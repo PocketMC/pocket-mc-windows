@@ -37,23 +37,29 @@
         
         <!-- Console output area -->
         <Border Grid.Row="1" Background="#1E1E1E" CornerRadius="8" Padding="8">
-            <ScrollViewer x:Name="LogScroller" VerticalScrollBarVisibility="Auto" 
-                          HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl x:Name="LogView" ItemsSource="{Binding Logs}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel VirtualizationMode="Recycling"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Text}" Foreground="{Binding TextColor}" 
-                                       FontFamily="Consolas" FontSize="13" TextWrapping="Wrap"
-                                       Padding="4,1"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <Grid>
+                <ScrollViewer x:Name="LogScroller" VerticalScrollBarVisibility="Auto" 
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl x:Name="LogView" ItemsSource="{Binding Logs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel VirtualizationMode="Recycling"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Text}" Foreground="{Binding TextColor}" 
+                                           FontFamily="Consolas" FontSize="13" TextWrapping="Wrap"
+                                           Padding="4,1"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                
+                <Border x:Name="CrashBanner" VerticalAlignment="Top" Background="#33FF0000" BorderBrush="#88FF0000" BorderThickness="1" CornerRadius="4" Padding="12" Margin="10" Visibility="Collapsed">
+                    <TextBlock x:Name="TxtCrashLog" Foreground="#FF6B6B" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" />
+                </Border>
+            </Grid>
         </Border>
         
         <!-- Command input bar -->

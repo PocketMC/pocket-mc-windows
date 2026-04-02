@@ -14,8 +14,14 @@ namespace PocketMC.Desktop.Models
         public int MaxRamMb { get; set; } = 4096;
 
         // Backup configuration
+        // Backup configuration
         public int BackupIntervalHours { get; set; } = 0; // 0 = manual only
         public int MaxBackupsToKeep { get; set; } = 10;
         public DateTime? LastBackupTime { get; set; }
+        
+        // Auto-Restart configuration
+        public bool EnableAutoRestart { get; set; } = false;
+        public int MaxAutoRestarts { get; set; } = 3;
+        public int AutoRestartDelaySeconds { get; set; } = 10;
     }
 }

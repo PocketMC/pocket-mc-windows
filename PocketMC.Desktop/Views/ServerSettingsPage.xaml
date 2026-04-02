@@ -227,6 +227,32 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- ═══════════════════════ TAB 6: CRASH & RESTART ═══════════════════════ -->
+            <TabItem Header="  Crash &amp; Restart  " Foreground="White">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                    <StackPanel Margin="20">
+
+                        <TextBlock Text="Crash Recovery" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Configure automatic restarts when the server crashes unexpectedly." Foreground="Silver" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                        <CheckBox x:Name="ChkEnableAutoRestart" Content="Enable Auto-Restart on Crash" Foreground="White" Margin="0,0,0,20"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <TextBlock Text="Max Auto-Restarts:" Foreground="Silver" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox x:Name="TxtMaxAutoRestarts" Background="#3E3E42" Foreground="White" Width="60" Text="3" Padding="2"/>
+                            <TextBlock Text=" times" Foreground="Silver" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <TextBlock Text="Restart Delay:" Foreground="Silver" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox x:Name="TxtAutoRestartDelay" Background="#3E3E42" Foreground="White" Width="60" Text="10" Padding="2"/>
+                            <TextBlock Text=" seconds" Foreground="Silver" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <!-- Footer Actions -->

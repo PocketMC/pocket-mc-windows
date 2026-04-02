@@ -11,7 +11,7 @@
         <!-- Inverse bool converter -->
         <Style x:Key="HiddenWhenRunning" TargetType="FrameworkElement">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                <DataTrigger Binding="{Binding ShowRunningControls}" Value="True">
                     <Setter Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
             </Style.Triggers>
@@ -19,7 +19,7 @@
         <Style x:Key="VisibleWhenRunning" TargetType="FrameworkElement">
             <Setter Property="Visibility" Value="Collapsed"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                <DataTrigger Binding="{Binding ShowRunningControls}" Value="True">
                     <Setter Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </Style.Triggers>
@@ -135,7 +135,7 @@
                                                Icon="{ui:SymbolIcon WindowConsole20}" Click="BtnConsole_Click" Cursor="Hand"/>
                                     <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,4,0"
                                                Icon="{ui:SymbolIcon Settings24}" Click="BtnManage_Click" Cursor="Hand"/>
-                                    <ui:Button Content="Stop" Appearance="Danger" 
+                                    <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" 
                                                Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand"/>
                                 </StackPanel>
                             </Grid>

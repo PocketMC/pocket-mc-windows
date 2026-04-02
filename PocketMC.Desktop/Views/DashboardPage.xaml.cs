@@ -41,8 +41,12 @@ namespace PocketMC.Desktop.Views
         public string Description => _metadata.Description;
 
         public bool IsRunning => _state == ServerState.Starting || _state == ServerState.Online || _state == ServerState.Stopping;
+        public bool IsWaitingToRestart => ServerProcessManager.IsWaitingToRestart(Id);
+        public bool ShowRunningControls => IsRunning || IsWaitingToRestart;
+        public string StopButtonText => IsWaitingToRestart ? "Abort" : "Stop";
 
-        public string StatusText => _state switch
+        private string? _countdownText;
+        public string StatusText => _countdownText ?? _state switch
         {
             ServerState.Stopped => "● Stopped",
             ServerState.Starting => "◉ Starting...",
@@ -120,10 +124,24 @@ namespace PocketMC.Desktop.Views
 
         public void UpdateState(ServerState newState)
         {
+            _countdownText = null;
             _state = newState;
             OnPropertyChanged(nameof(IsRunning));
+            OnPropertyChanged(nameof(ShowRunningControls));
+            OnPropertyChanged(nameof(IsWaitingToRestart));
+            OnPropertyChanged(nameof(StopButtonText));
             OnPropertyChanged(nameof(StatusText));
             OnPropertyChanged(nameof(StatusColor));
+        }
+
+        public void UpdateCountdown(int seconds)
+        {
+            _countdownText = $"Restarting in {seconds}s...";
+            OnPropertyChanged(nameof(IsWaitingToRestart));
+            OnPropertyChanged(nameof(ShowRunningControls));
+            OnPropertyChanged(nameof(StopButtonText));
+            _state = ServerState.Crashed;
+            OnPropertyChanged(nameof(StatusText));
         }
 
         public void RefreshNameDescription()
@@ -152,6 +170,7 @@ namespace PocketMC.Desktop.Views
 
             // Subscribe to global state changes
             ServerProcessManager.OnInstanceStateChanged += OnServerStateChanged;
+            ServerProcessManager.OnRestartCountdownTick += OnRestartCountdownTick;
             MainWindow.GlobalMonitor.OnGlobalMetricsUpdated += UpdateMetrics;
         }
 
@@ -207,6 +226,18 @@ namespace PocketMC.Desktop.Views
             {
                 var vm = _viewModels.FirstOrDefault(v => v.Id == instanceId);
                 vm?.UpdateState(newState);
+            });
+        }
+
+        private void OnRestartCountdownTick(Guid instanceId, int seconds)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var vm = _viewModels.FirstOrDefault(v => v.Id == instanceId);
+                if (vm != null)
+                {
+                    vm.UpdateCountdown(seconds);
+                }
             });
         }
 
@@ -272,7 +303,14 @@ namespace PocketMC.Desktop.Views
 
             try
             {
-                await ServerProcessManager.StopProcessAsync(vm.Id);
+                if (vm.IsWaitingToRestart)
+                {
+                    ServerProcessManager.AbortRestartDelay(vm.Id);
+                }
+                else
+                {
+                    await ServerProcessManager.StopProcessAsync(vm.Id);
+                }
             }
             catch (Exception ex)
             {

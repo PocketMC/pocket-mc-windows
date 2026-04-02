@@ -1,0 +1,11 @@
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Verification Required                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+**Test 4: Dashboard Cooldown & Abort**
+
+On the Dashboard, with an auto-restart enabled instance running, force-kill the Java process from the Task Manager. The server status text should show "Restarting in 15s..." counting down, and the Action buttons should display "Abort". Click "Abort" around 5 seconds. The countdown should halt immediately, the server state should remain Crashed, and the server should NOT magically start after 15 seconds.
+
+──────────────────────────────────────────────────────────────
+Type `pass` or describe what's wrong.
+──────────────────────────────────────────────────────────────

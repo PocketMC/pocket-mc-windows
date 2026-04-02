@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PocketMC.Desktop")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fd39ef9d9662d3e9441ed66d09d09fe93caf882f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+11ef39b1525456396cadc444ed96e37c1a7b3ac5")]
 [assembly: System.Reflection.AssemblyProductAttribute("PocketMC.Desktop")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PocketMC.Desktop")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

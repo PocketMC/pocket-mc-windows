@@ -54,6 +54,7 @@ namespace PocketMC.Desktop.Views
             LoadPluginTab();
             LoadModTab();
             LoadBackupTab();
+            LoadCrashRestartTab();
 
             // Tab change handler to refresh lock states
             MainTabControl.SelectionChanged += (s, e) =>
@@ -223,6 +224,10 @@ namespace PocketMC.Desktop.Views
         {
             _metadata.MinRamMb = (int)SldMinRam.Value;
             _metadata.MaxRamMb = (int)SldMaxRam.Value;
+            
+            _metadata.EnableAutoRestart = ChkEnableAutoRestart.IsChecked == true;
+            if (int.TryParse(TxtMaxAutoRestarts.Text, out int m)) _metadata.MaxAutoRestarts = m;
+            if (int.TryParse(TxtAutoRestartDelay.Text, out int d)) _metadata.AutoRestartDelaySeconds = d;
 
             var metaFile = Path.Combine(_serverDir, ".pocket-mc.json");
             File.WriteAllText(metaFile, System.Text.Json.JsonSerializer.Serialize(_metadata, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
@@ -838,6 +843,17 @@ namespace PocketMC.Desktop.Views
             var metaFile = Path.Combine(_serverDir, ".pocket-mc.json");
             File.WriteAllText(metaFile, System.Text.Json.JsonSerializer.Serialize(_metadata,
                 new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        }
+
+        // ════════════════════════════════════════════════
+        //  TAB 6: CRASH & RESTART
+        // ════════════════════════════════════════════════
+
+        private void LoadCrashRestartTab()
+        {
+            ChkEnableAutoRestart.IsChecked = _metadata.EnableAutoRestart;
+            TxtMaxAutoRestarts.Text = _metadata.MaxAutoRestarts.ToString();
+            TxtAutoRestartDelay.Text = _metadata.AutoRestartDelaySeconds.ToString();
         }
     }
 }

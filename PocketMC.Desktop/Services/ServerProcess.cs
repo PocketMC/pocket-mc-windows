@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -44,6 +45,7 @@ namespace PocketMC.Desktop.Services
         public event Action<string>? OnErrorLine;
         public event Action<int>? OnExited;
         public event Action<ServerState>? OnStateChanged;
+        public event Action<string>? OnServerCrashed;
 
         public Process? GetInternalProcess() => _process;
 
@@ -229,10 +231,18 @@ namespace PocketMC.Desktop.Services
         {
             int exitCode = _process?.ExitCode ?? -1;
 
-            if (_intentionalStop || exitCode == 0)
-                SetState(ServerState.Stopped);
-            else
+            if (!_intentionalStop && exitCode != 0)
+            {
+                var snapshotLines = OutputBuffer.ToArray().TakeLast(50);
+                string crashContext = $"--- CRASH DETECTED (Exit Code: {exitCode}) ---\n" + string.Join(Environment.NewLine, snapshotLines);
+                
                 SetState(ServerState.Crashed);
+                OnServerCrashed?.Invoke(crashContext);
+            }
+            else
+            {
+                SetState(ServerState.Stopped);
+            }
 
             OnExited?.Invoke(exitCode);
         }

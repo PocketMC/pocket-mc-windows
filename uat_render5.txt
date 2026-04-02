@@ -1,0 +1,11 @@
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Verification Required                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+**Test 5: Intentional Stop vs Crash Detection**
+
+Start a server, then use the normal "Stop" button from the Dashboard or Console. The server should transition to "Stopping..." and eventually "Stopped". The crash banner should NOT appear, and the auto-restart countdown should NOT initiate.
+
+──────────────────────────────────────────────────────────────
+Type `pass` or describe what's wrong.
+──────────────────────────────────────────────────────────────

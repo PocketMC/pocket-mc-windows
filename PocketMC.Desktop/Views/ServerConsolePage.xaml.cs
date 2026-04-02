@@ -64,6 +64,7 @@ namespace PocketMC.Desktop.Views
             _serverProcess.OnOutputLine += OnOutputReceived;
             _serverProcess.OnErrorLine += OnErrorReceived;
             _serverProcess.OnStateChanged += OnStateChanged;
+            _serverProcess.OnServerCrashed += OnServerCrashed;
 
             // Flush timer: 100ms interval for batched UI updates
             _flushTimer = new DispatcherTimer
@@ -96,6 +97,20 @@ namespace PocketMC.Desktop.Views
             {
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(StatusColor));
+
+                if (state == ServerState.Starting)
+                {
+                    CrashBanner.Visibility = Visibility.Collapsed;
+                }
+            });
+        }
+
+        private void OnServerCrashed(string crashContext)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                TxtCrashLog.Text = crashContext;
+                CrashBanner.Visibility = Visibility.Visible;
             });
         }
 
@@ -170,6 +185,7 @@ namespace PocketMC.Desktop.Views
             _serverProcess.OnOutputLine -= OnOutputReceived;
             _serverProcess.OnErrorLine -= OnErrorReceived;
             _serverProcess.OnStateChanged -= OnStateChanged;
+            _serverProcess.OnServerCrashed -= OnServerCrashed;
 
             if (NavigationService.CanGoBack)
                 NavigationService.GoBack();

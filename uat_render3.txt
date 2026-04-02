@@ -1,0 +1,11 @@
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Verification Required                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+**Test 3: Server Console Crash Banner**
+
+While a server is running, switch to the "Console" page. Force-kill the Java process from the Task Manager. A red crash banner should appear inside the console describing the crash, and the status text should update to Crashed. The banner should go away the next time the server is started.
+
+──────────────────────────────────────────────────────────────
+Type `pass` or describe what's wrong.
+──────────────────────────────────────────────────────────────

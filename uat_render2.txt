@@ -1,0 +1,11 @@
+╔══════════════════════════════════════════════════════════════╗
+║  CHECKPOINT: Verification Required                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+**Test 2: Form Configuration Persistence**
+
+In the Server Settings Page, navigate to the "Crash & Restart" tab. Enable Auto-Restart, set Max Restarts to 2, and Delay to 15 seconds. Save settings. Switch tabs and switch back; the settings should remain the same. Ensure they are persisted across application restarts.
+
+──────────────────────────────────────────────────────────────
+Type `pass` or describe what's wrong.
+──────────────────────────────────────────────────────────────
