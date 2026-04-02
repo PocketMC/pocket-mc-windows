@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Models;
@@ -31,6 +32,7 @@ namespace PocketMC.Desktop.Services
         private readonly JobObject _jobObject;
         private bool _disposed;
         private bool _intentionalStop;
+        private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
 
         public Guid InstanceId { get; }
         public ServerState State { get; private set; } = ServerState.Stopped;
@@ -200,11 +202,20 @@ namespace PocketMC.Desktop.Services
                         }
                         else if (line.Contains("players online:"))
                         {
-                            // "There are X of a max of Y players online:"
-                            var match = System.Text.RegularExpressions.Regex.Match(line, @"There are (\d+) of a max");
+                            var match = Regex.Match(line, @"There are (\d+) of a max");
                             if (match.Success && int.TryParse(match.Groups[1].Value, out int count))
                             {
                                 PlayerCount = count;
+                            }
+                        }
+
+                        // Check output waiters (used by BackupService for save-all sync)
+                        foreach (var kvp in _outputWaiters)
+                        {
+                            if (kvp.Value.IsMatch(line))
+                            {
+                                _outputWaiters.TryRemove(kvp.Key, out _);
+                                kvp.Key.TrySetResult(true);
                             }
                         }
                     }
@@ -233,6 +244,27 @@ namespace PocketMC.Desktop.Services
                 State = newState;
                 OnStateChanged?.Invoke(newState);
             }
+        }
+
+        /// <summary>
+        /// Waits for a specific regex pattern to appear in the console output.
+        /// Returns true if matched within timeout, false if timed out.
+        /// Used by BackupService to synchronize with 'Saved the game'.
+        /// </summary>
+        public async Task<bool> WaitForConsoleOutputAsync(string regexPattern, TimeSpan timeout)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            var compiled = new Regex(regexPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            _outputWaiters.TryAdd(tcs, compiled);
+
+            using var cts = new CancellationTokenSource(timeout);
+            cts.Token.Register(() =>
+            {
+                _outputWaiters.TryRemove(tcs, out _);
+                tcs.TrySetResult(false); // Timed out
+            });
+
+            return await tcs.Task;
         }
 
         public void Dispose()

@@ -12,5 +12,10 @@ namespace PocketMC.Desktop.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int MinRamMb { get; set; } = 1024;
         public int MaxRamMb { get; set; } = 4096;
+
+        // Backup configuration
+        public int BackupIntervalHours { get; set; } = 0; // 0 = manual only
+        public int MaxBackupsToKeep { get; set; } = 10;
+        public DateTime? LastBackupTime { get; set; }
     }
 }

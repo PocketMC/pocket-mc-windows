@@ -182,6 +182,51 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- ═══════════════════════ TAB 5: BACKUPS ═══════════════════════ -->
+            <TabItem Header="  Backups  " Foreground="White">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                    <StackPanel Margin="20">
+
+                        <!-- Manual Backup -->
+                        <TextBlock Text="Manual Backup" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Button x:Name="BtnCreateBackup" Content="📦 Create Backup Now" Click="BtnCreateBackup_Click" 
+                                    Padding="12,8" Background="#007ACC" Foreground="White" Margin="0,0,10,0"/>
+                        </StackPanel>
+                        <TextBlock x:Name="TxtBackupProgress" Foreground="LimeGreen" Visibility="Collapsed" Margin="0,0,0,15"/>
+
+                        <!-- Schedule Settings -->
+                        <TextBlock Text="Automatic Schedule" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Backup Every:" Foreground="Silver" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox x:Name="CmbBackupInterval" Background="#3E3E42" Foreground="White" Width="150"
+                                      SelectionChanged="CmbBackupInterval_Changed">
+                                <ComboBoxItem Content="Manual Only" Tag="0"/>
+                                <ComboBoxItem Content="Every 6 Hours" Tag="6"/>
+                                <ComboBoxItem Content="Every 12 Hours" Tag="12"/>
+                                <ComboBoxItem Content="Every 24 Hours" Tag="24"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <TextBlock Text="Keep Max:" Foreground="Silver" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox x:Name="CmbMaxBackups" Background="#3E3E42" Foreground="White" Width="150"
+                                      SelectionChanged="CmbMaxBackups_Changed">
+                                <ComboBoxItem Content="5 backups" Tag="5"/>
+                                <ComboBoxItem Content="10 backups" Tag="10"/>
+                                <ComboBoxItem Content="20 backups" Tag="20"/>
+                                <ComboBoxItem Content="50 backups" Tag="50"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Backup List -->
+                        <TextBlock Text="Available Backups" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,10"/>
+                        <TextBlock x:Name="TxtBackupLockWarning" Text="⚠ Server must be stopped to restore backups." 
+                                   Foreground="#FF6B6B" FontWeight="SemiBold" Visibility="Collapsed" Margin="0,0,0,10"/>
+                        <ItemsControl x:Name="BackupList"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <!-- Footer Actions -->

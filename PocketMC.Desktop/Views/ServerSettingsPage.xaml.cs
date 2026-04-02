@@ -8,6 +8,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using System.IO.Compression;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Services;
 using PocketMC.Desktop.Utils;
@@ -20,6 +21,7 @@ namespace PocketMC.Desktop.Views
         private string _appRoot;
         private string _serverDir;
         private readonly WorldManager _worldManager = new();
+        private readonly BackupService _backupService = new();
 
         public ServerSettingsPage(InstanceMetadata metadata, string appRoot)
         {
@@ -51,6 +53,7 @@ namespace PocketMC.Desktop.Views
             LoadWorldTab();
             LoadPluginTab();
             LoadModTab();
+            LoadBackupTab();
 
             // Tab change handler to refresh lock states
             MainTabControl.SelectionChanged += (s, e) =>
@@ -588,6 +591,253 @@ namespace PocketMC.Desktop.Views
                     }
                 }
             }
+        }
+
+        // ════════════════════════════════════════════════
+        //  TAB 5: BACKUPS
+        // ════════════════════════════════════════════════
+
+        private void LoadBackupTab()
+        {
+            // Set schedule dropdown to current value
+            foreach (ComboBoxItem item in CmbBackupInterval.Items)
+            {
+                if (item.Tag?.ToString() == _metadata.BackupIntervalHours.ToString())
+                {
+                    CmbBackupInterval.SelectedItem = item;
+                    break;
+                }
+            }
+
+            // Set max backups dropdown to current value
+            foreach (ComboBoxItem item in CmbMaxBackups.Items)
+            {
+                if (item.Tag?.ToString() == _metadata.MaxBackupsToKeep.ToString())
+                {
+                    CmbMaxBackups.SelectedItem = item;
+                    break;
+                }
+            }
+
+            // Show restore lock warning if running
+            bool isRunning = ServerProcessManager.IsRunning(_metadata.Id);
+            TxtBackupLockWarning.Visibility = isRunning ? Visibility.Visible : Visibility.Collapsed;
+
+            // Load backup list
+            RefreshBackupList();
+        }
+
+        private void RefreshBackupList()
+        {
+            BackupList.Items.Clear();
+            var backupDir = Path.Combine(_serverDir, "backups");
+            if (!Directory.Exists(backupDir))
+            {
+                BackupList.Items.Add(new TextBlock
+                {
+                    Text = "No backups yet.",
+                    Foreground = Brushes.Gray,
+                    FontStyle = FontStyles.Italic
+                });
+                return;
+            }
+
+            var files = new DirectoryInfo(backupDir)
+                .GetFiles("world-*.zip")
+                .OrderByDescending(f => f.CreationTime)
+                .ToArray();
+
+            if (files.Length == 0)
+            {
+                BackupList.Items.Add(new TextBlock
+                {
+                    Text = "No backups yet.",
+                    Foreground = Brushes.Gray,
+                    FontStyle = FontStyles.Italic
+                });
+                return;
+            }
+
+            bool isRunning = ServerProcessManager.IsRunning(_metadata.Id);
+
+            foreach (var file in files)
+            {
+                var row = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(0x3E, 0x3E, 0x42)),
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new Thickness(12, 8, 12, 8),
+                    Margin = new Thickness(0, 0, 0, 6)
+                };
+
+                var grid = new Grid();
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                var info = new StackPanel();
+                info.Children.Add(new TextBlock
+                {
+                    Text = file.Name,
+                    Foreground = Brushes.White,
+                    FontWeight = FontWeights.SemiBold
+                });
+                info.Children.Add(new TextBlock
+                {
+                    Text = $"Size: {Math.Round(file.Length / (1024.0 * 1024.0), 1)} MB  |  Created: {file.CreationTime:yyyy-MM-dd HH:mm}",
+                    Foreground = Brushes.Silver,
+                    FontSize = 11
+                });
+                Grid.SetColumn(info, 0);
+                grid.Children.Add(info);
+
+                var restoreBtn = new Button
+                {
+                    Content = "🔄 Restore",
+                    Padding = new Thickness(8, 4, 8, 4),
+                    Background = new SolidColorBrush(Color.FromRgb(0x00, 0x7A, 0xCC)),
+                    Foreground = Brushes.White,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 0, 6, 0),
+                    Tag = file.FullName,
+                    IsEnabled = !isRunning
+                };
+                restoreBtn.Click += RestoreBackup_Click;
+                Grid.SetColumn(restoreBtn, 1);
+                grid.Children.Add(restoreBtn);
+
+                var deleteBtn = new Button
+                {
+                    Content = "🗑",
+                    Padding = new Thickness(8, 4, 8, 4),
+                    Background = new SolidColorBrush(Color.FromRgb(0xC6, 0x28, 0x28)),
+                    Foreground = Brushes.White,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Tag = file.FullName
+                };
+                deleteBtn.Click += DeleteBackup_Click;
+                Grid.SetColumn(deleteBtn, 2);
+                grid.Children.Add(deleteBtn);
+
+                row.Child = grid;
+                BackupList.Items.Add(row);
+            }
+        }
+
+        private async void BtnCreateBackup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                BtnCreateBackup.IsEnabled = false;
+                TxtBackupProgress.Visibility = Visibility.Visible;
+
+                await _backupService.RunBackupAsync(_metadata, _serverDir, progress =>
+                {
+                    Dispatcher.Invoke(() => TxtBackupProgress.Text = progress);
+                });
+
+                RefreshBackupList();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Backup failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                BtnCreateBackup.IsEnabled = true;
+                TxtBackupProgress.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void RestoreBackup_Click(object sender, RoutedEventArgs e)
+        {
+            if (ServerProcessManager.IsRunning(_metadata.Id))
+            {
+                MessageBox.Show("Stop the server before restoring a backup.", "Server Running", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (sender is Button btn && btn.Tag is string zipPath)
+            {
+                var result = MessageBox.Show(
+                    $"Restore '{Path.GetFileName(zipPath)}'? This will REPLACE the current world.",
+                    "Confirm Restore", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        TxtBackupProgress.Visibility = Visibility.Visible;
+                        await _backupService.RestoreBackupAsync(zipPath, _serverDir, progress =>
+                        {
+                            Dispatcher.Invoke(() => TxtBackupProgress.Text = progress);
+                        });
+                        MessageBox.Show("World restored successfully!", "Done", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Restore failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    finally
+                    {
+                        TxtBackupProgress.Visibility = Visibility.Collapsed;
+                    }
+                }
+            }
+        }
+
+        private void DeleteBackup_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string path)
+            {
+                var result = MessageBox.Show(
+                    $"Delete backup '{Path.GetFileName(path)}'?",
+                    "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        File.Delete(path);
+                        RefreshBackupList();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to delete: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        private void CmbBackupInterval_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbBackupInterval.SelectedItem is ComboBoxItem item && item.Tag != null)
+            {
+                if (int.TryParse(item.Tag.ToString(), out int hours))
+                {
+                    _metadata.BackupIntervalHours = hours;
+                    SaveMetadata();
+                }
+            }
+        }
+
+        private void CmbMaxBackups_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbMaxBackups.SelectedItem is ComboBoxItem item && item.Tag != null)
+            {
+                if (int.TryParse(item.Tag.ToString(), out int max))
+                {
+                    _metadata.MaxBackupsToKeep = max;
+                    SaveMetadata();
+                }
+            }
+        }
+
+        private void SaveMetadata()
+        {
+            var metaFile = Path.Combine(_serverDir, ".pocket-mc.json");
+            File.WriteAllText(metaFile, System.Text.Json.JsonSerializer.Serialize(_metadata,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
         }
     }
 }

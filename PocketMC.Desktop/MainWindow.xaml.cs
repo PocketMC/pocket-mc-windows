@@ -9,6 +9,7 @@ namespace PocketMC.Desktop
     public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         public static ResourceMonitorService GlobalMonitor { get; } = new ResourceMonitorService();
+        private BackupSchedulerService? _backupScheduler;
 
         public MainWindow()
         {
@@ -37,8 +38,8 @@ namespace PocketMC.Desktop
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
+            _backupScheduler?.Dispose();
             GlobalMonitor.Dispose();
-            // Kill all managed server processes on app close
             ServerProcessManager.KillAll();
         }
 
@@ -66,6 +67,10 @@ namespace PocketMC.Desktop
                     return;
                 }
             }
+
+            // Start the background backup scheduler
+            _backupScheduler = new BackupSchedulerService(settings.AppRootPath);
+            _backupScheduler.Start();
 
             RootFrame.Navigate(new JavaSetupPage(settings.AppRootPath));
         }
