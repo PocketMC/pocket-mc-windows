@@ -36,10 +36,14 @@ namespace PocketMC.Desktop.Services
         public ServerState State { get; private set; } = ServerState.Stopped;
         public ConcurrentQueue<string> OutputBuffer { get; } = new();
 
+        public int PlayerCount { get; private set; }
+
         public event Action<string>? OnOutputLine;
         public event Action<string>? OnErrorLine;
         public event Action<int>? OnExited;
         public event Action<ServerState>? OnStateChanged;
+
+        public Process? GetInternalProcess() => _process;
 
         public ServerProcess(Guid instanceId, JobObject jobObject)
         {
@@ -182,9 +186,27 @@ namespace PocketMC.Desktop.Services
                     {
                         OnOutputLine?.Invoke(line);
 
-                        // Detect "Done!" log line to transition to Online
+                        // State Transition
                         if (State == ServerState.Starting && line.Contains("Done ("))
                             SetState(ServerState.Online);
+                            
+                        // Player Tracking
+                        if (line.Contains(" joined the game"))
+                            PlayerCount++;
+                        else if (line.Contains(" left the game"))
+                        {
+                            PlayerCount--;
+                            if (PlayerCount < 0) PlayerCount = 0;
+                        }
+                        else if (line.Contains("players online:"))
+                        {
+                            // "There are X of a max of Y players online:"
+                            var match = System.Text.RegularExpressions.Regex.Match(line, @"There are (\d+) of a max");
+                            if (match.Success && int.TryParse(match.Groups[1].Value, out int count))
+                            {
+                                PlayerCount = count;
+                            }
+                        }
                     }
                 }
             }

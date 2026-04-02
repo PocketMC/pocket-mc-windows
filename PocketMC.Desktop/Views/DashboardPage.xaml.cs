@@ -60,6 +60,64 @@ namespace PocketMC.Desktop.Views
             _ => Brushes.Gray
         };
 
+        // LiveCharts properties
+        public ObservableCollection<double> CpuHistory { get; } = new();
+        public ObservableCollection<double> RamHistory { get; } = new();
+        public LiveChartsCore.ISeries[] CpuSeries { get; set; }
+        public LiveChartsCore.ISeries[] RamSeries { get; set; }
+        
+        public LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint InvisiblePaint { get; set; } = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColors.Transparent);
+        
+        public LiveChartsCore.SkiaSharpView.Axis[] InvisibleXAxes { get; set; } = new[] 
+        { 
+            new LiveChartsCore.SkiaSharpView.Axis { IsVisible = false, ShowSeparatorLines = false } 
+        };
+        public LiveChartsCore.SkiaSharpView.Axis[] InvisibleYAxes { get; set; } = new[] 
+        { 
+            new LiveChartsCore.SkiaSharpView.Axis { IsVisible = false, MinLimit = 0, ShowSeparatorLines = false } 
+        };
+
+        private string _playerStatus = "0 Players Online";
+        public string PlayerStatus { get => _playerStatus; set { _playerStatus = value; OnPropertyChanged(nameof(PlayerStatus)); } }
+
+        private string _cpuText = "CPU 0%";
+        public string CpuText { get => _cpuText; set { _cpuText = value; OnPropertyChanged(nameof(CpuText)); } }
+
+        private string _ramText = "RAM 0 MB";
+        public string RamText { get => _ramText; set { _ramText = value; OnPropertyChanged(nameof(RamText)); } }
+
+        public void EnsureChartsReady()
+        {
+            if (CpuSeries != null) return; // Only init once
+            CpuSeries = new LiveChartsCore.ISeries[]
+            {
+                new LiveChartsCore.SkiaSharpView.LineSeries<double>
+                {
+                    Values = CpuHistory,
+                    Fill = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse("#204CAF50")),
+                    Stroke = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse("#4CAF50")) { StrokeThickness = 2 },
+                    GeometryFill = null,
+                    GeometryStroke = null,
+                    LineSmoothness = 0.5
+                }
+            };
+
+            RamSeries = new LiveChartsCore.ISeries[]
+            {
+                new LiveChartsCore.SkiaSharpView.LineSeries<double>
+                {
+                    Values = RamHistory,
+                    Fill = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse("#202196F3")),
+                    Stroke = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse("#2196F3")) { StrokeThickness = 2 },
+                    GeometryFill = null,
+                    GeometryStroke = null,
+                    LineSmoothness = 0.5
+                }
+            };
+            OnPropertyChanged(nameof(CpuSeries));
+            OnPropertyChanged(nameof(RamSeries));
+        }
+
         public void UpdateState(ServerState newState)
         {
             _state = newState;
@@ -94,6 +152,45 @@ namespace PocketMC.Desktop.Views
 
             // Subscribe to global state changes
             ServerProcessManager.OnInstanceStateChanged += OnServerStateChanged;
+            MainWindow.GlobalMonitor.OnGlobalMetricsUpdated += UpdateMetrics;
+        }
+
+        private void UpdateMetrics()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var dictionary = MainWindow.GlobalMonitor.Metrics;
+                foreach (var vm in _viewModels)
+                {
+                    if (dictionary.TryGetValue(vm.Id, out var metric))
+                    {
+                        vm.EnsureChartsReady();
+                        
+                        vm.CpuHistory.Add(metric.CpuUsage);
+                        if (vm.CpuHistory.Count > 30) vm.CpuHistory.RemoveAt(0);
+                        vm.CpuText = $"CPU {Math.Round(metric.CpuUsage)}%";
+
+                        vm.RamHistory.Add(metric.RamUsageMb);
+                        if (vm.RamHistory.Count > 30) vm.RamHistory.RemoveAt(0);
+                        vm.RamText = $"RAM {Math.Round(metric.RamUsageMb)} MB";
+
+                        vm.PlayerStatus = $"{metric.PlayerCount} Players Online";
+                        
+                        // High RAM warning badge logic
+                        if (vm.Metadata.MaxRamMb > 0 && metric.RamUsageMb > vm.Metadata.MaxRamMb * 1.1)
+                        {
+                            vm.RamText += " ⚠ (High)";
+                        }
+                    }
+                    else
+                    {
+                        // Default out
+                        vm.PlayerStatus = "0 Players Online";
+                        vm.CpuText = "CPU 0%";
+                        vm.RamText = "RAM 0 MB";
+                    }
+                }
+            });
         }
 
         private void LoadInstances()

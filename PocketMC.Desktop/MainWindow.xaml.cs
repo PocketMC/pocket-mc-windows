@@ -8,16 +8,36 @@ namespace PocketMC.Desktop
 {
     public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
+        public static ResourceMonitorService GlobalMonitor { get; } = new ResourceMonitorService();
+
         public MainWindow()
         {
             InitializeComponent();
             Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
             Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
             Closing += MainWindow_Closing;
+
+            GlobalMonitor.OnGlobalMetricsUpdated += UpdateGlobalHealth;
+        }
+
+        private void UpdateGlobalHealth()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                double commitedMb = GlobalMonitor.GetTotalCommittedRamMb();
+                double totalMb = PocketMC.Desktop.Utils.SystemMetrics.GetTotalPhysicalMemoryMb();
+                GlobalHealthTextBlock.Text = $"Global RAM: {Math.Round(commitedMb)} MB / {Math.Round(totalMb)} MB";
+
+                if (totalMb > 0 && commitedMb > totalMb * 0.9)
+                    GlobalHealthTextBlock.Foreground = System.Windows.Media.Brushes.Red;
+                else
+                    GlobalHealthTextBlock.Foreground = (System.Windows.Media.Brush)FindResource("TextFillColorSecondaryBrush");
+            });
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
+            GlobalMonitor.Dispose();
             // Kill all managed server processes on app close
             ServerProcessManager.KillAll();
         }
