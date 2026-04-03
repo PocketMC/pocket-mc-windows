@@ -90,6 +90,11 @@ namespace PocketMC.Desktop.Views
         private string _ramText = "RAM 0 MB";
         public string RamText { get => _ramText; set { _ramText = value; OnPropertyChanged(nameof(RamText)); } }
 
+        private string _playitAddressText = "";
+        public string PlayitAddressText { get => _playitAddressText; set { _playitAddressText = value; OnPropertyChanged(nameof(PlayitAddressText)); OnPropertyChanged(nameof(PlayitVisibility)); } }
+
+        public Visibility PlayitVisibility => string.IsNullOrEmpty(_playitAddressText) ? Visibility.Collapsed : Visibility.Visible;
+
         public void EnsureChartsReady()
         {
             if (CpuSeries != null) return; // Only init once
@@ -225,8 +230,46 @@ namespace PocketMC.Desktop.Views
             Dispatcher.Invoke(() =>
             {
                 var vm = _viewModels.FirstOrDefault(v => v.Id == instanceId);
-                vm?.UpdateState(newState);
+                if (vm != null)
+                {
+                    vm.UpdateState(newState);
+                    if (newState == ServerState.Online && vm.Metadata.EnablePlayit && string.IsNullOrEmpty(vm.PlayitAddressText))
+                    {
+                        StartPlayitPolling(vm);
+                    }
+                    else if (newState == ServerState.Stopped || newState == ServerState.Crashed)
+                    {
+                        vm.PlayitAddressText = "";
+                    }
+                }
             });
+        }
+
+        private async void StartPlayitPolling(InstanceCardViewModel vm)
+        {
+            if (!vm.Metadata.EnablePlayit) return;
+            
+            var playit = new PlayitService(new SettingsManager());
+            int localPort = 25565;
+            
+            var folder = FindFolderById(vm.Id);
+            if (folder != null)
+            {
+                var propsFile = System.IO.Path.Combine(_appRootPath, "servers", folder, "server.properties");
+                var props = ServerPropertiesParser.Read(propsFile);
+                if (props.TryGetValue("server-port", out var sp) && int.TryParse(sp, out int p)) localPort = p;
+            }
+
+            for (int i=0; i<15; i++)
+            {
+                await System.Threading.Tasks.Task.Delay(2000);
+                string addr = await playit.GetPublicAddressForPortAsync(localPort);
+                if (!string.IsNullOrEmpty(addr))
+                {
+                    vm.PlayitAddressText = addr;
+                    return;
+                }
+            }
         }
 
         private void OnRestartCountdownTick(Guid instanceId, int seconds)
@@ -331,6 +374,16 @@ namespace PocketMC.Desktop.Views
             if (process != null)
             {
                 NavigationService.Navigate(new ServerConsolePage(vm.Metadata, process));
+            }
+        }
+
+        private void PlayitAddress_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var vm = GetViewModel(sender);
+            if (vm != null && !string.IsNullOrEmpty(vm.PlayitAddressText))
+            {
+                System.Windows.Clipboard.SetText(vm.PlayitAddressText);
+                System.Windows.MessageBox.Show("Playit.gg address copied to clipboard!", "Copied", MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             }
         }
 

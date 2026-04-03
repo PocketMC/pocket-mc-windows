@@ -55,6 +55,7 @@ namespace PocketMC.Desktop.Views
             LoadModTab();
             LoadBackupTab();
             LoadCrashRestartTab();
+            LoadNetworkingTab();
 
             // Tab change handler to refresh lock states
             MainTabControl.SelectionChanged += (s, e) =>
@@ -854,6 +855,77 @@ namespace PocketMC.Desktop.Views
             ChkEnableAutoRestart.IsChecked = _metadata.EnableAutoRestart;
             TxtMaxAutoRestarts.Text = _metadata.MaxAutoRestarts.ToString();
             TxtAutoRestartDelay.Text = _metadata.AutoRestartDelaySeconds.ToString();
+        }
+
+        // ════════════════════════════════════════════════
+        //  TAB 7: NETWORKING
+        // ════════════════════════════════════════════════
+
+        private void LoadNetworkingTab()
+        {
+            var settings = new SettingsManager().Load();
+            if (string.IsNullOrEmpty(settings.PlayitSecretKey))
+            {
+                PanelPlayitLogin.Visibility = Visibility.Visible;
+                PanelPlayitConfig.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                PanelPlayitLogin.Visibility = Visibility.Collapsed;
+                PanelPlayitConfig.Visibility = Visibility.Visible;
+                ChkEnablePlayit.IsChecked = _metadata.EnablePlayit;
+            }
+        }
+
+        private async void BtnPlayitLogin_Click(object sender, RoutedEventArgs e)
+        {
+            TxtPlayitLoginStatus.Visibility = Visibility.Visible;
+            TxtPlayitLoginStatus.Text = "Initiating Playit setup...";
+            BtnPlayitLogin.IsEnabled = false;
+
+            try 
+            {
+                var downloader = new DownloaderService();
+                await downloader.DownloadPlayitCliAsync(_appRoot);
+
+                var playit = new PlayitService(new SettingsManager());
+                string url = await playit.ClaimPlayitAccountAsync(_appRoot);
+                
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+
+                TxtPlayitLoginStatus.Text = "Browser opened... Playit interactive setup has begun. If playit.exe provided a secret token, paste it below:";
+                
+                TxtPlayitSecretInput.Visibility = Visibility.Visible;
+                BtnSavePlayitSecret.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                TxtPlayitLoginStatus.Text = $"Error: {ex.Message}";
+                BtnPlayitLogin.IsEnabled = true;
+            }
+        }
+
+        private void BtnSavePlayitSecret_Click(object sender, RoutedEventArgs e)
+        {
+            string secret = TxtPlayitSecretInput.Text.Trim();
+            if (!string.IsNullOrEmpty(secret))
+            {
+                var settingsManager = new SettingsManager();
+                var settings = settingsManager.Load();
+                settings.PlayitSecretKey = secret;
+                settingsManager.Save(settings);
+                
+                LoadNetworkingTab();
+            }
+        }
+
+        private void ChkEnablePlayit_Changed(object sender, RoutedEventArgs e)
+        {
+            _metadata.EnablePlayit = ChkEnablePlayit.IsChecked == true;
         }
     }
 }

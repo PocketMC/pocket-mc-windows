@@ -253,6 +253,32 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- ═══════════════════════ TAB 7: NETWORKING ═══════════════════════ -->
+            <TabItem Header="  Networking  " Foreground="White">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Playit.gg Tunneling" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Expose your server to the internet without port forwarding." Foreground="Silver" TextWrapping="Wrap" Margin="0,0,0,15"/>
+
+                        <StackPanel x:Name="PanelPlayitLogin" Visibility="Collapsed" Margin="0,0,0,20">
+                            <TextBlock Text="You need to link your Playit account first." Foreground="Orange" Margin="0,0,0,10"/>
+                            <Button x:Name="BtnPlayitLogin" Content="Login to Playit.gg" Click="BtnPlayitLogin_Click" 
+                                    Padding="12,8" Background="#007ACC" Foreground="White" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="TxtPlayitLoginStatus" Foreground="White" Margin="0,5,0,0" Visibility="Collapsed"/>
+                            <TextBox x:Name="TxtPlayitSecretInput" Background="#3E3E42" Foreground="White" Padding="5" Margin="0,10,0,0" Visibility="Collapsed"/>
+                            <Button x:Name="BtnSavePlayitSecret" Content="Save Secret" Click="BtnSavePlayitSecret_Click" 
+                                    Padding="10,5" Background="#C62828" Foreground="White" HorizontalAlignment="Left" Margin="0,5,0,0" Visibility="Collapsed"/>
+                            <TextBlock Text="(You may paste the secret here if the terminal provided one, or let the app automatically grab the URL to claim)" Foreground="Gray" FontSize="10" Margin="0,5,0,0" Visibility="Collapsed"/>
+                        </StackPanel>
+
+                        <StackPanel x:Name="PanelPlayitConfig" Visibility="Collapsed">
+                            <TextBlock Text="✅ Account Linked" Foreground="LimeGreen" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <CheckBox x:Name="ChkEnablePlayit" Content="Enable Playit.gg for this Server" Foreground="White" Margin="0,0,0,15" Checked="ChkEnablePlayit_Changed" Unchecked="ChkEnablePlayit_Changed"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <!-- Footer Actions -->

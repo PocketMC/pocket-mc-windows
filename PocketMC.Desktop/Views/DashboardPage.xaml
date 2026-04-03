@@ -93,6 +93,11 @@
                                 <TextBlock Grid.Row="1" Text="{Binding StatusText}" 
                                            Foreground="{Binding StatusColor}" FontSize="11" FontWeight="SemiBold"
                                            Margin="0,0,0,8"/>
+                                           
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Visibility="{Binding PlayitVisibility}" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="Hand" MouseLeftButtonDown="PlayitAddress_Click" ToolTip="Copy IP to clipboard">
+                                    <TextBlock Text="🌐 " Foreground="#00E5FF" FontSize="11"/>
+                                    <TextBlock Text="{Binding PlayitAddressText}" Foreground="#00E5FF" FontSize="11" TextDecorations="Underline" FontWeight="SemiBold"/>
+                                </StackPanel>
                                 
                                 <ui:TextBlock Grid.Row="2" FontTypography="Caption" Text="{Binding Description}" 
                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
