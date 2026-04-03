@@ -45,25 +45,50 @@ namespace PocketMC.Desktop.Services
                 if (process == null) return "https://playit.gg/login";
 
                 string claimUrl = "https://playit.gg/login";
-                
-                // Use a cancellation token to stop waiting after 10 seconds
-                using var cts = new CancellationTokenSource(10000);
-                
-                // Read line by line to get the URL quickly without waiting for exit
-                while (!process.StandardOutput.EndOfStream)
+                var tcs = new TaskCompletionSource<string>();
+
+                // Continuously drain stdout to prevent deadlocks when pipe buffer gets full
+                Task.Run(async () =>
                 {
-                    if (cts.IsCancellationRequested) break;
-                    
-                    var lineTask = process.StandardOutput.ReadLineAsync();
-                    if (await Task.WhenAny(lineTask, Task.Delay(500, cts.Token)) == lineTask && lineTask.Result != null)
+                    try
                     {
-                        var match = Regex.Match(lineTask.Result, @"https:/\/playit\.gg\/claim\/[a-zA-Z0-9\-]+");
-                        if (match.Success)
+                        while (!process.StandardOutput.EndOfStream)
                         {
-                            claimUrl = match.Value;
-                            break; // Got the URL, leave the process running in the background to finish the handshake
+                            string? line = await process.StandardOutput.ReadLineAsync();
+                            if (line == null) break;
+
+                            if (claimUrl == "https://playit.gg/login")
+                            {
+                                var match = Regex.Match(line, @"https:/\/playit\.gg\/claim\/[a-zA-Z0-9\-]+");
+                                if (match.Success)
+                                {
+                                    claimUrl = match.Value;
+                                    tcs.TrySetResult(match.Value);
+                                }
+                            }
                         }
                     }
+                    catch { }
+                });
+
+                // Continuously drain stderr for same reason
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        while (!process.StandardError.EndOfStream)
+                        {
+                            await process.StandardError.ReadLineAsync();
+                        }
+                    }
+                    catch { }
+                });
+
+                // Wait for the URL or give up after 10 seconds (it falls back to generic login url)
+                var delayTask = Task.Delay(10000);
+                if (await Task.WhenAny(tcs.Task, delayTask) == tcs.Task)
+                {
+                    return tcs.Task.Result;
                 }
 
                 return claimUrl;
