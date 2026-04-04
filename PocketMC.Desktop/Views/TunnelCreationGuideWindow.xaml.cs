@@ -18,6 +18,11 @@ namespace PocketMC.Desktop.Views
         private CancellationTokenSource? _pollingCts;
 
         /// <summary>
+        /// Fires when the tunnel starts successfully and its address is resolved locally.
+        /// </summary>
+        public event Action<string>? OnTunnelResolved;
+
+        /// <summary>
         /// The public address of the newly created tunnel, populated when found.
         /// </summary>
         public string? ResolvedAddress { get; private set; }
@@ -45,6 +50,7 @@ namespace PocketMC.Desktop.Views
                 if (address != null)
                 {
                     ResolvedAddress = address;
+                    OnTunnelResolved?.Invoke(address);
                     Dispatcher.Invoke(() =>
                     {
                         StatusText.Text = $"✓ Tunnel found: {address}";

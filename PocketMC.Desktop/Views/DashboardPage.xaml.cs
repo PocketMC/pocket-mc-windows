@@ -393,9 +393,11 @@ namespace PocketMC.Desktop.Views
 
                 case TunnelResolutionResult.TunnelStatus.CreationStarted:
                     var guideWindow = new TunnelCreationGuideWindow(tunnelService, serverPort);
+                    guideWindow.OnTunnelResolved += (address) => 
+                    {
+                        Dispatcher.Invoke(() => vm.TunnelAddress = address);
+                    };
                     guideWindow.Show();
-                    if (guideWindow.ResolvedAddress != null)
-                        vm.TunnelAddress = guideWindow.ResolvedAddress;
                     break;
 
                 case TunnelResolutionResult.TunnelStatus.Error:
