@@ -60,16 +60,17 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <ui:Card Width="280" Cursor="Hand">
+                            <ui:Card Width="360" Cursor="Hand">
                             <Grid Margin="12">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/> <!-- Title & Menu -->
+                                    <RowDefinition Height="Auto"/> <!-- Description -->
+                                    <RowDefinition Height="Auto"/> <!-- Status & Tunnel Pill -->
+                                    <RowDefinition Height="Auto"/> <!-- Running Metrics Panel -->
+                                    <RowDefinition Height="Auto"/> <!-- Action Buttons -->
                                 </Grid.RowDefinitions>
                                 
-                                <!-- Title row -->
+                                <!-- Title row (Row 0) -->
                                 <Grid Grid.Row="0" Margin="0,0,0,4">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -89,68 +90,75 @@
                                     </ui:Button>
                                 </Grid>
                                 
-                                <!-- Status badge -->
-                                <TextBlock Grid.Row="1" Text="{Binding StatusText}" 
-                                           Foreground="{Binding StatusColor}" FontSize="11" FontWeight="SemiBold"
-                                           Margin="0,0,0,4"/>
-                                
-                                <!-- Tunnel address pill (D-03: click-to-copy) -->
-                                <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                        Background="#2089B4FA" CornerRadius="10" Padding="8,3"
-                                        Cursor="Hand" Margin="0,0,0,0"
-                                        Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}">
-                                    <Border.InputBindings>
-                                        <MouseBinding Gesture="LeftClick" Command="{x:Null}"/>
-                                    </Border.InputBindings>
-                                    <TextBlock Text="{Binding TunnelAddress}" FontSize="10" 
-                                               Foreground="#89B4FA" FontWeight="SemiBold"
-                                               MouseLeftButtonDown="TunnelPill_MouseDown"/>
-                                </Border>
-                                
-                                <ui:TextBlock Grid.Row="2" FontTypography="Caption" Text="{Binding Description}" 
+                                <!-- Description (Row 1) -->
+                                <ui:TextBlock Grid.Row="1" FontTypography="Caption" Text="{Binding Description}" 
                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                               TextWrapping="Wrap" Margin="0,0,0,12"/>
-                                
-                                <!-- Running metrics panel -->
-                                <Grid Grid.Row="2" Style="{StaticResource VisibleWhenRunning}" Margin="0,4,0,12">
+                                              
+                                <!-- Status & Tunnel Pill (Row 2) -->
+                                <Grid Grid.Row="2" Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0" Text="{Binding StatusText}" 
+                                               Foreground="{Binding StatusColor}" FontSize="11" FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+                                               
+                                    <Border Grid.Column="1" Background="#2089B4FA" CornerRadius="10" Padding="8,3"
+                                            Cursor="Hand" Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}">
+                                        <Border.InputBindings>
+                                            <MouseBinding Gesture="LeftClick" Command="{x:Null}"/>
+                                        </Border.InputBindings>
+                                        <TextBlock Text="{Binding TunnelAddress}" FontSize="10" 
+                                                   Foreground="#89B4FA" FontWeight="SemiBold"
+                                                   MouseLeftButtonDown="TunnelPill_MouseDown"/>
+                                    </Border>
+                                </Grid>
+                                
+                                <!-- Running metrics panel (Row 3, hidden when stopped) -->
+                                <Grid Grid.Row="3" Style="{StaticResource VisibleWhenRunning}" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                    <StackPanel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding CpuText}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                     
-                                    <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                                    <StackPanel Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding RamText}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                     
                                     <!-- Player count -->
-                                    <TextBlock Text="{Binding PlayerStatus}" FontSize="11" FontWeight="Medium" 
-                                               Foreground="{Binding StatusColor}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,-22,0,0" />
+                                    <TextBlock Grid.Column="2" Text="{Binding PlayerStatus}" FontSize="11" FontWeight="Medium" 
+                                               Foreground="{Binding StatusColor}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                                 </Grid>
 
-                                <!-- Action buttons: STOPPED state -->
-                                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right"
-                                            Style="{StaticResource HiddenWhenRunning}">
-                                    <ui:Button Content="Start" Appearance="Primary" Margin="0,0,4,0"
-                                               Icon="{ui:SymbolIcon Play24}" Click="BtnStart_Click" Cursor="Hand"/>
-                                    <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,4,0"
-                                               Icon="{ui:SymbolIcon Settings24}" Click="BtnManage_Click" Cursor="Hand"/>
-                                    <ui:Button Icon="{ui:SymbolIcon Folder24}" Click="BtnOpenFolder_Click" Cursor="Hand"/>
-                                </StackPanel>
-                                
-                                <!-- Action buttons: RUNNING state -->
-                                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right"
-                                            Style="{StaticResource VisibleWhenRunning}">
-                                    <ui:Button Content="Console" Appearance="Primary" Margin="0,0,4,0"
-                                               Icon="{ui:SymbolIcon WindowConsole20}" Click="BtnConsole_Click" Cursor="Hand"/>
-                                    <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,4,0"
-                                               Icon="{ui:SymbolIcon Settings24}" Click="BtnManage_Click" Cursor="Hand"/>
-                                    <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" 
-                                               Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand"/>
-                                </StackPanel>
+                                <!-- Action buttons (Row 4) -->
+                                <Grid Grid.Row="4">
+                                    <!-- STOPPED state -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Style="{StaticResource HiddenWhenRunning}">
+                                        <ui:Button Content="Start" Appearance="Primary" Margin="0,0,6,0"
+                                                   Icon="{ui:SymbolIcon Play24}" Click="BtnStart_Click" Cursor="Hand"/>
+                                        <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,6,0"
+                                                   Icon="{ui:SymbolIcon Settings24}" Click="BtnManage_Click" Cursor="Hand"/>
+                                        <ui:Button Icon="{ui:SymbolIcon Folder24}" Click="BtnOpenFolder_Click" Cursor="Hand"/>
+                                    </StackPanel>
+                                    
+                                    <!-- RUNNING state -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Style="{StaticResource VisibleWhenRunning}">
+                                        <ui:Button Content="Console" Appearance="Primary" Margin="0,0,6,0"
+                                                   Icon="{ui:SymbolIcon WindowConsole20}" Click="BtnConsole_Click" Cursor="Hand"/>
+                                        <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,6,0"
+                                                   Icon="{ui:SymbolIcon Settings24}" Click="BtnManage_Click" Cursor="Hand"/>
+                                        <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" 
+                                                   Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand"/>
+                                    </StackPanel>
+                                </Grid>
                             </Grid>
                         </ui:Card>
                         </Border>
