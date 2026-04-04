@@ -107,6 +107,7 @@ namespace PocketMC.Desktop.Services
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
+                RedirectStandardInput = true,
                 CreateNoWindow = true,
                 StandardOutputEncoding = Encoding.UTF8
             };
@@ -160,6 +161,18 @@ namespace PocketMC.Desktop.Services
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
                     Log("STDOUT: " + line);
+
+                    // Auto-reply to invalid secret prompt to reset `playit.toml` automatically
+                    if (line.Contains("Invalid secret, do you want to reset", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log("INFO: Auto-replying 'Y' to reset invalid secret...");
+                        try
+                        {
+                            await _agentProcess!.StandardInput.WriteLineAsync("Y");
+                            await _agentProcess!.StandardInput.FlushAsync();
+                        }
+                        catch { /* Ignore if it closed */ }
+                    }
 
                     // Claim URL detection (NET-03, NET-04)
                     var claimMatch = ClaimUrlRegex.Match(line);
