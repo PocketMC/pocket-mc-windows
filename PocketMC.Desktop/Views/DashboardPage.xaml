@@ -92,7 +92,20 @@
                                 <!-- Status badge -->
                                 <TextBlock Grid.Row="1" Text="{Binding StatusText}" 
                                            Foreground="{Binding StatusColor}" FontSize="11" FontWeight="SemiBold"
-                                           Margin="0,0,0,8"/>
+                                           Margin="0,0,0,4"/>
+                                
+                                <!-- Tunnel address pill (D-03: click-to-copy) -->
+                                <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Background="#2089B4FA" CornerRadius="10" Padding="8,3"
+                                        Cursor="Hand" Margin="0,0,0,0"
+                                        Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}">
+                                    <Border.InputBindings>
+                                        <MouseBinding Gesture="LeftClick" Command="{x:Null}"/>
+                                    </Border.InputBindings>
+                                    <TextBlock Text="{Binding TunnelAddress}" FontSize="10" 
+                                               Foreground="#89B4FA" FontWeight="SemiBold"
+                                               MouseLeftButtonDown="TunnelPill_MouseDown"/>
+                                </Border>
                                 
                                 <ui:TextBlock Grid.Row="2" FontTypography="Caption" Text="{Binding Description}" 
                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 

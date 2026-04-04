@@ -9,6 +9,7 @@ using PocketMC.Desktop.Services;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Utils;
 using System.Linq;
+using System.Threading.Tasks;
 using MenuItem = System.Windows.Controls.MenuItem;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxResult = System.Windows.MessageBoxResult;
@@ -89,6 +90,20 @@ namespace PocketMC.Desktop.Views
 
         private string _ramText = "RAM 0 MB";
         public string RamText { get => _ramText; set { _ramText = value; OnPropertyChanged(nameof(RamText)); } }
+
+        // Tunnel address (NET-06, D-03)
+        private string? _tunnelAddress;
+        public string? TunnelAddress
+        {
+            get => _tunnelAddress;
+            set
+            {
+                _tunnelAddress = value;
+                OnPropertyChanged(nameof(TunnelAddress));
+                OnPropertyChanged(nameof(HasTunnelAddress));
+            }
+        }
+        public bool HasTunnelAddress => !string.IsNullOrEmpty(_tunnelAddress);
 
         public void EnsureChartsReady()
         {
@@ -312,13 +327,16 @@ namespace PocketMC.Desktop.Views
             }
         }
 
-        private void BtnStart_Click(object sender, RoutedEventArgs e)
+        private async void BtnStart_Click(object sender, RoutedEventArgs e)
         {
             var vm = GetViewModel(sender);
             if (vm == null) return;
 
             try
             {
+                // Resolve tunnel address before starting (NET-06, NET-09)
+                await ResolveTunnelForInstance(vm);
+
                 ServerProcessManager.StartProcess(vm.Metadata, _appRootPath);
             }
             catch (Exception ex)
@@ -328,6 +346,80 @@ namespace PocketMC.Desktop.Views
                     "Cannot Start Server",
                     MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Resolves the Playit tunnel address for a server instance (NET-06).
+        /// Reads server-port from server.properties to match against API tunnels.
+        /// </summary>
+        private async Task ResolveTunnelForInstance(InstanceCardViewModel vm)
+        {
+            if (PlayitAgent == null || PlayitAgent.State != PlayitAgentState.Connected)
+            {
+                vm.TunnelAddress = null;
+                return;
+            }
+
+            // Read server port from server.properties
+            string? folderName = FindFolderById(vm.Id);
+            if (folderName == null) return;
+
+            string serverDir = System.IO.Path.Combine(_appRootPath, "servers", folderName);
+            string propsPath = System.IO.Path.Combine(serverDir, "server.properties");
+            var props = ServerPropertiesParser.Read(propsPath);
+            int serverPort = 25565; // Default Minecraft port
+            if (props.TryGetValue("server-port", out var portStr) && int.TryParse(portStr, out var parsed))
+                serverPort = parsed;
+
+            var apiClient = new PlayitApiClient();
+            var tunnelService = new TunnelService(apiClient, PlayitAgent);
+            var result = await tunnelService.ResolveTunnelAsync(serverPort);
+
+            switch (result.Status)
+            {
+                case TunnelResolutionResult.TunnelStatus.Found:
+                    vm.TunnelAddress = result.PublicAddress;
+                    break;
+
+                case TunnelResolutionResult.TunnelStatus.LimitReached:
+                    var tunnelResult = await apiClient.GetTunnelsAsync();
+                    var dialog = new TunnelLimitDialog(tunnelResult.Tunnels);
+                    dialog.Owner = Window.GetWindow(this);
+                    dialog.ShowDialog();
+                    vm.TunnelAddress = null;
+                    break;
+
+                case TunnelResolutionResult.TunnelStatus.CreationStarted:
+                    var guideWindow = new TunnelCreationGuideWindow(tunnelService, serverPort);
+                    guideWindow.Show();
+                    if (guideWindow.ResolvedAddress != null)
+                        vm.TunnelAddress = guideWindow.ResolvedAddress;
+                    break;
+
+                default:
+                    vm.TunnelAddress = null;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Click-to-copy handler for tunnel address pill (D-03).
+        /// </summary>
+        private void TunnelPill_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is InstanceCardViewModel vm
+                && !string.IsNullOrEmpty(vm.TunnelAddress))
+            {
+                System.Windows.Clipboard.SetText(vm.TunnelAddress);
+                // Brief visual feedback — swap text momentarily
+                var originalAddress = vm.TunnelAddress;
+                vm.TunnelAddress = "Copied!";
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(1500);
+                    Dispatcher.Invoke(() => vm.TunnelAddress = originalAddress);
+                });
             }
         }
 
