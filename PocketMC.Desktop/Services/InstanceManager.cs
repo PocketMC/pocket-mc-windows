@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,6 +15,10 @@ namespace PocketMC.Desktop.Services
     {
         private readonly ApplicationState _applicationState;
         private readonly ILogger<InstanceManager> _logger;
+        private readonly ConcurrentDictionary<Guid, string> _pathCache = new();
+        private readonly ConcurrentDictionary<Guid, InstanceMetadata> _metadataCache = new();
+        private readonly object _cacheLock = new();
+        private volatile bool _cacheInitialized;
 
         public InstanceManager(ApplicationState applicationState, ILogger<InstanceManager> logger)
         {
@@ -39,53 +44,39 @@ namespace PocketMC.Desktop.Services
         public List<InstanceMetadata> GetAllInstances()
         {
             EnsureDirectory();
-            var instances = new List<InstanceMetadata>();
-
-            foreach (var dir in Directory.GetDirectories(ServersDirectory))
-            {
-                var metadataFile = Path.Combine(dir, ".pocket-mc.json");
-                if (File.Exists(metadataFile))
-                {
-                    try
-                    {
-                        var content = File.ReadAllText(metadataFile);
-                        var metadata = JsonSerializer.Deserialize<InstanceMetadata>(content);
-                        if (metadata != null)
-                        {
-                            instances.Add(metadata);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Skipping malformed instance metadata file {MetadataFile}.", metadataFile);
-                    }
-                }
-            }
-
-            return instances;
+            EnsureCacheLoaded();
+            return _metadataCache.Values.ToList();
         }
 
         public string? GetInstancePath(Guid id)
         {
             EnsureDirectory();
+
+            if (_pathCache.TryGetValue(id, out var cachedPath) && Directory.Exists(cachedPath))
+            {
+                return cachedPath;
+            }
+
+            EnsureCacheLoaded();
+            if (_pathCache.TryGetValue(id, out cachedPath) && Directory.Exists(cachedPath))
+            {
+                return cachedPath;
+            }
+
             foreach (var dir in Directory.GetDirectories(ServersDirectory))
             {
                 var metadataFile = Path.Combine(dir, ".pocket-mc.json");
-                if (File.Exists(metadataFile))
+                if (TryReadMetadata(metadataFile, out var metadata) && metadata != null)
                 {
-                    try
+                    _pathCache[metadata.Id] = dir;
+                    _metadataCache[metadata.Id] = metadata;
+                    if (metadata.Id == id)
                     {
-                        var content = File.ReadAllText(metadataFile);
-                        var metadata = JsonSerializer.Deserialize<InstanceMetadata>(content);
-                        if (metadata?.Id == id)
-                            return dir;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to inspect instance metadata at {MetadataFile}.", metadataFile);
+                        return dir;
                     }
                 }
             }
+
             return null;
         }
 
@@ -118,6 +109,10 @@ namespace PocketMC.Desktop.Services
 
             var metadataFile = Path.Combine(newInstancePath, ".pocket-mc.json");
             File.WriteAllText(metadataFile, JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true }));
+
+            _pathCache[metadata.Id] = newInstancePath;
+            _metadataCache[metadata.Id] = metadata;
+            _cacheInitialized = true;
 
             return metadata;
         }
@@ -167,12 +162,16 @@ namespace PocketMC.Desktop.Services
                 metadata.Description = newDescription;
 
                 File.WriteAllText(metadataFile, JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true }));
+                _pathCache[metadata.Id] = currentFolderPath;
+                _metadataCache[metadata.Id] = metadata;
             }
         }
 
         public void DeleteInstance(string folderName)
         {
             var folderPath = Path.Combine(ServersDirectory, folderName);
+            Guid? instanceId = ReadInstanceId(folderPath);
+            bool deleted = false;
             if (Directory.Exists(folderPath))
             {
                 // Simple retry logic since files might be temporarily locked
@@ -181,6 +180,7 @@ namespace PocketMC.Desktop.Services
                     try
                     {
                         Directory.Delete(folderPath, true);
+                        deleted = true;
                         break;
                     }
                     catch (IOException ex)
@@ -189,6 +189,12 @@ namespace PocketMC.Desktop.Services
                         Thread.Sleep(500); // Wait 500ms and retry
                     }
                 }
+            }
+
+            if (deleted && instanceId.HasValue)
+            {
+                _pathCache.TryRemove(instanceId.Value, out _);
+                _metadataCache.TryRemove(instanceId.Value, out _);
             }
         }
 
@@ -221,6 +227,71 @@ namespace PocketMC.Desktop.Services
         {
             var metadataFile = Path.Combine(instancePath, ".pocket-mc.json");
             File.WriteAllText(metadataFile, JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true }));
+            _pathCache[metadata.Id] = instancePath;
+            _metadataCache[metadata.Id] = metadata;
+            _cacheInitialized = true;
+        }
+
+        private void EnsureCacheLoaded()
+        {
+            if (_cacheInitialized)
+            {
+                return;
+            }
+
+            lock (_cacheLock)
+            {
+                if (_cacheInitialized)
+                {
+                    return;
+                }
+
+                RefreshCachesFromDisk();
+                _cacheInitialized = true;
+            }
+        }
+
+        private void RefreshCachesFromDisk()
+        {
+            _pathCache.Clear();
+            _metadataCache.Clear();
+
+            foreach (var dir in Directory.GetDirectories(ServersDirectory))
+            {
+                var metadataFile = Path.Combine(dir, ".pocket-mc.json");
+                if (TryReadMetadata(metadataFile, out var metadata) && metadata != null)
+                {
+                    _pathCache[metadata.Id] = dir;
+                    _metadataCache[metadata.Id] = metadata;
+                }
+            }
+        }
+
+        private bool TryReadMetadata(string metadataFile, out InstanceMetadata? metadata)
+        {
+            metadata = null;
+            if (!File.Exists(metadataFile))
+            {
+                return false;
+            }
+
+            try
+            {
+                var content = File.ReadAllText(metadataFile);
+                metadata = JsonSerializer.Deserialize<InstanceMetadata>(content);
+                return metadata != null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Skipping malformed instance metadata file {MetadataFile}.", metadataFile);
+                return false;
+            }
+        }
+
+        private Guid? ReadInstanceId(string folderPath)
+        {
+            var metadataFile = Path.Combine(folderPath, ".pocket-mc.json");
+            return TryReadMetadata(metadataFile, out var metadata) ? metadata?.Id : null;
         }
     }
 }

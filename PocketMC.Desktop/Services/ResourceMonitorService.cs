@@ -31,6 +31,7 @@ namespace PocketMC.Desktop.Services
         private readonly ILogger<ResourceMonitorService> _logger;
         private readonly Timer _timer;
         private readonly double _totalPhysicalRamMb;
+        private int _tickInProgress;
         private int _listCommandTick = 0;
         
         public ConcurrentDictionary<Guid, InstanceMetrics> Metrics { get; } = new();
@@ -50,13 +51,21 @@ namespace PocketMC.Desktop.Services
         {
             _serverProcessManager = serverProcessManager;
             _logger = logger;
-            _totalPhysicalRamMb = SystemMetrics.GetTotalPhysicalMemoryMb();
+            _totalPhysicalRamMb = (double)MemoryHelper.GetTotalPhysicalMemoryMb();
             _currentSummary = new GlobalResourceSummary(0, _totalPhysicalRamMb);
             _timer = new Timer(OnTick, null, 2000, 2000);
         }
 
         private void OnTick(object? state)
         {
+            if (Interlocked.CompareExchange(ref _tickInProgress, 1, 0) != 0)
+            {
+                return;
+            }
+
+            int nextInterval = 2000;
+            _timer.Change(Timeout.Infinite, Timeout.Infinite);
+
             try
             {
                 var activeProcesses = _serverProcessManager.ActiveProcesses.Values
@@ -73,11 +82,10 @@ namespace PocketMC.Desktop.Services
                 }
 
                 // Adaptive polling
-                int interval = (count >= 7) ? 10000 : (count >= 4) ? 5000 : 2000;
-                _timer.Change(interval, interval);
+                nextInterval = (count >= 7) ? 10000 : (count >= 4) ? 5000 : 2000;
 
                 _listCommandTick++;
-                bool sendListCommand = (_listCommandTick * (interval / 1000.0)) >= 30;
+                bool sendListCommand = (_listCommandTick * (nextInterval / 1000.0)) >= 30;
                 if (sendListCommand) _listCommandTick = 0;
 
                 foreach (var sp in activeProcesses)
@@ -145,6 +153,11 @@ namespace PocketMC.Desktop.Services
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Resource monitor tick failed.");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _tickInProgress, 0);
+                _timer.Change(nextInterval, nextInterval);
             }
         }
 

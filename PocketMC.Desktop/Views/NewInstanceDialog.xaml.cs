@@ -13,19 +13,22 @@ namespace PocketMC.Desktop.Views
     public partial class NewInstanceDialog : Wpf.Ui.Controls.FluentWindow
     {
         private readonly InstanceManager _instanceManager;
-        private readonly ApplicationState _applicationState;
+        private readonly VanillaProvider _vanillaProvider;
+        private readonly PaperProvider _paperProvider;
         private readonly ILogger<NewInstanceDialog> _logger;
 
         public bool WasCreated { get; private set; }
 
         public NewInstanceDialog(
             InstanceManager instanceManager,
-            ApplicationState applicationState,
+            VanillaProvider vanillaProvider,
+            PaperProvider paperProvider,
             ILogger<NewInstanceDialog> logger)
         {
             InitializeComponent();
             _instanceManager = instanceManager;
-            _applicationState = applicationState;
+            _vanillaProvider = vanillaProvider;
+            _paperProvider = paperProvider;
             _logger = logger;
             
             Loaded += async (s, e) => await LoadVersionsAsync("Vanilla");
@@ -52,9 +55,7 @@ namespace PocketMC.Desktop.Views
             try
             {
                 CmbVersion.ItemsSource = null;
-                IServerJarProvider provider = serverType == "Paper" 
-                    ? new PaperProvider() 
-                    : new VanillaProvider(_applicationState.GetRequiredAppRootPath());
+                IServerJarProvider provider = GetProvider(serverType);
 
                 var versions = await provider.GetAvailableVersionsAsync();
 
@@ -117,9 +118,7 @@ namespace PocketMC.Desktop.Views
                 string jarPath = Path.Combine(instancePath, "server.jar");
 
                 // 2. Download Jar
-                IServerJarProvider provider = srvType == "Paper" 
-                    ? new PaperProvider() 
-                    : new VanillaProvider(_applicationState.GetRequiredAppRootPath());
+                IServerJarProvider provider = GetProvider(srvType);
 
                 var progress = new Progress<DownloadProgress>(p =>
                 {
@@ -152,6 +151,13 @@ namespace PocketMC.Desktop.Views
                 TxtError.Visibility = Visibility.Visible;
                 _logger.LogError(ex, "Failed to create a new instance named {InstanceName}.", TxtName.Text);
             }
+        }
+
+        private IServerJarProvider GetProvider(string serverType)
+        {
+            return string.Equals(serverType, "Paper", StringComparison.OrdinalIgnoreCase)
+                ? _paperProvider
+                : _vanillaProvider;
         }
     }
 }

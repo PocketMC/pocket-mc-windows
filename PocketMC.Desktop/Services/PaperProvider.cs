@@ -15,11 +15,10 @@ namespace PocketMC.Desktop.Services
 
         public string DisplayName => "Paper (High Performance)";
 
-        public PaperProvider()
+        public PaperProvider(HttpClient httpClient, DownloaderService downloader)
         {
-            _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop");
-            _downloader = new DownloaderService();
+            _httpClient = httpClient;
+            _downloader = downloader;
         }
 
         public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()

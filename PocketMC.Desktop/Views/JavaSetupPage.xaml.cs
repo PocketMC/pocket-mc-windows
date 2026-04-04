@@ -75,7 +75,7 @@ namespace PocketMC.Desktop.Views
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             string appRootPath = _applicationState.GetRequiredAppRootPath();
-            int[] requiredVersions = { 11, 17, 21, 25 };
+            var requiredVersions = JavaRuntimeResolver.GetBundledJavaVersions();
             bool anyMissing = false;
 
             foreach (var v in requiredVersions)

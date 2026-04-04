@@ -11,6 +11,7 @@ using Wpf.Ui.Controls;
 using PocketMC.Desktop.Utils;
 using PocketMC.Desktop.Services;
 using PocketMC.Desktop.Models;
+using PocketMC.Desktop.ViewModels;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,162 +21,6 @@ using MessageBoxResult = System.Windows.MessageBoxResult;
 
 namespace PocketMC.Desktop.Views
 {
-    /// <summary>
-    /// ViewModel wrapper for InstanceMetadata that adds live state tracking.
-    /// </summary>
-    public class InstanceCardViewModel : INotifyPropertyChanged
-    {
-        private readonly InstanceMetadata _metadata;
-        private readonly ServerProcessManager _serverProcessManager;
-        private ServerState _state = ServerState.Stopped;
-
-        public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager)
-        {
-            _metadata = metadata;
-            _serverProcessManager = serverProcessManager;
-
-            // Sync initial state from ServerProcessManager
-            if (_serverProcessManager.IsRunning(metadata.Id))
-            {
-                var proc = _serverProcessManager.GetProcess(metadata.Id);
-                _state = proc?.State ?? ServerState.Stopped;
-            }
-        }
-
-        public InstanceMetadata Metadata => _metadata;
-        public Guid Id => _metadata.Id;
-        public string Name => _metadata.Name;
-        public string Description => _metadata.Description;
-
-        public bool IsRunning => _state == ServerState.Starting || _state == ServerState.Online || _state == ServerState.Stopping;
-        public bool IsWaitingToRestart => _serverProcessManager.IsWaitingToRestart(Id);
-        public bool ShowRunningControls => IsRunning || IsWaitingToRestart;
-        public string StopButtonText => IsWaitingToRestart ? "Abort" : "Stop";
-
-        private string? _countdownText;
-        public string StatusText => _countdownText ?? _state switch
-        {
-            ServerState.Stopped => "● Stopped",
-            ServerState.Starting => "◉ Starting...",
-            ServerState.Online => "● Online",
-            ServerState.Stopping => "◉ Stopping...",
-            ServerState.Crashed => "✖ Crashed",
-            _ => "Unknown"
-        };
-
-        public Brush StatusColor => _state switch
-        {
-            ServerState.Online => Brushes.LimeGreen,
-            ServerState.Starting or ServerState.Stopping => Brushes.Orange,
-            ServerState.Crashed => Brushes.Red,
-            _ => Brushes.Gray
-        };
-
-        // LiveCharts properties
-        public ObservableCollection<double> CpuHistory { get; } = new();
-        public ObservableCollection<double> RamHistory { get; } = new();
-        public LiveChartsCore.ISeries[]? CpuSeries { get; set; }
-        public LiveChartsCore.ISeries[]? RamSeries { get; set; }
-        
-        public LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint InvisiblePaint { get; set; } = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColors.Transparent);
-        
-        public LiveChartsCore.SkiaSharpView.Axis[] InvisibleXAxes { get; set; } = new[] 
-        { 
-            new LiveChartsCore.SkiaSharpView.Axis { IsVisible = false, ShowSeparatorLines = false } 
-        };
-        public LiveChartsCore.SkiaSharpView.Axis[] InvisibleYAxes { get; set; } = new[] 
-        { 
-            new LiveChartsCore.SkiaSharpView.Axis { IsVisible = false, MinLimit = 0, ShowSeparatorLines = false } 
-        };
-
-        private string _playerStatus = "0 Players Online";
-        public string PlayerStatus { get => _playerStatus; set { _playerStatus = value; OnPropertyChanged(nameof(PlayerStatus)); } }
-
-        private string _cpuText = "CPU 0%";
-        public string CpuText { get => _cpuText; set { _cpuText = value; OnPropertyChanged(nameof(CpuText)); } }
-
-        private string _ramText = "RAM 0 MB";
-        public string RamText { get => _ramText; set { _ramText = value; OnPropertyChanged(nameof(RamText)); } }
-
-        // Tunnel address (NET-06, D-03)
-        private string? _tunnelAddress;
-        public string? TunnelAddress
-        {
-            get => _tunnelAddress;
-            set
-            {
-                _tunnelAddress = value;
-                OnPropertyChanged(nameof(TunnelAddress));
-                OnPropertyChanged(nameof(HasTunnelAddress));
-            }
-        }
-        public bool HasTunnelAddress => !string.IsNullOrEmpty(_tunnelAddress);
-
-        public void EnsureChartsReady()
-        {
-            if (CpuSeries != null) return; // Only init once
-            CpuSeries = new LiveChartsCore.ISeries[]
-            {
-                new LiveChartsCore.SkiaSharpView.LineSeries<double>
-                {
-                    Values = CpuHistory,
-                    Fill = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse("#204CAF50")),
-                    Stroke = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse("#4CAF50")) { StrokeThickness = 2 },
-                    GeometryFill = null,
-                    GeometryStroke = null,
-                    LineSmoothness = 0.5
-                }
-            };
-
-            RamSeries = new LiveChartsCore.ISeries[]
-            {
-                new LiveChartsCore.SkiaSharpView.LineSeries<double>
-                {
-                    Values = RamHistory,
-                    Fill = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse("#202196F3")),
-                    Stroke = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColor.Parse("#2196F3")) { StrokeThickness = 2 },
-                    GeometryFill = null,
-                    GeometryStroke = null,
-                    LineSmoothness = 0.5
-                }
-            };
-            OnPropertyChanged(nameof(CpuSeries));
-            OnPropertyChanged(nameof(RamSeries));
-        }
-
-        public void UpdateState(ServerState newState)
-        {
-            _countdownText = null;
-            _state = newState;
-            OnPropertyChanged(nameof(IsRunning));
-            OnPropertyChanged(nameof(ShowRunningControls));
-            OnPropertyChanged(nameof(IsWaitingToRestart));
-            OnPropertyChanged(nameof(StopButtonText));
-            OnPropertyChanged(nameof(StatusText));
-            OnPropertyChanged(nameof(StatusColor));
-        }
-
-        public void UpdateCountdown(int seconds)
-        {
-            _countdownText = $"Restarting in {seconds}s...";
-            OnPropertyChanged(nameof(IsWaitingToRestart));
-            OnPropertyChanged(nameof(ShowRunningControls));
-            OnPropertyChanged(nameof(StopButtonText));
-            _state = ServerState.Crashed;
-            OnPropertyChanged(nameof(StatusText));
-        }
-
-        public void RefreshNameDescription()
-        {
-            OnPropertyChanged(nameof(Name));
-            OnPropertyChanged(nameof(Description));
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged(string prop) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
-    }
-
     public partial class DashboardPage : Page
     {
         private readonly ApplicationState _applicationState;
@@ -696,11 +541,17 @@ namespace PocketMC.Desktop.Views
                 System.Windows.Clipboard.SetText(vm.TunnelAddress);
                 // Brief visual feedback — swap text momentarily
                 var originalAddress = vm.TunnelAddress;
-                vm.TunnelAddress = "Copied!";
+                vm.TunnelAddress = "\u2713 Copied";
                 _ = Task.Run(async () =>
                 {
                     await Task.Delay(1500);
-                    Dispatcher.Invoke(() => vm.TunnelAddress = originalAddress);
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (vm.TunnelAddress == "\u2713 Copied")
+                        {
+                            vm.TunnelAddress = originalAddress;
+                        }
+                    });
                 });
             }
         }

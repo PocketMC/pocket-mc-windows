@@ -45,7 +45,7 @@ namespace PocketMC.Desktop.Services
         private readonly JobObject _jobObject;
         private readonly ILogger<ServerProcess> _logger;
         private bool _disposed;
-        private bool _intentionalStop;
+        private volatile bool _intentionalStop;
         private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
         private StreamWriter? _sessionLogWriter;
         private const int MAX_BUFFER_LINES = 5000;
@@ -73,31 +73,40 @@ namespace PocketMC.Desktop.Services
             _logger = logger;
         }
 
-        public void Start(InstanceMetadata meta, string appRootPath)
+        public void Start(InstanceMetadata meta, string workingDir, string appRootPath)
         {
             if (State != ServerState.Stopped && State != ServerState.Crashed)
                 throw new InvalidOperationException($"Cannot start server — current state is {State}.");
 
-            string javaPath = !string.IsNullOrEmpty(meta.CustomJavaPath) && File.Exists(meta.CustomJavaPath) 
-                ? meta.CustomJavaPath 
-                : "java";
+            int requiredJavaVersion = JavaRuntimeResolver.GetRequiredJavaVersion(meta.MinecraftVersion);
+            string? bundledJavaPath = JavaRuntimeResolver.GetBundledJavaPath(appRootPath, requiredJavaVersion);
+            string javaPath = JavaRuntimeResolver.ResolveJavaPath(meta, appRootPath);
 
-            string serversDir = Path.Combine(appRootPath, "servers");
-            string? workingDir = null;
-            if (Directory.Exists(serversDir))
+            if (!string.IsNullOrWhiteSpace(meta.CustomJavaPath) && !File.Exists(meta.CustomJavaPath))
             {
-                foreach (var dir in Directory.GetDirectories(serversDir))
-                {
-                    string metaFile = Path.Combine(dir, ".pocket-mc.json");
-                    if (File.Exists(metaFile) && File.ReadAllText(metaFile).Contains(meta.Id.ToString()))
-                    {
-                        workingDir = dir;
-                        break;
-                    }
-                }
+                _logger.LogWarning(
+                    "Custom Java path {CustomJavaPath} for instance {InstanceId} does not exist. Falling back to the bundled runtime selection.",
+                    meta.CustomJavaPath,
+                    InstanceId);
             }
 
-            if (workingDir == null)
+            if (javaPath == "java")
+            {
+                _logger.LogWarning(
+                    "Bundled Java {JavaVersion} was not found for Minecraft {MinecraftVersion}. Falling back to system java.",
+                    requiredJavaVersion,
+                    meta.MinecraftVersion);
+            }
+            else if (bundledJavaPath != null && string.Equals(javaPath, bundledJavaPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation(
+                    "Using bundled Java {JavaVersion} for Minecraft {MinecraftVersion} at {JavaPath}.",
+                    requiredJavaVersion,
+                    meta.MinecraftVersion,
+                    javaPath);
+            }
+
+            if (string.IsNullOrWhiteSpace(workingDir))
             {
                 throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
             }

@@ -78,6 +78,7 @@ namespace PocketMC.Desktop.Views
             };
             _flushTimer.Tick += FlushPendingLines;
             _flushTimer.Start();
+            Unloaded += (_, _) => DetachHandlers();
 
             // 1. Load full session history from the log file (NET-15)
             LoadSessionLogHistory();
@@ -138,8 +139,11 @@ namespace PocketMC.Desktop.Views
             }
 
             // Trim old lines to prevent unbounded memory growth
-            while (Logs.Count > MAX_LOG_LINES)
+            int excess = Logs.Count - MAX_LOG_LINES;
+            for (int i = 0; i < excess; i++)
+            {
                 Logs.RemoveAt(0);
+            }
 
             // Auto-scroll to bottom
             if (count > 0 && LogScroller != null && (BtnAutoScroll?.IsChecked ?? true))
@@ -242,12 +246,7 @@ namespace PocketMC.Desktop.Views
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)
         {
-            // Unsubscribe to prevent memory leaks
-            _flushTimer.Stop();
-            _serverProcess.OnOutputLine -= OnOutputReceived;
-            _serverProcess.OnErrorLine -= OnErrorReceived;
-            _serverProcess.OnStateChanged -= OnStateChanged;
-            _serverProcess.OnServerCrashed -= OnServerCrashed;
+            DetachHandlers();
 
             if (NavigationService?.CanGoBack == true)
                 NavigationService.GoBack();
@@ -268,6 +267,15 @@ namespace PocketMC.Desktop.Views
         private void BtnRestart_Click(object sender, RoutedEventArgs e)
         {
             Logs.Add(new LogLine { Text = "[PocketMC] Restart is not yet implemented. Stop and start manually.", TextColor = Brushes.Orange });
+        }
+
+        private void DetachHandlers()
+        {
+            _flushTimer.Stop();
+            _serverProcess.OnOutputLine -= OnOutputReceived;
+            _serverProcess.OnErrorLine -= OnErrorReceived;
+            _serverProcess.OnStateChanged -= OnStateChanged;
+            _serverProcess.OnServerCrashed -= OnServerCrashed;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

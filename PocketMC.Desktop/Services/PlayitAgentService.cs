@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Utils;
@@ -44,9 +45,15 @@ namespace PocketMC.Desktop.Services
         private readonly ApplicationState _applicationState;
         private readonly SettingsManager _settingsManager;
         private readonly ILogger<PlayitAgentService> _logger;
+        private readonly object _restartLock = new();
         private StreamWriter? _logWriter;
         private bool _disposed;
         private bool _claimUrlAlreadyFired;
+        private volatile bool _manualStopRequested;
+        private int _unexpectedRestartAttempts;
+        private CancellationTokenSource? _restartDelayCancellation;
+        private const int MaxUnexpectedRestartAttempts = 5;
+        private const int BaseUnexpectedRestartDelaySeconds = 2;
 
         public PlayitAgentState State { get; private set; } = PlayitAgentState.Stopped;
 
@@ -91,6 +98,7 @@ namespace PocketMC.Desktop.Services
         /// </summary>
         public void Start()
         {
+            CancelPendingRestart();
             if (_agentProcess != null && !_agentProcess.HasExited)
                 return; // Already running
 
@@ -116,6 +124,7 @@ namespace PocketMC.Desktop.Services
             if (!string.IsNullOrEmpty(logDir))
                 Directory.CreateDirectory(logDir);
 
+            _logWriter?.Dispose();
             _logWriter = new StreamWriter(logFilePath, append: true, encoding: Encoding.UTF8)
             {
                 AutoFlush = true
@@ -134,6 +143,7 @@ namespace PocketMC.Desktop.Services
             };
 
             _claimUrlAlreadyFired = false;
+            _manualStopRequested = false;
             SetState(PlayitAgentState.Starting);
 
             _agentProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
@@ -159,11 +169,16 @@ namespace PocketMC.Desktop.Services
         /// </summary>
         public void Stop()
         {
+            _manualStopRequested = true;
+            CancelPendingRestart();
+
             if (_agentProcess == null || _agentProcess.HasExited)
             {
                 SetState(PlayitAgentState.Stopped);
                 _logWriter?.Dispose();
                 _logWriter = null;
+                Interlocked.Exchange(ref _unexpectedRestartAttempts, 0);
+                CleanupExitedProcess(_agentProcess);
                 return;
             }
 
@@ -180,6 +195,7 @@ namespace PocketMC.Desktop.Services
             Log("INFO: playit.exe stopped");
             _logWriter?.Dispose();
             _logWriter = null;
+            Interlocked.Exchange(ref _unexpectedRestartAttempts, 0);
             _agentProcess.Dispose();
             _agentProcess = null;
         }
@@ -218,6 +234,7 @@ namespace PocketMC.Desktop.Services
                         {
                             Stop();
                             await Task.Delay(500);
+                            _manualStopRequested = false;
                             Start();
                         });
                         
@@ -277,26 +294,31 @@ namespace PocketMC.Desktop.Services
 
         private void OnProcessExited(object? sender, EventArgs e)
         {
-            int exitCode = _agentProcess?.ExitCode ?? -1;
+            var exitedProcess = sender as Process;
+            int exitCode = -1;
+            try
+            {
+                exitCode = exitedProcess?.ExitCode ?? _agentProcess?.ExitCode ?? -1;
+            }
+            catch (InvalidOperationException)
+            {
+                // Process handle is already gone; keep the default exit code.
+            }
+
+            CleanupExitedProcess(exitedProcess);
             Log($"INFO: playit.exe exited with code {exitCode}");
 
-            if (State == PlayitAgentState.Connected || State == PlayitAgentState.Starting)
+            if (_manualStopRequested)
             {
-                // Unexpected exit — attempt one restart (NET-18 in success criteria)
-                SetState(PlayitAgentState.Error);
-                Log("WARN: Unexpected agent exit — attempting single restart");
-                OnAgentExited?.Invoke(this, exitCode);
+                SetState(PlayitAgentState.Stopped);
+                return;
+            }
 
-                try
-                {
-                    Start();
-                }
-                catch (Exception ex)
-                {
-                    SetState(PlayitAgentState.Error);
-                    Log("ERROR: Restart failed — agent offline");
-                    _logger.LogError(ex, "Failed to restart playit.exe after an unexpected exit.");
-                }
+            if (State == PlayitAgentState.Connected || State == PlayitAgentState.Starting || State == PlayitAgentState.WaitingForClaim)
+            {
+                SetState(PlayitAgentState.Error);
+                OnAgentExited?.Invoke(this, exitCode);
+                _ = ScheduleRestartAsync(exitCode);
             }
             else
             {
@@ -309,6 +331,11 @@ namespace PocketMC.Desktop.Services
             if (State != newState)
             {
                 State = newState;
+                if (newState == PlayitAgentState.Connected)
+                {
+                    Interlocked.Exchange(ref _unexpectedRestartAttempts, 0);
+                }
+
                 OnStateChanged?.Invoke(this, newState);
             }
         }
@@ -334,6 +361,137 @@ namespace PocketMC.Desktop.Services
                 Stop();
                 _agentProcess?.Dispose();
             }
+        }
+
+        private async Task ScheduleRestartAsync(int exitCode)
+        {
+            int attempt = Interlocked.Increment(ref _unexpectedRestartAttempts);
+            if (attempt > MaxUnexpectedRestartAttempts)
+            {
+                Log("ERROR: playit.exe hit the max restart limit and will stay offline.");
+                _logger.LogWarning(
+                    "playit.exe exited with code {ExitCode} and hit the max restart limit after {Attempts} attempts.",
+                    exitCode,
+                    attempt - 1);
+                return;
+            }
+
+            int delaySeconds = ServerProcessManager.CalculateRestartDelaySeconds(BaseUnexpectedRestartDelaySeconds, attempt - 1);
+            Log($"WARN: Unexpected agent exit — retrying in {delaySeconds}s (attempt {attempt}/{MaxUnexpectedRestartAttempts}).");
+
+            var cts = ReplacePendingRestart();
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds), cts.Token);
+                if (cts.IsCancellationRequested || _manualStopRequested)
+                {
+                    return;
+                }
+
+                Start();
+            }
+            catch (TaskCanceledException)
+            {
+                _logger.LogDebug("Cancelled pending playit restart attempt {Attempt}.", attempt);
+            }
+            catch (Exception ex)
+            {
+                SetState(PlayitAgentState.Error);
+                Log("ERROR: Restart failed — agent offline");
+                _logger.LogError(ex, "Failed to restart playit.exe after an unexpected exit.");
+            }
+            finally
+            {
+                ClearPendingRestart(cts);
+            }
+        }
+
+        private void CleanupExitedProcess(Process? exitedProcess)
+        {
+            if (exitedProcess == null)
+            {
+                return;
+            }
+
+            exitedProcess.Exited -= OnProcessExited;
+
+            if (ReferenceEquals(_agentProcess, exitedProcess))
+            {
+                _agentProcess = null;
+            }
+
+            try
+            {
+                exitedProcess.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to dispose an exited playit process cleanly.");
+            }
+        }
+
+        private void CancelPendingRestart()
+        {
+            CancellationTokenSource? cts;
+            lock (_restartLock)
+            {
+                cts = _restartDelayCancellation;
+                _restartDelayCancellation = null;
+            }
+
+            if (cts == null)
+            {
+                return;
+            }
+
+            try
+            {
+                cts.Cancel();
+            }
+            finally
+            {
+                cts.Dispose();
+            }
+        }
+
+        private CancellationTokenSource ReplacePendingRestart()
+        {
+            CancellationTokenSource? previous = null;
+            var next = new CancellationTokenSource();
+
+            lock (_restartLock)
+            {
+                previous = _restartDelayCancellation;
+                _restartDelayCancellation = next;
+            }
+
+            if (previous != null)
+            {
+                try
+                {
+                    previous.Cancel();
+                }
+                finally
+                {
+                    previous.Dispose();
+                }
+            }
+
+            return next;
+        }
+
+        private void ClearPendingRestart(CancellationTokenSource cts)
+        {
+            lock (_restartLock)
+            {
+                if (ReferenceEquals(_restartDelayCancellation, cts))
+                {
+                    _restartDelayCancellation = null;
+                }
+            }
+
+            cts.Dispose();
         }
     }
 }

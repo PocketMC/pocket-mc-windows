@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.IO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Toolkit.Uwp.Notifications;
 using PocketMC.Desktop.Models;
@@ -12,6 +13,7 @@ namespace PocketMC.Desktop.Services;
 public class ServerProcessManager
 {
     private readonly JobObject _jobObject;
+    private readonly InstanceManager _instanceManager;
     private readonly ILogger<ServerProcessManager> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ConcurrentDictionary<Guid, ServerProcess> _activeProcesses = new();
@@ -24,10 +26,12 @@ public class ServerProcessManager
 
     public ServerProcessManager(
         JobObject jobObject,
+        InstanceManager instanceManager,
         ILogger<ServerProcessManager> logger,
         ILoggerFactory loggerFactory)
     {
         _jobObject = jobObject;
+        _instanceManager = instanceManager;
         _logger = logger;
         _loggerFactory = loggerFactory;
     }
@@ -66,6 +70,11 @@ public class ServerProcessManager
         }
 
         _lastStartTime[meta.Id] = DateTime.UtcNow;
+        var instancePath = _instanceManager.GetInstancePath(meta.Id);
+        if (string.IsNullOrEmpty(instancePath))
+        {
+            throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
+        }
 
         var serverProcess = new ServerProcess(
             meta.Id,
@@ -88,7 +97,7 @@ public class ServerProcessManager
             await HandleServerCrashAsync(meta, appRootPath);
         };
 
-        serverProcess.Start(meta, appRootPath);
+        serverProcess.Start(meta, instancePath, appRootPath);
         _activeProcesses[meta.Id] = serverProcess;
         _historicalProcesses[meta.Id] = serverProcess;
 
@@ -157,7 +166,7 @@ public class ServerProcessManager
         }
     }
 
-    private static int CalculateRestartDelaySeconds(int baseDelaySeconds, int attempts)
+    internal static int CalculateRestartDelaySeconds(int baseDelaySeconds, int attempts)
     {
         var safeBaseDelay = Math.Max(1, baseDelaySeconds);
         var scaledDelay = safeBaseDelay * Math.Pow(2, attempts);

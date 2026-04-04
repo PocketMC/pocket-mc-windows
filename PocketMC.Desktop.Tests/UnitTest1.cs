@@ -4,15 +4,13 @@ namespace PocketMC.Desktop.Tests;
 
 public class SlugHelperTests
 {
-    [Fact]
-    public void GenerateSlug_NormalizesWhitespaceAndSymbols()
+    [Theory]
+    [InlineData(" My Cool Server! ", "my-cool-server")]
+    [InlineData("  spaces  ", "spaces")]
+    [InlineData("", "unnamed-server")]
+    [InlineData("---", "unnamed-server")]
+    public void GenerateSlug_HandlesEdgeCases(string input, string expected)
     {
-        Assert.Equal("my-cool-server", SlugHelper.GenerateSlug(" My Cool Server! "));
-    }
-
-    [Fact]
-    public void GenerateSlug_FallsBackWhenInputHasNoUsableCharacters()
-    {
-        Assert.Equal("unnamed-server", SlugHelper.GenerateSlug("!!!"));
+        Assert.Equal(expected, SlugHelper.GenerateSlug(input));
     }
 }

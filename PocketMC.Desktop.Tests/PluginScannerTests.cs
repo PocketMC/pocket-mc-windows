@@ -25,11 +25,14 @@ public sealed class PluginScannerTests : IDisposable
         Assert.Equal("1.20", PluginScanner.TryGetApiVersion(jarPath));
     }
 
-    [Fact]
-    public void IsIncompatible_ReturnsTrue_WhenPluginRequiresNewerApi()
+    [Theory]
+    [InlineData("1.21", "1.20.4", true)]
+    [InlineData("1.14", "1.20.4", false)]
+    [InlineData("1.20", "1.20.4", false)]
+    [InlineData(null, "1.20.4", false)]
+    public void IsIncompatible_RespectsBackwardCompatibility(string? pluginVersion, string serverVersion, bool expected)
     {
-        Assert.True(PluginScanner.IsIncompatible("1.21", "1.20.4"));
-        Assert.False(PluginScanner.IsIncompatible("1.19", "1.20.4"));
+        Assert.Equal(expected, PluginScanner.IsIncompatible(pluginVersion, serverVersion));
     }
 
     public void Dispose()

@@ -31,6 +31,7 @@ public partial class App : Application
                 services.AddSingleton<SettingsManager>();
                 services.AddSingleton<ApplicationState>();
                 services.AddSingleton<JobObject>();
+                services.AddSingleton<DownloaderService>();
                 services.AddSingleton<ServerProcessManager>();
                 services.AddSingleton<ResourceMonitorService>();
                 services.AddSingleton<BackupService>();
@@ -39,6 +40,11 @@ public partial class App : Application
                 services.AddSingleton<PlayitAgentService>();
                 services.AddSingleton<InstanceManager>();
                 services.AddSingleton<WorldManager>();
+                services.AddHttpClient<VanillaProvider>();
+                services.AddHttpClient<PaperProvider>(client =>
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop");
+                });
                 services.AddTransient<TunnelService>();
                 services.AddTransient<MainWindow>();
                 services.AddTransient<JavaSetupPage>();

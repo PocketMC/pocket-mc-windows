@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Timers;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Models;
@@ -16,7 +17,7 @@ namespace PocketMC.Desktop.Services
         private readonly BackupService _backupService;
         private readonly InstanceManager _instanceManager;
         private readonly ILogger<BackupSchedulerService> _logger;
-        private bool _isProcessing;
+        private int _isProcessing;
 
         public BackupSchedulerService(
             ApplicationState applicationState,
@@ -39,8 +40,10 @@ namespace PocketMC.Desktop.Services
         private async void OnTimerTick(object? sender, ElapsedEventArgs e)
         {
             // Prevent re-entrant ticks
-            if (_isProcessing) return;
-            _isProcessing = true;
+            if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) != 0)
+            {
+                return;
+            }
 
             try
             {
@@ -77,7 +80,7 @@ namespace PocketMC.Desktop.Services
             }
             finally
             {
-                _isProcessing = false;
+                Interlocked.Exchange(ref _isProcessing, 0);
             }
         }
 
