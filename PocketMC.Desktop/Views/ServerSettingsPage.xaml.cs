@@ -8,6 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using Microsoft.Win32;
 using System.IO.Compression;
 using PocketMC.Desktop.Models;
@@ -16,6 +18,11 @@ using PocketMC.Desktop.Utils;
 
 namespace PocketMC.Desktop.Views
 {
+    public class PropertyItem
+    {
+        public string Key { get; set; } = "";
+        public string Value { get; set; } = "";
+    }
     public partial class ServerSettingsPage : Page
     {
         private InstanceMetadata _metadata;
@@ -148,6 +155,20 @@ namespace PocketMC.Desktop.Views
             TxtSeed.Text = props.TryGetValue("level-seed", out var seed) ? seed : "";
             TxtSpawnProtection.Text = props.TryGetValue("spawn-protection", out var prot) ? prot : "16";
             TxtMaxPlayers.Text = props.TryGetValue("max-players", out var mp) ? mp : "20";
+
+            // Load Advanced Properties
+            var namedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "motd", "level-seed", "spawn-protection", "max-players", "server-port", "server-ip",
+                "level-type", "online-mode", "pvp", "white-list", "gamemode", "difficulty",
+                "enable-command-block", "allow-flight", "allow-nether"
+            };
+
+            var advancedItems = new ObservableCollection<PropertyItem>(
+                props.Where(kvp => !namedKeys.Contains(kvp.Key))
+                     .Select(kvp => new PropertyItem { Key = kvp.Key, Value = kvp.Value })
+            );
+            AdvancedPropsGrid.ItemsSource = advancedItems;
             
             string portString = props.TryGetValue("server-port", out var port) ? port : "25565";
             TxtServerPort.Text = portString;
@@ -386,10 +407,44 @@ namespace PocketMC.Desktop.Views
             props["allow-flight"] = ChkAllowFlight.IsChecked == true ? "true" : "false";
             props["allow-nether"] = ChkAllowNether.IsChecked == true ? "true" : "false";
 
+            // Merge Advanced Properties (Syncs exactly what is in the Grid)
+            var namedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "motd", "level-seed", "spawn-protection", "max-players", "server-port", "server-ip",
+                "level-type", "online-mode", "pvp", "white-list", "gamemode", "difficulty",
+                "enable-command-block", "allow-flight", "allow-nether"
+            };
+
+            // Remove existing custom keys that aren't mapped to specific UI controls to handle deletions
+            var keysToRemove = props.Keys.Where(k => !namedKeys.Contains(k)).ToList();
+            foreach (var k in keysToRemove) props.Remove(k);
+
+            if (AdvancedPropsGrid.ItemsSource is IEnumerable<PropertyItem> advancedItems)
+            {
+                foreach (var item in advancedItems)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.Key))
+                    {
+                        props[item.Key] = item.Value;
+                    }
+                }
+            }
+
             ServerPropertiesParser.Write(propsFile, props);
 
             _hasUnsavedChanges = false;
-            MessageBox.Show("Settings configuration saved successfully.", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            
+            // Visual confirmation instead of MessageBox (D-04)
+            string originalText = BtnSave.Content.ToString() ?? "Save Configurations";
+            BtnSave.Content = "✓ Saved";
+            
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            timer.Tick += (s, ev) => 
+            { 
+                BtnSave.Content = originalText; 
+                timer.Stop(); 
+            };
+            timer.Start();
         }
 
         // ════════════════════════════════════════════════

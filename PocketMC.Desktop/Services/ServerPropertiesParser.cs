@@ -64,10 +64,6 @@ namespace PocketMC.Desktop.Services
                         newLines.Add($"{key}={newValue}");
                         keysUpdated.Add(key);
                     }
-                    else
-                    {
-                        newLines.Add(line);
-                    }
                 }
                 else
                 {

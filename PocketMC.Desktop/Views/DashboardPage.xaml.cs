@@ -317,6 +317,7 @@ namespace PocketMC.Desktop.Views
             _viewModels = new ObservableCollection<InstanceCardViewModel>(
                 instances.Select(m => new InstanceCardViewModel(m)));
             InstanceGrid.ItemsSource = _viewModels;
+            TxtEmpty.Visibility = _viewModels.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void OnServerStateChanged(Guid instanceId, ServerState newState)

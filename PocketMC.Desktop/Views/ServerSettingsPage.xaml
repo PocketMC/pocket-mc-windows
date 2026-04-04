@@ -51,9 +51,13 @@
                                     <Setter Property="Background" Value="#007ACC"/>
                                     <Setter Property="Foreground" Value="White"/>
                                 </Trigger>
-                                <Trigger Property="IsMouseOver" Value="True">
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                        <Condition Property="IsSelected" Value="False"/>
+                                    </MultiTrigger.Conditions>
                                     <Setter Property="Background" Value="#3E3E42"/>
-                                </Trigger>
+                                </MultiTrigger>
                             </Style.Triggers>
                         </Style>
                     </ListBox.ItemContainerStyle>
@@ -199,6 +203,37 @@
                                 <CheckBox x:Name="ChkAllowBlock" Content="Allow Command Blocks" Foreground="White" Margin="0,5"/>
                                 <CheckBox x:Name="ChkAllowFlight" Content="Allow Flight" Foreground="White" Margin="0,5"/>
                                 <CheckBox x:Name="ChkAllowNether" Content="Allow Nether" IsChecked="True" Foreground="White" Margin="0,5"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Advanced Properties -->
+                        <Expander x:Name="ExpanderAdvanced" Header="Advanced Properties" IsExpanded="False" Foreground="White" Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="Edit direct server.properties values not covered in the UI." FontSize="11" Foreground="Gray" Margin="0,0,0,10"/>
+                                <DataGrid x:Name="AdvancedPropsGrid" AutoGenerateColumns="False" 
+                                          Background="#252526" Foreground="White" BorderBrush="#3F3F46" RowBackground="#252526"
+                                          CanUserAddRows="True" CanUserDeleteRows="True" GridLinesVisibility="None"
+                                          HeadersVisibility="Column" SelectionMode="Single"
+                                          Margin="0,0,0,10" MaxHeight="300">
+                                    <DataGrid.Resources>
+                                        <Style TargetType="DataGridColumnHeader">
+                                            <Setter Property="Background" Value="#333337"/>
+                                            <Setter Property="Foreground" Value="Silver"/>
+                                            <Setter Property="Padding" Value="5"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            <Setter Property="BorderBrush" Value="#3F3F46"/>
+                                        </Style>
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="Background" Value="#3E3E42"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                        </Style>
+                                    </DataGrid.Resources>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Property Key" Binding="{Binding Key}" Width="*" />
+                                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
                             </StackPanel>
                         </Expander>
                     </StackPanel>

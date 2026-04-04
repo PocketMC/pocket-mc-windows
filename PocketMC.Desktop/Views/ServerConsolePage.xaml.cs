@@ -139,7 +139,7 @@ namespace PocketMC.Desktop.Views
                 Logs.RemoveAt(0);
 
             // Auto-scroll to bottom
-            if (count > 0 && LogScroller != null && (ChkAutoScroll?.IsChecked ?? true))
+            if (count > 0 && LogScroller != null && (BtnAutoScroll?.IsChecked ?? true))
                 LogScroller.ScrollToEnd();
         }
 
