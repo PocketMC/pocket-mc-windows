@@ -33,7 +33,7 @@
         </Grid.RowDefinitions>
         
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,24">
-            <ui:TextBlock FontTypography="Title" Text="Instances" Margin="0,0,16,0" VerticalAlignment="Center"/>
+            <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center"/>
             <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Click="BtnNewInstance_Click" Cursor="Hand"/>
         </StackPanel>
         
@@ -46,49 +46,41 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <!-- Sleek Left-Border Glow Indicator instead of full bounding box -->
-                        <Border Margin="0,0,20,20" CornerRadius="8" Background="#1E1E2E">
+                        <!-- Outer Border for green glow — ui:Card ignores BorderBrush overrides -->
+                        <Border Margin="0,0,16,16" CornerRadius="8" Padding="0">
                             <Border.Style>
                                 <Style TargetType="Border">
-                                    <Setter Property="BorderBrush" Value="#313244"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="2"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                            <Setter Property="BorderBrush" Value="#A6E3A1"/>
-                                            <!-- Give a strong left-edge accent when running -->
-                                            <Setter Property="BorderThickness" Value="4,1,1,1"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding StatusText}" Value="✖ Crashed">
-                                            <Setter Property="BorderBrush" Value="#F38BA8"/>
-                                            <Setter Property="BorderThickness" Value="4,1,1,1"/>
+                                            <Setter Property="BorderBrush" Value="#4CAF50"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            
-                            <!-- Main Card Content inside the styled border -->
-                            <Grid Width="380" Margin="16,16,16,16">
+                            <ui:Card Width="360" Cursor="Hand">
+                            <Grid Margin="12">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/> <!-- Title & Menu -->
-                                    <RowDefinition Height="Auto"/> <!-- Status & Tunnel Pill -->
-                                    <RowDefinition Height="Auto"/> <!-- Divider -->
                                     <RowDefinition Height="Auto"/> <!-- Description -->
-                                    <RowDefinition Height="Auto"/> <!-- Running Metrics -->
-                                    <RowDefinition Height="Auto"/> <!-- Divider -->
+                                    <RowDefinition Height="Auto"/> <!-- Status & Tunnel Pill -->
+                                    <RowDefinition Height="Auto"/> <!-- Running Metrics Panel -->
                                     <RowDefinition Height="Auto"/> <!-- Action Buttons -->
                                 </Grid.RowDefinitions>
                                 
-                                <!-- ROW 0: Title & Menu -->
-                                <Grid Grid.Row="0" Margin="0,0,0,6">
+                                <!-- Title row (Row 0) -->
+                                <Grid Grid.Row="0" Margin="0,0,0,4">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     
-                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="#CDD6F4" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                    <ui:TextBlock Grid.Column="0" FontTypography="Subtitle" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                     
                                     <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}" 
-                                               Click="BtnMoreOptions_Click" Cursor="Hand" Padding="4" Margin="0,-4,-4,0" VerticalAlignment="Center" Height="28" Width="28">
+                                               Click="BtnMoreOptions_Click" Cursor="Hand" Padding="6,4" Margin="0,-6,-6,0" VerticalAlignment="Top">
                                         <ui:Button.ContextMenu>
                                             <ContextMenu>
                                                 <MenuItem Header="Rename" Click="RenameInstance_Click" />
@@ -98,104 +90,77 @@
                                     </ui:Button>
                                 </Grid>
                                 
-                                <!-- ROW 1: Status & Tunnel Pill -->
-                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                <!-- Description (Row 1) -->
+                                <ui:TextBlock Grid.Row="1" FontTypography="Caption" Text="{Binding Description}" 
+                                              Foreground="White" 
+                                              TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                              
+                                <!-- Status & Tunnel Pill (Row 2) -->
+                                <Grid Grid.Row="2" Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     
-                                    <!-- Status Badge with small dot -->
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Ellipse Width="8" Height="8" Fill="{Binding StatusColor}" Margin="0,1,6,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
+                                    <TextBlock Grid.Column="0" Text="{Binding StatusText}" 
+                                               Foreground="{Binding StatusColor}" FontSize="11" FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
                                                
-                                    <!-- Tunnel Address Pill (Click to copy) -->
-                                    <Border Grid.Column="1" Background="#2089B4FA" CornerRadius="6" Padding="8,4"
-                                            Cursor="Hand" Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}" VerticalAlignment="Center">
+                                    <Border Grid.Column="1" Background="#2089B4FA" CornerRadius="10" Padding="8,3"
+                                            Cursor="Hand" Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}">
                                         <Border.InputBindings>
                                             <MouseBinding Gesture="LeftClick" Command="{x:Null}"/>
                                         </Border.InputBindings>
-                                        <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Symbol="Link20" Foreground="#89B4FA" FontSize="12" Margin="0,0,4,0"/>
-                                            <TextBlock Text="{Binding TunnelAddress}" FontSize="11" Foreground="#89B4FA" FontWeight="SemiBold" MouseLeftButtonDown="TunnelPill_MouseDown" VerticalAlignment="Center"/>
-                                        </StackPanel>
+                                        <TextBlock Text="{Binding TunnelAddress}" FontSize="10" 
+                                                   Foreground="#89B4FA" FontWeight="SemiBold"
+                                                   MouseLeftButtonDown="TunnelPill_MouseDown"/>
                                     </Border>
                                 </Grid>
-
-                                <!-- ROW 2: Gentle Divider -->
-                                <Rectangle Grid.Row="2" Height="1" Fill="#313244" Margin="-16,0,-16,12" />
-
-                                <!-- ROW 3: Secondary Description -->
-                                <TextBlock Grid.Row="3" Text="{Binding Description}" FontSize="12" Foreground="#A6ADC8" 
-                                           TextWrapping="Wrap" Margin="0,0,0,12" Visibility="{Binding Description, Converter={StaticResource BoolToVis}}"/>
-
-                                <!-- ROW 4: Live Core Metrics (Visible only when running) -->
-                                <Border Grid.Row="4" Style="{StaticResource VisibleWhenRunning}" Background="#181825" CornerRadius="6" Padding="12" Margin="0,0,0,16">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="1*"/>
-                                            <ColumnDefinition Width="1*"/>
-                                            <ColumnDefinition Width="1.5*"/>
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <!-- CPU -->
-                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <ui:SymbolIcon Symbol="DataArea24" Foreground="#F9E2AF" FontSize="14" Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding CpuText}" FontSize="12" FontWeight="Medium" Foreground="#BAC2DE" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        
-                                        <!-- RAM -->
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <ui:SymbolIcon Symbol="Memory24" Foreground="#89B4FA" FontSize="14" Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding RamText}" FontSize="12" FontWeight="Medium" Foreground="#BAC2DE" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        
-                                        <!-- Players -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                            <ui:SymbolIcon Symbol="People24" Foreground="#A6E3A1" FontSize="14" Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding PlayerStatus}" FontSize="12" FontWeight="SemiBold" Foreground="#A6E3A1" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-
-                                <!-- ROW 6: Action Buttons stretched bottom row -->
-                                <Grid Grid.Row="6">
+                                
+                                <!-- Running metrics panel (Row 3, hidden when stopped) -->
+                                <Grid Grid.Row="3" Style="{StaticResource VisibleWhenRunning}" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-
-                                    <!-- STOPPED state Buttons -->
-                                    <Grid Style="{StaticResource HiddenWhenRunning}" Grid.ColumnSpan="2">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="10"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="10"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <ui:Button Grid.Column="0" Content="Start Server" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" HorizontalAlignment="Stretch" Click="BtnStart_Click" Cursor="Hand" FontWeight="SemiBold"/>
-                                        <ui:Button Grid.Column="2" Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" HorizontalAlignment="Stretch" Click="BtnManage_Click" Cursor="Hand" FontWeight="SemiBold"/>
-                                        <ui:Button Grid.Column="4" Appearance="Transparent" Icon="{ui:SymbolIcon Folder24}" Padding="10,6" Click="BtnOpenFolder_Click" Cursor="Hand"/>
-                                    </Grid>
                                     
-                                    <!-- RUNNING state Buttons -->
-                                    <Grid Style="{StaticResource VisibleWhenRunning}" Grid.ColumnSpan="2">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="6"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="6"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <ui:Button Grid.Column="0" Content="Console" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" HorizontalAlignment="Stretch" Click="BtnConsole_Click" Cursor="Hand" FontWeight="SemiBold" Padding="0,6"/>
-                                        <ui:Button Grid.Column="2" Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" HorizontalAlignment="Stretch" Click="BtnManage_Click" Cursor="Hand" FontWeight="SemiBold" Padding="0,6"/>
-                                        <ui:Button Grid.Column="4" Content="{Binding StopButtonText}" Appearance="Danger" Icon="{ui:SymbolIcon Stop24}" HorizontalAlignment="Stretch" Click="BtnStop_Click" Cursor="Hand" FontWeight="SemiBold" Padding="0,6"/>
-                                    </Grid>
+                                    <StackPanel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding CpuText}" FontSize="12" FontWeight="SemiBold" Foreground="White" />
+                                    </StackPanel>
+                                    
+                                    <StackPanel Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding RamText}" FontSize="12" FontWeight="SemiBold" Foreground="White" />
+                                    </StackPanel>
+                                    
+                                    <!-- Player count -->
+                                    <TextBlock Grid.Column="2" Text="{Binding PlayerStatus}" FontSize="11" FontWeight="Medium" 
+                                               Foreground="{Binding StatusColor}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+
+                                <!-- Action buttons (Row 4) -->
+                                <Grid Grid.Row="4">
+                                    <!-- STOPPED state -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Style="{StaticResource HiddenWhenRunning}">
+                                        <ui:Button Content="Start" Appearance="Primary" Margin="0,0,6,0"
+                                                   Icon="{ui:SymbolIcon Play24}" Click="BtnStart_Click" Cursor="Hand"/>
+                                        <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,6,0"
+                                                   Icon="{ui:SymbolIcon Settings24}" Click="BtnManage_Click" Cursor="Hand"/>
+                                        <ui:Button Icon="{ui:SymbolIcon Folder24}" Click="BtnOpenFolder_Click" Cursor="Hand"/>
+                                    </StackPanel>
+                                    
+                                    <!-- RUNNING state -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Style="{StaticResource VisibleWhenRunning}">
+                                        <ui:Button Content="Console" Appearance="Primary" Margin="0,0,6,0"
+                                                   Icon="{ui:SymbolIcon WindowConsole20}" Click="BtnConsole_Click" Cursor="Hand"/>
+                                        <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,6,0"
+                                                   Icon="{ui:SymbolIcon Settings24}" Click="BtnManage_Click" Cursor="Hand"/>
+                                        <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" 
+                                                   Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand"/>
+                                    </StackPanel>
                                 </Grid>
                             </Grid>
+                        </ui:Card>
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
