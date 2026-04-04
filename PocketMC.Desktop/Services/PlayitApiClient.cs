@@ -9,10 +9,24 @@ using System.Threading.Tasks;
 
 namespace PocketMC.Desktop.Services
 {
-    /// <summary>
-    /// Represents a single Playit.gg tunnel entry returned by the API.
-    /// </summary>
-    public class TunnelData
+    // --- Playit API Response Models ---
+
+    public class PlayitApiResponse
+    {
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
+
+        [JsonPropertyName("data")]
+        public PlayitApiData? Data { get; set; }
+    }
+
+    public class PlayitApiData
+    {
+        [JsonPropertyName("tunnels")]
+        public List<PlayitTunnelConfig> Tunnels { get; set; } = new();
+    }
+
+    public class PlayitTunnelConfig
     {
         [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
@@ -20,14 +34,63 @@ namespace PocketMC.Desktop.Services
         [JsonPropertyName("name")]
         public string? Name { get; set; }
 
-        [JsonPropertyName("port")]
-        public int Port { get; set; }
+        [JsonPropertyName("tunnel_type")]
+        public string? TunnelType { get; set; }
 
-        [JsonPropertyName("public_address")]
+        [JsonPropertyName("alloc")]
+        public PlayitAllocWrapper? Alloc { get; set; }
+
+        [JsonPropertyName("origin")]
+        public PlayitOriginWrapper? Origin { get; set; }
+    }
+
+    public class PlayitAllocWrapper
+    {
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
+
+        [JsonPropertyName("data")]
+        public PlayitAllocData? Data { get; set; }
+    }
+
+    public class PlayitAllocData
+    {
+        [JsonPropertyName("ip_hostname")]
+        public string IpHostname { get; set; } = string.Empty;
+
+        [JsonPropertyName("port_start")]
+        public int PortStart { get; set; }
+
+        [JsonPropertyName("assigned_srv")]
+        public string? AssignedSrv { get; set; }
+    }
+
+    public class PlayitOriginWrapper
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        [JsonPropertyName("data")]
+        public PlayitOriginData? Data { get; set; }
+    }
+
+    public class PlayitOriginData
+    {
+        [JsonPropertyName("local_port")]
+        public int LocalPort { get; set; }
+    }
+
+    // --- Custom UI Models ---
+
+    /// <summary>
+    /// Represents a normalized single Playit.gg tunnel entry.
+    /// </summary>
+    public class TunnelData
+    {
+        public string Id { get; set; } = string.Empty;
+        public string? Name { get; set; }
+        public int Port { get; set; } // Local port
         public string PublicAddress { get; set; } = string.Empty;
-
-        [JsonPropertyName("proto")]
-        public string Protocol { get; set; } = "tcp";
     }
 
     /// <summary>
@@ -53,12 +116,14 @@ namespace PocketMC.Desktop.Services
             @"secret_key\s*=\s*""([^""]+)""",
             RegexOptions.Compiled);
 
-        private const string TunnelApiUrl = "https://api.playit.gg/account/tunnels";
+        private const string TunnelApiUrl = "https://api.playit.gg/tunnels/list";
 
         public PlayitApiClient(HttpClient? httpClient = null)
         {
             _httpClient = httpClient ?? new HttpClient();
+            // App needs a user agent and specific headers
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop");
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json");
         }
 
         /// <summary>
@@ -104,9 +169,13 @@ namespace PocketMC.Desktop.Services
 
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get, TunnelApiUrl);
+                using var request = new HttpRequestMessage(HttpMethod.Post, TunnelApiUrl);
+                // The correct Auth format is 'Agent-Key {secret}'
                 request.Headers.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Secret", secretKey);
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Agent-Key", secretKey);
+
+                // Endpoint requires an empty JSON body
+                request.Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json");
 
                 using var response = await _httpClient.SendAsync(request);
 
@@ -125,13 +194,35 @@ namespace PocketMC.Desktop.Services
                 response.EnsureSuccessStatusCode();
 
                 string json = await response.Content.ReadAsStringAsync();
-                var tunnels = JsonSerializer.Deserialize<List<TunnelData>>(json)
-                              ?? new List<TunnelData>();
+                var apiResponse = JsonSerializer.Deserialize<PlayitApiResponse>(json);
+
+                var normalizedTunnels = new List<TunnelData>();
+
+                if (apiResponse?.Data?.Tunnels != null)
+                {
+                    foreach (var pt in apiResponse.Data.Tunnels)
+                    {
+                        if (pt.Alloc?.Data == null || pt.Origin?.Data == null) continue;
+
+                        int localPort = pt.Origin.Data.LocalPort;
+                        string publicAddress = !string.IsNullOrEmpty(pt.Alloc.Data.AssignedSrv) 
+                            ? pt.Alloc.Data.AssignedSrv 
+                            : $"{pt.Alloc.Data.IpHostname}:{pt.Alloc.Data.PortStart}";
+
+                        normalizedTunnels.Add(new TunnelData
+                        {
+                            Id = pt.Id,
+                            Name = pt.Name,
+                            Port = localPort,
+                            PublicAddress = publicAddress
+                        });
+                    }
+                }
 
                 return new TunnelListResult
                 {
                     Success = true,
-                    Tunnels = tunnels
+                    Tunnels = normalizedTunnels
                 };
             }
             catch (HttpRequestException ex)
