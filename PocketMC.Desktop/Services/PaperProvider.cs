@@ -36,11 +36,16 @@ namespace PocketMC.Desktop.Services
                 {
                     if (v == null) continue;
                     
+                    string vStr = v.ToString();
+                    string type = "release";
+                    if (vStr.Contains("-") || System.Text.RegularExpressions.Regex.IsMatch(vStr, @"[a-zA-Z]"))
+                        type = "snapshot";
+
                     versions.Add(new MinecraftVersion
                     {
-                        Id = v.ToString(),
-                        Type = "release", // Paper only releases for stable/semi-stable versions usually
-                        ReleaseTime = DateTime.MinValue // Paper API doesn't provide release time at this endpoint easily
+                        Id = vStr,
+                        Type = type,
+                        ReleaseTime = DateTime.MinValue 
                     });
                 }
             }

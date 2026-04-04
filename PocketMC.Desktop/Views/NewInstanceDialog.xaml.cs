@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,6 +33,14 @@ namespace PocketMC.Desktop.Views
             await LoadVersionsAsync(type);
         }
 
+        private async void ChkShowSnapshots_Changed(object sender, RoutedEventArgs e)
+        {
+            if (CmbServerType == null) return;
+            var item = CmbServerType.SelectedItem as ComboBoxItem;
+            string type = item?.Content?.ToString() ?? "Vanilla";
+            await LoadVersionsAsync(type);
+        }
+
         private async Task LoadVersionsAsync(string serverType)
         {
             try
@@ -42,6 +51,12 @@ namespace PocketMC.Desktop.Views
                     : new VanillaProvider(_appRootPath);
 
                 var versions = await provider.GetAvailableVersionsAsync();
+
+                if (ChkShowSnapshots.IsChecked != true)
+                {
+                    versions = versions.Where(v => v.Type == "release").ToList();
+                }
+
                 CmbVersion.ItemsSource = versions;
                 if (versions.Count > 0)
                     CmbVersion.SelectedIndex = 0;
@@ -78,9 +93,10 @@ namespace PocketMC.Desktop.Views
             string srvType = (CmbServerType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Vanilla";
             
             // Disable inputs
-            InputsPanel.IsEnabled = false;
+            InputsPanel.Visibility = Visibility.Collapsed;
             BtnCreate.IsEnabled = false;
             ProgressOverlay.Visibility = Visibility.Visible;
+            PrgDownload.IsIndeterminate = true;
             TxtError.Visibility = Visibility.Collapsed;
 
             try
@@ -100,11 +116,22 @@ namespace PocketMC.Desktop.Views
 
                 var progress = new Progress<DownloadProgress>(p =>
                 {
-                    PrgDownload.Value = p.Percentage;
-                    TxtProgress.Text = $"{p.BytesRead / 1024 / 1024} MB / {p.TotalBytes / 1024 / 1024} MB";
+                    Dispatcher.Invoke(() => 
+                    {
+                        PrgDownload.IsIndeterminate = p.TotalBytes <= 0;
+                        PrgDownload.Value = p.Percentage;
+                        TxtProgress.Text = $"{p.BytesRead / 1024 / 1024} MB / {p.TotalBytes / 1024 / 1024} MB";
+                    });
                 });
 
                 await provider.DownloadJarAsync(selectedVersion.Id, jarPath, progress);
+
+                // 3. Handle EULA Acceptance (NET-12)
+                if (ChkAcceptEula.IsChecked == true)
+                {
+                    string folderName = Path.GetFileName(instancePath);
+                    _instanceManager.AcceptEula(folderName);
+                }
 
                 WasCreated = true;
                 DialogResult = true;

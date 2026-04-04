@@ -181,7 +181,7 @@ namespace PocketMC.Desktop.Services
                         catch { /* Ignore delete errors */ }
 
                         // Schedule a restart (using a fire-and-forget task so we don't block the output reader)
-                        Task.Run(async () =>
+                        _ = Task.Run(async () =>
                         {
                             Stop();
                             await Task.Delay(500);

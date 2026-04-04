@@ -65,7 +65,7 @@ namespace PocketMC.Desktop.Views
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
-            int[] requiredVersions = { 11, 17, 21 };
+            int[] requiredVersions = { 11, 17, 21, 25 };
             bool anyMissing = false;
 
             foreach (var v in requiredVersions)

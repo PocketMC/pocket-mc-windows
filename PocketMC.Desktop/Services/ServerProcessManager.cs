@@ -15,6 +15,7 @@ namespace PocketMC.Desktop.Services
     {
         private static readonly JobObject _jobObject = new();
         private static readonly ConcurrentDictionary<Guid, ServerProcess> _activeProcesses = new();
+        private static readonly ConcurrentDictionary<Guid, ServerProcess> _historicalProcesses = new();
         
         // Auto-Restart Tracking State
         private static readonly ConcurrentDictionary<Guid, int> _consecutiveRestarts = new();
@@ -74,6 +75,7 @@ namespace PocketMC.Desktop.Services
 
             serverProcess.Start(meta, appRootPath);
             _activeProcesses[meta.Id] = serverProcess;
+            _historicalProcesses[meta.Id] = serverProcess;
 
             return serverProcess;
         }
@@ -171,8 +173,11 @@ namespace PocketMC.Desktop.Services
         /// </summary>
         public static ServerProcess? GetProcess(Guid instanceId)
         {
-            _activeProcesses.TryGetValue(instanceId, out var process);
-            return process;
+            if (_activeProcesses.TryGetValue(instanceId, out var process))
+                return process;
+
+            _historicalProcesses.TryGetValue(instanceId, out var historical);
+            return historical;
         }
 
         /// <summary>

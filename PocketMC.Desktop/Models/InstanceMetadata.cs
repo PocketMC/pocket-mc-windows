@@ -23,5 +23,8 @@ namespace PocketMC.Desktop.Models
         public bool EnableAutoRestart { get; set; } = false;
         public int MaxAutoRestarts { get; set; } = 3;
         public int AutoRestartDelaySeconds { get; set; } = 10;
+        
+        // Runtime configuration (NET-14)
+        public string? CustomJavaPath { get; set; } = null;
     }
 }

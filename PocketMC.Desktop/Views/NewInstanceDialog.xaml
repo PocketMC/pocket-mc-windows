@@ -2,23 +2,24 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Create New Server" Height="450" Width="400"
+        Title="Create New Server" Height="600" Width="400"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowCornerPreference="Round" ExtendsContentIntoTitleBar="True"
         Background="{DynamicResource ApplicationBackgroundBrush}">
     
     <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="*"/>    <!-- Content Area -->
+            <RowDefinition Height="Auto"/> <!-- Progress -->
+            <RowDefinition Height="Auto"/> <!-- Error -->
+            <RowDefinition Height="Auto"/> <!-- Buttons -->
         </Grid.RowDefinitions>
         
         <ui:TextBlock Grid.Row="0" FontTypography="Title" Text="New Instance" Margin="0,0,0,16"/>
         
-        <StackPanel Grid.Row="1" x:Name="InputsPanel">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,-8,0">
+            <StackPanel x:Name="InputsPanel" Margin="0,0,8,0">
             <TextBlock Text="Server Name" Margin="0,0,0,4"/>
             <ui:TextBox x:Name="TxtName" PlaceholderText="My Cool Server" Margin="0,0,0,12"/>
             
@@ -30,13 +31,22 @@
                 <ComboBoxItem Content="Vanilla" IsSelected="True"/>
                 <ComboBoxItem Content="Paper"/>
             </ComboBox>
+
+            <CheckBox x:Name="ChkShowSnapshots" Content="Show snapshots &amp; pre-releases" Margin="0,0,0,12" Checked="ChkShowSnapshots_Changed" Unchecked="ChkShowSnapshots_Changed"/>
             
             <TextBlock Text="Minecraft Version" Margin="0,0,0,4"/>
             <ComboBox x:Name="CmbVersion" Margin="0,0,0,12" DisplayMemberPath="Id" />
-        </StackPanel>
+
+            <CheckBox x:Name="ChkAcceptEula" Margin="0,4,0,4">
+                <TextBlock Text="I accept the Minecraft End User License Agreement" TextWrapping="Wrap" FontSize="13"/>
+            </CheckBox>
+            <TextBlock Text="By checking this box you confirm acceptance of Mojang's EULA (https://aka.ms/MinecraftEULA). PocketMC will write eula.txt automatically on your behalf." 
+                       FontWeight="Normal" FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="24,0,0,12" Opacity="0.8"/>
+            </StackPanel>
+        </ScrollViewer>
         
         <!-- Progress overlay, shown during download -->
-        <Border Grid.Row="2" x:Name="ProgressOverlay" Visibility="Collapsed" VerticalAlignment="Center" Margin="0,16,0,0">
+        <Border Grid.Row="2" x:Name="ProgressOverlay" Visibility="Collapsed" VerticalAlignment="Center" Margin="0,16,0,0" MinHeight="120">
             <StackPanel>
                 <TextBlock Text="Downloading Server JAR..." HorizontalAlignment="Center" Margin="0,0,0,8"/>
                 <ProgressBar x:Name="PrgDownload" Minimum="0" Maximum="100" Height="4" Margin="0,0,0,8"/>
@@ -48,7 +58,7 @@
         
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
             <ui:Button Content="Cancel" Appearance="Secondary" Margin="0,0,8,0" Click="BtnCancel_Click"/>
-            <ui:Button x:Name="BtnCreate" Content="Create &amp; Download" Appearance="Primary" Click="BtnCreate_Click"/>
+            <ui:Button x:Name="BtnCreate" Content="Create &amp; Download" Appearance="Primary" Click="BtnCreate_Click" IsEnabled="{Binding ElementName=ChkAcceptEula, Path=IsChecked}"/>
         </StackPanel>
     </Grid>
 </ui:FluentWindow>

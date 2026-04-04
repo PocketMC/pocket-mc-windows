@@ -1,0 +1,74 @@
+<ui:FluentWindow x:Class="PocketMC.Desktop.Views.PluginBrowserWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Browse Modrinth Content" Height="600" Width="800"
+        WindowStartupLocation="CenterOwner"
+        ExtendsContentIntoTitleBar="True" WindowCornerPreference="Round"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ui:TextBlock Grid.Row="0" FontTypography="Title" x:Name="TxtTitle" Text="Plugin Marketplace" Margin="0,0,0,16"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
+            <TextBlock Text="Sort By:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="Silver"/>
+            <ComboBox x:Name="CmbSort" Width="150" SelectionChanged="CmbSort_SelectionChanged">
+                <ComboBoxItem Content="Trending" Tag="relevance" IsSelected="True"/>
+                <ComboBoxItem Content="Top Downloads" Tag="downloads"/>
+                <ComboBoxItem Content="Newest" Tag="newest"/>
+            </ComboBox>
+            <ui:SymbolIcon Symbol="Info24" Margin="16,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <TextBlock x:Name="TxtMcVersion" Text="Minecraft 1.20.1" VerticalAlignment="Center" Foreground="Gray"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="ListResults">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="#2D2D30" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="64"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0" Width="64" Height="64" CornerRadius="4" ClipToBounds="True" VerticalAlignment="Top">
+                                    <Image Source="{Binding IconUrl}" Stretch="UniformToFill"/>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="12,0">
+                                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="Silver" TextWrapping="Wrap" MaxHeight="40" Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,4,0" FontSize="12" Foreground="Gray"/>
+                                        <TextBlock Text="{Binding Downloads, StringFormat={}{0:N0}}" FontSize="11" Foreground="Gray" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <Button Grid.Column="2" Content="Install" Width="80" Height="32" 
+                                        Background="#007ACC" Foreground="White" 
+                                        Click="BtnInstall_Click" Tag="{Binding Slug}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <ui:ProgressRing Grid.Row="2" x:Name="ProgressSearching" IsIndeterminate="True" Width="40" Height="40" Visibility="Collapsed"/>
+
+        <!-- Footer Area -->
+        <Grid Grid.Row="3" Margin="0,16,0,0">
+            <TextBlock x:Name="TxtStatus" Text="" Foreground="LimeGreen" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+            <ui:Button Content="Close" Width="100" Appearance="Secondary" HorizontalAlignment="Right" Click="BtnClose_Click"/>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

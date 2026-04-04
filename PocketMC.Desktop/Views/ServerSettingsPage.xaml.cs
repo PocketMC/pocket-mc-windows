@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -22,6 +23,9 @@ namespace PocketMC.Desktop.Views
         private string _serverDir;
         private readonly WorldManager _worldManager = new();
         private readonly BackupService _backupService = new();
+        private ulong _totalSystemRamMb;
+        private bool _hasUnsavedChanges = false;
+        private bool _isLoading = false;
 
         public ServerSettingsPage(InstanceMetadata metadata, string appRoot)
         {
@@ -72,6 +76,18 @@ namespace PocketMC.Desktop.Views
             SidebarList.SelectedIndex = 0;
             MainTabControl.SelectedIndex = 0;
             RefreshLockStates();
+
+            // Track changes across all inputs in the settings panel
+            SettingsPanel.AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(OnSettingChanged));
+            SettingsPanel.AddHandler(CheckBox.ClickEvent, new RoutedEventHandler(OnSettingChanged));
+            SettingsPanel.AddHandler(ComboBox.SelectionChangedEvent, new SelectionChangedEventHandler(OnSettingChanged));
+            SldMinRam.ValueChanged += OnSettingChanged;
+            SldMaxRam.ValueChanged += OnSettingChanged;
+        }
+
+        private void OnSettingChanged(object sender, EventArgs e)
+        {
+            if (!_isLoading) _hasUnsavedChanges = true;
         }
 
         private void SidebarList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -115,8 +131,15 @@ namespace PocketMC.Desktop.Views
 
         private void LoadSettings()
         {
+            _isLoading = true;
+            _totalSystemRamMb = MemoryHelper.GetTotalPhysicalMemoryMb();
+            double maxAllowedRam = Math.Max(8192.0, (double)_totalSystemRamMb);
+            SldMinRam.Maximum = maxAllowedRam;
+            SldMaxRam.Maximum = maxAllowedRam;
+
             SldMinRam.Value = _metadata.MinRamMb > 0 ? _metadata.MinRamMb : 1024;
             SldMaxRam.Value = _metadata.MaxRamMb > 0 ? _metadata.MaxRamMb : 4096;
+            TxtJavaPath.Text = _metadata.CustomJavaPath ?? "";
 
             var propsFile = Path.Combine(_serverDir, "server.properties");
             var props = ServerPropertiesParser.Read(propsFile);
@@ -181,8 +204,33 @@ namespace PocketMC.Desktop.Views
                 catch { }
             }
 
+            // Update Playit Agent Status
+            if (DashboardPage.PlayitAgent != null)
+            {
+                TxtPlayitAgentStatus.Text = DashboardPage.PlayitAgent.State.ToString();
+                TxtPlayitAgentStatus.Foreground = DashboardPage.PlayitAgent.State == PlayitAgentState.Connected ? Brushes.LimeGreen : Brushes.Orange;
+            }
+            else
+            {
+                TxtPlayitAgentStatus.Text = "Not initialized";
+                TxtPlayitAgentStatus.Foreground = Brushes.Gray;
+            }
+
             // Fire and forget tunnel resolution
             _ = ResolveTunnelAddressAsync(portString);
+
+            _isLoading = false;
+            _hasUnsavedChanges = false;
+        }
+
+        private void BtnResolvePlayit_Click(object sender, RoutedEventArgs e)
+        {
+            _ = ResolveTunnelAddressAsync(TxtServerPort.Text);
+        }
+
+        private void BtnOpenPlayitDashboard_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo { FileName = "https://playit.gg/account/tunnels", UseShellExecute = true });
         }
 
         private async System.Threading.Tasks.Task ResolveTunnelAddressAsync(string portString)
@@ -193,6 +241,7 @@ namespace PocketMC.Desktop.Views
                 return;
             }
 
+            TxtPlayitAddress.Text = "Resolving tunnel for port " + port + "...";
             try
             {
                 var apiClient = new PlayitApiClient();
@@ -222,12 +271,12 @@ namespace PocketMC.Desktop.Views
 
         private void RamSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            OnSettingChanged(sender, e);
             if (TxtRamWarning == null) return;
-            ulong totalMb = MemoryHelper.GetTotalPhysicalMemoryMb();
-            if (totalMb > 0)
+            if (_totalSystemRamMb > 0)
             {
                 double totalRequested = SldMaxRam.Value;
-                TxtRamWarning.Visibility = totalRequested > (totalMb * 0.8) ? Visibility.Visible : Visibility.Collapsed;
+                TxtRamWarning.Visibility = totalRequested > (_totalSystemRamMb * 0.8) ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -273,8 +322,33 @@ namespace PocketMC.Desktop.Views
 
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {
-            if (NavigationService.CanGoBack)
+            if (_hasUnsavedChanges)
+            {
+                var result = MessageBox.Show(
+                    "You have unsaved changes. Are you sure you want to discard them?",
+                    "Discard Changes",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.No) return;
+            }
+
+            if (NavigationService?.CanGoBack == true)
                 NavigationService.GoBack();
+        }
+
+        private void BtnBrowseJava_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog
+            {
+                Filter = "Java Runtime (java.exe)|java.exe|Executables (*.exe)|*.exe",
+                Title = "Select Java Runtime Executable"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                TxtJavaPath.Text = openFileDialog.FileName;
+            }
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -285,6 +359,7 @@ namespace PocketMC.Desktop.Views
             _metadata.EnableAutoRestart = ChkEnableAutoRestart.IsChecked == true;
             if (int.TryParse(TxtMaxAutoRestarts.Text, out int m)) _metadata.MaxAutoRestarts = m;
             if (int.TryParse(TxtAutoRestartDelay.Text, out int d)) _metadata.AutoRestartDelaySeconds = d;
+            _metadata.CustomJavaPath = string.IsNullOrWhiteSpace(TxtJavaPath.Text) ? null : TxtJavaPath.Text;
 
             var metaFile = Path.Combine(_serverDir, ".pocket-mc.json");
             File.WriteAllText(metaFile, System.Text.Json.JsonSerializer.Serialize(_metadata, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
@@ -298,13 +373,14 @@ namespace PocketMC.Desktop.Views
             props["max-players"] = TxtMaxPlayers.Text;
             props["server-port"] = TxtServerPort.Text;
             if (!string.IsNullOrWhiteSpace(TxtServerIp.Text)) props["server-ip"] = TxtServerIp.Text;
+            else props.Remove("server-ip");
 
-            props["level-type"] = ((ComboBoxItem)CmbLevelType.SelectedItem).Content.ToString();
+            props["level-type"] = (CmbLevelType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "minecraft:normal";
             props["online-mode"] = ChkOnlineMode.IsChecked == true ? "true" : "false";
             props["pvp"] = ChkPvp.IsChecked == true ? "true" : "false";
             props["white-list"] = ChkWhiteList.IsChecked == true ? "true" : "false";
-            props["gamemode"] = ((ComboBoxItem)CmbGamemode.SelectedItem).Content.ToString();
-            props["difficulty"] = ((ComboBoxItem)CmbDifficulty.SelectedItem).Content.ToString();
+            props["gamemode"] = (CmbGamemode.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "survival";
+            props["difficulty"] = (CmbDifficulty.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "easy";
 
             props["enable-command-block"] = ChkAllowBlock.IsChecked == true ? "true" : "false";
             props["allow-flight"] = ChkAllowFlight.IsChecked == true ? "true" : "false";
@@ -312,6 +388,7 @@ namespace PocketMC.Desktop.Views
 
             ServerPropertiesParser.Write(propsFile, props);
 
+            _hasUnsavedChanges = false;
             MessageBox.Show("Settings configuration saved successfully.", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -536,6 +613,21 @@ namespace PocketMC.Desktop.Views
         // ════════════════════════════════════════════════
         //  TAB 4: MODS
         // ════════════════════════════════════════════════
+
+        private void BtnBrowseModrinth_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string projectType)
+            {
+                var browser = new PluginBrowserWindow(_serverDir, _metadata.MinecraftVersion, projectType);
+                browser.Owner = Window.GetWindow(this);
+                browser.Closed += (s, ev) =>
+                {
+                    if (projectType.Contains("plugin")) LoadPluginTab();
+                    else LoadModTab();
+                };
+                browser.ShowDialog();
+            }
+        }
 
         private void LoadModTab()
         {

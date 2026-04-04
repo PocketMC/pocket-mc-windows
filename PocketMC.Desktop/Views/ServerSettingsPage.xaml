@@ -3,6 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       mc:Ignorable="d" 
       d:DesignHeight="700" d:DesignWidth="800"
       Title="Server Settings">
@@ -85,9 +86,20 @@
                                 <Button x:Name="BtnBrowseIcon" Content="Select Icon" Click="BtnBrowseIcon_Click" Width="100" HorizontalAlignment="Left" Padding="5"/>
                                 <Image x:Name="ImgIconPreview" Width="64" Height="64" HorizontalAlignment="Left" Margin="0,10,0,10" Stretch="UniformToFill"/>
                                 
-                                <TextBlock Text="MOTD (Message of the Day):" Foreground="Silver" Margin="0,5"/>
+                                <TextBlock Text="MOTD (Message of the Day):" Foreground="Silver" Margin="0,15,0,5"/>
                                 <TextBox x:Name="TxtMotd" TextChanged="TxtMotd_TextChanged" Background="#3E3E42" Foreground="White" Padding="5" />
                                 <TextBlock x:Name="TxtMotdPreview" Foreground="LightGray" Margin="0,5,0,10"/>
+
+                                <TextBlock Text="Java Runtime (Override Path):" Foreground="Silver" Margin="0,15,0,5"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ui:TextBox x:Name="TxtJavaPath" Background="#3E3E42" Foreground="White" Padding="5" IsReadOnly="False" PlaceholderText="Default (PocketMC-Desktop Runtimes)"/>
+                                    <Button x:Name="BtnBrowseJava" Grid.Column="1" Content="..." Click="BtnBrowseJava_Click" Margin="5,0,0,0" Width="35" Padding="5" Cursor="Hand"/>
+                                </Grid>
+                                <TextBlock Text="Note: Leave blank to use PocketMC's automatic internal Java versioning." FontSize="11" Foreground="Gray" Margin="0,5,0,12"/>
                             </StackPanel>
                         </Expander>
 
@@ -150,10 +162,18 @@
                                 <TextBlock Text="Server IP (Leave blank for default):" Foreground="Silver" Margin="0,5"/>
                                 <TextBox x:Name="TxtServerIp" Background="#3E3E42" Foreground="White" Padding="5" Margin="0,0,0,10"/>
                                 
+                                <TextBlock Text="Playit.gg Status:" Foreground="Silver" Margin="0,5"/>
+                                <TextBlock x:Name="TxtPlayitAgentStatus" Text="Checking..." Foreground="#F9E2AF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"/>
+
                                 <TextBlock Text="Playit.gg Public Address:" Foreground="Silver" Margin="0,5"/>
-                                <TextBox x:Name="TxtPlayitAddress" IsReadOnly="True" Background="#2D2D30" Foreground="#89B4FA" Padding="5" Margin="0,0,0,10" 
+                                <TextBox x:Name="TxtPlayitAddress" IsReadOnly="True" Background="#2D2D30" Foreground="#89B4FA" Padding="5" Margin="0,0,0,6" 
                                          BorderBrush="#89B4FA" BorderThickness="1"
                                          Text="Resolving tunnel from agent..."/>
+                                
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Button x:Name="BtnResolvePlayit" Content="🔄 Refresh Tunnel Address" Click="BtnResolvePlayit_Click" Padding="8,4" Margin="0,0,8,0"/>
+                                    <Button x:Name="BtnOpenPlayitDashboard" Content="🌐 Manage Tunnels" Click="BtnOpenPlayitDashboard_Click" Padding="8,4"/>
+                                </StackPanel>
                             </StackPanel>
                         </Expander>
 
@@ -217,8 +237,12 @@
                         <TextBlock x:Name="TxtVanillaWarning" Text="⚠ Vanilla servers do not support plugins. Switch to Paper for plugin support." 
                                    Foreground="Orange" FontWeight="SemiBold" Visibility="Collapsed" Margin="0,0,0,15"/>
                         
-                        <Button x:Name="BtnAddPlugin" Content="➕ Add Plugin (.jar)" Click="BtnAddPlugin_Click" 
-                                Padding="12,8" Background="#007ACC" Foreground="White" Margin="0,0,0,15"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <Button x:Name="BtnAddPlugin" Content="➕ Add Plugin (.jar)" Click="BtnAddPlugin_Click" 
+                                    Padding="12,8" Background="#007ACC" Foreground="White" Margin="0,0,8,0"/>
+                            <Button x:Name="BtnBrowseModrinthPlugins" Content="🌐 Browse Modrinth" Click="BtnBrowseModrinth_Click"
+                                    Tag="project_type:plugin" Padding="12,8" Background="#2D2D30" Foreground="White"/>
+                        </StackPanel>
                         
                         <ItemsControl x:Name="PluginList"/>
                     </StackPanel>
@@ -232,8 +256,12 @@
                         <TextBlock x:Name="TxtModLockWarning" Text="⚠ Server is running — stop the server before managing mods." 
                                    Foreground="#FF6B6B" FontWeight="SemiBold" Visibility="Collapsed" Margin="0,0,0,15"/>
                         
-                        <Button x:Name="BtnAddMod" Content="➕ Add Mod (.jar)" Click="BtnAddMod_Click" 
-                                Padding="12,8" Background="#007ACC" Foreground="White" Margin="0,0,0,15"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <Button x:Name="BtnAddMod" Content="➕ Add Mod (.jar)" Click="BtnAddMod_Click" 
+                                    Padding="12,8" Background="#007ACC" Foreground="White" Margin="0,0,8,0"/>
+                            <Button x:Name="BtnBrowseModrinthMods" Content="🌐 Browse Modrinth" Click="BtnBrowseModrinth_Click"
+                                    Tag="project_type:mod" Padding="12,8" Background="#2D2D30" Foreground="White"/>
+                        </StackPanel>
                         
                         <ItemsControl x:Name="ModList"/>
                     </StackPanel>
@@ -316,7 +344,7 @@
         <!-- Footer Actions -->
         <Border Grid.Row="2" Background="#2D2D30" Padding="15">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="BtnCancel" Content="Cancel" Width="80" Margin="0,0,10,0" Padding="5,5"/>
+                <Button x:Name="BtnCancel" Content="Cancel" Width="80" Margin="0,0,10,0" Padding="5,5" Click="BtnCancel_Click"/>
                 <Button x:Name="BtnSave" Content="Save Configurations" Width="140" Padding="5,5" Background="#007ACC" Foreground="White" Click="BtnSave_Click"/>
             </StackPanel>
         </Border>

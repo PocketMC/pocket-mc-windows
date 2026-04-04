@@ -18,6 +18,8 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             
             <ui:Button Grid.Column="0" Content="Back" Appearance="Secondary" 
@@ -29,16 +31,42 @@
                            FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
             </StackPanel>
             
-            <ui:Button Grid.Column="2" Content="Stop Server" Appearance="Danger"
-                       Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand" Margin="0,0,4,0"/>
-            <ui:Button Grid.Column="3" Content="Restart" Appearance="Secondary"
+            <CheckBox x:Name="ChkAutoScroll" Grid.Column="2" Content="Auto-scroll" 
+                      IsChecked="True" Foreground="LightGray" VerticalAlignment="Center" Margin="0,0,16,0" Cursor="Hand"/>
+            
+            <ui:Button Grid.Column="3" Content="Copy Logs" Appearance="Secondary"
+                       Icon="{ui:SymbolIcon Copy24}" Click="BtnCopyLogs_Click" Cursor="Hand" Margin="0,0,8,0"/>
+            <ui:Button Grid.Column="4" Content="Stop Server" Appearance="Danger"
+                       Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand" Margin="0,0,8,0"
+                       IsEnabled="{Binding CanStopServer}"/>
+            <ui:Button Grid.Column="5" Content="Restart" Appearance="Secondary"
                        Icon="{ui:SymbolIcon ArrowSync24}" Click="BtnRestart_Click" Cursor="Hand"/>
         </Grid>
         
         <!-- Console output area -->
         <Border Grid.Row="1" Background="#1E1E1E" CornerRadius="8" Padding="8">
             <Grid>
-                <ScrollViewer x:Name="LogScroller" VerticalScrollBarVisibility="Auto" 
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" x:Name="CrashBanner" Background="#33FF0000" BorderBrush="#88FF0000" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,10" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:SymbolIcon Symbol="Warning24" Margin="0,0,8,0" Foreground="#FF6B6B"/>
+                            <ui:TextBlock FontTypography="Subtitle" Text="Critical Crash Detected!" Foreground="#FF6B6B" VerticalAlignment="Center"/>
+                            <ui:Button Content="Copy Crash Report" Appearance="Secondary" Icon="{ui:SymbolIcon Copy24}" Margin="16,0,0,0" Padding="8,4" Click="BtnCopyCrash_Click"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="1" x:Name="TxtCrashLog" Foreground="#FF6B6B" FontFamily="Consolas" FontSize="11" TextWrapping="Wrap" Opacity="0.9"/>
+                    </Grid>
+                </Border>
+
+                <ScrollViewer Grid.Row="1" x:Name="LogScroller" VerticalScrollBarVisibility="Auto" 
                               HorizontalScrollBarVisibility="Disabled">
                     <ItemsControl x:Name="LogView" ItemsSource="{Binding Logs}">
                         <ItemsControl.ItemsPanel>
@@ -55,10 +83,6 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
-                
-                <Border x:Name="CrashBanner" VerticalAlignment="Top" Background="#33FF0000" BorderBrush="#88FF0000" BorderThickness="1" CornerRadius="4" Padding="12" Margin="10" Visibility="Collapsed">
-                    <TextBlock x:Name="TxtCrashLog" Foreground="#FF6B6B" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" />
-                </Border>
             </Grid>
         </Border>
         

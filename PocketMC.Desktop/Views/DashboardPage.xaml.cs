@@ -1,13 +1,14 @@
 using System;
+using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Wpf.Ui.Controls;
+using PocketMC.Desktop.Utils;
 using PocketMC.Desktop.Services;
 using PocketMC.Desktop.Models;
-using PocketMC.Desktop.Utils;
 using System.Linq;
 using System.Threading.Tasks;
 using MenuItem = System.Windows.Controls.MenuItem;
@@ -68,8 +69,8 @@ namespace PocketMC.Desktop.Views
         // LiveCharts properties
         public ObservableCollection<double> CpuHistory { get; } = new();
         public ObservableCollection<double> RamHistory { get; } = new();
-        public LiveChartsCore.ISeries[] CpuSeries { get; set; }
-        public LiveChartsCore.ISeries[] RamSeries { get; set; }
+        public LiveChartsCore.ISeries[]? CpuSeries { get; set; }
+        public LiveChartsCore.ISeries[]? RamSeries { get; set; }
         
         public LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint InvisiblePaint { get; set; } = new LiveChartsCore.SkiaSharpView.Painting.SolidColorPaint(SkiaSharp.SKColors.Transparent);
         
@@ -188,6 +189,8 @@ namespace PocketMC.Desktop.Views
             _appRootPath = appRootPath;
             _instanceManager = new InstanceManager(appRootPath);
             LoadInstances();
+            
+            _ = CheckJavaRequirementsAsync(); // Async Java check (NET-14)
 
             // Subscribe to global state changes
             ServerProcessManager.OnInstanceStateChanged += OnServerStateChanged;
@@ -217,6 +220,7 @@ namespace PocketMC.Desktop.Views
                 Dispatcher.Invoke(() =>
                 {
                     var guideWindow = new PlayitGuideWindow(PlayitAgent, claimUrl);
+                    guideWindow.Owner = Window.GetWindow(this);
                     guideWindow.Show();
                 });
             };
@@ -379,6 +383,25 @@ namespace PocketMC.Desktop.Views
 
             try
             {
+                // 0. Java Version Check before starting (NET-14)
+                string javaPath = JavaVersionHelper.GetRecommendedJavaPath(vm.Metadata.MinecraftVersion, _appRootPath, vm.Metadata.CustomJavaPath);
+                var javaCheck = await JavaVersionHelper.CheckInstallationAsync(javaPath);
+                
+                int required = JavaVersionHelper.GetRequiredJavaVersion(vm.Metadata.MinecraftVersion);
+
+                if (javaCheck.IsAvailable && javaCheck.MajorVersion < required)
+                {
+                    string source = (javaPath == "java") ? "System 'java'" : $"Selected Java ({javaPath})";
+                    var res = System.Windows.MessageBox.Show(
+                        $"{source} is Version {javaCheck.MajorVersion}, but Minecraft {vm.Metadata.MinecraftVersion} requires Version {required}+.\n\n" +
+                        "The server will likely fail to start. Continue anyway?",
+                        "Java Compatibility Warning",
+                        System.Windows.MessageBoxButton.YesNo,
+                        System.Windows.MessageBoxImage.Warning);
+                    
+                    if (res == System.Windows.MessageBoxResult.No) return;
+                }
+
                 // Resolve tunnel address before starting (NET-06, NET-09)
                 await ResolveTunnelForInstance(vm);
 
@@ -438,6 +461,7 @@ namespace PocketMC.Desktop.Views
 
                 case TunnelResolutionResult.TunnelStatus.CreationStarted:
                     var guideWindow = new TunnelCreationGuideWindow(tunnelService, serverPort);
+                    guideWindow.Owner = Window.GetWindow(this);
                     guideWindow.OnTunnelResolved += (address) => 
                     {
                         Dispatcher.Invoke(() => vm.TunnelAddress = address);
@@ -613,6 +637,50 @@ namespace PocketMC.Desktop.Views
                         LoadInstances();
                     }
                 }
+            }
+        }
+        private async Task CheckJavaRequirementsAsync()
+        {
+            try
+            {
+                var check = await JavaVersionHelper.CheckInstallationAsync();
+                
+                // Requirement (April 2026 Context): Minecraft 1.21+ needs Java 21+
+                // Latest Minecraft might need Java 25 (69.0)
+                if (!check.IsAvailable || check.MajorVersion < 21)
+                {
+                    Dispatcher.Invoke(() => 
+                    {
+                        TxtJavaInfo.Text = check.IsAvailable 
+                            ? $"System 'java' is Version {check.MajorVersion}. Modern Minecraft requires Java 21 or newer."
+                            : "No Java installation was detected on your system path.";
+                            
+                        JavaWarningBanner.Visibility = Visibility.Visible;
+                    });
+                }
+            }
+            catch { /* Silent fail for background check */ }
+        }
+
+        private void OnJavaDownload_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo { FileName = "https://adoptium.net/temurin/releases/", UseShellExecute = true });
+        }
+        private void CopyCrashReport_Click(object sender, RoutedEventArgs e)
+        {
+            var m = sender as MenuItem;
+            var vm = m?.DataContext as InstanceCardViewModel;
+            if (vm == null) return;
+
+            var process = ServerProcessManager.GetProcess(vm.Id);
+            if (process != null && !string.IsNullOrEmpty(process.CrashContext))
+            {
+                System.Windows.Clipboard.SetText(process.CrashContext);
+                System.Windows.MessageBox.Show("Crash report copied to clipboard!", "Copied", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("No crash report available for this instance.", "Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
     }

@@ -3,9 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Playit.gg Setup Guide"
-        Width="420" Height="340"
-        WindowStartupLocation="CenterScreen"
-        Topmost="True"
+        Width="420" Height="380"
+        WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         WindowCornerPreference="Round" ExtendsContentIntoTitleBar="True" Background="#1E1E2E">
 

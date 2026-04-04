@@ -31,7 +31,7 @@ namespace PocketMC.Desktop.Views
         private readonly ServerProcess _serverProcess;
         private readonly ConcurrentQueue<LogLine> _pendingLines = new();
         private readonly DispatcherTimer _flushTimer;
-        private const int MAX_LOG_LINES = 5000;
+        private const int MAX_LOG_LINES = 10000;
 
         public ObservableCollection<LogLine> Logs { get; } = new();
 
@@ -51,6 +51,8 @@ namespace PocketMC.Desktop.Views
             ServerState.Crashed => Brushes.Red,
             _ => Brushes.Gray
         };
+
+        public bool CanStopServer => _serverProcess.State == ServerState.Online || _serverProcess.State == ServerState.Starting;
 
         public ServerConsolePage(InstanceMetadata metadata, ServerProcess serverProcess)
         {
@@ -74,10 +76,18 @@ namespace PocketMC.Desktop.Views
             _flushTimer.Tick += FlushPendingLines;
             _flushTimer.Start();
 
-            // Drain any existing buffered lines
-            while (_serverProcess.OutputBuffer.TryDequeue(out var existingLine))
+            // 1. Load full session history from the log file (NET-15)
+            LoadSessionLogHistory();
+
+            // 2. Drain and CLEAR the transient buffer
+            // We clear it because the log file already contains these lines (autoflush is on)
+            while (_serverProcess.OutputBuffer.TryDequeue(out _)) { }
+
+            // 3. If in crashed state, show the crash banner immediately (NET-10)
+            if (_serverProcess.State == ServerState.Crashed && !string.IsNullOrEmpty(_serverProcess.CrashContext))
             {
-                _pendingLines.Enqueue(ColorizeLogLine(existingLine));
+                TxtCrashLog.Text = _serverProcess.CrashContext;
+                CrashBanner.Visibility = Visibility.Visible;
             }
         }
 
@@ -97,6 +107,7 @@ namespace PocketMC.Desktop.Views
             {
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(StatusColor));
+                OnPropertyChanged(nameof(CanStopServer));
 
                 if (state == ServerState.Starting)
                 {
@@ -128,8 +139,29 @@ namespace PocketMC.Desktop.Views
                 Logs.RemoveAt(0);
 
             // Auto-scroll to bottom
-            if (count > 0 && LogScroller != null)
+            if (count > 0 && LogScroller != null && (ChkAutoScroll?.IsChecked ?? true))
                 LogScroller.ScrollToEnd();
+        }
+
+        private void LoadSessionLogHistory()
+        {
+            try
+            {
+                string logFile = System.IO.Path.Combine(_serverProcess.WorkingDirectory, "logs", "pocketmc-session.log");
+                if (System.IO.File.Exists(logFile))
+                {
+                    // Read the session log with shared access to avoid locking errors
+                    using var stream = new System.IO.FileStream(logFile, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite);
+                    using var reader = new System.IO.StreamReader(stream);
+                    
+                    string? line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        _pendingLines.Enqueue(ColorizeLogLine(line));
+                    }
+                }
+            }
+            catch { /* Ignore recovery errors */ }
         }
 
         /// <summary>
@@ -166,6 +198,30 @@ namespace PocketMC.Desktop.Views
             }
         }
 
+        private void BtnCopyLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var allText = string.Join(Environment.NewLine, System.Linq.Enumerable.Select(Logs, l => l.Text));
+                if (!string.IsNullOrEmpty(allText))
+                {
+                    System.Windows.Clipboard.SetText(allText);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to copy logs: {ex.Message}", "Clipboard Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void BtnCopyCrash_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(TxtCrashLog.Text))
+            {
+                System.Windows.Clipboard.SetText(TxtCrashLog.Text);
+            }
+        }
+
         private async System.Threading.Tasks.Task SendCommand()
         {
             string command = TxtCommand.Text.Trim();
@@ -187,7 +243,7 @@ namespace PocketMC.Desktop.Views
             _serverProcess.OnStateChanged -= OnStateChanged;
             _serverProcess.OnServerCrashed -= OnServerCrashed;
 
-            if (NavigationService.CanGoBack)
+            if (NavigationService?.CanGoBack == true)
                 NavigationService.GoBack();
         }
 

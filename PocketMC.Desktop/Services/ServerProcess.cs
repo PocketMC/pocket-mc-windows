@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Utils;
 
 namespace PocketMC.Desktop.Services
 {
@@ -34,12 +35,16 @@ namespace PocketMC.Desktop.Services
         private bool _disposed;
         private bool _intentionalStop;
         private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
+        private StreamWriter? _sessionLogWriter;
+        private const int MAX_BUFFER_LINES = 5000;
 
         public Guid InstanceId { get; }
         public ServerState State { get; private set; } = ServerState.Stopped;
+        public string WorkingDirectory { get; private set; } = string.Empty;
         public ConcurrentQueue<string> OutputBuffer { get; } = new();
 
         public int PlayerCount { get; private set; }
+        public string? CrashContext { get; private set; }
 
         public event Action<string>? OnOutputLine;
         public event Action<string>? OnErrorLine;
@@ -60,21 +65,7 @@ namespace PocketMC.Desktop.Services
             if (State != ServerState.Stopped && State != ServerState.Crashed)
                 throw new InvalidOperationException($"Cannot start server — current state is {State}.");
 
-            string jreFolder = "java21";
-            if (System.Version.TryParse(meta.MinecraftVersion.Replace("1.X", "1.0").Split('-')[0], out var versionParts))
-            {
-                if (versionParts.Minor <= 17) jreFolder = "java11";
-                else if (versionParts.Minor <= 20 && versionParts.Build <= 4) jreFolder = "java17";
-            }
-            if (meta.MinecraftVersion.StartsWith("1.20.4") || meta.MinecraftVersion.StartsWith("1.20.3")) jreFolder = "java17";
-
-            string javaPath = Path.Combine(appRootPath, "runtime", jreFolder, "bin", "java.exe");
-            if (!File.Exists(javaPath))
-            {
-                throw new FileNotFoundException(
-                    $"Java runtime not found for {meta.MinecraftVersion}.\n\n" +
-                    $"Expected path: {javaPath}\n\n");
-            }
+            string javaPath = JavaVersionHelper.GetRecommendedJavaPath(meta.MinecraftVersion, appRootPath, meta.CustomJavaPath);
 
             string serversDir = Path.Combine(appRootPath, "servers");
             string? workingDir = null;
@@ -96,6 +87,19 @@ namespace PocketMC.Desktop.Services
                 throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
             }
 
+            WorkingDirectory = workingDir;
+
+            // Initialize session log
+            try
+            {
+                string logDir = Path.Combine(workingDir, "logs");
+                Directory.CreateDirectory(logDir);
+                string sessionLogPath = Path.Combine(logDir, "pocketmc-session.log");
+                var stream = new FileStream(sessionLogPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                _sessionLogWriter = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
+            }
+            catch { /* Best effort logging */ }
+
             string serverJar = Path.Combine(workingDir, "server.jar");
             if (!File.Exists(serverJar))
             {
@@ -104,10 +108,13 @@ namespace PocketMC.Desktop.Services
                     $"Please download a Minecraft server JAR and place it there.");
             }
 
+            int req = JavaVersionHelper.GetRequiredJavaVersion(meta.MinecraftVersion);
+            string jvmFlags = (req >= 21) ? "--enable-native-access=ALL-UNNAMED " : "";
+
             var psi = new ProcessStartInfo
             {
                 FileName = javaPath,
-                Arguments = $"-Xms{meta.MinRamMb}M -Xmx{meta.MaxRamMb}M -jar server.jar nogui",
+                Arguments = $"-Xms{meta.MinRamMb}M -Xmx{meta.MaxRamMb}M {jvmFlags}-jar server.jar nogui",
                 WorkingDirectory = workingDir,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -184,6 +191,11 @@ namespace PocketMC.Desktop.Services
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
                     OutputBuffer.Enqueue(line);
+                    if (OutputBuffer.Count > MAX_BUFFER_LINES)
+                        OutputBuffer.TryDequeue(out _);
+
+                    try { _sessionLogWriter?.WriteLine(line); } catch { }
+
                     if (isError)
                         OnErrorLine?.Invoke(line);
                     else
@@ -234,10 +246,10 @@ namespace PocketMC.Desktop.Services
             if (!_intentionalStop && exitCode != 0)
             {
                 var snapshotLines = OutputBuffer.ToArray().TakeLast(50);
-                string crashContext = $"--- CRASH DETECTED (Exit Code: {exitCode}) ---\n" + string.Join(Environment.NewLine, snapshotLines);
+                CrashContext = $"--- CRASH DETECTED (Exit Code: {exitCode}) ---\n" + string.Join(Environment.NewLine, snapshotLines);
                 
                 SetState(ServerState.Crashed);
-                OnServerCrashed?.Invoke(crashContext);
+                OnServerCrashed?.Invoke(CrashContext);
             }
             else
             {
@@ -282,6 +294,8 @@ namespace PocketMC.Desktop.Services
             if (!_disposed)
             {
                 _disposed = true;
+                _sessionLogWriter?.Dispose();
+                _sessionLogWriter = null;
                 Kill();
                 _process?.Dispose();
             }

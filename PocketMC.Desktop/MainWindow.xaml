@@ -21,6 +21,6 @@
                 <TextBlock x:Name="GlobalHealthTextBlock" Text="" Margin="0,0,110,0" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="Silver" FontSize="11"/>
             </ui:TitleBar.Header>
         </ui:TitleBar>
-        <Frame x:Name="RootFrame" Grid.Row="1" NavigationUIVisibility="Hidden"/>
+        <Frame x:Name="RootFrame" Grid.Row="1" NavigationUIVisibility="Hidden" JournalOwnership="OwnsJournal"/>
     </Grid>
 </ui:FluentWindow>
