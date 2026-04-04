@@ -10,6 +10,7 @@
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/icon.ico"
         Loaded="Window_Loaded">
     <Grid>
         <Grid.RowDefinitions>
