@@ -65,7 +65,9 @@ namespace PocketMC.Desktop.Services
             if (State != ServerState.Stopped && State != ServerState.Crashed)
                 throw new InvalidOperationException($"Cannot start server — current state is {State}.");
 
-            string javaPath = JavaVersionHelper.GetRecommendedJavaPath(meta.MinecraftVersion, appRootPath, meta.CustomJavaPath);
+            string javaPath = !string.IsNullOrEmpty(meta.CustomJavaPath) && File.Exists(meta.CustomJavaPath) 
+                ? meta.CustomJavaPath 
+                : "java";
 
             string serversDir = Path.Combine(appRootPath, "servers");
             string? workingDir = null;
@@ -108,13 +110,12 @@ namespace PocketMC.Desktop.Services
                     $"Please download a Minecraft server JAR and place it there.");
             }
 
-            int req = JavaVersionHelper.GetRequiredJavaVersion(meta.MinecraftVersion);
-            string jvmFlags = (req >= 21) ? "--enable-native-access=ALL-UNNAMED " : "";
+
 
             var psi = new ProcessStartInfo
             {
                 FileName = javaPath,
-                Arguments = $"-Xms{meta.MinRamMb}M -Xmx{meta.MaxRamMb}M {jvmFlags}-jar server.jar nogui",
+                Arguments = $"-Xms{meta.MinRamMb}M -Xmx{meta.MaxRamMb}M -jar server.jar nogui",
                 WorkingDirectory = workingDir,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,

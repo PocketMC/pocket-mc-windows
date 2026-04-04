@@ -33,18 +33,7 @@
         </Grid.RowDefinitions>
         
         <StackPanel Grid.Row="0">
-            <!-- Java Compatibility Warning (NET-14) -->
-            <Border x:Name="JavaWarningBanner" Visibility="Collapsed" Background="#44FB8C00" BorderBrush="#88FB8C00" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal">
-                    <ui:SymbolIcon Symbol="Warning24" Margin="0,0,12,0" Foreground="Orange"/>
-                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="1000">
-                        <Run Text="⚠ Outdated Java Version Detected!" FontWeight="Bold" Foreground="Orange"/>
-                        <LineBreak/>
-                        <Run x:Name="TxtJavaInfo" Text="Your system is running Java 11. Minecraft 1.21+ requires Java 21 or newer."/>
-                        <Hyperlink NavigateUri="https://adoptium.net/" Click="OnJavaDownload_Click"> Download Java 21+</Hyperlink>
-                    </TextBlock>
-                </StackPanel>
-            </Border>
+
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
                 <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center"/>
