@@ -62,8 +62,19 @@ namespace PocketMC.Desktop.Views
                 if (e.Source is TabControl)
                 {
                     RefreshLockStates();
+                    // Sync sidebar selection if it drifted (e.g. initial load)
+                    if (SidebarList.SelectedIndex != MainTabControl.SelectedIndex)
+                        SidebarList.SelectedIndex = MainTabControl.SelectedIndex;
                 }
             };
+        }
+
+        private void SidebarList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SidebarList != null && MainTabControl != null && SidebarList.SelectedIndex != -1)
+            {
+                MainTabControl.SelectedIndex = SidebarList.SelectedIndex;
+            }
         }
 
         // ════════════════════════════════════════════════

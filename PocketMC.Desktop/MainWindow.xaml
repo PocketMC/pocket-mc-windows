@@ -16,9 +16,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ui:TitleBar Title="PocketMC Desktop" Grid.Row="0">
+        <ui:TitleBar Title="PocketMC Desktop" Grid.Row="0" VerticalContentAlignment="Center">
             <ui:TitleBar.Header>
-                <TextBlock x:Name="GlobalHealthTextBlock" Text="" Margin="0,0,16,0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                <TextBlock x:Name="GlobalHealthTextBlock" Text="" Margin="0,0,110,0" VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="Silver" FontSize="11"/>
             </ui:TitleBar.Header>
         </ui:TitleBar>
         <Frame x:Name="RootFrame" Grid.Row="1" NavigationUIVisibility="Hidden"/>

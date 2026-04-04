@@ -19,8 +19,60 @@
             <TextBlock Text="Server Configuration &amp; Setup" Foreground="White" FontSize="20" FontWeight="Bold"/>
         </Border>
 
-        <!-- Tab Control -->
-        <TabControl x:Name="MainTabControl" Grid.Row="1" Background="#1E1E1E" BorderThickness="0" Margin="0">
+        <!-- Sidebar Layout -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Side Bar (Category List) -->
+            <Border Grid.Column="0" Background="#252526" BorderBrush="#3F3F46" BorderThickness="0,0,1,0">
+                <ListBox x:Name="SidebarList" Background="Transparent" BorderThickness="0" Margin="8,16" 
+                         SelectionChanged="SidebarList_SelectionChanged">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="12,10"/>
+                            <Setter Property="Margin" Value="0,2"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border CornerRadius="6" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#007ACC"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#3E3E42"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    
+                    <ListBoxItem Content="Properties" IsSelected="True" Foreground="White"/>
+                    <ListBoxItem Content="Worlds" Foreground="White"/>
+                    <ListBoxItem Content="Plugins" Foreground="White"/>
+                    <ListBoxItem Content="Mods" Foreground="White"/>
+                    <ListBoxItem Content="Backups" Foreground="White"/>
+                    <ListBoxItem Content="Crash &amp; Restart" Foreground="White"/>
+                </ListBox>
+            </Border>
+
+            <!-- Content Area (Headerless TabControl) -->
+            <TabControl x:Name="MainTabControl" Grid.Column="1" Background="#1E1E1E" BorderThickness="0" Margin="0">
+                <TabControl.Resources>
+                    <Style TargetType="TabPanel">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </Style>
+                </TabControl.Resources>
             
             <!-- ═══════════════════════ TAB 1: PROPERTIES ═══════════════════════ -->
             <TabItem Header="  Properties  " Foreground="White">
@@ -259,6 +311,7 @@
                 </ScrollViewer>
             </TabItem>
         </TabControl>
+        </Grid>
 
         <!-- Footer Actions -->
         <Border Grid.Row="2" Background="#2D2D30" Padding="15">
