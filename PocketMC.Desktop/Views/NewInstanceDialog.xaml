@@ -1,9 +1,10 @@
-<Window x:Class="PocketMC.Desktop.Views.NewInstanceDialog"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Views.NewInstanceDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Create New Server" Height="450" Width="400"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        WindowCornerPreference="Round" ExtendsContentIntoTitleBar="True"
         Background="{DynamicResource ApplicationBackgroundBrush}">
     
     <Grid Margin="16">
@@ -50,4 +51,4 @@
             <ui:Button x:Name="BtnCreate" Content="Create &amp; Download" Appearance="Primary" Click="BtnCreate_Click"/>
         </StackPanel>
     </Grid>
-</Window>
+</ui:FluentWindow>

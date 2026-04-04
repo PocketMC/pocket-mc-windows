@@ -1,6 +1,9 @@
-<Window x:Class="PocketMC.Desktop.Views.TunnelCreationGuideWindow"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Views.TunnelCreationGuideWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Create Tunnel" Width="420" Height="360" WindowStartupLocation="CenterScreen" Topmost="True" ResizeMode="NoResize" WindowStyle="ToolWindow" Background="#1E1E2E">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Create Tunnel" Width="420" Height="360" WindowStartupLocation="CenterScreen" Topmost="True" ResizeMode="NoResize"
+    WindowCornerPreference="Round" ExtendsContentIntoTitleBar="True" Background="#1E1E2E">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -40,7 +43,7 @@
             </TextBlock>
 
             <TextBlock Foreground="#A6E3A1" FontSize="13" Margin="8,4">
-                <Run FontWeight="Bold" Text="6. "/>
+                <Run FontWeight="Bold" Text="5. "/>
                 <Run Text="Click 'Create'."/>
             </TextBlock>
 
@@ -54,4 +57,4 @@
             <Button Content="Cancel" Width="80" Height="30" Background="#45475A" Foreground="#CDD6F4" BorderThickness="0" Click="CancelButton_Click"/>
         </StackPanel>
     </Grid>
-</Window>
+</ui:FluentWindow>

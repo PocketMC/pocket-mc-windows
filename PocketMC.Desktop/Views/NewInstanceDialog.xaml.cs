@@ -8,7 +8,7 @@ using PocketMC.Desktop.Services;
 
 namespace PocketMC.Desktop.Views
 {
-    public partial class NewInstanceDialog : Window
+    public partial class NewInstanceDialog : Wpf.Ui.Controls.FluentWindow
     {
         private readonly InstanceManager _instanceManager;
         private readonly string _appRootPath;

@@ -1,13 +1,13 @@
-<Window x:Class="PocketMC.Desktop.Views.PlayitGuideWindow"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Views.PlayitGuideWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Playit.gg Setup Guide"
         Width="420" Height="340"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
         ResizeMode="NoResize"
-        WindowStyle="ToolWindow"
-        Background="#1E1E2E">
+        WindowCornerPreference="Round" ExtendsContentIntoTitleBar="True" Background="#1E1E2E">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -65,4 +65,4 @@
                     Click="CloseButton_Click"/>
         </StackPanel>
     </Grid>
-</Window>
+</ui:FluentWindow>

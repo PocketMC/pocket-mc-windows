@@ -11,7 +11,7 @@ namespace PocketMC.Desktop.Views
     /// and the server's port is not among the existing tunnels.
     /// Implements NET-10.
     /// </summary>
-    public partial class TunnelLimitDialog : Window
+    public partial class TunnelLimitDialog : Wpf.Ui.Controls.FluentWindow
     {
         /// <summary>
         /// True if the user chose "Change Port" — the caller should navigate

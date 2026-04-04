@@ -11,7 +11,7 @@ namespace PocketMC.Desktop.Views
     /// Polls the Playit API every 5s for a new tunnel matching the server port.
     /// Auto-closes when the tunnel is detected (NET-08).
     /// </summary>
-    public partial class TunnelCreationGuideWindow : Window
+    public partial class TunnelCreationGuideWindow : Wpf.Ui.Controls.FluentWindow
     {
         private readonly TunnelService _tunnelService;
         private readonly int _serverPort;

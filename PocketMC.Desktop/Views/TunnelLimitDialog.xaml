@@ -1,12 +1,12 @@
-<Window x:Class="PocketMC.Desktop.Views.TunnelLimitDialog"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Views.TunnelLimitDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Tunnel Limit Reached"
         Width="520" Height="400"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        WindowStyle="ToolWindow"
-        Background="#1E1E2E">
+        WindowCornerPreference="Round" ExtendsContentIntoTitleBar="True" Background="#1E1E2E">
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -74,4 +74,4 @@
                     Click="ChangePortButton_Click"/>
         </StackPanel>
     </Grid>
-</Window>
+</ui:FluentWindow>

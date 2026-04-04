@@ -9,7 +9,7 @@ namespace PocketMC.Desktop.Views
     /// Handles browser opening, auto-close on agent connection,
     /// and manual close fallback.
     /// </summary>
-    public partial class PlayitGuideWindow : Window
+    public partial class PlayitGuideWindow : Wpf.Ui.Controls.FluentWindow
     {
         private readonly Services.PlayitAgentService _agentService;
 

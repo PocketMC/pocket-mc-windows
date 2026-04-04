@@ -8,6 +8,7 @@
         Title="PocketMC Desktop" Height="600" Width="1000"
         WindowBackdropType="Mica"
         ExtendsContentIntoTitleBar="True"
+        WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded">
     <Grid>
