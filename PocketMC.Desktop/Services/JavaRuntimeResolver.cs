@@ -28,7 +28,7 @@ public static class JavaRuntimeResolver
 
         if (IsVersionInRange(version, "1.16.5", "1.17.1"))
         {
-            return 17; // Minecraft 1.17+ requires at least Java 16/17
+            return 11;
         }
 
         if (IsVersionInRange(version, "1.18", "1.20.4"))
