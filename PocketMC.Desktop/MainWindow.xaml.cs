@@ -562,8 +562,27 @@ public partial class MainWindow : FluentWindow
 
         try
         {
-            // Navigate to Dashboard — Java Setup is now a management page
-            NavigateToDashboard();
+            if (!settings.HasCompletedFirstLaunch)
+            {
+                settings.HasCompletedFirstLaunch = true;
+                _settingsManager.Save(settings);
+
+                // If no playit config exists, route to Tunnel Page for first-time setup
+                string configPath = _settingsManager.GetPlayitTomlPath(settings);
+                if (!System.IO.File.Exists(configPath))
+                {
+                    ReplaceShellContent(typeof(PocketMC.Desktop.Views.TunnelPage));
+                }
+                else
+                {
+                    NavigateToDashboard();
+                }
+            }
+            else
+            {
+                NavigateToDashboard();
+            }
+
             TryStartPlayitAgentOnLaunch();
         }
         catch (Exception ex)
