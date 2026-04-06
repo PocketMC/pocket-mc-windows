@@ -51,8 +51,8 @@
 
         <!-- Content Area -->
         <Grid Grid.Row="2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent" Padding="0,0,16,0">
+                <StackPanel Background="Transparent">
                     <ItemsControl x:Name="ListResults">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

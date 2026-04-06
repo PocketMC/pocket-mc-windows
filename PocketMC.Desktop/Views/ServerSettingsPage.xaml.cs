@@ -46,6 +46,7 @@ namespace PocketMC.Desktop.Views
         private readonly MouseWheelEventHandler _settingsPagePreviewMouseWheelHandler;
         private bool _isForwardingMouseWheel;
 
+        private readonly ModpackService _modpackService;
         public ServerSettingsPage(
             InstanceMetadata metadata,
             InstanceManager instanceManager,
@@ -54,8 +55,10 @@ namespace PocketMC.Desktop.Views
             BackupService backupService,
             PlayitAgentService playitAgentService,
             PlayitApiClient playitApiClient,
+            ModpackService modpackService,
             ILogger<ServerSettingsPage> logger)
         {
+            _modpackService = modpackService;
             InitializeComponent();
             _settingsPagePreviewMouseWheelHandler = OnSettingsPagePreviewMouseWheel;
             _instanceManager = instanceManager;
@@ -864,6 +867,16 @@ namespace PocketMC.Desktop.Views
                     if (projectType.Contains("plugin")) LoadPluginTab();
                     else LoadModTab();
                 });
+
+                if (projectType == "project_type:modpack")
+                {
+                    browserPage.OnModpackDownloaded += async (tempZip) =>
+                    {
+                        await ImportModpackAsync(tempZip);
+                        try { File.Delete(tempZip); } catch { }
+                    };
+                }
+
                 NavigationService.Navigate(browserPage);
             }
         }
@@ -970,6 +983,48 @@ namespace PocketMC.Desktop.Views
         // ════════════════════════════════════════════════
         //  TAB 5: BACKUPS
         // ════════════════════════════════════════════════
+
+
+        private async void BtnImportModpack_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Modpack ZIP (*.zip)|*.zip|All Files (*.*)|*.*",
+                Title = "Select Modpack ZIP"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                await ImportModpackAsync(openFileDialog.FileName);
+            }
+        }
+
+        private async Task ImportModpackAsync(string zipPath)
+        {
+            try
+            {
+                var result = await _modpackService.ParseModpackZipAsync(zipPath);
+
+                var confirm = System.Windows.MessageBox.Show(
+                    $"Import modpack '{result.Name}' for Minecraft {result.MinecraftVersion} ({result.Loader}) to this server?",
+                    "Import Modpack",
+                    MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
+
+                if (confirm == MessageBoxResult.Yes)
+                {
+                    await _modpackService.ImportToExistingInstanceAsync(result, _metadata, _serverDir, zipPath);
+                    LoadSettings(); // Reload properties
+                    LoadModTab();
+                    System.Windows.MessageBox.Show("Modpack imported successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to import modpack from {ZipPath}.", zipPath);
+                System.Windows.MessageBox.Show($"Failed to import modpack: {ex.Message}", "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private void LoadBackupTab()
         {

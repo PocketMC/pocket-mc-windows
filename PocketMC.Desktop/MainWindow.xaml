@@ -132,7 +132,8 @@
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem x:Name="NavAbout"
                                        Content="About"
-                                       Icon="{ui:SymbolIcon Info24}"/>
+                                       Icon="{ui:SymbolIcon Info24}"
+                                       TargetPageType="{x:Type views:AboutPage}"/>
             </ui:NavigationView.FooterMenuItems>
 
         </ui:NavigationView>

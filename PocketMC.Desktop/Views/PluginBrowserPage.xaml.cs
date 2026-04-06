@@ -48,10 +48,9 @@ namespace PocketMC.Desktop.Views
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)
         {
-            if (NavigationService.CanGoBack)
-            {
-                NavigationService.GoBack();
-            }
+            var mainWindow = Window.GetWindow(this) as MainWindow;
+            if (mainWindow?.NavigateBackFromDetail() == true) return;
+            if (NavigationService?.CanGoBack == true) NavigationService.GoBack();
         }
 
         private async Task RefreshResultsAsync(bool append = false)

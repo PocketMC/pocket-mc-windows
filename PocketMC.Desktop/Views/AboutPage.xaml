@@ -1,0 +1,34 @@
+<Page x:Class="PocketMC.Desktop.Views.AboutPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="About">
+
+    <Grid Margin="28,20,28,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <ui:TextBlock FontTypography="Title" Text="About PocketMC" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+            <TextBlock Text="Information and details about PocketMC Desktop." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
+        </StackPanel>
+
+        <ui:Card Grid.Row="1" Padding="24" MaxWidth="600" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <StackPanel>
+                <TextBlock Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                <TextBlock Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                <TextBlock Text="Repository" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8">
+                    <Run Text="GitHub: "/>
+                    <Hyperlink NavigateUri="https://github.com/divyviradiya2/pocket-mc-desktop.git" RequestNavigate="Hyperlink_RequestNavigate">
+                        https://github.com/divyviradiya2/pocket-mc-desktop.git
+                    </Hyperlink>
+                </TextBlock>
+                <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </ui:Card>
+    </Grid>
+</Page>

@@ -57,18 +57,18 @@
             </Setter>
         </Style>
 
-        <Style TargetType="{x:Type ui:TextBox}">
+        <Style TargetType="{x:Type ui:TextBox}" BasedOn="{StaticResource {x:Type ui:TextBox}}">
             <Setter Property="MinHeight" Value="40"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
 
-        <Style TargetType="{x:Type ui:ToggleSwitch}">
+        <Style TargetType="{x:Type ui:ToggleSwitch}" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
             <Setter Property="Margin" Value="0,6,0,6"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
 
-        <Style TargetType="{x:Type ui:Button}">
+        <Style TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
             <Setter Property="MinHeight" Value="38"/>
             <Setter Property="Padding" Value="14,8"/>
         </Style>
@@ -173,8 +173,8 @@
             
             <!-- ═══════════════════════ TAB 1: PROPERTIES ═══════════════════════ -->
             <TabItem Header="  Properties  " Foreground="White">
-                <ScrollViewer x:Name="PropertiesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0">
-                    <StackPanel x:Name="SettingsPanel">
+                <ScrollViewer x:Name="PropertiesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0" Background="Transparent">
+                    <StackPanel x:Name="SettingsPanel" Background="Transparent">
                         <!-- Icon Upload & Instance Metadata -->
                         <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Margin="0,0,0,12">
                         <Expander x:Name="ExpanderGeneral" Header="General" IsExpanded="False" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0">
@@ -325,7 +325,7 @@
                         <Expander x:Name="ExpanderAdvanced" Header="Advanced Properties" IsExpanded="False" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0">
                             <StackPanel Margin="18,14,18,18">
                                 <TextBlock Text="Edit direct server.properties values not covered in the UI." FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,10"/>
-                                <DataGrid x:Name="AdvancedPropsGrid" AutoGenerateColumns="False" 
+                                <ui:DataGrid x:Name="AdvancedPropsGrid" AutoGenerateColumns="False"
                                           CanUserAddRows="True" CanUserDeleteRows="True" GridLinesVisibility="None"
                                           HeadersVisibility="Column" SelectionMode="Single"
                                           Margin="0,0,0,10" MaxHeight="300">
@@ -333,7 +333,7 @@
                                         <DataGridTextColumn Header="Property Key" Binding="{Binding Key}" Width="*" />
                                         <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" />
                                     </DataGrid.Columns>
-                                </DataGrid>
+                                </ui:DataGrid>
                             </StackPanel>
                         </Expander>
                         </Border>
@@ -343,7 +343,7 @@
 
             <!-- ═══════════════════════ TAB 2: WORLDS ═══════════════════════ -->
             <TabItem Header="  Worlds  " Foreground="White">
-                <ScrollViewer x:Name="WorldsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0">
+                <ScrollViewer x:Name="WorldsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0" Background="Transparent">
                     <ui:Card Padding="20">
                     <StackPanel>
                         <TextBlock x:Name="TxtWorldStatus" Text="Checking world..." Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
@@ -367,7 +367,7 @@
 
             <!-- ═══════════════════════ TAB 3: PLUGINS ═══════════════════════ -->
             <TabItem x:Name="TabPlugins" Header="  Plugins  " Foreground="White">
-                <ScrollViewer x:Name="PluginsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0">
+                <ScrollViewer x:Name="PluginsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0" Background="Transparent">
                     <ui:Card Padding="20">
                     <StackPanel>
                         <TextBlock x:Name="TxtPluginLockWarning" Text="Server is running — stop the server before managing plugins." 
@@ -391,7 +391,7 @@
 
             <!-- ═══════════════════════ TAB 4: MODS ═══════════════════════ -->
             <TabItem Header="  Mods  " Foreground="White">
-                <ScrollViewer x:Name="ModsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0">
+                <ScrollViewer x:Name="ModsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0" Background="Transparent">
                     <ui:Card Padding="20">
                     <StackPanel>
                         <TextBlock x:Name="TxtModLockWarning" Text="Server is running — stop the server before managing mods." 
@@ -401,7 +401,11 @@
                             <ui:Button x:Name="BtnAddMod" Content="Add Mod (.jar)" Click="BtnAddMod_Click" 
                                        Appearance="Primary" Margin="0,0,8,0"/>
                             <ui:Button x:Name="BtnBrowseModrinthMods" Content="Browse Modrinth" Click="BtnBrowseModrinth_Click"
-                                       Tag="project_type:mod" Appearance="Secondary"/>
+                                       Tag="project_type:mod" Appearance="Secondary" Margin="0,0,8,0"/>
+                            <ui:Button x:Name="BtnImportModpack" Content="Import Modpack" Click="BtnImportModpack_Click"
+                                       Appearance="Secondary" Margin="0,0,8,0"/>
+                            <ui:Button x:Name="BtnBrowseModpacks" Content="Browse Modpacks" Click="BtnBrowseModrinth_Click"
+                                       Tag="project_type:modpack" Appearance="Secondary"/>
                         </StackPanel>
                         
                         <ItemsControl x:Name="ModList"/>
@@ -412,7 +416,7 @@
 
             <!-- ═══════════════════════ TAB 5: BACKUPS ═══════════════════════ -->
             <TabItem Header="  Backups  " Foreground="White">
-                <ScrollViewer x:Name="BackupsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0">
+                <ScrollViewer x:Name="BackupsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0" Background="Transparent">
                     <StackPanel>
 
                         <!-- Manual Backup -->
@@ -469,7 +473,7 @@
 
             <!-- ═══════════════════════ TAB 6: CRASH & RESTART ═══════════════════════ -->
             <TabItem Header="  Crash &amp; Restart  " Foreground="White">
-                <ScrollViewer x:Name="CrashRestartScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0">
+                <ScrollViewer x:Name="CrashRestartScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0" Background="Transparent">
                     <ui:Card Padding="20">
                     <StackPanel>
 

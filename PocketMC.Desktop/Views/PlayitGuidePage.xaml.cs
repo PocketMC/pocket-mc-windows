@@ -43,20 +43,18 @@ namespace PocketMC.Desktop.Views
                 StatusText.Text = "✓ Agent connected!";
                 _agentService.OnTunnelRunning -= OnTunnelRunning;
 
-                if (NavigationService.CanGoBack)
-                {
-                    NavigationService.GoBack();
-                }
+                var mainWindow = Window.GetWindow(this) as MainWindow;
+                if (mainWindow?.NavigateBackFromDetail() == true) return;
+                if (NavigationService?.CanGoBack == true) NavigationService.GoBack();
             });
         }
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)
         {
             _agentService.OnTunnelRunning -= OnTunnelRunning;
-            if (NavigationService.CanGoBack)
-            {
-                NavigationService.GoBack();
-            }
+            var mainWindow = Window.GetWindow(this) as MainWindow;
+            if (mainWindow?.NavigateBackFromDetail() == true) return;
+            if (NavigationService?.CanGoBack == true) NavigationService.GoBack();
         }
 
         private void PlayitGuidePage_Unloaded(object sender, RoutedEventArgs e)
