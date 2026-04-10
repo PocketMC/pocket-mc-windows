@@ -32,7 +32,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <!-- Outer Border for green glow — ui:Card ignores BorderBrush overrides -->
-                            <Border Margin="0,0,16,16" CornerRadius="8" Padding="0" Width="340" MinWidth="280" MinHeight="180">
+                            <Border Margin="0,0,16,16" CornerRadius="8" Padding="0" Width="340" MinWidth="280" MinHeight="220">
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Setter Property="BorderBrush" Value="Transparent"/>
@@ -48,12 +48,13 @@
                                 <ui:Card Cursor="Hand" Padding="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                                     <Grid Margin="16">
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/> <!-- Title & Menu -->
-                                            <RowDefinition Height="Auto"/> <!-- Description -->
-                                            <RowDefinition Height="Auto"/> <!-- Status & Tunnel Pill -->
-                                            <RowDefinition Height="Auto"/> <!-- Running Metrics Panel -->
-                                            <RowDefinition Height="*"/>    <!-- Spacer -->
-                                            <RowDefinition Height="Auto"/> <!-- Action Buttons -->
+                                            <RowDefinition Height="Auto"/> <!-- Row 0: Title & Menu -->
+                                            <RowDefinition Height="Auto"/> <!-- Row 1: Description -->
+                                            <RowDefinition Height="Auto"/> <!-- Row 2: Status -->
+                                            <RowDefinition Height="Auto"/> <!-- Row 3: IP Row -->
+                                            <RowDefinition Height="Auto"/> <!-- Row 4: Stats Row -->
+                                            <RowDefinition Height="*"/>    <!-- Row 5: Spacer -->
+                                            <RowDefinition Height="Auto"/> <!-- Row 6: Action Buttons -->
                                         </Grid.RowDefinitions>
                                 
                                 <!-- Title row (Row 0) -->
@@ -91,53 +92,73 @@
                                 <!-- Description (Row 1) -->
                                 <ui:TextBlock Grid.Row="1" FontTypography="Caption" Text="{Binding Description}" 
                                               Foreground="Silver" Height="34"
-                                              TextWrapping="Wrap" Margin="0,0,0,12" TextTrimming="CharacterEllipsis"/>
+                                              TextWrapping="Wrap" Margin="0,0,0,8" TextTrimming="CharacterEllipsis"/>
                                               
-                                <!-- Status & Tunnel Pill (Row 2) -->
-                                <Grid Grid.Row="2" Margin="0,0,0,8">
+                                <!-- Status (Row 2) -->
+                                <TextBlock Grid.Row="2" Text="{Binding StatusText}" 
+                                           Foreground="{Binding StatusColor}" FontSize="11" FontWeight="SemiBold"
+                                           Margin="0,0,0,6"/>
+
+                                <!-- IP Row (Row 3) — always visible -->
+                                <Border Grid.Row="3" Background="#22FFFFFF" CornerRadius="6" Padding="8,3"
+                                        Margin="0,0,0,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="IP : " FontSize="11" Foreground="#88FFFFFF" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding IpDisplayText}" FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <ui:Button Grid.Column="2" Appearance="Transparent" Padding="4,2" Margin="4,0,0,0"
+                                                   Icon="{ui:SymbolIcon Copy16}" Cursor="Hand"
+                                                   Click="BtnCopyIp_Click"
+                                                   Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}"
+                                                   ToolTip="Copy IP to clipboard"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Stats Row (Row 4) — always visible, 3 equal columns with dividers -->
+                                <Grid Grid.Row="4" Margin="0,0,0,8">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <TextBlock Grid.Column="0" Text="{Binding StatusText}" 
-                                               Foreground="{Binding StatusColor}" FontSize="11" FontWeight="SemiBold"
-                                               VerticalAlignment="Center"/>
-                                               
-                                    <Border Grid.Column="1" Background="#2089B4FA" CornerRadius="10" Padding="8,3"
-                                            Cursor="Hand" Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}">
-                                        <Border.InputBindings>
-                                            <MouseBinding Gesture="LeftClick" Command="{x:Null}"/>
-                                        </Border.InputBindings>
-                                        <TextBlock Text="{Binding TunnelAddress}" FontSize="10" 
-                                                   Foreground="#89B4FA" FontWeight="SemiBold"
-                                                   MouseLeftButtonDown="TunnelPill_MouseDown"/>
-                                    </Border>
-                                </Grid>
-                                
-                                <!-- Running metrics panel (Row 3, hidden when stopped) -->
-                                <Grid Grid.Row="3" Visibility="{Binding RunningControlsVisibility}" Margin="0,0,0,16">
-                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    
-                                    <StackPanel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding CpuText}" FontSize="12" FontWeight="SemiBold" Foreground="White" />
+
+                                    <!-- CPU -->
+                                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                        <TextBlock Text="CPU" FontSize="10" Foreground="#88FFFFFF" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding CpuText}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="White" HorizontalAlignment="Center"/>
                                     </StackPanel>
-                                    
-                                    <StackPanel Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding RamText}" FontSize="12" FontWeight="SemiBold" Foreground="White" />
+
+                                    <!-- Divider 1 -->
+                                    <Border Grid.Column="1" Width="1" Background="#22FFFFFF" Margin="4,2"/>
+
+                                    <!-- RAM -->
+                                    <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                        <TextBlock Text="RAM" FontSize="10" Foreground="#88FFFFFF" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding RamText}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="White" HorizontalAlignment="Center"/>
                                     </StackPanel>
-                                    
-                                    <!-- Player count -->
-                                    <TextBlock Grid.Column="2" Text="{Binding PlayerStatus}" FontSize="11" FontWeight="Medium" 
-                                               Foreground="{Binding StatusColor}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+
+                                    <!-- Divider 2 -->
+                                    <Border Grid.Column="3" Width="1" Background="#22FFFFFF" Margin="4,2"/>
+
+                                    <!-- Players -->
+                                    <StackPanel Grid.Column="4" HorizontalAlignment="Center">
+                                        <TextBlock Text="Players" FontSize="10" Foreground="#88FFFFFF" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding PlayerStatus}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="White" HorizontalAlignment="Center"/>
+                                    </StackPanel>
                                 </Grid>
 
-                                <!-- Action buttons (Row 5) -->
-                                <Grid Grid.Row="5" Margin="0,8,0,0">
+                                <!-- Action buttons (Row 6) -->
+                                <Grid Grid.Row="6" Margin="0,8,0,0">
                                     <!-- STOPPED state -->
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Visibility="{Binding StoppedControlsVisibility}">
                                         <ui:Button Content="Start" Appearance="Primary" Margin="0,0,4,0"

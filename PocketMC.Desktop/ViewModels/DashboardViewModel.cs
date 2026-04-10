@@ -193,6 +193,13 @@ namespace PocketMC.Desktop.ViewModels
                     vm.UpdateState(process.State);
                 }
 
+                // Populate MaxPlayers from server.properties
+                if (TryGetServerProperty(vm.Id, "max-players", out string? maxPlayerStr) &&
+                    int.TryParse(maxPlayerStr, out int maxPlayers) && maxPlayers > 0)
+                {
+                    vm.MaxPlayers = maxPlayers;
+                }
+
                 ApplyLiveMetrics(vm);
 
                 // Pre-populate tunnel address from cache (no polling)
@@ -216,17 +223,22 @@ namespace PocketMC.Desktop.ViewModels
         {
             if (_resourceMonitorService.Metrics.TryGetValue(vm.Id, out var metrics))
             {
-                vm.CpuText = $"CPU {Math.Round(metrics.CpuUsage):0}%";
-                vm.RamText = $"RAM {Math.Round(metrics.RamUsageMb):0} MB";
-                vm.PlayerStatus = metrics.PlayerCount == 1
-                    ? "1 Player Online"
-                    : $"{metrics.PlayerCount} Players Online";
+                double maxRamGb = vm.Metadata.MaxRamMb / 1024.0;
+                double usedRamGb = metrics.RamUsageMb / 1024.0;
+
+                vm.CpuText = $"{Math.Round(metrics.CpuUsage):0}%";
+                vm.RamText = $"{usedRamGb:F1} / {maxRamGb:F0} GB";
+                vm.PlayerStatus = $"{metrics.PlayerCount} / {vm.MaxPlayers}";
                 return;
             }
 
-            vm.CpuText = "CPU 0%";
-            vm.RamText = "RAM 0 MB";
-            vm.PlayerStatus = "0 Players Online";
+            // No metrics — show placeholder only if server isn't running
+            if (!vm.IsRunning)
+            {
+                vm.CpuText = "\u00b7 \u00b7 \u00b7";
+                vm.RamText = "\u00b7 \u00b7 \u00b7";
+                vm.PlayerStatus = "\u00b7 \u00b7 \u00b7";
+            }
         }
 
 
@@ -407,6 +419,19 @@ namespace PocketMC.Desktop.ViewModels
 
             var props = ServerPropertiesParser.Read(propsFile);
             return props.TryGetValue("server-port", out string? portString) && int.TryParse(portString, out serverPort);
+        }
+
+        private bool TryGetServerProperty(Guid instanceId, string key, out string? value)
+        {
+            value = null;
+            string? instancePath = _instanceManager.GetInstancePath(instanceId);
+            if (string.IsNullOrWhiteSpace(instancePath)) return false;
+
+            string propsFile = Path.Combine(instancePath, "server.properties");
+            if (!File.Exists(propsFile)) return false;
+
+            var props = ServerPropertiesParser.Read(propsFile);
+            return props.TryGetValue(key, out value);
         }
 
         private bool TryBeginTunnelResolution(Guid instanceId)

@@ -76,12 +76,19 @@ namespace PocketMC.Desktop.Views
             }
         }
 
-        private void TunnelPill_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private async void BtnCopyIp_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm && !string.IsNullOrEmpty(vm.TunnelAddress))
+            if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm && vm.HasTunnelAddress)
             {
-                System.Windows.Clipboard.SetText(vm.TunnelAddress);
-                System.Windows.MessageBox.Show("Tunnel address copied to clipboard.", "Copied", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Windows.Clipboard.SetText(vm.TunnelAddress!);
+                string original = vm.IpDisplayText;
+                vm.IpDisplayText = "\u2713 Copied";
+                await System.Threading.Tasks.Task.Delay(1500);
+                // Restore only if it wasn't changed by something else in the meantime
+                if (vm.IpDisplayText == "\u2713 Copied")
+                {
+                    vm.IpDisplayText = original;
+                }
             }
         }
 

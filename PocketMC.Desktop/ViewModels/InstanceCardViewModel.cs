@@ -17,10 +17,12 @@ namespace PocketMC.Desktop.ViewModels
         private readonly ServerProcessManager _serverProcessManager;
         private ServerState _state = ServerState.Stopped;
         private string? _countdownText;
-        private string _playerStatus = "0 Players Online";
-        private string _cpuText = "CPU 0%";
-        private string _ramText = "RAM 0 MB";
+        private string _cpuText = "· · ·";
+        private string _ramText = "· · ·";
+        private string _playerStatus = "· · ·";
         private string? _tunnelAddress;
+        private string _ipDisplayText = "Will Appear Here!";
+        private int _maxPlayers = 20;
 
         public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager)
         {
@@ -81,15 +83,7 @@ namespace PocketMC.Desktop.ViewModels
                 new LiveChartsCore.SkiaSharpView.Axis { IsVisible = false, MinLimit = 0, ShowSeparatorLines = false }
             };
 
-        public string PlayerStatus
-        {
-            get => _playerStatus;
-            set
-            {
-                _playerStatus = value;
-                OnPropertyChanged(nameof(PlayerStatus));
-            }
-        }
+        // ── Stats row (always visible — "—" when stopped) ──
 
         public string CpuText
         {
@@ -111,18 +105,55 @@ namespace PocketMC.Desktop.ViewModels
             }
         }
 
+        public string PlayerStatus
+        {
+            get => _playerStatus;
+            set
+            {
+                _playerStatus = value;
+                OnPropertyChanged(nameof(PlayerStatus));
+            }
+        }
+
+        public int MaxPlayers
+        {
+            get => _maxPlayers;
+            set
+            {
+                _maxPlayers = value;
+                OnPropertyChanged(nameof(MaxPlayers));
+            }
+        }
+
+        // ── IP row (always visible — "—" when no tunnel) ──
+
         public string? TunnelAddress
         {
             get => _tunnelAddress;
             set
             {
                 _tunnelAddress = value;
+                IpDisplayText = string.IsNullOrEmpty(value) ? "Will Appear Here!" : value;
                 OnPropertyChanged(nameof(TunnelAddress));
                 OnPropertyChanged(nameof(HasTunnelAddress));
             }
         }
 
         public bool HasTunnelAddress => !string.IsNullOrEmpty(_tunnelAddress);
+
+        /// <summary>
+        /// The text actually displayed in the IP row badge.
+        /// Shows the address when available, "— " when not, or "✓ Copied" briefly after a click.
+        /// </summary>
+        public string IpDisplayText
+        {
+            get => _ipDisplayText;
+            set
+            {
+                _ipDisplayText = value;
+                OnPropertyChanged(nameof(IpDisplayText));
+            }
+        }
 
         public void EnsureChartsReady()
         {
@@ -167,6 +198,15 @@ namespace PocketMC.Desktop.ViewModels
         {
             _countdownText = null;
             _state = newState;
+
+            // Reset stats to "—" when server stops
+            if (!IsRunning)
+            {
+                CpuText = "· · ·";
+                RamText = "· · ·";
+                PlayerStatus = "· · ·";
+            }
+
             OnPropertyChanged(nameof(IsRunning));
             OnPropertyChanged(nameof(ShowRunningControls));
             OnPropertyChanged(nameof(RunningControlsVisibility));
@@ -190,7 +230,7 @@ namespace PocketMC.Desktop.ViewModels
             OnPropertyChanged(nameof(StatusColor));
         }
 
-                public void UpdateFromMetadata(InstanceMetadata newMetadata)
+        public void UpdateFromMetadata(InstanceMetadata newMetadata)
         {
             _metadata.Name = newMetadata.Name;
             _metadata.Description = newMetadata.Description;
