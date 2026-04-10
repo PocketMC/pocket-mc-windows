@@ -25,7 +25,6 @@ namespace PocketMC.Desktop.Views
         private readonly Action? _onCompleted;
         private readonly ObservableCollection<ModrinthHit> _results = new();
         private int _currentOffset = 0;
-        private bool _isChanging = false;
         private System.Threading.CancellationTokenSource? _searchCts;
 
         public event Action<string>? OnModpackDownloaded;

@@ -515,7 +515,7 @@ namespace PocketMC.Desktop.ViewModels
             }
         }
 
-        private async void RenameInstance(object? parameter)
+        private void RenameInstance(object? parameter)
         {
             // Placeholder: Implementing a full rename dialog might require a custom popup window,
             // but we can ask the UI layer to handle it or use a simple input dialog if available.

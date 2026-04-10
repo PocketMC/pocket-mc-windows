@@ -258,8 +258,8 @@ namespace PocketMC.Desktop.Services
             }
 
             // Start background readers
-            Task.Run(() => ReadStreamAsync(_process.StandardOutput, false));
-            Task.Run(() => ReadStreamAsync(_process.StandardError, true));
+            _ = Task.Run(() => ReadStreamAsync(_process.StandardOutput, false));
+            _ = Task.Run(() => ReadStreamAsync(_process.StandardError, true));
         }
 
         public async Task WriteInputAsync(string command)

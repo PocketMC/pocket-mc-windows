@@ -88,17 +88,17 @@ namespace PocketMC.Desktop.Services
             if (index?["dependencies"]?["fabric-loader"] != null)
             {
                 result.Loader = "Fabric";
-                result.LoaderVersion = index["dependencies"]["fabric-loader"]?.ToString() ?? "";
+                result.LoaderVersion = index?["dependencies"]?["fabric-loader"]?.ToString() ?? "";
             }
             else if (index?["dependencies"]?["forge"] != null)
             {
                 result.Loader = "Forge";
-                result.LoaderVersion = index["dependencies"]["forge"]?.ToString() ?? "";
+                result.LoaderVersion = index?["dependencies"]?["forge"]?.ToString() ?? "";
             }
             else if (index?["dependencies"]?["quilt-loader"] != null)
             {
                 result.Loader = "Quilt";
-                result.LoaderVersion = index["dependencies"]["quilt-loader"]?.ToString() ?? "";
+                result.LoaderVersion = index?["dependencies"]?["quilt-loader"]?.ToString() ?? "";
             }
 
             // Files & Environment Filtering
