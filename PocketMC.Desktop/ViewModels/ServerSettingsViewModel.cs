@@ -75,6 +75,7 @@ namespace PocketMC.Desktop.ViewModels
 
         private string _levelType = "minecraft:normal";
         public string LevelType { get => _levelType; set { if (SetProperty(ref _levelType, value)) MarkChanged(); } }
+        public string[] LevelTypes { get; } = { "minecraft:normal", "minecraft:flat", "minecraft:large_biomes", "minecraft:amplified", "minecraft:single_biome_surface" };
 
         private string _spawnProtection = "16";
         public string SpawnProtection { get => _spawnProtection; set { if (SetProperty(ref _spawnProtection, value)) MarkChanged(); } }
@@ -108,9 +109,11 @@ namespace PocketMC.Desktop.ViewModels
         // Gameplay
         private string _gamemode = "survival";
         public string Gamemode { get => _gamemode; set { if (SetProperty(ref _gamemode, value)) MarkChanged(); } }
+        public string[] Gamemodes { get; } = { "survival", "creative", "adventure", "spectator" };
 
         private string _difficulty = "easy";
         public string Difficulty { get => _difficulty; set { if (SetProperty(ref _difficulty, value)) MarkChanged(); } }
+        public string[] Difficulties { get; } = { "peaceful", "easy", "normal", "hard" };
 
         private bool _allowBlock = false;
         public bool AllowBlock { get => _allowBlock; set { if (SetProperty(ref _allowBlock, value)) MarkChanged(); } }

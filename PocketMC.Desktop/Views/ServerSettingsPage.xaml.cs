@@ -25,27 +25,67 @@ namespace PocketMC.Desktop.Views
             MainTabControl.SelectionChanged += MainTabControl_SelectionChanged;
         }
 
+        private bool _isFirstLoad = true;
+        private bool _allowTabAnimation = false;
+
         private void ServerSettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
             AddHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler, true);
-            QueueTabTransitionAnimation();
+            
+            if (_isFirstLoad)
+            {
+                _isFirstLoad = false;
+                if (SidebarList.MenuItems.Count > 0 && SidebarList.MenuItems[0] is Wpf.Ui.Controls.NavigationViewItem firstItem)
+                {
+                    firstItem.IsActive = true;
+                    MainTabControl.SelectedIndex = 0;
+                }
+
+                // Delay unlocking animations until after the initial UI load executes
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new System.Action(() => _allowTabAnimation = true));
+            }
+            else
+            {
+                QueueTabTransitionAnimation();
+            }
+            
+            if (Window.GetWindow(this) as MainWindow is { } mainWindow)
+            {
+                mainWindow.RootNavigation.IsPaneOpen = false;
+            }
         }
 
         private void ServerSettingsPage_Unloaded(object sender, RoutedEventArgs e)
         {
             RemoveHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler);
             ViewModel.Dispose();
+            
+            if (Window.GetWindow(this) as MainWindow is { } mainWindow)
+            {
+                mainWindow.RootNavigation.IsPaneOpen = true;
+            }
         }
 
         private bool _isSynchronizingTabSelection;
 
-        private void SidebarList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void NavItem_Click(object sender, RoutedEventArgs e)
         {
             if (_isSynchronizingTabSelection) return;
 
-            if (SidebarList != null && MainTabControl != null && SidebarList.SelectedIndex != -1)
+            if (sender is Wpf.Ui.Controls.NavigationViewItem clickedItem && MainTabControl != null)
             {
-                MainTabControl.SelectedIndex = SidebarList.SelectedIndex;
+                int idx = SidebarList.MenuItems.IndexOf(clickedItem);
+                if (idx != -1 && MainTabControl.SelectedIndex != idx)
+                {
+                    MainTabControl.SelectedIndex = idx;
+                    
+                    foreach (var item in SidebarList.MenuItems)
+                    {
+                        if (item is Wpf.Ui.Controls.NavigationViewItem navItem)
+                            navItem.IsActive = false;
+                    }
+                    clickedItem.IsActive = true;
+                }
             }
         }
 
@@ -53,10 +93,31 @@ namespace PocketMC.Desktop.Views
         {
             if (e.Source is not TabControl) return;
 
-            if (SidebarList.SelectedIndex != MainTabControl.SelectedIndex)
+            int sideIndex = -1;
+            for (int i = 0; i < SidebarList.MenuItems.Count; i++)
+            {
+                if (SidebarList.MenuItems[i] is Wpf.Ui.Controls.NavigationViewItem item && item.IsActive)
+                {
+                    sideIndex = i;
+                    break;
+                }
+            }
+            if (sideIndex != MainTabControl.SelectedIndex)
             {
                 _isSynchronizingTabSelection = true;
-                SidebarList.SelectedIndex = MainTabControl.SelectedIndex;
+                if (MainTabControl.SelectedIndex >= 0 && MainTabControl.SelectedIndex < SidebarList.MenuItems.Count)
+                {
+                    foreach (var item in SidebarList.MenuItems)
+                    {
+                        if (item is Wpf.Ui.Controls.NavigationViewItem navItem)
+                            navItem.IsActive = false;
+                    }
+
+                    if (SidebarList.MenuItems[MainTabControl.SelectedIndex] is Wpf.Ui.Controls.NavigationViewItem targetItem)
+                    {
+                        targetItem.IsActive = true;
+                    }
+                }
                 _isSynchronizingTabSelection = false;
             }
 
@@ -65,7 +126,7 @@ namespace PocketMC.Desktop.Views
 
         private void QueueTabTransitionAnimation()
         {
-            if (!IsLoaded) return;
+            if (!IsLoaded || !_allowTabAnimation) return;
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new System.Action(AnimateContentAreaTransition));
         }
 
