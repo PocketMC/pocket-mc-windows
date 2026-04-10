@@ -103,6 +103,7 @@ public partial class MainWindow : FluentWindow
             nameof(DashboardPage)      => "Dashboard",
             nameof(TunnelPage)         => "Tunnel",
             nameof(JavaSetupPage)       => "Java Setup",
+            nameof(AboutPage)           => "About",
             nameof(NewInstancePage)     => "New Instance",
             nameof(ServerSettingsPage)  => "Server Settings",
             nameof(ServerConsolePage)   => "Console",
@@ -130,7 +131,8 @@ public partial class MainWindow : FluentWindow
     private static bool IsShellPageType(Type? pageType) =>
         pageType == typeof(DashboardPage) ||
         pageType == typeof(TunnelPage) ||
-        pageType == typeof(JavaSetupPage);
+        pageType == typeof(JavaSetupPage) ||
+        pageType == typeof(AboutPage);
 
     /// <summary>
     /// Allows child pages to navigate within the NavigationView.
@@ -232,6 +234,7 @@ public partial class MainWindow : FluentWindow
         SetNavigationItemActiveState(NavDashboard, ReferenceEquals(targetItem, NavDashboard));
         SetNavigationItemActiveState(NavTunnel, ReferenceEquals(targetItem, NavTunnel));
         SetNavigationItemActiveState(NavJavaSetup, ReferenceEquals(targetItem, NavJavaSetup));
+        SetNavigationItemActiveState(NavAbout, ReferenceEquals(targetItem, NavAbout));
     }
 
     private NavigationViewItem? GetShellNavigationItem(Type? pageType)
@@ -249,6 +252,11 @@ public partial class MainWindow : FluentWindow
         if (pageType == typeof(JavaSetupPage))
         {
             return NavJavaSetup;
+        }
+
+        if (pageType == typeof(AboutPage))
+        {
+            return NavAbout;
         }
 
         return null;

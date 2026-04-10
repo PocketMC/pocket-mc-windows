@@ -93,6 +93,8 @@ namespace PocketMC.Desktop.Services
         public bool IsBinaryAvailable =>
             _applicationState.IsConfigured && File.Exists(_applicationState.GetPlayitExecutablePath());
 
+        public bool IsRunning => _agentProcess != null && !_agentProcess.HasExited;
+
         /// <summary>
         /// Starts the playit.exe agent process (NET-02).
         /// </summary>
@@ -198,6 +200,20 @@ namespace PocketMC.Desktop.Services
             Interlocked.Exchange(ref _unexpectedRestartAttempts, 0);
             _agentProcess.Dispose();
             _agentProcess = null;
+        }
+
+        public async Task RestartAsync(int restartDelayMilliseconds = 500, CancellationToken cancellationToken = default)
+        {
+            Stop();
+
+            if (restartDelayMilliseconds > 0)
+            {
+                await Task.Delay(restartDelayMilliseconds, cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            _manualStopRequested = false;
+            Start();
         }
 
         private async Task ReadOutputAsync(StreamReader reader)

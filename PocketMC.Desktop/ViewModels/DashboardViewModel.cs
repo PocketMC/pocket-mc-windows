@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,12 +26,15 @@ namespace PocketMC.Desktop.ViewModels
         private readonly ResourceMonitorService _resourceMonitorService;
         private readonly PlayitAgentService _playitAgentService;
         private readonly PlayitApiClient _playitApiClient;
+        private readonly TunnelService _tunnelService;
         private readonly IDialogService _dialogService;
         private readonly IAppNavigationService _navigationService;
         private readonly IAppDispatcher _dispatcher;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<DashboardViewModel> _logger;
         private readonly Dictionary<Guid, InstanceCardViewModel> _instanceLookup = new();
+        private readonly HashSet<Guid> _tunnelResolutionsInFlight = new();
+        private readonly object _tunnelResolutionLock = new();
         private bool _isActive;
 
         public ObservableCollection<InstanceCardViewModel> Instances { get; } = new();
@@ -53,6 +57,7 @@ namespace PocketMC.Desktop.ViewModels
             ResourceMonitorService resourceMonitorService,
             PlayitAgentService playitAgentService,
             PlayitApiClient playitApiClient,
+            TunnelService tunnelService,
             IDialogService dialogService,
             IAppNavigationService navigationService,
             IAppDispatcher dispatcher,
@@ -65,6 +70,7 @@ namespace PocketMC.Desktop.ViewModels
             _resourceMonitorService = resourceMonitorService;
             _playitAgentService = playitAgentService;
             _playitApiClient = playitApiClient;
+            _tunnelService = tunnelService;
             _dialogService = dialogService;
             _navigationService = navigationService;
             _dispatcher = dispatcher;
@@ -252,14 +258,7 @@ namespace PocketMC.Desktop.ViewModels
                     vm.UpdateState(process.State);
                     ApplyLiveMetrics(vm);
 
-                    // Automatically start playit
-                    if (_applicationState.IsConfigured && File.Exists(_applicationState.GetPlayitExecutablePath()))
-                    {
-                        if (_playitAgentService.State == PlayitAgentState.Stopped || _playitAgentService.State == PlayitAgentState.Starting)
-                        {
-                            _playitAgentService.Start();
-                        }
-                    }
+                    _ = EnsureTunnelFlowForInstanceAsync(vm);
                 }
                 catch (Exception ex)
                 {
@@ -268,6 +267,170 @@ namespace PocketMC.Desktop.ViewModels
                     _logger.LogError(ex, "Failed to start server {ServerName}.", vm.Name);
                     _dialogService.ShowMessage("Start Failed", $"PocketMC could not start '{vm.Name}'.\n\n{ex.Message}", DialogType.Error);
                 }
+            }
+        }
+
+        private async Task EnsureTunnelFlowForInstanceAsync(InstanceCardViewModel vm)
+        {
+            if (!_applicationState.IsConfigured || !File.Exists(_applicationState.GetPlayitExecutablePath()))
+            {
+                return;
+            }
+
+            if (!TryBeginTunnelResolution(vm.Id))
+            {
+                return;
+            }
+
+            try
+            {
+                if (!TryGetServerPort(vm.Id, out int serverPort))
+                {
+                    _logger.LogDebug("Skipping tunnel resolution for {ServerName} because the server port could not be read.", vm.Name);
+                    return;
+                }
+
+                _dispatcher.Invoke(() => vm.TunnelAddress = null);
+                EnsurePlayitAgentRunning();
+
+                TunnelResolutionResult resolution = await ResolveTunnelWithWarmupAsync(serverPort);
+                switch (resolution.Status)
+                {
+                    case TunnelResolutionResult.TunnelStatus.Found:
+                        if (!string.IsNullOrWhiteSpace(resolution.PublicAddress))
+                        {
+                            _dispatcher.Invoke(() => vm.TunnelAddress = resolution.PublicAddress);
+                        }
+                        break;
+
+                    case TunnelResolutionResult.TunnelStatus.CreationStarted:
+                        _dispatcher.Invoke(() =>
+                        {
+                            var guidePage = ActivatorUtilities.CreateInstance<TunnelCreationGuidePage>(_serviceProvider, serverPort);
+                            guidePage.OnTunnelResolved += address =>
+                            {
+                                _dispatcher.Invoke(() => vm.TunnelAddress = address);
+                            };
+                            _navigationService.NavigateToDetailPage(guidePage, $"Tunnel Setup: {vm.Name}");
+                        });
+                        break;
+
+                    case TunnelResolutionResult.TunnelStatus.LimitReached:
+                        _dispatcher.Invoke(() =>
+                            _dialogService.ShowMessage(
+                                "Tunnel Limit Reached",
+                                "Your Playit account already has 4 tunnels. Delete one in Playit or change this server's port, then try again.",
+                                DialogType.Warning));
+                        break;
+
+                    case TunnelResolutionResult.TunnelStatus.AgentOffline:
+                        _logger.LogInformation("Playit agent is not ready yet for server {ServerName}.", vm.Name);
+                        break;
+
+                    case TunnelResolutionResult.TunnelStatus.Error:
+                        if (resolution.RequiresClaim)
+                        {
+                            _logger.LogInformation("Playit claim is still pending for server {ServerName}.", vm.Name);
+                        }
+                        else if (resolution.IsTokenInvalid)
+                        {
+                            _dispatcher.Invoke(() =>
+                                _dialogService.ShowMessage(
+                                    "Playit Reconnect Required",
+                                    "PocketMC detected that your Playit agent needs to be linked again. Open the Tunnel page and click Reconnect.",
+                                    DialogType.Warning));
+                        }
+                        else if (!string.IsNullOrWhiteSpace(resolution.ErrorMessage))
+                        {
+                            _logger.LogWarning("Playit tunnel resolution failed for {ServerName}: {Message}", vm.Name, resolution.ErrorMessage);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to complete the Playit tunnel flow for {ServerName}.", vm.Name);
+            }
+            finally
+            {
+                EndTunnelResolution(vm.Id);
+            }
+        }
+
+        private async Task<TunnelResolutionResult> ResolveTunnelWithWarmupAsync(int serverPort)
+        {
+            TunnelResolutionResult? lastResult = null;
+
+            for (int attempt = 0; attempt < 4; attempt++)
+            {
+                lastResult = await _tunnelService.ResolveTunnelAsync(serverPort);
+                bool shouldRetry =
+                    attempt < 3 &&
+                    (lastResult.Status == TunnelResolutionResult.TunnelStatus.AgentOffline ||
+                     (lastResult.Status == TunnelResolutionResult.TunnelStatus.Error && lastResult.RequiresClaim));
+
+                if (!shouldRetry)
+                {
+                    return lastResult;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+
+            return lastResult ?? new TunnelResolutionResult
+            {
+                Status = TunnelResolutionResult.TunnelStatus.Error,
+                ErrorMessage = "Tunnel resolution did not complete."
+            };
+        }
+
+        private void EnsurePlayitAgentRunning()
+        {
+            if (_playitAgentService.IsRunning)
+            {
+                return;
+            }
+
+            if (_playitAgentService.State is PlayitAgentState.WaitingForClaim or PlayitAgentState.Starting)
+            {
+                return;
+            }
+
+            _playitAgentService.Start();
+        }
+
+        private bool TryGetServerPort(Guid instanceId, out int serverPort)
+        {
+            serverPort = 0;
+            string? instancePath = _instanceManager.GetInstancePath(instanceId);
+            if (string.IsNullOrWhiteSpace(instancePath))
+            {
+                return false;
+            }
+
+            string propsFile = Path.Combine(instancePath, "server.properties");
+            if (!File.Exists(propsFile))
+            {
+                return false;
+            }
+
+            var props = ServerPropertiesParser.Read(propsFile);
+            return props.TryGetValue("server-port", out string? portString) && int.TryParse(portString, out serverPort);
+        }
+
+        private bool TryBeginTunnelResolution(Guid instanceId)
+        {
+            lock (_tunnelResolutionLock)
+            {
+                return _tunnelResolutionsInFlight.Add(instanceId);
+            }
+        }
+
+        private void EndTunnelResolution(Guid instanceId)
+        {
+            lock (_tunnelResolutionLock)
+            {
+                _tunnelResolutionsInFlight.Remove(instanceId);
             }
         }
 

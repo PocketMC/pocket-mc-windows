@@ -65,6 +65,7 @@ public partial class App : Application
                 services.AddTransient<MainWindow>();
                 services.AddTransient<JavaSetupPage>();
                 services.AddTransient<TunnelPage>();
+                services.AddTransient<AboutPage>();
                 services.AddTransient<PocketMC.Desktop.ViewModels.DashboardViewModel>();
                 services.AddTransient<PocketMC.Desktop.ViewModels.ServerSettingsViewModel>();
                 services.AddTransient<DashboardPage>();

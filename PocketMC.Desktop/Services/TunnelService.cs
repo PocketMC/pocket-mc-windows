@@ -29,6 +29,8 @@ namespace PocketMC.Desktop.Services
         public string? PublicAddress { get; set; }
         public string? ErrorMessage { get; set; }
         public bool IsTokenInvalid { get; set; }
+        public bool RequiresClaim { get; set; }
+        public IReadOnlyList<TunnelData> ExistingTunnels { get; set; } = Array.Empty<TunnelData>();
     }
 
     /// <summary>
@@ -74,7 +76,8 @@ namespace PocketMC.Desktop.Services
                 {
                     Status = TunnelResolutionResult.TunnelStatus.Error,
                     ErrorMessage = result.ErrorMessage,
-                    IsTokenInvalid = result.IsTokenInvalid
+                    IsTokenInvalid = result.IsTokenInvalid,
+                    RequiresClaim = result.RequiresClaim
                 };
             }
 
@@ -94,7 +97,8 @@ namespace PocketMC.Desktop.Services
             {
                 return new TunnelResolutionResult
                 {
-                    Status = TunnelResolutionResult.TunnelStatus.LimitReached
+                    Status = TunnelResolutionResult.TunnelStatus.LimitReached,
+                    ExistingTunnels = result.Tunnels
                 };
             }
 
