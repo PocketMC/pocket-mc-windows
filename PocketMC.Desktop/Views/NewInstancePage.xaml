@@ -96,10 +96,20 @@
                                Margin="0,0,0,6"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                     <ComboBox x:Name="CmbVersion"
-                              Margin="0,0,0,8"
+                              Margin="0,0,0,12"
                               MinHeight="40"
                               DisplayMemberPath="Id"
                               SelectionChanged="CmbVersion_SelectionChanged"/>
+
+                    <StackPanel x:Name="LoaderVersionPanel" Visibility="Collapsed">
+                        <TextBlock Text="Loader Version"
+                                   Margin="0,0,0,6"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ComboBox x:Name="CmbLoaderVersion"
+                                  Margin="0,0,0,12"
+                                  MinHeight="40"
+                                  DisplayMemberPath="Version"/>
+                    </StackPanel>
 
                     <TextBlock x:Name="TxtVersionState"
                                Text="Choose a server type to load available versions."

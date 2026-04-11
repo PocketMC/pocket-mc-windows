@@ -31,23 +31,47 @@ namespace PocketMC.Desktop.Services
             if (response != null && response.TryGetPropertyValue("promos", out var promosNode) && promosNode is JsonObject promos)
             {
                 // We extract unique MC versions from the keys
-                var mcVersions = promos
-                    .Select(p => p.Key.Split('-')[0])
-                    .Distinct()
-                    .Where(v => v.StartsWith("1.")); // Filter out junk like "26.1"
-                
-                foreach (var mcVersion in mcVersions)
+                // Format of keys: "1.20.1-recommended", "1.20.1-latest"
+                var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
+
+                foreach (var entry in promos)
                 {
-                    versions.Add(new MinecraftVersion
+                    var parts = entry.Key.Split('-');
+                    if (parts.Length < 2) continue;
+
+                    string mcVersion = parts[0];
+                    if (!mcVersion.StartsWith("1.")) continue;
+                    
+                    string promoType = parts[1];
+                    string forgeVersion = entry.Value?.ToString() ?? "";
+
+                    if (!mcToLoaders.ContainsKey(mcVersion))
+                        mcToLoaders[mcVersion] = new List<ModLoaderVersion>();
+                    
+                    // Add this version if not already present
+                    if (!mcToLoaders[mcVersion].Any(l => l.Version == forgeVersion))
                     {
-                        Id = mcVersion,
+                        mcToLoaders[mcVersion].Add(new ModLoaderVersion
+                        {
+                            Version = forgeVersion,
+                            IsStable = promoType == "recommended"
+                        });
+                    }
+                }
+                
+                foreach (var kvp in mcToLoaders)
+                {
+                    versions.Add(new GameVersionWithLoaders
+                    {
+                        Id = kvp.Key,
                         Type = "release",
-                        ReleaseTime = DateTime.MinValue
+                        ReleaseTime = DateTime.MinValue,
+                        LoaderVersions = kvp.Value.OrderByDescending(l => l.IsStable).ThenByDescending(l => l.Version).ToList()
                     });
                 }
             }
             
-            // Numerical sort by segments
+            // Numerical sort by MC version segments
             return versions
                 .OrderByDescending(v => {
                     var parts = v.Id.Split('.');
@@ -63,10 +87,13 @@ namespace PocketMC.Desktop.Services
 
         public async Task DownloadJarAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
         {
-            // 1. Get the latest recommended/latest Forge version for this MC version
             string forgeVersion = await GetLatestForgeVersionAsync(mcVersion);
-            
-            // 2. Build the download URL for the installer
+            await DownloadForgeJarAsync(mcVersion, forgeVersion, destinationPath, progress);
+        }
+
+        public async Task DownloadForgeJarAsync(string mcVersion, string forgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+        {
+            // Build the download URL for the installer
             // Official: https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.2.20/forge-1.20.1-47.2.20-installer.jar
             string url = $"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar";
             

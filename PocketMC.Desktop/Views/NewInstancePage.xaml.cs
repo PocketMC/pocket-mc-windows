@@ -93,6 +93,22 @@ namespace PocketMC.Desktop.Views
         private void CmbVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateCreateButtonState();
+            UpdateLoaderVersionSelector();
+        }
+
+        private void UpdateLoaderVersionSelector()
+        {
+            if (CmbVersion.SelectedItem is GameVersionWithLoaders gvl && gvl.LoaderVersions.Any())
+            {
+                LoaderVersionPanel.Visibility = Visibility.Visible;
+                CmbLoaderVersion.ItemsSource = gvl.LoaderVersions;
+                CmbLoaderVersion.SelectedIndex = 0;
+            }
+            else
+            {
+                LoaderVersionPanel.Visibility = Visibility.Collapsed;
+                CmbLoaderVersion.ItemsSource = null;
+            }
         }
 
         private void ChkAcceptEula_Changed(object sender, RoutedEventArgs e)
@@ -236,7 +252,22 @@ namespace PocketMC.Desktop.Views
                 });
 
                 TxtProgress.Text = "Downloading server jar...";
-                await provider.DownloadJarAsync(selectedVersion.Id, jarPath, progress);
+                
+                string loaderVersion = (CmbLoaderVersion.SelectedItem as ModLoaderVersion)?.Version ?? "";
+
+                if (serverType == "Fabric" && !string.IsNullOrEmpty(loaderVersion))
+                {
+                    await _fabricProvider.DownloadFabricJarAsync(selectedVersion.Id, loaderVersion, jarPath, progress);
+                }
+                else if (serverType == "Forge" && !string.IsNullOrEmpty(loaderVersion))
+                {
+                    string forgeJarPath = Path.Combine(createdInstancePath, "forge-installer.jar");
+                    await _forgeProvider.DownloadForgeJarAsync(selectedVersion.Id, loaderVersion, forgeJarPath, progress);
+                }
+                else
+                {
+                    await provider.DownloadJarAsync(selectedVersion.Id, jarPath, progress);
+                }
 
                 if (ChkAcceptEula.IsChecked == true && createdFolderName != null)
                 {
