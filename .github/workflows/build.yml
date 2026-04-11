@@ -39,15 +39,24 @@ jobs:
     - name: Run Tests
       run: dotnet test PocketMC.Desktop.sln --configuration Release --no-build
 
-    - name: Publish App
-      run: dotnet publish PocketMC.Desktop\PocketMC.Desktop.csproj -c Release -r win-x64 -p:PublishSingleFile=true -p:PublishReadyToRun=true --self-contained false -o publish_output
+    - name: Publish Portable Executable
+      run: dotnet publish PocketMC.Desktop\PocketMC.Desktop.csproj -c Release -r win-x64 -p:PublishSingleFile=true -p:PublishReadyToRun=true --self-contained false -o portable_release
+      
+    - name: Upload Portable EXE Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PocketMC_Portable
+        path: portable_release\
+
+    - name: Publish App (Multi-File for Better Performance)
+      run: dotnet publish PocketMC.Desktop\PocketMC.Desktop.csproj -c Release -r win-x64 -p:PublishSingleFile=false -p:PublishReadyToRun=true --self-contained false -o publish_output
       
     - name: Create Installer using Inno Setup
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
       with:
         path: installer.iss
 
-    - name: Upload Setup.exe Artifact
+    - name: Upload Installer Setup Artifact
       uses: actions/upload-artifact@v4
       with:
         name: PocketMC_Setup
