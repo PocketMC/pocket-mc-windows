@@ -24,24 +24,35 @@ namespace PocketMC.Desktop.Services
 
         public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
         {
-            // For general selection, we probably want to list Minecraft versions that Fabric supports.
-            // But Fabric usually attaches to a specific Minecraft version.
-            // To simplify, let's just return the list of Minecraft versions from Mojang manifest for now,
-            // as Fabric supports almost all of them.
-            // Alternatively, fetch from Fabric meta: https://meta.fabricmc.net/v2/versions/game
+            var gameVersionsResponse = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/game");
+            var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/loader");
             
-            var response = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/game");
-            var versions = new List<MinecraftVersion>();
-            if (response != null)
+            var loaders = new List<ModLoaderVersion>();
+            if (loadersResponse != null)
             {
-                foreach (var node in response)
+                foreach (var node in loadersResponse)
                 {
                     if (node == null) continue;
-                    versions.Add(new MinecraftVersion
+                    loaders.Add(new ModLoaderVersion
+                    {
+                        Version = node["version"]?.ToString() ?? "",
+                        IsStable = (bool)(node["stable"] ?? false)
+                    });
+                }
+            }
+
+            var versions = new List<MinecraftVersion>();
+            if (gameVersionsResponse != null)
+            {
+                foreach (var node in gameVersionsResponse)
+                {
+                    if (node == null) continue;
+                    versions.Add(new GameVersionWithLoaders
                     {
                         Id = node["version"]?.ToString() ?? "",
                         Type = (bool)(node["stable"] ?? false) ? "release" : "snapshot",
-                        ReleaseTime = DateTime.MinValue
+                        ReleaseTime = DateTime.MinValue,
+                        LoaderVersions = loaders // In Fabric, generally any recent loader works with any game version
                     });
                 }
             }

@@ -212,12 +212,7 @@ public partial class MainWindow : FluentWindow
             return false;
         }
 
-        if (RootNavigation.CanGoBack && RootNavigation.GoBack())
-        {
-            return true;
-        }
-
-        return NavigateToShellPage(_lastShellPageType);
+        return NavigateToDashboard();
     }
 
     private bool ReplaceShellContent(Type pageType)

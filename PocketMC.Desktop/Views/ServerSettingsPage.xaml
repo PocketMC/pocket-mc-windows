@@ -332,7 +332,7 @@
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                             <ui:Button Content="Add Plugin (.jar)" Command="{Binding AddPluginCommand}" Appearance="Primary" Margin="0,0,8,0"/>
-                            <ui:Button Content="Browse Modrinth" Command="{Binding BrowseModrinthPluginsCommand}" Appearance="Secondary"/>
+                            <ui:Button Content="Browse Marketplace" Command="{Binding BrowseModrinthPluginsCommand}" Appearance="Secondary"/>
                         </StackPanel>
                         
                         <ItemsControl ItemsSource="{Binding Plugins}">
@@ -372,7 +372,7 @@
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                             <ui:Button Content="Add Mod (.jar)" Command="{Binding AddModCommand}" Appearance="Primary" Margin="0,0,8,0"/>
-                            <ui:Button Content="Browse Modrinth" Command="{Binding BrowseModrinthModsCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+                            <ui:Button Content="Browse Marketplace" Command="{Binding BrowseModrinthModsCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
                             <ui:Button Content="Import Modpack" Command="{Binding ImportModpackCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
                             <ui:Button Content="Browse Modpacks" Command="{Binding BrowseModpacksCommand}" Appearance="Secondary"/>
                         </StackPanel>

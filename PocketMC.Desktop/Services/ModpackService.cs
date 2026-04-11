@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -164,8 +165,30 @@ namespace PocketMC.Desktop.Services
                 }
             }
 
-            // Note: Individual mod downloads for CurseForge require projectID/fileID resolution.
-            // For now, we collect them. Resolution will be a separate step.
+            // Extract Mod Files (CurseForge specific indices)
+            var files = manifest?["files"]?.AsArray();
+            if (files != null)
+            {
+                foreach (var f in files)
+                {
+                    if (f == null) continue;
+                    
+                    string projectID = f["projectID"]?.ToString() ?? "";
+                    string fileID = f["fileID"]?.ToString() ?? "";
+                    
+                    if (!string.IsNullOrEmpty(projectID) && !string.IsNullOrEmpty(fileID))
+                    {
+                        // We store these special IDs. We will resolve them during injection/download stage.
+                        result.Mods.Add(new ModFile
+                        {
+                            Name = $"CF-{projectID}-{fileID}", // Temporary name
+                            DestinationPath = $"mods/{projectID}-{fileID}.jar", // Placeholder
+                            DownloadUrl = $"CURSEFORGE:{projectID}:{fileID}" // Special URI for the downloader
+                        });
+                    }
+                }
+            }
+
             return result;
         }
 
@@ -176,9 +199,7 @@ namespace PocketMC.Desktop.Services
             if (!string.IsNullOrEmpty(pack.Loader))
             {
                 metadata.ServerType = pack.Loader;
-                // Currently, custom loader versions might not be natively supported in metadata unless using 'Custom' or 'Fabric'.
-                // We'll trust the underlying providers to resolve it if left blank, or handle it here if required.
-                // Assuming ForgeProvider and FabricProvider handle this.
+                metadata.LoaderVersion = pack.LoaderVersion;
             }
             _instanceManager.SaveMetadata(metadata, instancePath);
 
@@ -190,37 +211,96 @@ namespace PocketMC.Desktop.Services
             }
             else if (pack.Loader.Equals("Forge", StringComparison.OrdinalIgnoreCase))
             {
-                // ForgeProvider in this codebase just takes mcVersion.
-                await _forgeProvider.DownloadJarAsync(pack.MinecraftVersion, jarPath);
-            }
-            else if (string.IsNullOrEmpty(pack.Loader) || pack.Loader.Equals("Vanilla", StringComparison.OrdinalIgnoreCase))
-            {
-                // Fallback to Vanilla if no loader specified
+                // Most Forge installers download as forge-installer.jar
+                string forgeJarPath = Path.Combine(instancePath, "forge-installer.jar");
+                await _forgeProvider.DownloadJarAsync(pack.MinecraftVersion, forgeJarPath);
             }
 
-            // 3. Download Mods
+            // 3. Resolve and Download Mods
+            await ResolveModUrlsAsync(pack);
+
             foreach (var mod in pack.Mods)
             {
+                if (string.IsNullOrEmpty(mod.DownloadUrl) || mod.DownloadUrl.StartsWith("CURSEFORGE:")) continue;
+
                 string dest = Path.Combine(instancePath, mod.DestinationPath);
                 Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-                await _downloader.DownloadFileAsync(mod.DownloadUrl, dest);
+                
+                try
+                {
+                    await _downloader.DownloadFileAsync(mod.DownloadUrl, dest);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to download mod: {ModName} from {Url}", mod.Name, mod.DownloadUrl);
+                }
             }
 
-            // 4. Extract Overrides (CurseForge/Modrinth)
+            // 4. Extract Overrides
             using var archive = ZipFile.OpenRead(zipPath);
+            // ... (rest of the override extraction logic)
             foreach (var entry in archive.Entries)
             {
-                if (entry.FullName.StartsWith("overrides/"))
-                {
-                    string relativePath = entry.FullName.Substring(10);
-                    if (string.IsNullOrEmpty(relativePath)) continue;
+                string targetPath = "";
+                if (entry.FullName.StartsWith("overrides/")) targetPath = entry.FullName.Substring(10);
+                else if (entry.FullName.StartsWith("client_overrides/")) continue; // Skip client overrides
 
-                    string destinationPath = Path.Combine(instancePath, relativePath);
-                    Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
-                    
-                    if (!string.IsNullOrEmpty(entry.Name)) // Only files, not directories
-                        entry.ExtractToFile(destinationPath, true);
+                if (string.IsNullOrEmpty(targetPath)) continue;
+
+                string destinationPath = Path.Combine(instancePath, targetPath);
+                if (string.IsNullOrEmpty(entry.Name)) // It's a directory
+                {
+                    Directory.CreateDirectory(destinationPath);
                 }
+                else
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+                    entry.ExtractToFile(destinationPath, true);
+                }
+            }
+        }
+
+        private async Task ResolveModUrlsAsync(ModpackImportResult pack)
+        {
+            var cfTasks = new List<Task>();
+
+            foreach (var mod in pack.Mods.Where(m => m.DownloadUrl.StartsWith("CURSEFORGE:")))
+            {
+                cfTasks.Add(Task.Run(async () =>
+                {
+                    var parts = mod.DownloadUrl.Split(':');
+                    if (parts.Length < 3) return;
+
+                    string projectId = parts[1];
+                    string fileId = parts[2];
+
+                    try
+                    {
+                        // Using a public CurseForge proxy (e.g. curse.tools) to resolve project/file ID to a download URL
+                        var response = await _httpClient.GetFromJsonAsync<JsonObject>($"https://api.curse.tools/v1/cf/mods/{projectId}/files/{fileId}");
+                        string? downloadUrl = response?["data"]?["downloadUrl"]?.ToString();
+                        string? fileName = response?["data"]?["fileName"]?.ToString();
+
+                        if (!string.IsNullOrEmpty(downloadUrl))
+                        {
+                            mod.DownloadUrl = downloadUrl;
+                            if (!string.IsNullOrEmpty(fileName))
+                            {
+                                mod.Name = fileName;
+                                mod.DestinationPath = $"mods/{fileName}";
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to resolve CurseForge mod project {ProjectId} file {FileId}", projectId, fileId);
+                    }
+                }));
+            }
+
+            if (cfTasks.Any())
+            {
+                await Task.WhenAll(cfTasks);
             }
         }
     }
