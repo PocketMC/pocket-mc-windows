@@ -53,7 +53,6 @@ namespace PocketMC.Desktop.Views
             TxtTitle.Text = baseTitle;
             TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
             
-            // Set dynamic placeholder based on context
             if (_isModpackMode) TxtSearch.PlaceholderText = "Search modpacks...";
             else if (_projectType.Contains("plugin")) TxtSearch.PlaceholderText = "Search Spigot/Paper plugins...";
             else TxtSearch.PlaceholderText = "Search Forge/Fabric mods...";
@@ -134,12 +133,11 @@ namespace PocketMC.Desktop.Views
 
             try
             {
-                await Task.Delay(500, token); // Wait 500ms
+                await Task.Delay(500, token);
                 await RefreshResultsAsync();
             }
             catch (OperationCanceledException)
             {
-                // Ignore
             }
         }
 
@@ -187,7 +185,7 @@ namespace PocketMC.Desktop.Views
                     string tempFile = Path.Combine(Path.GetTempPath(), file.FileName);
                     await File.WriteAllBytesAsync(tempFile, data);
 
-                    OnModpackDownloaded?.Invoke(tempFile);
+                    OnModpackDownloaded?.Invoke(tempPath: tempFile);
                     _navigationService.NavigateBack();
                     return;
                 }

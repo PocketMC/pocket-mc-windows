@@ -50,7 +50,6 @@ namespace PocketMC.Desktop.Views
             settings.EnableMicaEffect = enable;
             _settingsManager.Save(settings);
 
-            // Inform MainWindow to update visually
             if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
             {
                 mainWin.RequestMicaUpdate();

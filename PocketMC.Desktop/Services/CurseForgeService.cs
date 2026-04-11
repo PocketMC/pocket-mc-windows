@@ -18,13 +18,11 @@ namespace PocketMC.Desktop.Services
             _appState = appState;
             var handler = new HttpClientHandler
             {
-                // Cloudflare sometimes chokes on missing decompression headers
                 AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
             };
             
             _httpClient = new HttpClient(handler);
             
-            // Standardize headers to bypass basic proxy bot-checks
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
             _httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
@@ -80,7 +78,6 @@ namespace PocketMC.Desktop.Services
                 
                 if (!httpResponse.IsSuccessStatusCode)
                 {
-                    // Surface the HTTP error directly into the UI so you aren't flying blind
                     string errorText = await httpResponse.Content.ReadAsStringAsync();
                     return new List<ModrinthHit>
                     {
@@ -114,8 +111,6 @@ namespace PocketMC.Desktop.Services
                             icon = logoObj["thumbnailUrl"]?.ToString() ?? logoObj["url"]?.ToString() ?? "";
                         }
 
-                        // Safely parse download count via TryParse to prevent InvalidOperationExceptions 
-                        // if the API returns a float instead of a strict integer.
                         int safeDownloads = 0;
                         var dlNode = item["downloadCount"];
                         if (dlNode != null && double.TryParse(dlNode.ToString(), out double parsedDl))
@@ -149,7 +144,6 @@ namespace PocketMC.Desktop.Services
             }
             catch (Exception ex)
             {
-                // Surface code/parsing exceptions in the UI
                 return new List<ModrinthHit>
                 {
                     new ModrinthHit
@@ -200,7 +194,6 @@ namespace PocketMC.Desktop.Services
                 string fileName = latestFile["fileName"]?.ToString() ?? "mod.jar";
                 string downloadUrl = latestFile["downloadUrl"]?.ToString() ?? "";
 
-                // Critical Workaround: Reconstruct the Edge CDN URL if the API hides the direct link
                 if (string.IsNullOrEmpty(downloadUrl) && fileId > 0)
                 {
                     string part1 = (fileId / 1000).ToString();

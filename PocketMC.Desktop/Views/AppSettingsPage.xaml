@@ -22,7 +22,6 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,0,16">
-                <!-- Appearance Settings -->
                 <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Color24}">
                     <ui:CardExpander.Header>
                         <Grid>
@@ -37,7 +36,6 @@
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
-                        <!-- Mica Effect Toggle -->
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -60,7 +58,6 @@
                     </StackPanel>
                 </ui:CardExpander>
 
-                <!-- API Configuration -->
                 <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Key24}" Margin="0,12,0,0">
                     <ui:CardExpander.Header>
                         <Grid>
