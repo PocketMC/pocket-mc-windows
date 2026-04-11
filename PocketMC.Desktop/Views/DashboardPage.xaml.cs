@@ -92,31 +92,6 @@ namespace PocketMC.Desktop.Views
             }
         }
 
-        private void TxtRename_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (sender is TextBox tb && tb.DataContext is InstanceCardViewModel vm)
-            {
-                tb.Visibility = Visibility.Collapsed;
-                // Notify viewmodel of rename completion if we supported it
-            }
-        }
 
-        private void TxtRename_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Enter)
-            {
-                if (sender is TextBox tb)
-                {
-                    tb.Visibility = Visibility.Collapsed;
-                }
-            }
-            else if (e.Key == System.Windows.Input.Key.Escape)
-            {
-                if (sender is TextBox tb)
-                {
-                    tb.Visibility = Visibility.Collapsed;
-                }
-            }
-        }
     }
 }
