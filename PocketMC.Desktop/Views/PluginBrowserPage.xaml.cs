@@ -185,7 +185,7 @@ namespace PocketMC.Desktop.Views
                     string tempFile = Path.Combine(Path.GetTempPath(), file.FileName);
                     await File.WriteAllBytesAsync(tempFile, data);
 
-                    OnModpackDownloaded?.Invoke(tempPath: tempFile);
+                    OnModpackDownloaded?.Invoke(tempFile);
                     _navigationService.NavigateBack();
                     return;
                 }
