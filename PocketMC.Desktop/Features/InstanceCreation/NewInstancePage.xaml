@@ -32,19 +32,6 @@
                               VerticalAlignment="Center"/>
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <ui:Button x:Name="BtnBrowseModpacks"
-                           Content="Browse Modpacks"
-                           Appearance="Secondary"
-                           Icon="{ui:SymbolIcon Box24}"
-                           Margin="0,0,8,0"
-                           Click="BtnBrowseModpacks_Click"/>
-                <ui:Button x:Name="BtnImportZip"
-                           Content="Import Zip"
-                           Appearance="Secondary"
-                           Icon="{ui:SymbolIcon Folder24}"
-                           Click="BtnImportZip_Click"/>
-            </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1"

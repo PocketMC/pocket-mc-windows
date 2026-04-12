@@ -29,14 +29,11 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         private readonly PaperProvider _paperProvider;
         private readonly FabricProvider _fabricProvider;
         private readonly ForgeProvider _forgeProvider;
-        private readonly ModpackService _modpackService;
-        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<NewInstancePage> _logger;
         private bool _isCreating;
         private bool _isLoadingVersions;
         private bool _hasLoadedInitialVersions;
         private int _versionLoadRequestId;
-        private string? _pendingModpackPath;
 
         public NewInstancePage(
             IAppNavigationService navigationService,
@@ -46,8 +43,6 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             PaperProvider paperProvider,
             FabricProvider fabricProvider,
             ForgeProvider forgeProvider,
-            ModpackService modpackService,
-            IServiceProvider serviceProvider,
             ILogger<NewInstancePage> logger)
         {
             InitializeComponent();
@@ -58,8 +53,6 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             _paperProvider = paperProvider;
             _fabricProvider = fabricProvider;
             _forgeProvider = forgeProvider;
-            _modpackService = modpackService;
-            _serviceProvider = serviceProvider;
             _logger = logger;
 
             Loaded += OnLoaded;
@@ -215,57 +208,6 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
         }
 
-        private void BtnBrowseModpacks_Click(object sender, RoutedEventArgs e)
-        {
-            var page = ActivatorUtilities.CreateInstance<PluginBrowserPage>(_serviceProvider, null as string, "*", "modpack");
-            page.OnModpackDownloaded += path =>
-            {
-                Dispatcher.Invoke(async () => await HandleModpackSelectedAsync(path));
-            };
-
-            _navigationService.NavigateToDetailPage(page, "Browse Modpacks", DetailRouteKind.PluginBrowser, DetailBackNavigation.Dashboard, true);
-        }
-
-        private async void BtnImportZip_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new OpenFileDialog
-            {
-                Filter = "Modpack ZIP (*.zip)|*.zip",
-                Title = "Select Modpack File"
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                await HandleModpackSelectedAsync(dialog.FileName);
-            }
-        }
-
-        private async Task HandleModpackSelectedAsync(string path)
-        {
-            try
-            {
-                var result = await _modpackService.ParseModpackZipAsync(path);
-                TxtName.Text = result.Name;
-                TxtDescription.Text = $"Imported from modpack: {result.Name}";
-                
-                // Select Server Type
-                foreach (ComboBoxItem item in CmbServerType.Items)
-                {
-                    if (item.Content.ToString().Equals(result.Loader, StringComparison.OrdinalIgnoreCase))
-                    {
-                        CmbServerType.SelectedItem = item;
-                        break;
-                    }
-                }
-
-                _pendingModpackPath = path;
-                ShowError("Modpack selected. Details populated automatically.");
-            }
-            catch (Exception ex)
-            {
-                ShowError($"Failed to parse modpack: {ex.Message}");
-            }
-        }
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)
         {
@@ -348,15 +290,6 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     await provider.DownloadJarAsync(selectedVersion.Id, jarPath, progress);
                 }
 
-                if (!string.IsNullOrEmpty(_pendingModpackPath))
-                {
-                    TxtProgress.Text = "Importing modpack files...";
-                    await _modpackService.ImportToExistingInstanceAsync(
-                        await _modpackService.ParseModpackZipAsync(_pendingModpackPath),
-                        metadata,
-                        createdInstancePath,
-                        _pendingModpackPath);
-                }
 
                 if (ChkAcceptEula.IsChecked == true && createdFolderName != null)
                 {
