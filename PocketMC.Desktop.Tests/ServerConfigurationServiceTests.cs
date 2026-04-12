@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Services;
+using PocketMC.Desktop.Features.Instances;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -13,10 +14,10 @@ public sealed class ServerConfigurationServiceTests : IDisposable
     [Fact]
     public void Load_SeparatesCoreAndAdvancedServerProperties()
     {
-        var manager = CreateManager();
-        var service = new ServerConfigurationService(manager);
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager, registry);
         var metadata = manager.CreateInstance("Settings Test", "");
-        string serverDir = manager.GetInstancePath(metadata.Id)!;
+        string serverDir = registry.GetPath(metadata.Id)!;
         File.WriteAllLines(
             Path.Combine(serverDir, "server.properties"),
             new[] { "motd=Hello", "max-players=12", "view-distance=9" },
@@ -36,10 +37,10 @@ public sealed class ServerConfigurationServiceTests : IDisposable
     [Fact]
     public void Save_UpdatesMetadataAndServerProperties()
     {
-        var manager = CreateManager();
-        var service = new ServerConfigurationService(manager);
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager, registry);
         var metadata = manager.CreateInstance("Settings Save Test", "");
-        string serverDir = manager.GetInstancePath(metadata.Id)!;
+        string serverDir = registry.GetPath(metadata.Id)!;
         File.WriteAllText(Path.Combine(serverDir, "server.properties"), "motd=Old" + Environment.NewLine, new UTF8Encoding(false));
 
         var configuration = new ServerConfiguration
@@ -71,11 +72,15 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         Assert.Equal(6144, savedMetadata.MaxRamMb);
     }
 
-    private InstanceManager CreateManager()
+    private InstanceManager CreateManager(out InstanceRegistry registry, out InstancePathService pathService)
     {
         var state = new ApplicationState();
         state.ApplySettings(new AppSettings { AppRootPath = _tempDirectory });
-        return new InstanceManager(state, NullLogger<InstanceManager>.Instance);
+        
+        pathService = new InstancePathService(state);
+        registry = new InstanceRegistry(pathService, NullLogger<InstanceRegistry>.Instance);
+        
+        return new InstanceManager(registry, pathService, state, NullLogger<InstanceManager>.Instance);
     }
 
     public void Dispose()

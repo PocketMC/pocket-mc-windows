@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Services;
+using PocketMC.Desktop.Features.Instances;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -11,9 +12,9 @@ public sealed class InstanceManagerTests : IDisposable
     [Fact]
     public async Task DeleteInstanceAsync_RemovesInstanceDirectoryAndCacheEntry()
     {
-        var manager = CreateManager();
+        var manager = CreateManager(out var registry, out _);
         var metadata = manager.CreateInstance("Test Server", "A temporary server");
-        string instancePath = manager.GetInstancePath(metadata.Id)!;
+        string instancePath = registry.GetPath(metadata.Id)!;
         string lockedFile = Path.Combine(instancePath, "read-only.txt");
         File.WriteAllText(lockedFile, "data");
         File.SetAttributes(lockedFile, File.GetAttributes(lockedFile) | FileAttributes.ReadOnly);
@@ -22,14 +23,18 @@ public sealed class InstanceManagerTests : IDisposable
 
         Assert.True(deleted);
         Assert.False(Directory.Exists(instancePath));
-        Assert.Null(manager.GetInstancePath(metadata.Id));
+        Assert.Null(registry.GetPath(metadata.Id));
     }
 
-    private InstanceManager CreateManager()
+    private InstanceManager CreateManager(out InstanceRegistry registry, out InstancePathService pathService)
     {
         var state = new ApplicationState();
         state.ApplySettings(new AppSettings { AppRootPath = _tempDirectory });
-        return new InstanceManager(state, NullLogger<InstanceManager>.Instance);
+        
+        pathService = new InstancePathService(state);
+        registry = new InstanceRegistry(pathService, NullLogger<InstanceRegistry>.Instance);
+        
+        return new InstanceManager(registry, pathService, state, NullLogger<InstanceManager>.Instance);
     }
 
     public void Dispose()

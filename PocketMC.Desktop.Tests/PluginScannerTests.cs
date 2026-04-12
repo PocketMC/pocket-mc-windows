@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using PocketMC.Desktop.Services;
+using PocketMC.Desktop.Features.Mods;
 
 namespace PocketMC.Desktop.Tests;
 
