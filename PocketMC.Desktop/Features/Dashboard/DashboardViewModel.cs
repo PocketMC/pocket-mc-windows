@@ -28,6 +28,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly IAppDispatcher _dispatcher;
         private readonly IServiceProvider _serviceProvider;
         
+        private readonly System.Windows.Threading.DispatcherTimer _timer;
         private bool _isActive;
 
         public ObservableCollection<InstanceCardViewModel> Instances => _listVm.Instances;
@@ -74,6 +75,12 @@ namespace PocketMC.Desktop.Features.Dashboard
             CopyCrashReportCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.CopyCrashReport(vm); });
             ServerSettingsCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenSettings(vm); });
             OpenConsoleCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenConsole(vm); });
+
+            _timer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(5)
+            };
+            _timer.Tick += (s, e) => UpdateAllLiveMetrics();
         }
 
         public void Activate()
@@ -86,11 +93,13 @@ namespace PocketMC.Desktop.Features.Dashboard
             _isActive = true;
             _listVm.LoadInstances();
             UpdateAllLiveMetrics();
+            _timer.Start();
         }
 
         public void Deactivate()
         {
             if (!_isActive) return;
+            _timer.Stop();
             _registry.InstancesChanged -= OnInstancesChanged;
             _lifecycleService.OnInstanceStateChanged -= OnInstanceStateChanged;
             _lifecycleService.OnRestartCountdownTick -= OnRestartCountdownTick;
