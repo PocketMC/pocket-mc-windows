@@ -15,7 +15,8 @@ public enum NavigationRouteKind
     PluginBrowser,
     ServerConsole,
     TunnelCreationGuide,
-    PlayitGuide
+    PlayitGuide,
+    ImageCrop
 }
 
 public enum NavigationBackTargetKind

@@ -158,6 +158,7 @@ namespace PocketMC.Desktop.Infrastructure
             bool validParent = routeKind switch
             {
                 DetailRouteKind.PluginBrowser => current.RouteKind == DetailRouteKind.ServerSettings,
+                DetailRouteKind.ImageCrop => current.RouteKind == DetailRouteKind.ServerSettings,
                 _ => true
             };
 
@@ -223,6 +224,7 @@ namespace PocketMC.Desktop.Infrastructure
             DetailRouteKind.ServerConsole => NavigationRouteKind.ServerConsole,
             DetailRouteKind.TunnelCreationGuide => NavigationRouteKind.TunnelCreationGuide,
             DetailRouteKind.PlayitGuide => NavigationRouteKind.PlayitGuide,
+            DetailRouteKind.ImageCrop => NavigationRouteKind.ImageCrop,
             _ => throw new ArgumentOutOfRangeException(nameof(routeKind), routeKind, null)
         };
 

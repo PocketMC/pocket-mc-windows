@@ -1,0 +1,67 @@
+<Page x:Class="PocketMC.Desktop.Features.Settings.ImageCropPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Background="Transparent">
+    
+    <DockPanel LastChildFill="True">
+        <!-- Fixed Footer -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource ApplicationBackgroundBrush}" 
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,1,0,0"
+                Padding="16,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Content="Cancel" Click="BtnCancel_Click" Margin="0,0,8,0" Icon="{ui:SymbolIcon Dismiss24}"/>
+                <ui:Button Appearance="Primary" Content="Crop &amp; Save" Click="BtnSave_Click" Icon="{ui:SymbolIcon Checkmark24}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                <TextBlock Text="Crop Server Icon" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                <TextBlock Text="Select a square region of the image. It will be resized to 64×64 pixels and saved as your server icon." 
+                           FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <!-- Crop Canvas -->
+            <Border Grid.Row="1" Background="#111" ClipToBounds="True" CornerRadius="8">
+                <Canvas x:Name="DrawCanvas" SizeChanged="DrawCanvas_SizeChanged" 
+                        MouseLeftButtonDown="Canvas_MouseDown" MouseMove="Canvas_MouseMove" 
+                        MouseLeftButtonUp="Canvas_MouseUp" Cursor="SizeAll">
+                    <Image x:Name="SourceImage" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <Path Fill="#88000000" x:Name="OverlayMask"/>
+                    <Rectangle x:Name="CropRect" Stroke="White" StrokeThickness="2" StrokeDashArray="4 2" SnapsToDevicePixels="True">
+                        <Rectangle.Effect>
+                            <DropShadowEffect BlurRadius="4" ShadowDepth="0" Opacity="0.5" Color="Black"/>
+                        </Rectangle.Effect>
+                    </Rectangle>
+                    <!-- Corner handles -->
+                    <Thumb x:Name="ResizeThumbBR" Width="14" Height="14" Cursor="SizeNWSE" DragDelta="ResizeThumb_DragDelta">
+                        <Thumb.Template>
+                            <ControlTemplate TargetType="Thumb">
+                                <Grid>
+                                    <Ellipse Fill="White" Stroke="#333" StrokeThickness="1.5" Width="14" Height="14"/>
+                                </Grid>
+                            </ControlTemplate>
+                        </Thumb.Template>
+                    </Thumb>
+                </Canvas>
+            </Border>
+
+            <!-- Preview -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,12,0,0" HorizontalAlignment="Left">
+                <TextBlock Text="Preview:" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,12,0" FontSize="13"/>
+                <Border Width="64" Height="64" BorderThickness="1" BorderBrush="#555" Background="#111">
+                    <Image x:Name="PreviewImage" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Page>

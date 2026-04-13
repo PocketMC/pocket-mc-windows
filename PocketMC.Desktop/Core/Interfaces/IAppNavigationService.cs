@@ -10,7 +10,8 @@ namespace PocketMC.Desktop.Core.Interfaces
         PluginBrowser,
         ServerConsole,
         TunnelCreationGuide,
-        PlayitGuide
+        PlayitGuide,
+        ImageCrop
     }
 
     public enum DetailBackNavigation

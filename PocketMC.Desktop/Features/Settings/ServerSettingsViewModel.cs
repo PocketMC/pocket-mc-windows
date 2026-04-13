@@ -89,7 +89,7 @@ namespace PocketMC.Desktop.Features.Settings
             _instanceStateChangedHandler = (id, state) => { if (id == Metadata.Id) dispatcher.Invoke(UpdateRunningState); };
             _lifecycleService.OnInstanceStateChanged += _instanceStateChangedHandler;
 
-            General = new SettingsGeneralVM(ServerDir, dialogService, MarkChanged);
+            General = new SettingsGeneralVM(ServerDir, dialogService, navigationService, MarkChanged);
             World = new SettingsWorldVM(ServerDir, worldManager, dialogService, dispatcher, navigationService, serviceProvider, metadata.MinecraftVersion, () => IsRunning, MarkChanged);
             Performance = new SettingsPerformanceVM(dialogService, MarkChanged);
             Backups = new SettingsBackupsVM(metadata, ServerDir, backupService, dialogService, dispatcher, () => IsRunning, MarkChanged);
