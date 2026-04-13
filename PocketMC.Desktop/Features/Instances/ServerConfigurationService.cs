@@ -165,7 +165,7 @@ public sealed class ServerConfigurationService
     {
         var path = _registry.GetPath(instanceId);
         if (path == null) return 25565;
-        
+
         if (TryGetProperty(path, "server-port", out var portStr) && int.TryParse(portStr, out int port))
         {
             return port;

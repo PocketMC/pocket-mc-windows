@@ -11,7 +11,6 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.Instances;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {

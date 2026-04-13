@@ -86,6 +86,89 @@
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon BrainCircuit24}" Margin="0,12,0,0">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="AI Session Summarization" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Generate AI-powered summaries of your server sessions when they stop." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <!-- Provider Selection -->
+                        <TextBlock Text="AI Provider" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="Select the AI service you have an API key for." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
+                        <ComboBox x:Name="AiProviderCombo" Width="260" HorizontalAlignment="Left" SelectionChanged="AiProviderCombo_SelectionChanged">
+                            <ComboBoxItem Content="Google Gemini" IsSelected="True"/>
+                            <ComboBoxItem Content="OpenAI"/>
+                            <ComboBoxItem Content="Anthropic Claude"/>
+                            <ComboBoxItem Content="Mistral AI"/>
+                            <ComboBoxItem Content="Groq"/>
+                        </ComboBox>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                        <!-- API Key Input -->
+                        <TextBlock Text="API Key" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="Enter your API key for the selected provider. Keys are stored locally." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:TextBox x:Name="AiApiKeyInput" PlaceholderText="Paste your API key here..." Margin="0,0,8,0"/>
+                            <ui:Button Grid.Column="1" Content="Validate" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="Test the key with a small API call"/>
+                            <ui:Button Grid.Column="2" Content="Save" Appearance="Primary" Click="SaveAiKey_Click"/>
+                        </Grid>
+                        <TextBlock x:Name="AiKeyStatus" Text="" FontSize="12" Margin="0,6,0,0" Foreground="#A6E3A1"/>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                        <!-- Toggles -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Enable AI Summarization" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="When enabled, you'll be prompted to generate a summary after each server session." 
+                                           TextWrapping="Wrap" 
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                           FontSize="12" 
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleAiSummarization" Grid.Column="1" VerticalAlignment="Center" 
+                                             Checked="ToggleAiSummarization_Changed" 
+                                             Unchecked="ToggleAiSummarization_Changed"/>
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Automatic Summarization" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Skip the confirmation dialog and always generate summaries automatically." 
+                                           TextWrapping="Wrap" 
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                           FontSize="12" 
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleAutoSummarize" Grid.Column="1" VerticalAlignment="Center" 
+                                             Checked="ToggleAutoSummarize_Changed" 
+                                             Unchecked="ToggleAutoSummarize_Changed"/>
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
             </StackPanel>
         </ScrollViewer>
     </Grid>

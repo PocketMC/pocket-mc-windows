@@ -22,6 +22,7 @@ public class ServerLifecycleService : IServerLifecycleService
     private readonly ConcurrentDictionary<Guid, int> _consecutiveRestarts = new();
     private readonly ConcurrentDictionary<Guid, DateTime> _lastStartTime = new();
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _restartCancellations = new();
+    private readonly ConcurrentDictionary<Guid, DateTime> _sessionStartTimes = new();
 
     public event Action<Guid, ServerState>? OnInstanceStateChanged;
     public event Action<Guid, int>? OnRestartCountdownTick;
@@ -49,6 +50,7 @@ public class ServerLifecycleService : IServerLifecycleService
             _consecutiveRestarts[meta.Id] = 0;
 
         _lastStartTime[meta.Id] = DateTime.UtcNow;
+        _sessionStartTimes[meta.Id] = DateTime.UtcNow;
         await _processManager.StartProcessAsync(meta, _appRootPath);
     }
 
@@ -72,7 +74,7 @@ public class ServerLifecycleService : IServerLifecycleService
 
     public bool IsRunning(Guid instanceId) => _processManager.IsRunning(instanceId);
     public bool IsWaitingToRestart(Guid instanceId) => _restartCancellations.ContainsKey(instanceId);
-    
+
     public void AbortRestartDelay(Guid instanceId)
     {
         if (_restartCancellations.TryRemove(instanceId, out var cts))
@@ -84,11 +86,17 @@ public class ServerLifecycleService : IServerLifecycleService
 
     public ServerProcess? GetProcess(Guid instanceId) => _processManager.GetProcess(instanceId);
 
+    /// <summary>
+    /// Gets the UTC timestamp of when the current/last session started, or null if never started.
+    /// </summary>
+    public DateTime? GetSessionStartTime(Guid instanceId) =>
+        _sessionStartTimes.TryGetValue(instanceId, out var time) ? time : null;
+
     public async Task RestartAsync(Guid instanceId)
     {
         var meta = _registry.GetById(instanceId);
         if (meta == null) return;
-        
+
         await StopAsync(instanceId);
         // Wait a small buffer for OS to release locks
         await Task.Delay(800);

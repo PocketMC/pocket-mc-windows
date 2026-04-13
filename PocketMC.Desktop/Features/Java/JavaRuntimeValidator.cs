@@ -59,7 +59,7 @@ namespace PocketMC.Desktop.Features.Java
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(15));
-            
+
             await process.WaitForExitAsync(cts.Token);
 
             if (process.ExitCode != 0)

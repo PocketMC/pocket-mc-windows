@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using PocketMC.Desktop.Models;
@@ -8,7 +9,7 @@ using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Intelligence;
 
 namespace PocketMC.Desktop.Features.Setup
 {
@@ -17,14 +18,16 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly ApplicationState _applicationState;
         private readonly SettingsManager _settingsManager;
         private readonly IDialogService _dialogService;
+        private readonly AiApiClient _aiApiClient;
         private bool _isInitializing = true;
 
-        public AppSettingsPage(ApplicationState applicationState, SettingsManager settingsManager, IDialogService dialogService)
+        public AppSettingsPage(ApplicationState applicationState, SettingsManager settingsManager, IDialogService dialogService, AiApiClient aiApiClient)
         {
             InitializeComponent();
             _applicationState = applicationState;
             _settingsManager = settingsManager;
             _dialogService = dialogService;
+            _aiApiClient = aiApiClient;
 
             Loaded += AppSettingsPage_Loaded;
         }
@@ -34,6 +37,25 @@ namespace PocketMC.Desktop.Features.Setup
             _isInitializing = true;
             ToggleMica.IsChecked = _applicationState.Settings.EnableMicaEffect;
             CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
+
+            // AI Settings
+            AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
+            ToggleAiSummarization.IsChecked = _applicationState.Settings.EnableAiSummarization;
+            ToggleAutoSummarize.IsChecked = _applicationState.Settings.AlwaysAutoSummarize;
+
+            // Set provider combo selection
+            var savedProvider = _applicationState.Settings.AiProvider ?? "Gemini";
+            var providerType = AiApiClient.ParseProvider(savedProvider);
+            var displayName = AiApiClient.GetDisplayName(providerType);
+            for (int i = 0; i < AiProviderCombo.Items.Count; i++)
+            {
+                if (AiProviderCombo.Items[i] is ComboBoxItem item && item.Content?.ToString() == displayName)
+                {
+                    AiProviderCombo.SelectedIndex = i;
+                    break;
+                }
+            }
+
             _isInitializing = false;
         }
 
@@ -66,6 +88,96 @@ namespace PocketMC.Desktop.Features.Setup
             _applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Text.Trim();
             _settingsManager.Save(_applicationState.Settings);
             _dialogService.ShowMessage("Saved", "API Configuration saved successfully.");
+        }
+
+        // ── AI Summarization Handlers ──────────────────────────────────
+
+        private void AiProviderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            var providerStr = GetSelectedProvider().ToString();
+            settings.AiProvider = providerStr;
+
+            // Auto-fill the key for the newly selected provider
+            settings.AiApiKeys.TryGetValue(providerStr, out var key);
+            AiApiKeyInput.Text = key ?? string.Empty;
+
+            _settingsManager.Save(settings);
+        }
+
+        private async void ValidateAiKey_Click(object sender, RoutedEventArgs e)
+        {
+            var apiKey = AiApiKeyInput.Text.Trim();
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                AiKeyStatus.Text = "⚠ Please enter an API key first.";
+                AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
+                return;
+            }
+
+            var provider = GetSelectedProvider();
+            AiKeyStatus.Text = $"⏳ Validating with {AiApiClient.GetDisplayName(provider)}...";
+            AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
+
+            try
+            {
+                var result = await _aiApiClient.ValidateKeyAsync(provider, apiKey);
+                if (result.Success)
+                {
+                    AiKeyStatus.Text = "✅ API key is valid! Connection successful.";
+                    AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
+                }
+                else
+                {
+                    AiKeyStatus.Text = $"❌ {result.Error}";
+                    AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
+                }
+            }
+            catch (Exception ex)
+            {
+                AiKeyStatus.Text = $"❌ Error: {ex.Message}";
+                AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
+            }
+        }
+
+        private void SaveAiKey_Click(object sender, RoutedEventArgs e)
+        {
+            SaveAiSettings();
+            _dialogService.ShowMessage("Saved", "AI Summarization configuration saved successfully.");
+        }
+
+        private void ToggleAiSummarization_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+            SaveAiSettings();
+        }
+
+        private void ToggleAutoSummarize_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+            SaveAiSettings();
+        }
+
+        private void SaveAiSettings()
+        {
+            var settings = _applicationState.Settings;
+            var provider = GetSelectedProvider().ToString();
+
+            settings.AiProvider = provider;
+            settings.AiApiKeys[provider] = AiApiKeyInput.Text.Trim();
+
+            settings.EnableAiSummarization = ToggleAiSummarization.IsChecked == true;
+            settings.AlwaysAutoSummarize = ToggleAutoSummarize.IsChecked == true;
+            _settingsManager.Save(settings);
+        }
+
+        private AiProviderType GetSelectedProvider()
+        {
+            if (AiProviderCombo.SelectedItem is ComboBoxItem item && item.Content is string name)
+                return AiApiClient.ParseProvider(name);
+            return AiProviderType.Gemini;
         }
     }
 }

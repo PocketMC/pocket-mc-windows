@@ -34,7 +34,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         public string? BreadcrumbCurrentText => _uiStateService.BreadcrumbCurrentText;
         public bool IsBreadcrumbVisible => _uiStateService.IsBreadcrumbVisible;
-        
+
         public string? TitleBarTitle => _uiStateService.TitleBarTitle;
         public string? TitleBarStatusText => _uiStateService.TitleBarStatusText;
         public Brush? TitleBarStatusBrush => _uiStateService.TitleBarStatusBrush;

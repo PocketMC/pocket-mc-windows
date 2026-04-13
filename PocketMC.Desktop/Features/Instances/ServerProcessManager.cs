@@ -55,7 +55,7 @@ public class ServerProcessManager
         if (_activeProcesses.ContainsKey(meta.Id))
             throw new InvalidOperationException($"Server '{meta.Name}' is already running.");
 
-        var instancePath = _registry.GetPath(meta.Id) 
+        var instancePath = _registry.GetPath(meta.Id)
             ?? throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
 
         var serverProcess = new ServerProcess(

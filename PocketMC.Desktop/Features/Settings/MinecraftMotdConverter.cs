@@ -34,7 +34,7 @@ namespace PocketMC.Desktop.Features.Settings
         {
             var text = value as string;
             var textBlock = new TextBlock { TextWrapping = System.Windows.TextWrapping.Wrap };
-            
+
             if (string.IsNullOrEmpty(text))
             {
                 textBlock.Inlines.Add(new Run("A Minecraft Server") { Foreground = Brushes.Gray });
@@ -43,7 +43,7 @@ namespace PocketMC.Desktop.Features.Settings
 
             // Normalise the formatters
             text = text.Replace('§', '&');
-            
+
             var parts = text.Split('&');
             // First part has no preceding color formatting
             if (!string.IsNullOrEmpty(parts[0]))

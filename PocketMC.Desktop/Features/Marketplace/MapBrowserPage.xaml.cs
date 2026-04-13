@@ -40,7 +40,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             ListResults.ItemsSource = _results;
             TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
-            
+
             Loaded += async (s, e) => await RefreshResultsAsync();
         }
 
@@ -83,10 +83,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             try
             {
                 string query = TxtSearch.Text ?? "";
-                
+
                 // Maps/Worlds class ID is 17 in CurseForge API
                 var hits = await _curseForge.SearchAsync("project_type:world", _mcVersion, query, _currentOffset);
-                
+
                 foreach (var hit in hits)
                 {
                     if (!_results.Any(r => r.Slug == hit.Slug))

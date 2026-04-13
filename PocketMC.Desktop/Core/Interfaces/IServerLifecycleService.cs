@@ -14,12 +14,13 @@ namespace PocketMC.Desktop.Core.Interfaces
         Task StopAsync(Guid instanceId);
         void Kill(Guid instanceId);
         void KillAll();
-        
+
         bool IsRunning(Guid instanceId);
         bool IsWaitingToRestart(Guid instanceId);
         void AbortRestartDelay(Guid instanceId);
         Task RestartAsync(Guid instanceId);
-        
+
         ServerProcess? GetProcess(Guid instanceId);
+        DateTime? GetSessionStartTime(Guid instanceId);
     }
 }

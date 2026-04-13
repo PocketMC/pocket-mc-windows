@@ -21,12 +21,12 @@ namespace PocketMC.Desktop.Models
         public int BackupIntervalHours { get; set; } = 0; // 0 = manual only
         public int MaxBackupsToKeep { get; set; } = 10;
         public DateTime? LastBackupTime { get; set; }
-        
+
         // Auto-Restart configuration
         public bool EnableAutoRestart { get; set; } = false;
         public int MaxAutoRestarts { get; set; } = 3;
         public int AutoRestartDelaySeconds { get; set; } = 10;
-        
+
         // Runtime configuration (NET-14)
         public string? CustomJavaPath { get; set; } = null;
         public string? AdvancedJvmArgs { get; set; } = null;

@@ -4,6 +4,7 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
       mc:Ignorable="d" 
       d:DesignHeight="1200" d:DesignWidth="950"
       Title="Server Settings"
@@ -123,6 +124,8 @@
                         <ui:NavigationViewItem Content="Automated Backups" Icon="{ui:SymbolIcon Save24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Fault Tolerance" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Advanced Editor" Icon="{ui:SymbolIcon Code24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="AI Summaries" Icon="{ui:SymbolIcon BrainCircuit24}" Click="NavItem_Click"
+                                               Visibility="{Binding IsAiSummarizationAvailable, Converter={StaticResource VisibleIfTrue}}"/>
                     </ui:NavigationView.MenuItems>
                 </ui:NavigationView>
 
@@ -524,6 +527,86 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+
+                        <!-- TAB 8: AI SUMMARIES -->
+                        <TabItem Header="AISummaries">
+                            <ScrollViewer x:Name="SummariesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
+                                <Grid>
+                                    <!-- Summary List View -->
+                                    <StackPanel Visibility="{Binding Summaries.IsViewingSummary, Converter={StaticResource InvertedVisibilityConverter}}">
+                                        <ui:Card Padding="24" Margin="0,0,0,16">
+                                            <StackPanel>
+                                                <TextBlock Text="Session Summaries" Style="{StaticResource SettingsHeader}" FontSize="18"/>
+                                                <TextBlock Text="AI-generated summaries of your server play sessions. Each summary captures player activity, deaths, events, and highlights." 
+                                                           Style="{StaticResource SettingsSubtext}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                            </StackPanel>
+                                        </ui:Card>
+
+                                        <!-- Empty State -->
+                                        <ui:Card Padding="32" Margin="0,0,0,16"
+                                                 Visibility="{Binding Summaries.HasSummaries, Converter={StaticResource InvertedVisibilityConverter}, FallbackValue=Visible}">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="BrainCircuit24" FontSize="36" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                                <TextBlock Text="No summaries yet" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="Summaries will appear here after you stop a server session and choose to generate one." 
+                                                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" 
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,6,0,0" MaxWidth="360"/>
+                                            </StackPanel>
+                                        </ui:Card>
+
+                                        <!-- Summaries List -->
+                                        <ItemsControl ItemsSource="{Binding Summaries.Summaries}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <ui:Card Margin="0,0,0,10" Padding="16,12">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel>
+                                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                                    <TextBlock Text="{Binding SessionDate}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                                    <Border Background="#313244" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding Duration}" FontSize="11" Foreground="#89B4FA"/>
+                                                                    </Border>
+                                                                    <Border Background="#313244" CornerRadius="4" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding Provider}" FontSize="11" Foreground="#A6E3A1"/>
+                                                                    </Border>
+                                                                </StackPanel>
+                                                                <TextBlock Text="{Binding Preview}" FontSize="12" 
+                                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                                           TextTrimming="CharacterEllipsis" MaxWidth="500" HorizontalAlignment="Left"/>
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                <ui:Button Content="View" Appearance="Secondary" 
+                                                                           Command="{Binding DataContext.Summaries.ViewSummaryCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                                                           CommandParameter="{Binding}" Margin="0,0,8,0"/>
+                                                                <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger" 
+                                                                           Command="{Binding DataContext.Summaries.DeleteSummaryCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                                                           CommandParameter="{Binding}"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </ui:Card>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+
+                                    <!-- Summary Content Viewer -->
+                                    <StackPanel Visibility="{Binding Summaries.IsViewingSummary, Converter={StaticResource VisibleIfTrue}}">
+                                        <ui:Button Content="← Back to Summaries" Appearance="Transparent" 
+                                                   Command="{Binding Summaries.CloseSummaryCommand}" Margin="0,0,0,12"/>
+                                        <ui:Card Padding="24">
+                                            <markdig:MarkdownViewer Markdown="{Binding Summaries.SummaryContent, Mode=OneWay}"
+                                                                    Background="Transparent"
+                                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                                    Margin="0,0,0,0"/>
+                                        </ui:Card>
+                                    </StackPanel>
+                                </Grid>
                             </ScrollViewer>
                         </TabItem>
                     </TabControl>

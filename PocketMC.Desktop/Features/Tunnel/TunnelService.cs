@@ -56,7 +56,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         /// </summary>
         public async Task<TunnelResolutionResult> ResolveTunnelAsync(int serverPort)
         {
-            if (_agentService.State != PlayitAgentState.Connected && 
+            if (_agentService.State != PlayitAgentState.Connected &&
                 _agentService.State != PlayitAgentState.Starting)
             {
                 return new TunnelResolutionResult

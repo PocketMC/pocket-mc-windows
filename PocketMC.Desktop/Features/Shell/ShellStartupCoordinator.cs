@@ -7,7 +7,6 @@ using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Tunnel;

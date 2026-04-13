@@ -79,6 +79,15 @@ namespace PocketMC.Desktop.Features.Settings
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "playit_gg");
 
+            // Migration: Move old single API key to the dictionary under Gemini
+            if (!string.IsNullOrEmpty(settings.AiApiKey))
+            {
+                if (!settings.AiApiKeys.ContainsKey("Gemini"))
+                    settings.AiApiKeys["Gemini"] = settings.AiApiKey;
+
+                settings.AiApiKey = null; // Clear it out so it stops writing to JSON
+            }
+
             return settings;
         }
     }

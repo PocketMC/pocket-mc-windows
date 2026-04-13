@@ -6,7 +6,7 @@ namespace PocketMC.Desktop.Models
     {
         public string Version { get; set; } = string.Empty;
         public bool IsStable { get; set; } = true;
-        
+
         public override string ToString() => Version + (IsStable ? "" : " (experimental)");
     }
 

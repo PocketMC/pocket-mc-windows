@@ -83,7 +83,7 @@ namespace PocketMC.Desktop.Features.Mods
         public static bool IsIncompatible(string? pluginApiVersion, string? serverMinecraftVersion)
         {
             if (string.IsNullOrEmpty(pluginApiVersion) || string.IsNullOrEmpty(serverMinecraftVersion))
-                return false; 
+                return false;
 
             try
             {
@@ -105,7 +105,7 @@ namespace PocketMC.Desktop.Features.Mods
         private static (int major, int minor)? ParseMajorMinor(string version)
         {
             version = version.Trim().Trim('\'', '"');
-            
+
             var parts = version.Split('.');
             if (parts.Length < 2) return null;
 

@@ -40,7 +40,7 @@ namespace PocketMC.Desktop.Core.Mvvm
                 {
                     await _execute(parameter);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // Swallow exception to prevent app crash
                 }

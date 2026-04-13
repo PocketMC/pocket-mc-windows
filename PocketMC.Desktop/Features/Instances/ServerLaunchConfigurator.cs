@@ -80,7 +80,7 @@ namespace PocketMC.Desktop.Features.Instances
         private async Task<string> EnsureAndResolveJavaPathAsync(InstanceMetadata meta, int requiredVersion, string appRootPath, Action<string> onLog)
         {
             // Architecture: Ensure required Java runtime is present and healthy (Auto-Repair)
-            bool expectsBundled = string.IsNullOrWhiteSpace(meta.CustomJavaPath) || 
+            bool expectsBundled = string.IsNullOrWhiteSpace(meta.CustomJavaPath) ||
                                   JavaRuntimeResolver.IsBundledJavaPath(meta.CustomJavaPath, requiredVersion, appRootPath);
 
             bool missingCustom = !string.IsNullOrWhiteSpace(meta.CustomJavaPath) && !File.Exists(meta.CustomJavaPath);
@@ -125,19 +125,21 @@ namespace PocketMC.Desktop.Features.Instances
             if (meta.ServerType == "Forge" && File.Exists(forgeInstaller) && !Directory.Exists(Path.Combine(workingDir, "libraries")))
             {
                 onLog("[PocketMC] First-time Forge setup detected. Running installer...");
-                
-                var installerPsi = new ProcessStartInfo {
+
+                var installerPsi = new ProcessStartInfo
+                {
                     FileName = javaPath,
                     WorkingDirectory = workingDir,
                     Arguments = "-jar forge-installer.jar --installServer",
-                    UseShellExecute = false, 
-                    RedirectStandardOutput = true, 
-                    RedirectStandardError = true, 
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     CreateNoWindow = true
                 };
 
                 using var proc = Process.Start(installerPsi);
-                if (proc != null) {
+                if (proc != null)
+                {
                     await proc.WaitForExitAsync();
                     if (proc.ExitCode == 0) onLog("[PocketMC] Forge installation successful.");
                     else throw new Exception($"Forge installer failed with exit code {proc.ExitCode}");

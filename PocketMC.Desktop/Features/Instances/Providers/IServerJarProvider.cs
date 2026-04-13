@@ -11,8 +11,8 @@ namespace PocketMC.Desktop.Features.Instances.Providers;
 public interface IServerJarProvider
 {
     string DisplayName { get; }
-    
+
     Task<List<MinecraftVersion>> GetAvailableVersionsAsync();
-    
+
     Task DownloadJarAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null);
 }

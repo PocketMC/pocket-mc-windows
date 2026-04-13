@@ -98,7 +98,7 @@ namespace PocketMC.Desktop.Infrastructure
 
             _detailPages.Add(new DetailPageEntry(stackEntry.EntryId, routeKind, page, breadcrumbLabel));
             _uiStateService.UpdateBreadcrumb(breadcrumbLabel);
-            
+
             return true;
         }
 

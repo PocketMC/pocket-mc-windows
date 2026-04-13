@@ -14,8 +14,8 @@ using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Desktop.Features.Intelligence;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -29,6 +29,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly IAppNavigationService _navigationService;
         private readonly Action<Guid, ServerState> _instanceStateChangedHandler;
         private readonly string _appRootPath;
+        private readonly ApplicationState _applicationState;
 
         public InstanceMetadata Metadata { get; }
         public string ServerDir { get; }
@@ -40,6 +41,10 @@ namespace PocketMC.Desktop.Features.Settings
         public SettingsBackupsVM Backups { get; }
         public SettingsAddonsVM Addons { get; }
         public SettingsAdvancedVM Advanced { get; }
+        public SettingsSummariesVM Summaries { get; }
+
+        private bool _isAiSummarizationAvailable;
+        public bool IsAiSummarizationAvailable { get => _isAiSummarizationAvailable; set => SetProperty(ref _isAiSummarizationAvailable, value); }
 
         private bool _isLoading;
         public bool IsLoading { get => _isLoading; set => SetProperty(ref _isLoading, value); }
@@ -86,7 +91,8 @@ namespace PocketMC.Desktop.Features.Settings
             _lifecycleService = lifecycleService;
             _dialogService = dialogService;
             _navigationService = navigationService;
-            _appRootPath = ((ApplicationState)serviceProvider.GetService(typeof(ApplicationState))!).GetRequiredAppRootPath();
+            _applicationState = (ApplicationState)serviceProvider.GetService(typeof(ApplicationState))!;
+            _appRootPath = _applicationState.GetRequiredAppRootPath();
             ServerDir = _registry.GetPath(metadata.Id) ?? throw new InvalidOperationException();
 
             _instanceStateChangedHandler = (id, state) => { if (id == Metadata.Id) dispatcher.Invoke(UpdateRunningState); };
@@ -98,6 +104,9 @@ namespace PocketMC.Desktop.Features.Settings
             Backups = new SettingsBackupsVM(metadata, ServerDir, backupService, dialogService, dispatcher, () => IsRunning, MarkChanged);
             Addons = new SettingsAddonsVM(metadata, ServerDir, modpackService, dialogService, navigationService, serviceProvider, () => IsRunning, MarkChanged);
             Advanced = new SettingsAdvancedVM(ServerDir, serverConfigurationService, MarkChanged);
+
+            var summaryStorage = (SummaryStorageService)serviceProvider.GetService(typeof(SummaryStorageService))!;
+            Summaries = new SettingsSummariesVM(ServerDir, summaryStorage, dialogService);
 
             SaveCommand = new RelayCommand(_ => SaveConfigurations(), _ => !IsTransientState);
             CancelCommand = new RelayCommand(async _ => await CancelAsync());
@@ -112,7 +121,7 @@ namespace PocketMC.Desktop.Features.Settings
             UpdateRunningState();
 
             var cfg = _serverConfigurationService.Load(Metadata, ServerDir);
-            
+
             // General
             General.Motd = cfg.Motd;
             General.ServerPort = cfg.ServerPort;
@@ -151,6 +160,11 @@ namespace PocketMC.Desktop.Features.Settings
             Addons.LoadAddons();
             Backups.LoadBackups();
 
+            // AI Summaries
+            bool hasApiKey = !string.IsNullOrWhiteSpace(_applicationState.Settings.GetCurrentAiKey());
+            IsAiSummarizationAvailable = hasApiKey;
+            Summaries.Load(hasApiKey);
+
             _ = ResolveTunnelAddressAsync(playitApiClient);
 
             IsLoading = false;
@@ -168,7 +182,7 @@ namespace PocketMC.Desktop.Features.Settings
         {
             bool running = _lifecycleService.IsRunning(Metadata.Id);
             bool waiting = _lifecycleService.IsWaitingToRestart(Metadata.Id);
-            
+
             IsRunning = running;
             IsTransientState = waiting;
 
@@ -182,28 +196,28 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task ResolveTunnelAddressAsync(PlayitApiClient client)
         {
-            if (!int.TryParse(General.ServerPort, out int port)) 
-            { 
-                PlayitAddress = "⚠ Invalid port number."; 
-                return; 
+            if (!int.TryParse(General.ServerPort, out int port))
+            {
+                PlayitAddress = "⚠ Invalid port number.";
+                return;
             }
             PlayitAddress = "⏳ Resolving tunnel...";
             try
             {
                 var result = await client.GetTunnelsAsync();
-                if (!result.Success) 
-                { 
-                    PlayitAddress = "⚠ Failed to reach Playit API."; 
-                    return; 
+                if (!result.Success)
+                {
+                    PlayitAddress = "⚠ Failed to reach Playit API.";
+                    return;
                 }
                 var match = PlayitApiClient.FindTunnelForPort(result.Tunnels, port);
-                PlayitAddress = match != null 
-                    ? match.PublicAddress 
+                PlayitAddress = match != null
+                    ? match.PublicAddress
                     : $"No tunnel found for port {port}. Please create a new tunnel.";
             }
-            catch 
-            { 
-                PlayitAddress = "⚠ Connection failed. Check your internet."; 
+            catch
+            {
+                PlayitAddress = "⚠ Connection failed. Check your internet.";
             }
         }
 
@@ -218,17 +232,30 @@ namespace PocketMC.Desktop.Features.Settings
 
             var cfg = new ServerConfiguration
             {
-                MinRamMb = (int)Performance.MinRam, MaxRamMb = (int)Performance.MaxRam,
-                CustomJavaPath = customJavaPathToSave, AdvancedJvmArgs = Performance.AdvancedJvmArgs,
+                MinRamMb = (int)Performance.MinRam,
+                MaxRamMb = (int)Performance.MaxRam,
+                CustomJavaPath = customJavaPathToSave,
+                AdvancedJvmArgs = Performance.AdvancedJvmArgs,
                 EnableAutoRestart = Advanced.EnableAutoRestart,
                 MaxAutoRestarts = int.TryParse(Advanced.MaxAutoRestarts, out int mr) ? mr : Metadata.MaxAutoRestarts,
                 AutoRestartDelaySeconds = int.TryParse(Advanced.AutoRestartDelay, out int rd) ? rd : Metadata.AutoRestartDelaySeconds,
                 BackupIntervalHours = Backups.BackupIntervalHours,
                 MaxBackupsToKeep = Backups.MaxBackupsToKeep,
-                Motd = General.Motd ?? "", Seed = World.Seed ?? "", SpawnProtection = World.SpawnProtection, MaxPlayers = World.MaxPlayers,
-                ServerPort = General.ServerPort, ServerIp = General.ServerIp ?? "", LevelType = World.LevelType,
-                OnlineMode = World.OnlineMode, Pvp = World.Pvp, WhiteList = World.WhiteList, Gamemode = World.Gamemode, Difficulty = World.Difficulty,
-                AllowCommandBlock = World.AllowCommandBlock, AllowFlight = World.AllowFlight, AllowNether = World.AllowNether
+                Motd = General.Motd ?? "",
+                Seed = World.Seed ?? "",
+                SpawnProtection = World.SpawnProtection,
+                MaxPlayers = World.MaxPlayers,
+                ServerPort = General.ServerPort,
+                ServerIp = General.ServerIp ?? "",
+                LevelType = World.LevelType,
+                OnlineMode = World.OnlineMode,
+                Pvp = World.Pvp,
+                WhiteList = World.WhiteList,
+                Gamemode = World.Gamemode,
+                Difficulty = World.Difficulty,
+                AllowCommandBlock = World.AllowCommandBlock,
+                AllowFlight = World.AllowFlight,
+                AllowNether = World.AllowNether
             };
 
             foreach (var item in Advanced.AdvancedProperties)

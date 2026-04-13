@@ -6,8 +6,6 @@ using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Instances;
-
 namespace PocketMC.Desktop.Features.Instances.Backups;
 
 /// <summary>

@@ -5,24 +5,24 @@ namespace PocketMC.Desktop.Features.Settings
     public class PropertyItem : ViewModelBase
     {
         private string _key = string.Empty;
-        public string Key 
-        { 
-            get => _key; 
-            set { if (SetProperty(ref _key, value)) IsDirty = true; } 
+        public string Key
+        {
+            get => _key;
+            set { if (SetProperty(ref _key, value)) IsDirty = true; }
         }
 
         private string _value = string.Empty;
-        public string Value 
-        { 
-            get => _value; 
-            set { if (SetProperty(ref _value, value)) IsDirty = true; } 
+        public string Value
+        {
+            get => _value;
+            set { if (SetProperty(ref _value, value)) IsDirty = true; }
         }
 
         private bool _isDirty;
-        public bool IsDirty 
-        { 
-            get => _isDirty; 
-            set => SetProperty(ref _isDirty, value); 
+        public bool IsDirty
+        {
+            get => _isDirty;
+            set => SetProperty(ref _isDirty, value);
         }
 
         private bool _isCore;

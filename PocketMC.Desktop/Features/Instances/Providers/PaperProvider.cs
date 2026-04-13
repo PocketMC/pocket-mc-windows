@@ -37,7 +37,7 @@ public class PaperProvider : IServerJarProvider
             foreach (var v in versionsArray.Reverse())
             {
                 if (v == null) continue;
-                
+
                 string vStr = v.ToString();
                 string type = "release";
                 if (vStr.Contains("-") || System.Text.RegularExpressions.Regex.IsMatch(vStr, @"[a-zA-Z]"))
@@ -47,7 +47,7 @@ public class PaperProvider : IServerJarProvider
                 {
                     Id = vStr,
                     Type = type,
-                    ReleaseTime = DateTime.MinValue 
+                    ReleaseTime = DateTime.MinValue
                 });
             }
         }

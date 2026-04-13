@@ -50,7 +50,7 @@ namespace PocketMC.Desktop.Features.Mods
         public async Task<ModpackImportResult> ParseZipAsync(string zipPath)
         {
             using var archive = ZipFile.OpenRead(zipPath);
-            
+
             // Check for Modrinth (modrinth.index.json)
             var modrinthIndex = archive.GetEntry("modrinth.index.json");
             if (modrinthIndex != null)
@@ -72,7 +72,7 @@ namespace PocketMC.Desktop.Features.Mods
         {
             using var stream = entry.Open();
             var index = await JsonNode.ParseAsync(stream);
-            
+
             var result = new ModpackImportResult
             {
                 Name = index?["name"]?.ToString() ?? "Imported Modpack",
@@ -113,7 +113,7 @@ namespace PocketMC.Desktop.Features.Mods
 
                     var downloadUrl = f["downloads"]?.AsArray()?.FirstOrDefault()?.ToString();
                     var destPath = f["path"]?.ToString();
-                    
+
                     if (downloadUrl != null && destPath != null)
                     {
                         if (PathSafety.ContainsTraversal(destPath))
@@ -151,7 +151,7 @@ namespace PocketMC.Desktop.Features.Mods
             var primaryLoader = loaders?.FirstOrDefault();
             if (primaryLoader != null)
             {
-                string loaderId = primaryLoader["id"]?.ToString() ?? ""; 
+                string loaderId = primaryLoader["id"]?.ToString() ?? "";
                 if (loaderId.StartsWith("fabric-"))
                 {
                     result.Loader = "Fabric";
@@ -171,17 +171,17 @@ namespace PocketMC.Desktop.Features.Mods
                 foreach (var f in files)
                 {
                     if (f == null) continue;
-                    
+
                     string projectID = f["projectID"]?.ToString() ?? "";
                     string fileID = f["fileID"]?.ToString() ?? "";
-                    
+
                     if (!string.IsNullOrEmpty(projectID) && !string.IsNullOrEmpty(fileID))
                     {
                         result.Mods.Add(new ModpackFile
                         {
-                            Name = $"CF-{projectID}-{fileID}", 
-                            DestinationPath = $"mods/{projectID}-{fileID}.jar", 
-                            DownloadUrl = $"CURSEFORGE:{projectID}:{fileID}" 
+                            Name = $"CF-{projectID}-{fileID}",
+                            DestinationPath = $"mods/{projectID}-{fileID}.jar",
+                            DownloadUrl = $"CURSEFORGE:{projectID}:{fileID}"
                         });
                     }
                 }

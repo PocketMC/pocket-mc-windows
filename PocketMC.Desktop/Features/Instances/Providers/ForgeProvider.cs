@@ -30,7 +30,7 @@ public class ForgeProvider : IServerJarProvider
         // Fetch the official Forge versions JSON (slim promotions)
         var response = await _httpClient.GetFromJsonAsync<JsonObject>("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json");
         var versions = new List<MinecraftVersion>();
-        
+
         if (response != null && response.TryGetPropertyValue("promos", out var promosNode) && promosNode is JsonObject promos)
         {
             // We extract unique MC versions from the keys
@@ -44,13 +44,13 @@ public class ForgeProvider : IServerJarProvider
 
                 string mcVersion = parts[0];
                 if (!mcVersion.StartsWith("1.")) continue;
-                
+
                 string promoType = parts[1];
                 string forgeVersion = entry.Value?.ToString() ?? "";
 
                 if (!mcToLoaders.ContainsKey(mcVersion))
                     mcToLoaders[mcVersion] = new List<ModLoaderVersion>();
-                
+
                 // Add this version if not already present
                 if (!mcToLoaders[mcVersion].Any(l => l.Version == forgeVersion))
                 {
@@ -61,7 +61,7 @@ public class ForgeProvider : IServerJarProvider
                     });
                 }
             }
-            
+
             foreach (var kvp in mcToLoaders)
             {
                 versions.Add(new GameVersionWithLoaders
@@ -73,13 +73,15 @@ public class ForgeProvider : IServerJarProvider
                 });
             }
         }
-        
+
         // Numerical sort by MC version segments
         return versions
-            .OrderByDescending(v => {
+            .OrderByDescending(v =>
+            {
                 var parts = v.Id.Split('.');
                 long total = 0;
-                for(int i = 0; i < Math.Min(parts.Length, 3); i++) {
+                for (int i = 0; i < Math.Min(parts.Length, 3); i++)
+                {
                     if (long.TryParse(parts[i], out var p))
                         total += p * (long)Math.Pow(1000, 2 - i);
                 }
@@ -99,7 +101,7 @@ public class ForgeProvider : IServerJarProvider
         // Build the download URL for the installer
         // Official: https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.2.20/forge-1.20.1-47.2.20-installer.jar
         string url = $"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar";
-        
+
         // NOTE: Forge installers need to be RUN to generate the server. 
         // For now, we download the installer. The instance launch logic will need to handle the "installation" step.
         await _downloader.DownloadFileAsync(url, destinationPath, progress);
@@ -113,11 +115,11 @@ public class ForgeProvider : IServerJarProvider
             // Format: "1.20.1-recommended": "47.2.0"
             if (promos.TryGetPropertyValue($"{mcVersion}-recommended", out var rec))
                 return rec?.ToString() ?? "0";
-            
+
             if (promos.TryGetPropertyValue($"{mcVersion}-latest", out var lat))
                 return lat?.ToString() ?? "0";
         }
-        
+
         return "latest";
     }
 }

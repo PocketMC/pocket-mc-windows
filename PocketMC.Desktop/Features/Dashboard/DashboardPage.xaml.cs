@@ -34,7 +34,8 @@ namespace PocketMC.Desktop.Features.Dashboard
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                e.Effects = DragDropEffects.Copy;            }
+                e.Effects = DragDropEffects.Copy;
+            }
             else
             {
                 e.Effects = DragDropEffects.None;
@@ -42,10 +43,11 @@ namespace PocketMC.Desktop.Features.Dashboard
         }
 
         private void Page_DragLeave(object sender, DragEventArgs e)
-        {        }
+        { }
 
         private void Page_Drop(object sender, DragEventArgs e)
-        {            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (files.Length > 0)

@@ -29,7 +29,7 @@ public class FabricProvider : IServerJarProvider
     {
         var gameVersionsResponse = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/game");
         var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/loader");
-        
+
         var loaders = new List<ModLoaderVersion>();
         if (loadersResponse != null)
         {
@@ -87,7 +87,7 @@ public class FabricProvider : IServerJarProvider
     {
         var loaders = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/loader");
         var latest = loaders?.FirstOrDefault(l => (bool)(l?["stable"] ?? false));
-        return latest?["version"]?.ToString() ?? "0.15.7"; 
+        return latest?["version"]?.ToString() ?? "0.15.7";
     }
 
     private async Task<string> GetLatestInstallerVersionAsync()

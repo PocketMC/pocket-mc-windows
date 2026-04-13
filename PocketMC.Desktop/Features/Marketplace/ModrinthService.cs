@@ -75,9 +75,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                     facetsStr += $",[\"versions:{mcVersion}\"]";
                 }
                 string facets = $"[{facetsStr}]";
-                
+
                 string url = $"https://api.modrinth.com/v2/search?query={Uri.EscapeDataString(query)}&facets={Uri.EscapeDataString(facets)}&limit=20&offset={offset}&index={sort}";
-                
+
                 var result = await _httpClient.GetFromJsonAsync<ModrinthSearchResult>(url);
                 return result?.Hits ?? new();
             }
@@ -96,9 +96,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                 {
                     url += $"?game_versions=[\"{mcVersion}\"]";
                 }
-                
+
                 var versions = await _httpClient.GetFromJsonAsync<List<ModrinthVersion>>(url);
-                
+
                 // Return the first (latest) version
                 return versions?.Count > 0 ? versions[0] : null;
             }

@@ -24,8 +24,8 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         private string? GetActiveApiKey()
         {
-            return !string.IsNullOrWhiteSpace(_appState.Settings.CurseForgeApiKey) 
-                ? _appState.Settings.CurseForgeApiKey 
+            return !string.IsNullOrWhiteSpace(_appState.Settings.CurseForgeApiKey)
+                ? _appState.Settings.CurseForgeApiKey
                 : null;
         }
 
@@ -59,18 +59,18 @@ namespace PocketMC.Desktop.Features.Marketplace
                 };
 
                 string url = $"{ApiBase}/mods/search?gameId=432&classId={classId}&sortField=2&sortOrder=desc&pageSize=20&index={offset}";
-                
+
                 if (!string.IsNullOrEmpty(mcVersion) && mcVersion != "*")
                     url += $"&gameVersion={Uri.EscapeDataString(mcVersion)}";
-                
+
                 if (!string.IsNullOrEmpty(query))
                     url += $"&searchFilter={Uri.EscapeDataString(query)}";
 
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-api-key", apiKey);
-                
+
                 var httpResponse = await _httpClient.SendAsync(request);
-                
+
                 if (!httpResponse.IsSuccessStatusCode)
                 {
                     string errorText = await httpResponse.Content.ReadAsStringAsync();
@@ -98,7 +98,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     foreach (var item in data)
                     {
                         if (item == null) continue;
-                        
+
                         string icon = "";
                         var logoNode = item["logo"];
                         if (logoNode is JsonObject logoObj)
@@ -118,12 +118,12 @@ namespace PocketMC.Desktop.Features.Marketplace
                             Title = item["name"]?.ToString() ?? "Unknown",
                             Description = item["summary"]?.ToString() ?? "",
                             IconUrl = icon,
-                            Slug = item["id"]?.ToString() ?? "", 
+                            Slug = item["id"]?.ToString() ?? "",
                             Downloads = safeDownloads
                         });
                     }
                 }
-                
+
                 if (results.Count == 0)
                 {
                     results.Add(new ModrinthHit
@@ -134,7 +134,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                         Slug = ""
                     });
                 }
-                
+
                 return results;
             }
             catch (Exception ex)
@@ -167,14 +167,14 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-api-key", apiKey);
-                
+
                 var httpResponse = await _httpClient.SendAsync(request);
-                
+
                 if (!httpResponse.IsSuccessStatusCode) return null;
 
                 var rootNode = await httpResponse.Content.ReadFromJsonAsync<JsonNode>();
                 var files = rootNode?["data"]?.AsArray();
-                
+
                 if (files == null || files.Count == 0) return null;
 
                 var latestFile = files[0];

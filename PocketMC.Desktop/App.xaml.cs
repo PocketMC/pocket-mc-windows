@@ -19,6 +19,7 @@ using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Java;
+using PocketMC.Desktop.Features.Intelligence;
 
 using System.Net.Http;
 using System.Net;
@@ -85,6 +86,13 @@ public partial class App : Application
                 services.AddSingleton<InstanceManager>();
                 services.AddSingleton<ServerConfigurationService>();
                 services.AddSingleton<WorldManager>();
+                services.AddHttpClient<AiApiClient>(client =>
+                {
+                    client.Timeout = TimeSpan.FromMinutes(3);
+                    SetDefaultUserAgent(client);
+                });
+                services.AddSingleton<SummaryStorageService>();
+                services.AddSingleton<SessionSummarizationService>();
                 services.AddHttpClient<VanillaProvider>(SetDefaultUserAgent);
                 services.AddHttpClient<FabricProvider>(SetDefaultUserAgent);
                 services.AddHttpClient<ForgeProvider>(SetDefaultUserAgent);

@@ -10,17 +10,17 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
     {
         string? BreadcrumbCurrentText { get; set; }
         bool IsBreadcrumbVisible { get; set; }
-        
+
         string? TitleBarTitle { get; set; }
         string? TitleBarStatusText { get; set; }
         Brush? TitleBarStatusBrush { get; set; }
         bool IsTitleBarContextVisible { get; set; }
-        
+
         string? GlobalHealthStatusText { get; set; }
         Brush? GlobalHealthStatusBrush { get; set; }
 
         event Action? OnStateChanged;
-        
+
         void UpdateBreadcrumb(string? label);
         void SetTitleBarContext(string? title, string? statusText, Brush? statusBrush);
         void ClearTitleBarContext();

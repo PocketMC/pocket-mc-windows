@@ -34,7 +34,7 @@ namespace PocketMC.Desktop.Features.Settings
         private void ServerSettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
             AddHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler, true);
-            
+
             if (_isFirstLoad)
             {
                 _isFirstLoad = false;
@@ -51,11 +51,11 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 QueueTabTransitionAnimation();
             }
-            
+
             if (Window.GetWindow(this) as MainWindow is { } mainWindow)
             {
                 mainWindow.RootNavigation.IsPaneOpen = false;
-                
+
                 // CRITICAL: Disable any parent ScrollViewer that might be allowing the page to grow infinitely
                 DisableParentScrollViewer(this);
             }
@@ -78,7 +78,7 @@ namespace PocketMC.Desktop.Features.Settings
         private void ServerSettingsPage_Unloaded(object sender, RoutedEventArgs e)
         {
             RemoveHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler);
-            
+
             if (Window.GetWindow(this) as MainWindow is { } mainWindow)
             {
                 mainWindow.RootNavigation.IsPaneOpen = true;
@@ -97,7 +97,7 @@ namespace PocketMC.Desktop.Features.Settings
                 if (idx != -1 && MainTabControl.SelectedIndex != idx)
                 {
                     MainTabControl.SelectedIndex = idx;
-                    
+
                     foreach (var item in SidebarList.MenuItems)
                     {
                         if (item is Wpf.Ui.Controls.NavigationViewItem navItem)
@@ -226,6 +226,7 @@ namespace PocketMC.Desktop.Features.Settings
                 4 => BackupsScrollViewer,
                 5 => RestartScrollViewer,
                 6 => AdvancedScrollViewer,
+                7 => SummariesScrollViewer,
                 _ => null
             };
         }

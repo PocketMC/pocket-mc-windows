@@ -67,7 +67,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private string _worldSizeText = "";
         public string WorldSizeText { get => _worldSizeText; set => SetProperty(ref _worldSizeText, value); }
-        
+
         public ICommand UploadWorldCommand { get; }
         public ICommand DeleteWorldCommand { get; }
         public ICommand BrowseMapsCommand { get; }
@@ -124,7 +124,7 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 try
                 {
-                    await _worldManager.ImportWorldZipAsync(file, Path.Combine(_serverDir, "world"), p => {});
+                    await _worldManager.ImportWorldZipAsync(file, Path.Combine(_serverDir, "world"), p => { });
                     LoadWorldState();
                 }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
@@ -145,11 +145,11 @@ namespace PocketMC.Desktop.Features.Settings
         private void BrowseMaps()
         {
             var browserPage = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion);
-            browserPage.OnMapDownloaded += async (tempZip) => 
+            browserPage.OnMapDownloaded += async (tempZip) =>
             {
-                try 
+                try
                 {
-                    await _worldManager.ImportWorldZipAsync(tempZip, Path.Combine(_serverDir, "world"), p => {});
+                    await _worldManager.ImportWorldZipAsync(tempZip, Path.Combine(_serverDir, "world"), p => { });
                     LoadWorldState();
                     File.Delete(tempZip);
                 }
