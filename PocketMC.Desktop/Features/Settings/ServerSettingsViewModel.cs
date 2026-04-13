@@ -179,16 +179,29 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task ResolveTunnelAddressAsync(PlayitApiClient client)
         {
-            if (!int.TryParse(General.ServerPort, out int port)) { PlayitAddress = "Invalid port."; return; }
-            PlayitAddress = "Resolving...";
+            if (!int.TryParse(General.ServerPort, out int port)) 
+            { 
+                PlayitAddress = "⚠ Invalid port number."; 
+                return; 
+            }
+            PlayitAddress = "⏳ Resolving tunnel...";
             try
             {
                 var result = await client.GetTunnelsAsync();
-                if (!result.Success) { PlayitAddress = "API Error."; return; }
+                if (!result.Success) 
+                { 
+                    PlayitAddress = "⚠ Failed to reach Playit API."; 
+                    return; 
+                }
                 var match = PlayitApiClient.FindTunnelForPort(result.Tunnels, port);
-                PlayitAddress = match != null ? match.PublicAddress : "No tunnel found.";
+                PlayitAddress = match != null 
+                    ? match.PublicAddress 
+                    : $"No tunnel found for port {port}. Please create a new tunnel.";
             }
-            catch { PlayitAddress = "Failed."; }
+            catch 
+            { 
+                PlayitAddress = "⚠ Connection failed. Check your internet."; 
+            }
         }
 
         private void SaveConfigurations()

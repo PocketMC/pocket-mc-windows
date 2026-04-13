@@ -234,9 +234,51 @@
                                                 </Grid>
                                             </Border>
 
-                                            <!-- Keep Networking Port input -->
-                                            <TextBlock Text="Networking Port:" Style="{StaticResource SettingsHeader}" Margin="0,0,0,8"/>
-                                            <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="25565" Width="120" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                    </ui:CardExpander>
+
+                                    <!-- NETWORKING & IP -->
+                                    <ui:CardExpander Header="Networking &amp; IP" Icon="{ui:SymbolIcon Globe24}" Margin="0,0,0,12" IsExpanded="True">
+                                        <StackPanel Margin="16,8,16,16">
+
+                                            <!-- Server Port -->
+                                            <TextBlock Text="Server Port" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="The port your Minecraft server listens on. Default is 25565." 
+                                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
+                                            <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}" 
+                                                        PlaceholderText="25565" Width="160" HorizontalAlignment="Left"/>
+
+                                            <Separator Margin="0,16" Opacity="0.15"/>
+
+                                            <!-- Public IP / Tunnel Endpoint -->
+                                            <TextBlock Text="Public Address (Tunnel)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="The public address players use to connect. Resolved from your active Playit.gg tunnels." 
+                                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" 
+                                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" 
+                                                        BorderThickness="1" CornerRadius="4" Padding="12,8" VerticalAlignment="Center">
+                                                    <StackPanel>
+                                                        <TextBlock x:Name="TxtPlayitAddress" Text="{Binding PlayitAddress}" 
+                                                                   FontFamily="Consolas" FontSize="14" 
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <ui:Button Grid.Column="1" Appearance="Secondary" 
+                                                           Content="Refresh" Icon="{ui:SymbolIcon ArrowSync24}" 
+                                                           Command="{Binding ResolvePlayitCommand}" 
+                                                           Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Re-resolve tunnel address for current port"/>
+                                            </Grid>
+
+
+
                                         </StackPanel>
                                     </ui:CardExpander>
 
