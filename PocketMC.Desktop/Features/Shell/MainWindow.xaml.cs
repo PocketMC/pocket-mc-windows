@@ -13,6 +13,8 @@ using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Settings;
+using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Settings;
 using Wpf.Ui.Controls;
 
 namespace PocketMC.Desktop.Features.Shell;
@@ -61,6 +63,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         
         Closing += MainWindow_Closing;
         _startupCoordinator.AttachHost(this);
+
+        AppTrayIcon.DataContext = _serviceProvider.GetRequiredService<TrayIconViewModel>();
     }
 
     /// <summary>
@@ -281,10 +285,39 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        var processManager = _serviceProvider.GetRequiredService<ServerProcessManager>();
+        if (processManager.ActiveProcesses.Count > 0)
+        {
+            e.Cancel = true;
+            this.Hide();
+            _serviceProvider.GetRequiredService<TrayIconViewModel>().EnsureVisible();
+            return;
+        }
+
         RootNavigation.Navigating -= OnNavigating;
         RootNavigation.Navigated -= OnNavigated;
         DetachTitleBarContextSource();
         _startupCoordinator.Shutdown();
+    }
+
+    private void AppTrayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
+    {
+        TrayOpen_Click(sender, e);
+    }
+
+    private void TrayOpen_Click(object sender, RoutedEventArgs e)
+    {
+        _serviceProvider.GetRequiredService<TrayIconViewModel>().Hide();
+        this.Show();
+        if (this.WindowState == WindowState.Minimized)
+            this.WindowState = WindowState.Normal;
+        this.Activate();
+    }
+
+    private void TrayExit_Click(object sender, RoutedEventArgs e)
+    {
+        _serviceProvider.GetRequiredService<ServerProcessManager>().KillAll();
+        Application.Current.Shutdown();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e) => _startupCoordinator.Start();

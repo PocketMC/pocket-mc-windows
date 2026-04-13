@@ -8,6 +8,7 @@
         xmlns:tunnel="clr-namespace:PocketMC.Desktop.Features.Tunnel"
         xmlns:setup="clr-namespace:PocketMC.Desktop.Features.Setup"
         xmlns:shell="clr-namespace:PocketMC.Desktop.Features.Shell"
+        xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
         mc:Ignorable="d"
         Title="PocketMC Desktop"
         WindowBackdropType="Mica"
@@ -24,6 +25,20 @@
                RenderOptions.BitmapScalingMode="HighQuality"
                IsHitTestVisible="False"
                Visibility="Collapsed"/>
+
+        <!-- TRAY ICON -->
+        <tb:TaskbarIcon x:Name="AppTrayIcon"
+                        IconSource="pack://application:,,,/icon.ico"
+                        ToolTipText="{Binding TooltipText}"
+                        Visibility="{Binding IconVisibility}"
+                        TrayMouseDoubleClick="AppTrayIcon_TrayMouseDoubleClick">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Open Dashboard" Click="TrayOpen_Click"/>
+                    <MenuItem Header="Exit PocketMC" Click="TrayExit_Click"/>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
 
         <!-- LAYER 1: NavigationView shell -->
             <ui:NavigationView x:Name="RootNavigation"

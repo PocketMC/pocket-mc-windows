@@ -132,6 +132,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IShellVisualService, ShellVisualService>();
             services.AddSingleton<ShellStartupCoordinator>();
             services.AddSingleton<ShellViewModel>();
+            services.AddSingleton<TrayIconViewModel>();
 
             services.AddTransient<MainWindow>();
             services.AddTransient<JavaSetupPage>();
