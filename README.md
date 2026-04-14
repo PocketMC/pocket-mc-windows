@@ -2,8 +2,9 @@
 
 <img src="docs/assets/logo.png" alt="PocketMC Logo" width="200" />
 
-**A professional Minecraft Java Edition server manager for Windows.**  
-Run, monitor, and share servers from your own machine, no sysadmin skills required.
+**Run Minecraft Java Edition servers from your Windows PC — without any mess** 
+---
+PocketMC is a modern Windows-native server manager for Vanilla, Paper, Fabric, and Forge servers. It helps you create, launch, monitor, back up, and share servers from your own machine with a polished GUI. Supports automatic Java provisioning, Playit.gg public tunneling, live server metrics, backups, and in-app plugin/mod workflows.
 
 [![Build](https://img.shields.io/github/actions/workflow/status/PocketMC/pocket-mc-windows/build.yml?branch=main&style=flat-square&logo=github)](https://github.com/PocketMC/pocket-mc-windows/actions)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
@@ -20,86 +21,46 @@ Run, monitor, and share servers from your own machine, no sysadmin skills requir
 
 ---
 
-## What Is This?
+## Why PocketMC?
 
-PocketMC Desktop is a **Windows-native GUI** for managing one or more Minecraft Java Edition servers on your local machine. It handles the parts that are annoying to do manually, Java runtime setup, process supervision, tunnel routing for public access, backups, plugin management, wrapped in a modern Fluent UI shell.
+Hosting a Minecraft server on Windows usually means juggling Java versions, server jars, folder layouts, backups, and public connectivity.
 
-It is not a hosting panel. It runs on your PC. Your server, your hardware, your control.
+PocketMC fixes that with a desktop-first workflow:
+
+- **Create multiple server instances** with isolated folders and metadata. Supports **Vanilla, Paper, Fabric, and Forge**. 
+- **Automatic Java runtime provisioning** for required Minecraft versions — no need to pre-install Java manually. 
+- **Public server access via Playit.gg** with guided in-app flow and per-start tunnel resolution. 
+- **Live CPU, RAM, and player metrics** on a dashboard built for real use, not just setup. 
+- **Backups and restore workflows** designed for live servers and safer world management. 
+- **Plugin, mod, and modpack workflows** with in-app browsing and compatibility-aware tooling. 
 
 ---
 
-## Features
+## Key Features
 
-### Instance Management
+### Server Instance Management
+Create and manage multiple Minecraft Java server instances side-by-side with clean separation between worlds, settings, and files. PocketMC supports **Vanilla**, **Paper**, **Fabric**, and **Forge** server types with guided creation and version selection.
 
-- Create multiple server instances side-by-side, each isolated in its own folder
-- Supports **Vanilla** (Mojang), **Paper** (high-performance), **Fabric**, and **Forge** (beta) server types
-- One-click JAR download directly from Mojang's launcher manifest, PaperMC's API, or Modrinth
-- Automatic `eula.txt` generation on instance creation
-- Per-instance metadata stored in `.pocket-mc.json`, human-readable and portable
+### Automatic Java Setup
+PocketMC downloads and manages its own Java runtimes for supported Minecraft versions, so you don’t have to deal with system-wide Java conflicts or manual installation steps.
 
-### Automatic Java Runtime Provisioning
+### Public Access with Playit.gg
+PocketMC integrates **Playit.gg** for public server sharing. The app can guide first-time tunnel setup, refresh tunnel addresses on server start, and surface the active public address directly in the UI.
 
-- Downloads and manages **headless JREs** (Java 11, 17, 21, 25) via the [Adoptium API](https://api.adoptium.net/)
-- Isolated from your system's Java install, no version conflicts
-- Custom Java executable path override per instance for advanced use cases
+### Live Dashboard & Console
+Monitor each server with live **CPU**, **RAM**, and **player count** metrics, then jump into a dedicated console with colorized logs, filtering, search, crash visibility, and command suggestions.
 
-### Public Server Tunneling via Playit.gg
+### World, Plugin, Mod, and Modpack Workflows
+Import worlds from ZIPs, browse plugins/mods from supported sources, and manage modded setups with compatibility-aware tooling and safer file handling.
 
-- Embedded [Playit.gg](https://playit.gg) agent runs as an app-scoped background process
-- First-time claim flow guided through an in-app wizard that opens automatically
-- Tunnel address resolved fresh on every server start, never stale-cached
-- Graceful handling of the free-tier 4-tunnel limit with a contextual dialog
-- Tunnel address displayed on instance cards with **one-click copy to clipboard**
-- Agent assigned to a Windows Job Object, guaranteed cleanup if PocketMC crashes
+### Backup and Restore
+Create manual backups or schedule automatic ones. PocketMC is built around real-world server operations, including safer world compression, restore workflows, and retention handling.
 
-### Server Lifecycle & Process Control
+### Crash-Safe Process Management
+PocketMC uses Windows-native process handling and cleanup patterns to reduce the chance of orphaned background processes when servers or tunnels crash.
 
-- Start, stop, and restart servers from the dashboard or the dedicated console view
-- **Windows Job Object** ensures all Java child processes die with PocketMC, no orphan processes
-- Graceful `/stop` command with configurable timeout, hard-kill fallback
-- Auto-restart on crash with **exponential backoff** and configurable max attempt limits
-- Real-time countdown display while a crashed server waits to restart
-- Per-instance session log written to `logs/pocketmc-session.log` with shared-access read
-
-### Resource Monitoring
-
-- Live CPU and RAM metrics per instance via Windows `Process` APIs
-- Sparkline history charts per card (powered by LiveCharts 2)
-- Global RAM header bar with 90% usage warning
-- Player count tracking via log parsing (`joined/left the game`, `/list` command reconciliation)
-- Adaptive polling interval, fewer resources consumed when more servers are running
-
-### Server Configuration
-
-- Full `server.properties` editor with categorized UI sections: World, Memory, Players, Network, Gameplay
-- Advanced properties data grid for any key not covered by the UI
-- Server icon upload with 64×64 dimension validation
-- MOTD live preview
-- RAM allocation sliders with a system-memory headroom warning
-- Per-instance advanced JVM arguments (tokenized correctly, no shell injection)
-
-### World Management
-
-- Upload any world as a **ZIP file**, intelligently hunts for `level.dat` regardless of ZIP structure
-- Delete the current world with a single confirmation
-- Running-server lock on all world operations
-
-### Plugin & Mod Management
-
-- Browse and install plugins/mods directly from [Modrinth](https://modrinth.com) and [CurseForge](https://curseforge.com) in-app
-- Local `.jar` file import with drag-and-drop support
-- Plugin `api-version` parsing from `plugin.yml` inside the JAR, **backward-compatibility-aware** mismatch warnings
-- Vanilla plugin tab warns that Paper is required, no silent failure
-- Running-server lock on all plugin/mod operations
-
-### Backup System
-
-- Manual and scheduled automatic backups (6h / 12h / 24h intervals)
-- Live-server-safe: sends `save-off` → `save-all` → waits for `Saved the game` confirmation before compressing
-- Locked-file tolerant: skips `session.lock` and any exclusively held files without failing the whole backup
-- Configurable retention, automatically prunes oldest ZIPs beyond the keep limit
-- One-click restore (server must be stopped)
+### AI Session Summaries
+Optionally generate structured summaries of server sessions using external AI providers for highlights, events, and session review.
 
 ---
 
@@ -140,7 +101,7 @@ It is not a hosting panel. It runs on your PC. Your server, your hardware, your 
 
 ### Build from Source
 
-**Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8), [Git](https://git-scm.com/)
+**Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0), [Git](https://git-scm.com/)
 
 ```bash
 git clone https://github.com/PocketMC/pocket-mc-windows.git
@@ -198,61 +159,6 @@ PocketMC integrates with [Playit.gg](https://playit.gg) for free public tunnelin
 3. The public address appears as a **copyable pill** on the instance card.
 
 > Playit.gg free accounts support up to 4 simultaneous tunnels.
-
----
-
-## Architecture Overview
-
-```
-App.xaml.cs  (IHost / DI root)
-│
-├── MainWindow           → Frame host, global RAM header
-│   ├── JavaSetupPage    → JRE acquisition + Playit binary download on first run
-│   └── DashboardPage    → Instance grid, Playit health banner, tunnel pill
-│       ├── NewInstanceDialog      → JAR download + EULA
-│       ├── ServerConsolePage      → Live log viewer, command input
-│       └── ServerSettingsPage     → Config, worlds, plugins, mods, backups, crash policy
-│
-├── Services (Singletons)
-│   ├── ApplicationState           → Runtime config store
-│   ├── SettingsManager            → Persistent JSON settings
-│   ├── InstanceManager            → CRUD for .pocket-mc.json metadata files
-│   ├── ServerProcessManager       → Process lifecycle, auto-restart, Job Object
-│   ├── ResourceMonitorService     → CPU/RAM polling via Windows Process API
-│   ├── BackupService              → Live-safe world zipping with lock-file tolerance
-│   ├── BackupSchedulerService     → Interval-based scheduler (60s tick)
-│   ├── PlayitAgentService         → playit.exe subprocess management
-│   ├── PlayitApiClient            → Tunnel list API, token validation
-│   └── TunnelService              → Tunnel resolution orchestration per server start
-│
-└── Utils
-    ├── FileUtils                  → Async copy/delete/clean with read-only stripping
-    ├── MemoryHelper               → GlobalMemoryStatusEx P/Invoke, GC fallback
-    ├── SlugHelper                 → URL-safe folder name generation with collision handling
-    └── SystemMetrics              → Total physical RAM via kernel32
-```
-
-**Key architectural decisions:**
-
-- **Windows Job Object** —> all child processes (Java servers, Playit agent) are assigned to a single Job Object. If PocketMC is killed hard (crash, task manager), the OS cleans up every child automatically. No zombie processes.
-- **No shell intermediaries** —> `ProcessStartInfo.ArgumentList` is used exclusively. No `cmd.exe`, no argument string concatenation, no injection surface.
-- **Tunnel addresses are never cached** —> `PlayitApiClient.GetTunnelsAsync()` is called fresh on every server start. Stale addresses cause connection failures; the API call is cheap.
-- **Dispatcher batching in console view** —> a 100ms `DispatcherTimer` flushes a `ConcurrentQueue<LogLine>` in batches of up to 200 lines, preventing UI jank on high-throughput server output.
-
----
-
-## Tech Stack
-
-| Component | Technology |
-|---|---|
-| Language | C# 12, .NET 8 |
-| UI Framework | WPF + [WPF-UI (Fluent)](https://github.com/lepoco/wpfui) |
-| Charts | [LiveChartsCore 2 (SkiaSharp)](https://lvcharts.com/) |
-| Toast Notifications | Microsoft.Toolkit.Uwp.Notifications |
-| System Tray | Hardcodet.NotifyIcon.Wpf |
-| DI / Hosting | Microsoft.Extensions.Hosting |
-| Installer | Inno Setup 6 |
-| CI | GitHub Actions (Windows-latest) |
 
 ---
 
