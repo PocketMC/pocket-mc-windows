@@ -70,18 +70,6 @@ jobs:
           -o publish
 
     # -------------------------
-    # 9. PUBLISH PORTABLE EXE
-    # -------------------------
-    - name: Publish Portable EXE
-      run: |
-        dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
-          -c Release `
-          -r $env:RUNTIME `
-          --self-contained true `
-          -p:PublishSingleFile=true `
-          -o portable
-
-    # -------------------------
     # 10. GET PREVIOUS VERSION
     # -------------------------
     - name: Get Previous Version
@@ -118,7 +106,7 @@ jobs:
     # 12. VELOPACK PACKAGE
     # -------------------------
     - name: Pack with Velopack
-      run: vpk pack --packId ${{ env.APP_ID }} --packVersion ${{ env.VERSION }} --packDir publish --mainExe PocketMC.Desktop.exe --framework net8.0 --runtime ${{ env.RUNTIME }} --outputDir Releases --authors "DS Labs"
+      run: vpk pack --packId ${{ env.APP_ID }} --packVersion ${{ env.VERSION }} --packDir publish --mainExe PocketMC.Desktop.exe --framework net8.0 --runtime ${{ env.RUNTIME }} --outputDir Releases
 
     # -------------------------
     # 13. UPLOAD RELEASE ARTIFACTS
