@@ -116,11 +116,32 @@ To build the Velopack release locally, install the Velopack CLI and pack the pub
 
 ```powershell
 dotnet tool install -g vpk
-dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj -c Release -o ./publish
+dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj -c Release -r win-x64 -o ./publish
 vpk pack -u PocketMC -v 1.0.0 -p ./publish -e PocketMC.Desktop.exe
 ```
 
 The installer and release feed files will be written to `Releases/`.
+
+Quick local test (fast): publish and run the built exe to verify UI and basic flows before tagging and pushing a release.
+
+```powershell
+dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj -c Release -r win-x64 -o ./publish
+Start-Process -FilePath .\publish\PocketMC.Desktop.exe
+# Or run from an elevated console if needed:
+# & .\publish\PocketMC.Desktop.exe
+```
+
+Release & versioning notes:
+
+- Use a semver tag like `v1.2.3` when creating a release. The CI uses the tag name as the release version.
+
+```powershell
+# Create a tag and push it
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+When the CI runs on the pushed tag it will publish for `win-x64`, run `vpk pack` with the tag as the version, and attach `Setup.exe` to the GitHub Release automatically.
 
 ---
 
@@ -162,6 +183,12 @@ PocketMC integrates with [Playit.gg](https://playit.gg) for free public tunnelin
 > Playit.gg free accounts support up to 4 simultaneous tunnels.
 
 ---
+
+## Community & Support
+
+Join our community on Discord to get help, ask questions, and connect with other PocketMC users:
+
+- Discord: https://discord.gg/h27uNCaxPH
 
 ## Contributing
 

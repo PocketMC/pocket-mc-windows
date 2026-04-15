@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using PocketMC.Desktop.Models;
@@ -182,6 +183,33 @@ namespace PocketMC.Desktop.Features.Setup
             if (AiProviderCombo.SelectedItem is ComboBoxItem item && item.Content is string name)
                 return AiApiClient.ParseProvider(name);
             return AiProviderType.Gemini;
+        }
+
+        private void OpenDiscord_Click(object sender, RoutedEventArgs e)
+        {
+            var invite = "https://discord.gg/h27uNCaxPH";
+            try
+            {
+                var psi = new ProcessStartInfo(invite) { UseShellExecute = true };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Unable to open link", ex.Message);
+            }
+        }
+
+        private void CopyDiscordInvite_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Clipboard.SetText("https://discord.gg/h27uNCaxPH");
+                _dialogService.ShowMessage("Copied", "Discord invite copied to clipboard.");
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Unable to copy invite", ex.Message);
+            }
         }
     }
 }

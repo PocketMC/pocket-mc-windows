@@ -51,11 +51,44 @@ jobs:
 
     - name: Publish WPF app
       if: startsWith(github.ref, 'refs/tags/')
-      run: dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj -c Release -o ./publish
+      run: dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj -c Release -r win-x64 -o ./publish
 
     - name: Pack Velopack release
       if: startsWith(github.ref, 'refs/tags/')
       run: vpk pack -u PocketMC -v ${{ github.ref_name }} -p ./publish -e PocketMC.Desktop.exe
+
+    - name: Find Setup.exe
+      if: startsWith(github.ref, 'refs/tags/')
+      id: find_setup
+      shell: pwsh
+      run: |
+        $exe = Get-ChildItem -Path Releases -Filter *.exe -Recurse | Select-Object -First 1
+        if (-not $exe) { Write-Error "No .exe found in Releases/; ensure vpk produced Setup.exe"; Exit 1 }
+        echo "setup_path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: PocketMC ${{ github.ref_name }}
+        body: Release built by CI for ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Setup.exe to Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ steps.find_setup.outputs.setup_path }}
+        asset_name: Setup-${{ github.ref_name }}.exe
+        asset_content_type: application/octet-stream
 
     - name: Upload Velopack release artifact
       if: startsWith(github.ref, 'refs/tags/')

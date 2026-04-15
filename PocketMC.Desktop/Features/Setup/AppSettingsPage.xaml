@@ -169,6 +169,26 @@
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
+                <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon People24}" Margin="0,12,0,0">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Community" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Join our Discord server to get help, share tips, and connect with other PocketMC users." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <ui:Button Content="Join Discord" Appearance="Primary" Click="OpenDiscord_Click"/>
+                            <ui:Button Content="Copy Invite" Appearance="Secondary" Margin="8,0,0,0" Click="CopyDiscordInvite_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ui:CardExpander>
             </StackPanel>
         </ScrollViewer>
     </Grid>
