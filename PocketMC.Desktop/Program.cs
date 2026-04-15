@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using Velopack;
 
@@ -8,8 +9,20 @@ public static class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        VelopackApp.Build().Run();
+        // Velopack MUST be bootstrapped before any WPF code runs.
+        // This handles squirrel-style install/uninstall hooks and
+        // delta-patch application on startup.
+        VelopackApp.Build()
+            .WithFirstRun(_ =>
+            {
+                // Optional: show a "thanks for installing" notification.
+                // At this point the WPF application is not yet running,
+                // so we keep this lightweight (no WPF dialogs).
+                System.Diagnostics.Debug.WriteLine("[Velopack] First run after install.");
+            })
+            .Run();
 
+        // Normal WPF startup
         var app = new App();
         app.InitializeComponent();
         app.Run();
