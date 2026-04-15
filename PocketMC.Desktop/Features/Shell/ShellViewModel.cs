@@ -86,7 +86,6 @@ namespace PocketMC.Desktop.Features.Shell
 
             RestartAndApplyUpdateCommand = new RelayCommand(async _ => await ExecuteRestartAndApplyUpdateAsync());
             DismissUpdateBannerCommand = new RelayCommand(_ => IsUpdateBannerVisible = false);
-
             _uiStateService.OnStateChanged += () =>
             {
                 OnPropertyChanged(nameof(BreadcrumbCurrentText));
@@ -103,6 +102,7 @@ namespace PocketMC.Desktop.Features.Shell
             };
 
             _updateService.OnStatusChanged += OnUpdateStatusChanged;
+            InitializeUpdateCheck();
         }
 
         public async Task CheckForUpdatesAsync()

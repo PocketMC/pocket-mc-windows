@@ -63,7 +63,7 @@ jobs:
         $ver = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}".TrimStart('v') } else { "0.0.1-build${{ github.run_number }}" }
         
         # vpk pack automatically generates deltas if previous .nupkg files exist in Releases/
-        vpk pack --packId PocketMC --packVersion $ver --packDir ./publish --mainExe PocketMC.Desktop.exe --releaseDir Releases --delta BestSpeed
+        vpk pack --packId PocketMC --packVersion $ver --packDir ./publish --mainExe PocketMC.Desktop.exe --icon PocketMC.Desktop/icon.ico --releaseDir Releases --delta BestSpeed
 
     # ── Final Release: ONLY RUNS ON TAGS ──────────────────────────────────────
 

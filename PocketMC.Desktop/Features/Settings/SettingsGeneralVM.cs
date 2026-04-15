@@ -49,6 +49,12 @@ namespace PocketMC.Desktop.Features.Settings
             CheckForUpdatesCommand = new RelayCommand(
                 async _ => await _updateService.CheckAndDownloadAsync(),
                 _ => _updateService.CurrentStage != UpdateStage.Checking && _updateService.CurrentStage != UpdateStage.Downloading);
+
+            _updateService.OnStatusChanged += _ => 
+            {
+                System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                    System.Windows.Input.CommandManager.InvalidateRequerySuggested());
+            };
         }
 
         public void LoadIcon()
