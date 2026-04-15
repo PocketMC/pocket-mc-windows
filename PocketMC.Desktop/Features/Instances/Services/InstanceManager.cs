@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Desktop.Core.Interfaces;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
     /// <summary>
@@ -20,6 +21,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         private readonly InstanceRegistry _registry;
         private readonly InstancePathService _pathService;
         private readonly ApplicationState _applicationState;
+        private readonly IAssetProvider _assetProvider;
         private readonly ILogger<InstanceManager> _logger;
 
         private static readonly JsonSerializerOptions MetadataJsonOptions = new() { WriteIndented = true };
@@ -28,11 +30,13 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             InstanceRegistry registry,
             InstancePathService pathService,
             ApplicationState applicationState,
+            IAssetProvider assetProvider,
             ILogger<InstanceManager> logger)
         {
             _registry = registry;
             _pathService = pathService;
             _applicationState = applicationState;
+            _assetProvider = assetProvider;
             _logger = logger;
         }
 
@@ -74,16 +78,11 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         {
             try
             {
-                // Access the logo from embedded resources
-                var uri = new Uri("pack://application:,,,/Assets/logo.png");
-                var resourceStream = System.Windows.Application.GetResourceStream(uri);
-                if (resourceStream != null)
+                using var stream = _assetProvider.GetAssetStream("logo.png");
+                if (stream != null)
                 {
-                    using (var stream = resourceStream.Stream)
-                    using (var fileStream = File.Create(Path.Combine(instancePath, "server-icon.png")))
-                    {
-                        stream.CopyTo(fileStream);
-                    }
+                    using var fileStream = File.Create(Path.Combine(instancePath, "server-icon.png"));
+                    stream.CopyTo(fileStream);
                 }
             }
             catch (Exception ex)

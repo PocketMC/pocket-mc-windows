@@ -8,19 +8,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Setup;
-using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Infrastructure.Process;
-using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Infrastructure.FileSystem;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Core.Presentation;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Shell.Interfaces;
+using PocketMC.Desktop.Features.Console;
 
-namespace PocketMC.Desktop.Features.Dashboard
+namespace PocketMC.Desktop.Features.Instances.Services
 {
     public sealed class GlobalResourceSummary
     {
@@ -49,6 +41,8 @@ namespace PocketMC.Desktop.Features.Dashboard
         private GlobalResourceSummary _currentSummary;
         public GlobalResourceSummary CurrentSummary => Volatile.Read(ref _currentSummary);
 
+        public event EventHandler? MetricsUpdated;
+
         private class ProcessTracker
         {
             public TimeSpan LastTotalProcessorTime { get; set; }
@@ -56,31 +50,16 @@ namespace PocketMC.Desktop.Features.Dashboard
         }
 
         private readonly ConcurrentDictionary<Guid, ProcessTracker> _trackers = new();
-        private readonly IShellUIStateService _uiStateService;
-        private readonly IAppDispatcher _dispatcher;
 
         public ResourceMonitorService(
             ServerProcessManager serverProcessManager,
-            IShellUIStateService uiStateService,
-            IAppDispatcher dispatcher,
             ILogger<ResourceMonitorService> logger)
         {
             _serverProcessManager = serverProcessManager;
-            _uiStateService = uiStateService;
-            _dispatcher = dispatcher;
             _logger = logger;
             _totalPhysicalRamMb = (double)MemoryHelper.GetTotalPhysicalMemoryMb();
             double initialUsedMb = _totalPhysicalRamMb - (double)MemoryHelper.GetAvailablePhysicalMemoryMb();
             _currentSummary = new GlobalResourceSummary(initialUsedMb, _totalPhysicalRamMb);
-
-            // Push the initial reading to the UI immediately so the pill is populated before the first tick
-            _dispatcher.Invoke(() =>
-            {
-                _uiStateService.GlobalHealthStatusText = _currentSummary.DisplayText;
-                _uiStateService.GlobalHealthStatusBrush = _currentSummary.IsHighUsage
-                    ? System.Windows.Media.Brushes.Red
-                    : System.Windows.Media.Brushes.White;
-            });
 
             _logger.LogInformation("ResourceMonitorService initialized with system RAM info.");
             _timer = new Timer(OnTick, null, 2000, 2000);
@@ -105,10 +84,9 @@ namespace PocketMC.Desktop.Features.Dashboard
                 {
                     _trackers.Clear();
                     Metrics.Clear();
-                    // Always show real system RAM, even with no servers running
                     double idleUsedMb = (double)MemoryHelper.GetTotalPhysicalMemoryMb() - (double)MemoryHelper.GetAvailablePhysicalMemoryMb();
                     Volatile.Write(ref _currentSummary, new GlobalResourceSummary(idleUsedMb, _totalPhysicalRamMb));
-                    UpdateUIState();
+                    NotifyMetricsUpdated();
                     return;
                 }
 
@@ -129,11 +107,9 @@ namespace PocketMC.Desktop.Features.Dashboard
 
                     try
                     {
-                        // Update RAM
-                        proc.Refresh(); // Refresh the native Process properties
+                        proc.Refresh(); 
                         metric.RamUsageMb = proc.WorkingSet64 / (1024.0 * 1024.0);
 
-                        // Update CPU
                         TimeSpan cpuTime = proc.TotalProcessorTime;
                         DateTime now = DateTime.UtcNow;
 
@@ -150,11 +126,8 @@ namespace PocketMC.Desktop.Features.Dashboard
 
                         tracker.LastTotalProcessorTime = cpuTime;
                         tracker.LastSampleTime = now;
-
-                        // Sync PlayerCount
                         metric.PlayerCount = sp.PlayerCount;
 
-                        // Execute reconciling /list
                         if (sendListCommand && sp.State == ServerState.Online)
                         {
                             Task.Run(() => sp.WriteInputAsync("list"));
@@ -162,15 +135,14 @@ namespace PocketMC.Desktop.Features.Dashboard
                     }
                     catch (Win32Exception ex)
                     {
-                        _logger.LogDebug(ex, "Skipping metric sample for instance {InstanceId} because the process is no longer accessible.", sp.InstanceId);
+                        _logger.LogDebug(ex, "Skipping metric sample for instance {InstanceId}.", sp.InstanceId);
                     }
                     catch (InvalidOperationException ex)
                     {
-                        _logger.LogDebug(ex, "Skipping metric sample for instance {InstanceId} because the process is no longer valid.", sp.InstanceId);
+                        _logger.LogDebug(ex, "Skipping metric sample for instance {InstanceId}.", sp.InstanceId);
                     }
                 }
 
-                // Clean up trackers for stopped instances
                 var deadIds = _trackers.Keys.Except(activeProcesses.Select(p => p.InstanceId)).ToList();
                 foreach (var id in deadIds)
                 {
@@ -180,7 +152,7 @@ namespace PocketMC.Desktop.Features.Dashboard
 
                 double systemUsedMb = (double)MemoryHelper.GetTotalPhysicalMemoryMb() - (double)MemoryHelper.GetAvailablePhysicalMemoryMb();
                 Volatile.Write(ref _currentSummary, new GlobalResourceSummary(systemUsedMb, _totalPhysicalRamMb));
-                UpdateUIState();
+                NotifyMetricsUpdated();
             }
             catch (Exception ex)
             {
@@ -193,16 +165,9 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
         }
 
-        private void UpdateUIState()
+        private void NotifyMetricsUpdated()
         {
-            var summary = CurrentSummary;
-            _dispatcher.Invoke(() =>
-            {
-                _uiStateService.GlobalHealthStatusText = summary.DisplayText;
-                _uiStateService.GlobalHealthStatusBrush = summary.IsHighUsage
-                    ? System.Windows.Media.Brushes.Red
-                    : System.Windows.Media.Brushes.White;
-            });
+            MetricsUpdated?.Invoke(this, EventArgs.Empty);
         }
 
         public double GetTotalCommittedRamMb()

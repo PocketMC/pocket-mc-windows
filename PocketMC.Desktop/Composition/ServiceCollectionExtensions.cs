@@ -41,6 +41,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IDialogService, WpfDialogService>();
             services.AddSingleton<IAppDispatcher, WpfAppDispatcher>();
             services.AddSingleton<IFileSystem, PhysicalFileSystem>();
+            services.AddSingleton<IAssetProvider, WpfAssetProvider>();
             services.AddSingleton<IAppNavigationService, AppNavigationService>();
             services.AddSingleton<SettingsManager>();
             services.AddSingleton<ApplicationState>();

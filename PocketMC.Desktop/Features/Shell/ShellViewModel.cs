@@ -60,6 +60,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly IServerLifecycleService _lifecycleService;
         private readonly PlayitAgentService _playitAgentService;
         private readonly ServerProcessManager _serverProcessManager;
+        private readonly ResourceMonitorService _resourceMonitorService;
         private readonly ILogger<ShellViewModel> _logger;
 
         private bool _isNavigationLocked;
@@ -75,6 +76,7 @@ namespace PocketMC.Desktop.Features.Shell
             IServerLifecycleService lifecycleService,
             PlayitAgentService playitAgentService,
             ServerProcessManager serverProcessManager,
+            ResourceMonitorService resourceMonitorService,
             ILogger<ShellViewModel> logger)
         {
             _uiStateService = uiStateService;
@@ -82,6 +84,7 @@ namespace PocketMC.Desktop.Features.Shell
             _lifecycleService = lifecycleService;
             _playitAgentService = playitAgentService;
             _serverProcessManager = serverProcessManager;
+            _resourceMonitorService = resourceMonitorService;
             _logger = logger;
 
             RestartAndApplyUpdateCommand = new RelayCommand(async _ => await ExecuteRestartAndApplyUpdateAsync());
@@ -101,8 +104,29 @@ namespace PocketMC.Desktop.Features.Shell
                 OnPropertyChanged(nameof(GlobalHealthVisibility));
             };
 
+            _resourceMonitorService.MetricsUpdated += OnMetricsUpdated;
             _updateService.OnStatusChanged += OnUpdateStatusChanged;
             InitializeUpdateCheck();
+        }
+
+        private void OnMetricsUpdated(object? sender, EventArgs e)
+        {
+            var summary = _resourceMonitorService.CurrentSummary;
+            if (Application.Current?.Dispatcher?.CheckAccess() == false)
+            {
+                Application.Current.Dispatcher.BeginInvoke(() => {
+                    _uiStateService.GlobalHealthStatusText = summary.DisplayText;
+                    _uiStateService.GlobalHealthStatusBrush = summary.IsHighUsage
+                        ? System.Windows.Media.Brushes.Red
+                        : System.Windows.Media.Brushes.White;
+                });
+                return;
+            }
+
+            _uiStateService.GlobalHealthStatusText = summary.DisplayText;
+            _uiStateService.GlobalHealthStatusBrush = summary.IsHighUsage
+                ? System.Windows.Media.Brushes.Red
+                : System.Windows.Media.Brushes.White;
         }
 
         public async Task CheckForUpdatesAsync()

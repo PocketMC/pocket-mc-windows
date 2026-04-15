@@ -78,16 +78,21 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         Assert.Equal(6144, savedMetadata.MaxRamMb);
     }
 
-    private InstanceManager CreateManager(out InstanceRegistry registry, out InstancePathService pathService)
-    {
-        var state = new ApplicationState();
-        state.ApplySettings(new AppSettings { AppRootPath = _tempDirectory });
+        private class MockAssetProvider : PocketMC.Desktop.Core.Interfaces.IAssetProvider
+        {
+            public Stream? GetAssetStream(string assetName) => null;
+        }
 
-        pathService = new InstancePathService(state);
-        registry = new InstanceRegistry(pathService, NullLogger<InstanceRegistry>.Instance);
+        private InstanceManager CreateManager(out InstanceRegistry registry, out InstancePathService pathService)
+        {
+            var state = new ApplicationState();
+            state.ApplySettings(new AppSettings { AppRootPath = _tempDirectory });
 
-        return new InstanceManager(registry, pathService, state, NullLogger<InstanceManager>.Instance);
-    }
+            pathService = new InstancePathService(state);
+            registry = new InstanceRegistry(pathService, NullLogger<InstanceRegistry>.Instance);
+
+            return new InstanceManager(registry, pathService, state, new MockAssetProvider(), NullLogger<InstanceManager>.Instance);
+        }
 
     public void Dispose()
     {
