@@ -4,9 +4,7 @@ on:
   push:
     branches: [ "main", "master" ]
     tags: [ "v*" ]
-  pull_request:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual testing from the Actions tab
 
 permissions:
   contents: write
@@ -14,106 +12,61 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
-    # ── Checkout ────────────────────────────────────────────────────────────────
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Required for gh release list to work correctly
+        fetch-depth: 0 # Required to see previous tags for delta comparison
 
-    # ── .NET setup ──────────────────────────────────────────────────────────────
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
-    # ── Cache NuGet packages ────────────────────────────────────────────────────
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: |
-          nuget-
+    - name: Restore & Build
+      run: |
+        dotnet restore PocketMC.Desktop.sln
+        dotnet build PocketMC.Desktop.sln --configuration Release --no-restore
 
-    # ── Restore ─────────────────────────────────────────────────────────────────
-    - name: Restore dependencies
-      run: dotnet restore PocketMC.Desktop.sln
+    # ── Release Logic: Enabled for Tags, Main Branch, and Manual Runs ───────────
 
-    # ── Build ───────────────────────────────────────────────────────────────────
-    - name: Build Release
-      run: dotnet build PocketMC.Desktop.sln --configuration Release --no-restore
-
-    # ── Tests ────────────────────────────────────────────────────────────────────
-    - name: Run Tests
-      run: dotnet test PocketMC.Desktop.sln --configuration Release --no-build
-
-    # ═══════════════════════════════════════════════════════════════════════════
-    # Release steps — now enabled for tags, manual runs, and main branch pushes
-    # ═══════════════════════════════════════════════════════════════════════════
-
-    # ── Install Velopack CLI ─────────────────────────────────────────────────────
     - name: Install Velopack CLI
-      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+      # Condition expanded to allow testing on main or manual runs
+      if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
       run: dotnet tool install -g vpk
 
     - name: Add dotnet tools to PATH
-      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
       shell: pwsh
       run: echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-    # ── Publish WPF application ──────────────────────────────────────────────────
-    - name: Publish WPF app (win-x64 self-contained)
-      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+    - name: Publish WPF app
+      if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
       run: |
         dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
-          -c Release `
-          -r win-x64 `
-          --self-contained true `
-          -p:PublishSingleFile=false `
-          -o ./publish
+          -c Release -r win-x64 --self-contained true -o ./publish
 
-    # ── Download previous release packages for delta generation ─────────────────
-    - name: Download previous release packages for delta generation
-      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+    - name: Download Previous Release (For Delta Generation)
+      if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
       shell: pwsh
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Using built-in token for downloads
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         New-Item -ItemType Directory -Force -Path Releases | Out-Null
-        
-        # Determine the tag to compare against
-        $currentTag = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "latest" }
-        
-        $releasesJson = gh release list --limit 10 --json tagName,isDraft,isPrerelease 2>$null
-        if ($null -eq $releasesJson -or $releasesJson -eq "[]") {
-          Write-Host "No previous releases found. Skipping delta download."
-          exit 0
-        }
+        # vpk download syncs the latest releases.win.json and .nupkg to the local dir
+        vpk download github --repoUrl "https://github.com/${{ github.repository }}" --outputDir Releases 2>$null || true
 
-        $previous = ($releasesJson | ConvertFrom-Json) | Where-Object { -not $_.isDraft -and $_.tagName -ne $currentTag } | Select-Object -First 1
-        if ($previous) {
-          Write-Host "Downloading assets from $($previous.tagName) for delta generation..."
-          gh release download $($previous.tagName) --dir Releases --pattern "*.nupkg" --skip-existing 2>$null
-        }
-
-    # ── Pack Velopack release ────────────────────────────────────────────────────
-    - name: Pack Velopack release
-      if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+    - name: Pack Velopack Release
+      if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
       shell: pwsh
       run: |
-        # Fallback versioning if not on a tag
-        $releaseVersion = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}".TrimStart('v') } else { "0.0.0-build-${{ github.run_number }}" }
+        # Use tag version if available, otherwise use a build-number version
+        $ver = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}".TrimStart('v') } else { "0.0.1-build${{ github.run_number }}" }
         
-        vpk pack `
-          --packId PocketMC `
-          --packVersion $releaseVersion `
-          --packDir ./publish `
-          --mainExe PocketMC.Desktop.exe `
-          --releaseDir Releases `
-          --delta BestSpeed
+        # vpk pack automatically generates deltas if previous .nupkg files exist in Releases/
+        vpk pack --packId PocketMC --packVersion $ver --packDir ./publish --mainExe PocketMC.Desktop.exe --releaseDir Releases --delta BestSpeed
 
-    # ── Create GitHub Release (RESTRICTED TO TAGS) ──────────────────────────────
+    # ── Final Release: ONLY RUNS ON TAGS ──────────────────────────────────────
+
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
       shell: pwsh
@@ -121,15 +74,12 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         $tag = "${{ github.ref_name }}"
-        $files = Get-ChildItem -Path Releases -File -Recurse | Where-Object { $_.Length -gt 0 } | ForEach-Object { $_.FullName }
-        
+        $files = Get-ChildItem -Path Releases -File | ForEach-Object { $_.FullName }
         gh release create $tag $files --title "PocketMC $tag" --generate-notes
 
-    # ── Upload artifact for debugging ───────────────────────────────────────────
-    - name: Upload Velopack artifacts
+    - name: Upload Artifacts (Always for debugging)
       uses: actions/upload-artifact@v4
       with:
         name: PocketMC_Build_${{ github.run_number }}
         path: Releases/
-        retention-days: 7
         
