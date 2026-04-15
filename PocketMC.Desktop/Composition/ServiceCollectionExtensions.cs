@@ -58,10 +58,10 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageService>();
             services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SessionSummarizationService>();
 
-            // ── Auto-update service ──────────────────────────────────────────────
             // Singleton so that the same download pipeline is shared across all
             // callers and cannot be started twice by accident.
             services.AddSingleton<UpdateService>();
+            services.AddSingleton<IApplicationLifecycleService, ApplicationLifecycleService>();
 
             return services;
         }

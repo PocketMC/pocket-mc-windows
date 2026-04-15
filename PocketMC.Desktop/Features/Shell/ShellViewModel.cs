@@ -57,9 +57,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private readonly IShellUIStateService _uiStateService;
         private readonly UpdateService _updateService;
-        private readonly IServerLifecycleService _lifecycleService;
-        private readonly PlayitAgentService _playitAgentService;
-        private readonly ServerProcessManager _serverProcessManager;
+        private readonly IApplicationLifecycleService _applicationLifecycle;
         private readonly ResourceMonitorService _resourceMonitorService;
         private readonly ILogger<ShellViewModel> _logger;
 
@@ -73,17 +71,13 @@ namespace PocketMC.Desktop.Features.Shell
         public ShellViewModel(
             IShellUIStateService uiStateService,
             UpdateService updateService,
-            IServerLifecycleService lifecycleService,
-            PlayitAgentService playitAgentService,
-            ServerProcessManager serverProcessManager,
+            IApplicationLifecycleService applicationLifecycle,
             ResourceMonitorService resourceMonitorService,
             ILogger<ShellViewModel> logger)
         {
             _uiStateService = uiStateService;
             _updateService = updateService;
-            _lifecycleService = lifecycleService;
-            _playitAgentService = playitAgentService;
-            _serverProcessManager = serverProcessManager;
+            _applicationLifecycle = applicationLifecycle;
             _resourceMonitorService = resourceMonitorService;
             _logger = logger;
 
@@ -146,19 +140,7 @@ namespace PocketMC.Desktop.Features.Shell
             UpdateStatusMessage = "Shutting down active servers...";
             IsUpdateDownloading = true; // Use this as a general "busy" state for the banner
             
-            var activeIds = _serverProcessManager.ActiveProcesses.Keys.ToList();
-            if (activeIds.Count > 0)
-            {
-                _logger.LogInformation("Gracefully stopping {Count} servers before restart.", activeIds.Count);
-                var stopTasks = activeIds.Select(id => _lifecycleService.StopAsync(id));
-                await Task.WhenAll(stopTasks);
-            }
-
-            if (_playitAgentService.IsRunning)
-            {
-                _logger.LogInformation("Disconnecting Playit.gg tunnels.");
-                _playitAgentService.Stop();
-            }
+            await _applicationLifecycle.GracefulShutdownAsync();
 
             UpdateStatusMessage = "Ready to update...";
             _updateService.ApplyUpdateAndRestart();
