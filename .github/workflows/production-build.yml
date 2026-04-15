@@ -85,7 +85,7 @@ jobs:
       run: |
         vpk pack `
           --packId $env:APP_ID `
-          --packVersion 1.3.0 `
+          --packVersion 1.3.1 `
           --packDir publish `
           --mainExe $env:MAIN_EXE `
           --framework net8.0 `
