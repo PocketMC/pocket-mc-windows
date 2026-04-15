@@ -1,0 +1,51 @@
+name: Velopack Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish App
+        run: |
+          dotnet publish PocketMC.Desktop `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            /p:PublishSingleFile=true
+
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
+
+      - name: Add vpk to PATH
+        run: echo "%USERPROFILE%\.dotnet\tools" >> $env:GITHUB_PATH
+
+      - name: Pack with Velopack
+        run: |
+          vpk pack `
+            -u PocketMC `
+            -v ${{ github.ref_name }} `
+            -o Releases `
+            -p PocketMC.Desktop/bin/Release/net8.0-windows/win-x64/publish
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Releases/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
