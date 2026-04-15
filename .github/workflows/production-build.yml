@@ -67,6 +67,9 @@ jobs:
           --self-contained false `
           -o publish
 
+    - name: List publish output
+      run: dir publish
+
     # -------------------------
     # 📥 DOWNLOAD PREVIOUS RELEASE (for delta)
     # -------------------------
