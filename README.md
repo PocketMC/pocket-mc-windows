@@ -11,6 +11,7 @@ PocketMC is a modern Windows-native server manager for Vanilla, Paper, Fabric, a
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4?style=flat-square&logo=windows)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-22C55E?style=flat-square)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/PocketMC/pocket-mc-windows?style=flat-square)](https://github.com/PocketMC/pocket-mc-windows/releases)
+[![PocketMC Discord](https://img.shields.io/badge/PocketMC-Discord-%235865F2.svg)](https://discord.gg/h27uNCaxPH)
 
 ---
 
