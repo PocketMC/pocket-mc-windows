@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - New-Ci-Pipeline
 
 jobs:
   build:
