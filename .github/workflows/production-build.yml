@@ -86,6 +86,8 @@ jobs:
     # -------------------------
     - name: Get Previous Version
       id: version
+      env:
+       GH_TOKEN: ${{ github.token }}
       run: |
         $latest = gh release list --limit 1 --json tagName | ConvertFrom-Json
         if ($latest) {
