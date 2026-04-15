@@ -11,7 +11,7 @@ namespace PocketMC.Desktop.Features.Shell
 {
     public class ShellViewModel : ViewModelBase
     {
-        private const string VelopackUpdateSource = "YOUR_UPDATE_URL_OR_GITHUB_REPO";
+        private const string VelopackUpdateSource = "https://github.com/PocketMC/pocket-mc-windows";
         private readonly IShellUIStateService _uiStateService;
         private readonly ILogger<ShellViewModel> _logger;
         private bool _isNavigationLocked;
@@ -42,14 +42,7 @@ namespace PocketMC.Desktop.Features.Shell
         {
             try
             {
-                // TODO: Replace this placeholder with your Velopack releases URL or GitHub repo.
                 var mgr = new UpdateManager(VelopackUpdateSource);
-                if (VelopackUpdateSource == "https://github.com/PocketMC/pocket-mc-windows.git")
-                {
-                    _logger.LogWarning("Velopack update source is not configured yet. Replace the placeholder in ShellViewModel before enabling auto-updates.");
-                    return;
-                }
-
                 var updateInfo = await mgr.CheckForUpdatesAsync().ConfigureAwait(false);
                 if (updateInfo is null)
                 {

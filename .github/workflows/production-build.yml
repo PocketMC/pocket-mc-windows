@@ -55,16 +55,10 @@ jobs:
 
     - name: Pack Velopack release
       if: startsWith(github.ref, 'refs/tags/')
-      run: vpk pack -u PocketMC -v ${{ github.ref_name }} -p ./publish -e PocketMC.Desktop.exe
-
-    - name: Find Setup.exe
-      if: startsWith(github.ref, 'refs/tags/')
-      id: find_setup
-      shell: pwsh
       run: |
-        $exe = Get-ChildItem -Path Releases -Filter *.exe -Recurse | Select-Object -First 1
-        if (-not $exe) { Write-Error "No .exe found in Releases/; ensure vpk produced Setup.exe"; Exit 1 }
-        echo "setup_path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+        $releaseVersion = "${{ github.ref_name }}".TrimStart('v')
+        if ([string]::IsNullOrWhiteSpace($releaseVersion)) { Write-Error "Unable to determine release version from tag."; exit 1 }
+        vpk pack -u PocketMC -v $releaseVersion -p ./publish -e PocketMC.Desktop.exe
 
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
@@ -79,16 +73,31 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Upload Setup.exe to Release
+    - name: Upload all Releases/ files to GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
-      uses: actions/upload-release-asset@v1
+      shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.find_setup.outputs.setup_path }}
-        asset_name: Setup-${{ github.ref_name }}.exe
-        asset_content_type: application/octet-stream
+        UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
+      run: |
+        if (-not $env:UPLOAD_URL) { Write-Error "No upload_url from create_release"; exit 1 }
+        $uploadUrl = $env:UPLOAD_URL -replace '\{\?.*',''
+        Write-Host "Uploading assets to $uploadUrl"
+        $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = 'application/vnd.github+json' }
+        $files = Get-ChildItem -Path Releases -File -Recurse | Where-Object { $_.Length -gt 0 }
+        if (-not $files) { Write-Host "No files found in Releases/ to upload."; exit 0 }
+        foreach ($file in $files) {
+          $name = [System.Uri]::EscapeDataString($file.Name)
+          $uri = "$uploadUrl?name=$name"
+          Write-Host "Uploading $($file.FullName) as $name..."
+          try {
+            $resp = Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -InFile $file.FullName -ContentType 'application/octet-stream'
+            Write-Host "Uploaded $($file.Name) (id: $($resp.id))"
+          } catch {
+            Write-Error "Failed to upload $($file.Name): $_"
+            exit 1
+          }
+        }
 
     - name: Upload Velopack release artifact
       if: startsWith(github.ref, 'refs/tags/')

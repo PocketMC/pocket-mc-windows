@@ -118,7 +118,7 @@ To build the Velopack release locally, install the Velopack CLI and pack the pub
 ```powershell
 dotnet tool install -g vpk
 dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj -c Release -r win-x64 -o ./publish
-vpk pack -u PocketMC -v 1.0.0 -p ./publish -e PocketMC.Desktop.exe
+vpk pack -u PocketMC -v 1.2.4 -p ./publish -e PocketMC.Desktop.exe
 ```
 
 The installer and release feed files will be written to `Releases/`.
@@ -134,12 +134,12 @@ Start-Process -FilePath .\publish\PocketMC.Desktop.exe
 
 Release & versioning notes:
 
-- Use a semver tag like `v1.2.3` when creating a release. The CI uses the tag name as the release version.
+- Use a semver tag like `v1.2.4` when creating a release. The CI uses the tag name as the release version.
 
 ```powershell
 # Create a tag and push it
-git tag v1.2.3
-git push origin v1.2.3
+git tag v1.2.4
+git push origin v1.2.4
 ```
 
 When the CI runs on the pushed tag it will publish for `win-x64`, run `vpk pack` with the tag as the version, and attach `Setup.exe` to the GitHub Release automatically.
