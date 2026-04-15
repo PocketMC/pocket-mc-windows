@@ -15,6 +15,7 @@ using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Intelligence;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Setup
 {
@@ -24,15 +25,22 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly SettingsManager _settingsManager;
         private readonly IDialogService _dialogService;
         private readonly AiApiClient _aiApiClient;
+        private readonly UpdateService _updateService;
         private bool _isInitializing = true;
 
-        public AppSettingsPage(ApplicationState applicationState, SettingsManager settingsManager, IDialogService dialogService, AiApiClient aiApiClient)
+        public AppSettingsPage(
+            ApplicationState applicationState, 
+            SettingsManager settingsManager, 
+            IDialogService dialogService, 
+            AiApiClient aiApiClient,
+            UpdateService updateService)
         {
             InitializeComponent();
             _applicationState = applicationState;
             _settingsManager = settingsManager;
             _dialogService = dialogService;
             _aiApiClient = aiApiClient;
+            _updateService = updateService;
 
             Loaded += AppSettingsPage_Loaded;
         }
@@ -187,28 +195,44 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void OpenDiscord_Click(object sender, RoutedEventArgs e)
         {
-            var invite = "https://discord.gg/h27uNCaxPH";
-            try
-            {
-                var psi = new ProcessStartInfo(invite) { UseShellExecute = true };
-                Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowMessage("Unable to open link", ex.Message);
-            }
+            // Handled in AboutPage now
         }
 
         private void CopyDiscordInvite_Click(object sender, RoutedEventArgs e)
         {
+            // Handled in AboutPage now
+        }
+
+        private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            BtnCheckUpdates.IsEnabled = false;
+            UpdateStatusText.Visibility = Visibility.Visible;
+            UpdateStatusText.Text = "⏳ Checking for updates...";
+            UpdateStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
+
             try
             {
-                Clipboard.SetText("https://discord.gg/h27uNCaxPH");
-                _dialogService.ShowMessage("Copied", "Discord invite copied to clipboard.");
+                await _updateService.CheckAndDownloadAsync();
+                
+                if (_updateService.HasPendingUpdate)
+                {
+                    UpdateStatusText.Text = $"✅ Update ready: {_updateService.PendingVersion}. See the top banner to restart.";
+                    UpdateStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
+                }
+                else
+                {
+                    UpdateStatusText.Text = "✅ PocketMC is up to date!";
+                    UpdateStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
+                }
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Unable to copy invite", ex.Message);
+                UpdateStatusText.Text = $"❌ Error: {ex.Message}";
+                UpdateStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
+            }
+            finally
+            {
+                BtnCheckUpdates.IsEnabled = true;
             }
         }
     }

@@ -5,11 +5,13 @@ using System.Windows.Media.Imaging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Settings
 {
     public class SettingsGeneralVM : ViewModelBase
     {
+        private readonly UpdateService _updateService;
         private readonly string _serverDir;
         private readonly IDialogService _dialogService;
         private readonly IAppNavigationService _navigationService;
@@ -28,14 +30,25 @@ namespace PocketMC.Desktop.Features.Settings
         public BitmapImage? ServerIcon { get => _serverIcon; set => SetProperty(ref _serverIcon, value); }
 
         public ICommand BrowseIconCommand { get; }
+        public ICommand CheckForUpdatesCommand { get; }
 
-        public SettingsGeneralVM(string serverDir, IDialogService dialogService, IAppNavigationService navigationService, Action markDirty)
+        public SettingsGeneralVM(
+            string serverDir, 
+            UpdateService updateService,
+            IDialogService dialogService, 
+            IAppNavigationService navigationService, 
+            Action markDirty)
         {
             _serverDir = serverDir;
+            _updateService = updateService;
             _dialogService = dialogService;
             _navigationService = navigationService;
             _markDirty = markDirty;
+            
             BrowseIconCommand = new RelayCommand(async _ => await BrowseIconAsync());
+            CheckForUpdatesCommand = new RelayCommand(
+                async _ => await _updateService.CheckAndDownloadAsync(),
+                _ => _updateService.CurrentStage != UpdateStage.Checking && _updateService.CurrentStage != UpdateStage.Downloading);
         }
 
         public void LoadIcon()

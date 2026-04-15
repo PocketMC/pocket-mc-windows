@@ -51,13 +51,12 @@
 
             <!-- ─── Update Banner ─────────────────────────────────────────────── -->
             <Border Grid.Row="0"
-                    Visibility="{Binding UpdateBannerVisibility}"
+                    Visibility="{Binding IsUpdateBannerVisible, Converter={StaticResource BoolToVis}}"
                     Background="#2563EB"
                     Padding="12,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
@@ -72,55 +71,35 @@
                         <!-- Download progress bar -->
                         <ProgressBar Width="120" Height="6"
                                      Minimum="0" Maximum="100"
-                                     Value="{Binding UpdateDownloadPercent}"
+                                     Value="{Binding UpdateDownloadPercent, Mode=OneWay}"
                                      Margin="0,0,10,0"
                                      Visibility="{Binding IsUpdateDownloading, Converter={StaticResource BoolToVis}}"/>
 
                         <!-- Message -->
                         <TextBlock VerticalAlignment="Center"
+                                   Text="{Binding UpdateStatusMessage}"
                                    Foreground="White"
                                    FontSize="13"
-                                   FontWeight="Medium">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{Binding UpdateVersion, StringFormat='Downloading update {0}…'}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsUpdateReadyToApply}" Value="True">
-                                            <Setter Property="Text" Value="{Binding UpdateVersion, StringFormat='PocketMC {0} is ready to install'}"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                                   FontWeight="Medium"/>
                     </StackPanel>
 
-                    <!-- "Restart now" button — only shown when update is fully downloaded -->
-                    <ui:Button Grid.Column="1"
-                               Content="Restart to update"
-                               Appearance="Secondary"
-                               Margin="12,0,8,0"
-                               Padding="10,4"
-                               Click="BtnApplyUpdate_Click"
-                               ToolTip="Stop all servers first if any are running">
-                        <ui:Button.Style>
-                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsUpdateReadyToApply}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ui:Button.Style>
-                    </ui:Button>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <!-- "Restart now" button — only shown when update is fully downloaded -->
+                        <ui:Button Content="Restart to update"
+                                   Appearance="Secondary"
+                                   Margin="12,0,8,0"
+                                   Padding="10,4"
+                                   Command="{Binding RestartAndApplyUpdateCommand}"
+                                   ToolTip="Stop all servers first if any are running"
+                                   Visibility="{Binding IsUpdateReadyToApply, Converter={StaticResource BoolToVis}}"/>
 
-                    <!-- Dismiss -->
-                    <ui:Button Grid.Column="2"
-                               Icon="{ui:SymbolIcon Dismiss16}"
-                               Appearance="Transparent"
-                               Padding="4"
-                               Click="BtnDismissUpdateBanner_Click"
-                               ToolTip="Dismiss — update will apply on next restart"/>
+                        <!-- Dismiss -->
+                        <ui:Button Icon="{ui:SymbolIcon Dismiss16}"
+                                   Appearance="Transparent"
+                                   Padding="4"
+                                   Command="{Binding DismissUpdateBannerCommand}"
+                                   ToolTip="Dismiss — update will apply on next restart"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 

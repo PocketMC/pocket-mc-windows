@@ -306,6 +306,16 @@
                                             </Grid>
                                         </StackPanel>
                                     </ui:CardExpander>
+
+                                    <!-- SOFTWARE UPDATES -->
+                                    <ui:CardExpander Header="Software Updates" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12" IsExpanded="True">
+                                        <StackPanel Margin="16,8,16,16">
+                                            <TextBlock Text="Application Updates" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Checking for updates will look for new versions of PocketMC Desktop." 
+                                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,12"/>
+                                            <ui:Button Content="Check for Updates" Icon="{ui:SymbolIcon ArrowSync24}" Command="{Binding General.CheckForUpdatesCommand}" Appearance="Secondary" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                    </ui:CardExpander>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>

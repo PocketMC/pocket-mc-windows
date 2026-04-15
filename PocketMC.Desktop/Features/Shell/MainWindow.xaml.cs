@@ -62,27 +62,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         AppTrayIcon.DataContext = _serviceProvider.GetRequiredService<TrayIconViewModel>();
     }
 
-    private void BtnApplyUpdate_Click(object sender, RoutedEventArgs e)
-    {
-        var processManager = _serviceProvider.GetRequiredService<ServerProcessManager>();
-        if (!processManager.ActiveProcesses.IsEmpty)
-        {
-            System.Windows.MessageBox.Show(
-                "Please stop all running servers before applying the update.",
-                "Servers Running",
-                System.Windows.MessageBoxButton.OK,
-                System.Windows.MessageBoxImage.Warning);
-            return;
-        }
-
-        _viewModel.RequestApplyUpdate();
-    }
-
-    private void BtnDismissUpdateBanner_Click(object sender, RoutedEventArgs e)
-    {
-        // Now accessible because of the ShellViewModel change below
-        _viewModel.IsUpdateAvailable = false;
-    }
 
     private void ApplyDynamicWindowSize()
     {
@@ -98,7 +77,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         _startupCoordinator.Start();
-        _ = _viewModel.CheckForUpdatesAsync();
+        _viewModel.InitializeUpdateCheck();
     }
 
     private void OnNavigated(NavigationView sender, NavigatedEventArgs args)

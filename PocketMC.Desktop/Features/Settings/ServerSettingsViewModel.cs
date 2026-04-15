@@ -13,6 +13,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Instances.Backups;
@@ -99,7 +100,8 @@ namespace PocketMC.Desktop.Features.Settings
             _instanceStateChangedHandler = (id, state) => { if (id == Metadata.Id) dispatcher.Invoke(UpdateRunningState); };
             _lifecycleService.OnInstanceStateChanged += _instanceStateChangedHandler;
 
-            General = new SettingsGeneralVM(ServerDir, dialogService, navigationService, MarkChanged);
+            var updateService = (UpdateService)serviceProvider.GetService(typeof(UpdateService))!;
+            General = new SettingsGeneralVM(ServerDir, updateService, dialogService, navigationService, MarkChanged);
             World = new SettingsWorldVM(ServerDir, worldManager, dialogService, dispatcher, navigationService, serviceProvider, metadata.MinecraftVersion, () => IsRunning, MarkChanged);
             Performance = new SettingsPerformanceVM(dialogService, MarkChanged);
             Backups = new SettingsBackupsVM(metadata, ServerDir, backupService, dialogService, dispatcher, () => IsRunning, MarkChanged);

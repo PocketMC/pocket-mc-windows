@@ -12,23 +12,47 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,20">
             <ui:TextBlock FontTypography="Title" Text="About PocketMC" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
-            <TextBlock Text="Information and details about PocketMC Desktop." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
+            <TextBlock x:Name="TxtVersion" Text="Version 1.0.0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
         </StackPanel>
 
-        <ui:Card Grid.Row="1" Padding="24" MaxWidth="600" HorizontalAlignment="Left" VerticalAlignment="Top">
-            <StackPanel>
-                <TextBlock Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                <TextBlock Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+        <StackPanel Grid.Row="1">
+            <ui:Card Padding="24" MaxWidth="600" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                    <TextBlock Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
-                <TextBlock Text="Repository" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8">
-                    <Run Text="GitHub: "/>
-                    <Hyperlink NavigateUri="https://github.com/divyviradiya2/pocket-mc-desktop.git" RequestNavigate="Hyperlink_RequestNavigate">
-                        https://github.com/divyviradiya2/pocket-mc-desktop.git
-                    </Hyperlink>
-                </TextBlock>
-                <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
-            </StackPanel>
-        </ui:Card>
+                    <TextBlock Text="Repository" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                    <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8">
+                        <Run Text="GitHub: "/>
+                        <Hyperlink NavigateUri="https://github.com/PocketMC/pocket-mc-windows.git" RequestNavigate="Hyperlink_RequestNavigate">
+                            https://github.com/PocketMC/pocket-mc-windows.git
+                        </Hyperlink>
+                    </TextBlock>
+                    <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- COMMUNITY SECTION -->
+            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon People24}" MaxWidth="600" HorizontalAlignment="Left">
+                <ui:CardExpander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Community" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="Join our Discord server to get help, share tips, and connect with other PocketMC users." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </ui:CardExpander.Header>
+
+                <StackPanel Margin="16,8,16,16">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <ui:Button Content="Join Discord" Appearance="Primary" Click="OpenDiscord_Click"/>
+                        <ui:Button Content="Copy Invite" Appearance="Secondary" Margin="8,0,0,0" Click="CopyDiscordInvite_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:CardExpander>
+        </StackPanel>
     </Grid>
 </Page>

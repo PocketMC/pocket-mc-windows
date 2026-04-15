@@ -22,7 +22,29 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,0,16">
-                <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Color24}">
+                <!-- UPDATES -->
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Software Updates" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Manage and check for application updates." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <TextBlock Text="Check for Updates" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="Looking for a newer version of PocketMC Desktop? Click below to check manually." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+                        <ui:Button x:Name="BtnCheckUpdates" Content="Check for Updates" Icon="{ui:SymbolIcon ArrowSync24}" Appearance="Secondary" Click="CheckUpdates_Click"/>
+                        <TextBlock x:Name="UpdateStatusText" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Color24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -58,7 +80,7 @@
                     </StackPanel>
                 </ui:CardExpander>
 
-                <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Key24}" Margin="0,12,0,0">
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Key24}" Margin="0,12,0,0">
                     <ui:CardExpander.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -87,7 +109,7 @@
                     </StackPanel>
                 </ui:CardExpander>
 
-                <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon BrainCircuit24}" Margin="0,12,0,0">
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon BrainCircuit24}" Margin="0,12,0,0">
                     <ui:CardExpander.Header>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -169,26 +191,7 @@
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
-                <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon People24}" Margin="0,12,0,0">
-                    <ui:CardExpander.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Community" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Join our Discord server to get help, share tips, and connect with other PocketMC users." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Grid>
-                    </ui:CardExpander.Header>
 
-                    <StackPanel Margin="16,8,16,16">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                            <ui:Button Content="Join Discord" Appearance="Primary" Click="OpenDiscord_Click"/>
-                            <ui:Button Content="Copy Invite" Appearance="Secondary" Margin="8,0,0,0" Click="CopyDiscordInvite_Click"/>
-                        </StackPanel>
-                    </StackPanel>
-                </ui:CardExpander>
             </StackPanel>
         </ScrollViewer>
     </Grid>

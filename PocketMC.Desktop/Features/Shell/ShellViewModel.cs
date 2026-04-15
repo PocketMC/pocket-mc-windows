@@ -1,42 +1,35 @@
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Input;
 using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Features.Shell
 {
     public class ShellViewModel : ViewModelBase
     {
-        private readonly IShellUIStateService _uiStateService;
-        private readonly UpdateService _updateService;
-        private readonly ServerProcessManager _serverProcessManager;
-        private readonly ILogger<ShellViewModel> _logger;
-
-        private bool _isNavigationLocked;
-        private bool _isPaneVisible = true;
-        private bool _isPaneToggleVisible = true;
-
-        private bool _isUpdateAvailable;
-        private string? _updateVersion;
+        private string _updateStatusMessage = "Checking for updates...";
         private bool _isUpdateDownloading;
         private double _updateDownloadPercent;
         private string? _updateErrorMessage;
-
-        public bool IsUpdateAvailable
+        public string UpdateStatusMessage
         {
-            get => _isUpdateAvailable;
-            internal set { if (SetProperty(ref _isUpdateAvailable, value)) OnPropertyChanged(nameof(UpdateBannerVisibility)); }
+            get => _updateStatusMessage;
+            private set => SetProperty(ref _updateStatusMessage, value);
         }
 
-        public string? UpdateVersion
+        private bool _isUpdateBannerVisible;
+        public bool IsUpdateBannerVisible
         {
-            get => _updateVersion;
-            private set => SetProperty(ref _updateVersion, value);
+            get => _isUpdateBannerVisible;
+            set => SetProperty(ref _isUpdateBannerVisible, value);
         }
 
         public bool IsUpdateDownloading
@@ -60,22 +53,39 @@ namespace PocketMC.Desktop.Features.Shell
         public bool IsUpdateReadyToApply => _updateService.HasPendingUpdate && !IsUpdateDownloading;
 
         public Visibility UpdateBannerVisibility =>
-            IsUpdateAvailable || IsUpdateDownloading ? Visibility.Visible : Visibility.Collapsed;
+            IsUpdateBannerVisible ? Visibility.Visible : Visibility.Collapsed;
 
-        public bool CanApplyUpdate =>
-            _updateService.HasPendingUpdate &&
-            _serverProcessManager.ActiveProcesses.IsEmpty;
+        private readonly IShellUIStateService _uiStateService;
+        private readonly UpdateService _updateService;
+        private readonly IServerLifecycleService _lifecycleService;
+        private readonly PlayitAgentService _playitAgentService;
+        private readonly ServerProcessManager _serverProcessManager;
+        private readonly ILogger<ShellViewModel> _logger;
+
+        private bool _isNavigationLocked;
+        private bool _isPaneVisible = true;
+        private bool _isPaneToggleVisible = true;
+
+        public ICommand RestartAndApplyUpdateCommand { get; }
+        public ICommand DismissUpdateBannerCommand { get; }
 
         public ShellViewModel(
             IShellUIStateService uiStateService,
             UpdateService updateService,
+            IServerLifecycleService lifecycleService,
+            PlayitAgentService playitAgentService,
             ServerProcessManager serverProcessManager,
             ILogger<ShellViewModel> logger)
         {
             _uiStateService = uiStateService;
             _updateService = updateService;
+            _lifecycleService = lifecycleService;
+            _playitAgentService = playitAgentService;
             _serverProcessManager = serverProcessManager;
             _logger = logger;
+
+            RestartAndApplyUpdateCommand = new RelayCommand(async _ => await ExecuteRestartAndApplyUpdateAsync());
+            DismissUpdateBannerCommand = new RelayCommand(_ => IsUpdateBannerVisible = false);
 
             _uiStateService.OnStateChanged += () =>
             {
@@ -100,18 +110,33 @@ namespace PocketMC.Desktop.Features.Shell
             await _updateService.CheckAndDownloadAsync();
         }
 
-        public void RequestApplyUpdate()
+        public void InitializeUpdateCheck()
+        {
+            Task.Run(() => _updateService.CheckAndDownloadAsync());
+        }
+
+        private async Task ExecuteRestartAndApplyUpdateAsync()
         {
             if (!_updateService.HasPendingUpdate) return;
 
-            if (!_serverProcessManager.ActiveProcesses.IsEmpty)
+            UpdateStatusMessage = "Shutting down active servers...";
+            IsUpdateDownloading = true; // Use this as a general "busy" state for the banner
+            
+            var activeIds = _serverProcessManager.ActiveProcesses.Keys.ToList();
+            if (activeIds.Count > 0)
             {
-                _logger.LogInformation(
-                    "Update restart deferred — {Count} server(s) still running.",
-                    _serverProcessManager.ActiveProcesses.Count);
-                return;
+                _logger.LogInformation("Gracefully stopping {Count} servers before restart.", activeIds.Count);
+                var stopTasks = activeIds.Select(id => _lifecycleService.StopAsync(id));
+                await Task.WhenAll(stopTasks);
             }
 
+            if (_playitAgentService.IsRunning)
+            {
+                _logger.LogInformation("Disconnecting Playit.gg tunnels.");
+                _playitAgentService.Stop();
+            }
+
+            UpdateStatusMessage = "Ready to update...";
             _updateService.ApplyUpdateAndRestart();
         }
 
@@ -126,43 +151,54 @@ namespace PocketMC.Desktop.Features.Shell
             switch (status.Stage)
             {
                 case UpdateStage.Checking:
+                    IsUpdateBannerVisible = true;
                     IsUpdateDownloading = false;
+                    UpdateStatusMessage = "Checking for updates...";
                     UpdateErrorMessage = null;
                     break;
 
                 case UpdateStage.Downloading:
-                    IsUpdateAvailable = true;
+                    IsUpdateBannerVisible = true;
                     IsUpdateDownloading = true;
-                    UpdateVersion = status.NewVersion;
+                    UpdateStatusMessage = $"Downloading update {status.NewVersion}...";
                     UpdateDownloadPercent = status.DownloadPercent;
                     UpdateErrorMessage = null;
                     break;
 
                 case UpdateStage.ReadyToRestart:
-                    IsUpdateAvailable = true;
+                    IsUpdateBannerVisible = true;
                     IsUpdateDownloading = false;
-                    UpdateVersion = status.NewVersion;
+                    UpdateStatusMessage = $"PocketMC {status.NewVersion} is ready to install";
                     UpdateDownloadPercent = 100;
                     UpdateErrorMessage = null;
                     OnPropertyChanged(nameof(IsUpdateReadyToApply));
-                    OnPropertyChanged(nameof(CanApplyUpdate));
                     _logger.LogInformation("Update {Version} is ready to apply.", status.NewVersion);
                     break;
 
                 case UpdateStage.UpToDate:
                 case UpdateStage.Idle:
-                    IsUpdateAvailable = false;
+                    if (status.Stage == UpdateStage.Idle && _updateService.HasPendingUpdate)
+                    {
+                        // Keep banner if we already have an update ready
+                        break;
+                    }
+                    IsUpdateBannerVisible = false;
                     IsUpdateDownloading = false;
+                    UpdateStatusMessage = string.Empty;
                     UpdateErrorMessage = null;
                     break;
 
                 case UpdateStage.Error:
                     IsUpdateDownloading = false;
                     UpdateErrorMessage = status.ErrorMessage;
+                    UpdateStatusMessage = $"Update error: {status.ErrorMessage}";
                     _logger.LogWarning("Update pipeline error: {Error}", status.ErrorMessage);
-                    IsUpdateAvailable = false;
+                    // Keep banner visible to show error? or hide it?
+                    // Let's keep it for a few seconds then hide or let user dismiss.
                     break;
             }
+            
+            OnPropertyChanged(nameof(UpdateBannerVisibility));
         }
 
         public string? BreadcrumbCurrentText => _uiStateService.BreadcrumbCurrentText;
