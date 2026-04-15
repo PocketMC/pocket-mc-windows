@@ -1,27 +1,90 @@
 using System.Windows;
 using System.Windows.Media;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using Velopack;
-using Velopack.Exceptions;
+using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Features.Instances.Services;
 
 namespace PocketMC.Desktop.Features.Shell
 {
     public class ShellViewModel : ViewModelBase
     {
-        private const string VelopackUpdateSource = "https://github.com/PocketMC/pocket-mc-windows";
         private readonly IShellUIStateService _uiStateService;
+        private readonly UpdateService _updateService;
+        private readonly ServerProcessManager _serverProcessManager;
         private readonly ILogger<ShellViewModel> _logger;
+
         private bool _isNavigationLocked;
         private bool _isPaneVisible = true;
         private bool _isPaneToggleVisible = true;
 
-        public ShellViewModel(IShellUIStateService uiStateService, ILogger<ShellViewModel> logger)
+        // ── Update banner state ──────────────────────────────────────────────────
+        private bool _isUpdateAvailable;
+        private string? _updateVersion;
+        private bool _isUpdateDownloading;
+        private double _updateDownloadPercent;
+        private string? _updateErrorMessage;
+
+        public bool IsUpdateAvailable
+        {
+            get => _isUpdateAvailable;
+            private set { if (SetProperty(ref _isUpdateAvailable, value)) OnPropertyChanged(nameof(UpdateBannerVisibility)); }
+        }
+
+        public string? UpdateVersion
+        {
+            get => _updateVersion;
+            private set => SetProperty(ref _updateVersion, value);
+        }
+
+        public bool IsUpdateDownloading
+        {
+            get => _isUpdateDownloading;
+            private set => SetProperty(ref _isUpdateDownloading, value);
+        }
+
+        public double UpdateDownloadPercent
+        {
+            get => _updateDownloadPercent;
+            private set => SetProperty(ref _updateDownloadPercent, value);
+        }
+
+        public string? UpdateErrorMessage
+        {
+            get => _updateErrorMessage;
+            private set => SetProperty(ref _updateErrorMessage, value);
+        }
+
+        /// <summary>
+        /// True while an update has been fully downloaded and is waiting for the user
+        /// to click "Restart to update" — blocked while any server is running.
+        /// </summary>
+        public bool IsUpdateReadyToApply => _updateService.HasPendingUpdate && !IsUpdateDownloading;
+
+        public Visibility UpdateBannerVisibility =>
+            IsUpdateAvailable || IsUpdateDownloading ? Visibility.Visible : Visibility.Collapsed;
+
+        /// <summary>
+        /// True when the user can safely apply the update (update ready + no running servers).
+        /// </summary>
+        public bool CanApplyUpdate =>
+            _updateService.HasPendingUpdate &&
+            _serverProcessManager.ActiveProcesses.IsEmpty;
+
+        public ShellViewModel(
+            IShellUIStateService uiStateService,
+            UpdateService updateService,
+            ServerProcessManager serverProcessManager,
+            ILogger<ShellViewModel> logger)
         {
             _uiStateService = uiStateService;
+            _updateService = updateService;
+            _serverProcessManager = serverProcessManager;
             _logger = logger;
+
             _uiStateService.OnStateChanged += () =>
             {
                 OnPropertyChanged(nameof(BreadcrumbCurrentText));
@@ -36,33 +99,95 @@ namespace PocketMC.Desktop.Features.Shell
                 OnPropertyChanged(nameof(GlobalHealthStatusBrush));
                 OnPropertyChanged(nameof(GlobalHealthVisibility));
             };
+
+            _updateService.OnStatusChanged += OnUpdateStatusChanged;
         }
 
+        // ── Update entry points ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Starts a background check + download cycle. Called once from
+        /// <see cref="MainWindow"/> on <c>Window_Loaded</c>.
+        /// </summary>
         public async Task CheckForUpdatesAsync()
         {
-            try
-            {
-                var mgr = new UpdateManager(VelopackUpdateSource);
-                var updateInfo = await mgr.CheckForUpdatesAsync().ConfigureAwait(false);
-                if (updateInfo is null)
-                {
-                    _logger.LogDebug("Velopack update check completed with no updates available.");
-                    return;
-                }
+            await _updateService.CheckAndDownloadAsync();
+        }
 
-                _logger.LogInformation("Velopack update found: {Version}. Downloading and applying.", updateInfo.TargetFullRelease.Version);
-                await mgr.DownloadUpdatesAsync(updateInfo).ConfigureAwait(false);
-                mgr.ApplyUpdatesAndRestart(updateInfo);
-            }
-            catch (NotInstalledException)
+        /// <summary>
+        /// Called by the "Restart to update" button in the UI.
+        /// Guards against running servers before delegating to the service.
+        /// </summary>
+        public void RequestApplyUpdate()
+        {
+            if (!_updateService.HasPendingUpdate) return;
+
+            if (!_serverProcessManager.ActiveProcesses.IsEmpty)
             {
-                _logger.LogDebug("Velopack update check skipped because the app is not installed yet.");
+                _logger.LogInformation(
+                    "Update restart deferred — {Count} server(s) still running.",
+                    _serverProcessManager.ActiveProcesses.Count);
+                return;
             }
-            catch (Exception ex)
+
+            _updateService.ApplyUpdateAndRestart();
+        }
+
+        // ── Update status handler ────────────────────────────────────────────────
+
+        private void OnUpdateStatusChanged(UpdateStatus status)
+        {
+            // Always marshal back to the UI thread
+            if (Application.Current?.Dispatcher?.CheckAccess() == false)
             {
-                _logger.LogError(ex, "Velopack update check failed.");
+                Application.Current.Dispatcher.BeginInvoke(() => OnUpdateStatusChanged(status));
+                return;
+            }
+
+            switch (status.Stage)
+            {
+                case UpdateStage.Checking:
+                    IsUpdateDownloading = false;
+                    UpdateErrorMessage = null;
+                    break;
+
+                case UpdateStage.Downloading:
+                    IsUpdateAvailable = true;
+                    IsUpdateDownloading = true;
+                    UpdateVersion = status.NewVersion;
+                    UpdateDownloadPercent = status.DownloadPercent;
+                    UpdateErrorMessage = null;
+                    break;
+
+                case UpdateStage.ReadyToRestart:
+                    IsUpdateAvailable = true;
+                    IsUpdateDownloading = false;
+                    UpdateVersion = status.NewVersion;
+                    UpdateDownloadPercent = 100;
+                    UpdateErrorMessage = null;
+                    OnPropertyChanged(nameof(IsUpdateReadyToApply));
+                    OnPropertyChanged(nameof(CanApplyUpdate));
+                    _logger.LogInformation("Update {Version} is ready to apply.", status.NewVersion);
+                    break;
+
+                case UpdateStage.UpToDate:
+                case UpdateStage.Idle:
+                    IsUpdateAvailable = false;
+                    IsUpdateDownloading = false;
+                    UpdateErrorMessage = null;
+                    break;
+
+                case UpdateStage.Error:
+                    IsUpdateDownloading = false;
+                    UpdateErrorMessage = status.ErrorMessage;
+                    _logger.LogWarning("Update pipeline error: {Error}", status.ErrorMessage);
+                    // Don't show the banner for errors — just log silently
+                    IsUpdateAvailable = false;
+                    break;
             }
         }
+
+        // ── Shell UI state pass-through ──────────────────────────────────────────
 
         public string? BreadcrumbCurrentText => _uiStateService.BreadcrumbCurrentText;
         public bool IsBreadcrumbVisible => _uiStateService.IsBreadcrumbVisible;
