@@ -21,7 +21,6 @@ namespace PocketMC.Desktop.Features.Shell
         private bool _isPaneVisible = true;
         private bool _isPaneToggleVisible = true;
 
-        // ── Update banner state ──────────────────────────────────────────────────
         private bool _isUpdateAvailable;
         private string? _updateVersion;
         private bool _isUpdateDownloading;
@@ -31,7 +30,7 @@ namespace PocketMC.Desktop.Features.Shell
         public bool IsUpdateAvailable
         {
             get => _isUpdateAvailable;
-            private set { if (SetProperty(ref _isUpdateAvailable, value)) OnPropertyChanged(nameof(UpdateBannerVisibility)); }
+            internal set { if (SetProperty(ref _isUpdateAvailable, value)) OnPropertyChanged(nameof(UpdateBannerVisibility)); }
         }
 
         public string? UpdateVersion
@@ -58,18 +57,11 @@ namespace PocketMC.Desktop.Features.Shell
             private set => SetProperty(ref _updateErrorMessage, value);
         }
 
-        /// <summary>
-        /// True while an update has been fully downloaded and is waiting for the user
-        /// to click "Restart to update" — blocked while any server is running.
-        /// </summary>
         public bool IsUpdateReadyToApply => _updateService.HasPendingUpdate && !IsUpdateDownloading;
 
         public Visibility UpdateBannerVisibility =>
             IsUpdateAvailable || IsUpdateDownloading ? Visibility.Visible : Visibility.Collapsed;
 
-        /// <summary>
-        /// True when the user can safely apply the update (update ready + no running servers).
-        /// </summary>
         public bool CanApplyUpdate =>
             _updateService.HasPendingUpdate &&
             _serverProcessManager.ActiveProcesses.IsEmpty;
@@ -103,21 +95,11 @@ namespace PocketMC.Desktop.Features.Shell
             _updateService.OnStatusChanged += OnUpdateStatusChanged;
         }
 
-        // ── Update entry points ──────────────────────────────────────────────────
-
-        /// <summary>
-        /// Starts a background check + download cycle. Called once from
-        /// <see cref="MainWindow"/> on <c>Window_Loaded</c>.
-        /// </summary>
         public async Task CheckForUpdatesAsync()
         {
             await _updateService.CheckAndDownloadAsync();
         }
 
-        /// <summary>
-        /// Called by the "Restart to update" button in the UI.
-        /// Guards against running servers before delegating to the service.
-        /// </summary>
         public void RequestApplyUpdate()
         {
             if (!_updateService.HasPendingUpdate) return;
@@ -133,11 +115,8 @@ namespace PocketMC.Desktop.Features.Shell
             _updateService.ApplyUpdateAndRestart();
         }
 
-        // ── Update status handler ────────────────────────────────────────────────
-
         private void OnUpdateStatusChanged(UpdateStatus status)
         {
-            // Always marshal back to the UI thread
             if (Application.Current?.Dispatcher?.CheckAccess() == false)
             {
                 Application.Current.Dispatcher.BeginInvoke(() => OnUpdateStatusChanged(status));
@@ -181,13 +160,10 @@ namespace PocketMC.Desktop.Features.Shell
                     IsUpdateDownloading = false;
                     UpdateErrorMessage = status.ErrorMessage;
                     _logger.LogWarning("Update pipeline error: {Error}", status.ErrorMessage);
-                    // Don't show the banner for errors — just log silently
                     IsUpdateAvailable = false;
                     break;
             }
         }
-
-        // ── Shell UI state pass-through ──────────────────────────────────────────
 
         public string? BreadcrumbCurrentText => _uiStateService.BreadcrumbCurrentText;
         public bool IsBreadcrumbVisible => _uiStateService.IsBreadcrumbVisible;
