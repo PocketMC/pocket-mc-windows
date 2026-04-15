@@ -2,9 +2,16 @@ name: Production Build
 
 on:
   push:
-    branches: [ master ]
-  workflow_dispatch:
+    branches:
+      - '**'        # all branches
+    tags:
+      - 'v*'        # version tags
 
+  pull_request:
+    branches:
+      - '**'        # all PRs
+
+  workflow_dispatch:
 jobs:
   build:
     runs-on: windows-latest
