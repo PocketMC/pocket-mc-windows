@@ -93,6 +93,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<InstanceManager>();
             services.AddSingleton<ServerConfigurationService>();
             services.AddSingleton<WorldManager>();
+            services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService>();
 
             services.AddHttpClient<VanillaProvider>(SetDefaultUserAgent);
             services.AddHttpClient<FabricProvider>(SetDefaultUserAgent);

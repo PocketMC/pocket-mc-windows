@@ -192,6 +192,27 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Stethoscope24}" Margin="0,12,0,0">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Diagnostics &amp; Support" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Tools to help troubleshoot and report issues." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <TextBlock Text="Export Support Bundle" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="Generates a ZIP archive containing redacted App logs, system information, and running server metrics. Attach this to GitHub issues or Discord help requests." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+                        <ui:Button x:Name="BtnExportBundle" Content="Generate Support Bundle" Icon="{ui:SymbolIcon Archive24}" Appearance="Secondary" Click="ExportBundle_Click"/>
+                        <TextBlock x:Name="ExportBundleStatusText" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                </ui:CardExpander>
+
             </StackPanel>
         </ScrollViewer>
     </Grid>

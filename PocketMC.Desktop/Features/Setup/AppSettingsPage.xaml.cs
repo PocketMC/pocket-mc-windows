@@ -26,6 +26,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly IDialogService _dialogService;
         private readonly AiApiClient _aiApiClient;
         private readonly UpdateService _updateService;
+        private readonly PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService _diagnosticService;
         private bool _isInitializing = true;
 
         public AppSettingsPage(
@@ -33,7 +34,8 @@ namespace PocketMC.Desktop.Features.Setup
             SettingsManager settingsManager, 
             IDialogService dialogService, 
             AiApiClient aiApiClient,
-            UpdateService updateService)
+            UpdateService updateService,
+            PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService diagnosticService)
         {
             InitializeComponent();
             _applicationState = applicationState;
@@ -41,6 +43,7 @@ namespace PocketMC.Desktop.Features.Setup
             _dialogService = dialogService;
             _aiApiClient = aiApiClient;
             _updateService = updateService;
+            _diagnosticService = diagnosticService;
 
             Loaded += AppSettingsPage_Loaded;
         }
@@ -233,6 +236,36 @@ namespace PocketMC.Desktop.Features.Setup
             finally
             {
                 BtnCheckUpdates.IsEnabled = true;
+            }
+        }
+
+        private async void ExportBundle_Click(object sender, RoutedEventArgs e)
+        {
+            BtnExportBundle.IsEnabled = false;
+            ExportBundleStatusText.Visibility = Visibility.Visible;
+            ExportBundleStatusText.Text = "⏳ Generating support bundle (This may take a moment)...";
+            ExportBundleStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
+
+            try
+            {
+                // Put it on Desktop by default
+                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                string bundlePath = await _diagnosticService.GenerateSupportBundleAsync(desktopPath);
+                
+                ExportBundleStatusText.Text = $"✅ Bundle saved to Desktop: {System.IO.Path.GetFileName(bundlePath)}";
+                ExportBundleStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
+                
+                // Select file in explorer
+                System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{bundlePath}\"");
+            }
+            catch (Exception ex)
+            {
+                ExportBundleStatusText.Text = $"❌ Failed to generate bundle: {ex.Message}";
+                ExportBundleStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
+            }
+            finally
+            {
+                BtnExportBundle.IsEnabled = true;
             }
         }
     }
