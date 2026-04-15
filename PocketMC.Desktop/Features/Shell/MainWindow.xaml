@@ -40,8 +40,93 @@
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
 
-        <!-- LAYER 1: NavigationView shell -->
+        <!-- Root layout: update banner stacked above the nav shell -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <!-- Update notification banner — collapses when no update is staged -->
+                <RowDefinition Height="Auto"/>
+                <!-- Main navigation shell -->
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ─── Update Banner ─────────────────────────────────────────────── -->
+            <Border Grid.Row="0"
+                    Visibility="{Binding UpdateBannerVisibility}"
+                    Background="#2563EB"
+                    Padding="12,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Status text + progress -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Spinner while downloading -->
+                        <ui:ProgressRing Width="14" Height="14"
+                                         IsIndeterminate="True"
+                                         Margin="0,0,8,0"
+                                         Visibility="{Binding IsUpdateDownloading, Converter={StaticResource BoolToVis}}"/>
+
+                        <!-- Download progress bar -->
+                        <ProgressBar Width="120" Height="6"
+                                     Minimum="0" Maximum="100"
+                                     Value="{Binding UpdateDownloadPercent}"
+                                     Margin="0,0,10,0"
+                                     Visibility="{Binding IsUpdateDownloading, Converter={StaticResource BoolToVis}}"/>
+
+                        <!-- Message -->
+                        <TextBlock VerticalAlignment="Center"
+                                   Foreground="White"
+                                   FontSize="13"
+                                   FontWeight="Medium">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding UpdateVersion, StringFormat='Downloading update {0}…'}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsUpdateReadyToApply}" Value="True">
+                                            <Setter Property="Text" Value="{Binding UpdateVersion, StringFormat='PocketMC {0} is ready to install'}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- "Restart now" button — only shown when update is fully downloaded -->
+                    <ui:Button Grid.Column="1"
+                               Content="Restart to update"
+                               Appearance="Secondary"
+                               Margin="12,0,8,0"
+                               Padding="10,4"
+                               Click="BtnApplyUpdate_Click"
+                               ToolTip="Stop all servers first if any are running">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUpdateReadyToApply}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+
+                    <!-- Dismiss -->
+                    <ui:Button Grid.Column="2"
+                               Icon="{ui:SymbolIcon Dismiss16}"
+                               Appearance="Transparent"
+                               Padding="4"
+                               Click="BtnDismissUpdateBanner_Click"
+                               ToolTip="Dismiss — update will apply on next restart"/>
+                </Grid>
+            </Border>
+
+            <!-- ─── NavigationView shell ──────────────────────────────────────── -->
             <ui:NavigationView x:Name="RootNavigation"
+                               Grid.Row="1"
                                PaneDisplayMode="Left"
                                IsBackButtonVisible="Collapsed"
                                IsPaneToggleVisible="{Binding IsPaneToggleVisible}"
@@ -50,102 +135,102 @@
                                ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
-            <!-- ─── Title Bar ─── -->
-            <ui:NavigationView.Header>
-                <ui:TitleBar Title="PocketMC Desktop"
-                             ShowMaximize="True"
-                             ShowMinimize="True"
-                             ShowClose="True">
-                    <ui:TitleBar.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                <!-- ─── Title Bar ─── -->
+                <ui:NavigationView.Header>
+                    <ui:TitleBar Title="PocketMC Desktop"
+                                 ShowMaximize="True"
+                                 ShowMinimize="True"
+                                 ShowClose="True">
+                        <ui:TitleBar.Header>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <!-- Breadcrumb trail -->
+                                <!-- Context for detail pages like Console -->
+                                <Border x:Name="TitleBarContextBorder"
+                                        Grid.Column="1"
+                                        Background="#12FFFFFF"
+                                        CornerRadius="4"
+                                        Padding="10,3"
+                                        Margin="0,0,12,0"
+                                        VerticalAlignment="Center"
+                                        Visibility="{Binding TitleBarContextVisibility}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="TitleBarContextTitle"
+                                                   Text="{Binding TitleBarTitle}"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TitleBarContextSeparator"
+                                                   Text="  •  "
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource TextFillColorDisabledBrush}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="TitleBarContextStatus"
+                                                   Text="{Binding TitleBarStatusText}"
+                                                   Foreground="{Binding TitleBarStatusBrush}"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
 
+                                <!-- Global resource health pill -->
+                                <Border x:Name="GlobalHealthBorder"
+                                        Grid.Column="2"
+                                        Background="#18FFFFFF"
+                                        CornerRadius="4"
+                                        Padding="10,3"
+                                        Margin="0,0,8,0"
+                                        VerticalAlignment="Center"
+                                        Visibility="{Binding GlobalHealthVisibility}">
+                                    <TextBlock x:Name="GlobalHealthTextBlock"
+                                               Text="{Binding GlobalHealthStatusText}"
+                                               Foreground="{Binding GlobalHealthStatusBrush, FallbackValue=Silver}"
+                                               FontSize="11"/>
+                                </Border>
+                            </Grid>
+                        </ui:TitleBar.Header>
+                    </ui:TitleBar>
+                </ui:NavigationView.Header>
 
-                            <!-- Context for detail pages like Console -->
-                            <Border x:Name="TitleBarContextBorder"
-                                    Grid.Column="1"
-                                    Background="#12FFFFFF"
-                                    CornerRadius="4"
-                                    Padding="10,3"
-                                    Margin="0,0,12,0"
-                                    VerticalAlignment="Center"
-                                    Visibility="{Binding TitleBarContextVisibility}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock x:Name="TitleBarContextTitle"
-                                               Text="{Binding TitleBarTitle}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="TitleBarContextSeparator"
-                                               Text="  •  "
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextFillColorDisabledBrush}"
-                                               VerticalAlignment="Center"
-                                               Visibility="Visible"/>
-                                    <TextBlock x:Name="TitleBarContextStatus"
-                                               Text="{Binding TitleBarStatusText}"
-                                               Foreground="{Binding TitleBarStatusBrush}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
+                <!-- ─── Sidebar Items ─── -->
+                <ui:NavigationView.MenuItems>
+                    <ui:NavigationViewItem x:Name="NavDashboard"
+                                           Content="Dashboard"
+                                           Icon="{ui:SymbolIcon Home24}"
+                                           TargetPageType="{x:Type dash:DashboardPage}"/>
+                    <ui:NavigationViewItem x:Name="NavTunnel"
+                                           Content="Tunnel"
+                                           Icon="{ui:SymbolIcon Globe24}"
+                                           TargetPageType="{x:Type tunnel:TunnelPage}"/>
+                </ui:NavigationView.MenuItems>
 
-                            <!-- Global resource health pill -->
-                            <Border x:Name="GlobalHealthBorder"
-                                    Grid.Column="2"
-                                    Background="#18FFFFFF"
-                                    CornerRadius="4"
-                                    Padding="10,3"
-                                    Margin="0,0,8,0"
-                                    VerticalAlignment="Center"
-                                    Visibility="{Binding GlobalHealthVisibility}">
-                                <TextBlock x:Name="GlobalHealthTextBlock"
-                                           Text="{Binding GlobalHealthStatusText}"
-                                           Foreground="{Binding GlobalHealthStatusBrush, FallbackValue=Silver}"
-                                           FontSize="11"/>
-                            </Border>
-                        </Grid>
-                    </ui:TitleBar.Header>
-                </ui:TitleBar>
-            </ui:NavigationView.Header>
+                <!-- ─── Footer ─── -->
+                <ui:NavigationView.FooterMenuItems>
+                    <ui:NavigationViewItem x:Name="NavJavaSetup"
+                                           Content="Java Setup"
+                                           Icon="{ui:SymbolIcon ArrowDownload24}"
+                                           TargetPageType="{x:Type setup:JavaSetupPage}"/>
+                    <ui:NavigationViewItem x:Name="NavSettings"
+                                           Content="Settings"
+                                           Icon="{ui:SymbolIcon Settings24}"
+                                           TargetPageType="{x:Type setup:AppSettingsPage}"/>
+                    <ui:NavigationViewItem x:Name="NavAbout"
+                                           Content="About"
+                                           Icon="{ui:SymbolIcon Info24}"
+                                           TargetPageType="{x:Type shell:AboutPage}"/>
+                </ui:NavigationView.FooterMenuItems>
 
-            <!-- ─── Sidebar Items ─── -->
-            <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem x:Name="NavDashboard"
-                                       Content="Dashboard"
-                                       Icon="{ui:SymbolIcon Home24}"
-                                       TargetPageType="{x:Type dash:DashboardPage}"/>
-                <ui:NavigationViewItem x:Name="NavTunnel"
-                                       Content="Tunnel"
-                                       Icon="{ui:SymbolIcon Globe24}"
-                                       TargetPageType="{x:Type tunnel:TunnelPage}"/>
-
-            </ui:NavigationView.MenuItems>
-
-            <!-- ─── Footer ─── -->
-            <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem x:Name="NavJavaSetup"
-                                       Content="Java Setup"
-                                       Icon="{ui:SymbolIcon ArrowDownload24}"
-                                       TargetPageType="{x:Type setup:JavaSetupPage}"/>
-                <ui:NavigationViewItem x:Name="NavSettings"
-                                       Content="Settings"
-                                       Icon="{ui:SymbolIcon Settings24}"
-                                       TargetPageType="{x:Type setup:AppSettingsPage}"/>
-                <ui:NavigationViewItem x:Name="NavAbout"
-                                       Content="About"
-                                       Icon="{ui:SymbolIcon Info24}"
-                                       TargetPageType="{x:Type shell:AboutPage}"/>
-            </ui:NavigationView.FooterMenuItems>
-
-        </ui:NavigationView>
+            </ui:NavigationView>
+        </Grid>
     </Grid>
+
+    <ui:FluentWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </ui:FluentWindow.Resources>
 </ui:FluentWindow>
