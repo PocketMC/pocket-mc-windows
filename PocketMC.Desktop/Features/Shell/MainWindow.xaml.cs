@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Setup;
@@ -63,8 +62,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         AppTrayIcon.DataContext = _serviceProvider.GetRequiredService<TrayIconViewModel>();
     }
 
-    // ── Update banner handlers ────────────────────────────────────────────────
-
     private void BtnApplyUpdate_Click(object sender, RoutedEventArgs e)
     {
         var processManager = _serviceProvider.GetRequiredService<ServerProcessManager>();
@@ -73,8 +70,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             System.Windows.MessageBox.Show(
                 "Please stop all running servers before applying the update.",
                 "Servers Running",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
             return;
         }
 
@@ -83,12 +80,9 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void BtnDismissUpdateBanner_Click(object sender, RoutedEventArgs e)
     {
-        // Hide the banner visually; the update will still be applied on the
-        // next natural app restart because Velopack stages it on disk.
+        // Now accessible because of the ShellViewModel change below
         _viewModel.IsUpdateAvailable = false;
     }
-
-    // ── Window lifecycle ──────────────────────────────────────────────────────
 
     private void ApplyDynamicWindowSize()
     {
@@ -104,9 +98,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         _startupCoordinator.Start();
-
-        // Fire-and-forget — update check is fully non-blocking.
-        // Errors are handled inside UpdateService and only logged.
         _ = _viewModel.CheckForUpdatesAsync();
     }
 
@@ -301,7 +292,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     }
 
     public void ShowError(string title, string message) =>
-        System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+        System.Windows.MessageBox.Show(message, title, System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
 
     public void ShutdownApplication() => Application.Current.Shutdown();
     public void CloseApp() => Application.Current.Shutdown();
