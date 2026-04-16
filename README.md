@@ -45,6 +45,26 @@ Supported server types: **Vanilla · Paper · Fabric · Forge · Bedrock (BDS) �
 
 ---
 
+## Comparison
+
+| Tool | Type | Hosting | Cost | Java | Bedrock | Mods/Plugins | 1-Click Install | Backups | Live Metrics | No Port-Forward | Open Source |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **PocketMC** | Windows desktop app | Self-hosted | Free | ✅ Vanilla/Paper/Fabric/Forge | ✅ BDS + PocketMine-MP + Geyser | ✅ CurseForge/Modrinth/Poggit | ✅ | ✅ Scheduled + manual | ✅ CPU/RAM/players | ✅ Playit.gg built-in | ✅ MIT |
+| SquidServers | Desktop app | Self-hosted | Free | ✅ Vanilla/Paper/Fabric | ✅ via Geyser | ✅ Mods | ✅ | ❌ manual only | ❌ | ✅ | ❌ |
+| auto-mcs | Desktop + Docker | Self-hosted | Free | ✅ Paper/Purpur/Fabric/Forge/Spigot/Vanilla | ✅ via Geyser | ✅ Modrinth | ✅ | ✅ Auto | ❌ | ✅ playit.gg | ✅ AGPL-3.0 |
+| MCSManager | Web panel | Self-hosted | Free | ✅ | ✅ | ✅ | ✅ marketplace | ✅ scheduled | ✅ | ❌ | ✅ Apache-2.0 |
+| Pterodactyl | Web panel | Self-hosted | Free | ✅ | ✅ via eggs | ✅ | ✅ | ⚠️ manual scripts | ✅ | ❌ | ✅ MIT |
+| fork.gg | Windows GUI | Self-hosted | Free | ✅ Vanilla/Paper/Waterfall | ❌ | ⚠️ manual jar replace | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Apex Hosting | Managed host | Cloud | ~$4.49+/mo | ✅ | ✅ | ✅ 1-click modpacks | ✅ | ✅ daily | ✅ graphs | N/A | ❌ |
+| Aternos | Managed host | Cloud | Free (ads) | ✅ | ✅ | ⚠️ CurseForge/Modrinth only, no upload | ✅ | ✅ Google Drive | ❌ | N/A | ❌ |
+| CubeCoders AMP | Web panel | Self-hosted | £7.50+ one-time | ✅ | ✅ | ✅ local + S3 | ✅ + analytics | ❌ | ❌ |
+| e4mc | Tunnel mod | — | Free | ✅ | ❌ | N/A | N/A | ❌ | ❌ | ✅ | ✅ |
+| Essential Mod | Client mod (P2P) | Self-hosted | Free | ✅ | ❌ | ⚠️ must match mods | ✅ Host World | ❌ | ❌ | ✅ | ❌ |
+| Minehut | Managed host | Cloud | Free / ~$4-12 | ✅ | ✅ (beta crossplay) | ✅ upload jars | ✅ | ✅ 2/GB RAM | ❌ | N/A | ❌ |
+| playit.gg | Tunnel service | — | Free / $3 mo | ✅ | ✅ | N/A | N/A | ❌ | ✅ tunnel stats | ✅ | ❌ |
+
+---
+
 ## Installation
 
 Download `Setup.exe` from the [latest release](https://github.com/PocketMC/pocket-mc-windows/releases/latest) and run it.
