@@ -3,11 +3,18 @@ name: Production Build
 on:
   push:
     branches:
+      - main
       - master
       - New-Ci-Pipeline
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
 
 jobs:
-  build:
+  build_and_test:
     runs-on: windows-latest
 
     env:
@@ -56,10 +63,63 @@ jobs:
     # 7. TEST
     # -------------------------
     - name: Run Tests
-      run: dotnet test PocketMC.Desktop.sln --no-build
+      run: dotnet test PocketMC.Desktop.sln --no-build --collect:"XPlat Code Coverage"
 
     # -------------------------
-    # 8. PUBLISH MULTI-DLL
+    # 8. VULNERABILITY AUDIT
+    # -------------------------
+    - name: Audit NuGet vulnerabilities
+      run: dotnet list PocketMC.Desktop.sln package --vulnerable --include-transitive
+
+    # -------------------------
+    # 9. UPLOAD TEST ARTIFACTS
+    # -------------------------
+    - name: Upload test results and coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-and-coverage
+        path: |
+          **/TestResults/**
+          **/coverage.cobertura.xml
+      if: always()
+
+  package_release:
+    if: github.event_name == 'push'
+    needs: build_and_test
+    runs-on: windows-latest
+
+    env:
+      DOTNET_VERSION: '8.0.x'
+      RUNTIME: win-x64
+      APP_ID: PocketMC
+
+    steps:
+    # -------------------------
+    # 1. CHECKOUT
+    # -------------------------
+    - uses: actions/checkout@v4
+
+    # -------------------------
+    # 2. SETUP DEPENDENCIES
+    # -------------------------
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    # -------------------------
+    # 3. ADD TOOL PATH
+    # -------------------------
+    - name: Add .NET tools to PATH
+      run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
+
+    # -------------------------
+    # 4. INSTALL VELOPACK CLI
+    # -------------------------
+    - name: Install Velopack
+      run: dotnet tool install -g vpk
+
+    # -------------------------
+    # 5. PUBLISH MULTI-DLL
     # -------------------------
     - name: Publish Multi-DLL
       run: |
@@ -70,7 +130,7 @@ jobs:
           -o publish
 
     # -------------------------
-    # 10. GET PREVIOUS VERSION
+    # 6. GET PREVIOUS VERSION
     # -------------------------
     - name: Get Previous Version
       id: version
@@ -93,7 +153,7 @@ jobs:
         echo "VERSION=$newVersion" >> $env:GITHUB_ENV
 
     # -------------------------
-    # 11. DOWNLOAD PREVIOUS RELEASE
+    # 7. DOWNLOAD PREVIOUS RELEASE
     # -------------------------
     - name: Download previous release
       uses: robinraju/release-downloader@v1
@@ -103,13 +163,13 @@ jobs:
       continue-on-error: true
 
     # -------------------------
-    # 12. VELOPACK PACKAGE
+    # 8. VELOPACK PACKAGE
     # -------------------------
     - name: Pack with Velopack
       run: vpk pack --packId ${{ env.APP_ID }} --packVersion ${{ env.VERSION }} --packDir publish --mainExe PocketMC.Desktop.exe --framework net8.0 --runtime ${{ env.RUNTIME }} --outputDir Releases
 
     # -------------------------
-    # 13. UPLOAD RELEASE ARTIFACTS
+    # 9. UPLOAD RELEASE ARTIFACTS
     # -------------------------
     - name: Upload Release Artifacts
       uses: actions/upload-artifact@v4

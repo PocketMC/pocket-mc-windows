@@ -23,9 +23,8 @@ using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Composition;
+using PocketMC.Desktop.Infrastructure.Logging;
 
-using System.Net.Http;
-using System.Net;
 using System.IO;
 
 namespace PocketMC.Desktop;
@@ -41,12 +40,14 @@ public partial class App : Application
     {
         base.OnStartup(e);
         WindowsToastNotificationService.RegisterApplication();
+        string appLogDirectory = GetAppLogDirectory();
 
         _host = Host.CreateDefaultBuilder()
             .ConfigureLogging(logging =>
             {
                 logging.ClearProviders();
                 logging.AddDebug();
+                logging.AddProvider(new RollingFileLoggerProvider(appLogDirectory, LogLevel.Information, retainedFileCount: 14));
             })
             .ConfigureServices(services =>
             {
@@ -143,11 +144,7 @@ public partial class App : Application
 
     private static string WriteCrashReport(Exception exception, string source)
     {
-        string logDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "PocketMC",
-            "logs");
-
+        string logDirectory = GetAppLogDirectory();
         Directory.CreateDirectory(logDirectory);
 
         string crashReportPath = Path.Combine(
@@ -165,8 +162,11 @@ public partial class App : Application
         return crashReportPath;
     }
 
-    private static void SetDefaultUserAgent(HttpClient client)
+    private static string GetAppLogDirectory()
     {
-        client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0");
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "PocketMC",
+            "logs");
     }
 }
