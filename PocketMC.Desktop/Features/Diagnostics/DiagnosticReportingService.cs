@@ -84,7 +84,7 @@ public class DiagnosticReportingService
                 var instanceDir = Path.Combine(outServers, instance.Id.ToString());
                 Directory.CreateDirectory(instanceDir);
 
-                string originalPath = _instanceRegistry.GetPath(instance.Id);
+                string? originalPath = _instanceRegistry.GetPath(instance.Id);
                 if (originalPath == null || !Directory.Exists(originalPath)) continue;
 
                 // Copy .pocket-mc.json

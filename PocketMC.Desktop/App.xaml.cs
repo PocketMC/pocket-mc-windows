@@ -10,7 +10,6 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.InstanceCreation;
-using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Setup;
@@ -49,7 +48,10 @@ public partial class App : Application
 #if DEBUG
                 logging.AddDebug();
 #endif
-                logging.AddProvider(new RollingFileLoggerProvider(appLogDirectory, LogLevel.Information, retainedFileCount: 14));
+                logging.AddProvider(new RollingFileLoggerProvider(
+                    appLogDirectory,
+                    Microsoft.Extensions.Logging.LogLevel.Information,
+                    retainedFileCount: 14));
             })
             .ConfigureServices(services =>
             {
