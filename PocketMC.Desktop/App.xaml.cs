@@ -46,7 +46,9 @@ public partial class App : Application
             .ConfigureLogging(logging =>
             {
                 logging.ClearProviders();
+#if DEBUG
                 logging.AddDebug();
+#endif
                 logging.AddProvider(new RollingFileLoggerProvider(appLogDirectory, LogLevel.Information, retainedFileCount: 14));
             })
             .ConfigureServices(services =>

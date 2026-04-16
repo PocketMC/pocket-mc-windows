@@ -103,9 +103,16 @@ public sealed class RollingFileLoggerProvider : ILoggerProvider
 
             string filePath = Path.Combine(_logDirectory, $"pocketmc-{timestamp:yyyyMMdd}.log");
 
-            lock (Gate)
+            try
             {
-                File.AppendAllText(filePath, line);
+                lock (Gate)
+                {
+                    File.AppendAllText(filePath, line);
+                }
+            }
+            catch
+            {
+                // Logging failures must never take down the app.
             }
         }
 
