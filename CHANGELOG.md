@@ -1,6 +1,29 @@
 # Changelog
 
-This file summarizes the PocketMC Desktop release line from `v1.0.0` to `v1.3.0`.
+This file summarizes the PocketMC Desktop release line from `v1.0.0` to `v1.4.0`.
+
+## v1.4.0 - Bedrock & PocketMine Protocol Expansion
+
+This milestone transforms PocketMC into a multi-protocol powerhouse, adding first-class support for native Bedrock Edition (BDS) and PocketMine-MP engines alongside Java!
+
+### 🟢 Bedrock Dedicated Server (BDS) Support
+
+- **Full Version Discovery:** Integrated the kittizz community manifest, enabling one-click installation for 45+ versions of Bedrock (including stable and preview releases).
+- **Bedrock Add-on Management:** Native support for `.mcpack` and `.mcaddon` files. Importing an addon automatically handles file extraction and updates `world_behavior_packs.json` / `world_resource_packs.json` for you.
+- **Fixed Provisioning Failures:** Rebuilt the BDS download pipeline to use system temp directories, resolving "Access Denied" errors during instance creation.
+- **UWP Loopback Automation:** Added a hardware-level "Fix Bedrock LAN" tool in settings that automates `CheckNetIsolation.exe` loopback exemptions, allowing you to connect to local servers from Minecraft for Windows.
+
+### 🔵 PocketMine-MP Support
+
+- **PHP Runtime Orchestrator:** PocketMC now automatically provisions and manages sandboxed PHP 8.x runtimes for PocketMine instances.
+- **Poggit Marketplace:** Integrated Poggit browsing for PocketMine plugins. The "Plugin Marketplace" button now intelligently switches sources based on your server engine.
+- **Auto-Generator Patching:** Implemented a world-generator sanity check that automatically patches `server.properties` (e.g., `minecraft:normal` → `DEFAULT`) to prevent common "Unknown generator" startup crashes.
+
+### ✨ Dashboard & UI Polish
+
+- **Engine-Aware Settings:** The Addons tab now dynamically filters content. Java-only sections (like Modrinth/Forge) are hidden when managing Bedrock or PocketMine instances.
+- **IP Duplicate Suppression:** The dashboard card now intelligently hides the secondary "Bedrock IP" row for native Bedrock servers to reduce clutter.
+- **Config Core Keys:** Expanded the core property list to include Bedrock-specific networking keys (`server-portv6`, `allow-cheats`, etc.) for easier configuration.
 
 ## v1.3.0 - Architectural Hardening & Observability
 

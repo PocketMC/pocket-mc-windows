@@ -2,9 +2,9 @@
 
 <img src="docs/assets/logo.png" alt="PocketMC Logo" width="200" />
 
-**Run Minecraft Java Edition servers from your Windows PC — without any mess** 
+**Run Minecraft Java & Bedrock servers from your Windows PC — without any mess** 
 ---
-PocketMC is a modern Windows-native server manager for Vanilla, Paper, Fabric, and Forge servers. It helps you create, launch, monitor, back up, and share servers from your own machine with a polished GUI. Supports automatic Java provisioning, Playit.gg public tunneling, live server metrics, backups, and in-app plugin/mod workflows.
+PocketMC is a modern Windows-native server manager for Java (Vanilla, Paper, Fabric, Forge) and Bedrock (BDS, PocketMine-MP) servers. It helps you create, launch, monitor, back up, and share servers from your own machine with a polished GUI. Supports automatic Java and PHP provisioning, Playit.gg public tunneling, live server metrics, backups, and in-app plugin/mod workflows.
 
 [![Build](https://img.shields.io/github/actions/workflow/status/PocketMC/pocket-mc-windows/production-build.yml?branch=main&style=flat-square&logo=github)](https://github.com/PocketMC/pocket-mc-windows/actions)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
@@ -28,19 +28,19 @@ Hosting a Minecraft server on Windows usually means juggling Java versions, serv
 
 PocketMC fixes that with a desktop-first workflow:
 
-- **Create multiple server instances** with isolated folders and metadata. Supports **Vanilla, Paper, Fabric, and Forge**. 
-- **Automatic Java runtime provisioning** for required Minecraft versions — no need to pre-install Java manually. 
+- **Create multiple server instances** with isolated folders and metadata. Supports **Vanilla, Paper, Fabric, Forge, Bedrock (BDS), and PocketMine-MP**. 
+- **Automatic Runtime provisioning**: Managed Java (JRE) and PHP setups for required Minecraft versions — no need to pre-install anything manually. 
 - **Public server access via Playit.gg** with guided in-app flow and per-start tunnel resolution. 
 - **Live CPU, RAM, and player metrics** on a dashboard built for real use, not just setup. 
 - **Backups and restore workflows** designed for live servers and safer world management. 
-- **Plugin, mod, and modpack workflows** with in-app browsing and compatibility-aware tooling. 
+- **Addon, Plugin, and Mod workflows** with in-app browsing, Poggit integration, and .mcpack importers. 
 
 ---
 
 ## Key Features
 
 ### Server Instance Management
-Create and manage multiple Minecraft Java server instances side-by-side with clean separation between worlds, settings, and files. PocketMC supports **Vanilla**, **Paper**, **Fabric**, and **Forge** server types with guided creation and version selection.
+Create and manage multiple Minecraft Java & Bedrock server instances side-by-side. Supports **Vanilla**, **Paper**, **Fabric**, **Forge**, **Bedrock (BDS)**, and **PocketMine-MP** server types with guided creation and version selection.
 
 ### Automatic Java Setup
 PocketMC downloads and manages its own Java runtimes for supported Minecraft versions, so you don’t have to deal with system-wide Java conflicts or manual installation steps.
@@ -159,7 +159,7 @@ PocketMC will prompt you to select an **App Root Folder**. This is where everyth
 ```
 <AppRoot>/
 ├── servers/          # One subfolder per server instance
-├── runtime/          # Managed JREs (java11, java17, java21, java25)
+├── runtimes/         # Managed JREs (java11, java17, java21, etc.) and PHP
 └── tunnel/           # Playit.gg agent binary and logs
 ```
 
@@ -210,7 +210,7 @@ For significant architectural changes, open an issue first to discuss the approa
 
 ## Roadmap
 
-- [ ] Bedrock Edition server support
+- [x] Bedrock Edition (BDS) & PocketMine support
 - [ ] In-app whitelist and op management
 - [ ] System tray minimization with running-server indicator
 - [ ] Multi-monitor window persistence
