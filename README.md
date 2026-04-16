@@ -57,7 +57,7 @@ Supported server types: **Vanilla · Paper · Fabric · Forge · Bedrock (BDS) �
 | fork.gg | Windows GUI | Self-hosted | Free | ✅ Vanilla/Paper/Waterfall | ❌ | ⚠️ manual jar replace | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Apex Hosting | Managed host | Cloud | ~$4.49+/mo | ✅ | ✅ | ✅ 1-click modpacks | ✅ | ✅ daily | ✅ graphs | N/A | ❌ |
 | Aternos | Managed host | Cloud | Free (ads) | ✅ | ✅ | ⚠️ CurseForge/Modrinth only, no upload | ✅ | ✅ Google Drive | ❌ | N/A | ❌ |
-| CubeCoders AMP | Web panel | Self-hosted | £7.50+ one-time | ✅ | ✅ | ✅ local + S3 | ✅ + analytics | ❌ | ❌ |
+| CubeCoders AMP | Web panel | Self-hosted | £7.50+ one-time | ✅ | ✅ | ✅ local + S3 | ✅ + analytics | ❌ | ❌ | N/A | ❌ |
 | e4mc | Tunnel mod | — | Free | ✅ | ❌ | N/A | N/A | ❌ | ❌ | ✅ | ✅ |
 | Essential Mod | Client mod (P2P) | Self-hosted | Free | ✅ | ❌ | ⚠️ must match mods | ✅ Host World | ❌ | ❌ | ✅ | ❌ |
 | Minehut | Managed host | Cloud | Free / ~$4-12 | ✅ | ✅ (beta crossplay) | ✅ upload jars | ✅ | ✅ 2/GB RAM | ❌ | N/A | ❌ |
