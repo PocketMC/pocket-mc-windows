@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-behavior: smooth;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PocketMC | The Modern Windows Minecraft Server Manager</title>
+
+    <style>
+        :root {
+            --bg-base: #09090b;
+            --bg-surface: #18181b;
+            --bg-surface-hover: #27272a;
+            --border: #27272a;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --brand-cyan: #22d3ee;
+            --brand-blue: #3b82f6;
+            --brand-purple: #8b5cf6;
+            --blurple: #5865F2;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 { line-height: 1.2; font-weight: 700; }
+        p { color: var(--text-secondary); }
+        a { text-decoration: none; color: inherit; }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, var(--brand-cyan), var(--brand-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(9, 9, 11, 0.8);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 72px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-img {
+            height: 36px;
+            width: 36px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover { color: var(--text-primary); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--text-primary);
+            color: var(--bg-base);
+        }
+
+        .btn-primary:hover {
+            background: #e4e4e7;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border-color: var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-surface-hover);
+        }
+
+        .hero {
+            padding: 14rem 0 6rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(9,9,11,0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .hero-top {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 6vw, 4.5rem);
+            letter-spacing: -1.5px;
+            margin-bottom: 1.5rem;
+            max-width: 900px;
+            margin-inline: auto;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            max-width: 700px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .hero-side-image img,
+        .hero-image-wrapper img,
+        .feature-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .hero-side-image img {
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .hero-image-wrapper {
+            margin-top: 4rem;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        .section-padding { padding: 8rem 0; }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-bottom: 8rem;
+        }
+
+        .feature-row:nth-child(even) .feature-content { order: 2; }
+        .feature-row:nth-child(even) .feature-image { order: 1; }
+
+        .feature-content h3 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-content p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-image {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: var(--bg-surface);
+        }
+
+        .roadmap-container {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 3rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .roadmap-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .roadmap-item:last-child { border-bottom: none; }
+
+        .status-badge {
+            background: rgba(234,179,8,0.15);
+            color: #facc15;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .creators-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .creator-card {
+            background: linear-gradient(145deg, #18181b, #111114);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: 0.25s ease;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+        }
+
+        .creator-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--brand-cyan);
+            box-shadow: 0 12px 35px rgba(34,211,238,0.12);
+        }
+
+        .creator-role {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            color: var(--brand-cyan);
+        }
+
+        .creator-card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .creator-card p {
+            margin-bottom: 1.75rem;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 3rem 0;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 968px) {
+            .hero-top,
+            .feature-row {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-row:nth-child(even) .feature-content,
+            .feature-row:nth-child(even) .feature-image {
+                order: unset;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<nav>
+    <div class="container nav-content">
+        <a href="#" class="logo-container">
+            <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/logo.png" alt="PocketMC Logo" class="logo-img">
+            PocketMC
+        </a>
+
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#roadmap">Roadmap</a>
+            <a href="#creators">Creators</a>
+            <a href="https://github.com/PocketMC/pocket-mc-windows" target="_blank">GitHub</a>
+        </div>
+    </div>
+</nav>
+
+<main>
+
+<section class="hero container">
+    <div class="hero-top">
+        <div>
+            <h1>Run Minecraft Java Edition and Bedrock Edition servers from your Windows PC <br><span class="text-gradient">— without any mess.</span></h1>
+            <p>PocketMC is a modern Windows-native server manager for Vanilla, Paper, Fabric, Bedrock, and Forge servers. It helps you create, launch, monitor, back up, and share servers from your own machine with a polished GUI.</p>
+
+            <div style="display:flex;gap:1rem;justify-content:center;margin-top:2rem;">
+                <a href="https://github.com/PocketMC/pocket-mc-windows/releases" target="_blank" class="btn btn-primary">Download .exe (Latest Release)</a>
+                <a href="https://discord.gg/h27uNCaxPH" target="_blank" class="btn btn-secondary">Join Discord</a>
+            </div>
+        </div>
+
+        <div class="hero-side-image">
+            <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/logo.png" alt="Hero Side Image">
+        </div>
+    </div>
+
+    <div class="hero-image-wrapper">
+        <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-dashboard.png" alt="PocketMC Dashboard Interface">
+    </div>
+</section>
+
+<section id="features" class="container section-padding">
+    <div class="section-header">
+        <h2>Why PocketMC?</h2>
+        <p style="max-width: 600px; margin: 0 auto; font-size: 1.1rem;">Hosting a Minecraft server on Windows usually means juggling Java versions, server jars, folder layouts, backups, and public connectivity. PocketMC fixes that with a desktop-first workflow.</p>
+    </div>
+
+    <div class="feature-row">
+        <div class="feature-content">
+            <h3>Server Instance Management</h3>
+            <p>Create and manage multiple Minecraft Java and Bedrock server instances side-by-side with clean separation between worlds, settings, and files. PocketMC supports <strong>Vanilla, Paper, Fabric, Bedrock, and Forge</strong> server types with guided creation and version selection.</p>
+            <p>PocketMC downloads and manages its own Java runtimes for supported Minecraft versions, so you don't have to deal with system-wide Java conflicts or manual installation steps. PocketMC also uses built-in playit.gg tunneling to instantly make your Minecraft server public without needing to port forward or share your home IP address </p>
+        </div>
+        <div class="feature-image">
+            <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-dashboard.png" alt="PocketMC Settings UI">
+            <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-settings.png" alt="PocketMC Settings UI">
+        </div>
+    </div>
+
+    <div class="feature-row">
+        <div class="feature-content">
+            <h3>Live Dashboard & Dedicated Console</h3>
+            <p>Monitor each server with live CPU, RAM, and player count metrics on a dashboard built for real use, not just setup.</p>
+            <p>Jump into a dedicated console with colorized logs, filtering, search, crash visibility, and command suggestions.</p>
+        </div>
+        <div class="feature-image">
+            <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-console.png" alt="PocketMC Console UI">
+        </div>
+    </div>
+
+    <div class="feature-row">
+        <div class="feature-content">
+            <h3>Plugin, Mod, and Modpack Workflows</h3>
+            <p>Stop hunting down jar files on the web. Import worlds from ZIPs, browse plugins and mods from supported sources natively, and manage modded setups with compatibility-aware tooling and safer file handling directly within the app.</p>
+        </div>
+        <div class="feature-image">
+            <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-plugins.png" alt="PocketMC Plugins UI">
+        </div>
+    </div>
+</section>
+
+<section id="roadmap" class="container section-padding">
+    <div class="section-header">
+        <h2>Development Roadmap</h2>
+        <p>We are constantly improving PocketMC. Here is what we are currently working on.</p>
+    </div>
+
+    <div class="roadmap-container">
+        <div class="roadmap-item"><span>Bedrock Edition server support</span><span class="status-badge">Complete</span></div>
+        <div class="roadmap-item"><span>In-app whitelist and op management</span><span class="status-badge">In Progress</span></div>
+        <div class="roadmap-item"><span>System tray minimization with running-server indicator</span><span class="status-badge">In Progress</span></div>
+        <div class="roadmap-item"><span>Multi-monitor window persistence</span><span class="status-badge">In Progress</span></div>
+        <div class="roadmap-item"><span>Forge — full 1.17+ bootstrapper stability pass</span><span class="status-badge">In Progress</span></div>
+        <div class="roadmap-item"><span>Modpack import progress UI (streaming install feedback)</span><span class="status-badge">In Progress</span></div>
+        <div class="roadmap-item"><span>Player activity charts and historical metrics</span><span class="status-badge">In Progress</span></div>
+    </div>
+</section>
+
+<section id="creators" class="container section-padding">
+    <div class="section-header">
+        <h2>The Creators</h2>
+        <p>The team behind PocketMC.</p>
+    </div>
+
+    <div class="creators-grid">
+        <div class="creator-card">
+            <div class="creator-role">Developer</div>
+            <h3>Sahaj Italiya</h3>
+            <a href="https://github.com/Sahaj33-op" target="_blank" class="btn btn-primary">GitHub Profile</a>
+        </div>
+
+        <div class="creator-card">
+            <div class="creator-role">Developer</div>
+            <h3>Divy Viradiya</h3>
+            <a href="https://github.com/divyviradiya2" target="_blank" class="btn btn-primary">GitHub Profile</a>
+        </div>
+        <div class="creator-card">
+            <div class="creator-role">Website Development</div>
+            <h3>JohnDingleSin</h3>
+            <p>I have been coding in HTML, CSS, and JavaScript since 2022 and have created a couple of personal websites. And I am glad for the opportunity to make a website for the software I use to run my own website servers</p>
+            <a href="https://github.com/Johndinglesin" target="_blank" class="btn btn-primary">GitHub Profile</a>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<footer>
+    <div class="container">
+        <p style="margin-bottom:1rem;">Built for people who want to run a Minecraft server, not maintain a Linux box.</p>
+        <p>MIT © 2024 PocketMC Contributors — <a href="https://github.com/PocketMC/pocket-mc-windows/blob/main/LICENSE" target="_blank" style="text-decoration: underline;">View License</a></p>
+    </div>
+</footer>
+
+<!-- Start of OpenWidget (www.openwidget.com) code -->
+<script>
+  window.__ow = window.__ow || {};
+  window.__ow.organizationId = "129ccfe2-fcf5-4bbe-8a51-455b82b0448a";
+  window.__ow.integration_name = "manual_settings";
+  window.__ow.product_name = "openwidget";   
+  ;(function(n,t,c){function i(n){return e._h?e._h.apply(null,n):e._q.push(n)}var e={_q:[],_h:null,_v:"2.0",on:function(){i(["on",c.call(arguments)])},once:function(){i(["once",c.call(arguments)])},off:function(){i(["off",c.call(arguments)])},get:function(){if(!e._h)throw new Error("[OpenWidget] You can't use getters before load.");return i(["get",c.call(arguments)])},call:function(){i(["call",c.call(arguments)])},init:function(){var n=t.createElement("script");n.async=!0,n.type="text/javascript",n.src="https://cdn.openwidget.com/openwidget.js",t.head.appendChild(n)}};!n.__ow.asyncInit&&e.init(),n.OpenWidget=n.OpenWidget||e}(window,document,[].slice))
+</script>
+<noscript>You need to <a href="https://www.openwidget.com/enable-javascript" rel="noopener nofollow">enable JavaScript</a> to use the communication tool powered by <a href="https://www.openwidget.com/" rel="noopener nofollow" target="_blank">OpenWidget</a></noscript>
+<!-- End of OpenWidget code -->
+
+</body>
+</html>
