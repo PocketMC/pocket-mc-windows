@@ -12,11 +12,13 @@
             font-family: 'Inter', sans-serif;
             background-color: #030712;
             color: #f9fafb;
+            overflow-x: hidden; /* Prevents horizontal scroll from absolute glows */
         }
         .glass {
             background: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .text-gradient {
             background: linear-gradient(135deg, #22d3ee 0%, #818cf8 50%, #c084fc 100%);
@@ -28,7 +30,8 @@
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 100%;
+            width: 150vw;
+            max-width: 1200px;
             height: 600px;
             background: radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.15) 0%, rgba(3, 7, 18, 0) 70%);
             z-index: -1;
@@ -42,8 +45,21 @@
             border-color: rgba(34, 211, 238, 0.4);
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
         }
-        .screenshot-mask {
-            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        /* Custom scrollbar for console */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>
@@ -53,12 +69,13 @@
 
     <!-- Navigation -->
     <nav class="fixed top-0 w-full z-50 glass border-b border-white/5">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
             <a href="#" class="flex items-center gap-3 group">
-                <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/logo.png" alt="PocketMC" class="h-10 w-10 rounded-xl transition-transform group-hover:scale-110">
-                <span class="text-xl font-bold tracking-tight">PocketMC</span>
+                <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/logo.png" alt="PocketMC" class="h-9 w-9 sm:h-10 sm:w-10 rounded-xl transition-transform group-hover:scale-110">
+                <span class="text-lg sm:text-xl font-bold tracking-tight">PocketMC</span>
             </a>
             
+            <!-- Desktop Menu -->
             <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
                 <a href="#features" class="hover:text-white transition-colors">Features</a>
                 <a href="#roadmap" class="hover:text-white transition-colors">Roadmap</a>
@@ -68,16 +85,38 @@
                 </a>
             </div>
 
-            <a href="https://github.com/PocketMC/pocket-mc-windows/releases" target="_blank" class="bg-white text-black px-5 py-2.5 rounded-full font-bold text-sm hover:bg-gray-200 transition-all active:scale-95">
-                Download
-            </a>
+            <div class="flex items-center gap-4">
+                <a href="https://github.com/PocketMC/pocket-mc-windows/releases" target="_blank" class="hidden sm:flex bg-white text-black px-5 py-2.5 rounded-full font-bold text-sm hover:bg-gray-200 transition-all active:scale-95">
+                    Download
+                </a>
+                
+                <!-- Mobile Menu Toggle -->
+                <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-400 hover:text-white focus:outline-none rounded-lg hover:bg-white/5 transition-colors" aria-label="Toggle Menu">
+                    <i data-lucide="menu" class="w-6 h-6" id="menu-icon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobile-menu" class="hidden absolute top-20 left-0 w-full glass border-b border-white/5 flex-col px-4 py-6 shadow-2xl md:hidden">
+            <div class="flex flex-col gap-4">
+                <a href="#features" class="mobile-link block text-lg font-medium text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5">Features</a>
+                <a href="#roadmap" class="mobile-link block text-lg font-medium text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5">Roadmap</a>
+                <a href="#creators" class="mobile-link block text-lg font-medium text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5">Creators</a>
+                <a href="https://github.com/PocketMC/pocket-mc-windows" target="_blank" class="mobile-link flex items-center gap-2 text-lg font-medium text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-white/5">
+                    GitHub <i data-lucide="external-link" class="w-4 h-4"></i>
+                </a>
+                <a href="https://github.com/PocketMC/pocket-mc-windows/releases" target="_blank" class="mt-4 flex items-center justify-center bg-white text-black px-5 py-3 rounded-xl font-bold text-base hover:bg-gray-200 transition-all active:scale-95">
+                    Download PocketMC
+                </a>
+            </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <header class="pt-40 pb-20 px-6 overflow-hidden">
+    <header class="pt-32 sm:pt-40 pb-16 sm:pb-20 px-4 sm:px-6 overflow-hidden">
         <div class="max-w-5xl mx-auto text-center">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-widest mb-8 animate-fade-in">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-widest mb-6 sm:mb-8 animate-fade-in">
                 <span class="relative flex h-2 w-2">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
@@ -85,170 +124,193 @@
                 Windows Native Support
             </div>
             
-            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-[1.1]">
-                Master your Minecraft servers <br>
+            <h1 class="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight mb-6 sm:mb-8 leading-[1.1]">
+                Master your Minecraft servers <br class="hidden sm:block">
                 <span class="text-gradient">without the mess.</span>
             </h1>
             
-            <p class="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto mb-12 leading-relaxed">
+            <p class="text-base sm:text-lg lg:text-xl text-gray-400 max-w-3xl mx-auto mb-10 sm:mb-12 leading-relaxed px-2">
                 A modern, polished Windows-native manager for Java and Bedrock Edition servers. 
                 Built for power users who value stability, speed, and zero configuration friction.
             </p>
 
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-                <a href="https://github.com/PocketMC/pocket-mc-windows/releases" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-black px-8 py-4 rounded-2xl font-bold text-lg hover:bg-cyan-50 transition-all shadow-xl shadow-white/5">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 sm:mb-20 px-4">
+                <a href="https://github.com/PocketMC/pocket-mc-windows/releases" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-black px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-base sm:text-lg hover:bg-cyan-50 transition-all shadow-xl shadow-white/5 active:scale-95">
                     <i data-lucide="download" class="w-5 h-5"></i>
                     Get PocketMC .exe
                 </a>
-                <a href="https://discord.gg/h27uNCaxPH" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 glass px-8 py-4 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all">
+                <a href="https://discord.gg/h27uNCaxPH" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 glass px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-base sm:text-lg hover:bg-white/10 transition-all active:scale-95">
                     <i data-lucide="message-circle" class="w-5 h-5 text-indigo-400"></i>
                     Join Community
                 </a>
             </div>
 
             <!-- Dashboard Preview -->
-            <div class="relative group">
-                <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
-                <div class="relative glass rounded-3xl p-2 md:p-4 overflow-hidden shadow-2xl">
-                    <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-dashboard.png" alt="Dashboard" class="rounded-2xl border border-white/10 w-full h-auto">
+            <div class="relative group px-2 sm:px-0">
+                <div class="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-[2rem] sm:rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                <div class="relative glass rounded-[1.5rem] sm:rounded-3xl p-2 sm:p-4 overflow-hidden shadow-2xl">
+                    <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-dashboard.png" alt="Dashboard" class="rounded-xl sm:rounded-2xl border border-white/10 w-full h-auto object-cover">
                 </div>
             </div>
         </div>
     </header>
 
     <!-- Features Bento Grid -->
-    <section id="features" class="py-32 px-6 max-w-7xl mx-auto">
-        <div class="text-center mb-20">
-            <h2 class="text-4xl font-bold mb-4">Powerful Features. Desktop First.</h2>
-            <p class="text-gray-400 max-w-2xl mx-auto">Skip the Linux command line. PocketMC brings enterprise-grade server management to a beautiful Windows interface.</p>
+    <section id="features" class="py-20 sm:py-32 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div class="text-center mb-16 sm:mb-20">
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">Powerful Features. Desktop First.</h2>
+            <p class="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto">Skip the Linux command line. PocketMC brings enterprise-grade server management to a beautiful Windows interface.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[800px]">
+        <!-- Changed from md:grid-cols-12 to lg:grid-cols-12 for better tablet support -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto">
+            
             <!-- Instance Management -->
-            <div class="md:col-span-7 glass rounded-[2.5rem] p-8 md:p-12 flex flex-col justify-between overflow-hidden bento-card relative group">
+            <div class="lg:col-span-7 glass rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 lg:p-12 flex flex-col justify-between overflow-hidden bento-card relative group min-h-[400px]">
                 <div class="relative z-10">
                     <div class="w-12 h-12 bg-cyan-500/10 rounded-2xl flex items-center justify-center mb-6 border border-cyan-500/20">
                         <i data-lucide="layers" class="text-cyan-400"></i>
                     </div>
-                    <h3 class="text-3xl font-bold mb-4">Unified Instance Control</h3>
-                    <p class="text-gray-400 text-lg leading-relaxed max-w-md">
+                    <h3 class="text-2xl sm:text-3xl font-bold mb-4">Unified Instance Control</h3>
+                    <p class="text-gray-400 text-base sm:text-lg leading-relaxed max-w-md">
                         Manage Vanilla, Paper, Fabric, and Bedrock side-by-side. 
                         No more system-wide Java conflicts—we handle the runtimes for you.
                     </p>
                 </div>
-                <div class="mt-8 relative -mb-12 md:-mb-24 translate-y-4 group-hover:translate-y-2 transition-transform duration-500">
-                    <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-settings.png" class="rounded-xl border border-white/10 shadow-2xl rotate-2" alt="Settings">
+                <div class="mt-8 relative -mb-8 sm:-mb-16 lg:-mb-24 translate-y-4 group-hover:translate-y-2 transition-transform duration-500">
+                    <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/screenshot-settings.png" class="rounded-xl border border-white/10 shadow-2xl rotate-2 w-full object-cover" alt="Settings">
                 </div>
             </div>
 
             <!-- Console -->
-            <div class="md:col-span-5 glass rounded-[2.5rem] p-8 md:p-12 flex flex-col justify-between bento-card border border-white/5">
+            <div class="lg:col-span-5 glass rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 lg:p-12 flex flex-col justify-between bento-card border border-white/5 min-h-[400px]">
                 <div>
                     <div class="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/20">
                         <i data-lucide="terminal" class="text-purple-400"></i>
                     </div>
-                    <h3 class="text-3xl font-bold mb-4">Smart Console</h3>
-                    <p class="text-gray-400 text-lg leading-relaxed">
+                    <h3 class="text-2xl sm:text-3xl font-bold mb-4">Smart Console</h3>
+                    <p class="text-gray-400 text-base sm:text-lg leading-relaxed">
                         Colorized logs, real-time search, and command suggestions. It's the terminal, but evolved.
                     </p>
                 </div>
-                <div class="mt-8 rounded-2xl bg-black/40 border border-white/5 p-4 overflow-hidden h-64 font-mono text-xs text-green-400/80">
-                   <div class="space-y-1">
-                        <p>[12:01:05 INFO]: Starting minecraft server version 1.20.1</p>
-                        <p>[12:01:07 INFO]: Loading properties</p>
-                        <p class="text-cyan-400">[PocketMC]: Tunneling via playit.gg... Active!</p>
-                        <p class="text-white">[12:01:10 INFO]: Done! (2.4s)</p>
+                <div class="mt-8 rounded-2xl bg-[#0a0a0a] border border-white/10 p-4 overflow-hidden h-48 sm:h-64 flex flex-col">
+                   <div class="space-y-1.5 font-mono text-xs sm:text-sm text-green-400/80 overflow-y-auto overflow-x-auto custom-scrollbar h-full pr-2">
+                        <p class="whitespace-nowrap">[12:01:05 INFO]: Starting minecraft server version 1.20.1</p>
+                        <p class="whitespace-nowrap">[12:01:07 INFO]: Loading properties</p>
+                        <p class="whitespace-nowrap text-cyan-400">[PocketMC]: Tunneling via playit.gg... Active!</p>
+                        <p class="whitespace-nowrap">[12:01:08 INFO]: Default game type: SURVIVAL</p>
+                        <p class="whitespace-nowrap">[12:01:09 INFO]: Generating keypair</p>
+                        <p class="whitespace-nowrap text-white font-semibold">[12:01:10 INFO]: Done! (2.4s) For help, type "help"</p>
                    </div>
                 </div>
             </div>
 
             <!-- Plugins & Mods -->
-            <div class="md:col-span-5 glass rounded-[2.5rem] p-8 bento-card">
+            <div class="lg:col-span-5 glass rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 lg:p-12 bento-card">
                 <div class="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center mb-6 border border-orange-500/20">
                     <i data-lucide="package" class="text-orange-400"></i>
                 </div>
-                <h3 class="text-2xl font-bold mb-4">Plugin Marketplace</h3>
-                <p class="text-gray-400 mb-6">Import worlds from ZIPs and browse plugins natively. Stop hunting for JARs manually.</p>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-center font-bold">WorldEdit</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-center font-bold">LuckPerms</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-center font-bold">EssentialsX</div>
-                    <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-center font-bold">GeyserMC</div>
+                <h3 class="text-2xl sm:text-3xl font-bold mb-4">Plugin Marketplace</h3>
+                <p class="text-gray-400 text-base sm:text-lg mb-8">Import worlds from ZIPs and browse plugins natively. Stop hunting for JARs manually.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 sm:gap-4">
+                    <div class="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 text-sm text-center font-bold hover:bg-white/10 transition-colors cursor-default">WorldEdit</div>
+                    <div class="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 text-sm text-center font-bold hover:bg-white/10 transition-colors cursor-default">LuckPerms</div>
+                    <div class="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 text-sm text-center font-bold hover:bg-white/10 transition-colors cursor-default">EssentialsX</div>
+                    <div class="p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10 text-sm text-center font-bold hover:bg-white/10 transition-colors cursor-default">GeyserMC</div>
                 </div>
             </div>
 
             <!-- Metrics -->
-            <div class="md:col-span-7 glass rounded-[2.5rem] p-8 md:p-12 bento-card overflow-hidden relative group">
-                <div class="flex flex-col md:flex-row gap-8 items-start">
-                    <div class="flex-1">
+            <div class="lg:col-span-7 glass rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 lg:p-12 bento-card overflow-hidden relative group">
+                <div class="flex flex-col lg:flex-row gap-8 items-start h-full">
+                    <div class="flex-1 z-10">
                         <div class="w-12 h-12 bg-green-500/10 rounded-2xl flex items-center justify-center mb-6 border border-green-500/20">
                             <i data-lucide="activity" class="text-green-400"></i>
                         </div>
-                        <h3 class="text-3xl font-bold mb-4">Live Metrics</h3>
-                        <p class="text-gray-400 text-lg leading-relaxed">
-                            Monitor CPU, RAM, and Player counts with beautiful live charts. Know exactly how your hardware is performing.
+                        <h3 class="text-2xl sm:text-3xl font-bold mb-4">Live Metrics</h3>
+                        <p class="text-gray-400 text-base sm:text-lg leading-relaxed">
+                            Monitor CPU, RAM, and Player counts with beautiful live charts. Know exactly how your hardware is performing under load.
                         </p>
                     </div>
-                    <div class="flex-1 w-full flex items-center justify-center">
-                        <div class="w-full max-w-[300px] h-[150px] relative">
-                            <!-- Simple SVG chart visual -->
-                            <svg viewBox="0 0 100 40" class="w-full h-full text-cyan-500 drop-shadow-lg">
-                                <path d="M0,35 Q10,30 20,32 T40,20 T60,25 T80,10 T100,15" fill="none" stroke="currentColor" stroke-width="2" class="animate-dash" stroke-dasharray="200" stroke-dashoffset="0"/>
-                                <circle cx="100" cy="15" r="2" fill="currentColor"/>
+                    <div class="flex-1 w-full flex items-center justify-center mt-4 lg:mt-0">
+                        <div class="w-full max-w-[350px] aspect-[2/1] relative">
+                            <!-- Responsive SVG chart visual -->
+                            <svg viewBox="0 0 100 50" class="w-full h-full text-cyan-500 drop-shadow-lg" preserveAspectRatio="xMidYMid meet">
+                                <!-- Grid Lines -->
+                                <line x1="0" y1="10" x2="100" y2="10" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+                                <line x1="0" y1="25" x2="100" y2="25" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+                                <line x1="0" y1="40" x2="100" y2="40" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+                                
+                                <!-- Chart Line -->
+                                <path d="M0,40 Q15,35 25,38 T45,20 T65,28 T85,12 T100,18" fill="none" stroke="currentColor" stroke-width="2.5" class="animate-dash" stroke-dasharray="200" stroke-dashoffset="0" stroke-linecap="round"/>
+                                
+                                <!-- Data Point -->
+                                <circle cx="100" cy="18" r="2.5" fill="#fff" stroke="currentColor" stroke-width="1"/>
+                                
+                                <!-- Area Gradient (Optional visual flair) -->
+                                <path d="M0,40 Q15,35 25,38 T45,20 T65,28 T85,12 T100,18 L100,50 L0,50 Z" fill="url(#chart-gradient)" opacity="0.2"/>
+                                
+                                <defs>
+                                    <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="currentColor" />
+                                        <stop offset="100%" stop-color="transparent" />
+                                    </linearGradient>
+                                </defs>
                             </svg>
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
     </section>
 
     <!-- Roadmap -->
-    <section id="roadmap" class="py-32 px-6 bg-white/[0.02]">
+    <section id="roadmap" class="py-20 sm:py-32 px-4 sm:px-6 bg-white/[0.01] border-y border-white/5">
         <div class="max-w-4xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold mb-4">Building the Future</h2>
-                <p class="text-gray-400">We're moving fast. Here's what's landing soon.</p>
+            <div class="text-center mb-12 sm:mb-16">
+                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">Building the Future</h2>
+                <p class="text-base sm:text-lg text-gray-400">We're moving fast. Here's what's landing soon.</p>
             </div>
 
             <div class="space-y-4">
-                <div class="glass p-6 rounded-2xl flex items-center justify-between border-l-4 border-l-green-500">
+                <div class="glass p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between border-l-4 border-l-green-500 gap-4">
                     <div class="flex items-center gap-4">
-                        <i data-lucide="check-circle-2" class="text-green-500 w-6 h-6"></i>
-                        <span class="font-medium">Bedrock Edition server support</span>
+                        <i data-lucide="check-circle-2" class="text-green-500 w-6 h-6 shrink-0"></i>
+                        <span class="font-medium text-base sm:text-lg">Bedrock Edition server support</span>
                     </div>
-                    <span class="bg-green-500/10 text-green-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Done</span>
+                    <span class="bg-green-500/10 text-green-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider self-start sm:self-auto">Done</span>
                 </div>
                 
                 <!-- In Progress Items -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="glass p-6 rounded-2xl flex flex-col gap-3 border-l-4 border-l-yellow-500/50">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="glass p-5 sm:p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-yellow-500/50 hover:bg-white/[0.03] transition-colors">
                         <div class="flex items-center justify-between">
-                            <span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">In Progress</span>
+                            <span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider">In Progress</span>
                             <i data-lucide="loader-2" class="w-4 h-4 text-yellow-500 animate-spin"></i>
                         </div>
-                        <p class="font-medium">In-app whitelist and op management</p>
+                        <p class="font-medium text-base">In-app whitelist and op management</p>
                     </div>
-                    <div class="glass p-6 rounded-2xl flex flex-col gap-3 border-l-4 border-l-yellow-500/50">
+                    <div class="glass p-5 sm:p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-yellow-500/50 hover:bg-white/[0.03] transition-colors">
                         <div class="flex items-center justify-between">
-                            <span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">In Progress</span>
+                            <span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider">In Progress</span>
                             <i data-lucide="loader-2" class="w-4 h-4 text-yellow-500 animate-spin"></i>
                         </div>
-                        <p class="font-medium">System tray minimization with indicators</p>
+                        <p class="font-medium text-base">System tray minimization with indicators</p>
                     </div>
-                    <div class="glass p-6 rounded-2xl flex flex-col gap-3 border-l-4 border-l-yellow-500/50">
+                    <div class="glass p-5 sm:p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-yellow-500/50 hover:bg-white/[0.03] transition-colors">
                         <div class="flex items-center justify-between">
-                            <span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">In Progress</span>
+                            <span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider">In Progress</span>
                             <i data-lucide="loader-2" class="w-4 h-4 text-yellow-500 animate-spin"></i>
                         </div>
-                        <p class="font-medium">Forge 1.17+ bootstrapper stability pass</p>
+                        <p class="font-medium text-base">Forge 1.17+ bootstrapper stability pass</p>
                     </div>
-                    <div class="glass p-6 rounded-2xl flex flex-col gap-3 border-l-4 border-l-yellow-500/50">
+                    <div class="glass p-5 sm:p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-yellow-500/50 hover:bg-white/[0.03] transition-colors">
                         <div class="flex items-center justify-between">
-                            <span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">In Progress</span>
+                            <span class="bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider">In Progress</span>
                             <i data-lucide="loader-2" class="w-4 h-4 text-yellow-500 animate-spin"></i>
                         </div>
-                        <p class="font-medium">Player activity charts & history</p>
+                        <p class="font-medium text-base">Player activity charts & history</p>
                     </div>
                 </div>
             </div>
@@ -256,63 +318,66 @@
     </section>
 
     <!-- Creators -->
-    <section id="creators" class="py-32 px-6 max-w-7xl mx-auto">
-        <div class="text-center mb-20">
-            <h2 class="text-4xl font-bold mb-4">Meet the Team</h2>
-            <p class="text-gray-400">The people behind the pixels.</p>
+    <section id="creators" class="py-20 sm:py-32 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div class="text-center mb-16 sm:mb-20">
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">Meet the Team</h2>
+            <p class="text-base sm:text-lg text-gray-400">The people behind the pixels.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <!-- Sahaj -->
-            <div class="glass p-8 rounded-[2rem] text-center bento-card flex flex-col items-center">
-                <div class="w-24 h-24 rounded-full bg-cyan-500/10 p-1 mb-6 border-2 border-cyan-500/20">
-                    <img src="https://github.com/Sahaj33-op.png" alt="Sahaj Italiya" class="w-full h-full rounded-full grayscale hover:grayscale-0 transition-all">
+            <div class="glass p-6 sm:p-8 rounded-[2rem] text-center bento-card flex flex-col items-center">
+                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-cyan-500/10 p-1 mb-6 border-2 border-cyan-500/20">
+                    <img src="https://github.com/Sahaj33-op.png" alt="Sahaj Italiya" class="w-full h-full rounded-full grayscale hover:grayscale-0 transition-all object-cover">
                 </div>
-                <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2">Lead Developer</span>
-                <h3 class="text-2xl font-bold mb-4">Sahaj Italiya</h3>
-                <a href="https://github.com/Sahaj33-op" target="_blank" class="mt-auto px-6 py-2 bg-white/5 hover:bg-white/10 rounded-full text-sm font-medium border border-white/10 transition-all">GitHub Profile</a>
+                <span class="text-[10px] sm:text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2">Lead Developer</span>
+                <h3 class="text-xl sm:text-2xl font-bold mb-2">Sahaj Italiya</h3>
+                <p class="text-sm text-gray-500 mb-6 px-2">Core architecture & desktop UI logic.</p>
+                <a href="https://github.com/Sahaj33-op" target="_blank" class="mt-auto px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-full text-sm font-medium border border-white/10 transition-all w-full sm:w-auto">GitHub Profile</a>
             </div>
 
             <!-- Divy -->
-            <div class="glass p-8 rounded-[2rem] text-center bento-card flex flex-col items-center">
-                <div class="w-24 h-24 rounded-full bg-purple-500/10 p-1 mb-6 border-2 border-purple-500/20">
-                    <img src="https://github.com/divyviradiya2.png" alt="Divy Viradiya" class="w-full h-full rounded-full grayscale hover:grayscale-0 transition-all">
+            <div class="glass p-6 sm:p-8 rounded-[2rem] text-center bento-card flex flex-col items-center">
+                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-purple-500/10 p-1 mb-6 border-2 border-purple-500/20">
+                    <img src="https://github.com/divyviradiya2.png" alt="Divy Viradiya" class="w-full h-full rounded-full grayscale hover:grayscale-0 transition-all object-cover">
                 </div>
-                <span class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-2">Developer</span>
-                <h3 class="text-2xl font-bold mb-4">Divy Viradiya</h3>
-                <a href="https://github.com/divyviradiya2" target="_blank" class="mt-auto px-6 py-2 bg-white/5 hover:bg-white/10 rounded-full text-sm font-medium border border-white/10 transition-all">GitHub Profile</a>
+                <span class="text-[10px] sm:text-xs font-bold text-purple-400 uppercase tracking-widest mb-2">Developer</span>
+                <h3 class="text-xl sm:text-2xl font-bold mb-2">Divy Viradiya</h3>
+                <p class="text-sm text-gray-500 mb-6 px-2">Server runtime handlers & toolchains.</p>
+                <a href="https://github.com/divyviradiya2" target="_blank" class="mt-auto px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-full text-sm font-medium border border-white/10 transition-all w-full sm:w-auto">GitHub Profile</a>
             </div>
 
-            <!-- John -->
-            <div class="glass p-8 rounded-[2rem] text-center bento-card flex flex-col items-center">
-                <div class="w-24 h-24 rounded-full bg-orange-500/10 p-1 mb-6 border-2 border-orange-500/20 text-orange-400 flex items-center justify-center">
-                    <i data-lucide="layout" class="w-10 h-10"></i>
+            <!-- John (Centered on tablet via grid col magic or just flowing) -->
+            <div class="glass p-6 sm:p-8 rounded-[2rem] text-center bento-card flex flex-col items-center sm:col-span-2 lg:col-span-1">
+                <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-orange-500/10 p-1 mb-6 border-2 border-orange-500/20 text-orange-400 flex items-center justify-center">
+                    <i data-lucide="layout" class="w-8 h-8 sm:w-10 sm:h-10"></i>
                 </div>
-                <span class="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">Web Design</span>
-                <h3 class="text-2xl font-bold mb-4">JohnDingleSin</h3>
-                <p class="text-sm text-gray-500 mb-6 px-4">Passionate coder building modern web experiences for the community.</p>
-                <a href="https://github.com/Johndinglesin" target="_blank" class="mt-auto px-6 py-2 bg-white/5 hover:bg-white/10 rounded-full text-sm font-medium border border-white/10 transition-all">GitHub Profile</a>
+                <span class="text-[10px] sm:text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">Web Design</span>
+                <h3 class="text-xl sm:text-2xl font-bold mb-2">JohnDingleSin</h3>
+                <p class="text-sm text-gray-500 mb-6 px-4">Passionate coder building modern web experiences.</p>
+                <a href="https://github.com/Johndinglesin" target="_blank" class="mt-auto px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-full text-sm font-medium border border-white/10 transition-all w-full sm:w-auto">GitHub Profile</a>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="py-20 px-6 border-t border-white/5 bg-black/50">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
-            <div class="text-center md:text-left">
-                <div class="flex items-center gap-3 mb-4 justify-center md:justify-start">
-                    <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/logo.png" alt="Logo" class="h-8 w-8">
+    <footer class="py-12 sm:py-20 px-4 sm:px-6 border-t border-white/5 bg-[#030712]">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 md:gap-10">
+            <div class="text-center md:text-left flex flex-col items-center md:items-start">
+                <div class="flex items-center gap-3 mb-4">
+                    <img src="https://uploads.onecompiler.io/44d62jskr/44kfusagm/logo.png" alt="Logo" class="h-8 w-8 rounded-lg">
                     <span class="text-xl font-bold">PocketMC</span>
                 </div>
-                <p class="text-gray-500 text-sm max-w-xs">Built for people who want to run a Minecraft server, not maintain a Linux box.</p>
+                <p class="text-gray-500 text-sm max-w-xs leading-relaxed">Built for people who want to run a Minecraft server, not maintain a Linux box.</p>
             </div>
 
-            <div class="flex flex-col items-center md:items-end gap-4">
-                <div class="flex gap-6 text-sm text-gray-400">
+            <div class="flex flex-col items-center md:items-end gap-5">
+                <div class="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm text-gray-400">
                     <a href="https://github.com/PocketMC/pocket-mc-windows/blob/main/LICENSE" target="_blank" class="hover:text-white transition-colors underline decoration-gray-700 underline-offset-4">MIT License</a>
                     <a href="https://discord.gg/h27uNCaxPH" target="_blank" class="hover:text-white transition-colors">Discord</a>
+                    <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
                 </div>
-                <p class="text-xs text-gray-600">© 2024 PocketMC Contributors. Minecraft is a trademark of Mojang AB.</p>
+                <p class="text-xs text-gray-600 text-center md:text-right">© 2024 PocketMC Contributors. Minecraft is a trademark of Mojang AB.</p>
             </div>
         </div>
     </footer>
@@ -321,9 +386,43 @@
         // Initialize Lucide icons
         lucide.createIcons();
 
-        // Simple scroll reveal effect
+        // --- Mobile Menu Toggle Logic ---
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+        const icon = document.getElementById('menu-icon');
+        const mobileLinks = document.querySelectorAll('.mobile-link');
+        let isMenuOpen = false;
+
+        function toggleMenu() {
+            isMenuOpen = !isMenuOpen;
+            if (isMenuOpen) {
+                menu.classList.remove('hidden');
+                menu.classList.add('flex', 'animate-fade-in');
+                // Change icon to 'X' (using Lucide's setAttribute trick or manually updating icon)
+                icon.setAttribute('data-lucide', 'x');
+                lucide.createIcons();
+            } else {
+                menu.classList.add('hidden');
+                menu.classList.remove('flex', 'animate-fade-in');
+                icon.setAttribute('data-lucide', 'menu');
+                lucide.createIcons();
+            }
+        }
+
+        btn.addEventListener('click', toggleMenu);
+
+        // Close mobile menu when a link is clicked
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (isMenuOpen) toggleMenu();
+            });
+        });
+
+
+        // --- Scroll Reveal Effect ---
         const observerOptions = {
-            threshold: 0.1
+            threshold: 0.05,
+            rootMargin: "0px 0px -50px 0px"
         };
 
         const observer = new IntersectionObserver((entries) => {
@@ -331,11 +430,12 @@
                 if (entry.isIntersecting) {
                     entry.target.classList.add('opacity-100', 'translate-y-0');
                     entry.target.classList.remove('opacity-0', 'translate-y-10');
+                    observer.unobserve(entry.target); // Only animate once for better performance
                 }
             });
         }, observerOptions);
 
-        document.querySelectorAll('.bento-card, section h2').forEach(el => {
+        document.querySelectorAll('.bento-card, section h2, .glass.flex-col').forEach(el => {
             el.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-10');
             observer.observe(el);
         });
