@@ -57,8 +57,14 @@ jobs:
         with:
           repository: PocketMC/pocket-mc-windows
           latest: true
+          fileName: "*"
           out-file-path: Releases
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show downloaded files
+        run: |
+          echo "==== FILE TREE ===="
+          dir Releases /s
 
 
       # Inject the dynamic env.VERSION instead of hardcoding 1.4.0
@@ -79,12 +85,3 @@ jobs:
         with:
           name: PocketMC-Release-1.4.1
           path: Releases/
-
-      # This step actually creates the GitHub Release and attaches the Velopack files
-      # The `if` condition ensures we don't accidentally release a random commit to master
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: Releases/*
-          generate_release_notes: true
