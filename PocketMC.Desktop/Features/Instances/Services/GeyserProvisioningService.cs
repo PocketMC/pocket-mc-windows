@@ -96,12 +96,16 @@ public class GeyserProvisioningService
         }
     }
 
-    private void WriteConnectGuide(string instancePath, string targetDir)
+    private void WriteConnectGuide(string instancePath, string targetDir, string serverType)
     {
         try
         {
             string guidePath = Path.Combine(instancePath, "BEDROCK-CONNECT.txt");
             if (File.Exists(guidePath)) return;
+
+            string configRelativePath = serverType.Equals("fabric", StringComparison.OrdinalIgnoreCase)
+                ? "Geyser-Fabric/config.yml"
+                : "Geyser-Spigot/config.yml";
 
             File.WriteAllText(guidePath,
                 "=== Bedrock Cross-Play (Geyser + Floodgate) ===\n\n" +
@@ -109,7 +113,7 @@ public class GeyserProvisioningService
                 "Bedrock players: Connect with the SAME IP on port 19132 (UDP).\n\n" +
                 "First run:\n" +
                 "  1. Start the server once — Geyser will auto-generate its config.yml\n" +
-                $"     inside {targetDir}/Geyser-Spigot/config.yml\n" +
+                $"     inside {targetDir}/{configRelativePath}\n" +
                 "  2. Restart the server. Geyser will then listen on port 19132.\n\n" +
                 "Tunneling (Playit.gg):\n" +
                 "  - For your Java port tunnel, select: Minecraft Java\n" +
