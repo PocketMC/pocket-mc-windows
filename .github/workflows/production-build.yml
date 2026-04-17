@@ -61,11 +61,6 @@ jobs:
           out-file-path: Releases
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Show downloaded files
-        run: |
-          echo "==== FILE TREE ===="
-          dir Releases /s
-
 
       # Inject the dynamic env.VERSION instead of hardcoding 1.4.0
       - name: Pack with Velopack
