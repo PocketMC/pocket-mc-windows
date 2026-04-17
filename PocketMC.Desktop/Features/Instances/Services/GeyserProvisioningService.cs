@@ -1,21 +1,27 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Instances.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
 public class GeyserProvisioningService
 {
     private readonly DownloaderService _downloader;
+    private readonly ModrinthService _modrinth;
     private readonly ILogger<GeyserProvisioningService> _logger;
 
     public GeyserProvisioningService(
         DownloaderService downloader,
+        ModrinthService modrinth,
         ILogger<GeyserProvisioningService> logger)
     {
         _downloader = downloader;
+        _modrinth = modrinth;
         _logger = logger;
     }
 
@@ -32,6 +38,7 @@ public class GeyserProvisioningService
     public async Task EnsureGeyserSetupAsync(
         string instancePath,
         string serverType,
+        string minecraftVersion,
         IProgress<DownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -49,8 +56,26 @@ public class GeyserProvisioningService
             string dirPath = Path.Combine(instancePath, targetDir);
             Directory.CreateDirectory(dirPath);
 
-            string geyserUrl    = $"https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/{platform}";
-            string floodgateUrl = $"https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/{platform}";
+            string geyserUrl = $"https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/{platform}";
+            string? floodgateUrl = null;
+
+            if (platform == "fabric")
+            {
+                // GeyserMC Build API has removed Fabric versions of Floodgate (moved to Modrinth).
+                _logger.LogInformation("Fetching latest Floodgate ({Platform}) from Modrinth for MC {MinecraftVersion}...", platform, minecraftVersion);
+                var version = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, "fabric");
+                floodgateUrl = version?.Files.FirstOrDefault(f => f.IsPrimary)?.Url ?? version?.Files.FirstOrDefault()?.Url;
+
+                if (string.IsNullOrEmpty(floodgateUrl))
+                {
+                    _logger.LogWarning("Could not find Floodgate for Fabric on Modrinth. Falling back to GeyserMC API (likely to fail).");
+                    floodgateUrl = $"https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/{platform}";
+                }
+            }
+            else
+            {
+                floodgateUrl = $"https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/{platform}";
+            }
 
             string geyserPath    = Path.Combine(dirPath, "Geyser.jar");
             string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
@@ -58,7 +83,7 @@ public class GeyserProvisioningService
             _logger.LogInformation("Downloading Geyser ({Platform})...", platform);
             await _downloader.DownloadFileAsync(geyserUrl, geyserPath, null, progress, cancellationToken);
 
-            _logger.LogInformation("Downloading Floodgate ({Platform})...", platform);
+            _logger.LogInformation("Downloading Floodgate from {Url}...", floodgateUrl);
             await _downloader.DownloadFileAsync(floodgateUrl, floodgatePath, null, progress, cancellationToken);
 
             // Write a README so users know how to connect Bedrock clients

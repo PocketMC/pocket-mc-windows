@@ -344,7 +344,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 if (ChkEnableGeyser.IsChecked == true && createdInstancePath != null)
                 {
                     TxtProgress.Text = "Setting up Geyser cross-play...";
-                    await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, progress);
+                    await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, selectedVersion.Id, progress);
 
                     // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
                     metadata.HasGeyser = true;

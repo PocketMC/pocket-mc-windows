@@ -87,14 +87,26 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        public async Task<ModrinthVersion?> GetLatestVersionAsync(string slug, string mcVersion)
+        public async Task<ModrinthVersion?> GetLatestVersionAsync(string slug, string mcVersion, string? loader = null)
         {
             try
             {
                 string url = $"https://api.modrinth.com/v2/project/{slug}/version";
+                var queryParams = new List<string>();
+
                 if (!string.IsNullOrEmpty(mcVersion) && mcVersion != "*")
                 {
-                    url += $"?game_versions=[\"{mcVersion}\"]";
+                    queryParams.Add($"game_versions=[\"{mcVersion}\"]");
+                }
+
+                if (!string.IsNullOrEmpty(loader))
+                {
+                    queryParams.Add($"loaders=[\"{loader}\"]");
+                }
+
+                if (queryParams.Count > 0)
+                {
+                    url += "?" + string.Join("&", queryParams);
                 }
 
                 var versions = await _httpClient.GetFromJsonAsync<List<ModrinthVersion>>(url);
