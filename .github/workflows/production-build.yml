@@ -58,6 +58,7 @@ jobs:
           repository: PocketMC/pocket-mc-windows
           latest: true
           out-file-path: Releases
+          token: ${{ secrets.GITHUB_TOKEN }}
 
 
       # Inject the dynamic env.VERSION instead of hardcoding 1.4.0
