@@ -4,9 +4,16 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
 
-# Required to allow the workflow to create a GitHub Release
 permissions:
   contents: write
 
@@ -26,30 +33,41 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Add .NET tools to PATH
-        run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
+      # --- CI: BUILD & TEST (Runs on PRs and Pushes) ---
 
-      - name: Install Velopack
-        run: dotnet tool install -g vpk
-
-      - name: Debug Build
-        run: dotnet build PocketMC.Desktop.sln -c Debug
-
-      - name: Release Build
-        run: dotnet build PocketMC.Desktop.sln -c Release
-
-      - name: Run Tests
-        run: dotnet test PocketMC.Desktop.sln --no-build
-
-      - name: Publish Multi-DLL
+      - name: Publish & Build (Release)
         run: |
           dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
             -c Release `
             -r $env:RUNTIME `
             --self-contained false `
             -o publish
-            
+
+      - name: Run Tests
+        run: dotnet test PocketMC.Desktop.sln -c Release --no-build
+
+      # --- CD: PACK & RELEASE (Runs ONLY on Push to Master) ---
+
+      - name: Extract Version from csproj
+        if: github.event_name == 'push'
+        id: version
+        run: |
+          [xml]$csproj = Get-Content PocketMC.Desktop/PocketMC.Desktop.csproj
+          $version = $csproj.Project.PropertyGroup.Version
+          if ([string]::IsNullOrWhiteSpace($version)) { $version = "1.0.0" }
+          echo "APP_VERSION=$version" >> $env:GITHUB_ENV
+          Write-Host "Detected Version: $version"
+
+      - name: Add .NET tools to PATH
+        if: github.event_name == 'push'
+        run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
+
+      - name: Install Velopack
+        if: github.event_name == 'push'
+        run: dotnet tool install -g vpk
+
       - name: Download previous release assets
+        if: github.event_name == 'push'
         uses: robinraju/release-downloader@v1
         with:
           repository: PocketMC/pocket-mc-windows
@@ -58,22 +76,21 @@ jobs:
           out-file-path: Releases
           token: ${{ secrets.GITHUB_TOKEN }}
 
-
-      # Inject the dynamic env.VERSION instead of hardcoding 1.4.0
       - name: Pack with Velopack
+        if: github.event_name == 'push'
         run: >
           vpk pack 
           --packId ${{ env.APP_ID }} 
-          --packVersion 1.4.1
+          --packVersion ${{ env.APP_VERSION }}
           --packDir publish 
           --mainExe PocketMC.Desktop.exe 
           --framework net8.0 
           --runtime ${{ env.RUNTIME }} 
           --outputDir Releases
 
-      # Keep this if you want workflow artifacts, otherwise you can safely delete it
       - name: Upload Release Artifacts
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: PocketMC-Release-1.4.1
+          name: PocketMC-Release-${{ env.APP_VERSION }}
           path: Releases/
