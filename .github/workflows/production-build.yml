@@ -5,7 +5,13 @@ on:
     branches:
       - master
       - New-Ci-Pipeline
+    tags:
+      - 'v*' # Triggers on tags like v1.4.0, v2.0, etc.
   pull_request:
+
+# Required to allow the workflow to create a GitHub Release
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -17,51 +23,27 @@ jobs:
       APP_ID: PocketMC
 
     steps:
-      # -------------------------
-      # 1. CHECKOUT
-      # -------------------------
       - uses: actions/checkout@v4
 
-      # -------------------------
-      # 2. SETUP DEPENDENCIES
-      # -------------------------
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # -------------------------
-      # 3. ADD TOOL PATH
-      # -------------------------
       - name: Add .NET tools to PATH
         run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
 
-      # -------------------------
-      # 4. INSTALL VELOPACK CLI
-      # -------------------------
       - name: Install Velopack
         run: dotnet tool install -g vpk
 
-      # -------------------------
-      # 5. DEBUG BUILD
-      # -------------------------
       - name: Debug Build
         run: dotnet build PocketMC.Desktop.sln -c Debug
 
-      # -------------------------
-      # 6. RELEASE BUILD
-      # -------------------------
       - name: Release Build
         run: dotnet build PocketMC.Desktop.sln -c Release
 
-      # -------------------------
-      # 7. TEST
-      # -------------------------
       - name: Run Tests
         run: dotnet test PocketMC.Desktop.sln --no-build
 
-      # -------------------------
-      # 8. PUBLISH MULTI-DLL
-      # -------------------------
       - name: Publish Multi-DLL
         run: |
           dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
@@ -69,32 +51,21 @@ jobs:
             -r $env:RUNTIME `
             --self-contained false `
             -o publish
-        # -------------------------
-        # 10. GET PREVIOUS VERSION
-        # -------------------------
-        #- name: Get Previous Version
-        #id: version
-        #env:
-        #GH_TOKEN: ${{ github.token }}
-        #run: |
-        #$latest = gh release list --limit 1 --json tagName | ConvertFrom-Json
-        #if ($latest) {
-        #$tag = $latest[0].tagName.Replace("v","")
-        #} else {
-        #$tag = "1.0.0"
-        #}
 
-        #$parts = $tag.Split(".")
-        #$major = [int]$parts[0]
-        #$minor = [int]$parts[1] + 1
-        #$patch = 0
+      # Dynamically set the version based on the tag, or fallback to the run number for normal commits
+      - name: Set Package Version
+        id: version
+        run: |
+          $ref = "${{ github.ref }}"
+          if ($ref.StartsWith("refs/tags/")) {
+            # Strip 'refs/tags/v' or 'refs/tags/' to get a clean semantic version (e.g., 1.4.1)
+            $version = $ref.Replace("refs/tags/v", "").Replace("refs/tags/", "")
+          } else {
+            # Dummy version for PRs and standard branch pushes to prevent Velopack from crashing
+            $version = "0.0.${{ github.run_number }}"
+          }
+          echo "VERSION=$version" >> $env:GITHUB_ENV
 
-        #$newVersion = "$major.$minor.$patch"
-        #echo "VERSION=$newVersion" >> $env:GITHUB_ENV
-
-        # -------------------------
-        # 11. DOWNLOAD PREVIOUS RELEASE
-        # -------------------------
       - name: Download previous release
         uses: robinraju/release-downloader@v1
         with:
@@ -102,19 +73,30 @@ jobs:
           out-file-path: Releases
         continue-on-error: true
 
-      # -------------------------
-      # 12. VELOPACK PACKAGE
-      # -------------------------
+      # Inject the dynamic env.VERSION instead of hardcoding 1.4.0
       - name: Pack with Velopack
-        run: vpk pack --packId ${{ env.APP_ID }} --packVersion 1.4.0 --packDir publish
-          --mainExe PocketMC.Desktop.exe --framework net8.0 --runtime ${{
-          env.RUNTIME }} --outputDir Releases
+        run: >
+          vpk pack 
+          --packId ${{ env.APP_ID }} 
+          --packVersion ${{ env.VERSION }} 
+          --packDir publish 
+          --mainExe PocketMC.Desktop.exe 
+          --framework net8.0 
+          --runtime ${{ env.RUNTIME }} 
+          --outputDir Releases
 
-      # -------------------------
-      # 13. UPLOAD RELEASE ARTIFACTS
-      # -------------------------
+      # Keep this if you want workflow artifacts, otherwise you can safely delete it
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Release 1.4.1
+          name: PocketMC-Build-${{ env.VERSION }}
           path: Releases/
+
+      # This step actually creates the GitHub Release and attaches the Velopack files
+      # The `if` condition ensures we don't accidentally release a random commit to master
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Releases/*
+          generate_release_notes: true
