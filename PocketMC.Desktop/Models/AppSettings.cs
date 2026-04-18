@@ -22,5 +22,8 @@ namespace PocketMC.Desktop.Models
         
         // Disaster Recovery
         public string? ExternalBackupDirectory { get; set; }
+
+        // Console Settings
+        public int ConsoleBufferSize { get; set; } = 5000;
     }
 }

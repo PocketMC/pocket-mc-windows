@@ -22,6 +22,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <ui:Button Grid.Column="0" Content="Back" Appearance="Secondary"
@@ -34,21 +35,27 @@
                        Icon="{ui:SymbolIcon Copy24}" Click="BtnCopyLogs_Click" Cursor="Hand" Margin="0,0,8,0"/>
 
             <ui:TextBox x:Name="TxtLogSearch" Grid.Column="3" PlaceholderText="Search logs..."
-                        Margin="0,0,8,0" MinWidth="160" VerticalAlignment="Center"
+                        Margin="0,0,4,0" MinWidth="160" VerticalAlignment="Center"
                         TextChanged="TxtLogSearch_TextChanged"/>
 
-            <ComboBox x:Name="CmbLogFilter" Grid.Column="4" Margin="0,0,8,0" SelectedIndex="0" VerticalAlignment="Center" Width="140" SelectionChanged="CmbLogFilter_SelectionChanged">
-                <ComboBoxItem Content="All Logs"/>
-                <ComboBoxItem Content="Info +"/>
-                <ComboBoxItem Content="Warnings/Errors"/>
-                <ComboBoxItem Content="Crashes/Exceptions"/>
-            </ComboBox>
+            <ToggleButton Grid.Column="4" Content=".*" ToolTip="Use Regex" 
+                          IsChecked="{Binding IsRegexEnabled}" 
+                          VerticalAlignment="Center" Margin="0,0,12,0" 
+                          Width="32" Height="32" Padding="0" Cursor="Hand"/>
 
-            <ui:Button Grid.Column="5" Content="Stop Server" Appearance="Danger"
+            <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <ToggleButton Content="Chat" IsChecked="{Binding IsFilterChat}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand"/>
+                <ToggleButton Content="Info" IsChecked="{Binding IsFilterInfo}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand"/>
+                <ToggleButton Content="Warn" IsChecked="{Binding IsFilterWarn}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand"/>
+                <ToggleButton Content="Error" IsChecked="{Binding IsFilterError}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand"/>
+                <ToggleButton Content="Sys" IsChecked="{Binding IsFilterSystem}" Padding="8,4" Cursor="Hand"/>
+            </StackPanel>
+
+            <ui:Button Grid.Column="6" Content="Stop Server" Appearance="Danger"
                        Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand" Margin="0,0,8,0"
                        IsEnabled="{Binding CanStopServer}"/>
 
-            <ui:Button Grid.Column="6" Content="Restart" Appearance="Secondary"
+            <ui:Button Grid.Column="7" Content="Restart" Appearance="Secondary"
                        Icon="{ui:SymbolIcon ArrowSync24}" Click="BtnRestart_Click" Cursor="Hand"/>
         </Grid>
         

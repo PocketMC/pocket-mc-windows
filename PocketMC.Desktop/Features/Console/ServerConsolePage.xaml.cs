@@ -16,6 +16,7 @@ using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Desktop.Features.Shell;
 
 
 namespace PocketMC.Desktop.Features.Console
@@ -25,6 +26,7 @@ namespace PocketMC.Desktop.Features.Console
     /// </summary>
     public enum LogLevel
     {
+        Chat,
         Trace,
         Debug,
         Info,
@@ -50,10 +52,11 @@ namespace PocketMC.Desktop.Features.Console
         private readonly InstanceMetadata _metadata;
         private readonly ServerProcess _serverProcess;
         private readonly IServerLifecycleService _lifecycleService;
+        private readonly ApplicationState _applicationState;
         private readonly ILogger<ServerConsolePage> _logger;
         private readonly ConcurrentQueue<LogLine> _pendingLines = new();
         private readonly DispatcherTimer _flushTimer;
-        private const int MAX_LOG_LINES = 10000;
+        private int _maxLogLines = 5000;
         private ScrollViewer? _shellScrollViewer;
         private ScrollViewer? _logScrollViewer;
         private ScrollBarVisibility _originalShellVerticalScrollBarVisibility;
@@ -88,6 +91,21 @@ namespace PocketMC.Desktop.Features.Console
         public string? TitleBarContextStatusText => StatusText;
         public Brush? TitleBarContextStatusBrush => StatusColor;
 
+        // --- Modern Filtering State ---
+        private bool _isFilterChat = true;
+        private bool _isFilterInfo = true;
+        private bool _isFilterWarn = true;
+        private bool _isFilterError = true;
+        private bool _isFilterSystem = true;
+        private bool _isRegexEnabled = false;
+
+        public bool IsFilterChat { get => _isFilterChat; set { if (SetProperty(ref _isFilterChat, value)) ApplyFilters(); } }
+        public bool IsFilterInfo { get => _isFilterInfo; set { if (SetProperty(ref _isFilterInfo, value)) ApplyFilters(); } }
+        public bool IsFilterWarn { get => _isFilterWarn; set { if (SetProperty(ref _isFilterWarn, value)) ApplyFilters(); } }
+        public bool IsFilterError { get => _isFilterError; set { if (SetProperty(ref _isFilterError, value)) ApplyFilters(); } }
+        public bool IsFilterSystem { get => _isFilterSystem; set { if (SetProperty(ref _isFilterSystem, value)) ApplyFilters(); } }
+        public bool IsRegexEnabled { get => _isRegexEnabled; set { if (SetProperty(ref _isRegexEnabled, value)) ApplyFilters(); } }
+
         public bool CanStopServer => _serverProcess.State == ServerState.Online || _serverProcess.State == ServerState.Starting;
         public event Action? TitleBarContextChanged;
 
@@ -96,13 +114,18 @@ namespace PocketMC.Desktop.Features.Console
             IServerLifecycleService lifecycleService,
             InstanceMetadata metadata,
             ServerProcess serverProcess,
+            ApplicationState applicationState,
             ILogger<ServerConsolePage> logger)
         {
             _navigationService = navigationService;
             _lifecycleService = lifecycleService;
             _metadata = metadata;
             _serverProcess = serverProcess;
+            _applicationState = applicationState;
             _logger = logger;
+
+            _maxLogLines = _applicationState.Settings.ConsoleBufferSize;
+            if (_maxLogLines <= 0) _maxLogLines = 5000;
 
             InitializeComponent();
             DataContext = this;
@@ -233,7 +256,7 @@ namespace PocketMC.Desktop.Features.Console
 
         private void OnErrorReceived(string line)
         {
-            _pendingLines.Enqueue(new LogLine { Text = line, TextColor = Brushes.Red });
+            _pendingLines.Enqueue(new LogLine { Text = line, TextColor = Brushes.Red, Level = LogLevel.Error });
         }
 
         private void OnStateChanged(ServerState state)
@@ -278,7 +301,7 @@ namespace PocketMC.Desktop.Features.Console
             }
 
             // Trim old lines
-            int excess = Logs.Count - 5000; // Reduced limit for better performance
+            int excess = Logs.Count - _maxLogLines;
             for (int i = 0; i < excess; i++)
             {
                 var removed = Logs[0];
@@ -297,30 +320,37 @@ namespace PocketMC.Desktop.Features.Console
 
         private bool PassesFilter(LogLine line)
         {
-            // 1. Apply Search Filter
-            if (TxtLogSearch != null && !string.IsNullOrWhiteSpace(TxtLogSearch.Text))
+            // 1. Severity/Level Toggles
+            bool passesToggle = line.Level switch
             {
-                if (!line.Text.Contains(TxtLogSearch.Text, StringComparison.OrdinalIgnoreCase))
-                    return false;
-            }
-
-            // 2. Apply Severity Filter
-            if (CmbLogFilter == null) return true;
-
-            bool passesSeverity = CmbLogFilter.SelectedIndex switch
-            {
-                1 => line.Level >= LogLevel.Info,
-                2 => line.Level >= LogLevel.Warn,
-                3 => line.Level >= LogLevel.Error,
+                LogLevel.Chat => IsFilterChat,
+                LogLevel.Info => IsFilterInfo,
+                LogLevel.Warn => IsFilterWarn,
+                LogLevel.Error => IsFilterError,
+                LogLevel.System => IsFilterSystem,
                 _ => true
             };
+            if (!passesToggle) return false;
 
-            if (!passesSeverity) return false;
+            // 2. Search Logic
+            if (string.IsNullOrWhiteSpace(TxtLogSearch?.Text)) return true;
+            string query = TxtLogSearch.Text;
 
-            // 3. Multi-keyword search with "-" support
-            if (TxtLogSearch == null || string.IsNullOrWhiteSpace(TxtLogSearch.Text)) return true;
+            if (IsRegexEnabled)
+            {
+                try
+                {
+                    return Regex.IsMatch(line.Text, query, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                }
+                catch
+                {
+                    // Invalid regex - fail open or closed? Let's fail closed to avoid noise
+                    return false;
+                }
+            }
 
-            var keywords = TxtLogSearch.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            // 3. Traditional Multi-keyword search
+            var keywords = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             foreach (var kw in keywords)
             {
                 if (kw.StartsWith('-') && kw.Length > 1)
@@ -396,12 +426,12 @@ namespace PocketMC.Desktop.Features.Console
             LogLevel level;
 
             // Detection for severity
-            if (text.Contains("/ERROR]") || text.Contains("[ERROR]") || text.Contains("Exception") || text.Contains("Fatal") || text.Contains("Error:"))
+            if (text.Contains("/ERROR]") || text.Contains("[ERROR]") || text.Contains("Exception") || text.Contains("Fatal") || text.Contains("FATAL") || text.Contains("Error:") || text.Contains(" SEVERE") || text.Contains(" CRITICAL"))
             {
                 color = Brushes.OrangeRed;
                 level = LogLevel.Error;
             }
-            else if (text.Contains("/WARN]") || text.Contains("[WARN]"))
+            else if (text.Contains("/WARN]") || text.Contains("[WARN]") || text.Contains(" WARN") || text.Contains("Warning") || text.Contains("WARNING") || text.Contains("****") || text.Contains("***"))
             {
                 color = Brushes.Yellow;
                 level = LogLevel.Warn;
@@ -420,6 +450,13 @@ namespace PocketMC.Desktop.Features.Console
             {
                 color = Brushes.LimeGreen;
                 level = LogLevel.Info;
+            }
+            else if (Regex.IsMatch(text, @"^\[\d{2}:\d{2}:\d{2}\sINFO\]:\s<[^>]+>\s.*$") || // Vanilla <Player> Msg
+                     Regex.IsMatch(text, @"^\[\d{2}:\d{2}:\d{2}\sINFO\]:\s[^\s:]+\s(joined|left) the game$") || // Join/Leave
+                     Regex.IsMatch(text, @"^\[\d{2}:\d{2}:\d{2}\sINFO\]:\s\[[^\]]+\]\s.*$")) // Plugin messages often [Plugin] Msg
+            {
+                color = Brushes.White;
+                level = LogLevel.Chat;
             }
             else if (text.TrimStart().StartsWith("at ") || text.TrimStart().StartsWith("...") || text.Contains("Caused by:"))
             {
@@ -774,5 +811,13 @@ namespace PocketMC.Desktop.Features.Console
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string prop) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
+
+        protected bool SetProperty<T>(ref T field, T value, [System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null)
+        {
+            if (Equals(field, value)) return false;
+            field = value;
+            OnPropertyChanged(propertyName ?? string.Empty);
+            return true;
+        }
     }
 }
