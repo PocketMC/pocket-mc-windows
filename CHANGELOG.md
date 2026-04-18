@@ -2,22 +2,36 @@
 
 This file summarizes the PocketMC Desktop release line from `v1.0.0` to `v1.4.3`.
 
-## v1.4.3 - Port Engine & Pipeline Enhancements
+## v1.4.3 - Port Engine, Cross-Play, & UI Enhancements
 
-This release introduces a new port reliability engine to improve server startup stability, fixes internal handle leaks, and streamlines the GitHub Actions release workflow.
+This release introduces a new port reliability engine to improve server startup stability, adds configurable Geyser Bedrock port support, modernizes the dashboard UI, and streamlines release workflows.
 
 ### 🔌 Port Reliability Engine
 
 - **Robust Port Resolution:** Added a new port reliability engine and comprehensive tests to prevent port binding conflicts and improve server startup resilience.
+- **Conflict Logic Patch:** Updated preflight checks to only block startup if another instance is actually running, ignoring duplicate config-level ports.
+
+### 🎮 Cross-Play & Networking
+
+- **Configurable Geyser Port:** Added support for per-instance Geyser Bedrock UDP ports, allowing concurrent cross-play servers.
+- **Dual-IP Display:** Integrated numeric IP addresses alongside hostnames for all tunnel types, with separate copy buttons for precision.
+- **Tunnel Auto-Patching:** Geyser configuration files are now automatically patched with the correct Bedrock UDP port on startup.
+
+### 💎 Dashboard & UI Polish
+
+- **Modern Grid Layout:** Replaced the legacy list view with a clean, responsive `UniformGrid` layout.
+- **Enhanced IP Blocks:** Redesigned connection sections to cleanly display both hostnames and numeric IPs.
 
 ### 🐛 Bug Fixes & Stability
 
 - **Log Handle Leaks:** Fixed an issue where `_sessionLogWriter` would leak file handles if server configuration or startup failed. It is now properly disposed and nulled during cleanup.
+- **Build Locking:** Fixed file access errors during publishing by ensuring clean process termination.
+- **Crash Resilience:** Fixed UI-related rendering crashes caused by invalid XAML symbols.
 
 ### 📦 Infrastructure & Documentation
 
-- **Automated Deployments:** Enhanced the GitHub Actions CI workflow with automated cleanup of old packages and integrated GitHub Release creation.
-- **Documentation:** Updated the README and replaced console screenshots to accurately reflect the modernized UI.
+- **Automated Deployments:** Enhanced CI workflows with package cleanup and integrated GitHub Release creation.
+- **Documentation:** Updated README and screenshots to reflect current UI and networking features.
 
 ## v1.4.2 - UI Modernization & Observatory Hardening
 
