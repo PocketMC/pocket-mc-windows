@@ -463,14 +463,20 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
         private static Task CleanupFailedGeyserSetupAsync(string instancePath)
         {
-            string pluginsPath = Path.Combine(instancePath, "plugins");
-            string modsPath = Path.Combine(instancePath, "mods");
+            if (string.IsNullOrWhiteSpace(instancePath) || !Path.IsPathRooted(instancePath))
+            {
+                return Task.CompletedTask;
+            }
+
+            string basePath = Path.GetFullPath(instancePath);
+            string pluginsPath = Path.Combine(basePath, "plugins");
+            string modsPath = Path.Combine(basePath, "mods");
 
             TryDeleteFile(Path.Combine(pluginsPath, "Geyser.jar"));
             TryDeleteFile(Path.Combine(pluginsPath, "Floodgate.jar"));
             TryDeleteFile(Path.Combine(modsPath, "Geyser.jar"));
             TryDeleteFile(Path.Combine(modsPath, "Floodgate.jar"));
-            TryDeleteFile(Path.Combine(instancePath, "BEDROCK-CONNECT.txt"));
+            TryDeleteFile(Path.Combine(basePath, "BEDROCK-CONNECT.txt"));
 
             return Task.CompletedTask;
         }
