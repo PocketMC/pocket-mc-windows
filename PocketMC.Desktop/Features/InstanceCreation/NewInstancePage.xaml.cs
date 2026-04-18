@@ -83,8 +83,10 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
 
             _hasLoadedInitialVersions = true;
+            string serverType = GetSelectedServerType();
+            UpdateAddonPanelVisibility(serverType);
             UpdateCreateButtonState();
-            await LoadVersionsAsync(GetSelectedServerType());
+            await LoadVersionsAsync(serverType);
         }
 
 
@@ -107,8 +109,16 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 TxtForgeWarning.Visibility = Visibility.Collapsed;
             }
 
+            UpdateAddonPanelVisibility(serverType);
+
+            await LoadVersionsAsync(serverType);
+        }
+
+        private void UpdateAddonPanelVisibility(string serverType)
+        {
             if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) || 
-                serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
+                serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) ||
+                serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase))
             {
                 AddonPanel.Visibility = Visibility.Collapsed;
                 ChkEnableGeyser.IsChecked = false;
@@ -117,8 +127,6 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             {
                 AddonPanel.Visibility = Visibility.Visible;
             }
-
-            await LoadVersionsAsync(serverType);
         }
 
         private async void ChkShowSnapshots_Changed(object sender, RoutedEventArgs e)
@@ -343,12 +351,36 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
                 if (ChkEnableGeyser.IsChecked == true && createdInstancePath != null)
                 {
-                    TxtProgress.Text = "Setting up Geyser cross-play...";
-                    await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, selectedVersion.Id, progress);
+                    try
+                    {
+                        TxtProgress.Text = "Setting up Geyser cross-play...";
+                        await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, selectedVersion.Id, progress);
 
-                    // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
-                    metadata.HasGeyser = true;
-                    _instanceManager.SaveMetadata(metadata, createdInstancePath);
+                        // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
+                        metadata.HasGeyser = true;
+                        _instanceManager.SaveMetadata(metadata, createdInstancePath);
+                    }
+                    catch (InvalidOperationException geyserEx)
+                    {
+                        // Cross-play failed (version/loader not supported, API down, etc.)
+                        // but the server itself is still valid — don't destroy the instance.
+                        _logger.LogWarning(geyserEx, "Geyser provisioning failed for {ServerType} {McVersion}. Continuing without cross-play.", serverType, selectedVersion.Id);
+
+                        metadata.HasGeyser = false;
+                        _instanceManager.SaveMetadata(metadata, createdInstancePath);
+
+                        // Clean up any partial Geyser/Floodgate jars that may have been downloaded
+                        CleanupGeyserFiles(createdInstancePath);
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show(
+                                $"Cross-play Setup Failed\n\n{geyserEx.Message}\n\nYour server was created without cross-play. You can add it later from Server Settings.",
+                                "Cross-play Unavailable",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                        });
+                    }
                 }
 
                 if (!NavigateToDashboard())
@@ -417,6 +449,33 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
         private string GetSelectedServerType() =>
             (CmbServerType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Vanilla";
+
+        private static void CleanupGeyserFiles(string instancePath)
+        {
+            // Remove any partial Geyser/Floodgate JARs from both possible target directories
+            string[] targetDirs = { "plugins", "mods" };
+            string[] geyserFiles = { "Geyser.jar", "Geyser.jar.partial", "Floodgate.jar", "Floodgate.jar.partial" };
+
+            foreach (string dir in targetDirs)
+            {
+                string dirPath = Path.Combine(instancePath, dir);
+                if (!Directory.Exists(dirPath)) continue;
+
+                foreach (string fileName in geyserFiles)
+                {
+                    string filePath = Path.Combine(dirPath, fileName);
+                    try { if (File.Exists(filePath)) File.Delete(filePath); } catch { }
+                }
+            }
+
+            // Also remove the connect guide
+            try
+            {
+                string guidePath = Path.Combine(instancePath, "BEDROCK-CONNECT.txt");
+                if (File.Exists(guidePath)) File.Delete(guidePath);
+            }
+            catch { }
+        }
 
         private async Task CleanupFailedInstanceAsync(string? folderName, string? instancePath)
         {

@@ -9,7 +9,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </Page.Resources>
     
-    <Grid Margin="24" AllowDrop="True" Drop="Page_Drop" >
+    <Grid Margin="24" AllowDrop="True" Drop="Page_Drop" Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -18,11 +18,17 @@
         <StackPanel Grid.Row="0">
             <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
                 <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand" Margin="0,0,8,0"/>            </StackPanel>
+                <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand" Margin="0,0,8,0"/>
+            </StackPanel>
         </StackPanel>
         
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel HorizontalAlignment="Left">
+        <ScrollViewer x:Name="DashScroller" 
+                      Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto" 
+                      Background="Transparent"
+                      CanContentScroll="False"
+                      Padding="0">
+            <StackPanel x:Name="MainContentStack" Background="Transparent">
                 <ItemsControl x:Name="InstanceGrid" ItemsSource="{Binding Instances}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>

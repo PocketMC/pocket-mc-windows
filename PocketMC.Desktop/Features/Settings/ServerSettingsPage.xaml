@@ -672,7 +672,111 @@
                                             <markdig:MarkdownViewer Markdown="{Binding Summaries.SummaryContent, Mode=OneWay}"
                                                                     Background="Transparent"
                                                                     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                                                    Margin="0,0,0,0"/>
+                                                                    Margin="0">
+                                                <markdig:MarkdownViewer.Resources>
+                                                    <!-- Base Document: left-align, proper font -->
+                                                    <Style x:Key="{x:Static markdig:Styles.DocumentStyleKey}" TargetType="{x:Type FlowDocument}">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                        <Setter Property="FontFamily" Value="Segoe UI, Inter, Roboto" />
+                                                        <Setter Property="TextAlignment" Value="Left" />
+                                                    </Style>
+
+                                                    <!-- Paragraphs -->
+                                                    <Style TargetType="{x:Type Paragraph}">
+                                                        <Setter Property="Margin" Value="0,0,0,10" />
+                                                        <Setter Property="LineHeight" Value="20" />
+                                                        <Setter Property="FontSize" Value="13" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                        <Setter Property="TextAlignment" Value="Left" />
+                                                    </Style>
+
+                                                    <!-- Headings: white for visibility -->
+                                                    <Style x:Key="{x:Static markdig:Styles.Heading1StyleKey}" TargetType="{x:Type Paragraph}">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                        <Setter Property="FontSize" Value="20" />
+                                                        <Setter Property="FontWeight" Value="Bold" />
+                                                        <Setter Property="Margin" Value="0,8,0,12" />
+                                                        <Setter Property="TextAlignment" Value="Left" />
+                                                    </Style>
+
+                                                    <Style x:Key="{x:Static markdig:Styles.Heading2StyleKey}" TargetType="{x:Type Paragraph}">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                        <Setter Property="FontSize" Value="17" />
+                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                        <Setter Property="Margin" Value="0,14,0,8" />
+                                                        <Setter Property="TextAlignment" Value="Left" />
+                                                    </Style>
+
+                                                    <Style x:Key="{x:Static markdig:Styles.Heading3StyleKey}" TargetType="{x:Type Paragraph}">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                        <Setter Property="FontSize" Value="15" />
+                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                        <Setter Property="Margin" Value="0,12,0,6" />
+                                                        <Setter Property="TextAlignment" Value="Left" />
+                                                    </Style>
+
+                                                    <Style x:Key="{x:Static markdig:Styles.Heading4StyleKey}" TargetType="{x:Type Paragraph}">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                        <Setter Property="FontSize" Value="13.5" />
+                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                        <Setter Property="Margin" Value="0,10,0,4" />
+                                                        <Setter Property="TextAlignment" Value="Left" />
+                                                    </Style>
+
+                                                    <!-- Lists -->
+                                                    <Style TargetType="{x:Type List}">
+                                                        <Setter Property="Margin" Value="10,0,0,8" />
+                                                        <Setter Property="Padding" Value="0" />
+                                                    </Style>
+
+                                                    <Style TargetType="{x:Type ListItem}">
+                                                        <Setter Property="Margin" Value="0,0,0,4" />
+                                                    </Style>
+
+                                                    <!-- Bullet dots -->
+                                                    <Style TargetType="{x:Type Ellipse}">
+                                                        <Setter Property="Fill" Value="#34D399" />
+                                                        <Setter Property="Width" Value="4" />
+                                                        <Setter Property="Height" Value="4" />
+                                                        <Setter Property="Opacity" Value="0.7" />
+                                                    </Style>
+
+                                                    <!-- Inline code -->
+                                                    <Style x:Key="{x:Static markdig:Styles.CodeStyleKey}" TargetType="{x:Type Run}">
+                                                        <Setter Property="FontFamily" Value="Consolas" />
+                                                        <Setter Property="Foreground" Value="#34D399" />
+                                                        <Setter Property="Background" Value="#1A1A1A" />
+                                                        <Setter Property="FontSize" Value="12" />
+                                                    </Style>
+
+                                                    <!-- Code blocks -->
+                                                    <Style x:Key="{x:Static markdig:Styles.CodeBlockStyleKey}" TargetType="{x:Type Paragraph}">
+                                                        <Setter Property="Background" Value="#0D0D0D" />
+                                                        <Setter Property="Foreground" Value="#A7F3D0" />
+                                                        <Setter Property="FontFamily" Value="Consolas" />
+                                                        <Setter Property="Padding" Value="10" />
+                                                        <Setter Property="Margin" Value="0,4,0,12" />
+                                                        <Setter Property="FontSize" Value="12" />
+                                                        <Setter Property="TextAlignment" Value="Left" />
+                                                    </Style>
+
+                                                    <!-- Bold inherits parent color -->
+                                                    <Style TargetType="{x:Type Bold}">
+                                                        <Setter Property="FontWeight" Value="Bold" />
+                                                    </Style>
+
+                                                    <!-- Hyperlinks -->
+                                                    <Style TargetType="{x:Type Hyperlink}">
+                                                        <Setter Property="Foreground" Value="#10B981" />
+                                                        <Setter Property="TextDecorations" Value="None" />
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="TextDecorations" Value="Underline" />
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </markdig:MarkdownViewer.Resources>
+                                            </markdig:MarkdownViewer>
                                         </ui:Card>
                                     </StackPanel>
                                 </Grid>

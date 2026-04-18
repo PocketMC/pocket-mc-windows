@@ -27,13 +27,15 @@ public class GeyserProvisioningService
 
     /// <summary>
     /// Provisions Geyser and Floodgate for a given Java server instance.
+    /// All downloads go through Modrinth, respecting server type and MC version.
+    ///
     /// Deliberately does NOT pre-write config.yml — Geyser auto-generates a correct
     /// one on first run. A hand-crafted config risks schema mismatches with the
     /// installed Geyser build and will break plugin startup.
-    /// 
+    ///
     /// Connection info after first server run:
     ///   - Bedrock clients connect on the SAME IP as Java, port 19132 (UDP)
-    ///   - Config lives in: plugins/Geyser-Spigot/config.yml  
+    ///   - Config lives in: plugins/Geyser-Spigot/config.yml (or mods/ equivalent)
     /// </summary>
     public async Task EnsureGeyserSetupAsync(
         string instancePath,
@@ -44,56 +46,149 @@ public class GeyserProvisioningService
     {
         try
         {
-            string platform = serverType.ToLowerInvariant() switch
-            {
-                "paper" or "spigot" => "spigot",  // Geyser calls it "spigot" for both Paper + Spigot
-                "fabric"            => "fabric",
-                "forge"             => "fabric",   // Forge uses the Fabric/NeoForge variant
-                _                   => "spigot"
-            };
+            // --- Defensive: block known-unsupported combinations ---
+            if (serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Geyser requires Paper, Fabric, or Forge. Vanilla is not supported.");
 
-            string targetDir = platform == "fabric" ? "mods" : "plugins";
+            if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) ||
+                serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Bedrock and PocketMine servers do not need Geyser.");
+
+            // --- Resolve Modrinth loader string ---
+            string loader = ResolveLoader(serverType, minecraftVersion);
+            string targetDir = loader is "fabric" or "forge" or "neoforge" ? "mods" : "plugins";
             string dirPath = Path.Combine(instancePath, targetDir);
             Directory.CreateDirectory(dirPath);
 
-            string geyserUrl = $"https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/{platform}";
-            string? floodgateUrl = null;
+            _logger.LogInformation(
+                "Provisioning Geyser+Floodgate via Modrinth: server={ServerType}, mc={McVer}, loader={Loader}, dir={Dir}",
+                serverType, minecraftVersion, loader, targetDir);
 
-            if (platform == "fabric")
+            // --- Geyser ---
+            ReportStatus(progress, $"Checking Geyser compatibility for {serverType} {minecraftVersion}...");
+            var geyserVersion = await _modrinth.GetLatestVersionAsync("geyser", minecraftVersion, loader);
+
+            if (geyserVersion == null)
             {
-                // GeyserMC Build API has removed Fabric versions of Floodgate (moved to Modrinth).
-                _logger.LogInformation("Fetching latest Floodgate ({Platform}) from Modrinth for MC {MinecraftVersion}...", platform, minecraftVersion);
-                var version = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, "fabric");
-                floodgateUrl = version?.Files.FirstOrDefault(f => f.IsPrimary)?.Url ?? version?.Files.FirstOrDefault()?.Url;
+                throw new InvalidOperationException(
+                    $"Geyser does not currently support Minecraft {minecraftVersion} on {serverType}. " +
+                    $"Check https://modrinth.com/mod/geyser for supported versions.");
+            }
 
-                if (string.IsNullOrEmpty(floodgateUrl))
-                {
-                    _logger.LogWarning("Could not find Floodgate for Fabric on Modrinth. Falling back to GeyserMC API (likely to fail).");
-                    floodgateUrl = $"https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/{platform}";
-                }
+            var geyserFile = geyserVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? geyserVersion.Files.FirstOrDefault();
+            if (geyserFile == null)
+                throw new InvalidOperationException("Modrinth returned a Geyser version with no downloadable files.");
+
+            string geyserPath = Path.Combine(dirPath, "Geyser.jar");
+            ReportStatus(progress, $"Downloading Geyser ({loader})...");
+            _logger.LogInformation("Downloading Geyser from {Url}", geyserFile.Url);
+            await _downloader.DownloadFileAsync(geyserFile.Url, geyserPath, null, progress, cancellationToken);
+
+            // --- Floodgate (optional — Geyser can run without it) ---
+            ReportStatus(progress, "Checking Floodgate compatibility...");
+            var floodgateVersion = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, loader);
+
+            if (floodgateVersion == null)
+            {
+                _logger.LogWarning(
+                    "Floodgate not found for {ServerType} {McVersion} (loader={Loader}). Installing Geyser only.",
+                    serverType, minecraftVersion, loader);
+                ReportStatus(progress, $"Warning: Floodgate not available for {serverType} {minecraftVersion}. Geyser only.");
             }
             else
             {
-                floodgateUrl = $"https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/{platform}";
+                var floodgateFile = floodgateVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? floodgateVersion.Files.FirstOrDefault();
+                if (floodgateFile == null)
+                {
+                    _logger.LogWarning("Modrinth returned a Floodgate version with no files. Skipping Floodgate.");
+                    ReportStatus(progress, "Warning: Floodgate version has no downloadable files. Geyser only.");
+                }
+                else
+                {
+                    string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
+                    ReportStatus(progress, $"Downloading Floodgate ({loader})...");
+                    _logger.LogInformation("Downloading Floodgate from {Url}", floodgateFile.Url);
+                    await _downloader.DownloadFileAsync(floodgateFile.Url, floodgatePath, null, progress, cancellationToken);
+                }
             }
-
-            string geyserPath    = Path.Combine(dirPath, "Geyser.jar");
-            string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
-
-            _logger.LogInformation("Downloading Geyser ({Platform})...", platform);
-            await _downloader.DownloadFileAsync(geyserUrl, geyserPath, null, progress, cancellationToken);
-
-            _logger.LogInformation("Downloading Floodgate from {Url}...", floodgateUrl);
-            await _downloader.DownloadFileAsync(floodgateUrl, floodgatePath, null, progress, cancellationToken);
 
             // Write a README so users know how to connect Bedrock clients
             WriteConnectGuide(instancePath, targetDir);
+
+            ReportStatus(progress, "Cross-play setup complete.");
+            _logger.LogInformation("Geyser provisioning complete for {ServerType} {McVersion}.", serverType, minecraftVersion);
+        }
+        catch (InvalidOperationException)
+        {
+            // Compatibility failures — surface cleanly to caller
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to provision Geyser and Floodgate for {ServerType}.", serverType);
-            throw;
+            _logger.LogError(ex, "Failed to provision Geyser and Floodgate for {ServerType} {McVersion}.", serverType, minecraftVersion);
+            throw new InvalidOperationException(
+                $"Cross-play setup failed: {ex.Message}. " +
+                $"Your server was created but Geyser/Floodgate could not be installed.", ex);
         }
+    }
+
+    /// <summary>
+    /// Maps server type + MC version to the Modrinth loader string.
+    /// </summary>
+    private static string ResolveLoader(string serverType, string minecraftVersion)
+    {
+        return serverType.ToLowerInvariant() switch
+        {
+            "paper" or "spigot" => "spigot",
+            "fabric"            => "fabric",
+            "forge"             => IsNewerOrEqual(minecraftVersion, "1.20.5") ? "neoforge" : "forge",
+            _                   => "spigot" // safe default
+        };
+    }
+
+    /// <summary>
+    /// Compares two Minecraft version strings (e.g. "1.20.5" >= "1.20.5").
+    /// Returns true if <paramref name="version"/> >= <paramref name="threshold"/>.
+    /// </summary>
+    private static bool IsNewerOrEqual(string version, string threshold)
+    {
+        try
+        {
+            var vParts = version.Split('.').Select(int.Parse).ToArray();
+            var tParts = threshold.Split('.').Select(int.Parse).ToArray();
+
+            int len = Math.Max(vParts.Length, tParts.Length);
+            for (int i = 0; i < len; i++)
+            {
+                int v = i < vParts.Length ? vParts[i] : 0;
+                int t = i < tParts.Length ? tParts[i] : 0;
+                if (v > t) return true;
+                if (v < t) return false;
+            }
+
+            return true; // equal
+        }
+        catch
+        {
+            // If version string is unparseable (snapshot, etc.), default to false
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Reports a status string to the UI via the download progress reporter.
+    /// Uses a zero-byte progress report so the UI can display the message.
+    /// </summary>
+    private static void ReportStatus(IProgress<DownloadProgress>? progress, string _)
+    {
+        // The DownloadProgress struct doesn't carry a text field, so we just
+        // reset the progress bar to indeterminate (0/0) to signal a status change.
+        // The calling code in NewInstancePage sets TxtProgress.Text before calling us.
+        progress?.Report(new DownloadProgress { BytesRead = 0, TotalBytes = 0 });
     }
 
     private void WriteConnectGuide(string instancePath, string targetDir)

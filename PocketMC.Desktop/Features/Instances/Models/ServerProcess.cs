@@ -44,6 +44,7 @@ public class ServerProcess : IDisposable
     public ConcurrentQueue<string> OutputBuffer { get; } = new();
     public int PlayerCount { get; private set; }
     public string? CrashContext { get; private set; }
+    public DateTime? StartTime { get; private set; }
 
     public event Action<string>? OnOutputLine;
     public event Action<string>? OnErrorLine;
@@ -76,6 +77,7 @@ public class ServerProcess : IDisposable
         _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
         _process.Exited += OnProcessExited;
         _process.Start();
+        StartTime = DateTime.UtcNow;
 
         try { _jobObject.AddProcess(_process.Handle); }
         catch (Exception ex) { _logger.LogWarning(ex, "Failed to assign process to job object."); }

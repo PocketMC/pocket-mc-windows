@@ -17,7 +17,7 @@ jobs:
       DOTNET_VERSION: "8.0.x"
       RUNTIME: win-x64
       APP_ID: PocketMC
-      VERSION: 1.4.1   # <-- single source of truth
+      VERSION: 1.4.2 # <-- single source of truth
 
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
         run: dotnet test PocketMC.Desktop.sln --no-build
 
       - name: Publish Multi-DLL
-        run: |
+        run: |+
           dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
             -c Release `
             -r $env:RUNTIME `
@@ -58,7 +58,6 @@ jobs:
           fileName: "*"
           out-file-path: Releases
           token: ${{ secrets.GITHUB_TOKEN }}
-        
 
       # 🔍 Extract previous version
       - name: Get previous version
@@ -89,14 +88,9 @@ jobs:
       - name: Pack with Velopack
         if: steps.compare.outputs.skip == 'false'
         run: >
-          vpk pack 
-          --packId ${{ env.APP_ID }} 
-          --packVersion ${{ env.VERSION }}
-          --packDir publish 
-          --mainExe PocketMC.Desktop.exe 
-          --framework net8.0 
-          --runtime ${{ env.RUNTIME }} 
-          --outputDir Releases
+          vpk pack  --packId ${{ env.APP_ID }}  --packVersion ${{ env.VERSION }}
+          --packDir publish  --mainExe PocketMC.Desktop.exe  --framework
+          net8.0  --runtime ${{ env.RUNTIME }}  --outputDir Releases
 
       # 📦 Upload only if packaged
       - name: Upload Release Artifacts
