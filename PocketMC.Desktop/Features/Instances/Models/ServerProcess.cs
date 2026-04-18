@@ -21,7 +21,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 namespace PocketMC.Desktop.Features.Instances.Models;
 
 /// <summary>
-/// Wraps a single Minecraft server process. 
+/// Wraps a single Minecraft server process.
 /// Delegated launch configuration to ServerLaunchConfigurator.
 /// </summary>
 public class ServerProcess : IDisposable
@@ -69,21 +69,30 @@ public class ServerProcess : IDisposable
         InitializeSessionLog(workingDir);
         CleanSessionLock(workingDir);
 
-        var psi = await _launchConfigurator.ConfigureAsync(meta, workingDir, appRootPath, l => AppendOutput(l));
+        try
+        {
+            var psi = await _launchConfigurator.ConfigureAsync(meta, workingDir, appRootPath, l => AppendOutput(l));
 
-        SetState(ServerState.Starting);
-        _intentionalStop = false;
+            SetState(ServerState.Starting);
+            _intentionalStop = false;
 
-        _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-        _process.Exited += OnProcessExited;
-        _process.Start();
-        StartTime = DateTime.UtcNow;
+            _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            _process.Exited += OnProcessExited;
+            _process.Start();
+            StartTime = DateTime.UtcNow;
 
-        try { _jobObject.AddProcess(_process.Handle); }
-        catch (Exception ex) { _logger.LogWarning(ex, "Failed to assign process to job object."); }
+            try { _jobObject.AddProcess(_process.Handle); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Failed to assign process to job object."); }
 
-        _ = Task.Run(() => ReadStreamAsync(_process.StandardOutput, false));
-        _ = Task.Run(() => ReadStreamAsync(_process.StandardError, true));
+            _ = Task.Run(() => ReadStreamAsync(_process.StandardOutput, false));
+            _ = Task.Run(() => ReadStreamAsync(_process.StandardError, true));
+        }
+        catch
+        {
+            _sessionLogWriter?.Dispose();
+            _sessionLogWriter = null;
+            throw;
+        }
     }
 
     private void InitializeSessionLog(string workingDir)
@@ -127,7 +136,7 @@ public class ServerProcess : IDisposable
         if (_process == null || _process.HasExited) return;
         _intentionalStop = true;
         SetState(ServerState.Stopping);
-        
+
         bool rconSuccess = await TryStopViaRconAsync(WorkingDirectory);
         if (!rconSuccess)
         {
@@ -154,10 +163,10 @@ public class ServerProcess : IDisposable
             var props = PocketMC.Desktop.Features.Instances.ServerPropertiesParser.Read(propsFile);
             if (!props.TryGetValue("enable-rcon", out var rconEnabled) || rconEnabled != "true")
                 return false;
-                
+
             if (!props.TryGetValue("rcon.port", out var portStr))
                 return false;
-                
+
             if (!int.TryParse(portStr, out int port))
                 return false;
 
