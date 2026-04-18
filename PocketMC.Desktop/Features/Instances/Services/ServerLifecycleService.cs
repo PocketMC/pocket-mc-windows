@@ -25,6 +25,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
     private readonly INotificationService _notificationService;
     private readonly ILogger<ServerLifecycleService> _logger;
     private readonly PocketMC.Desktop.Features.Shell.ApplicationState _appState;
+    private readonly GeyserProvisioningService _geyserProvisioningService;
     private string _appRootPath => _appState.GetRequiredAppRootPath();
 
     private readonly ConcurrentDictionary<Guid, int> _consecutiveRestarts = new();
@@ -45,7 +46,8 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         PortRecoveryService portRecoveryService,
         INotificationService notificationService,
         ILogger<ServerLifecycleService> logger,
-        PocketMC.Desktop.Features.Shell.ApplicationState appState)
+        PocketMC.Desktop.Features.Shell.ApplicationState appState,
+        GeyserProvisioningService geyserProvisioningService)
     {
         _processManager = processManager;
         _registry = registry;
@@ -56,6 +58,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         _notificationService = notificationService;
         _logger = logger;
         _appState = appState;
+        _geyserProvisioningService = geyserProvisioningService;
 
         _processManager.OnInstanceStateChanged += HandleInstanceStateChanged;
         _processManager.OnServerCrashed += HandleProcessManagerServerCrashed;
@@ -77,6 +80,11 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
 
             string instancePath = _registry.GetPath(meta.Id)
                 ?? throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
+
+            if (meta.HasGeyser)
+            {
+                _geyserProvisioningService.PatchGeyserConfigPort(instancePath, meta.GeyserBedrockPort ?? 19132);
+            }
 
             while (true)
             {

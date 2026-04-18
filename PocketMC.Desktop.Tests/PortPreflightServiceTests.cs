@@ -67,6 +67,7 @@ public sealed class PortPreflightServiceTests
         var service = workspace.CreatePortPreflightService();
         var metadata = workspace.CreateInstance("Crossplay", serverType: "Paper");
         metadata.HasGeyser = true;
+        metadata.GeyserBedrockPort = 19140;
         workspace.SaveMetadata(metadata);
 
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");

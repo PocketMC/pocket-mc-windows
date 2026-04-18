@@ -1,11 +1,11 @@
 <Page x:Class="PocketMC.Desktop.Features.Settings.ServerSettingsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:markdig="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
-      mc:Ignorable="d" 
+      mc:Ignorable="d"
       d:DesignHeight="1200" d:DesignWidth="950"
       Title="Server Settings"
       Background="Transparent">
@@ -50,10 +50,10 @@
             <!-- Title Section -->
             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,24">
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <ui:Button Icon="{ui:SymbolIcon ArrowLeft24}" 
-                               Appearance="Transparent" 
+                    <ui:Button Icon="{ui:SymbolIcon ArrowLeft24}"
+                               Appearance="Transparent"
                                Command="{Binding CancelCommand}"
-                               Margin="0,0,12,0" 
+                               Margin="0,0,12,0"
                                Padding="6" />
                     <ui:TextBlock FontTypography="Title"
                                   Text="Server Configurations"
@@ -79,7 +79,7 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                 Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}">
                         <ui:SymbolIcon Symbol="Warning24" Foreground="#F38BA8" Margin="0,0,10,0"/>
-                        <TextBlock Text="Unsaved changes detected" 
+                        <TextBlock Text="Unsaved changes detected"
                                    Foreground="#F38BA8"
                                    FontSize="13"
                                    FontWeight="SemiBold"
@@ -89,13 +89,13 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                 Visibility="{Binding IsRestartRequired, Converter={StaticResource VisibleIfTrue}}">
                         <ui:SymbolIcon Symbol="ArrowClockwise24" Foreground="#89B4FA" Margin="0,0,10,0"/>
-                        <TextBlock Text="Server restart required to apply changes" 
+                        <TextBlock Text="Server restart required to apply changes"
                                    Foreground="#89B4FA"
                                    FontSize="13"
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
-                    
+
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <ui:Button Content="Discard" Appearance="Secondary" Margin="0,0,12,0" Command="{Binding CancelCommand}"/>
                         <ui:Button Content="Save Changes" Appearance="Primary" Command="{Binding SaveCommand}" MinWidth="140"/>
@@ -132,14 +132,14 @@
                 <Border x:Name="ContentAreaCard" Grid.Column="2" VerticalAlignment="Stretch">
                     <TabControl x:Name="MainTabControl" Background="Transparent" BorderThickness="0" Margin="0" VerticalAlignment="Stretch">
                         <TabControl.Resources><Style TargetType="TabPanel"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
-                
+
                         <!-- TAB 1: IDENTITY & PERFORMANCE -->
                         <TabItem Header="Identity">
                             <ScrollViewer x:Name="GeneralScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <ui:CardExpander Header="Visual Identity" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12" IsExpanded="True">
                                         <StackPanel Margin="16,8,16,16">
-                                            
+
                                             <!-- Interactive Dummy Server Card -->
                                             <Border Background="{StaticResource DirtBackground}" BorderThickness="2" BorderBrush="#000000" Padding="4" Margin="0,0,0,16" CornerRadius="0">
                                                 <Grid>
@@ -177,7 +177,7 @@
 
                                                         <!-- MOTD Display & Editor -->
                                                         <Grid Grid.Row="1" VerticalAlignment="Top">
-                                                            
+
                                                             <!-- Display Mode -->
                                                             <StackPanel x:Name="MotdDisplayMode">
                                                                 <StackPanel Orientation="Horizontal">
@@ -189,7 +189,7 @@
                                                                     <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Edit16}" Click="BtnEditMotd_Click" Margin="4,-2,0,0" Padding="2" ToolTip="Edit MOTD"/>
                                                                 </StackPanel>
                                                             </StackPanel>
-                                                            
+
                                                             <!-- MOTD Editor Mode -->
                                                             <StackPanel x:Name="MotdEditorMode" Visibility="Collapsed" Margin="0,0,0,0">
                                                                 <WrapPanel Margin="0,0,0,4" MaxWidth="280">
@@ -205,7 +205,7 @@
                                                                     <Button Content="&#167;d" ToolTip="Light Purple" Click="BtnInsertMotdColor_Click" Tag="&#167;d" Background="#FF55FF" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
                                                                     <Button Content="&#167;f" ToolTip="White" Click="BtnInsertMotdColor_Click" Tag="&#167;f" Background="#FFFFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
                                                                     <Button Content="&#167;0" ToolTip="Black" Click="BtnInsertMotdColor_Click" Tag="&#167;0" Background="#000000" Foreground="White" BorderThickness="0" Margin="0,0,8,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    
+
                                                                     <!-- Formatters -->
                                                                     <Button Content="&#167;l" ToolTip="Bold" Click="BtnInsertMotdColor_Click" Tag="&#167;l" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" FontWeight="Bold" Cursor="Hand"/>
                                                                     <Button Content="&#167;n" ToolTip="Underline" Click="BtnInsertMotdColor_Click" Tag="&#167;n" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
@@ -218,7 +218,7 @@
                                                             </StackPanel>
                                                         </Grid>
                                                     </Grid>
-                                                    
+
                                                     <!-- Signal Bars Dummy -->
                                                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Top" Margin="8,0,4,0">
                                                         <TextBlock FontSize="15" FontFamily="Consolas" Foreground="#AAAAAA" VerticalAlignment="Top" Margin="0,0,6,0" FontWeight="SemiBold">
@@ -246,16 +246,25 @@
 
                                             <!-- Server Port -->
                                             <TextBlock Text="Server Port" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="The port your Minecraft server listens on. Default is 25565." 
+                                            <TextBlock Text="The port your Minecraft server listens on. Default is 25565."
                                                        FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
-                                            <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}" 
+                                            <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}"
                                                         PlaceholderText="25565" Width="160" HorizontalAlignment="Left"/>
 
-                                            <Separator Margin="0,16" Opacity="0.15"/>
+                                            <StackPanel Visibility="{Binding HasGeyser, Converter={StaticResource BoolToVis}}">
+                                                <Separator Margin="0,16" Opacity="0.15"/>
 
+                                                <TextBlock Text="Geyser Bedrock Port (UDP)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                <TextBlock Text="The UDP port used by Bedrock players to connect via Geyser."
+                                                           FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
+                                                <ui:TextBox Text="{Binding General.GeyserBedrockPort, UpdateSourceTrigger=PropertyChanged}"
+                                                            PlaceholderText="19132" Width="160" HorizontalAlignment="Left"/>
+                                            </StackPanel>
+
+                                            <Separator Margin="0,16" Opacity="0.15"/>
                                             <!-- Public IP / Tunnel Endpoint -->
                                             <TextBlock Text="Public Address (Tunnel)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="The public address players use to connect. Resolved from your active Playit.gg tunnels." 
+                                            <TextBlock Text="The public address players use to connect. Resolved from your active Playit.gg tunnels."
                                                        FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
 
                                             <Grid>
@@ -269,35 +278,35 @@
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
                                                     </Grid.RowDefinitions>
-                                                    
+
                                                     <!-- Primary Java Tunnel -->
-                                                    <Border Grid.Row="0" Background="{DynamicResource ControlFillColorDefaultBrush}" 
-                                                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" 
+                                                    <Border Grid.Row="0" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                                                             BorderThickness="1" CornerRadius="4" Padding="12,8" VerticalAlignment="Center">
                                                         <StackPanel>
-                                                            <TextBlock x:Name="TxtPlayitAddress" Text="{Binding PlayitAddress}" 
-                                                                       FontFamily="Consolas" FontSize="14" 
+                                                            <TextBlock x:Name="TxtPlayitAddress" Text="{Binding PlayitAddress}"
+                                                                       FontFamily="Consolas" FontSize="14"
                                                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                         </StackPanel>
                                                     </Border>
-                                                    
+
                                                     <!-- Secondary Bedrock Tunnel -->
-                                                    <Border Grid.Row="1" Background="#22F9A825" 
+                                                    <Border Grid.Row="1" Background="#22F9A825"
                                                             BorderBrush="#44F9A825" Margin="0,8,0,0"
                                                             BorderThickness="1" CornerRadius="4" Padding="12,8" VerticalAlignment="Center"
                                                             Visibility="{Binding HasGeyser, Converter={StaticResource VisibleIfTrue}}">
                                                         <StackPanel>
                                                             <TextBlock Text="Bedrock Address:" FontSize="11" Foreground="#F9A825" Margin="0,0,0,2"/>
-                                                            <TextBlock x:Name="TxtPlayitBedrockAddress" Text="{Binding PlayitBedrockAddress}" 
-                                                                       FontFamily="Consolas" FontSize="14" 
+                                                            <TextBlock x:Name="TxtPlayitBedrockAddress" Text="{Binding PlayitBedrockAddress}"
+                                                                       FontFamily="Consolas" FontSize="14"
                                                                        Foreground="#FFD54F"/>
                                                         </StackPanel>
                                                     </Border>
                                                 </Grid>
 
-                                                <ui:Button Grid.Column="1" Appearance="Secondary" 
-                                                           Content="Refresh" Icon="{ui:SymbolIcon ArrowSync24}" 
-                                                           Command="{Binding ResolvePlayitCommand}" 
+                                                <ui:Button Grid.Column="1" Appearance="Secondary"
+                                                           Content="Refresh" Icon="{ui:SymbolIcon ArrowSync24}"
+                                                           Command="{Binding ResolvePlayitCommand}"
                                                            Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Re-resolve tunnel address for current port"/>
                                             </Grid>
 
@@ -315,7 +324,7 @@
                                                 <Slider Grid.Column="1" Value="{Binding Performance.MaxRam}" Minimum="512" Maximum="{Binding Performance.TotalRamMb}" TickFrequency="512" SmallChange="512" LargeChange="1024" IsSnapToTickEnabled="True"/>
                                                 <TextBlock Grid.Column="2" Text="{Binding Performance.MaxRamDisplay}" Margin="12,0,0,0" FontWeight="Bold" VerticalAlignment="Center"/>
                                             </Grid>
-                                            
+
                                             <TextBlock Text="Startup JVM Arguments:" Style="{StaticResource SettingsHeader}" Margin="0,5,0,8"/>
                                             <ui:TextBox Text="{Binding Performance.AdvancedJvmArgs, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="-XX:+UseG1GC ..."/>
 
@@ -332,7 +341,7 @@
                                     <ui:CardExpander Header="Software Updates" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12" IsExpanded="True">
                                         <StackPanel Margin="16,8,16,16">
                                             <TextBlock Text="Application Updates" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Checking for updates will look for new versions of PocketMC Desktop." 
+                                            <TextBlock Text="Checking for updates will look for new versions of PocketMC Desktop."
                                                        FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,12"/>
                                             <ui:Button Content="Check for Updates" Icon="{ui:SymbolIcon ArrowSync24}" Command="{Binding General.CheckForUpdatesCommand}" Appearance="Secondary" HorizontalAlignment="Left"/>
                                         </StackPanel>
@@ -363,7 +372,7 @@
                                                 <TextBlock Text="Spawn Protection Radius:" Style="{StaticResource SettingsSubtext}"/>
                                                 <ui:TextBox Text="{Binding World.SpawnProtection, UpdateSourceTrigger=PropertyChanged}" />
                                             </StackPanel>
-                                            
+
                                             <Separator Width="800" Margin="0,10,0,20" Background="#313244"/>
 
                                             <StackPanel Width="400" Margin="10">
@@ -391,7 +400,7 @@
                                             <TextBlock Text="World Instance Management" Style="{StaticResource SettingsHeader}" FontSize="18"/>
                                             <TextBlock Text="{Binding World.WorldStatusText}" Foreground="#A6E3A1" FontWeight="SemiBold" Margin="0,5,0,2"/>
                                             <TextBlock Text="{Binding World.WorldSizeText}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,25"/>
-                                            
+
                                             <TextBlock Text="World Generation Seed:" Style="{StaticResource SettingsHeader}"/>
                                             <ui:TextBox Text="{Binding World.Seed, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Leave empty for random" Margin="0,0,0,15"/>
 
@@ -418,9 +427,9 @@
                                     <TextBlock Text="Server Plugins" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
                                     <ui:Card Margin="0,0,0,16" Padding="20">
                                         <StackPanel>
-                                            <TextBlock Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource VisibleIfTrue}}" 
+                                            <TextBlock Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource VisibleIfTrue}}"
                                                        Text="⚠ Plugins are not supported on Vanilla software. Please use Paper or Spigot." Foreground="#F38BA8" Margin="0,0,0,15" FontSize="12" FontWeight="SemiBold"/>
-                                            <TextBlock Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}" 
+                                            <TextBlock Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}"
                                                        Text="ℹ PocketMine plugins are .phar files. Use the Poggit marketplace button to browse and install them." Foreground="#89B4FA" Margin="0,0,0,10" FontSize="12" TextWrapping="Wrap"/>
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:Button Content="Local File" Command="{Binding Addons.AddPluginCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
@@ -529,7 +538,7 @@
                                             </StackPanel>
                                         </StackPanel>
                                     </ui:Card>
-                                    
+
                                     <ui:ListView ItemsSource="{Binding Backups.BackupList}" Margin="4,0,0,0" x:Name="BackupListView">
                                         <ui:ListView.ItemTemplate>
                                             <DataTemplate>
@@ -560,7 +569,7 @@
                                     <StackPanel>
                                         <TextBlock Text="Auto-Restart Engine" Style="{StaticResource SettingsHeader}" FontSize="18"/>
                                         <ui:ToggleSwitch IsChecked="{Binding Advanced.EnableAutoRestart}" Content="Restart on Failure" OnContent="Enabled" OffContent="Disabled"/>
-                                        
+
                                         <TextBlock Text="Max Failure Tolerance (Attempts):" Style="{StaticResource SettingsSubtext}" Margin="0,20,0,8"/>
                                         <ui:TextBox Text="{Binding Advanced.MaxAutoRestarts}" Width="100" HorizontalAlignment="Left"/>
 
@@ -582,7 +591,7 @@
                                             <ui:Button Content="Append Parameter" Command="{Binding Advanced.AddPropertyCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Add20}"/>
                                         </StackPanel>
                                     </ui:Card>
-                                    
+
                                     <ItemsControl ItemsSource="{Binding Advanced.AdvancedProperties}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -608,7 +617,7 @@
                                         <ui:Card Padding="24" Margin="0,0,0,16">
                                             <StackPanel>
                                                 <TextBlock Text="Session Summaries" Style="{StaticResource SettingsHeader}" FontSize="18"/>
-                                                <TextBlock Text="AI-generated summaries of your server play sessions. Each summary captures player activity, deaths, events, and highlights." 
+                                                <TextBlock Text="AI-generated summaries of your server play sessions. Each summary captures player activity, deaths, events, and highlights."
                                                            Style="{StaticResource SettingsSubtext}" TextWrapping="Wrap" Margin="0,0,0,4"/>
                                             </StackPanel>
                                         </ui:Card>
@@ -619,8 +628,8 @@
                                             <StackPanel HorizontalAlignment="Center">
                                                 <ui:SymbolIcon Symbol="BrainCircuit24" FontSize="36" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
                                                 <TextBlock Text="No summaries yet" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                <TextBlock Text="Summaries will appear here after you stop a server session and choose to generate one." 
-                                                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" 
+                                                <TextBlock Text="Summaries will appear here after you stop a server session and choose to generate one."
+                                                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,6,0,0" MaxWidth="360"/>
                                             </StackPanel>
                                         </ui:Card>
@@ -645,16 +654,16 @@
                                                                         <TextBlock Text="{Binding Provider}" FontSize="11" Foreground="#A6E3A1"/>
                                                                     </Border>
                                                                 </StackPanel>
-                                                                <TextBlock Text="{Binding Preview}" FontSize="12" 
-                                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                                <TextBlock Text="{Binding Preview}" FontSize="12"
+                                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                            TextTrimming="CharacterEllipsis" MaxWidth="500" HorizontalAlignment="Left"/>
                                                             </StackPanel>
                                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <ui:Button Content="View" Appearance="Secondary" 
-                                                                           Command="{Binding DataContext.Summaries.ViewSummaryCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                                                <ui:Button Content="View" Appearance="Secondary"
+                                                                           Command="{Binding DataContext.Summaries.ViewSummaryCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                            CommandParameter="{Binding}" Margin="0,0,8,0"/>
-                                                                <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger" 
-                                                                           Command="{Binding DataContext.Summaries.DeleteSummaryCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                                                <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger"
+                                                                           Command="{Binding DataContext.Summaries.DeleteSummaryCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                            CommandParameter="{Binding}"/>
                                                             </StackPanel>
                                                         </Grid>
@@ -666,7 +675,7 @@
 
                                     <!-- Summary Content Viewer -->
                                     <StackPanel Visibility="{Binding Summaries.IsViewingSummary, Converter={StaticResource VisibleIfTrue}}">
-                                        <ui:Button Content="← Back to Summaries" Appearance="Transparent" 
+                                        <ui:Button Content="← Back to Summaries" Appearance="Transparent"
                                                    Command="{Binding Summaries.CloseSummaryCommand}" Margin="0,0,0,12"/>
                                         <ui:Card Padding="24">
                                             <markdig:MarkdownViewer Markdown="{Binding Summaries.SummaryContent, Mode=OneWay}"

@@ -19,6 +19,7 @@ public sealed class PortDiagnosticsSnapshotBuilderTests
 
         var metadata = workspace.CreateInstance("Diagnostics", serverType: "Paper");
         metadata.HasGeyser = true;
+        metadata.GeyserBedrockPort = 19140;
         workspace.SaveMetadata(metadata);
         string instancePath = workspace.GetInstancePath(metadata.Id);
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");

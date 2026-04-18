@@ -246,7 +246,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             recoveryService,
             notificationService ?? new RecordingNotificationService(),
             NullLogger<ServerLifecycleService>.Instance,
-            AppState);
+            AppState,
+            new PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService>.Instance));
     }
 
     public int GetAvailableTcpPort()

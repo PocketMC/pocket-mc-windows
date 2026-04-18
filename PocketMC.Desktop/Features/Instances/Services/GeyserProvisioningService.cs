@@ -216,4 +216,60 @@ public class GeyserProvisioningService
             _logger.LogDebug(ex, "Could not write Bedrock connect guide.");
         }
     }
+
+    public void PatchGeyserConfigPort(string instancePath, int targetPort)
+    {
+        string[] possiblePaths = {
+            Path.Combine(instancePath, "plugins", "Geyser-Spigot", "config.yml"),
+            Path.Combine(instancePath, "mods", "Geyser-Fabric", "config.yml"),
+            Path.Combine(instancePath, "mods", "Geyser-Forge", "config.yml")
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            if (File.Exists(path))
+            {
+                try
+                {
+                    string[] lines = File.ReadAllLines(path);
+                    bool modified = false;
+                    bool inBedrockSection = false;
+
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        if (lines[i].StartsWith("bedrock:"))
+                        {
+                            inBedrockSection = true;
+                        }
+                        else if (inBedrockSection && lines[i].Length > 0 && !lines[i].StartsWith(" ") && !lines[i].StartsWith("\t"))
+                        {
+                            inBedrockSection = false;
+                        }
+
+                        if (inBedrockSection && lines[i].TrimStart().StartsWith("port:"))
+                        {
+                            string indentation = lines[i].Substring(0, lines[i].IndexOf("port:"));
+                            string newPortLine = $"{indentation}port: {targetPort}";
+                            if (lines[i] != newPortLine)
+                            {
+                                lines[i] = newPortLine;
+                                modified = true;
+                            }
+                            break;
+                        }
+                    }
+
+                    if (modified)
+                    {
+                        File.WriteAllLines(path, lines);
+                        _logger.LogInformation("Patched Geyser port to {Port} in {Path}", targetPort, path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to patch Geyser config port at {Path}", path);
+                }
+            }
+        }
+    }
 }

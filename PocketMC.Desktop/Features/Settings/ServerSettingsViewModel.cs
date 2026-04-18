@@ -139,6 +139,7 @@ namespace PocketMC.Desktop.Features.Settings
             General.Motd = cfg.Motd;
             General.ServerPort = cfg.ServerPort;
             General.ServerIp = cfg.ServerIp;
+            General.GeyserBedrockPort = Metadata.GeyserBedrockPort?.ToString() ?? "19132";
             General.LoadIcon();
 
             // World
@@ -236,11 +237,12 @@ namespace PocketMC.Desktop.Features.Settings
                 PlayitAddress = match != null
                     ? match.PublicAddress
                     : $"No {FormatProtocol(primaryRequest.Protocol)} tunnel found for port {primaryRequest.Port}. Please create one.";
-                    
+
                 if (HasGeyser)
                 {
+                    int geyserPort = Metadata.GeyserBedrockPort ?? 19132;
                     geyserRequest ??= new PortCheckRequest(
-                        19132,
+                        geyserPort,
                         PortProtocol.Udp,
                         PortIpMode.IPv4,
                         instanceId: Metadata.Id,
@@ -386,6 +388,7 @@ namespace PocketMC.Desktop.Features.Settings
                     cfg.AdvancedProperties[item.Key] = item.Value;
             }
 
+            Metadata.GeyserBedrockPort = int.TryParse(General.GeyserBedrockPort, out int gPort) ? gPort : 19132;
             _serverConfigurationService.Save(Metadata, ServerDir, cfg);
             if (Advanced.IsRawServerPropertiesDirty)
             {

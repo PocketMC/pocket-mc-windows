@@ -24,7 +24,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private string? _tunnelAddress;
     private string? _bedrockTunnelAddress;
     private string? _bedrockIpDisplayTextOverride;
-    private int _bedrockLocalPort = 19132;
+    private int _bedrockLocalPort;
     private string _ipDisplayText = "Will Appear Here!";
     private string? _portIssueText;
     private string? _portIssueTooltip;
@@ -34,6 +34,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         _metadata = metadata;
         _serverProcessManager = serverProcessManager;
         _lifecycleService = lifecycleService;
+        _bedrockLocalPort = metadata.GeyserBedrockPort ?? 19132;
 
         if (_serverProcessManager.IsRunning(metadata.Id))
         {
@@ -62,7 +63,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public string? PortIssueTooltip => _portIssueTooltip;
 
     /// <summary>True for native Bedrock servers (BDS, Pocketmine).</summary>
-    public bool IsBedrockServer => 
+    public bool IsBedrockServer =>
         _metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true ||
         _metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
 

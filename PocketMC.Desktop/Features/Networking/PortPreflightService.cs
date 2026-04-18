@@ -296,7 +296,7 @@ public sealed class PortPreflightService
         if (metadata.HasGeyser)
         {
             GeyserNetworkSettings geyserSettings = LoadGeyserNetworkSettings(serverDir);
-            int geyserPort = geyserSettings.CloneRemotePort ? mainPort : geyserSettings.BedrockPort ?? DefaultBedrockPort;
+            int geyserPort = metadata.GeyserBedrockPort ?? DefaultBedrockPort;
             string? geyserBindAddress = NormalizeBindAddress(geyserSettings.BedrockAddress);
 
             targets.Add(

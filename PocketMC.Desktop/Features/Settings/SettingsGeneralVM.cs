@@ -23,6 +23,9 @@ namespace PocketMC.Desktop.Features.Settings
         private string _serverPort = "25565";
         public string ServerPort { get => _serverPort; set { if (SetProperty(ref _serverPort, value)) _markDirty(); } }
 
+        private string _geyserBedrockPort = "19132";
+        public string GeyserBedrockPort { get => _geyserBedrockPort; set { if (SetProperty(ref _geyserBedrockPort, value)) _markDirty(); } }
+
         private string? _serverIp;
         public string? ServerIp { get => _serverIp; set { if (SetProperty(ref _serverIp, value)) _markDirty(); } }
 
@@ -33,10 +36,10 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand CheckForUpdatesCommand { get; }
 
         public SettingsGeneralVM(
-            string serverDir, 
+            string serverDir,
             UpdateService updateService,
-            IDialogService dialogService, 
-            IAppNavigationService navigationService, 
+            IDialogService dialogService,
+            IAppNavigationService navigationService,
             Action markDirty)
         {
             _serverDir = serverDir;
@@ -44,15 +47,15 @@ namespace PocketMC.Desktop.Features.Settings
             _dialogService = dialogService;
             _navigationService = navigationService;
             _markDirty = markDirty;
-            
+
             BrowseIconCommand = new RelayCommand(async _ => await BrowseIconAsync());
             CheckForUpdatesCommand = new RelayCommand(
                 async _ => await _updateService.CheckAndDownloadAsync(),
                 _ => _updateService.CurrentStage != UpdateStage.Checking && _updateService.CurrentStage != UpdateStage.Downloading);
 
-            _updateService.OnStatusChanged += _ => 
+            _updateService.OnStatusChanged += _ =>
             {
-                System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     System.Windows.Input.CommandManager.InvalidateRequerySuggested());
             };
         }
