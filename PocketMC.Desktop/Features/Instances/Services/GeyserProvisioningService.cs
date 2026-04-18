@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Instances.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
@@ -25,100 +24,158 @@ public class GeyserProvisioningService
         _logger = logger;
     }
 
-    /// <summary>
-    /// Provisions Geyser and Floodgate for a given Java server instance.
-    /// Deliberately does NOT pre-write config.yml — Geyser auto-generates a correct
-    /// one on first run. A hand-crafted config risks schema mismatches with the
-    /// installed Geyser build and will break plugin startup.
-    /// 
-    /// Connection info after first server run:
-    ///   - Bedrock clients connect on the SAME IP as Java, port 19132 (UDP)
-    ///   - Config lives in: plugins/Geyser-Spigot/config.yml  
-    /// </summary>
     public async Task EnsureGeyserSetupAsync(
         string instancePath,
         string serverType,
         string minecraftVersion,
         IProgress<DownloadProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Action<string>? onProgress = null)
     {
         try
         {
-            string platform = serverType.ToLowerInvariant() switch
+            if (serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase))
             {
-                "paper" or "spigot" => "spigot",  // Geyser calls it "spigot" for both Paper + Spigot
-                "fabric"            => "fabric",
-                "forge"             => "fabric",   // Forge uses the Fabric/NeoForge variant
-                _                   => "spigot"
-            };
+                throw new InvalidOperationException("Geyser requires Paper, Fabric, or Forge. Vanilla is not supported.");
+            }
 
-            string targetDir = platform == "fabric" ? "mods" : "plugins";
+            if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) ||
+                serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Bedrock and PocketMine servers do not need Geyser.");
+            }
+
+            string loader = GetLoaderForServer(serverType, minecraftVersion);
+            string targetDir = GetTargetDirectory(loader);
             string dirPath = Path.Combine(instancePath, targetDir);
             Directory.CreateDirectory(dirPath);
 
-            string geyserUrl = $"https://download.geysermc.org/v2/projects/geyser/versions/latest/builds/latest/downloads/{platform}";
-            string? floodgateUrl = null;
+            onProgress?.Invoke($"Checking Geyser compatibility for {serverType} {minecraftVersion}...");
+            _logger.LogInformation("Checking Geyser compatibility for {ServerType} {MinecraftVersion} using loader {Loader}.", serverType, minecraftVersion, loader);
 
-            if (platform == "fabric")
+            var geyserVersion = await _modrinth.GetLatestVersionAsync("geyser", minecraftVersion, loader);
+            if (geyserVersion == null)
             {
-                // GeyserMC Build API has removed Fabric versions of Floodgate (moved to Modrinth).
-                _logger.LogInformation("Fetching latest Floodgate ({Platform}) from Modrinth for MC {MinecraftVersion}...", platform, minecraftVersion);
-                var version = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, "fabric");
-                floodgateUrl = version?.Files.FirstOrDefault(f => f.IsPrimary)?.Url ?? version?.Files.FirstOrDefault()?.Url;
-
-                if (string.IsNullOrEmpty(floodgateUrl))
-                {
-                    _logger.LogWarning("Could not find Floodgate for Fabric on Modrinth. Falling back to GeyserMC API (likely to fail).");
-                    floodgateUrl = $"https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/{platform}";
-                }
-            }
-            else
-            {
-                floodgateUrl = $"https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/{platform}";
+                throw new InvalidOperationException(
+                    $"Geyser does not currently support Minecraft {minecraftVersion} on {serverType}. " +
+                    "Check https://modrinth.com/mod/geyser for supported versions.");
             }
 
-            string geyserPath    = Path.Combine(dirPath, "Geyser.jar");
-            string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
+            var geyserFile = geyserVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? geyserVersion.Files.FirstOrDefault();
+            if (geyserFile == null)
+            {
+                throw new InvalidOperationException("Modrinth returned a version with no downloadable files.");
+            }
 
-            _logger.LogInformation("Downloading Geyser ({Platform})...", platform);
-            await _downloader.DownloadFileAsync(geyserUrl, geyserPath, null, progress, cancellationToken);
+            onProgress?.Invoke($"Downloading Geyser ({loader})...");
+            await _downloader.DownloadFileAsync(
+                geyserFile.Url,
+                Path.Combine(dirPath, "Geyser.jar"),
+                null,
+                progress,
+                cancellationToken);
 
-            _logger.LogInformation("Downloading Floodgate from {Url}...", floodgateUrl);
-            await _downloader.DownloadFileAsync(floodgateUrl, floodgatePath, null, progress, cancellationToken);
+            onProgress?.Invoke("Checking Floodgate compatibility...");
+            var floodgateVersion = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, loader);
 
-            // Write a README so users know how to connect Bedrock clients
-            WriteConnectGuide(instancePath, targetDir);
+            if (floodgateVersion == null)
+            {
+                _logger.LogWarning("Floodgate not found for {ServerType} {McVersion}. Installing Geyser only.", serverType, minecraftVersion);
+                onProgress?.Invoke("Warning: Floodgate not available — Geyser only.");
+                onProgress?.Invoke("Cross-play setup complete.");
+                return;
+            }
+
+            var floodgateFile = floodgateVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? floodgateVersion.Files.FirstOrDefault();
+            if (floodgateFile == null)
+            {
+                throw new InvalidOperationException("Modrinth returned a version with no downloadable files.");
+            }
+
+            onProgress?.Invoke($"Downloading Floodgate ({loader})...");
+            await _downloader.DownloadFileAsync(
+                floodgateFile.Url,
+                Path.Combine(dirPath, "Floodgate.jar"),
+                null,
+                progress,
+                cancellationToken);
+
+            onProgress?.Invoke("Cross-play setup complete.");
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to provision Geyser and Floodgate for {ServerType}.", serverType);
-            throw;
+            _logger.LogError(ex, "Failed to provision Geyser and Floodgate for {ServerType} {McVersion}.", serverType, minecraftVersion);
+            throw new InvalidOperationException(
+                $"Cross-play setup could not be completed for {serverType} {minecraftVersion}. Try again later.",
+                ex);
         }
     }
 
-    private void WriteConnectGuide(string instancePath, string targetDir)
+    private static string GetTargetDirectory(string loader)
     {
-        try
+        return loader switch
         {
-            string guidePath = Path.Combine(instancePath, "BEDROCK-CONNECT.txt");
-            if (File.Exists(guidePath)) return;
+            "fabric" or "forge" or "neoforge" => "mods",
+            _ => "plugins"
+        };
+    }
 
-            File.WriteAllText(guidePath,
-                "=== Bedrock Cross-Play (Geyser + Floodgate) ===\n\n" +
-                "Java players:   Connect with the Java IP on port 25565 (as usual).\n" +
-                "Bedrock players: Connect with the SAME IP on port 19132 (UDP).\n\n" +
-                "First run:\n" +
-                "  1. Start the server once — Geyser will auto-generate its config.yml\n" +
-                $"     inside {targetDir}/Geyser-Spigot/config.yml\n" +
-                "  2. Restart the server. Geyser will then listen on port 19132.\n\n" +
-                "Tunneling (Playit.gg):\n" +
-                "  - For your Java port tunnel, select: Minecraft Java\n" +
-                "  - For your Bedrock port tunnel (19132), select: Minecraft Bedrock\n" +
-                "  Both tunnels are needed for full cross-play.\n");
-        }
-        catch (Exception ex)
+    private static string GetLoaderForServer(string serverType, string minecraftVersion)
+    {
+        if (string.Equals(serverType, "Paper", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(serverType, "Spigot", StringComparison.OrdinalIgnoreCase))
         {
-            _logger.LogDebug(ex, "Could not write Bedrock connect guide.");
+            return "spigot";
         }
+
+        if (string.Equals(serverType, "Fabric", StringComparison.OrdinalIgnoreCase))
+        {
+            return "fabric";
+        }
+
+        if (string.Equals(serverType, "Forge", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsMinecraftVersionAtLeast(minecraftVersion, 1, 20, 5) ? "neoforge" : "forge";
+        }
+
+        return "spigot";
+    }
+
+    private static bool IsMinecraftVersionAtLeast(string version, int major, int minor, int patch)
+    {
+        var segments = version.Split('.', '-', StringSplitOptions.RemoveEmptyEntries)
+            .Take(3)
+            .Select(ParseLeadingInt)
+            .ToArray();
+
+        int actualMajor = segments.Length > 0 ? segments[0] : 0;
+        int actualMinor = segments.Length > 1 ? segments[1] : 0;
+        int actualPatch = segments.Length > 2 ? segments[2] : 0;
+
+        if (actualMajor != major)
+        {
+            return actualMajor > major;
+        }
+
+        if (actualMinor != minor)
+        {
+            return actualMinor > minor;
+        }
+
+        return actualPatch >= patch;
+    }
+
+    private static int ParseLeadingInt(string value)
+    {
+        var digits = value.TakeWhile(char.IsDigit).ToArray();
+        return digits.Length == 0 ? 0 : int.Parse(new string(digits));
     }
 }

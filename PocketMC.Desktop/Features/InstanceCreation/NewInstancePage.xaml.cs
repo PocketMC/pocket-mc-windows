@@ -343,12 +343,35 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
                 if (ChkEnableGeyser.IsChecked == true && createdInstancePath != null)
                 {
-                    TxtProgress.Text = "Setting up Geyser cross-play...";
-                    await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, selectedVersion.Id, progress);
+                    try
+                    {
+                        TxtProgress.Text = "Setting up Geyser cross-play...";
+                        await _geyserProvisioning.EnsureGeyserSetupAsync(
+                            createdInstancePath,
+                            serverType,
+                            selectedVersion.Id,
+                            progress,
+                            CancellationToken.None,
+                            message => Dispatcher.Invoke(() => TxtProgress.Text = message));
 
-                    // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
-                    metadata.HasGeyser = true;
-                    _instanceManager.SaveMetadata(metadata, createdInstancePath);
+                        // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
+                        metadata.HasGeyser = true;
+                        _instanceManager.SaveMetadata(metadata, createdInstancePath);
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        await CleanupGeyserFilesAsync(createdInstancePath, serverType);
+                        metadata.HasGeyser = false;
+                        _instanceManager.SaveMetadata(metadata, createdInstancePath);
+
+                        MessageBox.Show(
+                            $"Cross-play Setup Failed\n\n{ex.Message}\n\nYour server was created without cross-play. You can add it later from Server Settings.",
+                            "Cross-play Setup Failed",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+
+                        _logger.LogWarning(ex, "Cross-play setup failed for {ServerType} {McVersion}. Instance was created without Geyser.", serverType, selectedVersion.Id);
+                    }
                 }
 
                 if (!NavigateToDashboard())
@@ -436,6 +459,36 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             catch (Exception cleanupEx)
             {
                 _logger.LogWarning(cleanupEx, "Failed to clean up the partially created instance at {InstancePath}.", instancePath);
+            }
+        }
+
+        private async Task CleanupGeyserFilesAsync(string instancePath, string serverType)
+        {
+            try
+            {
+                string targetDir = serverType.Equals("Fabric", StringComparison.OrdinalIgnoreCase) ||
+                                   serverType.Equals("Forge", StringComparison.OrdinalIgnoreCase)
+                    ? "mods"
+                    : "plugins";
+
+                string geyserPath = Path.Combine(instancePath, targetDir, "Geyser.jar");
+                string floodgatePath = Path.Combine(instancePath, targetDir, "Floodgate.jar");
+
+                if (File.Exists(geyserPath))
+                {
+                    File.Delete(geyserPath);
+                }
+
+                if (File.Exists(floodgatePath))
+                {
+                    File.Delete(floodgatePath);
+                }
+
+                await Task.CompletedTask;
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogWarning(cleanupEx, "Failed to clean up Geyser files for instance path {InstancePath}.", instancePath);
             }
         }
 
