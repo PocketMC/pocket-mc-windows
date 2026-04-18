@@ -2,253 +2,133 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
       Title="Dashboard">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </Page.Resources>
 
-    <Grid Margin="24" AllowDrop="True" Drop="Page_Drop" Background="Transparent">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0">
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
-                <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand" Margin="0,0,8,0"/>
-            </StackPanel>
+        <StackPanel Grid.Row="0" Margin="0,0,0,24" Orientation="Horizontal">
+            <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center"/>
+            <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand"/>
         </StackPanel>
 
-        <ScrollViewer x:Name="DashScroller"
-                      Grid.Row="1"
-                      VerticalScrollBarVisibility="Auto"
-                      Background="Transparent"
-                      CanContentScroll="False"
-                      Padding="0"
-                      PreviewMouseWheel="DashScroller_PreviewMouseWheel">
-            <StackPanel x:Name="MainContentStack" Background="Transparent">
-                <ItemsControl x:Name="InstanceGrid" ItemsSource="{Binding Instances}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <!-- Outer Border for green glow — ui:Card ignores BorderBrush overrides -->
-                            <Border Margin="0,0,16,16" CornerRadius="8" Padding="0" Width="340" MinWidth="280" MinHeight="220">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="BorderBrush" Value="Transparent"/>
-                                        <Setter Property="BorderThickness" Value="2"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                                <Setter Property="BorderBrush" Value="#4CAF50"/>
-                                                <Setter Property="BorderThickness" Value="2"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <ui:Card Cursor="Hand" Padding="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                                    <ui:Card.InputBindings>
-                                        <MouseBinding MouseAction="LeftClick"
-                                                      Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                      CommandParameter="{Binding}"/>
-                                    </ui:Card.InputBindings>
-                                    <Grid Margin="16">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/> <!-- Row 0: Title & Menu -->
-                                            <RowDefinition Height="Auto"/> <!-- Row 1: Description -->
-                                            <RowDefinition Height="Auto"/> <!-- Row 2: Status -->
-                                            <RowDefinition Height="Auto"/> <!-- Row 3: Java IP Row -->
-                                            <RowDefinition Height="Auto"/> <!-- Row 4: Bedrock IP Row -->
-                                            <RowDefinition Height="Auto"/> <!-- Row 5: Stats Row -->
-                                            <RowDefinition Height="*"/>    <!-- Row 6: Spacer -->
-                                            <RowDefinition Height="Auto"/> <!-- Row 7: Action Buttons -->
-                                        </Grid.RowDefinitions>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Instances}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:Card Margin="12" Width="320">
+                            <Grid Margin="4">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/> <!-- Header -->
+                                    <RowDefinition Height="Auto"/> <!-- Metrics -->
+                                    <RowDefinition Height="Auto"/> <!-- Connections -->
+                                    <RowDefinition Height="Auto"/> <!-- Actions -->
+                                </Grid.RowDefinitions>
 
-                                <!-- Title row (Row 0) -->
-                                <Grid Grid.Row="0" Margin="0,0,0,4">
+                                <!-- Header -->
+                                <Grid Grid.Row="0" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <ui:TextBlock FontTypography="Subtitle" Text="{Binding Name}" MaxWidth="150" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
-                                        <Border Background="#33FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding MinecraftVersion, FallbackValue='?'}" FontSize="10" Foreground="Silver" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2" Margin="4,0,0,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding ServerType, FallbackValue='Vanilla'}" FontSize="10" Foreground="#89B4FA" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <Border Background="#33F38BA8" CornerRadius="4" Padding="6,2" Margin="4,0,0,0" VerticalAlignment="Center"
-                                                Visibility="{Binding PortIssueVisibility}"
-                                                ToolTip="{Binding PortIssueTooltip}">
-                                            <TextBlock Text="{Binding PortIssueText}" FontSize="10" Foreground="#F38BA8" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                        </Border>
+                                    <StackPanel Grid.Column="0">
+                                        <ui:TextBlock FontTypography="Subtitle" Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                            <Border Background="#33FFFFFF" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                                <TextBlock Text="{Binding MinecraftVersion}" FontSize="10" Foreground="Silver"/>
+                                            </Border>
+                                            <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2">
+                                                <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="#89B4FA" FontWeight="SemiBold"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="Bold" FontSize="11" Margin="0,8,0,0"/>
                                     </StackPanel>
-
-                                    <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}"
-                                               Click="BtnMoreOptions_Click" Cursor="Hand" Padding="6,4" Margin="0,-6,-6,0" VerticalAlignment="Top"
-                                               Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Page}}">
+                                    <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}" Click="BtnMoreOptions_Click" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Page}}">
                                         <ui:Button.ContextMenu>
                                             <ContextMenu>
                                                 <MenuItem Header="Copy Crash Report" Command="{Binding PlacementTarget.Tag.CopyCrashReportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                                <MenuItem Header="Open Instance Folder" Command="{Binding PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                                <Separator/>
-                                                <MenuItem Header="Delete Instance" Command="{Binding PlacementTarget.Tag.DeleteInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                <MenuItem Header="Open Folder" Command="{Binding PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                             </ContextMenu>
                                         </ui:Button.ContextMenu>
                                     </ui:Button>
                                 </Grid>
 
-                                <!-- Description (Row 1) -->
-                                <ui:TextBlock Grid.Row="1" FontTypography="Caption" Text="{Binding Description}"
-                                               Foreground="Silver" MinHeight="0"
-                                               TextWrapping="Wrap" Margin="0,0,0,8" TextTrimming="CharacterEllipsis"/>
-
-                                <!-- Status (Row 2) -->
-                                <TextBlock Grid.Row="2" Text="{Binding StatusText}"
-                                           Foreground="{Binding StatusBrush}" FontSize="11" FontWeight="SemiBold"
-                                           Margin="0,0,0,6"/>
-
-                                <!-- IP Row (Row 3) — always visible -->
-                                <Border Grid.Row="3" Background="#22FFFFFF" CornerRadius="6" Padding="8,3"
-                                        Margin="0,0,0,10">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="IP : " FontSize="11" Foreground="#88FFFFFF" VerticalAlignment="Center"/>
-                                        <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding TunnelAddress}" FontSize="11" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                <!-- Metrics -->
+                                <Border Grid.Row="1" Background="#1AFFFFFF" CornerRadius="8" Padding="12" Margin="0,0,0,16">
+                                    <UniformGrid Columns="3">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="CPU" FontSize="10" Foreground="#88FFFFFF"/>
+                                            <TextBlock Text="{Binding CpuText}" FontSize="13" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
                                         </StackPanel>
-                                        <ui:Button Grid.Column="2" Appearance="Transparent" Padding="4,2" Margin="4,0,0,0"
-                                                   Icon="{ui:SymbolIcon Copy16}" Cursor="Hand"
-                                                   Click="BtnCopyIp_Click"
-                                                   Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}"
-                                                   ToolTip="Copy IP to clipboard"/>
-                                    </Grid>
-                                </Border>
-                                <!-- Bedrock IP Row (Row 4) — visible only for Bedrock/Geyser servers -->
-                                <Border Grid.Row="4"
-                                        Visibility="{Binding ShowBedrockIp, Converter={StaticResource BoolToVis}}"
-                                        Background="#22F9A825" CornerRadius="6" Padding="8,3" Margin="0,-6,0,10">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding BedrockIpLabel}" FontSize="11" Foreground="#F9A825" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                        <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding BedrockNumericTunnelAddress}" FontSize="11" FontWeight="SemiBold" Foreground="#FFD54F" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="RAM" FontSize="10" Foreground="#88FFFFFF"/>
+                                            <TextBlock Text="{Binding RamText}" FontSize="13" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
                                         </StackPanel>
-                                        <ui:Button Grid.Column="2" Appearance="Transparent" Padding="4,2" Margin="4,0,0,0"
-                                                   Icon="{ui:SymbolIcon Copy16}" Cursor="Hand"
-                                                   Click="BtnCopyBedrockIp_Click"
-                                                   ToolTip="Copy IP to clipboard"/>
-                                    </Grid>
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="PLAYERS" FontSize="10" Foreground="#88FFFFFF"/>
+                                            <TextBlock Text="{Binding PlayerStatus}" FontSize="13" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </UniformGrid>
                                 </Border>
-                                <Grid Grid.Row="5" Margin="0,0,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
 
-                                    <!-- CPU -->
-                                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                                        <TextBlock Text="CPU" FontSize="10" Foreground="#88FFFFFF" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding CpuText}" FontSize="13" FontWeight="SemiBold"
-                                                   Foreground="White" HorizontalAlignment="Center"/>
+                                <!-- Connections -->
+                                <StackPanel Grid.Row="2" Margin="0,0,0,16" Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}">
+                                    <Border Background="#1AFFFFFF" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ui:SymbolIcon Grid.Column="0" Symbol="Cube24" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TunnelAddress}" FontSize="12" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click"/>
+                                        </Grid>
+                                    </Border>
+                                    <Border Background="#1AFFFFFF" CornerRadius="6" Padding="10,8" Visibility="{Binding HasNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="#AAA" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding NumericTunnelAddress}" FontSize="12" Foreground="#AAA" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyNumericIp_Click"/>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Actions -->
+                                <Grid Grid.Row="3">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Visibility="{Binding StoppedControlsVisibility}">
+                                        <ui:Button Content="Start" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2"/>
+                                        <ui:Button Content="Logs" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2"/>
+                                        <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2"/>
                                     </StackPanel>
-
-                                    <!-- Divider 1 -->
-                                    <Border Grid.Column="1" Width="1" Background="#22FFFFFF" Margin="4,2"/>
-
-                                    <!-- RAM -->
-                                    <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                        <TextBlock Text="RAM" FontSize="10" Foreground="#88FFFFFF" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding RamText}" FontSize="13" FontWeight="SemiBold"
-                                                   Foreground="White" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-
-                                    <!-- Divider 2 -->
-                                    <Border Grid.Column="3" Width="1" Background="#22FFFFFF" Margin="4,2"/>
-
-                                    <!-- Players -->
-                                    <StackPanel Grid.Column="4" HorizontalAlignment="Center">
-                                        <TextBlock Text="Players" FontSize="10" Foreground="#88FFFFFF" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding PlayerStatus}" FontSize="13" FontWeight="SemiBold" Opacity="0.9"
-                                                    Foreground="White" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <!-- Action buttons (Row 7) -->
-                                <Grid Grid.Row="7" Margin="0,8,0,0">
-                                    <!-- STOPPED state -->
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Visibility="{Binding StoppedControlsVisibility}">
-                                        <ui:Button Content="Start" Appearance="Primary" Margin="0,0,4,0"
-                                                   Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Cursor="Hand"/>
-                                        <ui:Button Content="Logs" Appearance="Secondary" Margin="0,0,4,0"
-                                                   Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Cursor="Hand"/>
-                                        <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,4,0"
-                                                   Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Cursor="Hand"/>
-                                        <ui:Button Icon="{ui:SymbolIcon Folder24}" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Cursor="Hand"/>
-                                    </StackPanel>
-
-                                    <!-- RUNNING state -->
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Visibility="{Binding RunningControlsVisibility}">
-                                        <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" Margin="0,0,4,0"
-                                                   Icon="{ui:SymbolIcon Stop24}" Command="{Binding DataContext.StopServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Cursor="Hand"/>
-                                        <ui:Button Content="Restart" Appearance="Secondary" Margin="0,0,4,0"
-                                                   Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding DataContext.RestartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Cursor="Hand"/>
-                                        <ui:Button Content="Console" Appearance="Primary" Margin="0,0,4,0"
-                                                   Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Cursor="Hand"/>
-                                        <ui:Button Content="Settings" Appearance="Secondary" Margin="0,0,4,0"
-                                                   Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Cursor="Hand"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Visibility="{Binding RunningControlsVisibility}">
+                                        <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" Icon="{ui:SymbolIcon Stop24}" Command="{Binding DataContext.StopServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2"/>
+                                        <ui:Button Content="Restart" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding DataContext.RestartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2"/>
+                                        <ui:Button Content="Console" Appearance="Primary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2"/>
                                     </StackPanel>
                                 </Grid>
                             </Grid>
                         </ui:Card>
-                        </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <StackPanel x:Name="TxtEmpty" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="60">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding Instances.Count}" Value="0">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <ui:SymbolIcon Symbol="ServerPlay20" FontSize="48" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,16"/>
-                    <TextBlock Text="No servers detected"
-                               FontWeight="SemiBold"
-                               FontSize="18"
-                               Foreground="White"
-                               HorizontalAlignment="Center"/>
-                    <TextBlock Text="Click 'New Instance' above to create your first Minecraft environment."
-                               Foreground="Silver"
-                               Margin="0,8,0,0"
-                               HorizontalAlignment="Center"
-                               TextWrapping="Wrap"
-                               TextAlignment="Center"/>
-                </StackPanel>
-            </StackPanel>
+            </ItemsControl>
         </ScrollViewer>
     </Grid>
 </Page>
