@@ -344,10 +344,30 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 if (ChkEnableGeyser.IsChecked == true && createdInstancePath != null)
                 {
                     TxtProgress.Text = "Setting up Geyser cross-play...";
-                    await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, selectedVersion.Id, progress);
+                    try
+                    {
+                        await _geyserProvisioning.EnsureGeyserSetupAsync(
+                            createdInstancePath,
+                            serverType,
+                            selectedVersion.Id,
+                            progress,
+                            status => Dispatcher.Invoke(() => TxtProgress.Text = status));
 
-                    // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
-                    metadata.HasGeyser = true;
+                        // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
+                        metadata.HasGeyser = true;
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        await CleanupFailedGeyserFilesAsync(createdInstancePath);
+                        metadata.HasGeyser = false;
+
+                        MessageBox.Show(
+                            $"Cross-play Setup Failed\n\n{ex.Message}\n\nYour server was created without cross-play. You can add it later from Server Settings.",
+                            "Cross-play Setup Failed",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                    }
+
                     _instanceManager.SaveMetadata(metadata, createdInstancePath);
                 }
 
@@ -437,6 +457,38 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             {
                 _logger.LogWarning(cleanupEx, "Failed to clean up the partially created instance at {InstancePath}.", instancePath);
             }
+        }
+
+        private Task CleanupFailedGeyserFilesAsync(string instancePath)
+        {
+            try
+            {
+                string pluginsPath = Path.Combine(instancePath, "plugins");
+                string modsPath = Path.Combine(instancePath, "mods");
+
+                string[] pathsToDelete =
+                {
+                    Path.Combine(pluginsPath, "Geyser.jar"),
+                    Path.Combine(pluginsPath, "Floodgate.jar"),
+                    Path.Combine(modsPath, "Geyser.jar"),
+                    Path.Combine(modsPath, "Floodgate.jar"),
+                    Path.Combine(instancePath, "BEDROCK-CONNECT.txt")
+                };
+
+                foreach (string path in pathsToDelete)
+                {
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+                }
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogWarning(cleanupEx, "Failed to clean up partially downloaded Geyser files in {InstancePath}.", instancePath);
+            }
+
+            return Task.CompletedTask;
         }
 
         private bool NavigateToDashboard()
