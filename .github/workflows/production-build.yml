@@ -99,3 +99,28 @@ jobs:
         with:
           name: PocketMC-Release-${{ env.VERSION }}
           path: Releases/
+
+          # 🧹 Keep only current version artifacts
+      - name: Clean old packages
+        if: steps.compare.outputs.skip == 'false'
+        shell: pwsh
+        run: |
+          Get-ChildItem Releases -File | Where-Object {
+            $_.Name -notmatch "${{ env.VERSION }}"
+          } | Remove-Item -Force
+
+          # 🚀 Create GitHub Release and upload assets
+      - name: Create GitHub Release
+        if: steps.compare.outputs.skip == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: PocketMC v${{ env.VERSION }}
+          body: |
+            Release version ${{ env.VERSION }}
+
+            - Auto-built via CI
+            - Includes latest packaged binaries
+          files: Releases/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

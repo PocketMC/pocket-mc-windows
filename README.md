@@ -24,10 +24,20 @@
 </div>
 
 ---
+## What PocketMC is NOT
+
+- Not a hosting service — runs locally on your PC
+- Not a Linux server panel — no Docker, no SSH, no sysadmin skills needed
+- Not a Minecraft launcher — it manages servers, not the game
+- Not a script pack — replaces manual setup entirely
+
+
+---
+
 
 ## What it does
 
-PocketMC is a Windows desktop app for creating and managing Minecraft server instances — Java and Bedrock — without touching a command line. Java is bundled automatically. Public sharing is one click via Playit.gg.
+PocketMC is a Windows desktop app for creating and managing Minecraft server instances — Java and Bedrock — without touching a command line. Java is bundled automatically. Public sharing is one click via Playit.gg. Without dealing with Java installs, port forwarding, or command-line setup.
 
 Supported server types: **Vanilla · Paper · Fabric · Forge · Bedrock (BDS) · PocketMine-MP**
 
@@ -47,7 +57,7 @@ Supported server types: **Vanilla · Paper · Fabric · Forge · Bedrock (BDS) �
 
 - **Live Metrics** — Real-time CPU, RAM, and player count tracking per instance.
 - **Dependency Health Dashboard** — Live status monitoring for Adoptium, Playit.gg, and Modrinth microservices directly in the settings.
-- **Modern Console** — Colorized logs with multi-keyword search, Regex filtering, command history, and intelligent command auto-suggestions.
+- **Modern AI Console** — Colorized logs with multi-keyword search, Regex filtering, command history, intelligent command auto-suggestions and crashes and errors AI analysis.
 - **AI Session Summaries** — Generate structured summaries of your server sessions using Google Gemini, OpenAI, Anthropic Claude, Mistral AI, or Groq.
 - **Disaster Recovery** — Automated backups with optional off-site replication to Google Drive/Dropbox sync directories and one-click support bundle export.
 
@@ -101,6 +111,11 @@ Download `Setup.exe` from the [latest release](https://github.com/PocketMC/pocke
 **3. Start your server.** Hit **Start**. Metrics go live. Connect from Minecraft at `localhost` or your LAN IP.
 
 **Optional: Enable public access.** Open the instance, enable Playit.gg tunneling, and follow the one-time account link flow. Your public address appears on the dashboard.
+
+---
+✔ Fully isolated — Java and PHP are managed internally
+✔ No system setup — no environment variables, no conflicts
+✔ Runs multiple servers safely side-by-side
 
 ---
 
