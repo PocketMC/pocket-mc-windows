@@ -469,14 +469,14 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
 
             string basePath = Path.GetFullPath(instancePath);
-            string pluginsPath = Path.Combine(basePath, "plugins");
-            string modsPath = Path.Combine(basePath, "mods");
+            string pluginsPath = Path.Join(basePath, "plugins");
+            string modsPath = Path.Join(basePath, "mods");
 
-            TryDeleteFile(Path.Combine(pluginsPath, "Geyser.jar"));
-            TryDeleteFile(Path.Combine(pluginsPath, "Floodgate.jar"));
-            TryDeleteFile(Path.Combine(modsPath, "Geyser.jar"));
-            TryDeleteFile(Path.Combine(modsPath, "Floodgate.jar"));
-            TryDeleteFile(Path.Combine(basePath, "BEDROCK-CONNECT.txt"));
+            TryDeleteFile(Path.Join(pluginsPath, "Geyser.jar"));
+            TryDeleteFile(Path.Join(pluginsPath, "Floodgate.jar"));
+            TryDeleteFile(Path.Join(modsPath, "Geyser.jar"));
+            TryDeleteFile(Path.Join(modsPath, "Floodgate.jar"));
+            TryDeleteFile(Path.Join(basePath, "BEDROCK-CONNECT.txt"));
 
             return Task.CompletedTask;
         }
