@@ -99,14 +99,7 @@ jobs:
         with:
           name: PocketMC-Release-${{ env.VERSION }}
           path: Releases/
-          # 🧹 Keep only current version artifacts
-      - name: Clean old packages
-        if: steps.compare.outputs.skip == 'false'
-        shell: pwsh
-        run: |
-          Get-ChildItem Releases -File | Where-Object {
-            $_.Name -notmatch "${{ env.VERSION }}"
-          } | Remove-Item -Force
+      
 
           # 🚀 Create GitHub Release and upload assets
       - name: Create GitHub Release
