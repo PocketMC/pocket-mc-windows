@@ -50,6 +50,24 @@ jobs:
             --self-contained false `
             -o publish
 
+      - name: Publish Portable Release EXE (Test Release)
+        run: |
+          dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
+            -c Release `
+            -r $env:RUNTIME `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o "Test Release/Portable"
+
+      - name: Upload Test Release Portable Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PocketMC-Test-Portable-${{ github.run_number }}
+          path: Test Release/Portable/
+
       # 🔽 KEEP THIS (for Velopack delta support, NOT version logic)
       - name: Download previous release assets
         uses: robinraju/release-downloader@v1
