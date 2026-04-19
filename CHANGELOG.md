@@ -9,22 +9,26 @@ This release introduces a new port reliability engine to improve server startup 
 ### 🔌 Port Reliability Engine
 
 - **Robust Port Resolution:** Added a new port reliability engine and comprehensive tests to prevent port binding conflicts and improve server startup resilience.
-- **Conflict Logic Patch:** Updated preflight checks to only block startup if another instance is actually running, ignoring duplicate config-level ports.
+- **Conflict Logic Patch:** Updated preflight checks to only block startup if another instance is actively running, ignoring duplicate config-level ports.
 
 ### 🎮 Cross-Play & Networking
 
 - **Configurable Geyser Port:** Added support for per-instance Geyser Bedrock UDP ports, allowing concurrent cross-play servers.
 - **Dual-IP Display:** Integrated numeric IP addresses alongside hostnames for all tunnel types, with separate copy buttons for precision.
 - **Tunnel Auto-Patching:** Geyser configuration files are now automatically patched with the correct Bedrock UDP port on startup.
+- **Fabric API Automation:** Added automatic `fabric-api` downloading during Geyser setup for Fabric servers to resolve mod dependency crashes.
 
 ### 💎 Dashboard & UI Polish
 
-- **Modern Grid Layout:** Replaced the legacy list view with a clean, responsive `UniformGrid` layout.
-- **Enhanced IP Blocks:** Redesigned connection sections to cleanly display both hostnames and numeric IPs.
+- **Modern Grid Layout:** Replaced the legacy list view with a clean, responsive layout featuring fixed headers and scrollable instance areas.
+- **Enhanced IP Blocks:** Redesigned connection sections to cleanly display both hostnames and numeric IPs, with state-aware visibility (IPs hide when server is stopped).
+- **Compact Actions:** Reorganized dashboard buttons into a balanced 2x2 grid for improved accessibility and a cleaner look.
+- **Scroll Precision:** Fixed console scrolling behavior, disabling unreliable "smooth" scroll for standard high-performance WPF scrolling.
 
 ### 🐛 Bug Fixes & Stability
 
-- **Log Handle Leaks:** Fixed an issue where `_sessionLogWriter` would leak file handles if server configuration or startup failed. It is now properly disposed and nulled during cleanup.
+- **Log Handle Leaks:** Fixed a critical issue where session log handles remained open after server exit, preventing instance deletion and causing filesystem locking errors.
+- **Clipboard Resilience:** Implemented robust clipboard handling with retries to prevent application crashes during IP copy actions.
 - **Build Locking:** Fixed file access errors during publishing by ensuring clean process termination.
 - **Crash Resilience:** Fixed UI-related rendering crashes caused by invalid XAML symbols.
 
@@ -79,7 +83,7 @@ This milestone transforms PocketMC into a multi-protocol powerhouse, adding firs
 
 - **Engine-Aware Settings:** The Addons tab now dynamically filters content. Java-only sections (like Modrinth/Forge) are hidden when managing Bedrock or PocketMine instances.
 - **IP Duplicate Suppression:** The dashboard card now intelligently hides the secondary "Bedrock IP" row for native Bedrock servers to reduce clutter.
-- **Config Core Keys:** Expanded the core property list to include Bedrock-specific networking keys (`server-portv6`, `allow-cheats`, etc.) for easier configuration.
+- **Dashboard Grid Layout:** Modernized the instance card layout with improved metrics scannability and connection clarity.
 
 ## v1.3.0 - Architectural Hardening & Observability
 
