@@ -149,7 +149,6 @@ Download `Setup.exe` from the [latest release](https://github.com/PocketMC/pocke
 - [ ] Forge 1.17+ bootstrapper stability pass
 - [ ] Modpack install progress UI
 - [ ] Player activity charts and historical metrics
-- [ ] Multi-monitor window persistence
 
 ---
 

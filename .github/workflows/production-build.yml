@@ -43,13 +43,14 @@ jobs:
         run: dotnet test PocketMC.Desktop.sln --no-build
 
       - name: Publish Multi-DLL
-        run: |+
+        run: |
           dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
             -c Release `
             -r $env:RUNTIME `
             --self-contained false `
             -o publish
-            
+
+      # 🔽 KEEP THIS (for Velopack delta support, NOT version logic)
       - name: Download previous release assets
         uses: robinraju/release-downloader@v1
         with:
@@ -59,28 +60,45 @@ jobs:
           out-file-path: Releases
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 🔍 Extract previous version
-      - name: Get previous version
-        id: prev
+      # 🔍 Get latest GitHub release version (source of truth)
+      - name: Get latest release version
+        id: latest
         shell: pwsh
         run: |
-          if (Test-Path "Releases") {
-            $file = Get-ChildItem Releases -Filter "*.nupkg" | Select-Object -First 1
-            if ($file -and $file.Name -match "\d+\.\d+\.\d+") {
-              echo "version=$($Matches[0])" >> $env:GITHUB_OUTPUT
-              exit 0
+          try {
+            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/latest" `
+              -Headers @{ Authorization = "Bearer ${{ secrets.GITHUB_TOKEN }}" }
+
+            $tag = $response.tag_name
+
+            if (-not $tag) {
+              echo "version=none" >> $env:GITHUB_OUTPUT
+            } else {
+              $clean = $tag -replace '^v', ''
+              echo "version=$clean" >> $env:GITHUB_OUTPUT
             }
+          } catch {
+            echo "version=none" >> $env:GITHUB_OUTPUT
           }
-          echo "version=none" >> $env:GITHUB_OUTPUT
 
       # 🧠 Compare versions
       - name: Compare versions
         id: compare
         shell: pwsh
         run: |
-          if ("${{ steps.prev.outputs.version }}" -eq "${{ env.VERSION }}") {
+          $current = "${{ env.VERSION }}"
+          $latest  = "${{ steps.latest.outputs.version }}"
+
+          Write-Host "Current version: $current"
+          Write-Host "Latest release: $latest"
+
+          if ($latest -eq "none") {
+            echo "skip=false" >> $env:GITHUB_OUTPUT
+          }
+          elseif ($current -eq $latest) {
             echo "skip=true" >> $env:GITHUB_OUTPUT
-          } else {
+          }
+          else {
             echo "skip=false" >> $env:GITHUB_OUTPUT
           }
 
@@ -88,9 +106,14 @@ jobs:
       - name: Pack with Velopack
         if: steps.compare.outputs.skip == 'false'
         run: >
-          vpk pack  --packId ${{ env.APP_ID }}  --packVersion ${{ env.VERSION }}
-          --packDir publish  --mainExe PocketMC.Desktop.exe  --framework
-          net8.0  --runtime ${{ env.RUNTIME }}  --outputDir Releases
+          vpk pack
+          --packId ${{ env.APP_ID }}
+          --packVersion ${{ env.VERSION }}
+          --packDir publish
+          --mainExe PocketMC.Desktop.exe
+          --framework net8.0
+          --runtime ${{ env.RUNTIME }}
+          --outputDir Releases
 
       # 📦 Upload only if packaged
       - name: Upload Release Artifacts
@@ -99,9 +122,8 @@ jobs:
         with:
           name: PocketMC-Release-${{ env.VERSION }}
           path: Releases/
-      
 
-          # 🚀 Create GitHub Release and upload assets
+      # 🚀 Create GitHub Release and upload assets
       - name: Create GitHub Release
         if: steps.compare.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
@@ -110,7 +132,6 @@ jobs:
           name: PocketMC v${{ env.VERSION }}
           body: |
             Release version ${{ env.VERSION }}
-
             - Auto-built via CI
             - Includes latest packaged binaries
           files: Releases/*
