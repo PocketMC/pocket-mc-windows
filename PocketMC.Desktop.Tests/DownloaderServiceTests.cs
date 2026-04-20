@@ -72,6 +72,20 @@ public sealed class DownloaderServiceTests : IDisposable
         Assert.Equal(expectedContent, await File.ReadAllTextAsync(destinationPath));
     }
 
+    [Fact]
+    public void CanResumePlayitDownload_WhenHashIsUnpinned_ReturnsFalse()
+    {
+        var service = new DownloaderService(
+            new TestHttpClientFactory(_ => new HttpClient(new DelegateHttpMessageHandler((_, _) =>
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent(Array.Empty<byte>())
+                }))),
+            NullLogger<DownloaderService>.Instance);
+
+        Assert.False(service.CanResumePlayitDownload());
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_rootPath))

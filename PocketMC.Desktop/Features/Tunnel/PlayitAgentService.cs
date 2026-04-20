@@ -58,6 +58,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         public PlayitAgentState State => _stateMachine.State;
         public bool IsDownloadingBinary => _isDownloadingBinary;
         public bool IsBinaryAvailable => _applicationState.IsConfigured && File.Exists(_applicationState.GetPlayitExecutablePath());
+        public bool CanResumeDownload => _downloaderService.CanResumePlayitDownload();
         public bool IsRunning => _processManager.IsRunning;
 
         public event EventHandler<string>? OnClaimUrlReceived;

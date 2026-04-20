@@ -11,6 +11,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
     public class DownloaderService
     {
         private const string DownloadClientName = "PocketMC.Downloads";
+        private const string PlayitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-windows-x86_64.exe";
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<DownloaderService> _logger;
 
@@ -28,7 +29,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             CancellationToken cancellationToken = default)
         {
             string partialPath = destinationPath + ".partial";
-            bool allowResume = !string.IsNullOrWhiteSpace(expectedHash);
+            bool allowResume = CanResumeDownload(expectedHash);
             string? directory = Path.GetDirectoryName(destinationPath);
             if (!string.IsNullOrEmpty(directory))
             {
@@ -134,11 +135,6 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         /// </summary>
         public async Task EnsurePlayitDownloadedAsync(string appRootPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
         {
-            // Note: For 'latest' URL, the hash isn't stable. 
-            // Ideally, we should fetch the hash from a sidecar file or pin the version.
-            // For now, we allow the download but provide the hook for verification.
-            const string playitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-windows-x86_64.exe";
-
             string tunnelDir = Path.Combine(appRootPath, "tunnel");
             string playitPath = Path.Combine(tunnelDir, "playit.exe");
 
@@ -148,9 +144,19 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             }
 
             Directory.CreateDirectory(tunnelDir);
-            await DownloadFileAsync(playitDownloadUrl, playitPath, null, progress, cancellationToken);
+            await DownloadFileAsync(PlayitDownloadUrl, playitPath, GetPlayitExpectedHash(), progress, cancellationToken);
         }
 // ... rest of file (ExtractZipAsync, etc.)
+
+        public bool CanResumeDownload(string? expectedHash)
+        {
+            return !string.IsNullOrWhiteSpace(expectedHash);
+        }
+
+        public bool CanResumePlayitDownload()
+        {
+            return CanResumeDownload(GetPlayitExpectedHash());
+        }
 
         public Task ExtractZipAsync(string zipPath, string extractPath, IProgress<DownloadProgress>? progress = null)
         {
@@ -281,5 +287,11 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             {
                 // Best effort cleanup only.
             }
+        }
+
+        private static string? GetPlayitExpectedHash()
+        {
+            // Playit currently uses a "latest" URL, so a stable hash is unavailable.
+            return null;
         }
     }
