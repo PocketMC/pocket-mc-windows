@@ -178,14 +178,9 @@ public class BackupService
             {
                 try
                 {
-                    // Try RCON first
-                    if (!_configService.TryGetProperty(serverDir, "enable-rcon", out var rconEnabled) || rconEnabled != "true")
+                    bool restoredViaRcon = await TrySendSaveOnViaRconAsync(serverDir, onProgress);
+                    if (!restoredViaRcon)
                     {
-                        await process.WriteInputAsync("save-on");
-                    }
-                    else
-                    {
-                        // We could use RCON here too, but save-on is safe via console
                         await process.WriteInputAsync("save-on");
                     }
                 }
@@ -237,6 +232,36 @@ public class BackupService
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "RCON sync failed.");
+            return false;
+        }
+    }
+
+    private async Task<bool> TrySendSaveOnViaRconAsync(string serverDir, Action<string>? onProgress)
+    {
+        try
+        {
+            if (!_configService.TryGetProperty(serverDir, "enable-rcon", out var rconEnabled) || rconEnabled != "true")
+            {
+                return false;
+            }
+
+            _configService.TryGetProperty(serverDir, "rcon.port", out var portStr);
+            _configService.TryGetProperty(serverDir, "rcon.password", out var password);
+
+            if (string.IsNullOrEmpty(password) || !int.TryParse(portStr ?? "25575", out int port))
+            {
+                return false;
+            }
+
+            onProgress?.Invoke("Restoring auto-save via RCON...");
+            using var rcon = new RconClient("127.0.0.1", port, password);
+            await rcon.ConnectAsync();
+            await rcon.ExecuteCommandAsync("save-on");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "RCON save-on failed; falling back to console input.");
             return false;
         }
     }
