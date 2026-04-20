@@ -85,19 +85,11 @@
 
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                                             <ui:Button x:Name="BtnAction" Width="90" Height="36"
-                                                       Click="BtnInstall_Click" Tag="{Binding Slug}" Appearance="Primary">
-                                                <ui:Button.Style>
-                                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                                        <Setter Property="Content" Value="Install"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding ElementName=TxtTitle, Path=Text}" Value="Modpack Marketplace">
-                                                                <Setter Property="Content" Value="Import"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ui:Button.Style>
-                                            </ui:Button>
-                                            <TextBlock x:Name="TxtStatus" Text="" Foreground="LimeGreen" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                                                       Click="BtnInstall_Click" Content="{Binding ActionButtonText}" 
+                                                       IsEnabled="{Binding IsActionEnabled}" Appearance="Primary"/>
+                                            
+                                            <TextBlock x:Name="TxtStatus" Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" 
+                                                       FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Grid>
                                 </ui:Card>

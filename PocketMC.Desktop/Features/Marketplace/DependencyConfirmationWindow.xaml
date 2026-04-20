@@ -1,0 +1,88 @@
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Marketplace.DependencyConfirmationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:local="clr-namespace:PocketMC.Desktop.Features.Marketplace"
+        xmlns:models="clr-namespace:PocketMC.Desktop.Features.Marketplace.Models"
+        xmlns:pres="clr-namespace:PocketMC.Desktop.Core.Presentation"
+        mc:Ignorable="d"
+        Title="Confirm Installation" Height="500" Width="600"
+        WindowStartupLocation="CenterOwner"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="Mica"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <ui:FluentWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:DependencyTypeToIsEnabledConverter x:Key="DependencyTypeToIsEnabledConverter"/>
+        <local:DependencyTypeToAppearanceConverter x:Key="DependencyTypeToAppearanceConverter"/>
+        <pres:NullOrEmptyToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <pres:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+    </ui:FluentWindow.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,10,0,10">
+            <TextBlock Text="Ready to Install" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <TextBlock Text="The following items will be installed on your server." Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" 
+                Visibility="{Binding HasErrors, Converter={StaticResource BooleanToVisibilityConverter}}"
+                Padding="10" CornerRadius="4" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <ui:SymbolIcon Symbol="Warning24" Margin="0,0,10,0" Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
+                <TextBlock Text="Some dependencies could not be resolved or have issues." VerticalAlignment="Center" FontWeight="SemiBold"/>
+            </StackPanel>
+        </Border>
+
+        <ListView Grid.Row="2" ItemsSource="{Binding Dependencies}" 
+                  BorderThickness="0" Background="Transparent"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <CheckBox IsChecked="{Binding IsSelected}" 
+                                  IsEnabled="{Binding Type, Converter={StaticResource DependencyTypeToIsEnabledConverter}}"
+                                  VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ProjectTitle}" FontWeight="SemiBold" FontSize="14"/>
+                            <TextBlock Text="{Binding VersionName}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                            <TextBlock Text="{Binding Error}" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}" 
+                                       Visibility="{Binding Error, Converter={StaticResource StringToVisibilityConverter}}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal">
+                            <ui:Badge Content="Already Installed" Appearance="Secondary" 
+                                      Visibility="{Binding IsAlreadyInstalled, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                      Margin="0,0,5,0"/>
+                            <ui:Badge Content="{Binding Type}" 
+                                      Appearance="{Binding Type, Converter={StaticResource DependencyTypeToAppearanceConverter}}"/>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <ui:Button Content="Cancel" Command="{Binding CancelCommand}" Width="100" Margin="0,0,10,0"/>
+            <ui:Button Content="Install" Appearance="Primary" Command="{Binding ConfirmCommand}" Width="120"
+                       IsEnabled="{Binding CanInstall}"/>
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

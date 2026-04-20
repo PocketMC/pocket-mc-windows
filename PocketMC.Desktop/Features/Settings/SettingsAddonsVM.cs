@@ -37,6 +37,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly IServiceProvider _serviceProvider;
         private readonly Func<bool> _isRunningCheck;
         private readonly Action _onAddonChanged;
+        private readonly AddonManifestService _manifestService;
 
         // ── Installed addon collections ──────────────────────────────────
         public ObservableCollection<PluginItemViewModel> Plugins { get; } = new();
@@ -86,6 +87,7 @@ namespace PocketMC.Desktop.Features.Settings
             _serviceProvider   = serviceProvider;
             _isRunningCheck    = isRunningCheck;
             _onAddonChanged    = onAddonChanged;
+            _manifestService   = serviceProvider.GetRequiredService<AddonManifestService>();
 
             // Resolve the Bedrock installer from DI (if not Bedrock this is a no-op).
             _bedrockInstaller = serviceProvider.GetRequiredService<BedrockAddonInstaller>();
@@ -269,7 +271,13 @@ namespace PocketMC.Desktop.Features.Settings
         {
             if (path != null && await _dialogService.ShowDialogAsync("Confirm", $"Delete {System.IO.Path.GetFileName(path)}?", DialogType.Question) == DialogResult.Yes)
             {
-                try { await FileUtils.DeleteFileAsync(path); LoadPlugins(); _onAddonChanged(); }
+                try 
+                { 
+                    await FileUtils.DeleteFileAsync(path); 
+                    await _manifestService.UnregisterByFileNameAsync(_serverDir, Path.GetFileName(path));
+                    LoadPlugins(); 
+                    _onAddonChanged(); 
+                }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             }
         }
@@ -303,7 +311,13 @@ namespace PocketMC.Desktop.Features.Settings
         {
             if (path != null && await _dialogService.ShowDialogAsync("Confirm", $"Delete {System.IO.Path.GetFileName(path)}?", DialogType.Question) == DialogResult.Yes)
             {
-                try { await FileUtils.DeleteFileAsync(path); LoadMods(); _onAddonChanged(); }
+                try 
+                { 
+                    await FileUtils.DeleteFileAsync(path); 
+                    await _manifestService.UnregisterByFileNameAsync(_serverDir, Path.GetFileName(path));
+                    LoadMods(); 
+                    _onAddonChanged(); 
+                }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             }
         }

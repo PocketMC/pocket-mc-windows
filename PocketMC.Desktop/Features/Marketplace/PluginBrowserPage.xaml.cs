@@ -12,10 +12,9 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace.Models;
 using Wpf.Ui.Controls;
 using System.Collections.ObjectModel;
 using MessageBoxButton = System.Windows.MessageBoxButton;
@@ -37,17 +36,22 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly Action? _onCompleted;
         private readonly string _serverType;
         private readonly string _loader;
-        private readonly ObservableCollection<ModrinthHit> _results = new();
+        private readonly ObservableCollection<MarketplaceItemViewModel> _results = new();
         private int _currentOffset = 0;
         private System.Threading.CancellationTokenSource? _searchCts;
 
         public event Action<string>? OnModpackDownloaded;
+
+        private readonly DependencyResolverService _resolver;
+        private readonly AddonManifestService _manifestService;
 
         public PluginBrowserPage(
             IAppNavigationService navigationService,
             ModrinthService modrinth,
             CurseForgeService curseForge,
             PoggitService poggit,
+            DependencyResolverService resolver,
+            AddonManifestService manifestService,
             IHttpClientFactory httpClientFactory,
             string? serverDir,
             string mcVersion,
@@ -60,6 +64,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             _modrinth = modrinth;
             _curseForge = curseForge;
             _poggit = poggit;
+            _resolver = resolver;
+            _manifestService = manifestService;
             _httpClientFactory = httpClientFactory;
             _serverDir = serverDir;
             _mcVersion = mcVersion;
@@ -68,7 +74,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             _onCompleted = onCompleted;
             _serverType = serverType;
             _loader = ResolveLoader(serverType);
-
             ListResults.ItemsSource = _results;
             bool isBedrock = _serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase);
             bool isPocketmine = _serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase);
@@ -95,9 +100,21 @@ namespace PocketMC.Desktop.Features.Marketplace
                 TxtSearch.PlaceholderText = $"Search {loaderLabel}...";
             }
             else TxtSearch.PlaceholderText = "Search mods...";
-
-            Loaded += async (s, e) => await RefreshResultsAsync();
+            Loaded += async (s, e) => 
+            {
+                if (_serverDir != null)
+                {
+                    await _manifestService.SyncManifestAsync(_serverDir, _modrinth, IsJavaEngine);
+                }
+                await RefreshResultsAsync();
+            };
         }
+
+        private bool IsJavaEngine => _serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) || 
+                                     _serverType.StartsWith("Paper", StringComparison.OrdinalIgnoreCase) ||
+                                     _serverType.StartsWith("Fabric", StringComparison.OrdinalIgnoreCase) ||
+                                     _serverType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase) ||
+                                     _serverType.StartsWith("NeoForge", StringComparison.OrdinalIgnoreCase);
 
         private static string ResolveLoader(string serverType)
         {
@@ -178,7 +195,26 @@ namespace PocketMC.Desktop.Features.Marketplace
                 foreach (var hit in hits)
                 {
                     if (!_results.Any(r => r.Slug == hit.Slug))
-                        _results.Add(hit);
+                    {
+                        var vm = new MarketplaceItemViewModel
+                        {
+                            Title = hit.Title,
+                            Description = hit.Description,
+                            IconUrl = hit.IconUrl,
+                            Downloads = hit.Downloads,
+                            Slug = hit.Slug,
+                            ProjectId = hit.ProjectId,
+                            Provider = isCurseForge ? "CurseForge" : (isPoggit ? "Poggit" : "Modrinth")
+                        };
+
+                        if (_serverDir != null)
+                        {
+                            bool installed = await _manifestService.IsInstalledAsync(_serverDir, vm.Provider, vm.ProjectId);
+                            vm.State = installed ? InstallState.Installed : InstallState.NotInstalled;
+                        }
+
+                        _results.Add(vm);
+                    }
                 }
 
                 _currentOffset += hits.Count;
@@ -221,92 +257,112 @@ namespace PocketMC.Desktop.Features.Marketplace
         private async void BtnInstall_Click(object sender, RoutedEventArgs e)
         {
             var btn = (System.Windows.Controls.Button)sender;
-            string slug = btn.Tag.ToString() ?? "";
-            btn.IsEnabled = false;
-            btn.Content = "Installing...";
+            var vm = (MarketplaceItemViewModel)btn.DataContext;
+            vm.IsActionEnabled = false;
+            vm.State = InstallState.Installing;
 
             try
             {
-                bool isCurseForge = CmbSource.SelectedItem is ComboBoxItem c && c.Content.ToString() == "CurseForge";
-                bool isPoggit = CmbSource.SelectedItem is ComboBoxItem pt && pt.Content.ToString() == "Poggit";
-                ModrinthVersion? version;
+                string projectId = vm.ProjectId;
+                if (string.IsNullOrEmpty(projectId)) projectId = vm.Slug;
+
                 bool isBedrock = _serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase);
                 bool isPocketmine = _serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase);
                 string mcVersionArg = (isBedrock || isPocketmine) ? "" : (_mcVersion == "*" ? "" : _mcVersion);
+                
+                IAddonProvider provider = vm.Provider switch
+                {
+                    "CurseForge" => _curseForge,
+                    "Poggit" => _poggit,
+                    _ => _modrinth
+                };
 
-                if (isCurseForge)
+                // Poggit doesn't support recursive deps yet
+                if (vm.Provider == "Poggit")
                 {
-                    version = await _curseForge.GetLatestVersionAsync(slug, mcVersionArg, _loader);
-                }
-                else if (isPoggit)
-                {
-                    version = await _poggit.GetLatestVersionAsync(slug);
-                }
-                else
-                {
-                    version = await _modrinth.GetLatestVersionAsync(slug, mcVersionArg, _loader);
-                }
-
-                if (version == null || version.Files.Count == 0)
-                {
-                    string mcVersionLabel = _mcVersion == "*" ? "any Minecraft version" : _mcVersion;
-                    bool isModProject = _projectType.Contains("mod", StringComparison.OrdinalIgnoreCase);
-                    if (isModProject && !string.IsNullOrWhiteSpace(_loader) && !isPoggit)
-                    {
-                        string loaderLabel = ToDisplayLoader(_loader);
-                        System.Windows.MessageBox.Show($"No compatible {loaderLabel} version found for {mcVersionLabel}.", "Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    var pVersion = await _poggit.GetLatestVersionAsync(projectId);
+                    if (pVersion == null) 
+                    { 
+                        vm.IsActionEnabled = true; 
+                        vm.State = InstallState.NotInstalled; 
+                        return; 
                     }
-                    else
-                    {
-                        System.Windows.MessageBox.Show($"No compatible version found for {mcVersionLabel}.", "Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                    btn.IsEnabled = true;
-                    btn.Content = "Install";
+                    await InstallSingleFileAsync(pVersion.DownloadUrl, pVersion.FileName, "Poggit", pVersion.ProjectId, pVersion.Id, isBedrock, isPocketmine);
+                    
+                    vm.State = InstallState.Installed;
+                    vm.IsActionEnabled = true;
                     return;
                 }
 
-                var file = version.Files.FirstOrDefault(f => f.IsPrimary) ?? version.Files[0];
-
-                using var httpClient = _httpClientFactory.CreateClient("PocketMC.Downloads");
-
-                using var response = await httpClient.GetAsync(file.Url, HttpCompletionOption.ResponseHeadersRead);
-                response.EnsureSuccessStatusCode();
-
-                string destFile;
-                if (_isModpackMode)
+                if (_serverDir == null) return;
+                var resolved = await _resolver.ResolveAsync(provider, _serverDir, projectId, mcVersionArg, _loader);
+                
+                // --- 2. User Confirmation ---
+                var confVm = new DependencyConfirmationViewModel(resolved);
+                var win = new DependencyConfirmationWindow(confVm) { Owner = Window.GetWindow(this) };
+                if (win.ShowDialogWithResult() != true)
                 {
-                    destFile = Path.Combine(Path.GetTempPath(), file.FileName);
-                }
-                else
-                {
-                    if (_serverDir == null) return;
-                    string targetSubDir = isBedrock ? "behavior_packs" : (_projectType.Contains("plugin") ? "plugins" : "mods");
-                    string destDir = Path.Combine(_serverDir, targetSubDir);
-                    if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
-                    destFile = Path.Combine(destDir, file.FileName);
-                }
-
-                await using (var contentStream = await response.Content.ReadAsStreamAsync())
-                await using (var fileStream = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
-                {
-                    await contentStream.CopyToAsync(fileStream);
-                }
-
-                if (_isModpackMode)
-                {
-                    OnModpackDownloaded?.Invoke(destFile);
-                    _navigationService.NavigateBack();
+                    vm.IsActionEnabled = true;
+                    vm.State = InstallState.NotInstalled;
                     return;
                 }
 
-                btn.Content = "Installed";
+                // --- 3. Batch Installation ---
+                foreach (var item in resolved.Where(d => d.IsSelected))
+                {
+                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", isBedrock, isPocketmine);
+                }
+
+                vm.State = InstallState.Installed;
+                vm.IsActionEnabled = true;
                 _onCompleted?.Invoke();
             }
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show("Install failed: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                btn.IsEnabled = true;
-                btn.Content = "Install";
+                vm.State = InstallState.Failed;
+                vm.IsActionEnabled = true;
+            }
+        }
+
+        private async Task InstallSingleFileAsync(string url, string fileName, string providerName, string projectId, string versionId, bool isBedrock = false, bool isPocketmine = false)
+        {
+            if (_serverDir == null && !_isModpackMode) return;
+
+            using var httpClient = _httpClientFactory.CreateClient("PocketMC.Downloads");
+            using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            string destFile;
+            if (_isModpackMode)
+            {
+                destFile = Path.Combine(Path.GetTempPath(), fileName);
+            }
+            else
+            {
+                string targetSubDir = isBedrock ? "behavior_packs" : (_projectType.Contains("plugin") ? "plugins" : "mods");
+                string destDir = Path.Combine(_serverDir!, targetSubDir);
+                if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
+                destFile = Path.Combine(destDir, fileName);
+            }
+
+            await using (var contentStream = await response.Content.ReadAsStreamAsync())
+            await using (var fileStream = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+            {
+                await contentStream.CopyToAsync(fileStream);
+            }
+
+            if (_isModpackMode)
+            {
+                OnModpackDownloaded?.Invoke(destFile);
+                _navigationService.NavigateBack();
+                return;
+            }
+
+            // Register in manifest if not modpack
+            if (_serverDir != null)
+            {
+                await _manifestService.RegisterInstallAsync(_serverDir, providerName, projectId, versionId, fileName);
             }
         }
     }
