@@ -35,6 +35,7 @@ public class ServerProcess : IDisposable
     private bool _disposed;
     private volatile bool _intentionalStop;
     private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
+    private readonly object _sessionLogSync = new();
     private StreamWriter? _sessionLogWriter;
     private const int MAX_BUFFER_LINES = 5000;
 
@@ -62,16 +63,31 @@ public class ServerProcess : IDisposable
 
     public async Task StartAsync(InstanceMetadata meta, string workingDir, string appRootPath)
     {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(ServerProcess));
+
         if (State != ServerState.Stopped && State != ServerState.Crashed)
             throw new InvalidOperationException($"Cannot start server — current state is {State}.");
 
         WorkingDirectory = workingDir;
-        InitializeSessionLog(workingDir);
         CleanSessionLock(workingDir);
 
         try
         {
             var psi = await _launchConfigurator.ConfigureAsync(meta, workingDir, appRootPath, l => AppendOutput(l));
+            StreamWriter? sessionLogWriter = CreateSessionLogWriter(workingDir);
+
+            lock (_sessionLogSync)
+            {
+                if (_disposed)
+                {
+                    sessionLogWriter?.Dispose();
+                    throw new ObjectDisposedException(nameof(ServerProcess));
+                }
+
+                _sessionLogWriter?.Dispose();
+                _sessionLogWriter = sessionLogWriter;
+            }
 
             SetState(ServerState.Starting);
             _intentionalStop = false;
@@ -89,13 +105,12 @@ public class ServerProcess : IDisposable
         }
         catch
         {
-            _sessionLogWriter?.Dispose();
-            _sessionLogWriter = null;
+            CloseSessionLogWriter();
             throw;
         }
     }
 
-    private void InitializeSessionLog(string workingDir)
+    private StreamWriter? CreateSessionLogWriter(string workingDir)
     {
         try
         {
@@ -103,9 +118,13 @@ public class ServerProcess : IDisposable
             Directory.CreateDirectory(logDir);
             string sessionLogPath = Path.Combine(logDir, "pocketmc-session.log");
             var stream = new FileStream(sessionLogPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            _sessionLogWriter = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
+            return new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
         }
-        catch (Exception ex) { _logger.LogWarning(ex, "Failed to initialize session log."); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to initialize session log.");
+            return null;
+        }
     }
 
     private void CleanSessionLock(string workingDir)
@@ -226,7 +245,13 @@ public class ServerProcess : IDisposable
         OutputBuffer.Enqueue(sanitizedLine);
         if (OutputBuffer.Count > MAX_BUFFER_LINES) OutputBuffer.TryDequeue(out _);
 
-        try { _sessionLogWriter?.WriteLine(sanitizedLine); }
+        StreamWriter? logWriter;
+        lock (_sessionLogSync)
+        {
+            logWriter = _sessionLogWriter;
+        }
+
+        try { logWriter?.WriteLine(sanitizedLine); }
         catch { }
 
         if (isError) OnErrorLine?.Invoke(sanitizedLine);
@@ -288,10 +313,18 @@ public class ServerProcess : IDisposable
         if (!_disposed)
         {
             _disposed = true;
-            _sessionLogWriter?.Dispose();
-            _sessionLogWriter = null;
+            CloseSessionLogWriter();
             Kill();
             _process?.Dispose();
+        }
+    }
+
+    private void CloseSessionLogWriter()
+    {
+        lock (_sessionLogSync)
+        {
+            _sessionLogWriter?.Dispose();
+            _sessionLogWriter = null;
         }
     }
 }
