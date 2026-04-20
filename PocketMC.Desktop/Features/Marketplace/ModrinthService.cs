@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using PocketMC.Desktop.Features.Marketplace.Models;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -31,12 +32,18 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         [JsonPropertyName("slug")]
         public string Slug { get; set; } = "";
+
+        [JsonPropertyName("project_id")]
+        public string ProjectId { get; set; } = "";
     }
 
     public class ModrinthVersion
     {
         [JsonPropertyName("id")]
         public string Id { get; set; } = "";
+
+        [JsonPropertyName("project_id")]
+        public string ProjectId { get; set; } = "";
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = "";
@@ -46,6 +53,21 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         [JsonPropertyName("loaders")]
         public List<string> Loaders { get; set; } = new();
+
+        [JsonPropertyName("dependencies")]
+        public List<ModrinthDependency> Dependencies { get; set; } = new();
+    }
+
+    public class ModrinthDependency
+    {
+        [JsonPropertyName("version_id")]
+        public string? VersionId { get; set; }
+
+        [JsonPropertyName("project_id")]
+        public string? ProjectId { get; set; }
+
+        [JsonPropertyName("dependency_type")]
+        public string DependencyType { get; set; } = ""; // "required", "optional", "incompatible", "embedded"
     }
 
     public class ModrinthFile
@@ -60,7 +82,22 @@ namespace PocketMC.Desktop.Features.Marketplace
         public bool IsPrimary { get; set; }
     }
 
-    public class ModrinthService
+    public class ModrinthProject
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = "";
+
+        [JsonPropertyName("slug")]
+        public string Slug { get; set; } = "";
+
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = "";
+
+        [JsonPropertyName("icon_url")]
+        public string? IconUrl { get; set; }
+    }
+
+    public class ModrinthService : IAddonProvider
     {
         private readonly HttpClient _httpClient;
 
@@ -68,6 +105,8 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             _httpClient = httpClient;
         }
+
+        public string Name => "Modrinth";
 
         public async Task<List<ModrinthHit>> SearchAsync(string type, string mcVersion, string loader, string sort = "relevance", string query = "", int offset = 0)
         {
@@ -94,6 +133,108 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 return new();
             }
+        }
+
+        async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string slug, string mcVersion, string loader)
+        {
+            var mVersion = await GetLatestVersionAsync(slug, mcVersion, loader);
+            if (mVersion == null) return null;
+
+            // We need project title for the UI summary
+            var projectInfo = await GetProjectInfoAsync(slug);
+
+            return MapToMarketplaceVersion(mVersion, projectInfo?.Title ?? slug);
+        }
+
+        public async Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId)
+        {
+            try
+            {
+                string url = $"https://api.modrinth.com/v2/version/{versionId}";
+                var mVersion = await _httpClient.GetFromJsonAsync<ModrinthVersion>(url);
+                if (mVersion == null) return null;
+
+                var projectInfo = await GetProjectInfoAsync(mVersion.ProjectId);
+                return MapToMarketplaceVersion(mVersion, projectInfo?.Title ?? mVersion.ProjectId);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<Dictionary<string, ModrinthVersion>> GetVersionsByHashesAsync(IEnumerable<string> hashes)
+        {
+            try
+            {
+                var requestBody = new { hashes = hashes.ToList(), algorithm = "sha1" };
+                var response = await _httpClient.PostAsJsonAsync("https://api.modrinth.com/v2/version_files", requestBody);
+                if (!response.IsSuccessStatusCode) return new();
+
+                return await response.Content.ReadFromJsonAsync<Dictionary<string, ModrinthVersion>>() ?? new();
+            }
+            catch
+            {
+                return new();
+            }
+        }
+
+        public async Task<MarketplaceProjectInfo?> GetProjectInfoAsync(string projectIdOrSlug)
+        {
+            try
+            {
+                string url = $"https://api.modrinth.com/v2/project/{projectIdOrSlug}";
+                var project = await _httpClient.GetFromJsonAsync<ModrinthProject>(url);
+                if (project == null) return null;
+
+                return new MarketplaceProjectInfo
+                {
+                    Id = project.Id,
+                    Title = project.Title,
+                    Slug = project.Slug,
+                    IconUrl = project.IconUrl
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private MarketplaceVersion MapToMarketplaceVersion(ModrinthVersion v, string projectTitle)
+        {
+            var primaryFile = v.Files.FirstOrDefault(f => f.IsPrimary) ?? v.Files.FirstOrDefault() ?? new ModrinthFile();
+            
+            var result = new MarketplaceVersion
+            {
+                Id = v.Id,
+                Name = v.Name,
+                ProjectId = v.ProjectId,
+                ProjectTitle = projectTitle,
+                FileName = primaryFile.FileName,
+                DownloadUrl = primaryFile.Url
+            };
+
+            foreach (var dep in v.Dependencies)
+            {
+                if (string.IsNullOrEmpty(dep.ProjectId)) continue;
+
+                result.Dependencies.Add(new MarketplaceDependency
+                {
+                    ProjectId = dep.ProjectId,
+                    VersionId = dep.VersionId,
+                    Type = dep.DependencyType.ToLowerInvariant() switch
+                    {
+                        "required" => DependencyType.Required,
+                        "optional" => DependencyType.Optional,
+                        "embedded" => DependencyType.Embedded,
+                        "incompatible" => DependencyType.Incompatible,
+                        _ => DependencyType.Optional
+                    }
+                });
+            }
+
+            return result;
         }
 
         public async Task<ModrinthVersion?> GetLatestVersionAsync(string slug, string mcVersion, string? loader = null)

@@ -49,7 +49,7 @@ Supported server types: **Vanilla · Paper · Fabric · Forge · Bedrock (BDS) �
 
 - **Multi-Protocol Support** — Run Minecraft Java, native Bedrock Edition (BDS), and PocketMine-MP instances side-by-side. Includes one-click installation for 45+ Bedrock versions via community manifests.
 - **Managed Runtimes** — PocketMC automatically provisions isolated JRE and PHP 8.x runtimes. Nothing touches your system Java/PHP installation.
-- **Add-on & Plugin Browser** — Native support for Bedrock `.mcpack`/`.mcaddon` and Poggit (PocketMine) integration. Browse and install Java plugins from Modrinth/CurseForge.
+- **Add-on & Plugin Browser** — Native support for Bedrock `.mcpack`/`.mcaddon` and Poggit (PocketMine) integration. Browse and install Java plugins from Modrinth/CurseForge. *Note: Poggit plugins currently do not support automatic dependency resolution due to upstream API limitations.*
 - **Public Tunneling** — Integrated Playit.gg with guided setup. Public addresses are shown as copyable links on the dashboard.
 - **Instance Isolation** — Each server runs in its own folder with independent configs, runtimes, and world files.
 

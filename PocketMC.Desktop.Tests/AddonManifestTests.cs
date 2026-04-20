@@ -1,39 +1,80 @@
-using PocketMC.Desktop.Features.Mods;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace.Models;
+using Xunit;
 
-namespace PocketMC.Desktop.Tests;
-
-public sealed class AddonManifestTests : IDisposable
+namespace PocketMC.Desktop.Tests
 {
-    private readonly string _addonsDir = Path.Combine(Path.GetTempPath(), "PocketMC.AddonManifestTests", Guid.NewGuid().ToString("N"));
-
-    [Fact]
-    public async Task SyncManifestAsync_ShouldRemoveDeletedFiles()
+    public class AddonManifestTests : IDisposable
     {
-        Directory.CreateDirectory(_addonsDir);
-        var manifest = new AddonManifest();
+        private readonly string _tempDir;
 
-        await manifest.SaveAsync(_addonsDir, new[]
+        public AddonManifestTests()
         {
-            new AddonManifestEntry
-            {
-                FileName = "mod-a.jar",
-                ProjectId = "mod-a",
-                Provider = "Modrinth",
-                VersionId = "",
-                InstalledAt = DateTime.MinValue
-            }
-        });
+            _tempDir = Path.Combine(Path.GetTempPath(), "PocketMC_Test_" + Guid.NewGuid());
+            Directory.CreateDirectory(_tempDir);
+        }
 
-        IReadOnlyList<AddonManifestEntry> synced = await manifest.SyncManifestAsync(_addonsDir);
-
-        Assert.Empty(synced);
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_addonsDir))
+        public void Dispose()
         {
-            Directory.Delete(_addonsDir, recursive: true);
+            try { Directory.Delete(_tempDir, true); } catch { }
+        }
+
+        [Fact]
+        public async Task SyncManifestAsync_ShouldRemoveDeletedFiles()
+        {
+            // Arrange
+            var service = new AddonManifestService();
+            var manifest = new AddonManifest();
+            manifest.Entries.Add(new AddonManifestEntry 
+            { 
+                ProjectId = "mod-a", 
+                FileName = "mod-a.jar", 
+                Provider = "Modrinth" 
+            });
+            
+            // Save manifest but don't create the file
+            string manifestPath = Path.Combine(_tempDir, "addon_manifest.json");
+            File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest));
+
+            // Act
+            await service.SyncManifestAsync(_tempDir, null, true);
+            var updated = await service.LoadManifestAsync(_tempDir);
+
+            // Assert
+            Assert.Empty(updated.Entries);
+        }
+
+        [Fact]
+        public async Task SyncManifestAsync_ShouldKeepExistingFiles()
+        {
+            // Arrange
+            var service = new AddonManifestService();
+            var manifest = new AddonManifest();
+            manifest.Entries.Add(new AddonManifestEntry 
+            { 
+                ProjectId = "mod-a", 
+                FileName = "mod-a.jar", 
+                Provider = "Modrinth" 
+            });
+            
+            Directory.CreateDirectory(Path.Combine(_tempDir, "mods"));
+            File.WriteAllText(Path.Combine(_tempDir, "mods", "mod-a.jar"), "dummy");
+            
+            string manifestPath = Path.Combine(_tempDir, "addon_manifest.json");
+            File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest));
+
+            // Act
+            await service.SyncManifestAsync(_tempDir, null, true);
+            var updated = await service.LoadManifestAsync(_tempDir);
+
+            // Assert
+            Assert.Single(updated.Entries);
+            Assert.Equal("mod-a", updated.Entries[0].ProjectId);
         }
     }
 }
