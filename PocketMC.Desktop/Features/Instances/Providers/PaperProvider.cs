@@ -9,6 +9,7 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Desktop.Features.Java;
 
 namespace PocketMC.Desktop.Features.Instances.Providers;
 
@@ -34,12 +35,16 @@ public class PaperProvider : IServerSoftwareProvider
         var versions = new List<MinecraftVersion>();
         if (versionsArray != null)
         {
+            var minVersion = new Version(1, 8, 8);
             // Paper provides an array of version strings, older to newer
             foreach (var v in versionsArray.Reverse())
             {
                 if (v == null) continue;
 
                 string vStr = v.ToString();
+                if (!JavaRuntimeResolver.TryParseVersion(vStr, out var version) || version < minVersion)
+                    continue;
+
                 string type = "release";
                 if (vStr.Contains("-") || System.Text.RegularExpressions.Regex.IsMatch(vStr, @"[a-zA-Z]"))
                     type = "snapshot";

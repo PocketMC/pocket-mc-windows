@@ -10,6 +10,7 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Desktop.Features.Java;
 
 namespace PocketMC.Desktop.Features.Instances.Providers;
 
@@ -48,12 +49,17 @@ public class FabricProvider : IServerSoftwareProvider
         var versions = new List<MinecraftVersion>();
         if (gameVersionsResponse != null)
         {
+            var minVersion = new Version(1, 14, 0);
             foreach (var node in gameVersionsResponse)
             {
                 if (node == null) continue;
+                string vStr = node["version"]?.ToString() ?? "";
+                if (!JavaRuntimeResolver.TryParseVersion(vStr, out var version) || version < minVersion)
+                    continue;
+
                 versions.Add(new GameVersionWithLoaders
                 {
-                    Id = node["version"]?.ToString() ?? "",
+                    Id = vStr,
                     Type = (bool)(node["stable"] ?? false) ? "release" : "snapshot",
                     ReleaseTime = DateTime.MinValue,
                     LoaderVersions = loaders // In Fabric, generally any recent loader works with any game version

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Diagnostics;
 using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Settings;
@@ -322,9 +323,16 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             AppState,
             NullLogger<PhpProvisioningService>.Instance);
 
+        var vanillaProvider = new VanillaProvider(
+            new HttpClient(),
+            AppState,
+            downloader,
+            NullLogger<VanillaProvider>.Instance);
+
         return new ServerLaunchConfigurator(
             javaProvisioning,
             phpProvisioning,
+            vanillaProvider,
             NullLogger<ServerLaunchConfigurator>.Instance);
     }
 

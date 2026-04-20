@@ -12,6 +12,7 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Desktop.Features.Java;
 
 namespace PocketMC.Desktop.Features.Instances.Providers;
 
@@ -44,7 +45,10 @@ public class VanillaProvider : IServerSoftwareProvider
             var response = await _httpClient.GetStringAsync(url);
             var manifest = JsonSerializer.Deserialize<VersionManifest>(response, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            return manifest?.Versions ?? new List<MinecraftVersion>();
+            var minVersion = new Version(1, 8, 8);
+            return manifest?.Versions
+                .Where(v => JavaRuntimeResolver.TryParseVersion(v.Id, out var version) && version >= minVersion)
+                .ToList() ?? new List<MinecraftVersion>();
         }
         catch (Exception ex)
         {

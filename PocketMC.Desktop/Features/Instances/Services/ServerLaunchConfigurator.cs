@@ -26,15 +26,18 @@ namespace PocketMC.Desktop.Features.Instances.Services;
 
         private readonly JavaProvisioningService _javaProvisioning;
         private readonly PhpProvisioningService _phpProvisioning;
+        private readonly VanillaProvider _vanillaProvider;
         private readonly ILogger<ServerLaunchConfigurator> _logger;
 
         public ServerLaunchConfigurator(
             JavaProvisioningService javaProvisioning, 
             PhpProvisioningService phpProvisioning,
+            VanillaProvider vanillaProvider,
             ILogger<ServerLaunchConfigurator> logger)
         {
             _javaProvisioning = javaProvisioning;
             _phpProvisioning = phpProvisioning;
+            _vanillaProvider = vanillaProvider;
             _logger = logger;
         }
 
@@ -75,7 +78,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             };
 
             AddRamArguments(psi, meta);
-            AddPerformanceArguments(psi);
+            AddPerformanceArguments(psi, meta.MinecraftVersion);
             AddAdvancedArguments(psi, meta.AdvancedJvmArgs);
             AddExecutableArguments(psi, meta, workingDir);
 
@@ -254,6 +257,27 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             {
                 onLog($"[PocketMC] First-time {meta.ServerType} setup detected. Running installer...");
 
+                // Legacy Forge installers (pre-1.17) often fail to download the base Vanilla JAR 
+                // themselves due to outdated URLs. We pre-download it to ensure success.
+                if (meta.ServerType == "Forge" && JavaRuntimeResolver.TryParseVersion(meta.MinecraftVersion, out var version) && version < new Version(1, 17))
+                {
+                    string vanillaJarName = $"minecraft_server.{meta.MinecraftVersion}.jar";
+                    string vanillaJarPath = Path.Combine(workingDir, vanillaJarName);
+                    
+                    if (!File.Exists(vanillaJarPath) && !File.Exists(Path.Combine(workingDir, "server.jar")))
+                    {
+                        onLog($"[PocketMC] Pre-downloading Vanilla {meta.MinecraftVersion} for legacy installer...");
+                        try
+                        {
+                            await _vanillaProvider.DownloadSoftwareAsync(meta.MinecraftVersion!, vanillaJarPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            onLog($"[PocketMC] WARNING: Base Vanilla download failed: {ex.Message}. Installer may fail.");
+                        }
+                    }
+                }
+
                 var installerPsi = new ProcessStartInfo
                 {
                     FileName = javaPath,
@@ -265,32 +289,63 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                     CreateNoWindow = true
                 };
 
-                using var proc = Process.Start(installerPsi);
-                if (proc != null)
+                try
                 {
-                    // consume streams asynchronously to prevent deadlock
-                    var outputTask = Task.Run(() => {
-                        while (!proc.StandardOutput.EndOfStream)
+                    using var proc = Process.Start(installerPsi);
+                    if (proc != null)
+                    {
+                        // consume streams asynchronously to prevent deadlock
+                        var outputTask = Task.Run(() => {
+                            while (!proc.StandardOutput.EndOfStream)
+                            {
+                                var line = proc.StandardOutput.ReadLine();
+                                if (line != null) onLog?.Invoke(line);
+                            }
+                        });
+
+                        var errorTask = Task.Run(() => {
+                            while (!proc.StandardError.EndOfStream)
+                            {
+                                var line = proc.StandardError.ReadLine();
+                                if (line != null) onLog?.Invoke($"[Error] {line}");
+                            }
+                        });
+
+                        await proc.WaitForExitAsync();
+                        await Task.WhenAll(outputTask, errorTask);
+
+                        if (proc.ExitCode == 0)
                         {
-                            var line = proc.StandardOutput.ReadLine();
-                            if (line != null) onLog?.Invoke(line);
+                            onLog?.Invoke($"[PocketMC] {meta.ServerType} installation successful.");
+                            // Clean up installer to prevent re-runs
+                            try { File.Delete(installerPath); } catch { }
                         }
-                    });
-
-                    var errorTask = Task.Run(() => {
-                        while (!proc.StandardError.EndOfStream)
+                        else
                         {
-                            var line = proc.StandardError.ReadLine();
-                            if (line != null) onLog?.Invoke($"[Error] {line}");
+                            // If installer failed, cleanup partial libraries to allow retry on next launch
+                            CleanupFailedInstallation(workingDir);
+                            throw new Exception($"{meta.ServerType} installer failed with exit code {proc.ExitCode}");
                         }
-                    });
-
-                    await proc.WaitForExitAsync();
-                    await Task.WhenAll(outputTask, errorTask);
-
-                    if (proc.ExitCode == 0) onLog?.Invoke($"[PocketMC] {meta.ServerType} installation successful.");
-                    else throw new Exception($"{meta.ServerType} installer failed with exit code {proc.ExitCode}");
+                    }
                 }
+                catch (Exception ex)
+                {
+                    CleanupFailedInstallation(workingDir);
+                    if (ex is not InvalidOperationException && !ex.Message.Contains("installer failed"))
+                    {
+                         throw new InvalidOperationException($"Failed to execute {meta.ServerType} installer: {ex.Message}", ex);
+                    }
+                    throw;
+                }
+            }
+        }
+
+        private void CleanupFailedInstallation(string workingDir)
+        {
+            string libDir = Path.Combine(workingDir, "libraries");
+            if (Directory.Exists(libDir))
+            {
+                try { Directory.Delete(libDir, true); } catch { }
             }
         }
 
@@ -302,14 +357,42 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             psi.ArgumentList.Add($"-Xmx{maxRamMb}M");
         }
 
-        private void AddPerformanceArguments(ProcessStartInfo psi)
+        private void AddPerformanceArguments(ProcessStartInfo psi, string? mcVersion)
         {
             psi.ArgumentList.Add("-XX:+UseG1GC");
             psi.ArgumentList.Add("-XX:+ParallelRefProcEnabled");
             psi.ArgumentList.Add("-XX:MaxGCPauseMillis=200");
             psi.ArgumentList.Add("-XX:+UnlockExperimentalVMOptions");
             psi.ArgumentList.Add("-XX:+DisableExplicitGC");
-            psi.ArgumentList.Add("-XX:+AlwaysPreTouch");
+            
+            // Log4Shell Mitigation for vulnerable versions (1.8.8 - 1.18)
+            if (JavaRuntimeResolver.TryParseVersion(mcVersion, out var version) && 
+                version >= new Version(1, 8, 8) && 
+                version < new Version(1, 18, 1))
+            {
+                psi.ArgumentList.Add("-Dlog4j2.formatMsgNoLookups=true");
+            }
+
+            // Performance: Only pre-touch for modern versions or if system has enough RAM normally.
+            // On Windows with small pagefiles, this causes immediate crash for legacy users.
+            if (version == null || version >= new Version(1, 17))
+            {
+                psi.ArgumentList.Add("-XX:+AlwaysPreTouch");
+            }
+
+            // Optimize for low-latency/throughput balance
+            psi.ArgumentList.Add("-XX:G1NewSizePercent=30");
+            psi.ArgumentList.Add("-XX:G1MaxNewSizePercent=40");
+            psi.ArgumentList.Add("-XX:G1HeapRegionSize=8M");
+            psi.ArgumentList.Add("-XX:G1ReservePercent=20");
+            psi.ArgumentList.Add("-XX:G1HeapWastePercent=5");
+            psi.ArgumentList.Add("-XX:G1MixedGCCountTarget=4");
+            psi.ArgumentList.Add("-XX:InitiatingHeapOccupancyPercent=15");
+            psi.ArgumentList.Add("-XX:G1MixedGCLiveThresholdPercent=90");
+            psi.ArgumentList.Add("-XX:G1RSetUpdatingPauseTimePercent=5");
+            psi.ArgumentList.Add("-XX:SurvivorRatio=32");
+            psi.ArgumentList.Add("-XX:+PerfDisableSharedMem");
+            psi.ArgumentList.Add("-XX:MaxTenuringThreshold=1");
         }
 
         private void AddAdvancedArguments(ProcessStartInfo psi, string? advancedArgs)
@@ -322,11 +405,12 @@ namespace PocketMC.Desktop.Features.Instances.Services;
 
         private void AddExecutableArguments(ProcessStartInfo psi, InstanceMetadata meta, string workingDir)
         {
-            string serverJar = Path.Combine(workingDir, "server.jar");
-
             bool isForgeOrNeo = meta.ServerType == "Forge" || meta.ServerType == "NeoForge";
-            if (isForgeOrNeo && !File.Exists(serverJar))
+            string? chosenJar = null;
+
+            if (isForgeOrNeo)
             {
+                // Modern Forge/NeoForge (1.17+) use user_jvm_args.txt or win_args.txt
                 var winArgs = Directory.GetFiles(workingDir, "win_args.txt", SearchOption.AllDirectories).FirstOrDefault();
                 if (winArgs != null)
                 {
@@ -334,11 +418,38 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                     psi.ArgumentList.Add($"@{relativeArgs}");
                     return;
                 }
+
+                // Legacy Forge (1.8.8 - 1.16.5)
+                // Search for any forge jar that isn't the installer.
+                // Prioritize 'universal' or 'server' but accept generic forge-* if it exists.
+                var jars = Directory.GetFiles(workingDir, "*.jar")
+                    .Select(Path.GetFileName)
+                    .Where(f => f != null && f.Contains("forge", StringComparison.OrdinalIgnoreCase) && !f.Contains("installer", StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(f => f!.Contains("universal", StringComparison.OrdinalIgnoreCase))
+                    .ThenByDescending(f => f!.Contains("server", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                chosenJar = jars.FirstOrDefault();
             }
 
-            // Fallback for non-Forge or old Forge
+            // Fallback for Vanilla, Fabric, Paper, or if Forge jar detection failed
+            if (string.IsNullOrEmpty(chosenJar))
+            {
+                chosenJar = "server.jar";
+            }
+
+            // Verification
+            string fullJarPath = Path.Combine(workingDir, chosenJar);
+            if (!File.Exists(fullJarPath))
+            {
+                throw new FileNotFoundException(
+                    $"The server executable '{chosenJar}' was not found in the instance directory. " +
+                    "If this is a Forge server, Ensure the installation completed successfully. " +
+                    "You may need to 'Reinstall' the server software if it is missing.", chosenJar);
+            }
+
             psi.ArgumentList.Add("-jar");
-            psi.ArgumentList.Add("server.jar");
+            psi.ArgumentList.Add(chosenJar);
         }
 
         private static IEnumerable<string> TokenizeAdvancedJvmArgs(string? advancedJvmArgs)

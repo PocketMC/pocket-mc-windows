@@ -51,14 +51,14 @@ namespace PocketMC.Desktop.Features.Java
             _logger = logger;
         }
 
-        public bool IsJavaVersionPresent(int version)
+        public virtual bool IsJavaVersionPresent(int version)
         {
             string appRoot = _applicationState.GetRequiredAppRootPath();
             string runtimeDir = Path.Combine(appRoot, "runtime", $"java{version}");
             return _validator.IsRuntimePresent(runtimeDir);
         }
 
-        public IReadOnlyList<JavaProvisioningStatus> GetStatuses()
+        public virtual IReadOnlyList<JavaProvisioningStatus> GetStatuses()
         {
             return JavaRuntimeResolver.GetBundledJavaVersions()
                 .Select(GetStatus)
@@ -93,7 +93,7 @@ namespace PocketMC.Desktop.Features.Java
             }
         }
 
-        public async Task EnsureJavaAsync(int version, CancellationToken cancellationToken = default)
+        public virtual async Task EnsureJavaAsync(int version, CancellationToken cancellationToken = default)
         {
             if (IsJavaVersionPresent(version))
             {

@@ -35,14 +35,14 @@ public class PhpProvisioningService
         }
     }
 
-    public bool IsPhpPresent()
+    public virtual bool IsPhpPresent()
     {
         string appRoot = _applicationState.GetRequiredAppRootPath();
         string phpExePath = Path.Combine(appRoot, "runtimes", "php", "bin", "php", "php.exe");
         return File.Exists(phpExePath);
     }
 
-    public async Task EnsurePhpAsync(IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public virtual async Task EnsurePhpAsync(IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         if (IsPhpPresent())
         {

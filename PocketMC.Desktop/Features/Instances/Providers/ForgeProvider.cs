@@ -10,6 +10,7 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Desktop.Features.Java;
 
 namespace PocketMC.Desktop.Features.Instances.Providers;
 
@@ -38,6 +39,7 @@ public class ForgeProvider : IServerSoftwareProvider
             // Format of keys: "1.20.1-recommended", "1.20.1-latest"
             var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
 
+            var minVersion = new Version(1, 8, 8);
             foreach (var entry in promos)
             {
                 var parts = entry.Key.Split('-');
@@ -45,6 +47,9 @@ public class ForgeProvider : IServerSoftwareProvider
 
                 string mcVersion = parts[0];
                 if (!mcVersion.StartsWith("1.")) continue;
+
+                if (!JavaRuntimeResolver.TryParseVersion(mcVersion, out var version) || version < minVersion)
+                    continue;
 
                 string promoType = parts[1];
                 string forgeVersion = entry.Value?.ToString() ?? "";
