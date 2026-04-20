@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using PocketMC.Desktop.Navigation;
 
 namespace PocketMC.Desktop.Tests;
@@ -157,6 +159,28 @@ public class ControlledNavigationStackTests
 
         Assert.True(first.Success);
         Assert.False(second.Success);
+        Assert.Empty(stack.Entries);
+    }
+
+    [Fact]
+    public void NavigateBack_WhenPreviousDetailIsOrphaned_DoesNotThrowAndHealsStack()
+    {
+        var stack = new ControlledNavigationStack();
+        FieldInfo? entriesField = typeof(ControlledNavigationStack).GetField("_entries", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(entriesField);
+
+        var entries = (List<ControlledNavigationEntry>)entriesField!.GetValue(stack)!;
+        entries.Clear();
+        entries.Add(new ControlledNavigationEntry(
+            Guid.NewGuid().ToString("N"),
+            NavigationRouteKind.PluginBrowser,
+            NavigationBackTarget.PreviousDetail()));
+
+        ControlledBackNavigationResult result = stack.NavigateBack();
+
+        Assert.True(result.Success);
+        Assert.True(result.TargetsShellRoute);
+        Assert.Equal(NavigationRouteKind.Dashboard, result.TargetRoute);
         Assert.Empty(stack.Entries);
     }
 }

@@ -79,16 +79,23 @@ public sealed class ControlledNavigationStack
         }
 
         ControlledNavigationEntry removed = _entries[^1];
-        _entries.RemoveAt(_entries.Count - 1);
 
         if (removed.BackTarget.Kind == NavigationBackTargetKind.PreviousDetail)
         {
-            if (_entries.Count == 0)
+            if (_entries.Count == 1)
             {
-                throw new InvalidOperationException(
-                    $"Route {removed.Route} expected a previous detail route, but the stack is empty.");
+                // Heal inconsistent state (for example, if the stack was externally mutated)
+                // by falling back to the default shell route instead of throwing.
+                _entries.Clear();
+                return new ControlledBackNavigationResult(
+                    true,
+                    removed.EntryId,
+                    NavigationRouteKind.Dashboard,
+                    null,
+                    true);
             }
 
+            _entries.RemoveAt(_entries.Count - 1);
             ControlledNavigationEntry target = _entries[^1];
             return new ControlledBackNavigationResult(
                 true,
@@ -98,6 +105,7 @@ public sealed class ControlledNavigationStack
                 false);
         }
 
+        _entries.RemoveAt(_entries.Count - 1);
         _entries.Clear();
         return new ControlledBackNavigationResult(
             true,
