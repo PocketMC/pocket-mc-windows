@@ -28,6 +28,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             CancellationToken cancellationToken = default)
         {
             string partialPath = destinationPath + ".partial";
+            bool allowResume = !string.IsNullOrWhiteSpace(expectedHash);
             string? directory = Path.GetDirectoryName(destinationPath);
             if (!string.IsNullOrEmpty(directory))
             {
@@ -44,7 +45,13 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                 try
                 {
                     using HttpClient client = _httpClientFactory.CreateClient(DownloadClientName);
-                    long existingBytes = GetExistingPartialLength(partialPath);
+                    if (!allowResume && File.Exists(partialPath))
+                    {
+                        _logger.LogInformation("Discarding unverified partial download for {Url}; resume requires a trusted hash.", url);
+                        TryDeleteFile(partialPath);
+                    }
+
+                    long existingBytes = allowResume ? GetExistingPartialLength(partialPath) : 0;
                     using HttpRequestMessage request = new(HttpMethod.Get, url);
                     if (existingBytes > 0)
                     {
@@ -241,11 +248,6 @@ namespace PocketMC.Desktop.Features.Instances.Services;
 
                 try
                 {
-                    if (File.Exists(destinationPath))
-                    {
-                        File.Delete(destinationPath);
-                    }
-
                     File.Move(partialPath, destinationPath, overwrite: true);
                     return;
                 }
@@ -281,4 +283,3 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             }
         }
     }
-
