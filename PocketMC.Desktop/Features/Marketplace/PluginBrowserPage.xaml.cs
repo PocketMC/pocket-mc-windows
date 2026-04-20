@@ -17,6 +17,7 @@ using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace.Models;
 using Wpf.Ui.Controls;
 using System.Collections.ObjectModel;
+using PocketMC.Desktop.Models;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxImage = System.Windows.MessageBoxImage;
 
@@ -34,8 +35,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly string _projectType;
         private readonly bool _isModpackMode;
         private readonly Action? _onCompleted;
-        private readonly string _serverType;
-        private readonly string _loader;
+        private readonly EngineCompatibility _compat;
         private readonly ObservableCollection<MarketplaceItemViewModel> _results = new();
         private int _currentOffset = 0;
         private System.Threading.CancellationTokenSource? _searchCts;
@@ -57,7 +57,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             string mcVersion,
             string projectType,
             Action? onCompleted = null,
-            string serverType = "")
+            EngineCompatibility? compat = null)
         {
             InitializeComponent();
             _navigationService = navigationService;
@@ -72,15 +72,12 @@ namespace PocketMC.Desktop.Features.Marketplace
             _projectType = projectType;
             _isModpackMode = projectType.Contains("modpack");
             _onCompleted = onCompleted;
-            _serverType = serverType;
-            _loader = ResolveLoader(serverType);
+            _compat = compat ?? new EngineCompatibility("Vanilla");
             ListResults.ItemsSource = _results;
-            bool isBedrock = _serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase);
-            bool isPocketmine = _serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase);
 
             string baseTitle = _isModpackMode ? "Modpack Marketplace" : (_projectType.Contains("plugin") ? "Plugin Marketplace" : "Mod Marketplace");
-            if (isBedrock) baseTitle = "Bedrock Add-Ons Marketplace";
-            if (isPocketmine) 
+            if (_compat.Family == EngineFamily.Bedrock) baseTitle = "Bedrock Add-Ons Marketplace";
+            if (_compat.Family == EngineFamily.Pocketmine) 
             {
                 baseTitle = "Pocketmine Plugins";
                 CmbSource.Items.Clear();
@@ -91,12 +88,12 @@ namespace PocketMC.Desktop.Features.Marketplace
             TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
 
             if (_isModpackMode) TxtSearch.PlaceholderText = "Search modpacks...";
-            else if (isBedrock) TxtSearch.PlaceholderText = "Search Bedrock Add-Ons...";
-            else if (isPocketmine && _projectType.Contains("plugin")) TxtSearch.PlaceholderText = "Search Pocketmine plugins (*.phar)...";
+            else if (_compat.Family == EngineFamily.Bedrock) TxtSearch.PlaceholderText = "Search Bedrock Add-Ons...";
+            else if (_compat.Family == EngineFamily.Pocketmine && _projectType.Contains("plugin")) TxtSearch.PlaceholderText = "Search Pocketmine plugins (*.phar)...";
             else if (_projectType.Contains("plugin")) TxtSearch.PlaceholderText = "Search Spigot/Paper plugins...";
             else if (_projectType.Contains("mod"))
             {
-                string loaderLabel = string.IsNullOrWhiteSpace(_loader) ? "mods" : $"{ToDisplayLoader(_loader)} mods";
+                string loaderLabel = string.IsNullOrWhiteSpace(_compat.LoaderName) ? "mods" : $"{ToDisplayLoader(_compat.LoaderName)} mods";
                 TxtSearch.PlaceholderText = $"Search {loaderLabel}...";
             }
             else TxtSearch.PlaceholderText = "Search mods...";
@@ -104,28 +101,12 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 if (_serverDir != null)
                 {
-                    await _manifestService.SyncManifestAsync(_serverDir, _modrinth, IsJavaEngine);
+                    await _manifestService.SyncManifestAsync(_serverDir, _modrinth, _compat);
                 }
                 await RefreshResultsAsync();
             };
         }
 
-        private bool IsJavaEngine => _serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) || 
-                                     _serverType.StartsWith("Paper", StringComparison.OrdinalIgnoreCase) ||
-                                     _serverType.StartsWith("Fabric", StringComparison.OrdinalIgnoreCase) ||
-                                     _serverType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase) ||
-                                     _serverType.StartsWith("NeoForge", StringComparison.OrdinalIgnoreCase);
-
-        private static string ResolveLoader(string serverType)
-        {
-            if (serverType.Contains("NeoForge", StringComparison.OrdinalIgnoreCase))
-                return "neoforge";
-            if (serverType.Contains("Fabric", StringComparison.OrdinalIgnoreCase))
-                return "fabric";
-            if (serverType.Contains("Forge", StringComparison.OrdinalIgnoreCase))
-                return "forge";
-            return "";
-        }
 
         private static string ToDisplayLoader(string loader)
         {
@@ -174,14 +155,12 @@ namespace PocketMC.Desktop.Features.Marketplace
                 string sort = (CmbSort.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "relevance";
 
                 List<ModrinthHit> hits;
-                bool isBedrock = _serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase);
-                bool isPocketmine = _serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase);
-                string mcVersionArg = (isBedrock || isPocketmine) ? "" : _mcVersion;
+                string mcVersionArg = (_compat.Family == EngineFamily.Bedrock || _compat.Family == EngineFamily.Pocketmine) ? "" : _mcVersion;
 
                 if (isCurseForge)
                 {
                     // Standard CurseForge uses 432 for Java. If it's bedrock, we override type to '6945' inside the CurseForgeService search...
-                    hits = await _curseForge.SearchAsync(isBedrock ? "6945" : _projectType, mcVersionArg, _loader, query, _currentOffset);
+                    hits = await _curseForge.SearchAsync(_compat.Family == EngineFamily.Bedrock ? "6945" : _projectType, mcVersionArg, _compat.LoaderName, query, _currentOffset);
                 }
                 else if (isPoggit)
                 {
@@ -189,7 +168,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
                 else
                 {
-                    hits = await _modrinth.SearchAsync(_projectType, mcVersionArg, _loader, sort, query, _currentOffset);
+                    hits = await _modrinth.SearchAsync(_projectType, mcVersionArg, _compat.LoaderName, sort, query, _currentOffset);
                 }
 
                 foreach (var hit in hits)
@@ -209,7 +188,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                         if (_serverDir != null)
                         {
-                            bool installed = await _manifestService.IsInstalledAsync(_serverDir, vm.Provider, vm.ProjectId);
+                            bool installed = await _manifestService.IsInstalledAsync(_serverDir, vm.Provider, vm.ProjectId, _compat);
                             vm.State = installed ? InstallState.Installed : InstallState.NotInstalled;
                         }
 
@@ -266,9 +245,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 string projectId = vm.ProjectId;
                 if (string.IsNullOrEmpty(projectId)) projectId = vm.Slug;
 
-                bool isBedrock = _serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase);
-                bool isPocketmine = _serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase);
-                string mcVersionArg = (isBedrock || isPocketmine) ? "" : (_mcVersion == "*" ? "" : _mcVersion);
+                string mcVersionArg = (_compat.Family == EngineFamily.Bedrock || _compat.Family == EngineFamily.Pocketmine) ? "" : (_mcVersion == "*" ? "" : _mcVersion);
                 
                 IAddonProvider provider = vm.Provider switch
                 {
@@ -287,7 +264,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                         vm.State = InstallState.NotInstalled; 
                         return; 
                     }
-                    await InstallSingleFileAsync(pVersion.DownloadUrl, pVersion.FileName, "Poggit", pVersion.ProjectId, pVersion.Id, isBedrock, isPocketmine);
+                    await InstallSingleFileAsync(pVersion.DownloadUrl, pVersion.FileName, "Poggit", pVersion.ProjectId, pVersion.Id);
                     
                     vm.State = InstallState.Installed;
                     vm.IsActionEnabled = true;
@@ -295,7 +272,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
 
                 if (_serverDir == null) return;
-                var resolved = await _resolver.ResolveAsync(provider, _serverDir, projectId, mcVersionArg, _loader);
+                var resolved = await _resolver.ResolveAsync(provider, _serverDir, projectId, mcVersionArg, _compat.LoaderName, _compat);
                 
                 // --- 2. User Confirmation ---
                 var confVm = new DependencyConfirmationViewModel(resolved);
@@ -310,7 +287,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 // --- 3. Batch Installation ---
                 foreach (var item in resolved.Where(d => d.IsSelected))
                 {
-                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", isBedrock, isPocketmine);
+                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "");
                 }
 
                 vm.State = InstallState.Installed;
@@ -325,7 +302,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        private async Task InstallSingleFileAsync(string url, string fileName, string providerName, string projectId, string versionId, bool isBedrock = false, bool isPocketmine = false)
+        private async Task InstallSingleFileAsync(string url, string fileName, string providerName, string projectId, string versionId)
         {
             if (_serverDir == null && !_isModpackMode) return;
 
@@ -340,8 +317,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             else
             {
-                string targetSubDir = isBedrock ? "behavior_packs" : (_projectType.Contains("plugin") ? "plugins" : "mods");
-                string destDir = Path.Combine(_serverDir!, targetSubDir);
+                string destDir = Path.Combine(_serverDir!, _compat.PrimaryAddonSubDir);
                 if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
                 destFile = Path.Combine(destDir, fileName);
             }

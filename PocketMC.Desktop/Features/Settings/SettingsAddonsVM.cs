@@ -45,11 +45,11 @@ namespace PocketMC.Desktop.Features.Settings
 
         // ── Engine predicates ────────────────────────────────────────────
         public bool ShowVanillaWarning   => _metadata.ServerType?.StartsWith("Vanilla",    StringComparison.OrdinalIgnoreCase) == true;
-        public bool IsBedrockDedicated  => _metadata.ServerType?.StartsWith("Bedrock",    StringComparison.OrdinalIgnoreCase) == true;
-        public bool IsPocketmine        => _metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
+        public bool IsBedrockDedicated  => _metadata.Compatibility.Family == EngineFamily.Bedrock;
+        public bool IsPocketmine        => _metadata.Compatibility.Family == EngineFamily.Pocketmine;
         public bool IsBedrockOrPocketmine => IsBedrockDedicated || IsPocketmine;
         /// <summary>True for Java-based engines (Vanilla, Paper, Fabric, Forge).</summary>
-        public bool IsJavaEngine => !IsBedrockDedicated && !IsPocketmine;
+        public bool IsJavaEngine => _metadata.Compatibility.IsJavaEngine;
 
         // ── Commands ─────────────────────────────────────────────────────
         // Shared / Java
@@ -98,28 +98,28 @@ namespace PocketMC.Desktop.Features.Settings
             // Java: JAR files via local picker
             AddPluginCommand            = new RelayCommand(
                 async _ => { if (IsPocketmine) BrowsePoggit(); else await AddPluginAsync(); },
-                _ => !_isRunningCheck() && !ShowVanillaWarning && !IsBedrockDedicated);
+                _ => !_isRunningCheck() && !ShowVanillaWarning && _metadata.Compatibility.SupportsPlugins);
             DeletePluginCommand         = new RelayCommand(
                 async p => await DeletePluginAsync(p as string),
-                _ => !_isRunningCheck() && !IsBedrockDedicated);
+                _ => !_isRunningCheck() && _metadata.Compatibility.SupportsPlugins);
             BrowseModrinthPluginsCommand = new RelayCommand(
                 _ => { if (IsPocketmine) BrowsePoggit(); else BrowseModrinth("project_type:plugin"); },
-                _ => !IsBedrockDedicated);
+                _ => _metadata.Compatibility.SupportsPlugins && _metadata.Compatibility.SupportsModrinth);
 
             // ── Mod commands — routed by engine ──────────────────────────────────────
             // BDS: "Add Mod" triggers local .mcpack/.mcaddon import
             // Java: JAR picker
             AddModCommand               = new RelayCommand(
                 async _ => { if (IsBedrockDedicated) await ImportBedrockAddonAsync(); else await AddModAsync(); },
-                _ => !_isRunningCheck() && !ShowVanillaWarning);
+                _ => !_isRunningCheck() && !ShowVanillaWarning && (_metadata.Compatibility.SupportsMods || _metadata.Compatibility.SupportsBedrockAddons));
             DeleteModCommand            = new RelayCommand(
                 async p => { if (IsBedrockDedicated) await DeleteBedrockAddonAsync(p as string); else await DeleteModAsync(p as string); },
                 _ => !_isRunningCheck());
             BrowseModrinthModsCommand   = new RelayCommand(
                 _ => { if (IsBedrockDedicated) ImportBedrockAddonCommand?.Execute(null); else BrowseModrinth("project_type:mod"); },
-                _ => true);
-            ImportModpackCommand        = new RelayCommand(async _ => await ImportModpackAsync(), _ => IsJavaEngine);
-            BrowseModpacksCommand       = new RelayCommand(_ => BrowseModrinth("project_type:modpack"), _ => IsJavaEngine);
+                _ => _metadata.Compatibility.SupportsMods && _metadata.Compatibility.SupportsModrinth);
+            ImportModpackCommand        = new RelayCommand(async _ => await ImportModpackAsync(), _ => _metadata.Compatibility.SupportsModpacks);
+            BrowseModpacksCommand       = new RelayCommand(_ => BrowseModrinth("project_type:modpack"), _ => _metadata.Compatibility.SupportsModpacks);
 
             // ── Bedrock-specific commands (also reachable via unified commands above) ─
             ImportBedrockAddonCommand   = new RelayCommand(async _ => await ImportBedrockAddonAsync(), _ => IsBedrockDedicated && !_isRunningCheck());
@@ -349,7 +349,7 @@ namespace PocketMC.Desktop.Features.Settings
                         _metadata.MinecraftVersion,
                         projectType,
                         (Action)(() => { if (projectType.Contains("plugin")) LoadPlugins(); else LoadMods(); _onAddonChanged(); }),
-                        _metadata.ServerType ?? ""
+                        _metadata.Compatibility
                     });
 
                 if (projectType == "project_type:modpack")

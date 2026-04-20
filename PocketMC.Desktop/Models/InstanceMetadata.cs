@@ -35,5 +35,8 @@ namespace PocketMC.Desktop.Models
         /// <summary>True when Geyser + Floodgate were installed for this Java instance.</summary>
         public bool HasGeyser { get; set; } = false;
         public int? GeyserBedrockPort { get; set; } = 19132;
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public EngineCompatibility Compatibility => new EngineCompatibility(ServerType);
     }
 }

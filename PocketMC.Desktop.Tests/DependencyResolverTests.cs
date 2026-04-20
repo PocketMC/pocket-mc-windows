@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Models;
 using Xunit;
 
 namespace PocketMC.Desktop.Tests
@@ -56,7 +57,7 @@ namespace PocketMC.Desktop.Tests
             var resolver = new DependencyResolverService(manifestService);
 
             // Act
-            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric");
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric", new EngineCompatibility("Fabric"));
 
             // Assert
             Assert.Equal(3, results.Count);
@@ -91,7 +92,7 @@ namespace PocketMC.Desktop.Tests
             var resolver = new DependencyResolverService(new AddonManifestService());
 
             // Act
-            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric");
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric", new EngineCompatibility("Fabric"));
 
             // Assert
             Assert.Equal(2, results.Count);
@@ -124,7 +125,7 @@ namespace PocketMC.Desktop.Tests
             var resolver = new DependencyResolverService(new AddonManifestService());
 
             // Act
-            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric");
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric", new EngineCompatibility("Fabric"));
 
             // Assert
             Assert.Equal(2, results.Count);
@@ -148,7 +149,7 @@ namespace PocketMC.Desktop.Tests
             var resolver = new DependencyResolverService(new AddonManifestService());
 
             // Act
-            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric");
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric", new EngineCompatibility("Fabric"));
 
             // Assert
             Assert.Single(results);

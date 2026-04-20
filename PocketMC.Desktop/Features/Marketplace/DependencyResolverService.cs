@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -40,11 +41,12 @@ namespace PocketMC.Desktop.Features.Marketplace
             string serverDir,
             string rootProjectId,
             string mcVersion,
-            string loader)
+            string loader,
+            EngineCompatibility compat)
         {
             var results = new List<ResolvedDependency>();
             var visited = new HashSet<string>(); // ProjectId to handle cycles
-            return await ResolveRecursiveAsync(provider, serverDir, rootProjectId, mcVersion, loader, results, visited, DependencyType.Required);
+            return await ResolveRecursiveAsync(provider, serverDir, rootProjectId, mcVersion, loader, results, visited, DependencyType.Required, compat);
         }
 
         private async Task<List<ResolvedDependency>> ResolveRecursiveAsync(
@@ -55,7 +57,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             string loader,
             List<ResolvedDependency> results,
             HashSet<string> visited,
-            DependencyType depType)
+            DependencyType depType,
+            EngineCompatibility compat)
         {
             string normalizedId = projectId.ToLowerInvariant().Trim();
             
@@ -77,7 +80,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             if (visited.Contains(normalizedId)) return results;
             visited.Add(normalizedId);
 
-            bool alreadyInstalled = await _manifestService.IsInstalledAsync(serverDir, provider.Name, projectId);
+            bool alreadyInstalled = await _manifestService.IsInstalledAsync(serverDir, provider.Name, projectId, compat);
             
             var version = await provider.GetLatestVersionAsync(projectId, mcVersion, loader);
             if (version == null)
@@ -145,7 +148,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     if (dep.Type == DependencyType.Incompatible) continue;
                     if (dep.Type == DependencyType.Embedded) continue; 
 
-                    await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, mcVersion, loader, results, visited, dep.Type);
+                    await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, mcVersion, loader, results, visited, dep.Type, compat);
                 }
             }
 

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -90,15 +91,14 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        public async Task<bool> IsInstalledAsync(string serverDir, string provider, string projectId)
+        public async Task<bool> IsInstalledAsync(string serverDir, string provider, string projectId, EngineCompatibility compat)
         {
             var manifest = await LoadManifestAsync(serverDir);
             var entry = manifest.Entries.Find(e => e.ProjectId == projectId && e.Provider == provider);
             if (entry == null) return false;
 
             // Verify file still exists on disk
-            string subDir = entry.FileName.EndsWith(".phar") ? "plugins" : "mods";
-            string filePath = Path.Combine(serverDir, subDir, entry.FileName);
+            string filePath = Path.Combine(serverDir, compat.PrimaryAddonSubDir, entry.FileName);
             
             if (!File.Exists(filePath))
             {
@@ -110,7 +110,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             return true;
         }
 
-        public async Task SyncManifestAsync(string serverDir, ModrinthService modrinth, bool isJava)
+        public async Task SyncManifestAsync(string serverDir, ModrinthService modrinth, EngineCompatibility compat)
         {
             var manifest = await LoadManifestAsync(serverDir);
             bool modified = false;
@@ -119,8 +119,9 @@ namespace PocketMC.Desktop.Features.Marketplace
             var entriesToRemove = new List<AddonManifestEntry>();
             foreach (var entry in manifest.Entries)
             {
-                string subDir = (entry.FileName.EndsWith(".phar") || entry.FileName.EndsWith(".php")) ? "plugins" : "mods";
-                if (!isJava && entry.FileName.EndsWith(".mcpack")) subDir = "behavior_packs";
+                // Better dynamic path detection based on suffix
+                string subDir = (entry.FileName.EndsWith(".phar") || entry.FileName.EndsWith(".php")) ? "plugins" : 
+                                (entry.FileName.EndsWith(".mcpack") || entry.FileName.EndsWith(".mcaddon")) ? "behavior_packs" : "mods";
                 
                 string filePath = Path.Combine(serverDir, subDir, entry.FileName);
                 if (!File.Exists(filePath))
@@ -136,55 +137,57 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             // 2. Identify untracked files
-            string targetDir = isJava ? Path.Combine(serverDir, "mods") : Path.Combine(serverDir, "behavior_packs");
-            // Pocketmine plugins are .phar in /plugins
-            if (isJava == false && !Directory.Exists(targetDir)) 
+            string targetDir = Path.Combine(serverDir, compat.PrimaryAddonSubDir);
+
+            if (Directory.Exists(targetDir))
             {
-                targetDir = Path.Combine(serverDir, "plugins"); // Pocketmine fallback
-            }
-
-            if (!Directory.Exists(targetDir)) return;
-
-            string[] extensions = isJava ? new[] { "*.jar" } : new[] { "*.mcpack", "*.phar" };
-            var files = new List<string>();
-            foreach(var ext in extensions)
-            {
-                files.AddRange(Directory.GetFiles(targetDir, ext));
-            }
-
-            var untrackedFiles = files.Where(f => !manifest.Entries.Any(e => e.FileName == Path.GetFileName(f))).ToList();
-
-            if (untrackedFiles.Count > 0)
-            {
-                var hashToLocalPath = new Dictionary<string, string>();
-                foreach (var file in untrackedFiles)
+                string[] extensions = compat.Family switch
                 {
-                    try 
-                    {
-                        string hash = await CalculateSha1Async(file);
-                        hashToLocalPath[hash] = file;
-                    }
-                    catch { /* Skip unreadable files */ }
+                    EngineFamily.Bedrock => new[] { "*.mcpack", "*.mcaddon" },
+                    EngineFamily.Pocketmine => new[] { "*.phar" },
+                    _ => new[] { "*.jar" }
+                };
+
+                var files = new List<string>();
+                foreach(var ext in extensions)
+                {
+                    files.AddRange(Directory.GetFiles(targetDir, ext));
                 }
 
-                if (hashToLocalPath.Count > 0)
+                var untrackedFiles = files.Where(f => !manifest.Entries.Any(e => e.FileName == Path.GetFileName(f))).ToList();
+
+                if (untrackedFiles.Count > 0)
                 {
-                    var modrinthResults = await modrinth.GetVersionsByHashesAsync(hashToLocalPath.Keys);
-                    foreach (var kvp in modrinthResults)
+                    var hashToLocalPath = new Dictionary<string, string>();
+                    foreach (var file in untrackedFiles)
                     {
-                        var hash = kvp.Key;
-                        var version = kvp.Value;
-                        if (hashToLocalPath.TryGetValue(hash, out string? localPath))
+                        try 
                         {
-                            manifest.Entries.Add(new AddonManifestEntry
+                            string hash = await CalculateSha1Async(file);
+                            hashToLocalPath[hash] = file;
+                        }
+                        catch { /* Skip unreadable files */ }
+                    }
+
+                    if (hashToLocalPath.Count > 0)
+                    {
+                        var modrinthResults = await modrinth.GetVersionsByHashesAsync(hashToLocalPath.Keys);
+                        foreach (var kvp in modrinthResults)
+                        {
+                            var hash = kvp.Key;
+                            var version = kvp.Value;
+                            if (hashToLocalPath.TryGetValue(hash, out string? localPath))
                             {
-                                Provider = "Modrinth",
-                                ProjectId = version.ProjectId,
-                                VersionId = version.Id,
-                                FileName = Path.GetFileName(localPath),
-                                InstalledAt = DateTime.UtcNow
-                            });
-                            modified = true;
+                                manifest.Entries.Add(new AddonManifestEntry
+                                {
+                                    Provider = "Modrinth",
+                                    ProjectId = version.ProjectId,
+                                    VersionId = version.Id,
+                                    FileName = Path.GetFileName(localPath),
+                                    InstalledAt = DateTime.UtcNow
+                                });
+                                modified = true;
+                            }
                         }
                     }
                 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Models;
 using Xunit;
 
 namespace PocketMC.Desktop.Tests
@@ -42,7 +43,7 @@ namespace PocketMC.Desktop.Tests
             File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest));
 
             // Act
-            await service.SyncManifestAsync(_tempDir, null, true);
+            await service.SyncManifestAsync(_tempDir, null, new EngineCompatibility("Fabric"));
             var updated = await service.LoadManifestAsync(_tempDir);
 
             // Assert
@@ -69,7 +70,7 @@ namespace PocketMC.Desktop.Tests
             File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest));
 
             // Act
-            await service.SyncManifestAsync(_tempDir, null, true);
+            await service.SyncManifestAsync(_tempDir, null, new EngineCompatibility("Fabric"));
             var updated = await service.LoadManifestAsync(_tempDir);
 
             // Assert
