@@ -33,6 +33,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _restartCancellations = new();
     private readonly ConcurrentDictionary<Guid, DateTime> _sessionStartTimes = new();
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _startLocks = new();
+    private readonly SemaphoreSlim _portReservationLock = new(1, 1);
 
     public event Action<Guid, ServerState>? OnInstanceStateChanged;
     public event Action<Guid, int>? OnRestartCountdownTick;
@@ -90,22 +91,31 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
             {
                 try
                 {
-                    var preflightResult = _portPreflightService.Check(meta, instancePath);
-                    if (!preflightResult.IsSuccessful)
-                        throw CreatePortReliabilityException(new[] { preflightResult }, recoveryAttempt);
+                    await _portReservationLock.WaitAsync();
+                    try
+                    {
+                        var preflightResult = _portPreflightService.Check(meta, instancePath);
+                        if (!preflightResult.IsSuccessful)
+                            throw CreatePortReliabilityException(new[] { preflightResult }, recoveryAttempt);
 
-                    IReadOnlyList<PortCheckRequest> portRequests = _portPreflightService.BuildRequests(meta, instancePath);
-                    PortCheckResult[] failedProbeResults = _portProbeService.ProbeMany(portRequests)
-                        .Where(result => !result.IsSuccessful)
-                        .ToArray();
+                        IReadOnlyList<PortCheckRequest> portRequests = _portPreflightService.BuildRequests(meta, instancePath);
+                        PortCheckResult[] failedProbeResults = _portProbeService.ProbeMany(portRequests)
+                            .Where(result => !result.IsSuccessful)
+                            .ToArray();
 
-                    if (failedProbeResults.Length > 0)
-                        throw CreatePortReliabilityException(failedProbeResults, recoveryAttempt);
+                        if (failedProbeResults.Length > 0)
+                            throw CreatePortReliabilityException(failedProbeResults, recoveryAttempt);
 
-                    leasesAcquired = true;
-                    PortCheckResult? leaseFailure = TryReservePortLeases(meta, instancePath, portRequests);
-                    if (leaseFailure != null)
-                        throw CreatePortReliabilityException(new[] { leaseFailure }, recoveryAttempt);
+                        PortCheckResult? leaseFailure = TryReservePortLeases(meta, instancePath, portRequests);
+                        if (leaseFailure != null)
+                            throw CreatePortReliabilityException(new[] { leaseFailure }, recoveryAttempt);
+
+                        leasesAcquired = true;
+                    }
+                    finally
+                    {
+                        _portReservationLock.Release();
+                    }
 
                     break;
                 }
@@ -244,6 +254,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
             startLock.Dispose();
         }
 
+        _portReservationLock.Dispose();
         _startLocks.Clear();
         _sessionStartTimes.Clear();
         _lastStartTime.Clear();
@@ -317,6 +328,8 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
 
     private PortCheckResult? TryReservePortLeases(InstanceMetadata meta, string instancePath, IReadOnlyList<PortCheckRequest> portRequests)
     {
+        var reservedRequests = new List<PortCheckRequest>(portRequests.Count);
+
         foreach (PortCheckRequest request in portRequests)
         {
             var lease = new PortLease(
@@ -330,8 +343,11 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
 
             if (_portLeaseRegistry.TryReserve(lease, out PortLease? conflictingLease))
             {
+                reservedRequests.Add(request);
                 continue;
             }
+
+            ReleaseReservedPortLeases(meta.Id, reservedRequests);
 
             var conflict = new PortConflictInfo(
                 PortFailureCode.InUseByPocketMcInstance,
@@ -367,6 +383,19 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         }
 
         return null;
+    }
+
+    private void ReleaseReservedPortLeases(Guid instanceId, IReadOnlyList<PortCheckRequest> reservedRequests)
+    {
+        foreach (PortCheckRequest reserved in reservedRequests)
+        {
+            _portLeaseRegistry.Release(
+                instanceId,
+                reserved.Port,
+                reserved.Protocol,
+                reserved.IpMode,
+                reserved.BindAddress);
+        }
     }
 
     private void CleanupInstanceNetworking(Guid instanceId)
