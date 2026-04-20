@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PocketMC.Desktop.Features.Instances;
 
 namespace PocketMC.Desktop.Features.Mods;
 
@@ -283,9 +284,10 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
     private static string ResolveWorldDirectory(string serverDir)
     {
-        // BDS stores worlds under [server]/worlds/<WorldName>/
-        // Prefer the default directory but fall back to the first existing world dir.
-        string preferred = Path.Combine(serverDir, WorldsDir, DefaultWorldName);
+        // BDS stores worlds under [server]/worlds/<WorldName>/, where <WorldName>
+        // comes from server.properties -> level-name.
+        string configuredWorldName = ResolveConfiguredWorldName(serverDir);
+        string preferred = Path.Combine(serverDir, WorldsDir, configuredWorldName);
         if (Directory.Exists(preferred)) return preferred;
 
         var worldsParent = Path.Combine(serverDir, WorldsDir);
@@ -295,9 +297,22 @@ public sealed class BedrockAddonInstaller : IAddonManager
             if (first != null) return first;
         }
 
-        // If no world directory exists yet, create the default one.
+        // If no world directory exists yet, create the configured/default one.
         Directory.CreateDirectory(preferred);
         return preferred;
+    }
+
+    private static string ResolveConfiguredWorldName(string serverDir)
+    {
+        string propertiesPath = Path.Combine(serverDir, "server.properties");
+        Dictionary<string, string> properties = ServerPropertiesParser.Read(propertiesPath);
+        if (!properties.TryGetValue("level-name", out string? levelName) || string.IsNullOrWhiteSpace(levelName))
+        {
+            return DefaultWorldName;
+        }
+
+        string trimmed = levelName.Trim();
+        return string.Concat(trimmed.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
     }
 
     private static void CollectAddons(string dir, string addonType, List<AddonInfo> output)
