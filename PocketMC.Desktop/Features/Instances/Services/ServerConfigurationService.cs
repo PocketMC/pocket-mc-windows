@@ -136,6 +136,14 @@ public sealed class ServerConfigurationService
         props["max-players"] = configuration.MaxPlayers;
         props["server-port"] = configuration.ServerPort;
 
+        bool isBedrock = metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true || 
+                         metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
+        
+        if (isBedrock && int.TryParse(configuration.ServerPort, out int parsedPort))
+        {
+            props["server-portv6"] = (parsedPort + 1).ToString();
+        }
+
         if (!string.IsNullOrWhiteSpace(configuration.ServerIp))
         {
             props["server-ip"] = configuration.ServerIp;
