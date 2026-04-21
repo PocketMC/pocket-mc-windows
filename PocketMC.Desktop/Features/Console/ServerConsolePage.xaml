@@ -332,13 +332,9 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <ui:AutoSuggestBox x:Name="TxtCommand" Grid.Column="0" PlaceholderText="Type a command..."
-                               Margin="0,0,8,0"
-                               TextChanged="TxtCommand_TextChanged"
-                               SuggestionChosen="TxtCommand_SuggestionChosen"
-                               QuerySubmitted="TxtCommand_QuerySubmitted"
-                               KeyDown="TxtCommand_KeyDown"
-                               OriginalItemsSource="{Binding CommandSuggestions}"/>
+            <ui:TextBox x:Name="TxtCommand" Grid.Column="0" PlaceholderText="Type a command..."
+                        Margin="0,0,8,0"
+                        KeyDown="TxtCommand_KeyDown"/>
             <ui:Button Grid.Column="1" Content="Send" Appearance="Primary"
                        Icon="{ui:SymbolIcon Send24}" Click="BtnSend_Click" Cursor="Hand"/>
         </Grid>

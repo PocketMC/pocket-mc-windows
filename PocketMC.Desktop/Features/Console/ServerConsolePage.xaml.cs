@@ -72,8 +72,6 @@ namespace PocketMC.Desktop.Features.Console
 
         public ObservableCollection<LogLine> Logs { get; } = new();
         public ObservableCollection<LogLine> FilteredLogs { get; } = new();
-        public ObservableCollection<string> CommandSuggestions { get; } = new();
-        private readonly System.Collections.Generic.HashSet<string> _knownCommands = new();
         private readonly System.Collections.Generic.List<string> _commandHistory = new();
         private int _historyIndex = -1;
         private string _pendingCommandText = string.Empty;
@@ -176,11 +174,6 @@ namespace PocketMC.Desktop.Features.Console
                 CrashBanner.Visibility = Visibility.Visible;
             }
 
-            // 4. Initialize command suggestions
-            InitializeDefaultCommands();
-
-            // 5. Connect GotFocus for immediate suggestions
-            TxtCommand.GotFocus += TxtCommand_GotFocus;
         }
 
         private void ServerConsolePage_Loaded(object sender, RoutedEventArgs e)
@@ -198,76 +191,11 @@ namespace PocketMC.Desktop.Features.Console
             DetachHandlers();
         }
 
-        private void TxtCommand_GotFocus(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(TxtCommand.Text))
-            {
-                // Show common commands
-                var common = new[] { "list", "stop", "help", "save-all", "op", "whitelist" };
-                TxtCommand.ItemsSource = common;
-            }
 
-            // Try to force dropdown open if any items
-            if (TxtCommand.ItemsSource != null)
-            {
-                // In WPF-UI 3.x, TxtCommand might have a property to show suggestions manually
-                // or it might just show them automatically if they are present.
-            }
-        }
-
-        private void InitializeDefaultCommands()
-        {
-            var defaults = new[]
-            {
-                "advancement", "attribute", "ban", "ban-ip", "banlist", "bossbar", "clear", "clone", "data", "datapack",
-                "debug", "defaultgamemode", "deop", "difficulty", "effect", "enchant", "execute", "expr", "fill",
-                "forceload", "function", "gamemode", "gamerule", "give", "help", "item", "jfr", "kick", "kill", "list",
-                "locate", "loot", "me", "msg", "op", "pardon", "pardon-ip", "particle", "perf", "place", "recipe",
-                "reload", "ride", "save-all", "save-off", "save-on", "say", "schedule", "scoreboard", "seed", "setblock",
-                "setidletimeout", "setworldspawn", "spawnpoint", "spectate", "spreadplayers", "stop", "stopsound",
-                "summon", "tag", "team", "teammsg", "teleport", "tell", "tellraw", "tick", "time", "title", "tp",
-                "trigger", "weather", "whitelist", "worldborder"
-            };
-
-            foreach (var cmd in defaults)
-            {
-                _knownCommands.Add(cmd);
-                CommandSuggestions.Add(cmd);
-            }
-        }
 
         private void OnOutputReceived(string line)
         {
             _pendingLines.Enqueue(ColorizeLogLine(line));
-            ParseHelpOutput(line);
-        }
-
-        private readonly Regex _helpRegex = new(@"^\/?([a-zA-Z0-9\-_]+)", RegexOptions.Compiled);
-
-        private void ParseHelpOutput(string line)
-        {
-            // Extract the part after the standard Minecraft log template [timestamp INFO]: /...
-            // or [timestamp INFO]: command ... (no slash)
-            int infoIdx = line.IndexOf(" INFO]: ");
-            if (infoIdx == -1) return;
-
-            string content = line.Substring(infoIdx + 8).Trim();
-            if (content.StartsWith('/')) content = content.Substring(1);
-
-            int spaceIdx = content.IndexOf(' ');
-            string cmd = spaceIdx != -1 ? content.Substring(0, spaceIdx) : content;
-
-            // Clean up common help output chars
-            cmd = cmd.Trim('<', '>', '[', ']', '(', ')', ' ', ':', '-');
-
-            if (!string.IsNullOrEmpty(cmd) && cmd.Length > 1 && _knownCommands.Add(cmd))
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    CommandSuggestions.Add(cmd);
-                    _logger.LogTrace("Added new command from console output: {Command}", cmd);
-                });
-            }
         }
 
         private void OnErrorReceived(string line)
@@ -571,57 +499,7 @@ namespace PocketMC.Desktop.Features.Console
             }
         }
 
-        private void TxtCommand_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs e)
-        {
-            if (e.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-            {
-                string query = TxtCommand.Text;
-                if (string.IsNullOrEmpty(query))
-                {
-                    // If empty, show first few commands or null
-                    TxtCommand_GotFocus(sender, new RoutedEventArgs());
-                    return;
-                }
 
-                // If command has spaces, we're likely in arguments mode, don't show command suggestions
-                if (query.Contains(' '))
-                {
-                    TxtCommand.ItemsSource = null;
-                    return;
-                }
-
-                // Strip leading slash for filtering since the command list doesn't have them
-                string filterQuery = query.StartsWith('/') ? query.Substring(1) : query;
-
-                var filtered = CommandSuggestions
-                    .Where(c => c.StartsWith(filterQuery, StringComparison.OrdinalIgnoreCase))
-                    .OrderBy(c => c.Length)
-                    .ToList();
-
-                if (filtered.Count == 0)
-                {
-                    filtered = CommandSuggestions
-                        .Where(c => c.Contains(filterQuery, StringComparison.OrdinalIgnoreCase))
-                        .OrderBy(c => c.Length)
-                        .ToList();
-                }
-
-                TxtCommand.ItemsSource = filtered;
-            }
-        }
-
-        private void TxtCommand_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs e)
-        {
-            if (e.SelectedItem is string cmd)
-            {
-                TxtCommand.Text = cmd;
-            }
-        }
-
-        private async void TxtCommand_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs e)
-        {
-            await SendCommand();
-        }
 
         private void BtnCopyLogs_Click(object sender, RoutedEventArgs e)
         {
