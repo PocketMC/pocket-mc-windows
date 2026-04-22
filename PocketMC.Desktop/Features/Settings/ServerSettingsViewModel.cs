@@ -328,7 +328,7 @@ namespace PocketMC.Desktop.Features.Settings
         {
             if (result.RequiresClaim)
             {
-                return "⚠ Finish Playit claim.";
+                return "⚠ Connect Playit first.";
             }
 
             if (result.IsTokenInvalid)

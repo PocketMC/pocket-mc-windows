@@ -247,7 +247,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                     _portRecoveryService.Recommend(result);
                 }
 
-                _logger.LogInformation("Playit claim is still pending for instance {InstanceName}.", instanceName);
+                _logger.LogInformation("Playit needs to be connected before tunnel resolution can continue for {InstanceName}.", instanceName);
             }
             else if (resolution.IsTokenInvalid)
             {
@@ -305,7 +305,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         private void EnsurePlayitAgentRunning()
         {
             if (_playitAgentService.IsRunning) return;
-            if (_playitAgentService.State is PlayitAgentState.WaitingForClaim or PlayitAgentState.Starting) return;
+            if (_playitAgentService.State is PlayitAgentState.AwaitingSetupCode or PlayitAgentState.ProvisioningAgent or PlayitAgentState.Starting) return;
             _playitAgentService.Start();
         }
 

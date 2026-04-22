@@ -51,6 +51,12 @@ namespace PocketMC.Desktop.Features.Settings
                         settings.CurseForgeApiKey = DataProtector.Unprotect(settings.CurseForgeApiKey);
                     }
 
+                    if (!string.IsNullOrEmpty(settings.PlayitPartnerConnection?.AgentSecretKey))
+                    {
+                        settings.PlayitPartnerConnection.AgentSecretKey =
+                            DataProtector.Unprotect(settings.PlayitPartnerConnection.AgentSecretKey);
+                    }
+
                     if (settings.AiApiKeys != null)
                     {
                         foreach (var key in new System.Collections.Generic.List<string>(settings.AiApiKeys.Keys))
@@ -81,6 +87,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
 
             var originalCurseForgeKey = normalizedSettings.CurseForgeApiKey;
+            var originalPlayitSecret = normalizedSettings.PlayitPartnerConnection?.AgentSecretKey;
             var originalAiApiKeys = new System.Collections.Generic.Dictionary<string, string>(normalizedSettings.AiApiKeys, StringComparer.OrdinalIgnoreCase);
 
             try
@@ -88,6 +95,12 @@ namespace PocketMC.Desktop.Features.Settings
                 if (!string.IsNullOrEmpty(normalizedSettings.CurseForgeApiKey))
                 {
                     normalizedSettings.CurseForgeApiKey = DataProtector.Protect(normalizedSettings.CurseForgeApiKey);
+                }
+
+                if (!string.IsNullOrEmpty(normalizedSettings.PlayitPartnerConnection?.AgentSecretKey))
+                {
+                    normalizedSettings.PlayitPartnerConnection.AgentSecretKey =
+                        DataProtector.Protect(normalizedSettings.PlayitPartnerConnection.AgentSecretKey);
                 }
 
                 foreach (var kvp in originalAiApiKeys)
@@ -104,6 +117,10 @@ namespace PocketMC.Desktop.Features.Settings
             finally
             {
                 normalizedSettings.CurseForgeApiKey = originalCurseForgeKey;
+                if (normalizedSettings.PlayitPartnerConnection != null)
+                {
+                    normalizedSettings.PlayitPartnerConnection.AgentSecretKey = originalPlayitSecret;
+                }
                 
                 normalizedSettings.AiApiKeys.Clear();
                 foreach (var kvp in originalAiApiKeys)
@@ -117,6 +134,15 @@ namespace PocketMC.Desktop.Features.Settings
         {
             var effectiveSettings = Normalize(settings ?? Load());
             return Path.Combine(effectiveSettings.PlayitConfigDirectory!, "playit.toml");
+        }
+
+        private const string PlayitPartnerBackendUrl = "https://pocket-mc-proxy.onrender.com";
+
+        public string GetPlayitPartnerBackendUrl(AppSettings? settings = null)
+        {
+            // Dev override only — never exposed to users
+            string? fromEnvironment = Environment.GetEnvironmentVariable("POCKETMC_PLAYIT_BACKEND_URL");
+            return !string.IsNullOrWhiteSpace(fromEnvironment) ? fromEnvironment : PlayitPartnerBackendUrl;
         }
 
         private AppSettings CreateDefaultSettings()

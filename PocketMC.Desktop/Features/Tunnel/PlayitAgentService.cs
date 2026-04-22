@@ -40,6 +40,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         private readonly PlayitAgentStateMachine _stateMachine;
         private readonly ApplicationState _applicationState;
         private readonly SettingsManager _settingsManager;
+        private readonly PlayitPartnerProvisioningClient _partnerProvisioningClient;
         private readonly WindowsToastNotificationService _toastNotificationService;
         private readonly DownloaderService _downloaderService;
         private readonly ILogger<PlayitAgentService> _logger;
@@ -59,6 +60,8 @@ namespace PocketMC.Desktop.Features.Tunnel
         public bool IsDownloadingBinary => _isDownloadingBinary;
         public bool IsBinaryAvailable => _applicationState.IsConfigured && File.Exists(_applicationState.GetPlayitExecutablePath());
         public bool IsRunning => _processManager.IsRunning;
+        public string? LastErrorMessage { get; private set; }
+        public PlayitPartnerConnection? PartnerConnection => _applicationState.Settings.PlayitPartnerConnection;
 
         public event EventHandler<string>? OnClaimUrlReceived;
         public event EventHandler? OnTunnelRunning;
@@ -72,6 +75,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             SettingsManager settingsManager,
             PlayitAgentProcessManager processManager,
             PlayitAgentStateMachine stateMachine,
+            PlayitPartnerProvisioningClient partnerProvisioningClient,
             WindowsToastNotificationService toastNotificationService,
             DownloaderService downloaderService,
             ILogger<PlayitAgentService> logger)
@@ -80,6 +84,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             _settingsManager = settingsManager;
             _processManager = processManager;
             _stateMachine = stateMachine;
+            _partnerProvisioningClient = partnerProvisioningClient;
             _toastNotificationService = toastNotificationService;
             _downloaderService = downloaderService;
             _logger = logger;
@@ -94,9 +99,11 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             CancelPendingRestart();
             if (IsRunning) return;
+            LastErrorMessage = null;
 
             if (!_applicationState.IsConfigured)
             {
+                LastErrorMessage = "PocketMC is not configured yet.";
                 _stateMachine.TransitionTo(PlayitAgentState.Error);
                 return;
             }
@@ -104,11 +111,25 @@ namespace PocketMC.Desktop.Features.Tunnel
             string playitPath = _applicationState.GetPlayitExecutablePath();
             if (!File.Exists(playitPath))
             {
+                LastErrorMessage = "playit.exe is missing.";
                 _stateMachine.TransitionTo(PlayitAgentState.Error);
                 _processManager.Log("ERROR: playit.exe not found at " + playitPath);
                 return;
             }
 
+            TryImportLegacyTomlConnection();
+            string? secretKey = _applicationState.Settings.PlayitPartnerConnection?.AgentSecretKey;
+            if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                if (State != PlayitAgentState.ReauthRequired)
+                {
+                    _stateMachine.TransitionTo(PlayitAgentState.AwaitingSetupCode);
+                }
+
+                return;
+            }
+
+            EnsureRuntimeToml(secretKey);
             _claimUrlAlreadyFired = false;
             _tunnelRunningAlreadyFired = false;
             _manualStopRequested = false;
@@ -126,6 +147,64 @@ namespace PocketMC.Desktop.Features.Tunnel
             _processManager.Stop();
             _stateMachine.TransitionTo(PlayitAgentState.Stopped);
             Interlocked.Exchange(ref _unexpectedRestartAttempts, 0);
+        }
+
+        public async Task<PlayitPartnerCreateAgentResult> ConnectWithSetupCodeAsync(string setupCode, CancellationToken token = default)
+        {
+            LastErrorMessage = null;
+
+            if (!_applicationState.IsConfigured)
+            {
+                LastErrorMessage = "PocketMC is not configured yet.";
+                _stateMachine.TransitionTo(PlayitAgentState.Error);
+                return new PlayitPartnerCreateAgentResult { Success = false, ErrorMessage = LastErrorMessage };
+            }
+
+            string playitPath = _applicationState.GetPlayitExecutablePath();
+            if (!File.Exists(playitPath))
+            {
+                LastErrorMessage = "Download the Playit agent before connecting.";
+                _stateMachine.TransitionTo(PlayitAgentState.Error);
+                return new PlayitPartnerCreateAgentResult { Success = false, ErrorMessage = LastErrorMessage };
+            }
+
+            _stateMachine.TransitionTo(PlayitAgentState.ProvisioningAgent);
+            PlayitPartnerAgentVersion agentVersion = PlayitEmbeddedAgentVersionResolver.Resolve(playitPath);
+            PlayitPartnerCreateAgentResult result = await _partnerProvisioningClient.CreateAgentAsync(
+                new PlayitPartnerCreateAgentRequest
+                {
+                    SetupCode = setupCode.Trim(),
+                    AgentVersion = agentVersion
+                },
+                token);
+
+            if (!result.Success || result.Response == null)
+            {
+                LastErrorMessage = result.ErrorMessage;
+                _stateMachine.TransitionTo(PlayitAgentState.AwaitingSetupCode);
+                return result;
+            }
+
+            SavePartnerConnection(
+                result.Response.AgentId,
+                result.Response.AgentSecretKey,
+                result.Response.AccountId,
+                result.Response.ConnectedEmail,
+                agentVersion.ToString());
+
+            Stop();
+            _manualStopRequested = false;
+            Start();
+            return result;
+        }
+
+        public void Disconnect()
+        {
+            Stop();
+            ClearPartnerConnection();
+            DeleteRuntimeToml();
+            LastErrorMessage = null;
+            _stateMachine.TransitionTo(PlayitAgentState.Disconnected);
         }
 
         public async Task RestartAsync(int delayMs = 500, CancellationToken token = default)
@@ -152,13 +231,14 @@ namespace PocketMC.Desktop.Features.Tunnel
             if (claimMatch.Success && !_claimUrlAlreadyFired)
             {
                 _claimUrlAlreadyFired = true;
-                _stateMachine.TransitionTo(PlayitAgentState.WaitingForClaim);
-                OnClaimUrlReceived?.Invoke(this, claimMatch.Groups["url"].Value);
+                LastErrorMessage = "The Playit agent requested a manual claim flow. Reconnect PocketMC with a fresh setup code.";
+                _stateMachine.TransitionTo(PlayitAgentState.ReauthRequired);
             }
 
             if (TunnelRunningRegex.IsMatch(line) && !_tunnelRunningAlreadyFired)
             {
                 _tunnelRunningAlreadyFired = true;
+                LastErrorMessage = null;
                 _stateMachine.TransitionTo(PlayitAgentState.Connected);
                 _toastNotificationService.ShowAgentConnected();
                 OnTunnelRunning?.Invoke(this, EventArgs.Empty);
@@ -176,7 +256,9 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return;
             }
 
-            if (State == PlayitAgentState.Connected || State == PlayitAgentState.Starting || State == PlayitAgentState.WaitingForClaim)
+            if (State == PlayitAgentState.Connected ||
+                State == PlayitAgentState.Starting ||
+                State == PlayitAgentState.ProvisioningAgent)
             {
                 _stateMachine.TransitionTo(PlayitAgentState.Error);
                 OnAgentExited?.Invoke(this, exitCode);
@@ -212,15 +294,13 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private void RecoverFromInvalidSecret()
         {
-            _processManager.Log("INFO: Invalid secret detected. Deleting config and restarting...");
-            try
-            {
-                string tomlPath = _settingsManager.GetPlayitTomlPath(_applicationState.Settings);
-                if (File.Exists(tomlPath)) File.Delete(tomlPath);
-            }
-            catch (Exception ex) { _logger.LogWarning(ex, "Failed to delete playit config."); }
-
-            _ = Task.Run(async () => { Stop(); await Task.Delay(500); _manualStopRequested = false; Start(); });
+            _processManager.Log("INFO: Invalid secret detected. Clearing saved Playit credentials.");
+            ClearPartnerConnection();
+            DeleteRuntimeToml();
+            LastErrorMessage = "The saved Playit credentials are no longer valid. Reconnect with a new setup code.";
+            _manualStopRequested = true;
+            _processManager.Stop();
+            _stateMachine.TransitionTo(PlayitAgentState.ReauthRequired);
         }
 
         private void CancelPendingRestart()
@@ -228,6 +308,98 @@ namespace PocketMC.Desktop.Features.Tunnel
             _restartDelayCancellation?.Cancel();
             _restartDelayCancellation?.Dispose();
             _restartDelayCancellation = null;
+        }
+
+        private void SavePartnerConnection(string agentId, string agentSecretKey, long? accountId, string? connectedEmail, string agentVersion)
+        {
+            var settings = _settingsManager.Load();
+            settings.PlayitPartnerConnection = new PlayitPartnerConnection
+            {
+                AgentId = agentId,
+                AgentSecretKey = agentSecretKey,
+                AccountId = accountId,
+                ConnectedEmail = connectedEmail,
+                Platform = "windows",
+                AgentVersion = agentVersion,
+                ConnectedAtUtc = DateTimeOffset.UtcNow
+            };
+
+            _settingsManager.Save(settings);
+            _applicationState.ApplySettings(settings);
+        }
+
+        private void ClearPartnerConnection()
+        {
+            var settings = _settingsManager.Load();
+            settings.PlayitPartnerConnection = null;
+            _settingsManager.Save(settings);
+            _applicationState.ApplySettings(settings);
+        }
+
+        private void TryImportLegacyTomlConnection()
+        {
+            if (!string.IsNullOrWhiteSpace(_applicationState.Settings.PlayitPartnerConnection?.AgentSecretKey))
+            {
+                return;
+            }
+
+            string tomlPath = _settingsManager.GetPlayitTomlPath(_applicationState.Settings);
+            if (!File.Exists(tomlPath))
+            {
+                return;
+            }
+
+            string? secretKey = null;
+            try
+            {
+                string content = File.ReadAllText(tomlPath);
+                Match match = Regex.Match(content, @"secret_key\s*=\s*""([^""]+)""");
+                secretKey = match.Success ? match.Groups[1].Value : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to import a legacy Playit TOML secret.");
+            }
+
+            if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                return;
+            }
+
+            SavePartnerConnection(
+                _applicationState.Settings.PlayitPartnerConnection?.AgentId ?? string.Empty,
+                secretKey,
+                _applicationState.Settings.PlayitPartnerConnection?.AccountId,
+                _applicationState.Settings.PlayitPartnerConnection?.ConnectedEmail,
+                PlayitEmbeddedAgentVersionResolver.Resolve(_applicationState.GetPlayitExecutablePath()).ToString());
+        }
+
+        private void EnsureRuntimeToml(string secretKey)
+        {
+            string tomlPath = _settingsManager.GetPlayitTomlPath(_applicationState.Settings);
+            string? directory = Path.GetDirectoryName(tomlPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllText(tomlPath, $"secret_key = \"{secretKey}\"{Environment.NewLine}");
+        }
+
+        private void DeleteRuntimeToml()
+        {
+            try
+            {
+                string tomlPath = _settingsManager.GetPlayitTomlPath(_applicationState.Settings);
+                if (File.Exists(tomlPath))
+                {
+                    File.Delete(tomlPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete playit config.");
+            }
         }
 
         public async Task DownloadAgentAsync()

@@ -125,6 +125,7 @@ namespace PocketMC.Desktop.Composition
 
         public static IServiceCollection AddTunneling(this IServiceCollection services)
         {
+            services.AddHttpClient<PlayitPartnerProvisioningClient>(SetDefaultUserAgent);
             services.AddSingleton<PlayitAgentProcessManager>();
             services.AddSingleton<PlayitAgentStateMachine>();
             services.AddSingleton<PlayitApiClient>();

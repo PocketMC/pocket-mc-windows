@@ -2,10 +2,22 @@ using System;
 
 namespace PocketMC.Desktop.Models
 {
+    public class PlayitPartnerConnection
+    {
+        public string? AgentId { get; set; }
+        public string? AgentSecretKey { get; set; }
+        public long? AccountId { get; set; }
+        public string? ConnectedEmail { get; set; }
+        public string? Platform { get; set; }
+        public string? AgentVersion { get; set; }
+        public DateTimeOffset? ConnectedAtUtc { get; set; }
+    }
+
     public class AppSettings
     {
         public string? AppRootPath { get; set; }
         public string? PlayitConfigDirectory { get; set; }
+        public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }
         public bool HasCompletedFirstLaunch { get; set; }
         public bool EnableMicaEffect { get; set; } = true;
         public string? CurseForgeApiKey { get; set; }

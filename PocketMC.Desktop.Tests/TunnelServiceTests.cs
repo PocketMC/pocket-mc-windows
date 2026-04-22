@@ -83,10 +83,38 @@ public sealed class TunnelServiceTests
                       "status": "success",
                       "data": {
                         "tunnels": [
-                          { "id": "1", "name": "a", "tunnel_type": "minecraft-java", "alloc": { "status": "ok", "data": { "ip_hostname": "a.example.com", "port_start": 1 } }, "origin": { "type": "tcp", "data": { "local_port": 25565 } } },
-                          { "id": "2", "name": "b", "tunnel_type": "minecraft-bedrock", "alloc": { "status": "ok", "data": { "ip_hostname": "b.example.com", "port_start": 2 } }, "origin": { "type": "udp", "data": { "local_port": 19132 } } },
-                          { "id": "3", "name": "c", "tunnel_type": "tcp", "alloc": { "status": "ok", "data": { "ip_hostname": "c.example.com", "port_start": 3 } }, "origin": { "type": "tcp", "data": { "local_port": 25566 } } },
-                          { "id": "4", "name": "d", "tunnel_type": "udp", "alloc": { "status": "ok", "data": { "ip_hostname": "d.example.com", "port_start": 4 } }, "origin": { "type": "udp", "data": { "local_port": 19133 } } }
+                          {
+                            "id": "1",
+                            "name": "a",
+                            "tunnel_type": "minecraft-java",
+                            "connect_addresses": [{ "type": "domain", "value": { "address": "a.example.com:1" } }],
+                            "public_allocations": [{ "type": "PortAllocation", "details": { "ip": "10.0.0.1", "port": 1 } }],
+                            "origin": { "type": "agent", "details": { "config_data": { "fields": [{ "name": "local_port", "value": "25565" }] } } }
+                          },
+                          {
+                            "id": "2",
+                            "name": "b",
+                            "tunnel_type": "minecraft-bedrock",
+                            "connect_addresses": [{ "type": "domain", "value": { "address": "b.example.com:2" } }],
+                            "public_allocations": [{ "type": "PortAllocation", "details": { "ip": "10.0.0.2", "port": 2 } }],
+                            "origin": { "type": "agent", "details": { "config_data": { "fields": [{ "name": "local_port", "value": "19132" }] } } }
+                          },
+                          {
+                            "id": "3",
+                            "name": "c",
+                            "tunnel_type": "tcp",
+                            "connect_addresses": [{ "type": "domain", "value": { "address": "c.example.com:3" } }],
+                            "public_allocations": [{ "type": "PortAllocation", "details": { "ip": "10.0.0.3", "port": 3 } }],
+                            "origin": { "type": "agent", "details": { "config_data": { "fields": [{ "name": "local_port", "value": "25566" }] } } }
+                          },
+                          {
+                            "id": "4",
+                            "name": "d",
+                            "tunnel_type": "udp",
+                            "connect_addresses": [{ "type": "domain", "value": { "address": "d.example.com:4" } }],
+                            "public_allocations": [{ "type": "PortAllocation", "details": { "ip": "10.0.0.4", "port": 4 } }],
+                            "origin": { "type": "agent", "details": { "config_data": { "fields": [{ "name": "local_port", "value": "19133" }] } } }
+                          }
                         ]
                       }
                     }

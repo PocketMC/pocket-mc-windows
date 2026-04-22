@@ -56,7 +56,6 @@ namespace PocketMC.Desktop.Features.Shell
         public void AttachHost(IStartupShellHost host)
         {
             _host = host;
-            _playitAgentService.OnClaimUrlReceived += OnPlayitClaimUrlReceived;
             _playitAgentService.OnTunnelRunning += OnPlayitTunnelRunning;
         }
 
@@ -108,7 +107,6 @@ namespace PocketMC.Desktop.Features.Shell
                 return;
             }
 
-            _playitAgentService.OnClaimUrlReceived -= OnPlayitClaimUrlReceived;
             _playitAgentService.OnTunnelRunning -= OnPlayitTunnelRunning;
             _backupScheduler.Stop();
             _healthMonitor.StopMonitoring();
@@ -176,11 +174,6 @@ namespace PocketMC.Desktop.Features.Shell
             {
                 _logger.LogWarning(ex, "Playit auto-connect failed during app startup. The user can retry from the Tunnel page.");
             }
-        }
-
-        private void OnPlayitClaimUrlReceived(object? sender, string claimUrl)
-        {
-            _host?.NavigateToPlayitGuide(claimUrl, navigateToDashboardOnCompletion: !_settingsManager.Load().HasCompletedFirstLaunch);
         }
 
         private void OnPlayitTunnelRunning(object? sender, EventArgs e)

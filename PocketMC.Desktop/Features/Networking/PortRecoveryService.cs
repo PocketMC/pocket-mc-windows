@@ -158,8 +158,8 @@ public sealed class PortRecoveryService
 
             PortFailureCode.PlayitClaimRequired => CreateAbortRecommendation(
                 result,
-                "Claim the Playit agent",
-                "The Playit agent needs to be claimed before PocketMC can continue tunnel setup.",
+                "Connect Playit",
+                "PocketMC needs a linked Playit agent before it can continue tunnel setup.",
                 attemptNumber,
                 maxRetryAttempts),
 

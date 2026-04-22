@@ -8,9 +8,11 @@ namespace PocketMC.Desktop.Features.Tunnel
     public enum PlayitAgentState
     {
         Stopped,
+        AwaitingSetupCode,
+        ProvisioningAgent,
         Starting,
-        WaitingForClaim,
         Connected,
+        ReauthRequired,
         Error,
         Disconnected
     }

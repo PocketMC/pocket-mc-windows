@@ -75,7 +75,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 PortFailureCode.TunnelLimitReached => $"No Playit tunnel slots are available for {request.DisplayName} port {request.Port}.",
                 PortFailureCode.PlayitAgentOffline => "The Playit agent is not connected.",
                 PortFailureCode.PlayitTokenInvalid => "The Playit agent token is invalid or expired.",
-                PortFailureCode.PlayitClaimRequired => "The Playit agent must be claimed before tunnel resolution can continue.",
+                PortFailureCode.PlayitClaimRequired => "PocketMC needs a linked Playit agent before tunnel resolution can continue.",
                 PortFailureCode.PublicReachabilityFailure => $"PocketMC could not resolve a public Playit address for {request.DisplayName} port {request.Port}.",
                 _ => $"Tunnel resolution failed for port {request.Port}."
             };
@@ -109,6 +109,28 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         public async Task<TunnelResolutionResult> ResolveTunnelAsync(PortCheckRequest request)
         {
+            if (_agentService.State == PlayitAgentState.ReauthRequired)
+            {
+                return new TunnelResolutionResult
+                {
+                    Status = TunnelResolutionResult.TunnelStatus.Error,
+                    ErrorMessage = _agentService.LastErrorMessage ?? "The Playit credentials must be refreshed before PocketMC can resolve tunnels.",
+                    IsTokenInvalid = true,
+                    FailureCode = PortFailureCode.PlayitTokenInvalid
+                };
+            }
+
+            if (_agentService.State == PlayitAgentState.AwaitingSetupCode)
+            {
+                return new TunnelResolutionResult
+                {
+                    Status = TunnelResolutionResult.TunnelStatus.Error,
+                    ErrorMessage = "PocketMC must be linked to Playit before tunnel resolution can continue.",
+                    RequiresClaim = true,
+                    FailureCode = PortFailureCode.PlayitClaimRequired
+                };
+            }
+
             if (_agentService.State != PlayitAgentState.Connected &&
                 _agentService.State != PlayitAgentState.Starting)
             {

@@ -49,7 +49,7 @@ public sealed class PortFailureMessageService
             PortFailureCode.TunnelLimitReached => "Tunnel Limit Reached",
             PortFailureCode.PlayitAgentOffline => "Playit Agent Offline",
             PortFailureCode.PlayitTokenInvalid => "Playit Reconnect Required",
-            PortFailureCode.PlayitClaimRequired => "Finish Playit Claim",
+            PortFailureCode.PlayitClaimRequired => "Connect Playit",
             PortFailureCode.PublicReachabilityFailure => "Public Connection Failed",
             _ => "Port Check Failed"
         };
@@ -94,7 +94,7 @@ public sealed class PortFailureMessageService
                 "PocketMC could not reach Playit because the saved agent token is invalid or expired.",
 
             PortFailureCode.PlayitClaimRequired =>
-                "The Playit agent still needs to be claimed before PocketMC can use it for tunnels.",
+                "PocketMC needs a linked Playit agent before it can use Playit tunnels.",
 
             PortFailureCode.PublicReachabilityFailure =>
                 $"'{instanceName}' may be running locally, but PocketMC could not resolve the expected public address for {portText}.",
@@ -142,7 +142,7 @@ public sealed class PortFailureMessageService
                 "Open the Tunnel page and reconnect Playit.",
 
             PortFailureCode.PlayitClaimRequired =>
-                "Finish the Playit claim flow in your browser, then start the server again.",
+                "Open the Tunnel page, create a Playit setup code, and link PocketMC before starting the server again.",
 
             PortFailureCode.PublicReachabilityFailure =>
                 BuildPublicReachabilityAction(result),
@@ -224,7 +224,7 @@ public sealed class PortFailureMessageService
             PortFailureCode.InUseByExternalProcess or PortFailureCode.TcpConflict or PortFailureCode.UdpConflict => "Port: in use",
             PortFailureCode.PlayitAgentOffline => "Port: Playit",
             PortFailureCode.PlayitTokenInvalid => "Port: reconnect",
-            PortFailureCode.PlayitClaimRequired => "Port: claim",
+            PortFailureCode.PlayitClaimRequired => "Port: connect",
             PortFailureCode.PublicReachabilityFailure => "Port: public",
             _ => "Port issue"
         };

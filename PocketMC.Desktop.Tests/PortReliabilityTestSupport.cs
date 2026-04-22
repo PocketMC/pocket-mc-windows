@@ -177,11 +177,29 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             NullLogger<PlayitAgentProcessManager>.Instance);
         var stateMachine = new PlayitAgentStateMachine();
         var toastService = new WindowsToastNotificationService(NullLogger<WindowsToastNotificationService>.Instance);
+        var partnerClient = new PlayitPartnerProvisioningClient(
+            AppState,
+            SettingsManager,
+            NullLogger<PlayitPartnerProvisioningClient>.Instance,
+            new HttpClient(new DelegateHttpMessageHandler((_, _) =>
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """
+                        {
+                          "accountId": 1,
+                          "agentId": "test-agent",
+                          "agentSecretKey": "test-secret",
+                          "agentOverLimit": false
+                        }
+                        """)
+                })));
         var agentService = new PlayitAgentService(
             AppState,
             SettingsManager,
             processManager,
             stateMachine,
+            partnerClient,
             toastService,
             CreateDownloaderService(),
             NullLogger<PlayitAgentService>.Instance);
