@@ -13,6 +13,7 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Desktop.Features.Settings;
 
 namespace PocketMC.Desktop.Features.Java
 {
@@ -27,6 +28,7 @@ namespace PocketMC.Desktop.Features.Java
         private readonly ApplicationState _applicationState;
         private readonly JavaAdoptiumClient _adoptiumClient;
         private readonly JavaRuntimeValidator _validator;
+        private readonly SettingsManager _settingsManager;
         private readonly ILogger<JavaProvisioningService> _logger;
 
         private readonly ConcurrentDictionary<int, Task> _inflightProvisioning = new();
@@ -42,12 +44,14 @@ namespace PocketMC.Desktop.Features.Java
             ApplicationState applicationState,
             JavaAdoptiumClient adoptiumClient,
             JavaRuntimeValidator validator,
+            SettingsManager settingsManager,
             ILogger<JavaProvisioningService> logger)
         {
             _downloader = downloader;
             _applicationState = applicationState;
             _adoptiumClient = adoptiumClient;
             _validator = validator;
+            _settingsManager = settingsManager;
             _logger = logger;
         }
 
@@ -73,7 +77,7 @@ namespace PocketMC.Desktop.Features.Java
 
         public Task EnsureBundledRuntimesAsync(CancellationToken cancellationToken = default)
         {
-            return EnsureVersionsAsync(JavaRuntimeResolver.GetBundledJavaVersions(), ignoreAutomaticRetryCooldown: true, cancellationToken);
+            return EnsureVersionsAsync(JavaRuntimeResolver.GetBundledJavaVersions(), ignoreAutomaticRetryCooldown: true, isManualUserTriggered: true, cancellationToken);
         }
 
         public void StartBackgroundProvisioning()
@@ -87,14 +91,24 @@ namespace PocketMC.Desktop.Features.Java
 
                 _backgroundProvisioningTask = Task.Run(async () =>
                 {
-                    try { await EnsureVersionsAsync(JavaRuntimeResolver.GetBundledJavaVersions(), ignoreAutomaticRetryCooldown: false, CancellationToken.None); }
+                    try { await EnsureVersionsAsync(JavaRuntimeResolver.GetBundledJavaVersions(), ignoreAutomaticRetryCooldown: false, isManualUserTriggered: false, CancellationToken.None); }
                     catch (Exception ex) { _logger.LogWarning(ex, "Background Java provisioning incomplete."); }
                 });
             }
         }
 
-        public virtual async Task EnsureJavaAsync(int version, CancellationToken cancellationToken = default)
+        public virtual async Task EnsureJavaAsync(int version, bool isManualUserTriggered = false, CancellationToken cancellationToken = default)
         {
+            var settings = _settingsManager.Load();
+            if (isManualUserTriggered && settings.UserRemovedJavaVersions.Contains(version))
+            {
+                settings.UserRemovedJavaVersions.Remove(version);
+                _settingsManager.Save(settings);
+            }
+            else if (!isManualUserTriggered && settings.UserRemovedJavaVersions.Contains(version))
+            {
+                return;
+            }
             if (IsJavaVersionPresent(version))
             {
                 PublishStatus(version, JavaProvisioningStage.Ready, "Runtime is installed and ready.", 100, isInstalled: true);
@@ -114,17 +128,22 @@ namespace PocketMC.Desktop.Features.Java
             }
         }
 
-        private async Task EnsureVersionsAsync(IEnumerable<int> versions, bool ignoreAutomaticRetryCooldown, CancellationToken cancellationToken)
+        private async Task EnsureVersionsAsync(IEnumerable<int> versions, bool ignoreAutomaticRetryCooldown, bool isManualUserTriggered, CancellationToken cancellationToken)
         {
+            var settings = _settingsManager.Load();
             foreach (int version in versions.Distinct().OrderBy(v => v))
             {
+                if (!isManualUserTriggered && settings.UserRemovedJavaVersions.Contains(version))
+                {
+                    continue;
+                }
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!ignoreAutomaticRetryCooldown && ShouldSkipAutomaticRetry(version, out var blockedUntil))
                 {
                     PublishAutomaticRetryDeferredStatus(version, blockedUntil);
                     continue;
                 }
-                await EnsureJavaAsync(version, cancellationToken);
+                await EnsureJavaAsync(version, isManualUserTriggered, cancellationToken);
             }
         }
 

@@ -57,6 +57,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Version tile -->
@@ -116,6 +117,17 @@
                                            Click="BtnDelete_Click"
                                            Tag="{Binding}"
                                            Visibility="{Binding DeleteVisibility}"
+                                           VerticalAlignment="Center"
+                                           Cursor="Hand" Margin="0,0,8,0"/>
+
+                                <!-- Download button (subtle, icon-only) -->
+                                <ui:Button Grid.Column="4"
+                                           Icon="{ui:SymbolIcon ArrowDownload24}"
+                                           Appearance="Primary"
+                                           ToolTip="Download this runtime"
+                                           Click="BtnDownloadSingle_Click"
+                                           Tag="{Binding}"
+                                           Visibility="{Binding DownloadVisibility}"
                                            VerticalAlignment="Center"
                                            Cursor="Hand"/>
                             </Grid>

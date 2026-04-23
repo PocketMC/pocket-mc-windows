@@ -166,13 +166,12 @@ public sealed class PortFailureMessageService
 
     private static string BuildExternalConflictAction(PortCheckResult result, string? suggestedPortText)
     {
-        string baseAction = suggestedPortText ?? "choose another port in Settings.";
         if (result.Request.Protocol == PortProtocol.Udp)
         {
-            return $"Close the app using this UDP port, {baseAction} Also check Windows Firewall and Bedrock loopback settings for Bedrock/Geyser servers.";
+            return "A background process or another game server is currently using this UDP port. You must stop that process before starting this server. Also check Windows Firewall and Bedrock loopback settings for Bedrock/Geyser servers.";
         }
 
-        return $"Close the app using this port, or {baseAction}";
+        return "A background process or another game server is currently using this port. You must stop that process before starting this server.";
     }
 
     private static string BuildBindFailureAction(PortCheckResult result, string? suggestedPortText)

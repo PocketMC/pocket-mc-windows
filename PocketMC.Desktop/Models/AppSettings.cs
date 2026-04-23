@@ -30,6 +30,7 @@ namespace PocketMC.Desktop.Models
         public string AiProvider { get; set; } = "Gemini";
         public bool AlwaysAutoSummarize { get; set; } = false;
 
+
         public string? GetCurrentAiKey() => AiApiKeys.TryGetValue(AiProvider, out var key) ? key : null;
         
         // Disaster Recovery
@@ -37,5 +38,8 @@ namespace PocketMC.Desktop.Models
 
         // Console Settings
         public int ConsoleBufferSize { get; set; } = 5000;
+
+        // User Intent Flags
+        public System.Collections.Generic.HashSet<int> UserRemovedJavaVersions { get; set; } = new();
     }
 }

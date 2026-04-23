@@ -177,6 +177,9 @@ namespace PocketMC.Desktop.Features.Setup
         // ── Delete button ──
         public Visibility DeleteVisibility => IsInstalled && !IsProvisioning ? Visibility.Visible : Visibility.Collapsed;
 
+        // ── Download button ──
+        public Visibility DownloadVisibility => !IsInstalled && !IsCustom && !IsProvisioning ? Visibility.Visible : Visibility.Collapsed;
+
         public void Refresh()
         {
             OnPropertyChanged(nameof(IsInstalled));
@@ -191,6 +194,7 @@ namespace PocketMC.Desktop.Features.Setup
             OnPropertyChanged(nameof(StatusIconForeground));
             OnPropertyChanged(nameof(StatusBackground));
             OnPropertyChanged(nameof(DeleteVisibility));
+            OnPropertyChanged(nameof(DownloadVisibility));
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -203,17 +207,26 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly ApplicationState _applicationState;
         private readonly JavaProvisioningService _javaProvisioning;
         private readonly ILogger<JavaSetupPage> _logger;
+        private readonly PocketMC.Desktop.Features.Settings.SettingsManager _settingsManager;
+        private readonly InstanceRegistry _instanceRegistry;
+        private readonly ServerProcessManager _processManager;
         private bool _isSubscribedToProvisioning;
         public ObservableCollection<JavaRuntimeEntry> Runtimes { get; } = new();
 
         public JavaSetupPage(
             ApplicationState applicationState,
             JavaProvisioningService javaProvisioning,
+            PocketMC.Desktop.Features.Settings.SettingsManager settingsManager,
+            InstanceRegistry instanceRegistry,
+            ServerProcessManager processManager,
             ILogger<JavaSetupPage> logger)
         {
             InitializeComponent();
             _applicationState = applicationState;
             _javaProvisioning = javaProvisioning;
+            _settingsManager = settingsManager;
+            _instanceRegistry = instanceRegistry;
+            _processManager = processManager;
             _logger = logger;
             RuntimeList.ItemsSource = Runtimes;
             Loaded += OnLoaded;
@@ -406,6 +419,36 @@ namespace PocketMC.Desktop.Features.Setup
         {
             if (sender is FrameworkElement fe && fe.Tag is JavaRuntimeEntry entry && entry.Path != null)
             {
+                var runningInstances = _processManager.ActiveProcesses.Keys
+                    .Select(id => _instanceRegistry.GetById(id))
+                    .Where(m => m != null);
+
+                bool isUsedByRunningServer = false;
+                foreach (var meta in runningInstances)
+                {
+                    string javaPath = JavaRuntimeResolver.ResolveJavaPath(meta!, _applicationState.GetRequiredAppRootPath());
+                    if (!entry.IsCustom && JavaRuntimeResolver.IsBundledJavaPath(javaPath, entry.Version, _applicationState.GetRequiredAppRootPath()))
+                    {
+                        isUsedByRunningServer = true;
+                        break;
+                    }
+                    if (entry.IsCustom && javaPath.StartsWith(entry.Path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isUsedByRunningServer = true;
+                        break;
+                    }
+                }
+
+                if (isUsedByRunningServer)
+                {
+                    System.Windows.MessageBox.Show(
+                        $"Cannot delete {entry.DisplayName} because it is currently in use by a running server.",
+                        "Cannot Delete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
                 var result = System.Windows.MessageBox.Show(
                     $"Delete {entry.DisplayName}?\n\nPath: {entry.Path}\n\nYou can re-download bundled runtimes at any time.",
                     "Confirm Delete",
@@ -416,6 +459,13 @@ namespace PocketMC.Desktop.Features.Setup
                 {
                     try
                     {
+                        if (!entry.IsCustom)
+                        {
+                            var settings = _settingsManager.Load();
+                            settings.UserRemovedJavaVersions.Add(entry.Version);
+                            _settingsManager.Save(settings);
+                        }
+
                         if (Directory.Exists(entry.Path))
                             Directory.Delete(entry.Path, true);
 
@@ -424,13 +474,47 @@ namespace PocketMC.Desktop.Features.Setup
                     }
                     catch (Exception ex)
                     {
+                        if (!entry.IsCustom)
+                        {
+                            var settings = _settingsManager.Load();
+                            settings.UserRemovedJavaVersions.Remove(entry.Version);
+                            _settingsManager.Save(settings);
+                        }
+
                         _logger.LogError(ex, "Failed to delete runtime at {Path}.", entry.Path);
                         System.Windows.MessageBox.Show(
                             $"Failed to delete: {ex.Message}",
                             "Error",
                             MessageBoxButton.OK,
-                            MessageBoxImage.Error);
+                        MessageBoxImage.Error);
                     }
+                }
+            }
+        }
+        // ──────────────────────────────────────────────
+        //  Download Single
+        // ──────────────────────────────────────────────
+
+        private async void BtnDownloadSingle_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is JavaRuntimeEntry entry && !entry.IsCustom)
+            {
+                try
+                {
+                    await _javaProvisioning.EnsureJavaAsync(entry.Version, isManualUserTriggered: true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to download single runtime.");
+                    System.Windows.MessageBox.Show(
+                        $"Failed to start download: {ex.Message}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+                finally
+                {
+                    UpdateGlobalStatus();
                 }
             }
         }
