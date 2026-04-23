@@ -122,7 +122,7 @@ public class ControlledNavigationStackTests
     {
         var stack = new ControlledNavigationStack();
         stack.Push(
-            NavigationRouteKind.PlayitGuide,
+            NavigationRouteKind.TunnelCreationGuide,
             NavigationBackTarget.ShellRoute(NavigationRouteKind.Tunnel),
             clearExistingStack: true);
 
