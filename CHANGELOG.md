@@ -1,6 +1,20 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.5.3`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.5.4`.
+
+## v1.5.4 - Playit.gg Connection Gate & Settings Refactor
+
+### 🚀 Playit.gg Connectivity Gate
+* **Pre-Start Warning Dialog**: Added a non-blocking `PreStartAgentWarningWindow` that intercepts server startups if the Playit.gg agent is disconnected or pending setup, guiding users to resolve the issue before launching.
+* **Centralized State Management**: Integrated `AgentProvisioningService` to act as the single source of truth for tunnel states globally across the application.
+* **Smart State Handling**: Accurately categorizes pending states like `AwaitingSetupCode` to trigger the warning gate, providing a smoother connection setup flow.
+
+### 🛠️ UI & Settings Refactor
+* **Removed Legacy Software Updates**: Removed the redundant "Software Updates" expander from the Server Settings page, cleaning up the UI and relying on the application's core update mechanisms.
+
+### 🧪 Test Coverage Improvements
+* **Network Reliability**: Introduced `PortReliabilityTestWorkspace` helper class to facilitate robust network-related component testing.
+* **JVM & File Handling Tests**: Added comprehensive unit tests for `ServerLaunchConfigurator` to verify version-specific JVM arguments and proper file management during server startup.
 
 ## v1.5.3 - Java Management, Networking & Setup Fixes
 
