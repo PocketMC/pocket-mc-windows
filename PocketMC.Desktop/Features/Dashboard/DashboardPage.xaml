@@ -155,7 +155,20 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="Desktop24" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <ui:SymbolIcon Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <ui:SymbolIcon.Style>
+                                                    <Style TargetType="ui:SymbolIcon">
+                                                        <Setter Property="Symbol" Value="Desktop24"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsBedrockServer}" Value="True">
+                                                                <Setter Property="Symbol" Value="Cube24"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ui:SymbolIcon.Style>
+                                            </ui:SymbolIcon>
                                             <TextBlock Grid.Column="1" Text="{Binding TunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                             <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click"/>
                                         </Grid>

@@ -135,7 +135,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         {
             if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm)
             {
-                string addressToCopy = vm.HasBedrockNumericTunnelAddress ? vm.BedrockNumericTunnelAddress! : (vm.HasGeyser && !string.IsNullOrEmpty(vm.BedrockTunnelAddress) ? vm.BedrockTunnelAddress : vm.BedrockIpDisplayText);
+                string addressToCopy = vm.HasGeyser && !string.IsNullOrEmpty(vm.BedrockTunnelAddress) ? vm.BedrockTunnelAddress : vm.BedrockIpDisplayText;
                 if (addressToCopy.Contains("local") || string.IsNullOrWhiteSpace(addressToCopy)) return;
 
                 await TrySetClipboardText(addressToCopy);
