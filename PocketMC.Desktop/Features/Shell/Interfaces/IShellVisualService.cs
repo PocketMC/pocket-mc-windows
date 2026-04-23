@@ -7,6 +7,6 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
     {
         bool EnableMicaEffect { get; set; }
         void RequestMicaUpdate();
-        void ApplyTheme(bool isDark);
+        void ApplyTheme(string theme);
     }
 }

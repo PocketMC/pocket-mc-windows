@@ -242,6 +242,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     }
 
     public void RequestMicaUpdate() => _visualService.RequestMicaUpdate();
+    public void RequestThemeUpdate(string theme) => _visualService.ApplyTheme(theme);
 
     public void ShowRootDirectorySetup()
     {

@@ -14,7 +14,7 @@
 
         <!-- ─── Header ─── -->
         <StackPanel Grid.Row="0" Margin="0,0,0,8">
-            <ui:TextBlock FontTypography="Title" Text="Java Runtimes" Foreground="White" Margin="0,0,0,4"/>
+            <ui:TextBlock FontTypography="Title" Text="Java Runtimes" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
             <TextBlock Text="Managed JREs for your Minecraft server instances. Missing runtimes are downloaded automatically."
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        TextWrapping="Wrap" FontSize="13" Margin="0,0,0,16"/>

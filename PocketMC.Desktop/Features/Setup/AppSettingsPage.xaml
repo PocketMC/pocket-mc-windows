@@ -17,7 +17,7 @@
         <TextBlock Text="App Settings" 
                    FontSize="28" 
                    FontWeight="SemiBold" 
-                   Foreground="White"
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                    Margin="0,0,0,24" />
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -58,6 +58,17 @@
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
+                        <!-- Theme Selection -->
+                        <TextBlock Text="Application Theme" FontSize="14" FontWeight="Medium" Margin="0,0,0,0"/>
+                        <TextBlock Text="Select your preferred visual theme." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
+                        <ComboBox x:Name="ThemeCombo" Width="260" HorizontalAlignment="Left" SelectionChanged="ThemeCombo_SelectionChanged">
+                            <ComboBoxItem Content="System Default" Tag="System"/>
+                            <ComboBoxItem Content="Light" Tag="Light"/>
+                            <ComboBoxItem Content="Dark" Tag="Dark"/>
+                        </ComboBox>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>

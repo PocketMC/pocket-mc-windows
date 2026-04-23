@@ -66,6 +66,17 @@ namespace PocketMC.Desktop.Features.Setup
             ToggleMica.IsChecked = _applicationState.Settings.EnableMicaEffect;
             CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
 
+            // Theme setting
+            string savedTheme = _applicationState.Settings.ApplicationTheme ?? "System";
+            foreach (ComboBoxItem item in ThemeCombo.Items)
+            {
+                if (item.Tag?.ToString() == savedTheme)
+                {
+                    ThemeCombo.SelectedItem = item;
+                    break;
+                }
+            }
+
             // Set initial state
             ExternalBackupPathInput.Text = _applicationState.Settings.ExternalBackupDirectory ?? "";
 
@@ -152,6 +163,23 @@ namespace PocketMC.Desktop.Features.Setup
             if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
             {
                 mainWin.RequestMicaUpdate();
+            }
+        }
+
+        private void ThemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            if (ThemeCombo.SelectedItem is ComboBoxItem item && item.Tag is string themeTag)
+            {
+                var settings = _applicationState.Settings;
+                settings.ApplicationTheme = themeTag;
+                _settingsManager.Save(settings);
+
+                if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+                {
+                    mainWin.RequestThemeUpdate(themeTag);
+                }
             }
         }
 

@@ -31,8 +31,7 @@ namespace PocketMC.Desktop.Features.Shell
         {
             _boundWindow = window;
             _micaFallbackImage = micaFallbackImage;
-            Wpf.Ui.Appearance.SystemThemeWatcher.Watch(_boundWindow);
-            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(_boundWindow);
+            ApplyTheme(_applicationState.Settings.ApplicationTheme);
         }
 
         public void RequestMicaUpdate()
@@ -61,11 +60,25 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
-        public void ApplyTheme(bool isDark)
+        public void ApplyTheme(string theme)
         {
             if (_boundWindow == null) return;
-            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(
-                isDark ? Wpf.Ui.Appearance.ApplicationTheme.Dark : Wpf.Ui.Appearance.ApplicationTheme.Light);
+            
+            if (theme == "Light")
+            {
+                Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(_boundWindow);
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
+            }
+            else if (theme == "Dark")
+            {
+                Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(_boundWindow);
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+            }
+            else
+            {
+                Wpf.Ui.Appearance.SystemThemeWatcher.Watch(_boundWindow);
+                Wpf.Ui.Appearance.ApplicationThemeManager.ApplySystemTheme();
+            }
         }
 
         private void ApplyWin10MicaFallback()

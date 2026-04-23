@@ -16,7 +16,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <ui:TextBlock FontTypography="Title" Text="Tunnel" Foreground="White" Margin="0,0,0,4"/>
+            <ui:TextBlock FontTypography="Title" Text="Tunnel" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
             <TextBlock Text="Manage the Playit.gg agent, download the tunnel binary, and retry connections without leaving PocketMC."
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        TextWrapping="Wrap"
@@ -52,7 +52,7 @@
                                    Margin="0,0,0,4"/>
                         <TextBlock x:Name="TxtStatusValue"
                                    Text="Checking..."
-                                   Foreground="#F9E2AF"
+                                   Foreground="{DynamicResource SystemFillColorCautionBrush}"
                                    FontSize="26"
                                    FontWeight="SemiBold"/>
                         <TextBlock x:Name="TxtStatusDetail"
@@ -63,7 +63,7 @@
                     </StackPanel>
 
                     <Border Grid.Row="1"
-                            Background="#12FFFFFF"
+                            Background="{DynamicResource ControlFillColorDefaultBrush}"
                             CornerRadius="8"
                             Padding="12"
                             Margin="0,0,0,12">
@@ -177,7 +177,7 @@
                 <ui:TextBlock Grid.Row="0"
                               FontTypography="Subtitle"
                               Text="Active Tunnels"
-                              Foreground="White"
+                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                               Margin="0,0,0,6"/>
                 <TextBlock x:Name="TxtTunnelListStatus"
                            Grid.Row="1"
@@ -192,8 +192,8 @@
                               Visibility="Collapsed">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="#0AFFFFFF"
-                                    BorderBrush="#18FFFFFF"
+                            <Border Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                                     BorderThickness="1"
                                     CornerRadius="10"
                                     Padding="16,14"
@@ -218,7 +218,7 @@
                                         <ui:SymbolIcon Grid.Column="0"
                                                        Symbol="Globe24"
                                                        FontSize="16"
-                                                       Foreground="#89B4FA"
+                                                       Foreground="{DynamicResource SystemFillColorAttentionBrush}"
                                                        VerticalAlignment="Center"/>
 
                                         <!-- Inline editable name -->
@@ -229,7 +229,7 @@
                                                  FontWeight="SemiBold"
                                                  Background="Transparent"
                                                  BorderThickness="0,0,0,1"
-                                                 BorderBrush="#30FFFFFF"
+                                                 BorderBrush="{DynamicResource ControlElevationBorderBrush}"
                                                  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                  VerticalAlignment="Center"
                                                  Padding="4,4"
@@ -296,15 +296,15 @@
 
                                         <!-- Local Port (editable) -->
                                         <Border Grid.Column="0"
-                                                Background="#15A6E3A1"
-                                                BorderBrush="#30A6E3A1"
+                                                Background="{DynamicResource SystemFillColorSuccessBackgroundBrush}"
+                                                BorderBrush="{DynamicResource SystemFillColorSuccessBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="6"
                                                 Padding="6,4">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="Port"
                                                            FontSize="11"
-                                                           Foreground="#A6E3A1"
+                                                           Foreground="{DynamicResource SystemFillColorSuccessBrush}"
                                                            FontWeight="Medium"
                                                            Margin="0,0,6,0"
                                                            VerticalAlignment="Center"/>
@@ -312,7 +312,7 @@
                                                          Tag="{Binding Id}"
                                                          FontSize="13"
                                                          FontWeight="Bold"
-                                                         Foreground="#A6E3A1"
+                                                         Foreground="{DynamicResource SystemFillColorSuccessBrush}"
                                                          Background="Transparent"
                                                          BorderThickness="0"
                                                          MinWidth="44"
@@ -341,23 +341,22 @@
 
                                         <!-- Tunnel Type (read-only) -->
                                         <Border Grid.Column="4"
-                                                Background="#15CBA6F7"
-                                                BorderBrush="#30CBA6F7"
-                                                BorderThickness="1"
+                                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                                BorderThickness="0"
                                                 CornerRadius="6"
                                                 Padding="10,5"
                                                 VerticalAlignment="Center">
                                             <TextBlock Text="{Binding TunnelType}"
                                                        FontSize="12"
                                                        FontWeight="Medium"
-                                                       Foreground="#CBA6F7"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                        VerticalAlignment="Center"/>
                                         </Border>
 
                                         <!-- Public Address -->
                                         <Border Grid.Column="6"
-                                                Background="#1589B4FA"
-                                                BorderBrush="#3089B4FA"
+                                                Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
+                                                BorderBrush="{DynamicResource SystemFillColorAttentionBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="6"
                                                 Padding="10,5"
@@ -365,12 +364,12 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:SymbolIcon Symbol="Link24"
                                                                FontSize="12"
-                                                               Foreground="#89B4FA"
+                                                               Foreground="{DynamicResource SystemFillColorAttentionBrush}"
                                                                Margin="0,0,6,0"/>
                                                 <TextBlock Text="{Binding PublicAddress}"
                                                            FontSize="13"
                                                            FontWeight="Medium"
-                                                           Foreground="#89B4FA"
+                                                           Foreground="{DynamicResource SystemFillColorAttentionBrush}"
                                                            VerticalAlignment="Center"
                                                            TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
@@ -380,7 +379,7 @@
                                     <!-- Row 3: Inline error message (hidden by default) -->
                                     <TextBlock x:Name="TxtTunnelError"
                                                Tag="{Binding Id}"
-                                               Foreground="#F38BA8"
+                                               Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                                                FontSize="12"
                                                Margin="0,8,0,0"
                                                TextWrapping="Wrap"

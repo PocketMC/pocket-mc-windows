@@ -20,6 +20,7 @@ namespace PocketMC.Desktop.Models
         public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }
         public bool HasCompletedFirstLaunch { get; set; }
         public bool EnableMicaEffect { get; set; } = true;
+        public string ApplicationTheme { get; set; } = "System";
         public string? CurseForgeApiKey { get; set; }
 
         // AI Summarization

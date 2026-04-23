@@ -17,7 +17,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,24" Orientation="Horizontal">
-            <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center"/>
+            <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center"/>
             <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand"/>
         </StackPanel>
 
@@ -57,11 +57,11 @@
                                     <StackPanel Grid.Column="0">
                                         <ui:TextBlock FontTypography="Subtitle" Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
                                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                            <Border Background="#33FFFFFF" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                                <TextBlock Text="{Binding MinecraftVersion}" FontSize="10" Foreground="Silver"/>
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                                <TextBlock Text="{Binding MinecraftVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
                                             <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2">
-                                                <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="#89B4FA" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="{DynamicResource SystemFillColorAttentionBrush}" FontWeight="SemiBold"/>
                                             </Border>
                                         </StackPanel>
                                         <TextBlock Text="{Binding Description}" FontSize="12" Foreground="SlateGray" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="32" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource NullOrEmptyToVis}}"/>
@@ -80,19 +80,19 @@
                                 </Grid>
 
                                 <!-- Metrics -->
-                                <Border Grid.Row="1" Background="#1AFFFFFF" CornerRadius="8" Padding="12" Margin="0,0,0,16">
+                                <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,16">
                                     <UniformGrid Columns="3">
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="CPU" FontSize="10" Foreground="#88FFFFFF"/>
-                                            <TextBlock Text="{Binding CpuText}" FontSize="13" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="CPU" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding CpuText}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="RAM" FontSize="10" Foreground="#88FFFFFF"/>
-                                            <TextBlock Text="{Binding RamText}" FontSize="13" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="RAM" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding RamText}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                         <StackPanel HorizontalAlignment="Center">
-                                            <TextBlock Text="PLAYERS" FontSize="10" Foreground="#88FFFFFF"/>
-                                            <TextBlock Text="{Binding PlayerStatus}" FontSize="13" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="PLAYERS" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding PlayerStatus}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </UniformGrid>
                                 </Border>
@@ -102,19 +102,19 @@
 
                                     <!-- Skeleton loader (shown while tunnel address is resolving) -->
                                     <Border Visibility="{Binding ShowTunnelSkeleton, Converter={StaticResource BoolToVis}}"
-                                            Background="#1AFFFFFF" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                            Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="Desktop24" Foreground="#44FFFFFF" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <ui:SymbolIcon Grid.Column="0" Symbol="Desktop24" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                             <Border Grid.Column="1" CornerRadius="4" Height="14" MaxWidth="180" HorizontalAlignment="Left">
                                                 <Border.Background>
                                                     <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                                        <GradientStop Color="#18FFFFFF" Offset="0"/>
-                                                        <GradientStop Color="#30FFFFFF" Offset="0.5"/>
-                                                        <GradientStop Color="#18FFFFFF" Offset="1"/>
+                                                        <GradientStop Color="#11888888" Offset="0"/>
+                                                        <GradientStop Color="#33888888" Offset="0.5"/>
+                                                        <GradientStop Color="#11888888" Offset="1"/>
                                                     </LinearGradientBrush>
                                                 </Border.Background>
                                                 <Border.Triggers>
@@ -136,27 +136,27 @@
 
                                     <!-- Error state (shown when tunnel resolution failed) -->
                                     <Border Visibility="{Binding HasTunnelError, Converter={StaticResource BoolToVis}}"
-                                            Background="#1AF38BA8" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                            Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="ErrorCircle24" Foreground="#F38BA8" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding TunnelErrorText}" FontSize="12" Foreground="#F38BA8" VerticalAlignment="Center"/>
+                                            <ui:SymbolIcon Grid.Column="0" Symbol="ErrorCircle24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TunnelErrorText}" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}" VerticalAlignment="Center"/>
                                         </Grid>
                                     </Border>
 
                                     <!-- Primary Connection (Java or Native Bedrock) -->
                                     <Border Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}"
-                                            Background="#1AFFFFFF" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">                                        <Grid>
+                                            Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">                                        <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="Desktop24" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding TunnelAddress}" FontSize="12" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <ui:SymbolIcon Grid.Column="0" Symbol="Desktop24" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                             <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click"/>
                                         </Grid>
                                     </Border>
@@ -164,7 +164,7 @@
                                     <!-- Bedrock-specific Tunnels (Native Bedrock Numeric, or Geyser Hostname + Numeric) -->
                                     <StackPanel Visibility="{Binding IsBedrockServer, Converter={StaticResource BoolToVis}}">
                                         <!-- Native Bedrock Numeric IP -->
-                                        <Border Background="#1AFFFFFF" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
+                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
                                                 Visibility="{Binding HasNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -172,8 +172,8 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="#AAA" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding NumericTunnelAddress}" FontSize="12" Foreground="#AAA" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding NumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                                 <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyNumericIp_Click"/>
                                             </Grid>
                                         </Border>
@@ -181,31 +181,31 @@
 
                                     <StackPanel Visibility="{Binding ShowBedrockIp, Converter={StaticResource BoolToVis}}">
                                         <!-- Geyser Bedrock Hostname -->
-                                        <Border Background="#1AFFFFFF" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <ui:SymbolIcon Grid.Column="0" Symbol="Cube24" Foreground="#FFD54F" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <ui:SymbolIcon Grid.Column="0" Symbol="Cube24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="Bedrock" FontSize="10" Foreground="#FFD54F" FontWeight="Bold"/>
-                                                    <TextBlock Text="{Binding BedrockTunnelAddress}" FontSize="12" Foreground="#FFD54F" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="Bedrock" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding BedrockTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
                                                 <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click"/>
                                             </Grid>
                                         </Border>
                                         <!-- Geyser Bedrock Numeric -->
-                                        <Border Background="#1AFFFFFF" CornerRadius="6" Padding="10,8" Visibility="{Binding HasBedrockNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
+                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Visibility="{Binding HasBedrockNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="#FFD54FAA" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding BedrockNumericTunnelAddress}" FontSize="12" Foreground="#FFD54FAA" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding BedrockNumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                                 <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockNumericIp_Click"/>
                                             </Grid>
                                         </Border>
