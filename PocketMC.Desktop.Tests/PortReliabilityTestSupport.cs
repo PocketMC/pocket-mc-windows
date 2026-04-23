@@ -330,6 +330,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             AppState,
             adoptiumClient,
             validator,
+            SettingsManager,
             NullLogger<JavaProvisioningService>.Instance);
         var phpProvisioning = new PhpProvisioningService(
             new HttpClient(new DelegateHttpMessageHandler((_, _) =>
