@@ -41,6 +41,20 @@ namespace PocketMC.Desktop.Features.Dashboard
             var metas = _registry.GetAll();
             foreach (var meta in metas)
             {
+                if (meta.ServerPort == null)
+                {
+                    string? path = _registry.GetPath(meta.Id);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        string propsFile = System.IO.Path.Combine(path, "server.properties");
+                        var props = PocketMC.Desktop.Features.Instances.ServerPropertiesParser.Read(propsFile);
+                        if (props.TryGetValue("server-port", out var pPort) && int.TryParse(pPort, out int parsedPort))
+                        {
+                            meta.ServerPort = parsedPort;
+                        }
+                    }
+                }
+
                 var existing = existingVms.FirstOrDefault(v => v.Id == meta.Id);
                 if (existing != null)
                 {

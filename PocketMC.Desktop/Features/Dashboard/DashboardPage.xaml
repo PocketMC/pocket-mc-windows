@@ -174,6 +174,24 @@
                                         </Grid>
                                     </Border>
 
+                                    <!-- Local Network (LAN) IP -->
+                                    <Border Visibility="{Binding HasLanAddress, Converter={StaticResource BoolToVis}}"
+                                            Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ui:SymbolIcon Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="Local Network (LAN)" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding LanAddressDisplayText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyLanIp_Click"/>
+                                        </Grid>
+                                    </Border>
+
                                     <!-- Bedrock-specific Tunnels (Native Bedrock Numeric, or Geyser Hostname + Numeric) -->
                                     <StackPanel Visibility="{Binding IsBedrockServer, Converter={StaticResource BoolToVis}}">
                                         <!-- Native Bedrock Numeric IP -->

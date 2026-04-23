@@ -61,6 +61,7 @@ public sealed class ServerConfigurationService
         // Sync metadata if needed (NET-15)
         if (props.TryGetValue("motd", out var pMotd)) metadata.Motd = pMotd;
         if (props.TryGetValue("max-players", out var pMax) && int.TryParse(pMax, out int max)) metadata.MaxPlayers = max;
+        if (props.TryGetValue("server-port", out var pPort) && int.TryParse(pPort, out int parsedPort)) metadata.ServerPort = parsedPort;
 
         bool isBedrock = metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true || 
                          metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
@@ -120,6 +121,7 @@ public sealed class ServerConfigurationService
         metadata.AdvancedJvmArgs = string.IsNullOrWhiteSpace(configuration.AdvancedJvmArgs) ? null : configuration.AdvancedJvmArgs.Trim();
         metadata.Motd = configuration.Motd;
         if (int.TryParse(configuration.MaxPlayers, out int mp)) metadata.MaxPlayers = mp;
+        if (int.TryParse(configuration.ServerPort, out int sp)) metadata.ServerPort = sp;
 
         _instanceManager.SaveMetadata(metadata, serverDir);
 

@@ -86,6 +86,15 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
         }
 
+        private async void BtnCopyLanIp_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm && vm.HasLanAddress)
+            {
+                await TrySetClipboardText(vm.LanAddressDisplayText!);
+                await ShowCopiedFeedback(fe);
+            }
+        }
+
         private async void BtnCopyNumericIp_Click(object sender, RoutedEventArgs e)
         {
             if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm && vm.HasNumericTunnelAddress)

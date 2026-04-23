@@ -124,6 +124,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     /// <summary>Label prefix for the secondary IP row.</summary>
     public string BedrockIpLabel => "Bedrock (Geyser):";
 
+    public int PrimaryPort => _metadata.ServerPort ?? (IsBedrockServer ? 19132 : 25565);
+    public string LanAddressDisplayText => $"127.0.0.1:{PrimaryPort}";
+    public bool HasLanAddress => IsRunning;
+
     public int BedrockLocalPort => _bedrockLocalPort;
 
     /// <summary>Text for the Bedrock IP row (tunnel address, or local Geyser port note).</summary>
@@ -241,6 +245,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(RunningControlsVisibility));
             OnPropertyChanged(nameof(StoppedControlsVisibility));
             OnPropertyChanged(nameof(StopButtonText));
+            OnPropertyChanged(nameof(HasLanAddress));
         }
     }
 
@@ -317,6 +322,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(MinecraftVersion));
         OnPropertyChanged(nameof(ServerType));
         OnPropertyChanged(nameof(MaxPlayers));
+        OnPropertyChanged(nameof(PrimaryPort));
+        OnPropertyChanged(nameof(LanAddressDisplayText));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
