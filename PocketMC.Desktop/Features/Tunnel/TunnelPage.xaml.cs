@@ -133,7 +133,6 @@ namespace PocketMC.Desktop.Features.Tunnel
         private async Task RefreshStatusAsync()
         {
             int refreshVersion = Interlocked.Increment(ref _refreshVersion);
-            UpdateConnectionSummary();
 
             if (!_applicationState.IsConfigured)
             {
@@ -470,19 +469,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             await RefreshStatusAsync();
         }
 
-        private void UpdateConnectionSummary()
-        {
-            var connection = _playitAgentService.PartnerConnection;
-            TxtLinkedAgent.Text = string.IsNullOrWhiteSpace(connection?.AgentId)
-                ? "Not linked"
-                : string.IsNullOrWhiteSpace(connection.ConnectedEmail)
-                    ? connection.AgentId
-                    : $"{connection.ConnectedEmail} ({connection.AgentId})";
 
-            TxtProvisioningBackend.Text = _partnerProvisioningClient.IsConfigured
-                ? "Configured"
-                : "Not configured";
-        }
 
         private string BuildAwaitingSetupMessage()
         {
