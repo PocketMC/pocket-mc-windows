@@ -4,6 +4,10 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Title="Tunnel">
 
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Page.Resources>
+
     <Grid Margin="36,24,36,24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -147,7 +151,7 @@
                            Margin="0,0,0,12"
                            TextWrapping="Wrap"/>
 
-                <!-- Modern card-based tunnel list -->
+                <!-- Tunnel cards with management controls -->
                 <ItemsControl x:Name="TunnelList"
                               Grid.Row="2"
                               Visibility="Collapsed">
@@ -159,87 +163,165 @@
                                     CornerRadius="10"
                                     Padding="16,14"
                                     Margin="0,0,0,10">
-                                <Grid>
-                                    <StackPanel Grid.Column="0">
-                                        <!-- Tunnel Name -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                            <ui:SymbolIcon Symbol="Globe24"
-                                                           FontSize="16"
-                                                           Foreground="#89B4FA"
-                                                           Margin="0,0,8,0"/>
-                                            <TextBlock Text="{Binding Name}"
-                                                       FontSize="15"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                <StackPanel>
+                                    <!-- Row 1: Name (editable) + Enable toggle + Delete -->
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <ui:SymbolIcon Grid.Column="0"
+                                                       Symbol="Globe24"
+                                                       FontSize="16"
+                                                       Foreground="#89B4FA"
                                                        VerticalAlignment="Center"/>
-                                        </StackPanel>
 
-                                        <!-- Port and Address Info -->
-                                        <Grid Margin="0,0,0,0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="16"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                                        <!-- Inline editable name -->
+                                        <TextBox Grid.Column="2"
+                                                 Text="{Binding Name, Mode=OneWay}"
+                                                 Tag="{Binding Id}"
+                                                 FontSize="14"
+                                                 FontWeight="SemiBold"
+                                                 Background="Transparent"
+                                                 BorderThickness="0,0,0,1"
+                                                 BorderBrush="#30FFFFFF"
+                                                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                 VerticalAlignment="Center"
+                                                 Padding="4,4"
+                                                 LostFocus="TunnelName_LostFocus"
+                                                 KeyDown="TunnelName_KeyDown"
+                                                 ToolTip="Press Enter or click away to rename"/>
 
-                                            <!-- Local Port Badge -->
-                                            <Border Grid.Column="0"
-                                                    Background="#15A6E3A1"
-                                                    BorderBrush="#30A6E3A1"
-                                                    BorderThickness="1"
-                                                    CornerRadius="6"
-                                                    Padding="10,5">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="Port"
-                                                               FontSize="11"
-                                                               Foreground="#A6E3A1"
-                                                               FontWeight="Medium"
-                                                               Margin="0,0,6,0"
-                                                               VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding Port}"
-                                                               FontSize="13"
-                                                               FontWeight="Bold"
-                                                               Foreground="#A6E3A1"
-                                                               VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Border>
+                                        <!-- Enable/disable toggle -->
+                                        <ToggleButton Grid.Column="3"
+                                                      IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                      Tag="{Binding Id}"
+                                                      Click="ToggleEnabled_Click"
+                                                      ToolTip="Enable or disable this tunnel"
+                                                      VerticalAlignment="Center"
+                                                      Cursor="Hand"
+                                                      Padding="6,4"
+                                                      MinWidth="50"/>
 
-                                            <!-- Public Address -->
-                                            <Border Grid.Column="2"
-                                                    Background="#1589B4FA"
-                                                    BorderBrush="#3089B4FA"
-                                                    BorderThickness="1"
-                                                    CornerRadius="6"
-                                                    Padding="10,5">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:SymbolIcon Symbol="Link24"
-                                                                   FontSize="12"
-                                                                   Foreground="#89B4FA"
-                                                                   Margin="0,0,6,0"/>
-                                                    <TextBlock Text="{Binding PublicAddress}"
-                                                               FontSize="13"
-                                                               FontWeight="Medium"
+                                        <!-- Delete button -->
+                                        <ui:Button Grid.Column="5"
+                                                   ToolTip="Delete this tunnel"
+                                                   Icon="{ui:SymbolIcon Delete24}"
+                                                   Appearance="Secondary"
+                                                   Padding="6"
+                                                   Click="BtnDeleteTunnel_Click"
+                                                   Tag="{Binding Id}"
+                                                   Cursor="Hand"
+                                                   VerticalAlignment="Center"/>
+
+                                        <!-- Copy address -->
+                                        <ui:Button Grid.Column="7"
+                                                   ToolTip="Copy public address"
+                                                   Appearance="Secondary"
+                                                   Icon="{ui:SymbolIcon Copy24}"
+                                                   Padding="6"
+                                                   Click="BtnCopyAddress_Click"
+                                                   Tag="{Binding PublicAddress}"
+                                                   Cursor="Hand"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+
+                                    <!-- Row 2: Port badge + Tunnel Type dropdown + Public Address -->
+                                    <Grid Margin="0,0,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Local Port (editable) -->
+                                        <Border Grid.Column="0"
+                                                Background="#15A6E3A1"
+                                                BorderBrush="#30A6E3A1"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="6,4">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Port"
+                                                           FontSize="11"
+                                                           Foreground="#A6E3A1"
+                                                           FontWeight="Medium"
+                                                           Margin="0,0,6,0"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBox Text="{Binding Port, Mode=OneWay}"
+                                                         Tag="{Binding Id}"
+                                                         FontSize="13"
+                                                         FontWeight="Bold"
+                                                         Foreground="#A6E3A1"
+                                                         Background="Transparent"
+                                                         BorderThickness="0"
+                                                         MinWidth="44"
+                                                         MaxWidth="80"
+                                                         Padding="2,2"
+                                                         VerticalAlignment="Center"
+                                                         LostFocus="TunnelPort_LostFocus"
+                                                         KeyDown="TunnelPort_KeyDown"
+                                                         IsEnabled="{Binding HasAgentOrigin}"
+                                                         ToolTip="Edit local port (Enter to save)"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Tunnel Type (read-only) -->
+                                        <Border Grid.Column="2"
+                                                Background="#15CBA6F7"
+                                                BorderBrush="#30CBA6F7"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="10,5"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding TunnelType}"
+                                                       FontSize="12"
+                                                       FontWeight="Medium"
+                                                       Foreground="#CBA6F7"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <!-- Public Address -->
+                                        <Border Grid.Column="4"
+                                                Background="#1589B4FA"
+                                                BorderBrush="#3089B4FA"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="10,5"
+                                                Visibility="{Binding HasPublicAddress, Converter={StaticResource BoolToVis}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:SymbolIcon Symbol="Link24"
+                                                               FontSize="12"
                                                                Foreground="#89B4FA"
-                                                               VerticalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
-                                            </Border>
+                                                               Margin="0,0,6,0"/>
+                                                <TextBlock Text="{Binding PublicAddress}"
+                                                           FontSize="13"
+                                                           FontWeight="Medium"
+                                                           Foreground="#89B4FA"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
 
-                                            <!-- Copy Button aligned with badges -->
-                                            <ui:Button Grid.Column="3"
-                                                       ToolTip="Copy public address"
-                                                       Appearance="Secondary"
-                                                       Icon="{ui:SymbolIcon Copy24}"
-                                                       Padding="8"
-                                                       Margin="8,0,0,0"
-                                                       VerticalAlignment="Stretch" 
-                                                       Click="BtnCopyAddress_Click"
-                                                       Tag="{Binding PublicAddress}"
-                                                       Cursor="Hand"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Grid>
+                                    <!-- Row 3: Inline error message (hidden by default) -->
+                                    <TextBlock x:Name="TxtTunnelError"
+                                               Tag="{Binding Id}"
+                                               Foreground="#F38BA8"
+                                               FontSize="12"
+                                               Margin="0,8,0,0"
+                                               TextWrapping="Wrap"
+                                               Visibility="Collapsed"/>
+                                </StackPanel>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

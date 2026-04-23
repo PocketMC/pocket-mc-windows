@@ -27,6 +27,11 @@ namespace PocketMC.Desktop.Features.Tunnel
         public string? NumericAddress { get; set; }
         public string? TunnelType { get; set; }
         public PortProtocol? Protocol { get; set; }
+        public bool IsEnabled { get; set; } = true;
+        public bool HasAgentOrigin { get; set; }
+        public string? AgentId { get; set; }
+        public string? LocalIp { get; set; }
+        public bool HasPublicAddress => !string.IsNullOrEmpty(PublicAddress);
     }
 
     public class TunnelListResult
@@ -45,6 +50,18 @@ namespace PocketMC.Desktop.Features.Tunnel
         public string? ErrorMessage { get; set; }
         public bool IsTokenInvalid { get; set; }
         public bool RequiresClaim { get; set; }
+    }
+
+    /// <summary>
+    /// Shared result type for tunnel management actions (rename, delete, enable, typeset, update).
+    /// </summary>
+    public class TunnelActionResult
+    {
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+
+        public static TunnelActionResult Ok() => new() { Success = true };
+        public static TunnelActionResult Fail(string message) => new() { Success = false, ErrorMessage = message };
     }
 
     internal sealed class PlayitApiEnvelope<TData>
@@ -75,6 +92,9 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         [JsonPropertyName("tunnel_type")]
         public string? TunnelType { get; set; }
+
+        [JsonPropertyName("user_enabled")]
+        public bool UserEnabled { get; set; } = true;
 
         [JsonPropertyName("connect_addresses")]
         public List<PlayitConnectAddress> ConnectAddresses { get; set; } = new();
@@ -387,20 +407,22 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             int? localPort = ExtractLocalPort(tunnel.Origin);
             string? publicAddress = ExtractPublicAddress(tunnel);
-            if (!localPort.HasValue || string.IsNullOrWhiteSpace(publicAddress))
-            {
-                return null;
-            }
 
+            // Allow tunnels without a resolved port (e.g. newly created / disabled)
+            // but keep port = 0 as a signal they lack config data.
             return new TunnelData
             {
                 Id = tunnel.Id,
                 Name = tunnel.Name,
-                Port = localPort.Value,
-                PublicAddress = publicAddress,
+                Port = localPort ?? 0,
+                PublicAddress = publicAddress ?? string.Empty,
                 NumericAddress = ExtractNumericAddress(tunnel),
                 TunnelType = tunnel.TunnelType,
-                Protocol = InferProtocol(tunnel.TunnelType)
+                Protocol = InferProtocol(tunnel.TunnelType),
+                IsEnabled = tunnel.UserEnabled,
+                HasAgentOrigin = tunnel.Origin?.Type == "agent",
+                AgentId = tunnel.Origin?.Details?.AgentId,
+                LocalIp = ExtractLocalIp(tunnel.Origin)
             };
         }
 
@@ -418,6 +440,25 @@ namespace PocketMC.Desktop.Features.Tunnel
                     int.TryParse(field.Value, out int parsedPort))
                 {
                     return parsedPort;
+                }
+            }
+
+            return null;
+        }
+
+        private static string? ExtractLocalIp(PlayitTunnelOriginV1? origin)
+        {
+            if (origin?.Details?.ConfigData?.Fields == null)
+            {
+                return null;
+            }
+
+            foreach (PlayitAgentTunnelField field in origin.Details.ConfigData.Fields)
+            {
+                if (string.Equals(field.Name, "local_ip", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(field.Name, "local_address", StringComparison.OrdinalIgnoreCase))
+                {
+                    return field.Value;
                 }
             }
 
@@ -516,5 +557,80 @@ namespace PocketMC.Desktop.Features.Tunnel
                    right == PortProtocol.TcpAndUdp ||
                    left == right;
         }
+
+        // ─── Tunnel management actions ────────────────────────────────────
+
+        /// <summary>
+        /// Sends an authorized POST to the given path and interprets the standard
+        /// success / fail / error envelope. Returns <see cref="TunnelActionResult"/>.
+        /// </summary>
+        private async Task<TunnelActionResult> PostActionAsync(string path, object payload)
+        {
+            string? secretKey = GetSecretKey();
+            if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                return TunnelActionResult.Fail("PocketMC is not connected to a Playit agent.");
+            }
+
+            try
+            {
+                using HttpRequestMessage request = BuildAuthorizedRequest(HttpMethod.Post, path, secretKey, payload);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+                if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                {
+                    return TunnelActionResult.Fail("The saved Playit credentials were rejected.");
+                }
+
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Playit action {Path} failed with HTTP {StatusCode}: {Body}", path, (int)response.StatusCode, body);
+                    return TunnelActionResult.Fail($"Playit API returned HTTP {(int)response.StatusCode}.");
+                }
+
+                using JsonDocument doc = JsonDocument.Parse(body);
+                JsonElement root = doc.RootElement;
+
+                string status = root.TryGetProperty("status", out JsonElement statusEl) ? statusEl.GetString() ?? "" : "";
+
+                if (status == "success")
+                {
+                    return TunnelActionResult.Ok();
+                }
+
+                if (status == "fail" && root.TryGetProperty("data", out JsonElement failData))
+                {
+                    string failMessage = failData.ValueKind == JsonValueKind.String
+                        ? failData.GetString() ?? "Unknown error"
+                        : failData.ToString();
+                    return TunnelActionResult.Fail(failMessage);
+                }
+
+                return TunnelActionResult.Fail($"Unexpected API response: {body}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Playit action {Path} failed.", path);
+                return TunnelActionResult.Fail(ex.Message);
+            }
+        }
+
+        /// <summary>Renames a tunnel. Path: /tunnels/rename.</summary>
+        public Task<TunnelActionResult> RenameTunnelAsync(string tunnelId, string newName)
+            => PostActionAsync("/tunnels/rename", new { tunnel_id = tunnelId, name = newName });
+
+        /// <summary>Deletes a tunnel. Path: /tunnels/delete.</summary>
+        public Task<TunnelActionResult> DeleteTunnelAsync(string tunnelId)
+            => PostActionAsync("/tunnels/delete", new { tunnel_id = tunnelId });
+
+        /// <summary>Enables or disables a tunnel. Path: /tunnels/enable.</summary>
+        public Task<TunnelActionResult> EnableTunnelAsync(string tunnelId, bool enabled)
+            => PostActionAsync("/tunnels/enable", new { tunnel_id = tunnelId, enabled });
+
+        /// <summary>Updates the local address / port / enabled state. Path: /tunnels/update.</summary>
+        public Task<TunnelActionResult> UpdateTunnelAsync(string tunnelId, string localIp, int? localPort, string? agentId, bool enabled)
+            => PostActionAsync("/tunnels/update", new { tunnel_id = tunnelId, local_ip = localIp, local_port = localPort, agent_id = agentId, enabled });
     }
 }

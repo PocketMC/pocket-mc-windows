@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -36,11 +39,17 @@ namespace PocketMC.Desktop.Features.Tunnel
         private readonly PlayitApiClient _playitApiClient;
         private readonly PlayitPartnerProvisioningClient _partnerProvisioningClient;
         private readonly IAppNavigationService _navigationService;
+        private readonly IDialogService _dialogService;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<TunnelPage> _logger;
         private bool _isSubscribed;
         private int _refreshVersion;
         private TunnelUiState _currentUiState = TunnelUiState.Missing;
+
+        /// <summary>
+        /// Tracks the current tunnel inventory so management actions can look up tunnel data by ID.
+        /// </summary>
+        private List<TunnelData> _currentTunnels = new();
 
         public TunnelPage(
             ApplicationState applicationState,
@@ -48,6 +57,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             PlayitApiClient playitApiClient,
             PlayitPartnerProvisioningClient partnerProvisioningClient,
             IAppNavigationService navigationService,
+            IDialogService dialogService,
             IServiceProvider serviceProvider,
             ILogger<TunnelPage> logger)
         {
@@ -57,6 +67,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             _playitApiClient = playitApiClient;
             _partnerProvisioningClient = partnerProvisioningClient;
             _navigationService = navigationService;
+            _dialogService = dialogService;
             _serviceProvider = serviceProvider;
             _logger = logger;
 
@@ -313,6 +324,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private void ShowNoTunnels(string message)
         {
+            _currentTunnels.Clear();
             TunnelList.ItemsSource = null;
             TunnelList.Visibility = Visibility.Collapsed;
             TxtTunnelListStatus.Text = message;
@@ -326,10 +338,13 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return;
             }
 
-            TunnelList.ItemsSource = tunnels;
+            _currentTunnels = tunnels.ToList();
+            TunnelList.ItemsSource = _currentTunnels;
             TunnelList.Visibility = Visibility.Visible;
             TxtTunnelListStatus.Text = message;
         }
+
+        // ─── Clipboard ───────────────────────────────────────────────────
 
         private void BtnCopyAddress_Click(object sender, RoutedEventArgs e)
         {
@@ -353,6 +368,215 @@ namespace PocketMC.Desktop.Features.Tunnel
                 }
             }
         }
+
+        // ─── Rename ──────────────────────────────────────────────────────
+
+        private void TunnelName_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && sender is TextBox tb)
+            {
+                Keyboard.ClearFocus();
+                e.Handled = true;
+            }
+        }
+
+        private async void TunnelName_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is not TextBox tb || tb.Tag is not string tunnelId) return;
+
+            string newName = tb.Text?.Trim() ?? string.Empty;
+            TunnelData? tunnel = _currentTunnels.FirstOrDefault(t => t.Id == tunnelId);
+            if (tunnel == null || string.Equals(newName, tunnel.Name, StringComparison.Ordinal)) return;
+            if (string.IsNullOrWhiteSpace(newName))
+            {
+                tb.Text = tunnel.Name;
+                return;
+            }
+
+            TunnelActionResult result = await _playitApiClient.RenameTunnelAsync(tunnelId, newName);
+            if (result.Success)
+            {
+                tunnel.Name = newName;
+            }
+            else
+            {
+                tb.Text = tunnel.Name; // rollback
+                ShowInlineError(tunnelId, $"Rename failed: {result.ErrorMessage}");
+            }
+        }
+
+        // ─── Enable / Disable ────────────────────────────────────────────
+
+        private async void ToggleEnabled_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ToggleButton toggle || toggle.Tag is not string tunnelId) return;
+
+            bool desiredEnabled = toggle.IsChecked == true;
+            TunnelData? tunnel = _currentTunnels.FirstOrDefault(t => t.Id == tunnelId);
+            if (tunnel == null) return;
+
+            // Optimistic update
+            tunnel.IsEnabled = desiredEnabled;
+
+            TunnelActionResult result = await _playitApiClient.EnableTunnelAsync(tunnelId, desiredEnabled);
+            if (!result.Success)
+            {
+                // Rollback
+                tunnel.IsEnabled = !desiredEnabled;
+                toggle.IsChecked = !desiredEnabled;
+                ShowInlineError(tunnelId, $"Toggle failed: {result.ErrorMessage}");
+            }
+        }
+
+        // ─── Delete ──────────────────────────────────────────────────────
+
+        private async void BtnDeleteTunnel_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Wpf.Ui.Controls.Button btn || btn.Tag is not string tunnelId) return;
+
+            TunnelData? tunnel = _currentTunnels.FirstOrDefault(t => t.Id == tunnelId);
+            string displayName = tunnel?.Name ?? tunnelId;
+
+            DialogResult confirm = await _dialogService.ShowDialogAsync(
+                "Delete Tunnel",
+                $"Are you sure you want to delete \"{displayName}\"?\n\nThis action cannot be undone.",
+                DialogType.Question,
+                showCancel: true);
+
+            if (confirm != Core.Interfaces.DialogResult.Ok && confirm != Core.Interfaces.DialogResult.Yes)
+            {
+                return;
+            }
+
+            TunnelActionResult result = await _playitApiClient.DeleteTunnelAsync(tunnelId);
+            if (result.Success)
+            {
+                // Remove from local state and refresh
+                _currentTunnels.RemoveAll(t => t.Id == tunnelId);
+                if (_currentTunnels.Count == 0)
+                {
+                    ShowNoTunnels("All tunnels deleted. Create or start a server tunnel to see entries here.");
+                }
+                else
+                {
+                    TunnelList.ItemsSource = null;
+                    TunnelList.ItemsSource = _currentTunnels;
+                }
+            }
+            else
+            {
+                ShowInlineError(tunnelId, $"Delete failed: {result.ErrorMessage}");
+            }
+        }
+
+        // ─── Update Local Port ───────────────────────────────────────────
+
+        private void TunnelPort_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && sender is TextBox tb)
+            {
+                Keyboard.ClearFocus();
+                e.Handled = true;
+            }
+        }
+
+        private async void TunnelPort_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is not TextBox tb || tb.Tag is not string tunnelId) return;
+
+            TunnelData? tunnel = _currentTunnels.FirstOrDefault(t => t.Id == tunnelId);
+            if (tunnel == null || !tunnel.HasAgentOrigin) return;
+
+            if (!int.TryParse(tb.Text?.Trim(), out int newPort) || newPort < 1 || newPort > 65535)
+            {
+                tb.Text = tunnel.Port.ToString();
+                ShowInlineError(tunnelId, "Invalid port number (1–65535).");
+                return;
+            }
+
+            if (newPort == tunnel.Port) return;
+
+            int previousPort = tunnel.Port;
+            string localIp = tunnel.LocalIp ?? "127.0.0.1";
+
+            TunnelActionResult result = await _playitApiClient.UpdateTunnelAsync(
+                tunnelId, localIp, newPort, tunnel.AgentId, tunnel.IsEnabled);
+
+            if (result.Success)
+            {
+                tunnel.Port = newPort;
+            }
+            else
+            {
+                tb.Text = previousPort.ToString();
+                ShowInlineError(tunnelId, $"Port update failed: {result.ErrorMessage}");
+            }
+        }
+
+        // ─── Inline error display ────────────────────────────────────────
+
+        /// <summary>
+        /// Finds the error TextBlock for a tunnel row and shows a transient inline error message.
+        /// Auto-hides after 6 seconds.
+        /// </summary>
+        private void ShowInlineError(string tunnelId, string message)
+        {
+            _logger.LogWarning("Tunnel action error ({TunnelId}): {Message}", tunnelId, message);
+
+            // Walk the visual tree to find the error TextBlock in the correct tunnel row
+            TextBlock? errorBlock = FindErrorBlockForTunnel(tunnelId);
+            if (errorBlock == null)
+            {
+                _logger.LogDebug("Could not find inline error TextBlock for tunnel {TunnelId}.", tunnelId);
+                return;
+            }
+
+            errorBlock.Text = message;
+            errorBlock.Visibility = Visibility.Visible;
+
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
+            timer.Tick += (s, args) =>
+            {
+                errorBlock.Visibility = Visibility.Collapsed;
+                errorBlock.Text = string.Empty;
+                timer.Stop();
+            };
+            timer.Start();
+        }
+
+        private TextBlock? FindErrorBlockForTunnel(string tunnelId)
+        {
+            for (int i = 0; i < TunnelList.Items.Count; i++)
+            {
+                if (TunnelList.ItemContainerGenerator.ContainerFromIndex(i) is ContentPresenter container)
+                {
+                    TextBlock? tb = FindChildByTag<TextBlock>(container, tunnelId);
+                    if (tb != null) return tb;
+                }
+            }
+
+            return null;
+        }
+
+        private static T? FindChildByTag<T>(DependencyObject parent, string tag) where T : FrameworkElement
+        {
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T element && element.Tag is string s && s == tag)
+                {
+                    return element;
+                }
+
+                T? found = FindChildByTag<T>(child, tag);
+                if (found != null) return found;
+            }
+
+            return null;
+        }
+
+        // ─── Action buttons ──────────────────────────────────────────────
 
         private void UpdateActionButtons(bool binaryExists)
         {
