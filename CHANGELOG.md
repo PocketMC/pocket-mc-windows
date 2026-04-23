@@ -1,6 +1,15 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.0`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.1`.
+
+## v1.6.1 - Cross-Play & UI Tweaks
+
+This is a minor patch release focusing on fixing cross-play port configuration and polishing the dashboard UI for Bedrock servers.
+
+### ✨ Enhancements & Fixes
+* **Geyser Config Port Patching**: Fixed an issue where the Geyser config port was not being properly patched on startup for non-Spigot loaders (Fabric, Forge, NeoForge). The patching engine now correctly searches the `config/` directory.
+* **Bedrock IP Copy Behavior**: Fixed a bug where clicking the "Copy" button next to a cross-play server's Bedrock Hostname incorrectly copied the numeric IP address instead of the hostname.
+* **Dedicated Bedrock UI Icons**: Updated the Dashboard UI to display the correct native Bedrock icon (Cube) instead of the default Desktop icon for dedicated Bedrock instances, ensuring visual consistency across all Bedrock connection types.
 
 ## v1.6.0 - Dynamic Theming & Advanced Tunnel Management
 
