@@ -63,7 +63,6 @@ namespace PocketMC.Desktop.Features.Tunnel
         public string? LastErrorMessage { get; private set; }
         public PlayitPartnerConnection? PartnerConnection => _applicationState.Settings.PlayitPartnerConnection;
 
-        public event EventHandler<string>? OnClaimUrlReceived;
         public event EventHandler? OnTunnelRunning;
         public event EventHandler<PlayitAgentState>? OnStateChanged;
         public event EventHandler<int>? OnAgentExited;
