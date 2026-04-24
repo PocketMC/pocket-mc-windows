@@ -805,6 +805,19 @@ namespace PocketMC.Desktop.Features.Tunnel
             await RefreshStatusAsync();
         }
 
+        private async void BtnCreateTunnel_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new CreateTunnelDialog(_playitApiClient);
+            dialog.Owner = Window.GetWindow(this);
+            dialog.ShowDialog();
+
+            if (dialog.TunnelCreated)
+            {
+                // Refresh the tunnel list so the newly created tunnel appears immediately
+                await RefreshStatusAsync();
+            }
+        }
+
         private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
             await RefreshStatusAsync();

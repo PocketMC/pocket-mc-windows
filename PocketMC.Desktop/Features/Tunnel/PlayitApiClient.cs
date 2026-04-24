@@ -48,6 +48,11 @@ namespace PocketMC.Desktop.Features.Tunnel
         public bool Success { get; set; }
         public string? TunnelId { get; set; }
         public string? ErrorMessage { get; set; }
+        /// <summary>
+        /// The raw TunnelCreateErrorV1 string returned by the API (e.g. "RequiresVerifiedAccount").
+        /// Populated only on a "fail" status response.
+        /// </summary>
+        public string? ErrorCode { get; set; }
         public bool IsTokenInvalid { get; set; }
         public bool RequiresClaim { get; set; }
     }
@@ -383,7 +388,105 @@ namespace PocketMC.Desktop.Features.Tunnel
                     string failMessage = failData.ValueKind == JsonValueKind.String
                         ? failData.GetString() ?? "Unknown error"
                         : failData.ToString();
-                    return new TunnelCreateResult { Success = false, ErrorMessage = failMessage };
+                    return new TunnelCreateResult { Success = false, ErrorMessage = failMessage, ErrorCode = failMessage };
+                }
+
+                return new TunnelCreateResult { Success = false, ErrorMessage = $"Unexpected API response: {body}" };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create Playit tunnel.");
+                return new TunnelCreateResult { Success = false, ErrorMessage = ex.Message };
+            }
+        }
+
+        /// <summary>
+        /// Creates a PlayIt tunnel with the specified region and enabled state via v1/tunnels/create.
+        /// </summary>
+        public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort, string region, bool enabled)
+        {
+            string? secretKey = GetSecretKey();
+            if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                return new TunnelCreateResult
+                {
+                    Success = false,
+                    ErrorMessage = "PocketMC is not connected to a Playit agent yet.",
+                    RequiresClaim = true
+                };
+            }
+
+            try
+            {
+                var payload = new
+                {
+                    name = tunnelName,
+                    protocol = new { type = "tunnel-type", details = tunnelType },
+                    origin = new
+                    {
+                        type = "agent",
+                        data = new
+                        {
+                            agent_id = (string?)null,
+                            config = new
+                            {
+                                fields = new[]
+                                {
+                                    new { name = "local_port", value = localPort.ToString() }
+                                }
+                            }
+                        }
+                    },
+                    endpoint = new
+                    {
+                        type = "region",
+                        details = new { region, port = (int?)null }
+                    },
+                    enabled
+                };
+
+                using HttpRequestMessage request = BuildAuthorizedRequest(HttpMethod.Post, "/v1/tunnels/create", secretKey, payload);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+                if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                {
+                    return new TunnelCreateResult
+                    {
+                        Success = false,
+                        ErrorMessage = "The saved Playit credentials were rejected.",
+                        IsTokenInvalid = true
+                    };
+                }
+
+                string body = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Playit tunnel creation failed with HTTP {StatusCode}: {Body}", (int)response.StatusCode, body);
+                    return new TunnelCreateResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"Playit API returned HTTP {(int)response.StatusCode}."
+                    };
+                }
+
+                using JsonDocument doc = JsonDocument.Parse(body);
+                JsonElement root = doc.RootElement;
+
+                string status = root.TryGetProperty("status", out JsonElement statusEl) ? statusEl.GetString() ?? "" : "";
+
+                if (status == "success" && root.TryGetProperty("data", out JsonElement data))
+                {
+                    string? createdId = data.TryGetProperty("id", out JsonElement idEl) ? idEl.GetString() : null;
+                    return new TunnelCreateResult { Success = true, TunnelId = createdId };
+                }
+
+                if (status == "fail" && root.TryGetProperty("data", out JsonElement failData))
+                {
+                    string failMessage = failData.ValueKind == JsonValueKind.String
+                        ? failData.GetString() ?? "Unknown error"
+                        : failData.ToString();
+                    return new TunnelCreateResult { Success = false, ErrorMessage = failMessage, ErrorCode = failMessage };
                 }
 
                 return new TunnelCreateResult { Success = false, ErrorMessage = $"Unexpected API response: {body}" };
