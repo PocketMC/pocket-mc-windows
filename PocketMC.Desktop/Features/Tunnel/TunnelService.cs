@@ -174,7 +174,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
             // No matching tunnel exists — auto-create one via the API.
             // The API will reject the request if the account's tunnel limit is reached.
-            return await AutoCreateTunnelAsync(request);
+            return await AutoCreateTunnelAsync(request, result.Tunnels);
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         /// On success, re-fetches tunnels to resolve the connect address.
         /// On failure, logs the error and returns a non-blocking error result.
         /// </summary>
-        private async Task<TunnelResolutionResult> AutoCreateTunnelAsync(PortCheckRequest request)
+        private async Task<TunnelResolutionResult> AutoCreateTunnelAsync(PortCheckRequest request, IReadOnlyList<TunnelData> existingTunnels)
         {
             bool isBedrock = request.Protocol == PortProtocol.Udp ||
                              request.BindingRole is PortBindingRole.BedrockServer
@@ -216,7 +216,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                         Status = TunnelResolutionResult.TunnelStatus.LimitReached,
                         ErrorMessage = "Tunnel limit reached. Visit playit.gg to upgrade.",
                         FailureCode = PortFailureCode.TunnelLimitReached,
-                        CreateErrorCode = createResult.ErrorCode
+                        CreateErrorCode = createResult.ErrorCode,
+                        ExistingTunnels = existingTunnels
                     };
                 }
 
