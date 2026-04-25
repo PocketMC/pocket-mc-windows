@@ -40,9 +40,9 @@ PocketMC uses WPF `ResourceDictionary` files to store UI text for each supported
 
 Example behavior:
 
-- `LoadResourceDictionary("es-ES")` removes the existing `Strings.*.xaml` dictionary from `Application.Current.Resources`.
-- It then adds the new resource dictionary using a `pack://application:,,,` URI.
-- UI controls bound with `DynamicResource` refresh automatically.
+- `LoadResourceDictionary("es-ES")` ensures `Strings.en-US.xaml` is loaded as a base dictionary.
+- It then adds `Strings.es-ES.xaml` as an overlay dictionary using a `pack://application:,,,` URI.
+- UI controls bound with `DynamicResource` will reflect overlay values while falling back to the base for missing keys.
 
 ## WPF usage rules
 
@@ -128,9 +128,9 @@ Hindi is left-to-right, but UI copy may wrap differently. Use `TextWrapping="Wra
 
 ### Resource dictionary lookup
 
-The app searches for the current dictionary by name pattern `Strings.` and replaces it at runtime. This means:
+The app keeps a base `Strings.en-US.xaml` dictionary and swaps only the active overlay dictionary. This means:
 
-- Only one `Strings.<culture>.xaml` dictionary should be merged at once.
+- Only one `Strings.<culture>.xaml` overlay dictionary should be merged at once.
 - Theme and control style dictionaries can remain merged independently.
 
 ### Fallback behavior
@@ -147,7 +147,7 @@ When adding a new page or control:
 
 ## Example file structure
 
-```
+```text
 PocketMC.Desktop/
   Resources/
     Strings.en-US.xaml

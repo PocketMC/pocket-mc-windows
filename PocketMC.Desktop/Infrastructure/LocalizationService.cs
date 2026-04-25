@@ -56,7 +56,7 @@ namespace PocketMC.Desktop.Infrastructure
             LoadResourceDictionary(languageCode);
 
             var settings = _settingsManager.Load();
-            settings.Language = languageCode;
+            settings.Language = CurrentLanguageCode;
             _settingsManager.Save(settings);
         }
 

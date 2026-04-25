@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=System.Private.CoreLib">
     <sys:String x:Key="AppSettingsTitle">App Settings</sys:String>
@@ -16,11 +16,11 @@
     <sys:String x:Key="ApplicationLanguageLabel">Select Language</sys:String>
     <sys:String x:Key="ApplicationLanguageDescription">Select the language for the PocketMC interface.</sys:String>
     <sys:String x:Key="LanguageEnglish">English</sys:String>
-    <sys:String x:Key="LanguageSpanish">Español</sys:String>
+    <sys:String x:Key="LanguageSpanish">EspaÃ±ol</sys:String>
     <sys:String x:Key="LanguageHindi">Hindi</sys:String>
-    <sys:String x:Key="LanguageFrench">Français</sys:String>
+    <sys:String x:Key="LanguageFrench">FranÃ§ais</sys:String>
     <sys:String x:Key="LanguageGerman">Deutsch</sys:String>
-    <sys:String x:Key="LanguageJapanese">日本語</sys:String>
+    <sys:String x:Key="LanguageJapanese">æ—¥æœ¬èªž</sys:String>
     <sys:String x:Key="SettingsCardApiConfiguration">API Configuration</sys:String>
     <sys:String x:Key="SettingsCardApiConfigurationDescription">Configure third-party API keys for services like CurseForge.</sys:String>
     <sys:String x:Key="CurseForgeApiKeyLabel">CurseForge API Key</sys:String>
@@ -60,7 +60,7 @@
     <sys:String x:Key="TrayExitPocketMCMenuItem">Exit PocketMC</sys:String>
     <sys:String x:Key="RestartToUpdateButton">Restart to update</sys:String>
     <sys:String x:Key="RestartToUpdateToolTip">Stop all servers first if any are running</sys:String>
-    <sys:String x:Key="DismissUpdateBannerToolTip">Dismiss — update will apply on next restart</sys:String>
+    <sys:String x:Key="DismissUpdateBannerToolTip">Dismiss â€” update will apply on next restart</sys:String>
     <sys:String x:Key="NavDashboardLabel">Dashboard</sys:String>
     <sys:String x:Key="NavTunnelLabel">Tunnel</sys:String>
     <sys:String x:Key="NavJavaSetupLabel">Java Setup</sys:String>
@@ -184,4 +184,10 @@
     <sys:String x:Key="ApplicationThemeSystemLabel">System Default</sys:String>
     <sys:String x:Key="ApplicationThemeLightLabel">Light</sys:String>
     <sys:String x:Key="ApplicationThemeDarkLabel">Dark</sys:String>
+
+    <sys:String x:Key="CopiedToClipboardMessage">Text copied to clipboard.</sys:String>
+    <sys:String x:Key="ValidatingApiKeyMessage">Validating with {0}...</sys:String>
+    <sys:String x:Key="ApiKeyValidMessage">API key is valid! Connection successful.</sys:String>
+    <sys:String x:Key="ApiKeyInvalidMessage">Error</sys:String>
+
 </ResourceDictionary>

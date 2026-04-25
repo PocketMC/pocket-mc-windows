@@ -246,7 +246,9 @@ namespace PocketMC.Desktop.Features.Setup
             }
 
             var provider = GetSelectedProvider();
-            AiKeyStatus.Text = $"⏳ Validating with {AiApiClient.GetDisplayName(provider)}...";
+            string validatingStr = _localizationService.GetString("ValidatingApiKeyMessage");
+            if (validatingStr == "ValidatingApiKeyMessage") validatingStr = "Validating with {0}...";
+            AiKeyStatus.Text = $"⏳ {string.Format(validatingStr, AiApiClient.GetDisplayName(provider))}";
             AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
 
             try
@@ -254,7 +256,9 @@ namespace PocketMC.Desktop.Features.Setup
                 var result = await _aiApiClient.ValidateKeyAsync(provider, apiKey);
                 if (result.Success)
                 {
-                    AiKeyStatus.Text = "✅ API key is valid! Connection successful.";
+                    string validStr = _localizationService.GetString("ApiKeyValidMessage");
+                    if (validStr == "ApiKeyValidMessage") validStr = "API key is valid! Connection successful.";
+                    AiKeyStatus.Text = $"✅ {validStr}";
                     AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
                 }
                 else
@@ -265,7 +269,9 @@ namespace PocketMC.Desktop.Features.Setup
             }
             catch (Exception ex)
             {
-                AiKeyStatus.Text = $"❌ Error: {ex.Message}";
+                string errorStr = _localizationService.GetString("ApiKeyInvalidMessage");
+                if (errorStr == "ApiKeyInvalidMessage") errorStr = "Error";
+                AiKeyStatus.Text = $"❌ {errorStr}: {ex.Message}";
                 AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
             }
         }

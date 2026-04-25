@@ -44,7 +44,7 @@ namespace PocketMC.Desktop.Features.Shell
             try
             {
                 Clipboard.SetText("https://discord.gg/h27uNCaxPH");
-                _dialogService.ShowMessage(_localizationService.GetString("CopiedTitle"), _localizationService.GetString("CopiedTitle"));
+                _dialogService.ShowMessage(_localizationService.GetString("CopiedTitle"), _localizationService.GetString("CopiedToClipboardMessage"));
             }
             catch (Exception ex)
             {
