@@ -60,7 +60,7 @@ Supported server types: **Vanilla · Paper · Fabric · Forge · Bedrock (BDS) �
 - **Modern AI Console** — Colorized logs with multi-keyword search, Regex filtering, command history, intelligent command auto-suggestions and crashes and errors AI analysis.
 - **AI Session Summaries** — Generate structured summaries of your server sessions using Google Gemini, OpenAI, Anthropic Claude, Mistral AI, or Groq.
 - **Disaster Recovery** — Automated backups with optional off-site replication to Google Drive/Dropbox sync directories and one-click support bundle export.
-- **Multilingual UI** — Runtime language switching in Settings, now supporting English, Español, and हिंदी.
+- **Multilingual UI** — Runtime language switching in Settings, now supporting English, Español, हिंदी, Français, Deutsch, and 日本語.
 
 ### 🛡️ Technical Excellence
 

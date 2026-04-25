@@ -7,6 +7,9 @@ This guide explains how PocketMC handles runtime localization and how to extend 
 - English (`en-US`)
 - Spanish (`es-ES`)
 - Hindi (`hi-IN`)
+- French (`fr-FR`)
+- German (`de-DE`)
+- Japanese (`ja-JP`)
 
 ## Architecture Overview
 
@@ -22,6 +25,9 @@ PocketMC uses WPF `ResourceDictionary` files to store UI text for each supported
 - `PocketMC.Desktop/Resources/Strings.en-US.xaml`
 - `PocketMC.Desktop/Resources/Strings.es-ES.xaml`
 - `PocketMC.Desktop/Resources/Strings.hi-IN.xaml`
+- `PocketMC.Desktop/Resources/Strings.fr-FR.xaml`
+- `PocketMC.Desktop/Resources/Strings.de-DE.xaml`
+- `PocketMC.Desktop/Resources/Strings.ja-JP.xaml`
 - `PocketMC.Desktop/Infrastructure/LocalizationService.cs`
 - `PocketMC.Desktop/Features/Setup/AppSettingsPage.xaml`
 
@@ -145,6 +151,9 @@ PocketMC.Desktop/
     Strings.en-US.xaml
     Strings.es-ES.xaml
     Strings.hi-IN.xaml
+    Strings.fr-FR.xaml
+    Strings.de-DE.xaml
+    Strings.ja-JP.xaml
   Infrastructure/
     LocalizationService.cs
   Features/
