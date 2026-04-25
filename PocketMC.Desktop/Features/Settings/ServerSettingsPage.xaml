@@ -56,11 +56,11 @@
                                Margin="0,0,12,0"
                                Padding="6" />
                     <ui:TextBlock FontTypography="Title"
-                                  Text="Server Configurations"
+                                  Text="{DynamicResource ServerSettingsTitle}"
                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                   VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock Text="Modify your instance setup, install addons, configure automated tasks and manage world files."
+                <TextBlock Text="{DynamicResource ServerSettingsDescription}"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                            FontSize="13"
                            Margin="48,0,0,0"
@@ -79,7 +79,7 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                 Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}">
                         <ui:SymbolIcon Symbol="Warning24" Foreground="#F38BA8" Margin="0,0,10,0"/>
-                        <TextBlock Text="Unsaved changes detected"
+                        <TextBlock Text="{DynamicResource UnsavedChangesDetected}"
                                    Foreground="#F38BA8"
                                    FontSize="13"
                                    FontWeight="SemiBold"
@@ -89,7 +89,7 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                 Visibility="{Binding IsRestartRequired, Converter={StaticResource VisibleIfTrue}}">
                         <ui:SymbolIcon Symbol="ArrowClockwise24" Foreground="#89B4FA" Margin="0,0,10,0"/>
-                        <TextBlock Text="Server restart required to apply changes"
+                        <TextBlock Text="{DynamicResource ServerRestartRequiredMessage}"
                                    Foreground="#89B4FA"
                                    FontSize="13"
                                    FontWeight="SemiBold"
@@ -97,8 +97,8 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <ui:Button Content="Discard" Appearance="Secondary" Margin="0,0,12,0" Command="{Binding CancelCommand}"/>
-                        <ui:Button Content="Save Changes" Appearance="Primary" Command="{Binding SaveCommand}" MinWidth="140"/>
+                        <ui:Button Content="{DynamicResource DiscardButton}" Appearance="Secondary" Margin="0,0,12,0" Command="{Binding CancelCommand}"/>
+                        <ui:Button Content="{DynamicResource SaveChangesButton}" Appearance="Primary" Command="{Binding SaveCommand}" MinWidth="140"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -117,14 +117,14 @@
                                    IsPaneToggleVisible="False"
                                    IsBackButtonVisible="Collapsed">
                     <ui:NavigationView.MenuItems>
-                        <ui:NavigationViewItem Content="Identity &amp; Performance" Icon="{ui:SymbolIcon Settings24}" Click="NavItem_Click" IsActive="True"/>
-                        <ui:NavigationViewItem Content="Gameplay Rules" Icon="{ui:SymbolIcon Globe24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="World &amp; Files" Icon="{ui:SymbolIcon Folder24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Addons (Plugins/Mods)" Icon="{ui:SymbolIcon Add24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Automated Backups" Icon="{ui:SymbolIcon Save24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Fault Tolerance" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Advanced Editor" Icon="{ui:SymbolIcon Code24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="AI Summaries" Icon="{ui:SymbolIcon BrainCircuit24}" Click="NavItem_Click"
+                        <ui:NavigationViewItem Content="{DynamicResource NavIdentityPerformance}" Icon="{ui:SymbolIcon Settings24}" Click="NavItem_Click" IsActive="True"/>
+                        <ui:NavigationViewItem Content="{DynamicResource NavGameplayRules}" Icon="{ui:SymbolIcon Globe24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{DynamicResource NavWorldFiles}" Icon="{ui:SymbolIcon Folder24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{DynamicResource NavAddonsPluginsMods}" Icon="{ui:SymbolIcon Add24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{DynamicResource NavAutomatedBackups}" Icon="{ui:SymbolIcon Save24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{DynamicResource NavFaultTolerance}" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{DynamicResource NavAdvancedEditor}" Icon="{ui:SymbolIcon Code24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{DynamicResource NavAiSummaries}" Icon="{ui:SymbolIcon BrainCircuit24}" Click="NavItem_Click"
                                                Visibility="{Binding IsAiSummarizationAvailable, Converter={StaticResource VisibleIfTrue}}"/>
                     </ui:NavigationView.MenuItems>
                 </ui:NavigationView>
@@ -134,19 +134,19 @@
                         <TabControl.Resources><Style TargetType="TabPanel"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
 
                         <!-- TAB 1: IDENTITY & PERFORMANCE -->
-                        <TabItem Header="Identity">
+                        <TabItem Header="{DynamicResource ServerSettingsIdentityTab}">
                             <ScrollViewer x:Name="GeneralScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <ui:CardExpander Header="Visual Identity" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12" IsExpanded="True">
                                         <StackPanel Margin="16,8,16,16">
                                             <!-- Instance Alias & Description -->
-                                            <TextBlock Text="Instance Name (Label)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="The display name for this instance in your dashboard." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                            <ui:TextBox Text="{Binding General.InstanceName, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="My Epic Server" Margin="0,0,0,16"/>
+                                            <TextBlock Text="{DynamicResource InstanceNameLabel}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{DynamicResource InstanceNameDescription}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                            <ui:TextBox Text="{Binding General.InstanceName, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{DynamicResource InstanceNamePlaceholder}" Margin="0,0,0,16"/>
 
-                                            <TextBlock Text="Instance Description" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="A short note about this instance's purpose or configuration." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                            <ui:TextBox Text="{Binding General.InstanceDescription, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Testing new mods..." Margin="0,0,0,20"/>
+                                            <TextBlock Text="{DynamicResource InstanceDescriptionLabel}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{DynamicResource InstanceDescriptionDescription}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                            <ui:TextBox Text="{Binding General.InstanceDescription, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{DynamicResource InstanceDescriptionPlaceholder}" Margin="0,0,0,20"/>
 
                                             <Separator Margin="0,0,0,20" Opacity="0.15"/>
 
@@ -165,7 +165,7 @@
                                                         <Border BorderThickness="1" BorderBrush="#333333" Background="#111">
                                                             <Image Source="{Binding General.ServerIcon}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
                                                         </Border>
-                                                        <ui:Button Appearance="Primary" Padding="4" Command="{Binding General.BrowseIconCommand}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="-8,-8,0,0" ToolTip="Change Server Icon">
+                                                        <ui:Button Appearance="Primary" Padding="4" Command="{Binding General.BrowseIconCommand}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="-8,-8,0,0" ToolTip="{DynamicResource ChangeServerIconToolTip}">
                                                             <ui:SymbolIcon Symbol="Edit16" />
                                                         </ui:Button>
                                                     </Grid>
@@ -196,7 +196,7 @@
                                                                             <DropShadowEffect BlurRadius="0" ShadowDepth="2" Opacity="1" Color="Black" />
                                                                         </ContentControl.Effect>
                                                                     </ContentControl>
-                                                                    <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Edit16}" Click="BtnEditMotd_Click" Margin="4,-2,0,0" Padding="2" ToolTip="Edit MOTD"/>
+                                                                    <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Edit16}" Click="BtnEditMotd_Click" Margin="4,-2,0,0" Padding="2" ToolTip="{DynamicResource EditMotdToolTip}"/>
                                                                 </StackPanel>
                                                             </StackPanel>
 
@@ -223,7 +223,7 @@
                                                                 </WrapPanel>
                                                                 <StackPanel Orientation="Horizontal">
                                                                     <ui:TextBox x:Name="TxtMotdRaw" Text="{Binding General.Motd, UpdateSourceTrigger=PropertyChanged}" Width="280" FontFamily="Consolas"/>
-                                                                    <ui:Button Appearance="Primary" Icon="{ui:SymbolIcon Checkmark16}" Click="BtnSaveMotd_Click" Margin="6,0,0,0" ToolTip="Save"/>
+                                                                    <ui:Button Appearance="Primary" Icon="{ui:SymbolIcon Checkmark16}" Click="BtnSaveMotd_Click" Margin="6,0,0,0" ToolTip="{DynamicResource SaveButton}"/>
                                                                 </StackPanel>
                                                             </StackPanel>
                                                         </Grid>
@@ -251,30 +251,30 @@
                                     </ui:CardExpander>
 
                                     <!-- NETWORKING & IP -->
-                                    <ui:CardExpander Header="Networking &amp; IP" Icon="{ui:SymbolIcon Globe24}" Margin="0,0,0,12" IsExpanded="True">
+                                    <ui:CardExpander Header="{DynamicResource NetworkingAndIpHeader}" Icon="{ui:SymbolIcon Globe24}" Margin="0,0,0,12" IsExpanded="True">
                                         <StackPanel Margin="16,8,16,16">
 
                                             <!-- Server Port -->
-                                            <TextBlock Text="Server Port" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="The port your Minecraft server listens on. Default is 25565."
+                                            <TextBlock Text="{DynamicResource ServerPortLabel}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{DynamicResource ServerPortDescription}"
                                                        FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
                                             <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}"
-                                                        PlaceholderText="25565" Width="160" HorizontalAlignment="Left"/>
+                                                        PlaceholderText="{DynamicResource ServerPortPlaceholder}" Width="160" HorizontalAlignment="Left"/>
 
                                             <StackPanel Visibility="{Binding HasGeyser, Converter={StaticResource BoolToVis}}">
                                                 <Separator Margin="0,16" Opacity="0.15"/>
 
-                                                <TextBlock Text="Geyser Bedrock Port (UDP)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                                <TextBlock Text="The UDP port used by Bedrock players to connect via Geyser."
+                                                <TextBlock Text="{DynamicResource GeyserBedrockPortLabel}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                <TextBlock Text="{DynamicResource GeyserBedrockPortDescription}"
                                                            FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
                                                 <ui:TextBox Text="{Binding General.GeyserBedrockPort, UpdateSourceTrigger=PropertyChanged}"
-                                                            PlaceholderText="19132" Width="160" HorizontalAlignment="Left"/>
+                                                            PlaceholderText="{DynamicResource GeyserBedrockPortPlaceholder}" Width="160" HorizontalAlignment="Left"/>
                                             </StackPanel>
 
                                             <Separator Margin="0,16" Opacity="0.15"/>
                                             <!-- Public IP / Tunnel Endpoint -->
-                                            <TextBlock Text="Public Address (Tunnel)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="The public address players use to connect. Resolved from your active Playit.gg tunnels."
+                                            <TextBlock Text="{DynamicResource PublicAddressLabel}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{DynamicResource PublicAddressDescription}"
                                                        FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
 
                                             <Grid>
