@@ -249,7 +249,7 @@
 
                     <StackPanel Margin="16,8,16,16">
                         <!-- Dependency Health -->
-                        <TextBlock Text="External Services Availability" FontSize="14" FontWeight="Medium" Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource ExternalServicesAvailabilityLabel}" FontSize="14" FontWeight="Medium" Margin="0,0,0,4"/>
                         <ItemsControl x:Name="DependencyHealthList" Margin="0,0,0,16">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -287,9 +287,9 @@
 
                         <Separator Margin="0,4,0,12" Opacity="0.15"/>
 
-                        <TextBlock Text="Export Support Bundle" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Generates a ZIP archive containing redacted App logs, system information, and running server metrics. Attach this to GitHub issues or Discord help requests." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
-                        <ui:Button x:Name="BtnExportBundle" Content="Generate Support Bundle" Icon="{ui:SymbolIcon Archive24}" Appearance="Secondary" Click="ExportBundle_Click"/>
+                        <TextBlock Text="{DynamicResource ExportSupportBundleLabel}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{DynamicResource ExportSupportBundleDescription}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+                        <ui:Button x:Name="BtnExportBundle" Content="{DynamicResource ExportSupportBundleButton}" Icon="{ui:SymbolIcon Archive24}" Appearance="Secondary" Click="ExportBundle_Click"/>
                         <TextBlock x:Name="ExportBundleStatusText" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
                     </StackPanel>
                 </ui:CardExpander>

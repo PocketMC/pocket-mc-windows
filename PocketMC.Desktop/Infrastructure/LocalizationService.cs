@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Diagnostics;
 using PocketMC.Desktop.Features.Settings;
 
 namespace PocketMC.Desktop.Infrastructure
@@ -9,7 +10,6 @@ namespace PocketMC.Desktop.Infrastructure
     public sealed class LocalizationService
     {
         private readonly SettingsManager _settingsManager;
-        private readonly ResourceDictionary _defaultResourceDictionary = new ResourceDictionary();
 
         public LocalizationService(SettingsManager settingsManager)
         {
@@ -99,8 +99,9 @@ namespace PocketMC.Desktop.Infrastructure
                 _activeLanguageDictionary = CreateDictionary(languageCode);
                 appResources.MergedDictionaries.Add(_activeLanguageDictionary);
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Trace.TraceError($"Failed to load language dictionary for {languageCode}: {ex}");
                 CurrentLanguageCode = "en-US";
             }
         }

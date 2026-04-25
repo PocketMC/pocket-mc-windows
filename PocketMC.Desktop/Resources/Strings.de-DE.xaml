@@ -50,6 +50,10 @@
     <sys:String x:Key="SavedApiConfigurationMessage">API-Konfiguration erfolgreich gespeichert.</sys:String>
     <sys:String x:Key="SavedAiConfigurationMessage">KI-Zusammenfassungskonfiguration erfolgreich gespeichert.</sys:String>
     <sys:String x:Key="SavedExternalBackupMessage">Externer Backup-Speicherort gespeichert. Beim nächsten Server-Backup-Lauf wird es automatisch hier repliziert.</sys:String>
+    <sys:String x:Key="ExternalServicesAvailabilityLabel">Verfügbarkeit externer Dienste</sys:String>
+    <sys:String x:Key="ExportSupportBundleLabel">Support-Bundle exportieren</sys:String>
+    <sys:String x:Key="ExportSupportBundleDescription">Erzeugt ein ZIP-Archiv mit redigierten App-Protokollen, Systeminformationen und laufenden Server-Metriken. Hängen Sie dies an GitHub-Issues oder Discord-Hilfeanfragen an.</sys:String>
+    <sys:String x:Key="ExportSupportBundleButton">Support-Bundle generieren</sys:String>
     <sys:String x:Key="PleaseEnterApiKeyMessage">Bitte geben Sie zuerst einen API-Schlüssel ein.</sys:String>
     <sys:String x:Key="ExternalBackupFolderDescription">Externen Backup-Ordner auswählen (z.B. Google Drive/Dropbox-Sync-Ordner)</sys:String>
     <sys:String x:Key="UnableToOpenLinkTitle">Link kann nicht geöffnet werden</sys:String>
@@ -189,5 +193,10 @@
     <sys:String x:Key="ValidatingApiKeyMessage">Validierung mit {0}...</sys:String>
     <sys:String x:Key="ApiKeyValidMessage">API-Schlüssel ist gültig! Verbindung erfolgreich.</sys:String>
     <sys:String x:Key="ApiKeyInvalidMessage">Fehler</sys:String>
+
+    <sys:String x:Key="CheckingForUpdatesStatus">⏳ Suche nach Updates...</sys:String>
+    <sys:String x:Key="UpdateReadyStatus">✅ Update bereit: {0}. Siehe das obere Banner zum Neustart.</sys:String>
+    <sys:String x:Key="UpToDateStatus">✅ PocketMC ist auf dem neuesten Stand!</sys:String>
+    <sys:String x:Key="UpdateErrorStatus">❌ Fehler: {0}</sys:String>
 
 </ResourceDictionary>

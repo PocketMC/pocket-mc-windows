@@ -50,6 +50,10 @@
     <sys:String x:Key="SavedApiConfigurationMessage">Configuration API sauvegardée avec succès.</sys:String>
     <sys:String x:Key="SavedAiConfigurationMessage">Configuration de résumé IA sauvegardée avec succès.</sys:String>
     <sys:String x:Key="SavedExternalBackupMessage">Emplacement de sauvegarde externe sauvegardé. La prochaine fois qu'une sauvegarde serveur s'exécute, elle sera automatiquement répliquée ici.</sys:String>
+    <sys:String x:Key="ExternalServicesAvailabilityLabel">Disponibilité des Services Externes</sys:String>
+    <sys:String x:Key="ExportSupportBundleLabel">Exporter le Paquet de Support</sys:String>
+    <sys:String x:Key="ExportSupportBundleDescription">Génère une archive ZIP contenant les journaux d'application expurgés, les informations système et les métriques du serveur en cours d'exécution. Joignez ceci aux problèmes GitHub ou aux demandes d'aide Discord.</sys:String>
+    <sys:String x:Key="ExportSupportBundleButton">Générer le Paquet de Support</sys:String>
     <sys:String x:Key="PleaseEnterApiKeyMessage">Veuillez d'abord entrer une clé API.</sys:String>
     <sys:String x:Key="ExternalBackupFolderDescription">Sélectionner le dossier de sauvegarde externe (ex. dossier de synchronisation Google Drive/Dropbox)</sys:String>
     <sys:String x:Key="UnableToOpenLinkTitle">Impossible d'ouvrir le lien</sys:String>
@@ -189,5 +193,10 @@
     <sys:String x:Key="ValidatingApiKeyMessage">Validation avec {0}...</sys:String>
     <sys:String x:Key="ApiKeyValidMessage">La clé API est valide! Connexion réussie.</sys:String>
     <sys:String x:Key="ApiKeyInvalidMessage">Erreur</sys:String>
+
+    <sys:String x:Key="CheckingForUpdatesStatus">⏳ Recherche de mises à jour...</sys:String>
+    <sys:String x:Key="UpdateReadyStatus">✅ Mise à jour prête : {0}. Voir la bannière supérieure pour redémarrer.</sys:String>
+    <sys:String x:Key="UpToDateStatus">✅ PocketMC est à jour !</sys:String>
+    <sys:String x:Key="UpdateErrorStatus">❌ Erreur : {0}</sys:String>
 
 </ResourceDictionary>

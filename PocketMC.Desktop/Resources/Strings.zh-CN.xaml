@@ -50,6 +50,10 @@
     <sys:String x:Key="SavedApiConfigurationMessage">API配置保存成功。</sys:String>
     <sys:String x:Key="SavedAiConfigurationMessage">AI摘要配置保存成功。</sys:String>
     <sys:String x:Key="SavedExternalBackupMessage">外部备份位置已保存。下次服务器备份运行时，将自动复制到此处。</sys:String>
+    <sys:String x:Key="ExternalServicesAvailabilityLabel">外部服务可用性</sys:String>
+    <sys:String x:Key="ExportSupportBundleLabel">导出支持包</sys:String>
+    <sys:String x:Key="ExportSupportBundleDescription">生成包含编辑后的应用日志、系统信息和运行中服务器指标的ZIP存档。将此附加到GitHub问题或Discord帮助请求中。</sys:String>
+    <sys:String x:Key="ExportSupportBundleButton">生成支持包</sys:String>
     <sys:String x:Key="PleaseEnterApiKeyMessage">请先输入API密钥。</sys:String>
     <sys:String x:Key="ExternalBackupFolderDescription">选择外部备份文件夹（例如Google Drive/Dropbox同步文件夹）</sys:String>
     <sys:String x:Key="UnableToOpenLinkTitle">无法打开链接</sys:String>
@@ -189,5 +193,10 @@
     <sys:String x:Key="ValidatingApiKeyMessage">正在验证 {0}...</sys:String>
     <sys:String x:Key="ApiKeyValidMessage">API密钥有效！连接成功。</sys:String>
     <sys:String x:Key="ApiKeyInvalidMessage">错误</sys:String>
+
+    <sys:String x:Key="CheckingForUpdatesStatus">⏳ 检查更新中...</sys:String>
+    <sys:String x:Key="UpdateReadyStatus">✅ 更新就绪：{0}。请查看顶部横幅以重启。</sys:String>
+    <sys:String x:Key="UpToDateStatus">✅ PocketMC已是最新版本！</sys:String>
+    <sys:String x:Key="UpdateErrorStatus">❌ 错误：{0}</sys:String>
 
 </ResourceDictionary>

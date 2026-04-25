@@ -50,6 +50,10 @@
     <sys:String x:Key="SavedApiConfigurationMessage">Configuración de API guardada exitosamente.</sys:String>
     <sys:String x:Key="SavedAiConfigurationMessage">Configuración de resumen con IA guardada exitosamente.</sys:String>
     <sys:String x:Key="SavedExternalBackupMessage">Ubicación de copia de seguridad externa guardada. La próxima vez que se ejecute una copia de seguridad del servidor, se replicará automáticamente aquí.</sys:String>
+    <sys:String x:Key="ExternalServicesAvailabilityLabel">Disponibilidad de Servicios Externos</sys:String>
+    <sys:String x:Key="ExportSupportBundleLabel">Exportar Paquete de Soporte</sys:String>
+    <sys:String x:Key="ExportSupportBundleDescription">Genera un archivo ZIP que contiene registros de la aplicación redactados, información del sistema y métricas del servidor en ejecución. Adjúntalo a problemas de GitHub o solicitudes de ayuda en Discord.</sys:String>
+    <sys:String x:Key="ExportSupportBundleButton">Generar Paquete de Soporte</sys:String>
     <sys:String x:Key="PleaseEnterApiKeyMessage">Por favor ingresa una clave de API primero.</sys:String>
     <sys:String x:Key="ExternalBackupFolderDescription">Seleccionar carpeta de copia de seguridad externa (ej. carpeta de sincronización de Google Drive/Dropbox)</sys:String>
     <sys:String x:Key="UnableToOpenLinkTitle">No se puede abrir el enlace</sys:String>
@@ -189,5 +193,10 @@
     <sys:String x:Key="ValidatingApiKeyMessage">Validando con {0}...</sys:String>
     <sys:String x:Key="ApiKeyValidMessage">¡La clave de API es válida! Conexión exitosa.</sys:String>
     <sys:String x:Key="ApiKeyInvalidMessage">Error</sys:String>
+
+    <sys:String x:Key="CheckingForUpdatesStatus">⏳ Buscando actualizaciones...</sys:String>
+    <sys:String x:Key="UpdateReadyStatus">✅ Actualización lista: {0}. Ve el banner superior para reiniciar.</sys:String>
+    <sys:String x:Key="UpToDateStatus">✅ PocketMC está actualizado!</sys:String>
+    <sys:String x:Key="UpdateErrorStatus">❌ Error: {0}</sys:String>
 
 </ResourceDictionary>

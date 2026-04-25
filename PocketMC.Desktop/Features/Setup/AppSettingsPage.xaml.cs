@@ -11,8 +11,6 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Interfaces;
@@ -328,7 +326,7 @@ namespace PocketMC.Desktop.Features.Setup
         {
             BtnCheckUpdates.IsEnabled = false;
             UpdateStatusText.Visibility = Visibility.Visible;
-            UpdateStatusText.Text = "⏳ Checking for updates...";
+            UpdateStatusText.Text = _localizationService.GetString("CheckingForUpdatesStatus");
             UpdateStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
 
             try
@@ -337,18 +335,18 @@ namespace PocketMC.Desktop.Features.Setup
 
                 if (_updateService.HasPendingUpdate)
                 {
-                    UpdateStatusText.Text = $"✅ Update ready: {_updateService.PendingVersion}. See the top banner to restart.";
+                    UpdateStatusText.Text = string.Format(_localizationService.GetString("UpdateReadyStatus"), _updateService.PendingVersion);
                     UpdateStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
                 }
                 else
                 {
-                    UpdateStatusText.Text = "✅ PocketMC is up to date!";
+                    UpdateStatusText.Text = _localizationService.GetString("UpToDateStatus");
                     UpdateStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
                 }
             }
             catch (Exception ex)
             {
-                UpdateStatusText.Text = $"❌ Error: {ex.Message}";
+                UpdateStatusText.Text = string.Format(_localizationService.GetString("UpdateErrorStatus"), ex.Message);
                 UpdateStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
             }
             finally
