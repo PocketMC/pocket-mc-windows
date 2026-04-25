@@ -82,7 +82,9 @@ public IReadOnlyList<LanguageInfo> SupportedLanguages { get; } = new List<Langua
     new LanguageInfo("en-US", "English"),
     new LanguageInfo("es-ES", "Español"),
     new LanguageInfo("hi-IN", "हिंदी"),
-    new LanguageInfo("fr-FR", "Français")
+    new LanguageInfo("fr-FR", "Français"),
+    new LanguageInfo("de-DE", "Deutsch"),
+    new LanguageInfo("ja-JP", "日本語")
 };
 ```
 
@@ -140,7 +142,7 @@ If the selected language is not found, the system falls back to `en-US`.
 When adding a new page or control:
 
 1. Create a new key in `Strings.en-US.xaml`.
-2. Copy the key to `Strings.es-ES.xaml` and `Strings.hi-IN.xaml`.
+2. Copy the key to every existing `Strings.*.xaml`.
 3. Use `DynamicResource` in XAML.
 
 ## Example file structure

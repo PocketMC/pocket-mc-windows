@@ -174,5 +174,14 @@
     <sys:String x:Key="TunnelCopyAddressToolTip">Copy public address to clipboard</sys:String>
     <sys:String x:Key="TunnelPortLabel">PORT</sys:String>
     <sys:String x:Key="TunnelEditPortToolTip">Edit local port for this tunnel</sys:String>
-    <sys:String x:Key="TunnelSavePortToolTip">Save the new local port</sys:String>
+    <sys:String x:Key="JavaSetupPageTitle">Java Setup</sys:String>
+    <sys:String x:Key="JavaSetupPageDescription">Manage and install Java runtimes required by your servers.</sys:String>
+    <sys:String x:Key="JavaSetupDownloadMissingButton">Download Missing</sys:String>
+    <sys:String x:Key="JavaSetupAddCustomButton">Add Custom Runtime</sys:String>
+    <sys:String x:Key="JavaSetupRefreshButton">Refresh</sys:String>
+    <sys:String x:Key="JavaSetupDeleteRuntimeToolTip">Delete runtime</sys:String>
+    <sys:String x:Key="JavaSetupDownloadRuntimeToolTip">Download runtime</sys:String>
+    <sys:String x:Key="ApplicationThemeSystemLabel">System Default</sys:String>
+    <sys:String x:Key="ApplicationThemeLightLabel">Light</sys:String>
+    <sys:String x:Key="ApplicationThemeDarkLabel">Dark</sys:String>
 </ResourceDictionary>

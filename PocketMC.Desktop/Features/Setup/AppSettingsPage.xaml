@@ -67,9 +67,9 @@
                         <TextBlock Text="{DynamicResource ApplicationThemeLabel}" FontSize="14" FontWeight="Medium" Margin="0,0,0,0"/>
                         <TextBlock Text="{DynamicResource ApplicationThemeDescription}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
                         <ComboBox x:Name="ThemeCombo" Width="260" HorizontalAlignment="Left" SelectionChanged="ThemeCombo_SelectionChanged">
-                            <ComboBoxItem Content="System Default" Tag="System"/>
-                            <ComboBoxItem Content="Light" Tag="Light"/>
-                            <ComboBoxItem Content="Dark" Tag="Dark"/>
+                            <ComboBoxItem Content="{DynamicResource ApplicationThemeSystemLabel}" Tag="System"/>
+                            <ComboBoxItem Content="{DynamicResource ApplicationThemeLightLabel}" Tag="Light"/>
+                            <ComboBoxItem Content="{DynamicResource ApplicationThemeDarkLabel}" Tag="Dark"/>
                         </ComboBox>
 
                         <Separator Margin="0,16" Opacity="0.15"/>

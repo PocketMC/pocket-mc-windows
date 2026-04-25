@@ -70,26 +70,45 @@ namespace PocketMC.Desktop.Infrastructure
             return key;
         }
 
+        private ResourceDictionary? _baseLanguageDictionary;
+        private ResourceDictionary? _activeLanguageDictionary;
+
         private void LoadResourceDictionary(string languageCode)
         {
-            if (Application.Current == null)
-            {
-                return;
-            }
+            if (Application.Current == null) return;
 
             var appResources = Application.Current.Resources;
-            var existingDictionary = appResources.MergedDictionaries
-                .FirstOrDefault(d => d.Source != null && d.Source.OriginalString.Contains("Strings.", StringComparison.OrdinalIgnoreCase));
 
-            if (existingDictionary != null)
+            // Always ensure en-US is loaded as the base
+            _baseLanguageDictionary ??= CreateDictionary("en-US");
+            if (!appResources.MergedDictionaries.Contains(_baseLanguageDictionary))
+                appResources.MergedDictionaries.Add(_baseLanguageDictionary);
+
+            // Remove previous overlay (non-base language)
+            if (_activeLanguageDictionary != null)
             {
-                appResources.MergedDictionaries.Remove(existingDictionary);
+                appResources.MergedDictionaries.Remove(_activeLanguageDictionary);
+                _activeLanguageDictionary = null;
             }
 
-            var source = new Uri($"pack://application:,,,/PocketMC.Desktop;component/Resources/Strings.{languageCode}.xaml", UriKind.Absolute);
-            var languageDictionary = new ResourceDictionary { Source = source };
-            appResources.MergedDictionaries.Add(languageDictionary);
+            if (string.Equals(languageCode, "en-US", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            try
+            {
+                _activeLanguageDictionary = CreateDictionary(languageCode);
+                appResources.MergedDictionaries.Add(_activeLanguageDictionary);
+            }
+            catch
+            {
+                CurrentLanguageCode = "en-US";
+            }
         }
+
+        private static ResourceDictionary CreateDictionary(string languageCode) =>
+            new() { Source = new Uri(
+                $"pack://application:,,,/PocketMC.Desktop;component/Resources/Strings.{languageCode}.xaml",
+                UriKind.Absolute) };
     }
 
     public sealed class LanguageInfo

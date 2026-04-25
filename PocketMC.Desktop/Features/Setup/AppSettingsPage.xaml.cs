@@ -94,7 +94,7 @@ namespace PocketMC.Desktop.Features.Setup
             }
 
             // Language setting
-            string savedLanguage = _applicationState.Settings.Language ?? "en-US";
+            string savedLanguage = _localizationService.CurrentLanguageCode;
             foreach (ComboBoxItem item in LanguageCombo.Items)
             {
                 if (item.Tag?.ToString() == savedLanguage)
@@ -388,8 +388,7 @@ namespace PocketMC.Desktop.Features.Setup
             {
                 _localizationService.ChangeLanguage(languageCode);
                 var settings = _applicationState.Settings;
-                settings.Language = languageCode;
-                _settingsManager.Save(settings);
+                settings.Language = _localizationService.CurrentLanguageCode;
             }
         }
 

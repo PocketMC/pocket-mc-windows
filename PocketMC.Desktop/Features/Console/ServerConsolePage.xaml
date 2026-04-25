@@ -24,6 +24,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <ui:Button Grid.Column="0" Content="{DynamicResource ConsoleBackButton}" Appearance="Secondary"
@@ -59,7 +60,7 @@
             <ui:Button Grid.Column="7" Content="{DynamicResource ConsoleRestartButton}" Appearance="Secondary"
                        Icon="{ui:SymbolIcon ArrowSync24}" Click="BtnRestart_Click" Cursor="Hand" Margin="0,0,8,0"/>
 
-            <ui:Button Grid.Column="7" Content="{DynamicResource ConsoleAiSummaryButton}" Appearance="Info"
+            <ui:Button Grid.Column="8" Content="{DynamicResource ConsoleAiSummaryButton}" Appearance="Info"
                        Icon="{ui:SymbolIcon Sparkle24}" Click="BtnAiSummary_Click" Cursor="Hand"
                        ToolTip="{DynamicResource ConsoleAiSummaryToolTip}"/>
         </Grid>

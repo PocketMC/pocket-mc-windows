@@ -156,7 +156,7 @@ namespace PocketMC.Desktop.Features.Settings
             settings.PlayitConfigDirectory ??= Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "playit_gg");
-            settings.Language ??= "en-US";
+            if (string.IsNullOrWhiteSpace(settings.Language)) settings.Language = "en-US";
 
             // Migration: Move old single API key to the dictionary under Gemini
             if (!string.IsNullOrEmpty(settings.AiApiKey))

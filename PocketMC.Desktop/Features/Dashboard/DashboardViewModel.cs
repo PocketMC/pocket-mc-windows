@@ -14,6 +14,7 @@ using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -29,6 +30,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly IAppNavigationService _navigationService;
         private readonly IAppDispatcher _dispatcher;
         private readonly IServiceProvider _serviceProvider;
+        private readonly LocalizationService _localizationService;
 
         private bool _isActive;
 
@@ -52,7 +54,8 @@ namespace PocketMC.Desktop.Features.Dashboard
             IResourceMonitorService resourceMonitorService,
             IAppNavigationService navigationService,
             IAppDispatcher dispatcher,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            LocalizationService localizationService)
         {
             _listVm = listVm;
             _metricsVm = metricsVm;
@@ -63,6 +66,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             _navigationService = navigationService;
             _dispatcher = dispatcher;
             _serviceProvider = serviceProvider;
+            _localizationService = localizationService;
 
             NewInstanceCommand = new RelayCommand(_ => NavigateToNewInstance());
             RefreshInstancesCommand = new RelayCommand(_ => _listVm.LoadInstances());
@@ -148,7 +152,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         private void NavigateToNewInstance()
         {
             var page = ActivatorUtilities.CreateInstance<NewInstancePage>(_serviceProvider);
-            var label = Application.Current.TryFindResource("BreadcrumbNewInstance") as string ?? "New Instance";
+            var label = _localizationService.GetString("BreadcrumbNewInstance");
             _navigationService.NavigateToDetailPage(page, label, DetailRouteKind.NewInstance, DetailBackNavigation.Dashboard, true);
         }
 

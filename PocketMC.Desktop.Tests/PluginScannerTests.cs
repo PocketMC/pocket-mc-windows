@@ -8,7 +8,6 @@ using PocketMC.Desktop.Features.Mods;
 
 namespace PocketMC.Desktop.Tests;
 
-#pragma warning disable CS0618
 public sealed class PluginScannerTests : IDisposable
 {
     private readonly string _tempDirectory = Path.Combine(Path.GetTempPath(), "PocketMC.Tests", Guid.NewGuid().ToString("N"));
@@ -27,8 +26,10 @@ public sealed class PluginScannerTests : IDisposable
             writer.WriteLine("api-version: '1.20'");
         }
 
+#pragma warning disable CS0618
         Assert.Equal("ExamplePlugin", PluginScanner.TryGetPluginName(jarPath));
         Assert.Equal("1.20", PluginScanner.TryGetApiVersion(jarPath));
+#pragma warning restore CS0618
     }
 
     [Theory]
@@ -38,7 +39,9 @@ public sealed class PluginScannerTests : IDisposable
     [InlineData(null, "1.20.4", false)]
     public void IsIncompatible_RespectsBackwardCompatibility(string? pluginVersion, string serverVersion, bool expected)
     {
+#pragma warning disable CS0618
         Assert.Equal(expected, PluginScanner.IsIncompatible(pluginVersion, serverVersion));
+#pragma warning restore CS0618
     }
 
     public void Dispose()
@@ -49,4 +52,3 @@ public sealed class PluginScannerTests : IDisposable
         }
     }
 }
-#pragma warning restore CS0618

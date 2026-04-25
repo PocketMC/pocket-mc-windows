@@ -148,7 +148,7 @@ namespace PocketMC.Desktop.Infrastructure
                 return null;
             }
 
-            return Application.Current?.TryFindResource(key) as string ?? key;
+            return Application.Current?.TryFindResource(key) as string;
         }
 
         private void ValidateDetailTransition(DetailRouteKind routeKind, DetailBackNavigation backNavigation)
