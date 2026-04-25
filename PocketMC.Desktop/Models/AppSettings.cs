@@ -21,7 +21,7 @@ namespace PocketMC.Desktop.Models
         public bool HasCompletedFirstLaunch { get; set; }
         public bool EnableMicaEffect { get; set; } = true;
         public string ApplicationTheme { get; set; } = "System";
-        public string Language { get; set; } = "en-US";
+        public string? Language { get; set; }
         public string? CurseForgeApiKey { get; set; }
 
         // AI Summarization

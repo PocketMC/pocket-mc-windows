@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Diagnostics;
@@ -30,7 +31,7 @@ namespace PocketMC.Desktop.Infrastructure
 
         public void Initialize(string? languageCode)
         {
-            var code = !string.IsNullOrWhiteSpace(languageCode) ? languageCode : "en-US";
+            var code = DetermineInitialLanguage(languageCode);
             if (!SupportedLanguages.Any(l => string.Equals(l.Code, code, StringComparison.OrdinalIgnoreCase)))
             {
                 code = "en-US";
@@ -38,6 +39,30 @@ namespace PocketMC.Desktop.Infrastructure
 
             CurrentLanguageCode = code;
             LoadResourceDictionary(code);
+        }
+
+        private string DetermineInitialLanguage(string? languageCode)
+        {
+            if (!string.IsNullOrWhiteSpace(languageCode))
+            {
+                return languageCode;
+            }
+
+            var systemCulture = CultureInfo.CurrentUICulture;
+            var exactMatch = SupportedLanguages.FirstOrDefault(l => string.Equals(l.Code, systemCulture.Name, StringComparison.OrdinalIgnoreCase));
+            if (exactMatch != null)
+            {
+                return exactMatch.Code;
+            }
+
+            var neutralPrefix = systemCulture.TwoLetterISOLanguageName + "-";
+            var partialMatch = SupportedLanguages.FirstOrDefault(l => l.Code.StartsWith(neutralPrefix, StringComparison.OrdinalIgnoreCase));
+            if (partialMatch != null)
+            {
+                return partialMatch.Code;
+            }
+
+            return "en-US";
         }
 
         public void ChangeLanguage(string languageCode)
