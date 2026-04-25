@@ -55,7 +55,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                     string zipPath = files[0];
                     if (zipPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                     {
-                        System.Windows.MessageBox.Show("Modpack import is now available from Server Settings > Mods.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                        PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo("Info", "Modpack import is now available from Server Settings > Mods.");
                     }
                 }
             }

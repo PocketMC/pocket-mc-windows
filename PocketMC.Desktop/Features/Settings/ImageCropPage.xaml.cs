@@ -54,7 +54,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Failed to load image: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Failed to load image: " + ex.Message);
                 _navigationService.NavigateBack();
             }
         }
@@ -216,7 +216,7 @@ namespace PocketMC.Desktop.Features.Settings
                 // Clamp for safety
                 if (pxX + pxSize > _originalImage.PixelWidth) pxSize = _originalImage.PixelWidth - pxX;
                 if (pxY + pxSize > _originalImage.PixelHeight) pxSize = Math.Min(pxSize, _originalImage.PixelHeight - pxY);
-                if (pxSize <= 0) { MessageBox.Show("Invalid crop region."); return; }
+                if (pxSize <= 0) { PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Invalid Crop", "Invalid crop region."); return; }
 
                 // 1. Crop
                 var cropped = new CroppedBitmap(_originalImage, new Int32Rect(pxX, pxY, pxSize, pxSize));
@@ -234,7 +234,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Failed to crop image: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Failed to crop image: " + ex.Message);
             }
         }
 

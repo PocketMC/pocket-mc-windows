@@ -74,8 +74,23 @@ public sealed class TunnelServiceTests
     {
         using var workspace = new PortReliabilityTestWorkspace();
         workspace.WritePlayitSecret();
-        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(_ =>
-            new HttpResponseMessage(HttpStatusCode.OK)
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("tunnels/create") == true)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """
+                        {
+                          "status": "fail",
+                          "data": "RequiresPlayitPremium"
+                        }
+                        """)
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(
                     """
@@ -119,7 +134,8 @@ public sealed class TunnelServiceTests
                       }
                     }
                     """)
-            });
+            };
+        });
         PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
         harness.StateMachine.TransitionTo(PlayitAgentState.Connected);
         TunnelService service = workspace.CreateTunnelService(apiClient, harness.Service);

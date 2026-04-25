@@ -1,6 +1,25 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.1`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.2`.
+
+## v1.6.2 - LAN Connectivity & Resilient Tunneling
+
+This release introduces LAN IP visibility to the dashboard for easier local play and overhauls the Playit.gg tunnel creation logic to be more resilient and informative.
+
+### 🏠 LAN Connectivity
+* **Dashboard LAN IP Display**: You can now view your server's Local Area Network (LAN) IP and port directly on the instance cards. This makes it easier to connect from other devices on the same network without needing a public tunnel.
+* **One-Click Copy**: Added a dedicated copy button for LAN addresses, mirroring the functionality for public tunnel addresses.
+* **Port Persistence**: Improved internal metadata tracking to ensure server ports are accurately cached and displayed even when the server is offline.
+
+### 🌐 Resilient Playit.gg Integration
+* **API-Driven Limit Handling**: Moved away from hardcoded tunnel limits. PocketMC now communicates directly with the Playit API to determine if you've reached your tunnel quota, providing real-time feedback.
+* **Actionable Error Messaging**: If a tunnel cannot be created due to account limits, the application now displays a clear, actionable message with a direct link to upgrade or manage your tunnels, rather than a generic failure.
+* **Persistent Creation Dialog**: The manual "Create Tunnel" dialog now remains open if a creation attempt fails, allowing you to fix configuration issues or view error details without losing your progress.
+* **Non-Blocking Auto-Provisioning**: Failures during automatic tunnel creation (at server startup) are now handled as non-blocking notifications. Your server will still start, and you'll be notified of the connectivity issue to resolve it later.
+
+### 🛠️ Internal Improvements
+* **Metadata Reliability**: Refactored `InstanceMetadata` to better track primary networking ports across different server engines.
+* **Standardized Failure Paths**: Unified error handling between manual tunnel creation and automatic background provisioning for a more consistent user experience.
 
 ## v1.6.1 - Cross-Play & UI Tweaks
 

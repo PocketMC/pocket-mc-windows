@@ -11,6 +11,7 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Networking;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {
@@ -121,8 +122,15 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                     if (resolution.Status == TunnelResolutionResult.TunnelStatus.LimitReached)
                     {
-                        _dispatcher.Invoke(() => vm.SetTunnelError("Address unavailable"));
-                        ShowTunnelFailure(vm.Name, request, resolution);
+                        _dispatcher.Invoke(() =>
+                        {
+                            vm.SetTunnelError("Address unavailable");
+                            if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
+                            {
+                                AppDialog.ShowError("Tunnel Creation Failed",
+                                    TunnelCreateResult.MapCreateError(resolution.CreateErrorCode));
+                            }
+                        });
                         break;
                     }
                     else if (resolution.Status == TunnelResolutionResult.TunnelStatus.AgentOffline)
@@ -138,7 +146,15 @@ namespace PocketMC.Desktop.Features.Tunnel
                     }
                     else if (resolution.Status == TunnelResolutionResult.TunnelStatus.Error)
                     {
-                        _dispatcher.Invoke(() => vm.SetTunnelError("Address unavailable"));
+                        _dispatcher.Invoke(() =>
+                        {
+                            vm.SetTunnelError("Address unavailable");
+                            if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
+                            {
+                                AppDialog.ShowError("Tunnel Creation Failed",
+                                    TunnelCreateResult.MapCreateError(resolution.CreateErrorCode));
+                            }
+                        });
                         HandleResolutionError(vm.Name, request, resolution);
                     }
                 }

@@ -518,7 +518,7 @@ namespace PocketMC.Desktop.Features.Console
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Failed to copy logs: {ex.Message}", "Clipboard Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Clipboard Error", $"Failed to copy logs: {ex.Message}");
             }
         }
 
@@ -768,13 +768,11 @@ Logs:
                 // ~1.5MB threshold (roughly 15k-20k lines depending on log format)
                 if (fileInfo.Length > 1_500_000)
                 {
-                    var result = System.Windows.MessageBox.Show(
-                        "Your server session is very long. Summarizing it using AI will require a large number of tokens and may increase your AI usage costs.\n\nDo you want to continue?",
+                    bool continueAi = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
                         "Long Session Detected",
-                        System.Windows.MessageBoxButton.YesNo,
-                        System.Windows.MessageBoxImage.Warning);
+                        "Your server session is very long. Summarizing it using AI will require a large number of tokens and may increase your AI usage costs.\n\nDo you want to continue?");
                     
-                    if (result != System.Windows.MessageBoxResult.Yes)
+                    if (!continueAi)
                     {
                         return; // exit silently
                     }

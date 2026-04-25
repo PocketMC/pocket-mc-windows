@@ -382,11 +382,9 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
                         Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show(
-                                $"Cross-play Setup Failed\n\n{geyserEx.Message}\n\nYour server was created without cross-play. You can add it later from Server Settings.",
+                            PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
                                 "Cross-play Unavailable",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
+                                $"Cross-play Setup Failed\n\n{geyserEx.Message}\n\nYour server was created without cross-play. You can add it later from Server Settings.");
                         });
                     }
                 }
@@ -395,11 +393,9 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 {
                     SetCreationState(false);
                     _logger.LogWarning("Instance {InstanceName} was created, but PocketMC could not navigate back to the dashboard automatically.", TxtName.Text);
-                    MessageBox.Show(
-                        "The instance was created successfully, but PocketMC could not return to the Dashboard automatically.",
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo(
                         "Instance Created",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        "The instance was created successfully, but PocketMC could not return to the Dashboard automatically.");
                 }
             }
             catch (Exception ex)

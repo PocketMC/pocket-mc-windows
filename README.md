@@ -114,9 +114,9 @@ Download `Setup.exe` from the [latest release](https://github.com/PocketMC/pocke
 **Optional: Enable public access.** Open the instance, enable Playit.gg tunneling, and follow the one-time account link flow. Your public address appears on the dashboard.
 
 ---
-✔ Fully isolated — Java and PHP are managed internally
-✔ No system setup — no environment variables, no conflicts
-✔ Runs multiple servers safely side-by-side
+* ✔ Fully isolated — Java and PHP are managed internally
+* ✔ No system setup — no environment variables, no conflicts
+* ✔ Runs multiple servers safely side-by-side
 
 ---
 
@@ -130,17 +130,18 @@ Download `Setup.exe` from the [latest release](https://github.com/PocketMC/pocke
 |-----------|---------------|
 | ![Dashboard](docs/assets/screenshot-dashboard.png) | ![Console](docs/assets/screenshot-console.png) |
 
-| Server Settings | Plugin Browser |
-|-----------------|----------------|
-| ![Settings](docs/assets/screenshot-settings.png) | ![Plugins](docs/assets/screenshot-plugins.png) |
+| Server Settings | App Settings |
+|-----------------|-----------------|
+| ![ServerSettings](docs/assets/server-settings.png) | ![Settings](docs/assets/screenshot-settings.png) |
 
-| Mod Marketplace | Public Tunnels |
+| Plugin Browser | Mod Marketplace |
 |-----------------|----------------|
-| ![Marketplace](docs/assets/mod-marketplace.png) | ![Tunnels](docs/assets/tunnels.png) |
+| ![Plugins](docs/assets/screenshot-plugins.png) | ![Marketplace](docs/assets/mod-marketplace.png) |
 
-| Managed Runtimes | About |
-|------------------|-------|
-| ![Runtimes](docs/assets/runtimes.png) | ![About](docs/assets/about.png) |
+| Public Tunnels | Managed Runtimes | About |
+|-----------------|----------------|-------|
+| ![Tunnels](docs/assets/tunnels.png) | ![Runtimes](docs/assets/runtimes.png) | ![About](docs/assets/about.png) |
+
 
 ---
 

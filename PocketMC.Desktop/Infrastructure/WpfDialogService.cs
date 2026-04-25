@@ -10,36 +10,31 @@ namespace PocketMC.Desktop.Infrastructure
     {
         public Task<DialogResult> ShowDialogAsync(string title, string message, DialogType type = DialogType.Information, bool showCancel = false)
         {
-            var btn = showCancel ? MessageBoxButton.YesNoCancel : MessageBoxButton.YesNo;
-            var img = type switch
+            var appType = type switch
             {
-                DialogType.Warning => MessageBoxImage.Warning,
-                DialogType.Error => MessageBoxImage.Error,
-                DialogType.Question => MessageBoxImage.Question,
-                _ => MessageBoxImage.Information
+                DialogType.Warning => AppDialogType.Warning,
+                DialogType.Error => AppDialogType.Error,
+                DialogType.Question => AppDialogType.Confirm,
+                _ => AppDialogType.Info
             };
 
-            var result = MessageBox.Show(message, title, btn, img);
-            return Task.FromResult(result switch
-            {
-                MessageBoxResult.Yes => DialogResult.Yes,
-                MessageBoxResult.No => DialogResult.No,
-                MessageBoxResult.Cancel => DialogResult.Cancel,
-                _ => DialogResult.Ok
-            });
+            var buttons = showCancel ? AppDialogButtons.YesNoCancel : AppDialogButtons.YesNo;
+            bool primary = AppDialog.Show(title, message, appType, buttons);
+
+            return Task.FromResult(primary ? DialogResult.Yes : DialogResult.No);
         }
 
         public void ShowMessage(string title, string message, DialogType type = DialogType.Information)
         {
-            var img = type switch
+            var appType = type switch
             {
-                DialogType.Warning => MessageBoxImage.Warning,
-                DialogType.Error => MessageBoxImage.Error,
-                DialogType.Question => MessageBoxImage.Question,
-                _ => MessageBoxImage.Information
+                DialogType.Warning => AppDialogType.Warning,
+                DialogType.Error => AppDialogType.Error,
+                DialogType.Question => AppDialogType.Confirm,
+                _ => AppDialogType.Info
             };
 
-            MessageBox.Show(message, title, MessageBoxButton.OK, img);
+            AppDialog.Show(title, message, appType, AppDialogButtons.Ok);
         }
 
         public Task<string?> OpenFolderDialogAsync(string title)

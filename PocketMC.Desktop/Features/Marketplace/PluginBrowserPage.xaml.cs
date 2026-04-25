@@ -201,7 +201,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Search failed: {ex.Message}");
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Search Error", $"Search failed: {ex.Message}");
             }
             finally
             {
@@ -296,7 +296,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show("Install failed: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Install failed: " + ex.Message);
                 vm.State = InstallState.Failed;
                 vm.IsActionEnabled = true;
             }

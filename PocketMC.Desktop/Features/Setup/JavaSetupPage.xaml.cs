@@ -370,11 +370,9 @@ namespace PocketMC.Desktop.Features.Setup
 
                 if (!File.Exists(javaExe))
                 {
-                    System.Windows.MessageBox.Show(
-                        "Selected folder does not contain bin/java.exe.\nPlease select the JRE/JDK root folder.",
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
                         "Invalid Runtime",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        "Selected folder does not contain bin/java.exe.\nPlease select the JRE/JDK root folder.");
                     return;
                 }
 
@@ -387,11 +385,9 @@ namespace PocketMC.Desktop.Features.Setup
                 {
                     if (Directory.Exists(destPath))
                     {
-                        System.Windows.MessageBox.Show(
-                            $"A runtime named 'custom-{folderName}' already exists.",
+                        PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
                             "Duplicate",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
+                            $"A runtime named 'custom-{folderName}' already exists.");
                         return;
                     }
 
@@ -402,11 +398,9 @@ namespace PocketMC.Desktop.Features.Setup
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to add custom runtime.");
-                    System.Windows.MessageBox.Show(
-                        $"Failed to add runtime: {ex.Message}",
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                         "Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        $"Failed to add runtime: {ex.Message}");
                 }
             }
         }
@@ -441,21 +435,17 @@ namespace PocketMC.Desktop.Features.Setup
 
                 if (isUsedByRunningServer)
                 {
-                    System.Windows.MessageBox.Show(
-                        $"Cannot delete {entry.DisplayName} because it is currently in use by a running server.",
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
                         "Cannot Delete",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                        $"Cannot delete {entry.DisplayName} because it is currently in use by a running server.");
                     return;
                 }
 
-                var result = System.Windows.MessageBox.Show(
-                    $"Delete {entry.DisplayName}?\n\nPath: {entry.Path}\n\nYou can re-download bundled runtimes at any time.",
+                bool confirmed = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
                     "Confirm Delete",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
+                    $"Delete {entry.DisplayName}?\n\nPath: {entry.Path}\n\nYou can re-download bundled runtimes at any time.");
 
-                if (result == MessageBoxResult.Yes)
+                if (confirmed)
                 {
                     try
                     {
@@ -482,11 +472,9 @@ namespace PocketMC.Desktop.Features.Setup
                         }
 
                         _logger.LogError(ex, "Failed to delete runtime at {Path}.", entry.Path);
-                        System.Windows.MessageBox.Show(
-                            $"Failed to delete: {ex.Message}",
+                        PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                             "Error",
-                            MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                            $"Failed to delete: {ex.Message}");
                     }
                 }
             }
@@ -506,11 +494,9 @@ namespace PocketMC.Desktop.Features.Setup
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to download single runtime.");
-                    System.Windows.MessageBox.Show(
-                        $"Failed to start download: {ex.Message}",
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                         "Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        $"Failed to start download: {ex.Message}");
                 }
                 finally
                 {

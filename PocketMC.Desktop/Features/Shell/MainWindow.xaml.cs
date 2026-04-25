@@ -264,7 +264,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
 
     public void ShowError(string title, string message) =>
-        System.Windows.MessageBox.Show(message, title, System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        Infrastructure.AppDialog.ShowError(title, message);
 
     public void ShutdownApplication() => Application.Current.Shutdown();
     public void CloseApp() => Application.Current.Shutdown();

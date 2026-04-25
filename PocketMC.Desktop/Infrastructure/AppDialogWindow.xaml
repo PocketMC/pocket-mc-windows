@@ -1,0 +1,63 @@
+<ui:FluentWindow x:Class="PocketMC.Desktop.Infrastructure.AppDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="{Binding ElementName=TxtTitle, Path=Text}"
+        SizeToContent="WidthAndHeight"
+        MinWidth="360" MaxWidth="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowCornerPreference="Round"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="Mica"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header: icon + title -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock x:Name="TxtIcon"
+                       FontSize="18"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"/>
+            <TextBlock x:Name="TxtTitle"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+
+        <!-- Message body -->
+        <ScrollViewer Grid.Row="1"
+                      MaxHeight="300"
+                      VerticalScrollBarVisibility="Auto">
+            <TextBlock x:Name="TxtMessage"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       LineHeight="20"/>
+        </ScrollViewer>
+
+        <!-- Action buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <ui:Button x:Name="BtnSecondary"
+                       Width="100"
+                       Margin="0,0,10,0"
+                       Visibility="Collapsed"
+                       Click="BtnSecondary_Click"/>
+
+            <ui:Button x:Name="BtnPrimary"
+                       Content="OK"
+                       Appearance="Primary"
+                       Width="110"
+                       Click="BtnPrimary_Click"
+                       IsDefault="True"/>
+        </StackPanel>
+
+    </Grid>
+</ui:FluentWindow>

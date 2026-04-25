@@ -58,21 +58,41 @@
 
                         <CheckBox IsChecked="{Binding IsSelected}" 
                                   IsEnabled="{Binding Type, Converter={StaticResource DependencyTypeToIsEnabledConverter}}"
+                                  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
 
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding ProjectTitle}" FontWeight="SemiBold" FontSize="14"/>
-                            <TextBlock Text="{Binding VersionName}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                            <TextBlock Text="{Binding ProjectTitle}" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <TextBlock Text="{Binding VersionName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBlock Text="{Binding Error}" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}" 
                                        Visibility="{Binding Error, Converter={StaticResource StringToVisibilityConverter}}"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal">
-                            <ui:Badge Content="Already Installed" Appearance="Secondary" 
-                                      Visibility="{Binding IsAlreadyInstalled, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                      Margin="0,0,5,0"/>
-                            <ui:Badge Content="{Binding Type}" 
-                                      Appearance="{Binding Type, Converter={StaticResource DependencyTypeToAppearanceConverter}}"/>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" Orientation="Horizontal">
+                            <Border CornerRadius="4" Padding="10,4" Background="{DynamicResource SystemFillColorNeutralBrush}" 
+                                    Visibility="{Binding IsAlreadyInstalled, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    Margin="0,0,6,0">
+                                <TextBlock Text="Already Installed" Foreground="{DynamicResource SystemControlForegroundAltHighBrush}" FontSize="12" FontWeight="SemiBold"/>
+                            </Border>
+                            <Border CornerRadius="4" Padding="10,4">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="{DynamicResource SystemFillColorNeutralBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Type}" Value="{x:Static models:DependencyType.Required}">
+                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Type}" Value="{x:Static models:DependencyType.Incompatible}">
+                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorCriticalBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Type}" Value="{x:Static models:DependencyType.Embedded}">
+                                                <Setter Property="Background" Value="{DynamicResource SystemFillColorSuccessBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding Type}" Foreground="{DynamicResource SystemControlForegroundAltHighBrush}" FontSize="12" FontWeight="SemiBold"/>
+                            </Border>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>

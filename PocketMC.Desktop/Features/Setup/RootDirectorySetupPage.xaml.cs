@@ -87,7 +87,7 @@ namespace PocketMC.Desktop.Features.Setup
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to create directory: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", $"Failed to create directory: {ex.Message}");
                     return;
                 }
             }

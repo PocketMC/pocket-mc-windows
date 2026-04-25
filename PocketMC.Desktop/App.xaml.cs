@@ -133,11 +133,9 @@ public partial class App : Application
 
         try
         {
-            MessageBox.Show(
-                $"PocketMC hit an unexpected error and wrote a crash report to:\n{crashReportPath}\n\nThe app will now close so it can restart cleanly.",
+            Infrastructure.AppDialog.ShowError(
                 "PocketMC Crash",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+                $"PocketMC hit an unexpected error and wrote a crash report to:\n{crashReportPath}\n\nThe app will now close so it can restart cleanly.");
         }
         catch
         {

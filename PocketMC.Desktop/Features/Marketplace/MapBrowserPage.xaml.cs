@@ -98,7 +98,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Search failed: {ex.Message}");
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Search Error", $"Search failed: {ex.Message}");
             }
             finally
             {
@@ -143,7 +143,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                 if (version == null || version.Files.Count == 0)
                 {
-                    MessageBox.Show($"No compatible world version found on CurseForge.", "Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Not Found", "No compatible world version found on CurseForge.");
                     btn.IsEnabled = true;
                     btn.Content = "Import";
                     return;
@@ -167,7 +167,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Download failed: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Download failed: " + ex.Message);
                 btn.IsEnabled = true;
                 btn.Content = "Import";
             }
