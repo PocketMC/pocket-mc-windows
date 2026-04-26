@@ -136,6 +136,35 @@ jobs:
           name: PocketMC-Release-${{ env.VERSION }}
           path: Releases/
 
+          # ... existing steps up to Pack with Velopack ...
+
+      # Extract release notes from CHANGELOG.md for this version
+      - name: Extract release notes from CHANGELOG
+        if: steps.compare.outputs.skip == 'false'
+        id: notes
+        shell: pwsh
+        run: |
+          $version = "${{ env.VERSION }}"
+          $header = "## [$version]"   # Adjust this pattern to exactly match your CHANGELOG format
+          # Common keepachangelog style: ## [1.6.3] - YYYY-MM-DD or ## 1.6.3
+          
+          $changelog = Get-Content -Path CHANGELOG.md -Raw
+          
+          # Extract everything from the matching header until the next ## or end
+          $pattern = '(?s)' + [regex]::Escape($header) + '.*?(?=^## |\Z)'
+          $match = [regex]::Match($changelog, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
+          
+          if ($match.Success) {
+            $body = $match.Value.Trim()
+            # Optional: strip the header itself if you don't want it duplicated
+            $body = $body -replace '^\s*##\s*\[?.*?\]?\s*', ''
+            echo "body=$body" >> $env:GITHUB_OUTPUT
+            Write-Host "Extracted notes for v$version"
+          } else {
+            echo "body=### Release v$version`n`nNo matching section found in CHANGELOG.md. Update it before bumping version." >> $env:GITHUB_OUTPUT
+            Write-Warning "No changelog section for v$version"
+          }
+
       # 🚀 Create GitHub Release and upload assets
       - name: Create GitHub Release
         if: steps.compare.outputs.skip == 'false'
@@ -143,10 +172,9 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           name: PocketMC v${{ env.VERSION }}
-          body: |
-            Release version ${{ env.VERSION }}
-            - Auto-built via CI
-            - Includes latest packaged binaries
+          body: ${{ steps.notes.outputs.body }}
           files: Releases/*
+          draft: false          # or true if you want manual review
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
