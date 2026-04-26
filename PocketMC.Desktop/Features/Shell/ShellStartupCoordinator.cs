@@ -144,7 +144,7 @@ namespace PocketMC.Desktop.Features.Shell
 
             if (!settings.HasCompletedFirstLaunch)
             {
-                _host.NavigateToTunnel();
+                _host.NavigateToPlayitSetup();
             }
             else
             {

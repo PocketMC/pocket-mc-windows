@@ -7,6 +7,7 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
         void RequestMicaUpdate();
         bool NavigateToDashboard();
         bool NavigateToTunnel();
+        bool NavigateToPlayitSetup();
         void ShowError(string title, string message);
         void ShutdownApplication();
     }

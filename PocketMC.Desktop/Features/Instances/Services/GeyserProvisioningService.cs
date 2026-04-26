@@ -108,30 +108,48 @@ public class GeyserProvisioningService
             }
 
             // --- Floodgate (optional — Geyser can run without it) ---
-            ReportStatus(progress, "Checking Floodgate compatibility...");
-            var floodgateVersion = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, loader);
+            // Paper/Spigot: Modrinth doesn't list Floodgate for the spigot loader,
+            // so we download directly from GeyserMC's official build API instead.
+            bool isPaperLike = serverType.Equals("Paper", StringComparison.OrdinalIgnoreCase) ||
+                               serverType.Equals("Spigot", StringComparison.OrdinalIgnoreCase);
 
-            if (floodgateVersion == null)
+            if (isPaperLike)
             {
-                _logger.LogWarning(
-                    "Floodgate not found for {ServerType} {McVersion} (loader={Loader}). Installing Geyser only.",
-                    serverType, minecraftVersion, loader);
-                ReportStatus(progress, $"Warning: Floodgate not available for {serverType} {minecraftVersion}. Geyser only.");
+                const string floodgateDirectUrl =
+                    "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot";
+
+                string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
+                ReportStatus(progress, "Downloading Floodgate (GeyserMC direct)...");
+                _logger.LogInformation("Downloading Floodgate for Paper/Spigot from GeyserMC direct: {Url}", floodgateDirectUrl);
+                await _downloader.DownloadFileAsync(floodgateDirectUrl, floodgatePath, null, progress, cancellationToken);
             }
             else
             {
-                var floodgateFile = floodgateVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? floodgateVersion.Files.FirstOrDefault();
-                if (floodgateFile == null)
+                ReportStatus(progress, "Checking Floodgate compatibility...");
+                var floodgateVersion = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, loader);
+
+                if (floodgateVersion == null)
                 {
-                    _logger.LogWarning("Modrinth returned a Floodgate version with no files. Skipping Floodgate.");
-                    ReportStatus(progress, "Warning: Floodgate version has no downloadable files. Geyser only.");
+                    _logger.LogWarning(
+                        "Floodgate not found for {ServerType} {McVersion} (loader={Loader}). Installing Geyser only.",
+                        serverType, minecraftVersion, loader);
+                    ReportStatus(progress, $"Warning: Floodgate not available for {serverType} {minecraftVersion}. Geyser only.");
                 }
                 else
                 {
-                    string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
-                    ReportStatus(progress, $"Downloading Floodgate ({loader})...");
-                    _logger.LogInformation("Downloading Floodgate from {Url}", floodgateFile.Url);
-                    await _downloader.DownloadFileAsync(floodgateFile.Url, floodgatePath, null, progress, cancellationToken);
+                    var floodgateFile = floodgateVersion.Files.FirstOrDefault(f => f.IsPrimary) ?? floodgateVersion.Files.FirstOrDefault();
+                    if (floodgateFile == null)
+                    {
+                        _logger.LogWarning("Modrinth returned a Floodgate version with no files. Skipping Floodgate.");
+                        ReportStatus(progress, "Warning: Floodgate version has no downloadable files. Geyser only.");
+                    }
+                    else
+                    {
+                        string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
+                        ReportStatus(progress, $"Downloading Floodgate ({loader})...");
+                        _logger.LogInformation("Downloading Floodgate from {Url}", floodgateFile.Url);
+                        await _downloader.DownloadFileAsync(floodgateFile.Url, floodgatePath, null, progress, cancellationToken);
+                    }
                 }
             }
 

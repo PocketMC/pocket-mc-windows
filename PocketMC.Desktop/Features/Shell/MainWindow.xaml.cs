@@ -261,6 +261,20 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     public bool NavigateToTunnel() =>
         _serviceProvider.GetRequiredService<IAppNavigationService>().NavigateToTunnel();
 
+    public bool NavigateToPlayitSetup()
+    {
+        if (!Dispatcher.CheckAccess()) return Dispatcher.Invoke(NavigateToPlayitSetup);
+
+        var nav = _serviceProvider.GetRequiredService<IAppNavigationService>();
+        var wizardPage = ActivatorUtilities.CreateInstance<PlayitSetupWizardPage>(_serviceProvider);
+        return nav.NavigateToDetailPage(
+            wizardPage,
+            "Playit Agent Setup",
+            DetailRouteKind.PlayitSetupWizard,
+            DetailBackNavigation.Dashboard,
+            clearDetailStack: true);
+    }
+
 
 
     public void ShowError(string title, string message) =>
