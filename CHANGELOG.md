@@ -1,6 +1,26 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.2`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.3`.
+
+## v1.6.3 - Installation Lifecycle & UI Safety
+
+This release brings major stability enhancements to the server installation process, introducing download cancellation, safety locks, and better real-time status tracking across the application.
+
+### 🔒 Safety & Installation Control
+* **Download Cancellation**: You can now safely cancel server software downloads mid-way. Doing so instantly cleans up all partially downloaded files and deletes the pending server folder automatically.
+* **Navigation Lock & Prompts**: The application now intelligently locks sidebar navigation while a server is downloading. Attempting to close PocketMC during an active download will now trigger a safety confirmation dialog.
+* **Explicit Installing State**: Introduced a dedicated `Installing` status. This provides accurate visual feedback when servers are processing installers (like Forge/Fabric) and allows you to halt the installation if it hangs.
+
+### 📈 Performance & Networking
+* **Console Anti-Freeze**: Added advanced output throttling and a defensive buffer drain to the server console. This completely prevents UI freezes and memory crashes when high-volume installer logs or spam errors flood the terminal.
+* **Live Tunnel Updates**: The tunnel management UI has been rebuilt to support real-time state tracking without visual flickering. Tunnels waiting for a public address are now continuously polled in the background.
+* **Wizard Redirection**: Fixed the dashboard connection flow to properly redirect first-time users straight to the Playit setup wizard.
+
+### 🛠️ Ecosystem Enhancements & Fixes
+* **Java Download Dialog**: Added a dedicated visual progress dialog when downloading missing Java runtimes, keeping you informed rather than freezing the background.
+* **Dynamic Bedrock Backups**: The backup engine now dynamically reads your Bedrock server's configuration to locate the exact world folder name, ensuring your backups never miss their target.
+* **Floodgate Fixes**: Fixed an issue where Floodgate (cross-play addon) failed to install on Paper and Spigot servers by routing the download directly through the GeyserMC official API.
+* **UI Polish**: Tightened the Tunnel Page layout by disabling unnecessary scrollbars.
 
 ## v1.6.2 - LAN Connectivity & Resilient Tunneling
 
