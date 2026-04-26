@@ -59,10 +59,23 @@ public class BackupService
     /// </summary>
     public async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress = null)
     {
-        var worldDir = Path.Combine(serverDir, "world");
+        string worldFolderName = "worlds";
+        if (string.Equals(metadata.ServerType, "Bedrock", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_configService.TryGetProperty(serverDir, "level-name", out var levelName) && !string.IsNullOrWhiteSpace(levelName))
+            {
+                worldFolderName = levelName.Trim();
+            }
+            else
+            {
+                worldFolderName = "Bedrock level";
+            }
+        }
+
+        var worldDir = Path.Combine(serverDir, worldFolderName);
         if (!Directory.Exists(worldDir))
         {
-            throw new DirectoryNotFoundException("No world folder found — nothing to back up.");
+            throw new DirectoryNotFoundException($"World folder '{worldFolderName}' not found in server directory.");
         }
 
         var backupDir = Path.Combine(serverDir, "backups");
@@ -287,9 +300,22 @@ public class BackupService
     /// Restores a backup by replacing the world folder with the backup contents.
     /// Server MUST be stopped before calling this.
     /// </summary>
-    public async Task RestoreBackupAsync(string backupZipPath, string serverDir, Action<string>? onProgress = null)
+    public async Task RestoreBackupAsync(InstanceMetadata metadata, string backupZipPath, string serverDir, Action<string>? onProgress = null)
     {
-        var worldDir = Path.Combine(serverDir, "world");
+        string worldFolderName = "world";
+        if (string.Equals(metadata.ServerType, "Bedrock", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_configService.TryGetProperty(serverDir, "level-name", out var levelName) && !string.IsNullOrWhiteSpace(levelName))
+            {
+                worldFolderName = levelName.Trim();
+            }
+            else
+            {
+                worldFolderName = "Bedrock level";
+            }
+        }
+
+        var worldDir = Path.Combine(serverDir, worldFolderName);
 
         onProgress?.Invoke("Removing current world...");
         if (Directory.Exists(worldDir))

@@ -89,7 +89,7 @@ namespace PocketMC.Desktop.Features.Settings
             if (path != null && await _dialogService.ShowDialogAsync("Restore Backup", "This will COMPLETELY OVERWRITE current server files. Continue?", DialogType.Warning) == DialogResult.Yes)
             {
                 IsBackingUp = true;
-                try { await _backupService.RestoreBackupAsync(path, _serverDir); _dialogService.ShowMessage("Success", "Backup restored successfully."); }
+                try { await _backupService.RestoreBackupAsync(_metadata, path, _serverDir); _dialogService.ShowMessage("Success", "Backup restored successfully."); }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
                 finally { IsBackingUp = false; }
             }
