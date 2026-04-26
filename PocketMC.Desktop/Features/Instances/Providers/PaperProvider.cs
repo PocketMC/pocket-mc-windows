@@ -61,7 +61,7 @@ public class PaperProvider : IServerSoftwareProvider
         return versions;
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // Get latest build
         string versionJson = await _httpClient.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{mcVersion}");
@@ -78,6 +78,6 @@ public class PaperProvider : IServerSoftwareProvider
         string downloadUrl = $"https://api.papermc.io/v2/projects/paper/versions/{mcVersion}/builds/{maxBuild}/downloads/{jarName}";
         string? expectedSha256 = root?["downloads"]?["application"]?["sha256"]?.ToString();
 
-        await _downloader.DownloadFileAsync(downloadUrl, destinationPath, expectedSha256, progress);
+        await _downloader.DownloadFileAsync(downloadUrl, destinationPath, expectedSha256, progress, cancellationToken);
     }
 }

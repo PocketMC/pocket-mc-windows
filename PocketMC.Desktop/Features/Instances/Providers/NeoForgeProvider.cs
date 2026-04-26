@@ -86,7 +86,7 @@ public class NeoForgeProvider : IServerSoftwareProvider
             .ToList();
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // This is a fallback if someone calls DownloadSoftwareAsync directly without a loader version.
         // We'll try to find the latest stable version for the MC version.
@@ -97,13 +97,13 @@ public class NeoForgeProvider : IServerSoftwareProvider
         if (latest == null)
             throw new Exception($"No NeoForge versions found for Minecraft {mcVersion}");
 
-        await DownloadNeoForgeJarAsync(mcVersion, latest.Version, destinationPath, progress);
+        await DownloadNeoForgeJarAsync(mcVersion, latest.Version, destinationPath, progress, cancellationToken);
     }
 
-    public async Task DownloadNeoForgeJarAsync(string mcVersion, string neoforgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadNeoForgeJarAsync(string mcVersion, string neoforgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // URL Pattern: https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.65/neoforge-21.1.65-installer.jar
         string url = $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoforgeVersion}/neoforge-{neoforgeVersion}-installer.jar";
-        await _downloader.DownloadFileAsync(url, destinationPath, null, progress);
+        await _downloader.DownloadFileAsync(url, destinationPath, null, progress, cancellationToken);
     }
 }

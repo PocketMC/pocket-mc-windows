@@ -142,6 +142,13 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             return;
         }
 
+        if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen && 
+            PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.IsDownloadInProgress)
+        {
+            args.Cancel = true;
+            return;
+        }
+
         if (!IsShellPageType(pageType)) return;
 
         args.Cancel = true;
@@ -285,6 +292,20 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen && 
+            PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.IsDownloadInProgress)
+        {
+            var result = Infrastructure.AppDialog.Confirm(
+                "Cancel Download?",
+                "A download is in progress. Are you sure you want to exit? The download will be cancelled.");
+                
+            if (!result)
+            {
+                e.Cancel = true;
+                return;
+            }
+        }
+
         var processManager = _serviceProvider.GetRequiredService<ServerProcessManager>();
         if (processManager.ActiveProcesses.Count > 0)
         {

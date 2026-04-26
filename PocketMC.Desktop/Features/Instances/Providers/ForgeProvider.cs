@@ -96,13 +96,13 @@ public class ForgeProvider : IServerSoftwareProvider
             .ToList();
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         string forgeVersion = await GetLatestForgeVersionAsync(mcVersion);
-        await DownloadForgeJarAsync(mcVersion, forgeVersion, destinationPath, progress);
+        await DownloadForgeJarAsync(mcVersion, forgeVersion, destinationPath, progress, cancellationToken);
     }
 
-    public async Task DownloadForgeJarAsync(string mcVersion, string forgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadForgeJarAsync(string mcVersion, string forgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // Build the download URL for the installer
         // Official: https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.2.20/forge-1.20.1-47.2.20-installer.jar
@@ -110,7 +110,7 @@ public class ForgeProvider : IServerSoftwareProvider
 
         // NOTE: Forge installers need to be RUN to generate the server. 
         // For now, we download the installer. The instance launch logic will need to handle the "installation" step.
-        await _downloader.DownloadFileAsync(url, destinationPath, null, progress);
+        await _downloader.DownloadFileAsync(url, destinationPath, null, progress, cancellationToken);
     }
 
     private async Task<string> GetLatestForgeVersionAsync(string mcVersion)

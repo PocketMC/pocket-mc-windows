@@ -57,7 +57,7 @@ public class VanillaProvider : IServerSoftwareProvider
         }
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Resolving download URL for Vanilla {Version}", mcVersion);
 
@@ -80,7 +80,7 @@ public class VanillaProvider : IServerSoftwareProvider
             throw new Exception($"No server download found for Vanilla {mcVersion}. Use a different provider or version.");
 
         // 3. Download
-        await _downloader.DownloadFileAsync(serverDownloadUrl, destinationPath, serverSha1, progress);
+        await _downloader.DownloadFileAsync(serverDownloadUrl, destinationPath, serverSha1, progress, cancellationToken);
     }
 
     private class VersionManifest

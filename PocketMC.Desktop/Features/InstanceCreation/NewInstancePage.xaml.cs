@@ -42,6 +42,10 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         private bool _isLoadingVersions;
         private bool _hasLoadedInitialVersions;
         private int _versionLoadRequestId;
+        private CancellationTokenSource? _downloadCts;
+
+        public static bool IsDownloadInProgress { get; private set; }
+        public static bool InstanceCreatePageIsOpen { get; private set; }
 
         public NewInstancePage(
             IAppNavigationService navigationService,
@@ -74,10 +78,18 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             _logger = logger;
 
             Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            InstanceCreatePageIsOpen = false;
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
+
+            InstanceCreatePageIsOpen = true;
 
             if (_hasLoadedInitialVersions)
             {
@@ -245,10 +257,29 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         {
             if (_isCreating)
             {
-                return;
+                var result = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
+                    "Cancel Download?",
+                    "A download is in progress. Are you sure you want to cancel? All downloaded files will be deleted."
+                );
+
+                if (!result)
+                {
+                    return;
+                }
+
+                CancelDownload();
             }
 
             NavigateToDashboard();
+        }
+
+        private void CancelDownload()
+        {
+            if (_isCreating && _downloadCts != null)
+            {
+                _logger.LogInformation("User cancelled the download on NewInstancePage.");
+                _downloadCts.Cancel();
+            }
         }
 
         private async void BtnCreate_Click(object sender, RoutedEventArgs e)
@@ -272,6 +303,8 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             string? createdFolderName = null;
 
             SetCreationState(true);
+            _downloadCts = new CancellationTokenSource();
+            var ct = _downloadCts.Token;
 
             try
             {
@@ -322,33 +355,34 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     try
                     {
                         // DownloadSoftwareAsync writes the ZIP to tempZip, then we extract.
-                        await provider.DownloadSoftwareAsync(selectedVersion.Id, tempZip, progress);
+                        await provider.DownloadSoftwareAsync(selectedVersion.Id, tempZip, progress, ct);
                         Dispatcher.Invoke(() => TxtProgress.Text = "Extracting Bedrock server files...");
                         await _downloader.ExtractZipAsync(tempZip, createdInstancePath, progress);
                     }
                     finally
                     {
                         try { if (File.Exists(tempZip)) File.Delete(tempZip); } catch { }
+                        try { if (File.Exists(tempZip + ".partial")) File.Delete(tempZip + ".partial"); } catch { }
                     }
                 }
 
                 else if (serverType == "Fabric" && !string.IsNullOrEmpty(loaderVersion))
                 {
-                    await _fabricProvider.DownloadFabricJarAsync(selectedVersion.Id, loaderVersion, jarPath, progress);
+                    await _fabricProvider.DownloadFabricJarAsync(selectedVersion.Id, loaderVersion, jarPath, progress, ct);
                 }
                 else if (serverType == "Forge" && !string.IsNullOrEmpty(loaderVersion))
                 {
                     string forgeJarPath = Path.Combine(createdInstancePath, "installer.jar");
-                    await _forgeProvider.DownloadForgeJarAsync(selectedVersion.Id, loaderVersion, forgeJarPath, progress);
+                    await _forgeProvider.DownloadForgeJarAsync(selectedVersion.Id, loaderVersion, forgeJarPath, progress, ct);
                 }
                 else if (serverType == "NeoForge" && !string.IsNullOrEmpty(loaderVersion))
                 {
                     string neoForgeJarPath = Path.Combine(createdInstancePath, "installer.jar");
-                    await _neoForgeProvider.DownloadNeoForgeJarAsync(selectedVersion.Id, loaderVersion, neoForgeJarPath, progress);
+                    await _neoForgeProvider.DownloadNeoForgeJarAsync(selectedVersion.Id, loaderVersion, neoForgeJarPath, progress, ct);
                 }
                 else if (!isBedrock)
                 {
-                    await provider.DownloadSoftwareAsync(selectedVersion.Id, jarPath, progress);
+                    await provider.DownloadSoftwareAsync(selectedVersion.Id, jarPath, progress, ct);
                 }
 
 
@@ -362,7 +396,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     try
                     {
                         TxtProgress.Text = "Setting up Geyser cross-play...";
-                        await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, selectedVersion.Id, progress);
+                        await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, selectedVersion.Id, progress, ct);
 
                         // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
                         metadata.HasGeyser = true;
@@ -389,9 +423,10 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     }
                 }
 
+                SetCreationState(false);
+
                 if (!NavigateToDashboard())
                 {
-                    SetCreationState(false);
                     _logger.LogWarning("Instance {InstanceName} was created, but PocketMC could not navigate back to the dashboard automatically.", TxtName.Text);
                     PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo(
                         "Instance Created",
@@ -402,14 +437,28 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             {
                 await CleanupFailedInstanceAsync(createdFolderName, createdInstancePath);
                 SetCreationState(false);
-                ShowError($"Could not create the instance: {ex.Message}");
-                _logger.LogError(ex, "Failed to create a new instance named {InstanceName}.", TxtName.Text);
+                
+                if (ex is OperationCanceledException)
+                {
+                    _logger.LogInformation("Instance creation cancelled by user.");
+                }
+                else
+                {
+                    ShowError($"Could not create the instance: {ex.Message}");
+                    _logger.LogError(ex, "Failed to create a new instance named {InstanceName}.", TxtName.Text);
+                }
+            }
+            finally
+            {
+                _downloadCts?.Dispose();
+                _downloadCts = null;
             }
         }
 
         private void SetCreationState(bool isCreating)
         {
             _isCreating = isCreating;
+            IsDownloadInProgress = isCreating;
             InputsPanel.IsEnabled = !isCreating;
             BtnCancel.IsEnabled = !isCreating;
             ProgressOverlay.Visibility = isCreating ? Visibility.Visible : Visibility.Collapsed;

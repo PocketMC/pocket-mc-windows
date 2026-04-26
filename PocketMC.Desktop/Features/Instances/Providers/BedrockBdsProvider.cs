@@ -100,7 +100,8 @@ public class BedrockBdsProvider : IServerSoftwareProvider
     public async Task DownloadSoftwareAsync(
         string versionId,
         string destinationPath,
-        IProgress<DownloadProgress>? progress = null)
+        IProgress<DownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Preparing BDS download for version {Version}.", versionId);
         await EnsureCacheAsync();
@@ -136,7 +137,7 @@ public class BedrockBdsProvider : IServerSoftwareProvider
             System.IO.Directory.CreateDirectory(dir);
 
         _logger.LogInformation("Downloading BDS {Version} from {Url}", versionId, url);
-        await _downloader.DownloadFileAsync(url, destinationPath, null, progress);
+        await _downloader.DownloadFileAsync(url, destinationPath, null, progress, cancellationToken);
         _logger.LogInformation("BDS ZIP written to {Path}.", destinationPath);
     }
 

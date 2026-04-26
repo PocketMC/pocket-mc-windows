@@ -68,7 +68,7 @@ public class PocketmineProvider : IServerSoftwareProvider
         return versions;
     }
 
-    public async Task DownloadSoftwareAsync(string versionId, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadSoftwareAsync(string versionId, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Resolving download URL for Pocketmine {Version}", versionId);
         
@@ -94,6 +94,6 @@ public class PocketmineProvider : IServerSoftwareProvider
             throw new Exception($"Could not find a valid PocketMine-MP.phar download URL for version {versionId}.");
         }
 
-        await _downloader.DownloadFileAsync(downloadUrl, destinationPath, null, progress);
+        await _downloader.DownloadFileAsync(downloadUrl, destinationPath, null, progress, cancellationToken);
     }
 }

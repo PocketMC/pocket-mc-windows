@@ -69,25 +69,25 @@ public class FabricProvider : IServerSoftwareProvider
         return versions;
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // Get latest loader and installer versions
         string loaderVersion = await GetLatestLoaderVersionAsync();
         string installerVersion = await GetLatestInstallerVersionAsync();
-        await DownloadFabricJarAsync(mcVersion, loaderVersion, installerVersion, destinationPath, progress);
+        await DownloadFabricJarAsync(mcVersion, loaderVersion, installerVersion, destinationPath, progress, cancellationToken);
     }
 
-    public async Task DownloadFabricJarAsync(string mcVersion, string loaderVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadFabricJarAsync(string mcVersion, string loaderVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         string installerVersion = await GetLatestInstallerVersionAsync();
-        await DownloadFabricJarAsync(mcVersion, loaderVersion, installerVersion, destinationPath, progress);
+        await DownloadFabricJarAsync(mcVersion, loaderVersion, installerVersion, destinationPath, progress, cancellationToken);
     }
 
-    public async Task DownloadFabricJarAsync(string mcVersion, string loaderVersion, string installerVersion, string destinationPath, IProgress<DownloadProgress>? progress = null)
+    public async Task DownloadFabricJarAsync(string mcVersion, string loaderVersion, string installerVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // Official structure: v2/versions/loader/:game_version/:loader_version/:installer_version/server/jar
         string url = $"https://meta.fabricmc.net/v2/versions/loader/{mcVersion}/{loaderVersion}/{installerVersion}/server/jar";
-        await _downloader.DownloadFileAsync(url, destinationPath, null, progress);
+        await _downloader.DownloadFileAsync(url, destinationPath, null, progress, cancellationToken);
     }
 
     private async Task<string> GetLatestLoaderVersionAsync()

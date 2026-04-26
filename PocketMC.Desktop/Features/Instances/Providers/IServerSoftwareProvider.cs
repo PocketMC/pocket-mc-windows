@@ -15,5 +15,5 @@ public interface IServerSoftwareProvider
 
     Task<List<MinecraftVersion>> GetAvailableVersionsAsync();
 
-    Task DownloadSoftwareAsync(string versionId, string destinationPath, IProgress<DownloadProgress>? progress = null);
+    Task DownloadSoftwareAsync(string versionId, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default);
 }
