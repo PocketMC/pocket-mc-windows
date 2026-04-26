@@ -1,0 +1,45 @@
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Instances.RuntimeDownloadDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="{Binding Title}"
+        Width="450" Height="250"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowCornerPreference="Round" 
+        ExtendsContentIntoTitleBar="True" 
+        Background="#1E1E2E">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding Title}"
+                   FontSize="18" FontWeight="Bold"
+                   Foreground="#CDD6F4"
+                   Margin="0,0,0,20"/>
+
+        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+            <TextBlock Text="{Binding StatusMessage}"
+                       Foreground="#BAC2DE" FontSize="13"
+                       Margin="0,0,0,8"
+                       HorizontalAlignment="Center"/>
+            
+            <ProgressBar Value="{Binding ProgressPercentage}"
+                           Height="8"
+                           Background="#313244"
+                           Foreground="#89B4FA"
+                           BorderThickness="0"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="2"
+                   Text="This may take a few minutes depending on your connection."
+                   Foreground="#6C7086" FontSize="11"
+                   HorizontalAlignment="Center"
+                   Margin="0,20,0,0"/>
+    </Grid>
+</ui:FluentWindow>

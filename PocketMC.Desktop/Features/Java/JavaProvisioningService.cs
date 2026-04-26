@@ -97,7 +97,7 @@ namespace PocketMC.Desktop.Features.Java
             }
         }
 
-        public virtual async Task EnsureJavaAsync(int version, bool isManualUserTriggered = false, CancellationToken cancellationToken = default)
+        public virtual async Task EnsureJavaAsync(int version, bool isManualUserTriggered = false, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
         {
             var settings = _settingsManager.Load();
             if (isManualUserTriggered && settings.UserRemovedJavaVersions.Contains(version))
@@ -117,8 +117,8 @@ namespace PocketMC.Desktop.Features.Java
 
             Task provisioningTask = _inflightProvisioning.GetOrAdd(
                 version,
-                static (v, state) => state.self.ProvisionRuntimeCoreAsync(v, state.token),
-                (self: this, token: cancellationToken));
+                static (v, state) => state.self.ProvisionRuntimeCoreAsync(v, state.progress, state.token),
+                (self: this, progress: progress, token: cancellationToken));
 
             try { await provisioningTask; }
             finally
@@ -143,11 +143,11 @@ namespace PocketMC.Desktop.Features.Java
                     PublishAutomaticRetryDeferredStatus(version, blockedUntil);
                     continue;
                 }
-                await EnsureJavaAsync(version, isManualUserTriggered, cancellationToken);
+                await EnsureJavaAsync(version, isManualUserTriggered, cancellationToken: cancellationToken);
             }
         }
 
-        private async Task ProvisionRuntimeCoreAsync(int version, CancellationToken cancellationToken)
+        private async Task ProvisionRuntimeCoreAsync(int version, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
         {
             if (IsJavaVersionPresent(version))
             {
@@ -178,7 +178,10 @@ namespace PocketMC.Desktop.Features.Java
                     var package = await _adoptiumClient.ResolveRuntimePackageAsync(version, cancellationToken);
 
                     var downloadProgress = new Progress<DownloadProgress>(p =>
-                        PublishStatus(version, JavaProvisioningStage.Downloading, $"Downloading... {FormatSize(p.BytesRead)} / {FormatSize(p.TotalBytes)}", p.Percentage));
+                    {
+                        PublishStatus(version, JavaProvisioningStage.Downloading, $"Downloading... {FormatSize(p.BytesRead)} / {FormatSize(p.TotalBytes)}", p.Percentage);
+                        progress?.Report(p);
+                    });
 
                     await _downloader.DownloadFileAsync(package.Url, tempZipPath, package.Sha256, downloadProgress, cancellationToken);
 
