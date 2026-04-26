@@ -41,7 +41,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             _logger = logger;
         }
 
-        public async Task<ProcessStartInfo> ConfigureAsync(InstanceMetadata meta, string workingDir, string appRootPath, Action<string> onLog)
+        public async Task<ProcessStartInfo> ConfigureAsync(InstanceMetadata meta, string workingDir, string appRootPath, Action<string> onLog, Action<ServerState>? onStateChange = null)
         {
             if (string.IsNullOrWhiteSpace(workingDir))
             {
@@ -63,7 +63,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             string javaPath = await EnsureAndResolveJavaPathAsync(meta, requiredJavaVersion, appRootPath, onLog);
 
             // Forge/NeoForge auto-installation
-            await HandleInstallerBasedSetupAsync(meta, workingDir, javaPath, onLog);
+            await HandleInstallerBasedSetupAsync(meta, workingDir, javaPath, onLog, onStateChange);
 
             var psi = new ProcessStartInfo
             {
@@ -248,13 +248,14 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             return javaPath;
         }
 
-        private async Task HandleInstallerBasedSetupAsync(InstanceMetadata meta, string workingDir, string javaPath, Action<string> onLog)
+        private async Task HandleInstallerBasedSetupAsync(InstanceMetadata meta, string workingDir, string javaPath, Action<string> onLog, Action<ServerState>? onStateChange = null)
         {
             string installerPath = Path.Combine(workingDir, "installer.jar");
             bool isForgeOrNeo = meta.ServerType == "Forge" || meta.ServerType == "NeoForge";
 
             if (isForgeOrNeo && File.Exists(installerPath) && !Directory.Exists(Path.Combine(workingDir, "libraries")))
             {
+                onStateChange?.Invoke(ServerState.Installing);
                 onLog($"[PocketMC] First-time {meta.ServerType} setup detected. Running installer...");
 
                 // Legacy Forge installers (pre-1.17) often fail to download the base Vanilla JAR 
@@ -295,12 +296,29 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                     if (proc != null)
                     {
                         // consume streams asynchronously to prevent deadlock
+                        // Throttle output: Forge/NeoForge installers produce thousands of lines
+                        // that can overwhelm the WPF UI. Only forward sampled/important lines.
                         var outputTask = Task.Run(() => {
+                            int lineCount = 0;
+                            long lastReportTicks = Stopwatch.GetTimestamp();
                             while (!proc.StandardOutput.EndOfStream)
                             {
                                 var line = proc.StandardOutput.ReadLine();
-                                if (line != null) onLog?.Invoke(line);
+                                if (line == null) continue;
+                                lineCount++;
+
+                                bool isImportant = line.Contains("ERROR", StringComparison.OrdinalIgnoreCase)
+                                    || line.Contains("FAILED", StringComparison.OrdinalIgnoreCase)
+                                    || line.Contains("Exception", StringComparison.OrdinalIgnoreCase);
+                                var elapsed = Stopwatch.GetElapsedTime(lastReportTicks);
+
+                                if (isImportant || lineCount % 50 == 0 || elapsed.TotalMilliseconds >= 500)
+                                {
+                                    onLog?.Invoke(line);
+                                    lastReportTicks = Stopwatch.GetTimestamp();
+                                }
                             }
+                            onLog?.Invoke($"[PocketMC] Installer completed ({lineCount} lines processed).");
                         });
 
                         var errorTask = Task.Run(() => {

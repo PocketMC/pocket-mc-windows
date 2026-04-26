@@ -56,7 +56,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public Guid Id => _metadata.Id;
     public string Name => _metadata.Name;
     public string Description => _metadata.Description;
-    public bool IsRunning => _state == ServerState.Starting || _state == ServerState.Online || _state == ServerState.Stopping;
+    public bool IsRunning => _state == ServerState.Installing || _state == ServerState.Starting || _state == ServerState.Online || _state == ServerState.Stopping;
     public bool IsWaitingToRestart => _lifecycleService.IsWaitingToRestart(Id);
     public bool ShowRunningControls => IsRunning || IsWaitingToRestart;
     public Visibility RunningControlsVisibility => ShowRunningControls ? Visibility.Visible : Visibility.Collapsed;
@@ -157,6 +157,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public string StatusText => _countdownText ?? _state switch
     {
         ServerState.Stopped => "● Stopped",
+        ServerState.Installing => "⚙ Installing...",
         ServerState.Starting => "● Starting",
         ServerState.Online => "● Online",
         ServerState.Stopping => "● Stopping",
@@ -167,6 +168,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public Brush StatusBrush => _state switch
     {
         ServerState.Online => Brushes.LimeGreen,
+        ServerState.Installing => Brushes.DeepSkyBlue,
         ServerState.Starting => Brushes.SkyBlue,
         ServerState.Stopping => Brushes.Orange,
         ServerState.Crashed => Brushes.Red,

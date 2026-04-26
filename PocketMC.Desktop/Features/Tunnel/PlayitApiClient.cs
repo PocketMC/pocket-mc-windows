@@ -15,23 +15,74 @@ using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Core.Mvvm;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {
-    public class TunnelData
+    public class TunnelData : ViewModelBase
     {
-        public string Id { get; set; } = string.Empty;
-        public string? Name { get; set; }
-        public int Port { get; set; }
-        public string PublicAddress { get; set; } = string.Empty;
-        public string? NumericAddress { get; set; }
-        public string? TunnelType { get; set; }
-        public PortProtocol? Protocol { get; set; }
-        public bool IsEnabled { get; set; } = true;
-        public bool HasAgentOrigin { get; set; }
-        public string? AgentId { get; set; }
-        public string? LocalIp { get; set; }
+        private string _id = string.Empty;
+        public string Id { get => _id; set => SetProperty(ref _id, value); }
+
+        private string? _name;
+        public string? Name { get => _name; set => SetProperty(ref _name, value); }
+
+        private int _port;
+        public int Port { get => _port; set => SetProperty(ref _port, value); }
+
+        private string _publicAddress = string.Empty;
+        public string PublicAddress 
+        { 
+            get => _publicAddress; 
+            set 
+            {
+                if (SetProperty(ref _publicAddress, value))
+                {
+                    OnPropertyChanged(nameof(HasPublicAddress));
+                }
+            }
+        }
+
+        private string? _numericAddress;
+        public string? NumericAddress { get => _numericAddress; set => SetProperty(ref _numericAddress, value); }
+
+        private string? _tunnelType;
+        public string? TunnelType 
+        { 
+            get => _tunnelType; 
+            set 
+            {
+                if (SetProperty(ref _tunnelType, value))
+                {
+                    OnPropertyChanged(nameof(TunnelTypeDisplay));
+                    OnPropertyChanged(nameof(LimitErrorText));
+                }
+            }
+        }
+
+        private PortProtocol? _protocol;
+        public PortProtocol? Protocol { get => _protocol; set => SetProperty(ref _protocol, value); }
+
+        private bool _isEnabled = true;
+        public bool IsEnabled { get => _isEnabled; set => SetProperty(ref _isEnabled, value); }
+
+        private bool _hasAgentOrigin;
+        public bool HasAgentOrigin { get => _hasAgentOrigin; set => SetProperty(ref _hasAgentOrigin, value); }
+
+        private string? _agentId;
+        public string? AgentId { get => _agentId; set => SetProperty(ref _agentId, value); }
+
+        private string? _localIp;
+        public string? LocalIp { get => _localIp; set => SetProperty(ref _localIp, value); }
+
         public bool HasPublicAddress => !string.IsNullOrEmpty(PublicAddress);
+        public string TunnelTypeDisplay => TunnelType switch
+        {
+            "minecraft-java" => "Minecraft Java",
+            "minecraft-bedrock" => "Minecraft Bedrock",
+            _ => TunnelType ?? "Unknown"
+        };
+        public string LimitErrorText => $"Tunnel Limit Reached for {TunnelTypeDisplay}";
     }
 
     public class TunnelListResult

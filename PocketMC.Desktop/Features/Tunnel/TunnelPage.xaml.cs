@@ -1,5 +1,5 @@
-using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -49,7 +49,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         /// <summary>
         /// Tracks the current tunnel inventory so management actions can look up tunnel data by ID.
         /// </summary>
-        private List<TunnelData> _currentTunnels = new();
+        private readonly ObservableCollection<TunnelData> _currentTunnels = new();
 
         public TunnelPage(
             ApplicationState applicationState,
@@ -70,6 +70,8 @@ namespace PocketMC.Desktop.Features.Tunnel
             _dialogService = dialogService;
             _serviceProvider = serviceProvider;
             _logger = logger;
+
+            TunnelList.ItemsSource = _currentTunnels;
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -325,7 +327,6 @@ namespace PocketMC.Desktop.Features.Tunnel
         private void ShowNoTunnels(string message)
         {
             _currentTunnels.Clear();
-            TunnelList.ItemsSource = null;
             TunnelList.Visibility = Visibility.Collapsed;
             TxtTunnelListStatus.Text = message;
         }
@@ -338,10 +339,53 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return;
             }
 
-            _currentTunnels = tunnels.ToList();
-            TunnelList.ItemsSource = _currentTunnels;
+            var existingIds = _currentTunnels.Select(t => t.Id).ToList();
+            var newIds = tunnels.Select(t => t.Id).ToList();
+
+            foreach (var id in existingIds.Except(newIds))
+            {
+                var toRemove = _currentTunnels.First(t => t.Id == id);
+                _currentTunnels.Remove(toRemove);
+            }
+
+            foreach (var newTunnel in tunnels)
+            {
+                var existing = _currentTunnels.FirstOrDefault(t => t.Id == newTunnel.Id);
+                if (existing != null)
+                {
+                    existing.Name = newTunnel.Name;
+                    existing.Port = newTunnel.Port;
+                    existing.PublicAddress = newTunnel.PublicAddress;
+                    existing.NumericAddress = newTunnel.NumericAddress;
+                    existing.TunnelType = newTunnel.TunnelType;
+                    existing.Protocol = newTunnel.Protocol;
+                    existing.IsEnabled = newTunnel.IsEnabled;
+                    existing.HasAgentOrigin = newTunnel.HasAgentOrigin;
+                    existing.AgentId = newTunnel.AgentId;
+                    existing.LocalIp = newTunnel.LocalIp;
+                }
+                else
+                {
+                    _currentTunnels.Add(newTunnel);
+                }
+            }
+
             TunnelList.Visibility = Visibility.Visible;
             TxtTunnelListStatus.Text = message;
+
+            if (_currentTunnels.Any(t => !t.HasPublicAddress))
+            {
+                _ = QueueContinuousCheckAsync(_refreshVersion);
+            }
+        }
+
+        private async Task QueueContinuousCheckAsync(int version)
+        {
+            await Task.Delay(2500);
+            if (_refreshVersion == version)
+            {
+                _ = RefreshStatusAsync();
+            }
         }
 
         // ─── Attribution ─────────────────────────────────────────────────
@@ -502,15 +546,15 @@ namespace PocketMC.Desktop.Features.Tunnel
             if (result.Success)
             {
                 // Remove from local state and refresh
-                _currentTunnels.RemoveAll(t => t.Id == tunnelId);
+                var toRemove = _currentTunnels.FirstOrDefault(t => t.Id == tunnelId);
+                if (toRemove != null)
+                {
+                    _currentTunnels.Remove(toRemove);
+                }
+                
                 if (_currentTunnels.Count == 0)
                 {
                     ShowNoTunnels("All tunnels deleted. Create or start a server tunnel to see entries here.");
-                }
-                else
-                {
-                    TunnelList.ItemsSource = null;
-                    TunnelList.ItemsSource = _currentTunnels;
                 }
             }
             else

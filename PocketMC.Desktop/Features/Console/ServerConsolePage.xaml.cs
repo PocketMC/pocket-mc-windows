@@ -83,6 +83,7 @@ namespace PocketMC.Desktop.Features.Console
         public string StatusText => _serverProcess.State switch
         {
             ServerState.Online => "● Online",
+            ServerState.Installing => "◉ Installing...",
             ServerState.Starting => "◉ Starting...",
             ServerState.Stopping => "◉ Stopping...",
             ServerState.Crashed => "✖ Crashed",
@@ -91,6 +92,7 @@ namespace PocketMC.Desktop.Features.Console
         public Brush StatusColor => _serverProcess.State switch
         {
             ServerState.Online => Brushes.LimeGreen,
+            ServerState.Installing => Brushes.DeepSkyBlue,
             ServerState.Starting or ServerState.Stopping => Brushes.Orange,
             ServerState.Crashed => Brushes.Red,
             _ => Brushes.Gray
@@ -114,7 +116,7 @@ namespace PocketMC.Desktop.Features.Console
         public bool IsFilterSystem { get => _isFilterSystem; set { if (SetProperty(ref _isFilterSystem, value)) ApplyFilters(); } }
         public bool IsRegexEnabled { get => _isRegexEnabled; set { if (SetProperty(ref _isRegexEnabled, value)) ApplyFilters(); } }
 
-        public bool CanStopServer => _serverProcess.State == ServerState.Online || _serverProcess.State == ServerState.Starting;
+        public bool CanStopServer => _serverProcess.State == ServerState.Online || _serverProcess.State == ServerState.Starting || _serverProcess.State == ServerState.Installing;
         public event Action? TitleBarContextChanged;
 
         public ServerConsolePage(
@@ -247,7 +249,14 @@ namespace PocketMC.Desktop.Features.Console
             int count = 0;
             bool addedToFiltered = false;
 
-            while (_pendingLines.TryDequeue(out var line) && count < 500) // Increased batch size for high-perf
+            // Defensive: if massively behind (e.g. installer flood), drain to prevent OOM
+            if (_pendingLines.Count > 2000)
+            {
+                while (_pendingLines.Count > 200)
+                    _pendingLines.TryDequeue(out _);
+            }
+
+            while (_pendingLines.TryDequeue(out var line) && count < 200)
             {
                 Logs.Add(line);
                 if (PassesFilter(line))
