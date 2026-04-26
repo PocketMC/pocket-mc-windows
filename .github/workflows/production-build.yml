@@ -145,8 +145,7 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ env.VERSION }}"
-          $header = "## [$version]"   # Adjust this pattern to exactly match your CHANGELOG format
-          # Common keepachangelog style: ## [1.6.3] - YYYY-MM-DD or ## 1.6.3
+          $header = "## v$version"
           
           $changelog = Get-Content -Path CHANGELOG.md -Raw
           
@@ -156,12 +155,22 @@ jobs:
           
           if ($match.Success) {
             $body = $match.Value.Trim()
-            # Optional: strip the header itself if you don't want it duplicated
-            $body = $body -replace '^\s*##\s*\[?.*?\]?\s*', ''
-            echo "body=$body" >> $env:GITHUB_OUTPUT
+            # Strip the header line itself
+            $body = $body -replace '(?m)^## v.*?`r?`n', ''
+            
+            # Write multiline string to GITHUB_OUTPUT using EOF delimiter
+            $EOF = [guid]::NewGuid().ToString()
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $body
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
+            
             Write-Host "Extracted notes for v$version"
           } else {
-            echo "body=### Release v$version`n`nNo matching section found in CHANGELOG.md. Update it before bumping version." >> $env:GITHUB_OUTPUT
+            $EOF = [guid]::NewGuid().ToString()
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "### Release v$version`n`nNo matching section found in CHANGELOG.md. Update it before bumping version."
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
+            
             Write-Warning "No changelog section for v$version"
           }
 
