@@ -179,11 +179,18 @@ jobs:
         if: steps.compare.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
-          name: PocketMC v${{ env.VERSION }}
-          body: ${{ steps.notes.outputs.body }}
-          files: Releases/*
-          draft: false          # or true if you want manual review
-          prerelease: false
+         tag_name: v${{ env.VERSION }}
+         name: PocketMC v${{ env.VERSION }}
+         body: ${{ steps.notes.outputs.body }}
+         files: |
+            Releases/PocketMC-${{ env.VERSION }}-full.nupkg
+            Releases/PocketMC-${{ env.VERSION }}-delta.nupkg
+            Releases/PocketMC-win-Setup.exe
+            Releases/PocketMC-win-Portable.zip
+            Releases/releases.win.json
+            Releases/assets.win.json
+            Releases/RELEASES
+         draft: false
+         prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
