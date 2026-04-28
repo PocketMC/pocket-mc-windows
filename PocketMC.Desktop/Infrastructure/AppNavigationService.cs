@@ -13,6 +13,7 @@ using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.InstanceCreation;
+using PocketMC.Desktop.Features.Players;
 
 namespace PocketMC.Desktop.Infrastructure
 {
@@ -139,6 +140,7 @@ namespace PocketMC.Desktop.Infrastructure
                 nameof(NewInstancePage) => "New Instance",
                 nameof(ServerSettingsPage) => "Server Settings",
                 nameof(ServerConsolePage) => "Console",
+                nameof(PlayerManagementPage) => "Players",
                 _ => null
             };
         }
@@ -223,6 +225,7 @@ namespace PocketMC.Desktop.Infrastructure
             DetailRouteKind.ServerSettings => NavigationRouteKind.ServerSettings,
             DetailRouteKind.PluginBrowser => NavigationRouteKind.PluginBrowser,
             DetailRouteKind.ServerConsole => NavigationRouteKind.ServerConsole,
+            DetailRouteKind.PlayerManagement => NavigationRouteKind.PlayerManagement,
             DetailRouteKind.PlayitSetupWizard => NavigationRouteKind.PlayitSetupWizard,
             DetailRouteKind.ImageCrop => NavigationRouteKind.ImageCrop,
             _ => throw new ArgumentOutOfRangeException(nameof(routeKind), routeKind, null)

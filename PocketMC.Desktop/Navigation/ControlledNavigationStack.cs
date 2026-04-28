@@ -14,6 +14,7 @@ public enum NavigationRouteKind
     ServerSettings,
     PluginBrowser,
     ServerConsole,
+    PlayerManagement,
     PlayitSetupWizard,
     ImageCrop
 }

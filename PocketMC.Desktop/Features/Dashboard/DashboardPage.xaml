@@ -92,7 +92,17 @@
                                         </StackPanel>
                                         <StackPanel HorizontalAlignment="Center">
                                             <TextBlock Text="PLAYERS" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <TextBlock Text="{Binding PlayerStatus}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                            <ui:Button Content="{Binding PlayerStatus}"
+                                                       Appearance="Transparent"
+                                                       FontSize="13"
+                                                       FontWeight="Bold"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                       Padding="4,0"
+                                                       MinWidth="0"
+                                                       HorizontalAlignment="Center"
+                                                       Command="{Binding DataContext.OpenPlayersCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                       CommandParameter="{Binding}"
+                                                       ToolTip="Manage online players"/>
                                         </StackPanel>
                                     </UniformGrid>
                                 </Border>

@@ -22,6 +22,7 @@ using PocketMC.Desktop.Core.Presentation;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Networking;
+using PocketMC.Desktop.Features.Players;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -292,6 +293,16 @@ namespace PocketMC.Desktop.Features.Dashboard
             if (process == null) return;
             var consolePage = ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, vm.Metadata, process);
             _navigationService.NavigateToDetailPage(consolePage, $"Console: {vm.Name}", DetailRouteKind.ServerConsole, DetailBackNavigation.Dashboard, true);
+        }
+
+        public void OpenPlayers(InstanceCardViewModel vm)
+        {
+            var process = _lifecycleService.GetProcess(vm.Id);
+            if (process == null) return;
+
+            var viewModel = ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, vm.Metadata, process);
+            var page = ActivatorUtilities.CreateInstance<PlayerManagementPage>(_serviceProvider, viewModel);
+            _navigationService.NavigateToDetailPage(page, $"Players: {vm.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.Dashboard, true);
         }
 
         private void HandlePortReliabilityFailure(

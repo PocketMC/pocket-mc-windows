@@ -15,6 +15,8 @@ using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Networking;
+using PocketMC.Desktop.Features.Players;
+using PocketMC.Desktop.Features.Players.Services;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Shell;
@@ -81,6 +83,9 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<JavaProvisioningService>();
 
             services.AddSingleton<ServerProcessManager>();
+            services.AddSingleton<PlayerListParser>();
+            services.AddSingleton<ServerStateFileService>();
+            services.AddSingleton<BanSidecarService>();
             services.AddSingleton<ServerLifecycleService>();
             services.AddSingleton<IServerLifecycleService>(
                 provider => provider.GetRequiredService<ServerLifecycleService>());
@@ -192,6 +197,7 @@ namespace PocketMC.Desktop.Composition
             services.AddTransient<PluginBrowserPage>();
             services.AddTransient<ServerSettingsPage>();
             services.AddTransient<ServerConsolePage>();
+            services.AddTransient<PlayerManagementPage>();
             return services;
         }
     }

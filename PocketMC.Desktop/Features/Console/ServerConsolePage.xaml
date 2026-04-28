@@ -24,6 +24,8 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <ui:Button Grid.Column="0" Content="Back" Appearance="Secondary"
@@ -52,14 +54,18 @@
                 <ToggleButton Content="Sys" IsChecked="{Binding IsFilterSystem}" Padding="8,4" Cursor="Hand"/>
             </StackPanel>
 
-            <ui:Button Grid.Column="6" Content="Stop Server" Appearance="Danger"
+            <ui:Button Grid.Column="6" Content="{Binding PlayerStatus}" Appearance="Secondary"
+                       Icon="{ui:SymbolIcon People24}" Click="BtnPlayers_Click" Cursor="Hand" Margin="0,0,8,0"
+                       ToolTip="Manage online players"/>
+
+            <ui:Button Grid.Column="7" Content="Stop Server" Appearance="Danger"
                        Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand" Margin="0,0,8,0"
                        IsEnabled="{Binding CanStopServer}"/>
 
-            <ui:Button Grid.Column="7" Content="Restart" Appearance="Secondary"
+            <ui:Button Grid.Column="8" Content="Restart" Appearance="Secondary"
                        Icon="{ui:SymbolIcon ArrowSync24}" Click="BtnRestart_Click" Cursor="Hand" Margin="0,0,8,0"/>
 
-            <ui:Button Grid.Column="7" Content="AI Summary" Appearance="Info"
+            <ui:Button Grid.Column="9" Content="AI Summary" Appearance="Info"
                        Icon="{ui:SymbolIcon Sparkle24}" Click="BtnAiSummary_Click" Cursor="Hand"
                        ToolTip="Generate AI session summary"/>
         </Grid>

@@ -9,6 +9,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Networking;
+using PocketMC.Desktop.Features.Players.Services;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Tunnel;
@@ -139,6 +140,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             InstanceManager,
             Registry,
             CreateServerLaunchConfigurator(),
+            new PlayerListParser(),
             NullLogger<ServerProcessManager>.Instance,
             NullLoggerFactory.Instance);
     }

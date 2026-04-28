@@ -17,6 +17,7 @@ using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Infrastructure.Process;
 using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Players.Services;
 
 namespace PocketMC.Desktop.Features.Instances.Models;
 
@@ -31,32 +32,56 @@ public class ServerProcess : IDisposable
     private Process? _process;
     private readonly JobObject _jobObject;
     private readonly ServerLaunchConfigurator _launchConfigurator;
+    private readonly PlayerListParser _playerListParser;
     private readonly ILogger<ServerProcess> _logger;
     private bool _disposed;
     private volatile bool _intentionalStop;
     private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
     private StreamWriter? _sessionLogWriter;
     private const int MAX_BUFFER_LINES = 5000;
+    private readonly object _playerListLock = new();
+    private List<string> _onlinePlayerNames = new();
+    private List<string> _pendingMultilinePlayerNames = new();
+    private int? _pendingMultilinePlayerCount;
+    private string _serverType = "Vanilla";
 
     public Guid InstanceId { get; }
     public ServerState State { get; private set; } = ServerState.Stopped;
     public string WorkingDirectory { get; private set; } = string.Empty;
     public ConcurrentQueue<string> OutputBuffer { get; } = new();
     public int PlayerCount { get; private set; }
+    public DateTime? LastPlayerListUpdatedUtc { get; private set; }
     public string? CrashContext { get; private set; }
     public DateTime? StartTime { get; private set; }
+    public IReadOnlyList<string> OnlinePlayerNames
+    {
+        get
+        {
+            lock (_playerListLock)
+            {
+                return _onlinePlayerNames.ToArray();
+            }
+        }
+    }
 
     public event Action<string>? OnOutputLine;
     public event Action<string>? OnErrorLine;
     public event Action<int>? OnExited;
     public event Action<ServerState>? OnStateChanged;
     public event Action<string>? OnServerCrashed;
+    public event Action<IReadOnlyList<string>, DateTime>? OnOnlinePlayersUpdated;
 
-    public ServerProcess(Guid instanceId, JobObject jobObject, ServerLaunchConfigurator launchConfigurator, ILogger<ServerProcess> logger)
+    public ServerProcess(
+        Guid instanceId,
+        JobObject jobObject,
+        ServerLaunchConfigurator launchConfigurator,
+        PlayerListParser playerListParser,
+        ILogger<ServerProcess> logger)
     {
         InstanceId = instanceId;
         _jobObject = jobObject;
         _launchConfigurator = launchConfigurator;
+        _playerListParser = playerListParser;
         _logger = logger;
     }
 
@@ -65,6 +90,7 @@ public class ServerProcess : IDisposable
         if (State != ServerState.Stopped && State != ServerState.Crashed)
             throw new InvalidOperationException($"Cannot start server — current state is {State}.");
 
+        _serverType = meta.ServerType;
         WorkingDirectory = workingDir;
         InitializeSessionLog(workingDir);
         CleanSessionLock(workingDir);
@@ -247,6 +273,42 @@ public class ServerProcess : IDisposable
 
     private void UpdatePlayerCount(string line)
     {
+        if (_pendingMultilinePlayerCount.HasValue)
+        {
+            if (_playerListParser.TryParseContinuationLine(line, out string playerName))
+            {
+                _pendingMultilinePlayerNames.Add(playerName);
+                if (_pendingMultilinePlayerNames.Count >= _pendingMultilinePlayerCount.Value)
+                {
+                    CommitOnlinePlayers(_pendingMultilinePlayerNames);
+                    _pendingMultilinePlayerCount = null;
+                    _pendingMultilinePlayerNames = new List<string>();
+                }
+
+                return;
+            }
+
+            _pendingMultilinePlayerCount = null;
+            _pendingMultilinePlayerNames = new List<string>();
+        }
+
+        PlayerListParseResult? parseResult = _playerListParser.ParseLine(line, _serverType);
+        if (parseResult != null)
+        {
+            PlayerCount = parseResult.OnlinePlayerCount;
+            if (parseResult.IsComplete)
+            {
+                CommitOnlinePlayers(parseResult.OnlinePlayerNames);
+            }
+            else
+            {
+                _pendingMultilinePlayerCount = parseResult.OnlinePlayerCount;
+                _pendingMultilinePlayerNames = new List<string>();
+            }
+
+            return;
+        }
+
         if (line.Contains(" joined the game") || line.Contains("Player connected:")) PlayerCount++;
         else if (line.Contains(" left the game") || line.Contains("Player disconnected:")) { PlayerCount = Math.Max(0, PlayerCount - 1); }
         else if (line.Contains("players online:"))
@@ -254,6 +316,23 @@ public class ServerProcess : IDisposable
             var match = PlayerCountRegex.Match(line);
             if (match.Success && int.TryParse(match.Groups[1].Value, out int count)) PlayerCount = count;
         }
+    }
+
+    private void CommitOnlinePlayers(IReadOnlyList<string> playerNames)
+    {
+        List<string> snapshot = playerNames
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
+            .ToList();
+
+        DateTime updatedAt = DateTime.UtcNow;
+        lock (_playerListLock)
+        {
+            _onlinePlayerNames = snapshot;
+            LastPlayerListUpdatedUtc = updatedAt;
+        }
+
+        OnOnlinePlayersUpdated?.Invoke(snapshot, updatedAt);
     }
 
     private void OnProcessExited(object? sender, EventArgs e)

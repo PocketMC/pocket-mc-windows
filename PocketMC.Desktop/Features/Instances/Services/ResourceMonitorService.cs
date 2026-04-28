@@ -97,7 +97,7 @@ namespace PocketMC.Desktop.Features.Instances.Services
                 nextInterval = (count >= 7) ? 10000 : (count >= 4) ? 5000 : 2000;
 
                 _listCommandTick++;
-                bool sendListCommand = (_listCommandTick * (nextInterval / 1000.0)) >= 30;
+                bool sendListCommand = (_listCommandTick * (nextInterval / 1000.0)) >= 10;
                 if (sendListCommand) _listCommandTick = 0;
 
                 foreach (var sp in activeProcesses)

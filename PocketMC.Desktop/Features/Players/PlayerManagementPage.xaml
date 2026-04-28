@@ -1,0 +1,359 @@
+<Page x:Class="PocketMC.Desktop.Features.Players.PlayerManagementPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"
+      Title="Player Management">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <presentation:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+    </Page.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ui:Button Grid.Column="0"
+                       Content="Back"
+                       Appearance="Secondary"
+                       Icon="{ui:SymbolIcon ArrowLeft24}"
+                       Command="{Binding BackCommand}"
+                       Margin="0,0,12,0"/>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <ui:TextBlock FontTypography="Title"
+                                  Text="{Binding InstanceName}"
+                                  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                  Margin="0,0,10,0"/>
+                    <Border CornerRadius="4"
+                            Padding="8,3"
+                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ServerType}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    </Border>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding ServerStatusText}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{Binding ServerStatusBrush}"
+                               Margin="0,0,12,0"/>
+                    <TextBlock Text="{Binding LastUpdatedText}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <ui:ProgressRing Grid.Column="2"
+                             Width="20"
+                             Height="20"
+                             IsIndeterminate="True"
+                             Visibility="{Binding IsRefreshingState, Converter={StaticResource BoolToVis}}"
+                             Margin="0,0,10,0"/>
+
+            <ui:Button Grid.Column="3"
+                       Content="Refresh"
+                       Appearance="Secondary"
+                       Icon="{ui:SymbolIcon ArrowClockwise24}"
+                       Command="{Binding RefreshCommand}"/>
+        </Grid>
+
+        <TabControl Grid.Row="1">
+            <TabItem Header="Online Players">
+                <Grid Margin="0,16,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                            CornerRadius="6"
+                            Padding="12,8"
+                            Margin="0,0,0,6"
+                            Visibility="{Binding HasOnlinePlayers, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="260"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Name" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="1" Text="Op Status" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="2" Text="Gamemode" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="3" Text="Actions" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        </Grid>
+                    </Border>
+
+                    <ListView Grid.Row="1"
+                              ItemsSource="{Binding OnlinePlayers}"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              Visibility="{Binding HasOnlinePlayers, Converter={StaticResource BoolToVis}}"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="6"
+                                        BorderThickness="1"
+                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                        Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                        Padding="12"
+                                        Margin="0,0,0,6">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsRecentlyUpdated}" Value="True">
+                                                    <Setter Property="Background" Value="#2034D399"/>
+                                                    <Setter Property="BorderBrush" Value="#6634D399"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="260"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Name}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ToggleButton IsChecked="{Binding IsOp, Mode=OneWay}"
+                                                          Command="{Binding ToggleOpCommand}"
+                                                          IsEnabled="{Binding CanSendCommands}"
+                                                          ToolTip="{Binding OfflineTooltip}"
+                                                          Padding="10,4"
+                                                          MinWidth="52"/>
+                                            <ui:ProgressRing Width="18"
+                                                             Height="18"
+                                                             IsIndeterminate="True"
+                                                             Visibility="{Binding IsOpUpdating, Converter={StaticResource BoolToVis}}"
+                                                             Margin="8,0,0,0"/>
+                                        </StackPanel>
+
+                                        <ComboBox Grid.Column="2"
+                                                  ItemsSource="{Binding GameModes}"
+                                                  SelectedItem="{Binding SelectedGameMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  IsEnabled="{Binding CanSendCommands}"
+                                                  ToolTip="{Binding GamemodeTooltip}"
+                                                  MinWidth="140"/>
+
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ui:Button Content="Kick"
+                                                       Appearance="Secondary"
+                                                       Icon="{ui:SymbolIcon People24}"
+                                                       Command="{Binding KickCommand}"
+                                                       IsEnabled="{Binding CanSendCommands}"
+                                                       Margin="0,0,8,0"/>
+                                            <ui:Button Content="{Binding BanButtonText}"
+                                                       Appearance="Danger"
+                                                       Icon="{ui:SymbolIcon Delete24}"
+                                                       Command="{Binding BanCommand}"
+                                                       IsEnabled="{Binding CanSendCommands}"
+                                                       ToolTip="{Binding BanTooltip}"/>
+                                        </StackPanel>
+
+                                        <Border Grid.Row="1"
+                                                Grid.ColumnSpan="4"
+                                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                CornerRadius="6"
+                                                Padding="10"
+                                                Margin="0,10,0,0"
+                                                Visibility="{Binding IsReasonPromptVisible, Converter={StaticResource BoolToVis}}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding ReasonPromptText}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,10,0"/>
+
+                                                <ui:TextBox Grid.Column="1"
+                                                            Text="{Binding PendingReason, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            PlaceholderText="Optional reason"
+                                                            Margin="0,0,8,0"/>
+
+                                                <ui:Button Grid.Column="2"
+                                                           Content="Send"
+                                                           Appearance="Primary"
+                                                           Command="{Binding ConfirmReasonCommand}"
+                                                           Margin="0,0,8,0"/>
+
+                                                <ui:Button Grid.Column="3"
+                                                           Content="Cancel"
+                                                           Appearance="Secondary"
+                                                           Command="{Binding CancelReasonCommand}"/>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <Border Grid.Row="1"
+                            Visibility="{Binding HasOnlinePlayers, Converter={StaticResource InverseBoolToVis}}"
+                            Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                            CornerRadius="8"
+                            Padding="24">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ui:SymbolIcon Symbol="People24"
+                                           Width="32"
+                                           Height="32"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,8"/>
+                            <TextBlock Text="{Binding EmptyOnlineText}"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Ban List">
+                <Grid Margin="0,16,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                            CornerRadius="6"
+                            Padding="12,8"
+                            Margin="0,0,0,6"
+                            Visibility="{Binding HasBannedPlayers, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="3*"/>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Name" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="1" Text="Reason" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="2" Text="Banned" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="3" Text="Expires" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="4" Text="Unban" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        </Grid>
+                    </Border>
+
+                    <ListView Grid.Row="1"
+                              ItemsSource="{Binding BannedPlayers}"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              Visibility="{Binding HasBannedPlayers, Converter={StaticResource BoolToVis}}"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="6"
+                                        BorderThickness="1"
+                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                        Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                        Padding="12"
+                                        Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="3*"/>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="140"/>
+                                            <ColumnDefinition Width="110"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding ReasonDisplay}"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding BannedDisplay}"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="3"
+                                                   Text="{Binding ExpiresDisplay}"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"/>
+                                        <ui:Button Grid.Column="4"
+                                                   Content="Pardon"
+                                                   Appearance="Secondary"
+                                                   Command="{Binding PardonCommand}"
+                                                   IsEnabled="{Binding IsServerOnline}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <Border Grid.Row="1"
+                            Visibility="{Binding HasBannedPlayers, Converter={StaticResource InverseBoolToVis}}"
+                            Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                            CornerRadius="8"
+                            Padding="24">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ui:SymbolIcon Symbol="Delete24"
+                                           Width="32"
+                                           Height="32"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,8"/>
+                            <TextBlock Text="{Binding EmptyBanText}"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Page>

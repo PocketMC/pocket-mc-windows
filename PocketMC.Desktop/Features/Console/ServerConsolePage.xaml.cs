@@ -23,6 +23,7 @@ using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Tunnel;
 using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Players;
 
 
 namespace PocketMC.Desktop.Features.Console
@@ -60,6 +61,7 @@ namespace PocketMC.Desktop.Features.Console
         private readonly IServerLifecycleService _lifecycleService;
         private readonly AgentProvisioningService _agentProvisioning;
         private readonly ApplicationState _applicationState;
+        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<ServerConsolePage> _logger;
         private readonly SessionSummarizationService _summarizationService;
         private readonly AiApiClient _aiClient;
@@ -117,6 +119,7 @@ namespace PocketMC.Desktop.Features.Console
         public bool IsRegexEnabled { get => _isRegexEnabled; set { if (SetProperty(ref _isRegexEnabled, value)) ApplyFilters(); } }
 
         public bool CanStopServer => _serverProcess.State == ServerState.Online || _serverProcess.State == ServerState.Starting || _serverProcess.State == ServerState.Installing;
+        public string PlayerStatus => $"{_serverProcess.PlayerCount} / {_metadata.MaxPlayers}";
         public event Action? TitleBarContextChanged;
 
         public ServerConsolePage(
@@ -126,6 +129,7 @@ namespace PocketMC.Desktop.Features.Console
             InstanceMetadata metadata,
             ServerProcess serverProcess,
             ApplicationState applicationState,
+            IServiceProvider serviceProvider,
             SessionSummarizationService summarizationService,
             AiApiClient aiClient,
             IResourceMonitorService resourceMonitor,
@@ -137,6 +141,7 @@ namespace PocketMC.Desktop.Features.Console
             _metadata = metadata;
             _serverProcess = serverProcess;
             _applicationState = applicationState;
+            _serviceProvider = serviceProvider;
             _summarizationService = summarizationService;
             _aiClient = aiClient;
             _resourceMonitor = resourceMonitor;
@@ -153,6 +158,7 @@ namespace PocketMC.Desktop.Features.Console
             _serverProcess.OnErrorLine += OnErrorReceived;
             _serverProcess.OnStateChanged += OnStateChanged;
             _serverProcess.OnServerCrashed += OnServerCrashed;
+            _serverProcess.OnOnlinePlayersUpdated += OnOnlinePlayersUpdated;
 
             // Flush timer: 100ms interval for batched UI updates
             _flushTimer = new DispatcherTimer
@@ -203,6 +209,10 @@ namespace PocketMC.Desktop.Features.Console
         private void OnOutputReceived(string line)
         {
             _pendingLines.Enqueue(ColorizeLogLine(line));
+            if (LineMayAffectPlayerStatus(line))
+            {
+                Dispatcher.InvokeAsync(() => OnPropertyChanged(nameof(PlayerStatus)));
+            }
         }
 
         private void OnErrorReceived(string line)
@@ -217,6 +227,7 @@ namespace PocketMC.Desktop.Features.Console
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(StatusColor));
                 OnPropertyChanged(nameof(CanStopServer));
+                OnPropertyChanged(nameof(PlayerStatus));
                 TitleBarContextChanged?.Invoke();
 
                 if (state == ServerState.Starting)
@@ -569,6 +580,13 @@ namespace PocketMC.Desktop.Features.Console
             }
         }
 
+        private void BtnPlayers_Click(object sender, RoutedEventArgs e)
+        {
+            var viewModel = ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, _metadata, _serverProcess);
+            var page = ActivatorUtilities.CreateInstance<PlayerManagementPage>(_serviceProvider, viewModel);
+            _navigationService.NavigateToDetailPage(page, $"Players: {_metadata.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.PreviousDetail);
+        }
+
         private async void BtnStop_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -616,6 +634,23 @@ namespace PocketMC.Desktop.Features.Console
             _serverProcess.OnErrorLine -= OnErrorReceived;
             _serverProcess.OnStateChanged -= OnStateChanged;
             _serverProcess.OnServerCrashed -= OnServerCrashed;
+            _serverProcess.OnOnlinePlayersUpdated -= OnOnlinePlayersUpdated;
+        }
+
+        private void OnOnlinePlayersUpdated(System.Collections.Generic.IReadOnlyList<string> names, DateTime updatedAtUtc)
+        {
+            Dispatcher.InvokeAsync(() => OnPropertyChanged(nameof(PlayerStatus)));
+        }
+
+        private static bool LineMayAffectPlayerStatus(string line)
+        {
+            return line.Contains(" joined the game", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains(" left the game", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("Player connected:", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("Player disconnected:", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("players online", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("Players connected", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("Online players", StringComparison.OrdinalIgnoreCase);
         }
 
         private void LockShellScrollHost()

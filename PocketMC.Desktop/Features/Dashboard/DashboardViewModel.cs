@@ -42,6 +42,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         public ICommand CopyCrashReportCommand { get; }
         public ICommand ServerSettingsCommand { get; }
         public ICommand OpenConsoleCommand { get; }
+        public ICommand OpenPlayersCommand { get; }
         public DashboardViewModel(
             DashboardInstanceListVM listVm,
             DashboardMetricsVM metricsVm,
@@ -73,6 +74,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             CopyCrashReportCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.CopyCrashReport(vm); });
             ServerSettingsCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenSettings(vm); });
             OpenConsoleCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenConsole(vm); });
+            OpenPlayersCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenPlayers(vm); });
         }
 
         public void Activate()

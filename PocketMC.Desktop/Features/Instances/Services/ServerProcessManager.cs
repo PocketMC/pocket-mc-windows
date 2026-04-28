@@ -8,6 +8,7 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Features.Players.Services;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
@@ -25,6 +26,7 @@ public class ServerProcessManager
     private readonly InstanceManager _instanceManager;
     private readonly InstanceRegistry _registry;
     private readonly ServerLaunchConfigurator _launchConfigurator;
+    private readonly PlayerListParser _playerListParser;
     private readonly ILogger<ServerProcessManager> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ConcurrentDictionary<Guid, ServerProcess> _activeProcesses = new();
@@ -35,6 +37,7 @@ public class ServerProcessManager
         InstanceManager instanceManager,
         InstanceRegistry registry,
         ServerLaunchConfigurator launchConfigurator,
+        PlayerListParser playerListParser,
         ILogger<ServerProcessManager> logger,
         ILoggerFactory loggerFactory)
     {
@@ -42,6 +45,7 @@ public class ServerProcessManager
         _instanceManager = instanceManager;
         _registry = registry;
         _launchConfigurator = launchConfigurator;
+        _playerListParser = playerListParser;
         _logger = logger;
         _loggerFactory = loggerFactory;
     }
@@ -63,6 +67,7 @@ public class ServerProcessManager
             meta.Id,
             _jobObject,
             _launchConfigurator,
+            _playerListParser,
             _loggerFactory.CreateLogger<ServerProcess>());
 
         serverProcess.OnStateChanged += state =>
