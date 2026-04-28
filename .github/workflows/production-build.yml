@@ -183,9 +183,13 @@ jobs:
          name: PocketMC v${{ env.VERSION }}
          body: ${{ steps.notes.outputs.body }}
          files: |
-           Releases/*
-           !Releases/PocketMC-${{ steps.latest.outputs.version }}-delta.nupkg
-           !Releases/PocketMC-${{ steps.latest.outputs.version }}-full.nupkg
+            Releases/PocketMC-${{ env.VERSION }}-full.nupkg
+            Releases/PocketMC-${{ env.VERSION }}-delta.nupkg
+            Releases/PocketMC-win-Setup.exe
+            Releases/PocketMC-win-Portable.zip
+            Releases/releases.win.json
+            Releases/assets.win.json
+            Releases/RELEASES
          draft: false
          prerelease: false
         env:
