@@ -35,6 +35,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private readonly HashSet<Guid> _resolutionsInFlight = new();
         private readonly object _lock = new();
+        private static DateTime _lastLimitDialogTime = DateTime.MinValue;
 
         public InstanceTunnelOrchestrator(
             TunnelService tunnelService,
@@ -125,8 +126,9 @@ namespace PocketMC.Desktop.Features.Tunnel
                         _dispatcher.Invoke(() =>
                         {
                             vm.SetTunnelError("Address unavailable");
-                            if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
+                            if (!string.IsNullOrEmpty(resolution.CreateErrorCode) && (DateTime.UtcNow - _lastLimitDialogTime).TotalSeconds > 10)
                             {
+                                _lastLimitDialogTime = DateTime.UtcNow;
                                 AppDialog.ShowError("Tunnel Creation Failed",
                                     TunnelCreateResult.MapCreateError(resolution.CreateErrorCode));
                             }
