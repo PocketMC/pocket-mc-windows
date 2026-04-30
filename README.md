@@ -179,4 +179,3 @@ MIT © 2024 PocketMC Contributors — see [LICENSE](LICENSE).
 </a>
 
 </div>
-
