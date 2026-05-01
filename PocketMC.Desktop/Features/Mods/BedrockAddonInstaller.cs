@@ -68,7 +68,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         {
             Directory.CreateDirectory(tempDir);
             _logger.LogInformation("Extracting addon {File} to temp dir {TempDir}.", sourceFilePath, tempDir);
-            await Task.Run(() => ZipFile.ExtractToDirectory(sourceFilePath, tempDir, overwriteFiles: true), ct);
+            await PocketMC.Desktop.Features.Instances.Backups.SafeZipExtractor.ExtractAsync(sourceFilePath, tempDir);
 
             var manifests = FindManifests(tempDir);
             if (manifests.Count == 0)
