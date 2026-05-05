@@ -59,16 +59,20 @@ public class BackupService
     /// </summary>
     public async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress = null)
     {
-        string worldFolderName = "worlds";
-        if (string.Equals(metadata.ServerType, "Bedrock", StringComparison.OrdinalIgnoreCase))
+        string worldFolderName = "world";
+        if (metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            worldFolderName = "worlds";
+        }
+        else if (metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true)
         {
             if (_configService.TryGetProperty(serverDir, "level-name", out var levelName) && !string.IsNullOrWhiteSpace(levelName))
             {
-                worldFolderName = levelName.Trim();
+                worldFolderName = Path.Combine("worlds", levelName.Trim());
             }
             else
             {
-                worldFolderName = "Bedrock level";
+                worldFolderName = Path.Combine("worlds", "Bedrock level");
             }
         }
 
@@ -303,15 +307,19 @@ public class BackupService
     public async Task RestoreBackupAsync(InstanceMetadata metadata, string backupZipPath, string serverDir, Action<string>? onProgress = null)
     {
         string worldFolderName = "world";
-        if (string.Equals(metadata.ServerType, "Bedrock", StringComparison.OrdinalIgnoreCase))
+        if (metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            worldFolderName = "worlds";
+        }
+        else if (metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true)
         {
             if (_configService.TryGetProperty(serverDir, "level-name", out var levelName) && !string.IsNullOrWhiteSpace(levelName))
             {
-                worldFolderName = levelName.Trim();
+                worldFolderName = Path.Combine("worlds", levelName.Trim());
             }
             else
             {
-                worldFolderName = "Bedrock level";
+                worldFolderName = Path.Combine("worlds", "Bedrock level");
             }
         }
 
