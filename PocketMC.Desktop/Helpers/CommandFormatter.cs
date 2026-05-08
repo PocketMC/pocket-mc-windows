@@ -7,6 +7,13 @@ public static class CommandFormatter
     public static string FormatPlayerName(string name, string? serverType)
     {
         string trimmed = name.Trim();
+        bool isJava = !IsBedrock(serverType) && !IsPocketMine(serverType);
+
+        if (isJava)
+        {
+            return trimmed;
+        }
+
         if (IsBedrock(serverType) || NeedsQuoting(trimmed))
         {
             return Quote(trimmed);
