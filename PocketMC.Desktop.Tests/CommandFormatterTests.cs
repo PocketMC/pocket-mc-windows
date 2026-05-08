@@ -13,11 +13,11 @@ public sealed class CommandFormatterTests
     }
 
     [Fact]
-    public void FormatPlayerName_QuotesJavaCrossplayNamesWithSpecialCharacters()
+    public void FormatPlayerName_DoesNotQuoteJavaCrossplayNamesWithSpecialCharacters()
     {
         string formatted = CommandFormatter.FormatPlayerName(".SahajItaliya", "Fabric");
 
-        Assert.Equal("\".SahajItaliya\"", formatted);
+        Assert.Equal(".SahajItaliya", formatted);
     }
 
     [Fact]

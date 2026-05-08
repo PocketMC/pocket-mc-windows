@@ -28,7 +28,7 @@ public sealed class PlayerActionCommandBuilderTests
             "Paper",
             "griefing");
 
-        Assert.Equal(new[] { "ban \".SahajItaliya\" griefing", "kick \".SahajItaliya\" griefing" }, commands);
+        Assert.Equal(new[] { "ban .SahajItaliya griefing", "kick .SahajItaliya griefing" }, commands);
     }
 
     [Fact]
