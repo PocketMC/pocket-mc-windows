@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Desktop.Features.Settings;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
@@ -57,15 +58,15 @@ public sealed class ServerConfigurationService
     public ServerConfiguration Load(InstanceMetadata metadata, string serverDir)
     {
         var props = ServerPropertiesParser.Read(GetPropertiesPath(serverDir));
+        var profile = ServerSettingsProfile.FromMetadata(metadata);
 
         // Sync metadata if needed (NET-15)
-        if (props.TryGetValue("motd", out var pMotd)) metadata.Motd = pMotd;
+        if (TryGetDisplayName(props, profile, out var pMotd)) metadata.Motd = pMotd;
         if (props.TryGetValue("max-players", out var pMax) && int.TryParse(pMax, out int max)) metadata.MaxPlayers = max;
         if (props.TryGetValue("server-port", out var pPort) && int.TryParse(pPort, out int parsedPort)) metadata.ServerPort = parsedPort;
 
-        bool isBedrock = metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true || 
-                         metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
-        string defaultPort = isBedrock ? "19132" : "25565";
+        string defaultPort = profile.DefaultServerPort;
+        string defaultPortV6 = TryGetPortPlusOne(props.TryGetValue("server-port", out var portValue) ? portValue : defaultPort);
 
         var configuration = new ServerConfiguration
         {
@@ -78,21 +79,27 @@ public sealed class ServerConfigurationService
             AutoRestartDelaySeconds = metadata.AutoRestartDelaySeconds,
             BackupIntervalHours = metadata.BackupIntervalHours,
             MaxBackupsToKeep = metadata.MaxBackupsToKeep,
-            Motd = props.TryGetValue("motd", out var motd) ? motd : "A Minecraft Server",
+            Motd = TryGetDisplayName(props, profile, out var motd) ? motd : "A Minecraft Server",
             Seed = props.TryGetValue("level-seed", out var seed) ? seed : "",
             SpawnProtection = props.TryGetValue("spawn-protection", out var protection) ? protection : "16",
             MaxPlayers = props.TryGetValue("max-players", out var maxPlayers) ? maxPlayers : "20",
             ServerPort = props.TryGetValue("server-port", out var port) ? port : defaultPort,
+            ServerPortV6 = props.TryGetValue("server-portv6", out var portV6) ? portV6 : defaultPortV6,
             ServerIp = props.TryGetValue("server-ip", out var ip) ? ip : "",
-            LevelType = props.TryGetValue("level-type", out var levelType) ? levelType : "minecraft:normal",
-            OnlineMode = props.TryGetValue("online-mode", out var onlineMode) && onlineMode == "true",
+            LevelType = props.TryGetValue("level-type", out var levelType) ? levelType : profile.DefaultLevelType,
+            OnlineMode = TryGetBool(props, "online-mode"),
             Pvp = props.TryGetValue("pvp", out var pvp) ? pvp == "true" : true,
-            WhiteList = props.TryGetValue("white-list", out var whiteList) && whiteList == "true",
+            WhiteList = TryGetBool(props, "white-list"),
             Gamemode = props.TryGetValue("gamemode", out var gamemode) ? gamemode : "survival",
             Difficulty = props.TryGetValue("difficulty", out var difficulty) ? difficulty : "easy",
-            AllowCommandBlock = props.TryGetValue("enable-command-block", out var commandBlock) && commandBlock == "true",
-            AllowFlight = props.TryGetValue("allow-flight", out var allowFlight) && allowFlight == "true",
-            AllowNether = props.TryGetValue("allow-nether", out var allowNether) ? allowNether == "true" : true
+            AllowCommandBlock = TryGetBool(props, "enable-command-block"),
+            AllowFlight = TryGetBool(props, "allow-flight"),
+            AllowNether = props.TryGetValue("allow-nether", out var allowNether) ? allowNether == "true" : true,
+            AllowCheats = TryGetBool(props, "allow-cheats"),
+            TexturepackRequired = TryGetBool(props, "texturepack-required"),
+            ForceGamemode = TryGetBool(props, "force-gamemode"),
+            DefaultPlayerPermissionLevel = props.TryGetValue("default-player-permission-level", out var permission) ? permission : "member",
+            TickDistance = props.TryGetValue("tick-distance", out var tickDistance) ? tickDistance : "4"
         };
 
         foreach (var property in props)
@@ -110,6 +117,8 @@ public sealed class ServerConfigurationService
 
     public void Save(InstanceMetadata metadata, string serverDir, ServerConfiguration configuration)
     {
+        var profile = ServerSettingsProfile.FromMetadata(metadata);
+
         metadata.MinRamMb = configuration.MinRamMb;
         metadata.MaxRamMb = configuration.MaxRamMb;
         metadata.EnableAutoRestart = configuration.EnableAutoRestart;
@@ -128,23 +137,23 @@ public sealed class ServerConfigurationService
         var propsFile = GetPropertiesPath(serverDir);
         var props = ServerPropertiesParser.Read(propsFile);
 
-        props["motd"] = configuration.Motd;
+        props[profile.DisplayNamePropertyKey] = configuration.Motd;
+        if (profile.IsJava)
+        {
+            props.Remove("server-name");
+        }
+        else
+        {
+            props.Remove("motd");
+        }
+
         if (!string.IsNullOrWhiteSpace(configuration.Seed))
         {
             props["level-seed"] = configuration.Seed;
         }
 
-        props["spawn-protection"] = configuration.SpawnProtection;
         props["max-players"] = configuration.MaxPlayers;
         props["server-port"] = configuration.ServerPort;
-
-        bool isBedrock = metadata.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true || 
-                         metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
-        
-        if (isBedrock && int.TryParse(configuration.ServerPort, out int parsedPort))
-        {
-            props["server-portv6"] = (parsedPort + 1).ToString();
-        }
 
         if (!string.IsNullOrWhiteSpace(configuration.ServerIp))
         {
@@ -155,15 +164,38 @@ public sealed class ServerConfigurationService
             props.Remove("server-ip");
         }
 
-        props["level-type"] = configuration.LevelType;
         props["online-mode"] = configuration.OnlineMode ? "true" : "false";
         props["pvp"] = configuration.Pvp ? "true" : "false";
         props["white-list"] = configuration.WhiteList ? "true" : "false";
         props["gamemode"] = configuration.Gamemode;
         props["difficulty"] = configuration.Difficulty;
-        props["enable-command-block"] = configuration.AllowCommandBlock ? "true" : "false";
-        props["allow-flight"] = configuration.AllowFlight ? "true" : "false";
-        props["allow-nether"] = configuration.AllowNether ? "true" : "false";
+
+        if (profile.IsJava)
+        {
+            props["spawn-protection"] = configuration.SpawnProtection;
+            props["level-type"] = configuration.LevelType;
+            props["enable-command-block"] = configuration.AllowCommandBlock ? "true" : "false";
+            props["allow-flight"] = configuration.AllowFlight ? "true" : "false";
+            props["allow-nether"] = configuration.AllowNether ? "true" : "false";
+            RemoveBedrockProperties(props);
+        }
+        else
+        {
+            RemoveJavaOnlyProperties(props);
+
+            props["server-portv6"] = string.IsNullOrWhiteSpace(configuration.ServerPortV6)
+                ? TryGetPortPlusOne(configuration.ServerPort)
+                : configuration.ServerPortV6;
+            props["allow-cheats"] = configuration.AllowCheats ? "true" : "false";
+            props["texturepack-required"] = configuration.TexturepackRequired ? "true" : "false";
+            props["force-gamemode"] = configuration.ForceGamemode ? "true" : "false";
+            props["default-player-permission-level"] = string.IsNullOrWhiteSpace(configuration.DefaultPlayerPermissionLevel)
+                ? "member"
+                : configuration.DefaultPlayerPermissionLevel;
+            props["tick-distance"] = string.IsNullOrWhiteSpace(configuration.TickDistance)
+                ? "4"
+                : configuration.TickDistance;
+        }
 
         foreach (var key in props.Keys.Where(key => !CorePropertyKeys.Contains(key)).ToList())
         {
@@ -211,4 +243,50 @@ public sealed class ServerConfigurationService
 
     private static string GetPropertiesPath(string serverDir) =>
         Path.Combine(serverDir, ServerPropertiesFileName);
+
+    private static bool TryGetDisplayName(
+        IReadOnlyDictionary<string, string> props,
+        ServerSettingsProfile profile,
+        out string value)
+    {
+        if (props.TryGetValue(profile.DisplayNamePropertyKey, out value!))
+        {
+            return true;
+        }
+
+        string fallbackKey = profile.IsJava ? "server-name" : "motd";
+        return props.TryGetValue(fallbackKey, out value!);
+    }
+
+    private static bool TryGetBool(IReadOnlyDictionary<string, string> props, string key)
+    {
+        return props.TryGetValue(key, out var value) &&
+               string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string TryGetPortPlusOne(string rawPort)
+    {
+        return int.TryParse(rawPort, out int parsedPort) && parsedPort < 65535
+            ? (parsedPort + 1).ToString()
+            : "19133";
+    }
+
+    private static void RemoveJavaOnlyProperties(IDictionary<string, string> props)
+    {
+        props.Remove("spawn-protection");
+        props.Remove("level-type");
+        props.Remove("enable-command-block");
+        props.Remove("allow-nether");
+    }
+
+    private static void RemoveBedrockProperties(IDictionary<string, string> props)
+    {
+        props.Remove("server-portv6");
+        props.Remove("allow-cheats");
+        props.Remove("texturepack-required");
+        props.Remove("force-gamemode");
+        props.Remove("default-player-permission-level");
+        props.Remove("tick-distance");
+        props.Remove("emit-server-telemetry");
+    }
 }

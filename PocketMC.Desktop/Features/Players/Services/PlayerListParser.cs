@@ -150,7 +150,7 @@ public sealed class PlayerListParser
             return Array.Empty<string>();
         }
 
-        string[] names = playerSegment.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+        string[] names = playerSegment.Split(',', StringSplitOptions.RemoveEmptyEntries);
         List<string> parsed = new(names.Length);
         foreach (string name in names)
         {

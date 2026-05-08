@@ -1,7 +1,6 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-// Removed legacy ViewModels using
 
 namespace PocketMC.Desktop.Features.Dashboard
 {

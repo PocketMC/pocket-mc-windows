@@ -21,6 +21,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly IAppDispatcher _dispatcher;
         private readonly Func<bool> _isRunningCheck;
         private readonly Action _markDirty;
+        private readonly ServerSettingsProfile _profile;
 
         public void UpdateServerDir(string newDir) => _serverDir = newDir;
 
@@ -36,15 +37,15 @@ namespace PocketMC.Desktop.Features.Settings
 
         private string _levelType = "minecraft:normal";
         public string LevelType { get => _levelType; set { if (SetProperty(ref _levelType, value)) _markDirty(); } }
-        public string[] LevelTypes { get; } = { "minecraft:normal", "minecraft:flat", "minecraft:large_biomes", "minecraft:amplified", "minecraft:single_biome_surface" };
+        public string[] LevelTypes { get; }
 
         private string _gamemode = "survival";
         public string Gamemode { get => _gamemode; set { if (SetProperty(ref _gamemode, value)) _markDirty(); } }
-        public string[] Gamemodes { get; } = { "survival", "creative", "adventure", "spectator" };
+        public string[] Gamemodes { get; }
 
         private string _difficulty = "easy";
         public string Difficulty { get => _difficulty; set { if (SetProperty(ref _difficulty, value)) _markDirty(); } }
-        public string[] Difficulties { get; } = { "peaceful", "easy", "normal", "hard" };
+        public string[] Difficulties { get; }
 
         private bool _pvp = true;
         public bool Pvp { get => _pvp; set { if (SetProperty(ref _pvp, value)) _markDirty(); } }
@@ -87,6 +88,7 @@ namespace PocketMC.Desktop.Features.Settings
             IAppNavigationService navigationService,
             IServiceProvider serviceProvider,
             string mcVersion,
+            ServerSettingsProfile profile,
             Func<bool> isRunningCheck,
             Action markDirty)
         {
@@ -97,8 +99,12 @@ namespace PocketMC.Desktop.Features.Settings
             _navigationService = navigationService;
             _serviceProvider = serviceProvider;
             _mcVersion = mcVersion;
+            _profile = profile;
             _isRunningCheck = isRunningCheck;
             _markDirty = markDirty;
+            LevelTypes = profile.LevelTypes;
+            Gamemodes = profile.Gamemodes;
+            Difficulties = profile.Difficulties;
 
             UploadWorldCommand = new RelayCommand(async _ => await UploadWorldAsync(), _ => !_isRunningCheck());
             DeleteWorldCommand = new RelayCommand(async _ => await DeleteWorldAsync(), _ => !_isRunningCheck());

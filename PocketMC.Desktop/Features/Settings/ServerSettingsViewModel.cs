@@ -37,12 +37,14 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly ApplicationState _applicationState;
 
         public InstanceMetadata Metadata { get; }
+        public ServerSettingsProfile Profile { get; }
         public string ServerDir { get; private set; }
 
         // Sub-ViewModels
         public SettingsGeneralVM General { get; }
         public SettingsWorldVM World { get; }
         public SettingsPerformanceVM Performance { get; }
+        public SettingsBedrockVM Bedrock { get; }
         public SettingsBackupsVM Backups { get; }
         public SettingsAddonsVM Addons { get; }
         public SettingsAdvancedVM Advanced { get; }
@@ -73,6 +75,14 @@ namespace PocketMC.Desktop.Features.Settings
         public string PlayitBedrockAddress { get => _playitBedrockAddress; set => SetProperty(ref _playitBedrockAddress, value); }
 
         public bool HasGeyser => Metadata.HasGeyser;
+        public bool IsJavaSettings => Profile.IsJava;
+        public bool IsBedrockSettings => Profile.SupportsBedrockRules;
+        public bool SupportsJavaRuntimeSettings => Profile.SupportsJavaRuntimeSettings;
+        public bool SupportsJavaWorldGenerator => Profile.SupportsJavaWorldGenerator;
+        public bool SupportsGeyserSettings => Profile.SupportsGeyserSettings;
+        public bool SupportsNether => Profile.SupportsNether;
+        public string DisplayNameLabel => Profile.DisplayNameLabel;
+        public string DefaultServerPortText => Profile.DefaultServerPort;
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
@@ -106,6 +116,7 @@ namespace PocketMC.Desktop.Features.Settings
             _applicationState = (ApplicationState)serviceProvider.GetService(typeof(ApplicationState))!;
             _appRootPath = _applicationState.GetRequiredAppRootPath();
             ServerDir = _registry.GetPath(metadata.Id) ?? throw new InvalidOperationException();
+            Profile = ServerSettingsProfile.FromMetadata(metadata);
 
             _instanceStateChangedHandler = (id, state) => { if (id == Metadata.Id) dispatcher.Invoke(UpdateRunningState); };
             _lifecycleService.OnInstanceStateChanged += _instanceStateChangedHandler;
@@ -116,8 +127,9 @@ namespace PocketMC.Desktop.Features.Settings
                 InstanceName = metadata.Name,
                 InstanceDescription = metadata.Description
             };
-            World = new SettingsWorldVM(ServerDir, worldManager, dialogService, dispatcher, navigationService, serviceProvider, metadata.MinecraftVersion, () => IsRunning, MarkChanged);
+            World = new SettingsWorldVM(ServerDir, worldManager, dialogService, dispatcher, navigationService, serviceProvider, metadata.MinecraftVersion, Profile, () => IsRunning, MarkChanged);
             Performance = new SettingsPerformanceVM(dialogService, MarkChanged);
+            Bedrock = new SettingsBedrockVM(Profile, MarkChanged);
             Backups = new SettingsBackupsVM(metadata, ServerDir, backupService, dialogService, dispatcher, () => IsRunning, MarkChanged);
             Addons = new SettingsAddonsVM(metadata, ServerDir, modpackService, dialogService, navigationService, serviceProvider, () => IsRunning, MarkChanged);
             Advanced = new SettingsAdvancedVM(ServerDir, serverConfigurationService, MarkChanged);
@@ -145,6 +157,12 @@ namespace PocketMC.Desktop.Features.Settings
             General.ServerIp = cfg.ServerIp;
             General.GeyserBedrockPort = Metadata.GeyserBedrockPort?.ToString() ?? "19132";
             General.LoadIcon();
+            Bedrock.ServerPortV6 = cfg.ServerPortV6;
+            Bedrock.AllowCheats = cfg.AllowCheats;
+            Bedrock.TexturepackRequired = cfg.TexturepackRequired;
+            Bedrock.ForceGamemode = cfg.ForceGamemode;
+            Bedrock.DefaultPlayerPermissionLevel = cfg.DefaultPlayerPermissionLevel;
+            Bedrock.TickDistance = cfg.TickDistance;
 
             // World
             World.Seed = cfg.Seed;
@@ -421,7 +439,13 @@ namespace PocketMC.Desktop.Features.Settings
                 Difficulty = World.Difficulty,
                 AllowCommandBlock = World.AllowCommandBlock,
                 AllowFlight = World.AllowFlight,
-                AllowNether = World.AllowNether
+                AllowNether = World.AllowNether,
+                ServerPortV6 = Bedrock.ServerPortV6,
+                AllowCheats = Bedrock.AllowCheats,
+                TexturepackRequired = Bedrock.TexturepackRequired,
+                ForceGamemode = Bedrock.ForceGamemode,
+                DefaultPlayerPermissionLevel = Bedrock.DefaultPlayerPermissionLevel,
+                TickDistance = Bedrock.TickDistance
             };
 
             foreach (var item in Advanced.AdvancedProperties)

@@ -256,12 +256,15 @@
 
                                             <!-- Server Port -->
                                             <TextBlock Text="Server Port" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="The port your Minecraft server listens on. Default is 25565."
-                                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
+                                            <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8">
+                                                <Run Text="The port your Minecraft server listens on. Default is "/>
+                                                <Run Text="{Binding DefaultServerPortText, Mode=OneWay}"/>
+                                                <Run Text="."/>
+                                            </TextBlock>
                                             <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}"
-                                                        PlaceholderText="25565" Width="160" HorizontalAlignment="Left"/>
+                                                        PlaceholderText="{Binding DefaultServerPortText, Mode=OneWay}" Width="160" HorizontalAlignment="Left"/>
 
-                                            <StackPanel Visibility="{Binding HasGeyser, Converter={StaticResource BoolToVis}}">
+                                            <StackPanel Visibility="{Binding SupportsGeyserSettings, Converter={StaticResource BoolToVis}}">
                                                 <Separator Margin="0,16" Opacity="0.15"/>
 
                                                 <TextBlock Text="Geyser Bedrock Port (UDP)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
@@ -325,7 +328,8 @@
                                         </StackPanel>
                                     </ui:CardExpander>
 
-                                    <ui:CardExpander Header="Resource Allocation" Icon="{ui:SymbolIcon TopSpeed24}" Margin="0,0,0,12" IsExpanded="True">
+                                            <ui:CardExpander Header="Resource Allocation" Icon="{ui:SymbolIcon TopSpeed24}" Margin="0,0,0,12" IsExpanded="True"
+                                                             Visibility="{Binding SupportsJavaRuntimeSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel Margin="16,8,16,16">
                                             <TextBlock Text="System RAM Limit:" Style="{StaticResource SettingsHeader}"/>
                                             <Grid Margin="0,5,0,15">
@@ -355,7 +359,8 @@
                         <TabItem Header="Gameplay">
                             <ScrollViewer x:Name="GameplayScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
-                                    <ui:Card Padding="24" Margin="0,0,0,16">
+                                    <ui:Card Padding="24" Margin="0,0,0,16"
+                                             Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <WrapPanel>
                                             <StackPanel Width="280" Margin="10,0,10,20">
                                                 <TextBlock Text="Default Gamemode:" Style="{StaticResource SettingsSubtext}"/>
@@ -388,6 +393,54 @@
                                             </StackPanel>
                                         </WrapPanel>
                                     </ui:Card>
+
+                                    <ui:Card Padding="24" Margin="0,0,0,16"
+                                             Visibility="{Binding IsBedrockSettings, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel>
+                                            <TextBlock Text="Bedrock Rules" Style="{StaticResource SettingsHeader}" FontSize="18"/>
+                                            <WrapPanel Margin="0,10,0,8">
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="Default Gamemode:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ComboBox ItemsSource="{Binding World.Gamemodes}" SelectedItem="{Binding World.Gamemode, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                                                </StackPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="Difficulty:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ComboBox ItemsSource="{Binding World.Difficulties}" SelectedItem="{Binding World.Difficulty, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                                                </StackPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="Tick Distance:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ui:TextBox Text="{Binding Bedrock.TickDistance, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="Default Permission:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ComboBox ItemsSource="{Binding Bedrock.PermissionLevels}" SelectedItem="{Binding Bedrock.DefaultPlayerPermissionLevel, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                                                </StackPanel>
+                                                <StackPanel Width="280" Margin="10,0,10,20">
+                                                    <TextBlock Text="IPv6 Port:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ui:TextBox Text="{Binding Bedrock.ServerPortV6, UpdateSourceTrigger=PropertyChanged}" />
+                                                </StackPanel>
+                                            </WrapPanel>
+
+                                            <Separator Margin="0,10,0,20" Background="#313244"/>
+
+                                            <WrapPanel>
+                                                <StackPanel Width="400" Margin="10">
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="Online Mode" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.Pvp}" Content="Enable PvP Damage" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.WhiteList}" Content="Enable Whitelist" />
+                                                </StackPanel>
+                                                <StackPanel Width="400" Margin="10">
+                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.AllowCheats}" Content="Allow Cheats" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.TexturepackRequired}" Content="Require Resource Packs" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.ForceGamemode}" Content="Force Default Gamemode" />
+                                                </StackPanel>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </ui:Card>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
@@ -405,8 +458,10 @@
                                             <TextBlock Text="World Generation Seed:" Style="{StaticResource SettingsHeader}"/>
                                             <ui:TextBox Text="{Binding World.Seed, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Leave empty for random" Margin="0,0,0,15"/>
 
-                                            <TextBlock Text="World Generator Type:" Style="{StaticResource SettingsHeader}"/>
-                                            <ComboBox ItemsSource="{Binding World.LevelTypes}" SelectedItem="{Binding World.LevelType, Mode=TwoWay}" Margin="0,0,0,30" HorizontalAlignment="Left" Width="300"/>
+                                            <StackPanel Visibility="{Binding SupportsJavaWorldGenerator, Converter={StaticResource VisibleIfTrue}}">
+                                                <TextBlock Text="World Generator Type:" Style="{StaticResource SettingsHeader}"/>
+                                                <ComboBox ItemsSource="{Binding World.LevelTypes}" SelectedItem="{Binding World.LevelType, Mode=TwoWay}" Margin="0,0,0,30" HorizontalAlignment="Left" Width="300"/>
+                                            </StackPanel>
 
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:Button Content="Import World (ZIP)" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}"/>

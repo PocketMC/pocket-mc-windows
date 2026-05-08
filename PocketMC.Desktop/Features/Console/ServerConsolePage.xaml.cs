@@ -10,7 +10,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Wpf.Ui.Controls;
 using PocketMC.Desktop.Core.Interfaces;
@@ -314,34 +313,7 @@ namespace PocketMC.Desktop.Features.Console
             if (string.IsNullOrWhiteSpace(TxtLogSearch?.Text)) return true;
             string query = TxtLogSearch.Text;
 
-            if (IsRegexEnabled)
-            {
-                try
-                {
-                    return Regex.IsMatch(line.Text, query, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                }
-                catch
-                {
-                    // Invalid regex - fail open or closed? Let's fail closed to avoid noise
-                    return false;
-                }
-            }
-
-            // 3. Traditional Multi-keyword search
-            var keywords = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var kw in keywords)
-            {
-                if (kw.StartsWith('-') && kw.Length > 1)
-                {
-                    if (line.Text.Contains(kw.Substring(1), StringComparison.OrdinalIgnoreCase)) return false;
-                }
-                else
-                {
-                    if (!line.Text.Contains(kw, StringComparison.OrdinalIgnoreCase)) return false;
-                }
-            }
-
-            return true;
+            return ConsoleLogFilter.MatchesSearch(line.Text, query, IsRegexEnabled);
         }
 
         private void TxtLogSearch_TextChanged(object sender, TextChangedEventArgs e)
@@ -400,66 +372,27 @@ namespace PocketMC.Desktop.Features.Console
         /// </summary>
         private LogLine ColorizeLogLine(string text)
         {
-            Brush color;
-            LogLevel level;
-
-            // Detection for severity
-            if (text.Contains("/ERROR]") || text.Contains("[ERROR]") || text.Contains("Exception") || text.Contains("Fatal") || text.Contains("FATAL") || text.Contains("Error:") || text.Contains(" SEVERE") || text.Contains(" CRITICAL"))
-            {
-                color = Brushes.OrangeRed;
-                level = LogLevel.Error;
-            }
-            else if (text.Contains("/WARN]") || text.Contains("[WARN]") || text.Contains(" WARN") || text.Contains("Warning") || text.Contains("WARNING") || text.Contains("****") || text.Contains("***"))
-            {
-                color = Brushes.Yellow;
-                level = LogLevel.Warn;
-            }
-            else if (text.Contains("/DEBUG]") || text.Contains("[DEBUG]"))
-            {
-                color = Brushes.Cyan;
-                level = LogLevel.Debug;
-            }
-            else if (text.Contains("/TRACE]") || text.Contains("[TRACE]"))
-            {
-                color = Brushes.Gray;
-                level = LogLevel.Trace;
-            }
-            else if (text.Contains("Done (") || text.Contains("Server started"))
-            {
-                color = Brushes.LimeGreen;
-                level = LogLevel.Info;
-            }
-            else if (Regex.IsMatch(text, @"^\[\d{2}:\d{2}:\d{2}\sINFO\]:\s<[^>]+>\s.*$") || // Vanilla <Player> Msg
-                     Regex.IsMatch(text, @"^\[\d{2}:\d{2}:\d{2}\sINFO\]:\s[^\s:]+\s(joined|left) the game$") || // Join/Leave
-                     Regex.IsMatch(text, @"^\[\d{2}:\d{2}:\d{2}\sINFO\]:\s\[[^\]]+\]\s.*$")) // Plugin messages often [Plugin] Msg
-            {
-                color = Brushes.White;
-                level = LogLevel.Chat;
-            }
-            else if (text.TrimStart().StartsWith("at ") || text.TrimStart().StartsWith("...") || text.Contains("Caused by:"))
-            {
-                // Stack trace line sticky severity
-                color = _lastLevel switch
-                {
-                    LogLevel.Error => Brushes.OrangeRed,
-                    LogLevel.Warn => Brushes.Yellow,
-                    _ => Brushes.WhiteSmoke
-                };
-                level = _lastLevel;
-            }
-            else if (text.StartsWith("> "))
-            {
-                color = Brushes.CornflowerBlue;
-                level = LogLevel.System;
-            }
-            else
-            {
-                color = text.Contains("/INFO]") || text.Contains("[INFO]") ? Brushes.LightGray : Brushes.WhiteSmoke;
-                level = LogLevel.Info;
-            }
+            LogLevel level = LogLineClassifier.Classify(text, _lastLevel);
+            Brush color = GetBrushForLogLine(text, level);
 
             _lastLevel = level;
             return new LogLine { Text = text, TextColor = color, Level = level };
+        }
+
+        private static Brush GetBrushForLogLine(string text, LogLevel level)
+        {
+            return level switch
+            {
+                LogLevel.Error => Brushes.OrangeRed,
+                LogLevel.Warn => Brushes.Yellow,
+                LogLevel.Debug => Brushes.Cyan,
+                LogLevel.Trace => Brushes.Gray,
+                LogLevel.Chat => Brushes.White,
+                LogLevel.System => Brushes.CornflowerBlue,
+                _ when text.Contains("Done (") || text.Contains("Server started", StringComparison.OrdinalIgnoreCase) => Brushes.LimeGreen,
+                _ when text.Contains("/INFO]") || text.Contains("[INFO]") => Brushes.LightGray,
+                _ => Brushes.WhiteSmoke
+            };
         }
 
         private async void BtnSend_Click(object sender, RoutedEventArgs e)

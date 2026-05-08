@@ -14,13 +14,18 @@ namespace PocketMC.Desktop.Features.Console
             RegexTimeout);
 
         private static readonly Regex SecretAssignmentRegex = new(
-            @"(?i)\b(secret|token)\b(\s*[:=]\s*)([^\s,;]+)",
-            RegexOptions.Compiled,
+            @"\b(secret(?:[_-]?key)?|token)\b(\s*[:=]\s*)""?[^""\s,;]+""?",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase,
             RegexTimeout);
 
         private static readonly Regex Ipv4Regex = new(
             @"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b",
             RegexOptions.Compiled,
+            RegexTimeout);
+
+        private static readonly Regex Ipv6Regex = new(
+            @"(?<![\w:])(?:[A-F0-9]{1,4}:){1,7}:?(?:[A-F0-9]{1,4})?(?![\w:])",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase,
             RegexTimeout);
 
         private static readonly Regex EmailRegex = new(
@@ -36,6 +41,7 @@ namespace PocketMC.Desktop.Features.Console
             
             // Protect player PII
             cleaned = Ipv4Regex.Replace(cleaned, "[REDACTED_IP]");
+            cleaned = Ipv6Regex.Replace(cleaned, "[REDACTED_IP]");
             cleaned = EmailRegex.Replace(cleaned, "[REDACTED_EMAIL]");
 
             return cleaned;

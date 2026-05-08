@@ -1,11 +1,11 @@
-using System.Windows.Controls;
-using PocketMC.Desktop.Features.Shell;
-using System.Windows.Input;
-// Removed legacy ViewModels using
+using System;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Controls.Primitives;
+using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.Settings
 {

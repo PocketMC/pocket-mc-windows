@@ -74,6 +74,116 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         Assert.Equal(6144, savedMetadata.MaxRamMb);
     }
 
+    [Fact]
+    public void Load_BedrockUsesServerNameAndBedrockDefaults()
+    {
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager);
+        var metadata = manager.CreateInstance("Bedrock Settings Test", "", "Bedrock Dedicated Server");
+        string serverDir = registry.GetPath(metadata.Id)!;
+        File.WriteAllLines(
+            Path.Combine(serverDir, "server.properties"),
+            new[]
+            {
+                "server-name=Bedrock Realm",
+                "server-port=19132",
+                "server-portv6=19133",
+                "allow-cheats=true",
+                "texturepack-required=true",
+                "default-player-permission-level=operator",
+                "tick-distance=8"
+            },
+            new UTF8Encoding(false));
+
+        var configuration = service.Load(metadata, serverDir);
+
+        Assert.Equal("Bedrock Realm", configuration.Motd);
+        Assert.Equal("19132", configuration.ServerPort);
+        Assert.Equal("19133", configuration.ServerPortV6);
+        Assert.True(configuration.AllowCheats);
+        Assert.True(configuration.TexturepackRequired);
+        Assert.Equal("operator", configuration.DefaultPlayerPermissionLevel);
+        Assert.Equal("8", configuration.TickDistance);
+    }
+
+    [Fact]
+    public void Save_BedrockWritesBedrockPropertiesAndSkipsJavaOnlyKeys()
+    {
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager);
+        var metadata = manager.CreateInstance("Bedrock Save Test", "", "Bedrock Dedicated Server");
+        string serverDir = registry.GetPath(metadata.Id)!;
+        File.WriteAllText(Path.Combine(serverDir, "server.properties"), "level-type=minecraft:normal" + Environment.NewLine, new UTF8Encoding(false));
+
+        var configuration = new ServerConfiguration
+        {
+            Motd = "Bedrock Name",
+            MaxPlayers = "12",
+            ServerPort = "19132",
+            ServerPortV6 = "19134",
+            Gamemode = "creative",
+            Difficulty = "normal",
+            OnlineMode = true,
+            Pvp = true,
+            WhiteList = false,
+            AllowCheats = true,
+            TexturepackRequired = true,
+            DefaultPlayerPermissionLevel = "member",
+            TickDistance = "6"
+        };
+
+        service.Save(metadata, serverDir, configuration);
+
+        var props = ServerPropertiesParser.Read(Path.Combine(serverDir, "server.properties"));
+        Assert.Equal("Bedrock Name", props["server-name"]);
+        Assert.Equal("19134", props["server-portv6"]);
+        Assert.Equal("true", props["allow-cheats"]);
+        Assert.Equal("true", props["texturepack-required"]);
+        Assert.Equal("member", props["default-player-permission-level"]);
+        Assert.Equal("6", props["tick-distance"]);
+        Assert.False(props.ContainsKey("motd"));
+        Assert.False(props.ContainsKey("level-type"));
+        Assert.False(props.ContainsKey("allow-nether"));
+        Assert.False(props.ContainsKey("enable-command-block"));
+    }
+
+    [Fact]
+    public void Save_JavaWritesJavaPropertiesAndSkipsBedrockOnlyKeys()
+    {
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager);
+        var metadata = manager.CreateInstance("Java Save Test", "", "Paper");
+        string serverDir = registry.GetPath(metadata.Id)!;
+        File.WriteAllText(Path.Combine(serverDir, "server.properties"), "server-name=Old Bedrock Name" + Environment.NewLine, new UTF8Encoding(false));
+
+        var configuration = new ServerConfiguration
+        {
+            Motd = "Java MOTD",
+            MaxPlayers = "20",
+            ServerPort = "25565",
+            SpawnProtection = "16",
+            LevelType = "minecraft:flat",
+            Gamemode = "survival",
+            Difficulty = "easy",
+            Pvp = true,
+            AllowNether = true,
+            AllowFlight = false,
+            AllowCommandBlock = false,
+            AllowCheats = true,
+            TexturepackRequired = true
+        };
+
+        service.Save(metadata, serverDir, configuration);
+
+        var props = ServerPropertiesParser.Read(Path.Combine(serverDir, "server.properties"));
+        Assert.Equal("Java MOTD", props["motd"]);
+        Assert.Equal("minecraft:flat", props["level-type"]);
+        Assert.Equal("true", props["allow-nether"]);
+        Assert.False(props.ContainsKey("server-name"));
+        Assert.False(props.ContainsKey("allow-cheats"));
+        Assert.False(props.ContainsKey("texturepack-required"));
+    }
+
     private sealed class MockAssetProvider : PocketMC.Desktop.Core.Interfaces.IAssetProvider
     {
         public Stream? GetAssetStream(string assetName) => null;

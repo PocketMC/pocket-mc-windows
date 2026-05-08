@@ -3,19 +3,21 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="{Binding ElementName=TxtTitle, Path=Text}"
-        SizeToContent="WidthAndHeight"
-        MinWidth="360" MaxWidth="500"
+        Width="420"
+        SizeToContent="Height"
+        MinWidth="360" MaxWidth="520"
+        MinHeight="0"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True"
-        WindowBackdropType="Mica"
+        WindowBackdropType="None"
         Background="{DynamicResource ApplicationBackgroundBrush}">
 
-    <Grid Margin="20">
+    <Grid Margin="20" MaxWidth="480">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -29,12 +31,13 @@
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                        VerticalAlignment="Center"
+                       TextWrapping="Wrap"
                        TextTrimming="CharacterEllipsis"/>
         </StackPanel>
 
         <!-- Message body -->
         <ScrollViewer Grid.Row="1"
-                      MaxHeight="300"
+                      MaxHeight="260"
                       VerticalScrollBarVisibility="Auto">
             <TextBlock x:Name="TxtMessage"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -44,7 +47,7 @@
         </ScrollViewer>
 
         <!-- Action buttons -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
             <ui:Button x:Name="BtnSecondary"
                        Width="100"
                        Margin="0,0,10,0"

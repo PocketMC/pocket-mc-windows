@@ -59,4 +59,21 @@ public sealed class PlayerListParserTests
         Assert.Equal("Steve", first);
         Assert.Equal("Alex With Spaces", second);
     }
+
+    [Fact]
+    public void ParseLine_SplitsCommaSeparatedNamesWithoutSpaces()
+    {
+        PlayerListParseResult? result = _parser.ParseLine(
+            "There are 2 of a max of 20 players online: Steve,Alex",
+            "Paper");
+
+        Assert.NotNull(result);
+        Assert.Equal(new[] { "Steve", "Alex" }, result!.OnlinePlayerNames);
+    }
+
+    [Fact]
+    public void TryParseContinuationLine_RejectsOrdinaryHyphenatedMessages()
+    {
+        Assert.False(_parser.TryParseContinuationLine("Steve - not a list item", out _));
+    }
 }

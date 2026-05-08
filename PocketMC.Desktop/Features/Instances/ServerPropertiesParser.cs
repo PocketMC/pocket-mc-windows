@@ -3,19 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Setup;
-using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Infrastructure.Process;
-using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Infrastructure.FileSystem;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Core.Presentation;
 
 namespace PocketMC.Desktop.Features.Instances;
 
@@ -86,7 +74,7 @@ public static class ServerPropertiesParser
                 }
                 else
                 {
-                    newLines.Add(line);
+                    keysUpdated.Add(key);
                 }
             }
             else
