@@ -1,6 +1,21 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.3`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.4`.
+
+## v1.6.4 - Player Management, Console Intelligence & Bedrock Profiles
+
+This release introduces a new player management suite, intelligent console log filtering, and engine-aware settings profiles to provide native configuration options for Bedrock servers.
+
+### ✨ New Features
+* **Player Management Suite**: Introduced a comprehensive player management UI powered by a new state file service. Administrators can now natively view and manage operators, banned players, banned IPs, and whitelists directly from the UI without editing JSON files.
+* **Console Log Intelligence**: Added a new log classification engine to intelligently parse, classify, and filter server console logs by severity and origin, reducing log spam and improving readability.
+* **Engine-Aware Settings Profiles**: Re-architected the settings backend with a new profiling system. The application now provides engine-specific UI configurations and dropdowns (e.g., Gamemodes, Level Types) tailored to the active server's engine.
+* **Native Bedrock Settings**: Added a dedicated Bedrock settings view exposing Bedrock-exclusive properties including `server-portv6`, `allow-cheats`, `texturepack-required`, `force-gamemode`, `default-player-permission-level`, and `tick-distance`.
+
+### 🛠️ Fixes & Enhancements
+* **Dynamic World Backups**: Refactored the backup service to parse server properties files dynamically. Backups now correctly identify and target the active world folder name for Bedrock and Pocketmine instead of assuming the default `world/` directory.
+* **CI Changelog Extraction**: Updated the production build GitHub workflow to improve release note extraction algorithms during automated deployments.
+* **Settings Cleanup**: Removed legacy tunnel limit dialog classes and cleaned up redundant dependencies across multiple settings panels.
 
 ## v1.6.3 - Installation Lifecycle & UI Safety
 
