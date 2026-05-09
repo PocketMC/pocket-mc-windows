@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PocketMC.Desktop.Features.Instances.Backups;
 
 namespace PocketMC.Desktop.Features.Mods;
 
@@ -68,7 +69,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         {
             Directory.CreateDirectory(tempDir);
             _logger.LogInformation("Extracting addon {File} to temp dir {TempDir}.", sourceFilePath, tempDir);
-            await Task.Run(() => ZipFile.ExtractToDirectory(sourceFilePath, tempDir, overwriteFiles: true), ct);
+            await SafeZipExtractor.ExtractAsync(sourceFilePath, tempDir);
 
             var manifests = FindManifests(tempDir);
             if (manifests.Count == 0)

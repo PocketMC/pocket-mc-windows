@@ -134,7 +134,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
             try
             {
-                Process.Start(new ProcessStartInfo
+                using var proc = Process.Start(new ProcessStartInfo
                 {
                     FileName = setupUri.AbsoluteUri,
                     UseShellExecute = true

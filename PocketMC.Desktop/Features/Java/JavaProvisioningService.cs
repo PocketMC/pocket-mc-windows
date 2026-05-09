@@ -157,7 +157,7 @@ namespace PocketMC.Desktop.Features.Java
 
             string appRootPath = _applicationState.GetRequiredAppRootPath();
             string runtimeDir = Path.Combine(appRootPath, "runtime");
-            string tempZipPath = Path.Combine(runtimeDir, $"temp_java{version}.zip");
+            string tempZipPath = Path.Combine(runtimeDir, $"temp_java{version}_{Guid.NewGuid():N}.zip");
             string extractPath = Path.Combine(runtimeDir, $"java{version}_ext");
             string finalPath = Path.Combine(runtimeDir, $"java{version}");
 

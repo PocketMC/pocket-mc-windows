@@ -52,7 +52,7 @@ public class PhpProvisioningService
         string appRoot = _applicationState.GetRequiredAppRootPath();
         string runtimesDir = Path.Combine(appRoot, "runtimes");
         string phpDir = Path.Combine(runtimesDir, "php");
-        string tempZipPath = Path.Combine(runtimesDir, "php_temp.zip");
+        string tempZipPath = Path.Combine(runtimesDir, $"php_temp_{Guid.NewGuid():N}.zip");
 
         Directory.CreateDirectory(runtimesDir);
 
