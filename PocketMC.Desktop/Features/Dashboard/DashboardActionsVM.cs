@@ -258,7 +258,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             string? path = _registry.GetPath(vm.Id);
             if (path != null && Directory.Exists(path))
             {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = path, UseShellExecute = true });
+                using var proc = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = path, UseShellExecute = true });
             }
         }
 

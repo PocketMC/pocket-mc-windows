@@ -382,7 +382,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllText(tomlPath, $"secret_key = \"{secretKey}\"{Environment.NewLine}");
+            FileUtils.AtomicWriteAllText(tomlPath, $"secret_key = \"{secretKey}\"{Environment.NewLine}");
         }
 
         private void DeleteRuntimeToml()

@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
+using PocketMC.Desktop.Infrastructure.FileSystem;
 using Microsoft.Extensions.Logging;
 
 namespace PocketMC.Desktop.Features.Mods;
@@ -68,7 +69,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         {
             Directory.CreateDirectory(tempDir);
             _logger.LogInformation("Extracting addon {File} to temp dir {TempDir}.", sourceFilePath, tempDir);
-            await Task.Run(() => ZipFile.ExtractToDirectory(sourceFilePath, tempDir, overwriteFiles: true), ct);
+            await PocketMC.Desktop.Features.Instances.Backups.SafeZipExtractor.ExtractAsync(sourceFilePath, tempDir);
 
             var manifests = FindManifests(tempDir);
             if (manifests.Count == 0)
@@ -251,7 +252,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         entries.Add(newEntry);
 
         var options = new JsonSerializerOptions { WriteIndented = true };
-        File.WriteAllText(jsonFilePath, entries.ToJsonString(options));
+        FileUtils.AtomicWriteAllText(jsonFilePath, entries.ToJsonString(options));
     }
 
     private void RemoveFromWorldJson(string jsonFilePath, string uuid)
@@ -266,7 +267,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
                     entries.RemoveAt(i);
             }
             var options = new JsonSerializerOptions { WriteIndented = true };
-            File.WriteAllText(jsonFilePath, entries.ToJsonString(options));
+            FileUtils.AtomicWriteAllText(jsonFilePath, entries.ToJsonString(options));
             _logger.LogInformation("Removed UUID {Uuid} from {File}.", uuid, Path.GetFileName(jsonFilePath));
         }
         catch (Exception ex)

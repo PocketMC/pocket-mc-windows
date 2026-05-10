@@ -53,7 +53,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             try
             {
-                Process.Start(new ProcessStartInfo
+                using var proc = Process.Start(new ProcessStartInfo
                 {
                     FileName = "https://www.minecraftmaps.com/search",
                     UseShellExecute = true

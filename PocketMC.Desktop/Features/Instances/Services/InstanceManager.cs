@@ -204,7 +204,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             string folderPath = _pathService.GetInstancePath(folderName);
             if (Directory.Exists(folderPath))
             {
-                Process.Start(new ProcessStartInfo
+                using var proc = Process.Start(new ProcessStartInfo
                 {
                     FileName = "explorer.exe",
                     Arguments = $"\"{folderPath}\"",
