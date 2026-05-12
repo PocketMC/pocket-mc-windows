@@ -480,13 +480,23 @@
                         <TabItem Header="Addons">
                             <ScrollViewer x:Name="AddonsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
+                                    <!-- Vanilla Empty State -->
+                                    <ui:Card Padding="32" Margin="0,0,0,16"
+                                             Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <ui:SymbolIcon Symbol="Prohibited24" FontSize="36" Foreground="#F38BA8" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                            <TextBlock Text="Vanilla doesn't support mods, plugins, and addons." FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <TextBlock Text="To install plugins or mods, please change your server type to Paper, Fabric, Forge, or NeoForge."
+                                                       HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,6,0,0" MaxWidth="360"/>
+                                        </StackPanel>
+                                    </ui:Card>
+
                                     <TextBlock Text="Server Plugins" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"
                                                Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}"/>
                                     <ui:Card Margin="0,0,0,16" Padding="20"
                                              Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <TextBlock Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource VisibleIfTrue}}"
-                                                       Text="⚠ Plugins are not supported on Vanilla software. Please use Paper or Spigot." Foreground="#F38BA8" Margin="0,0,0,15" FontSize="12" FontWeight="SemiBold"/>
                                             <TextBlock Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}"
                                                        Text="ℹ PocketMine plugins are .phar files. Use the Poggit marketplace button to browse and install them." Foreground="#89B4FA" Margin="0,0,0,10" FontSize="12" TextWrapping="Wrap"/>
                                             <StackPanel Orientation="Horizontal">
