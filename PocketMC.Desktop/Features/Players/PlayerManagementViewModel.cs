@@ -84,7 +84,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             _serverProcess.WorkingDirectory);
 
         BackCommand = new RelayCommand(_ => NavigateBack());
-        RefreshCommand = new AsyncRelayCommand(_ => RequestPlayerListAsync());
+        RefreshCommand = new AsyncRelayCommand(_ => RefreshAllPlayerDataAsync());
 
         _serverProcess.OnOnlinePlayersUpdated += OnOnlinePlayersUpdated;
         _serverProcess.OnOutputLine += OnOutputLine;
@@ -188,6 +188,53 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to request player list for instance {InstanceId}.", _metadata.Id);
+        }
+    }
+
+    /// <summary>
+    /// Full refresh triggered by the user's Refresh button.
+    /// Re-requests the player list, refreshes OP status from authoritative files,
+    /// and re-fetches the latest gamemode for every online player.
+    /// Works across all engine types (Java, Bedrock, PocketMine).
+    /// </summary>
+    private async Task RefreshAllPlayerDataAsync()
+    {
+        // 1. Request the updated player list from the server
+        await RequestPlayerListAsync();
+
+        // 2. Refresh persistent state (OP, bans) from authoritative files
+        await RefreshPersistentStateAsync();
+
+        // 3. Re-fetch per-player gamemode from the latest source
+        List<string> onlineNames = new();
+        await _dispatcher.InvokeAsync(() =>
+        {
+            onlineNames = OnlinePlayers.Select(player => player.Name).ToList();
+            foreach (PlayerViewModel player in OnlinePlayers)
+            {
+                player.IsGamemodeLoading = true;
+            }
+        });
+
+        foreach (string name in onlineNames)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (IsBedrock)
+            {
+                await LoadBedrockPlayerStateAsync(name);
+            }
+            else if (UsesJavaNativePlayerData)
+            {
+                await LoadJavaGamemodeAsync(name);
+            }
+            else if (UsesSidecarGamemode)
+            {
+                await LoadSidecarGamemodeAsync(name);
+            }
         }
     }
 
