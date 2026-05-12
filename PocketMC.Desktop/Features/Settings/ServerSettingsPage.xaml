@@ -464,7 +464,7 @@
                                             </StackPanel>
 
                                             <StackPanel Orientation="Horizontal">
-                                                <ui:Button Content="Import World (ZIP)" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}"/>
+                                                <ui:Button Content="{Binding World.ImportWorldButtonText}" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}"/>
                                                 <ui:Button Content="Wipe World Data" Command="{Binding World.DeleteWorldCommand}" Appearance="Danger" Margin="0,0,12,0" Icon="{ui:SymbolIcon Delete24}"/>
                                                 <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com"/>
                                             </StackPanel>

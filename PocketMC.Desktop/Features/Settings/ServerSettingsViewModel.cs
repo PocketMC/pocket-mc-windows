@@ -127,7 +127,7 @@ namespace PocketMC.Desktop.Features.Settings
                 InstanceName = metadata.Name,
                 InstanceDescription = metadata.Description
             };
-            World = new SettingsWorldVM(ServerDir, worldManager, dialogService, dispatcher, navigationService, serviceProvider, metadata.MinecraftVersion, Profile, () => IsRunning, MarkChanged);
+            World = new SettingsWorldVM(ServerDir, worldManager, serverConfigurationService, metadata, dialogService, dispatcher, navigationService, serviceProvider, metadata.MinecraftVersion, Profile, () => IsRunning, MarkChanged);
             Performance = new SettingsPerformanceVM(dialogService, MarkChanged);
             Bedrock = new SettingsBedrockVM(Profile, MarkChanged);
             Backups = new SettingsBackupsVM(metadata, ServerDir, backupService, dialogService, dispatcher, () => IsRunning, MarkChanged);

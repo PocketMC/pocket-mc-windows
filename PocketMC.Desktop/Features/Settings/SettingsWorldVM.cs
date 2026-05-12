@@ -10,6 +10,7 @@ using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -17,6 +18,8 @@ namespace PocketMC.Desktop.Features.Settings
     {
         private string _serverDir;
         private readonly WorldManager _worldManager;
+        private readonly ServerConfigurationService _configService;
+        private readonly InstanceMetadata _metadata;
         private readonly IDialogService _dialogService;
         private readonly IAppDispatcher _dispatcher;
         private readonly Func<bool> _isRunningCheck;
@@ -72,6 +75,13 @@ namespace PocketMC.Desktop.Features.Settings
         private string _worldSizeText = "";
         public string WorldSizeText { get => _worldSizeText; set => SetProperty(ref _worldSizeText, value); }
 
+        /// <summary>
+        /// Dynamic button label: includes .mcworld for Bedrock engines.
+        /// </summary>
+        public string ImportWorldButtonText => _profile.IsBedrockDedicated
+            ? "Import World (ZIP / .mcworld)"
+            : "Import World (ZIP)";
+
         public ICommand UploadWorldCommand { get; }
         public ICommand DeleteWorldCommand { get; }
         public ICommand BrowseMapsCommand { get; }
@@ -83,6 +93,8 @@ namespace PocketMC.Desktop.Features.Settings
         public SettingsWorldVM(
             string serverDir,
             WorldManager worldManager,
+            ServerConfigurationService configService,
+            InstanceMetadata metadata,
             IDialogService dialogService,
             IAppDispatcher dispatcher,
             IAppNavigationService navigationService,
@@ -94,6 +106,8 @@ namespace PocketMC.Desktop.Features.Settings
         {
             _serverDir = serverDir;
             _worldManager = worldManager;
+            _configService = configService;
+            _metadata = metadata;
             _dialogService = dialogService;
             _dispatcher = dispatcher;
             _navigationService = navigationService;
@@ -111,9 +125,17 @@ namespace PocketMC.Desktop.Features.Settings
             BrowseMapsCommand = new RelayCommand(_ => BrowseMaps());
         }
 
+        /// <summary>
+        /// Resolves the correct world directory path for the current engine family.
+        /// </summary>
+        private string ResolveWorldDir()
+        {
+            return WorldPathResolver.Resolve(_serverDir, _metadata, _configService);
+        }
+
         public void LoadWorldState()
         {
-            var worldDir = Path.Combine(_serverDir, "world");
+            var worldDir = ResolveWorldDir();
             if (Directory.Exists(worldDir))
             {
                 WorldStatusText = "✅ World folder exists";
@@ -128,12 +150,17 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task UploadWorldAsync()
         {
-            var file = await _dialogService.OpenFileDialogAsync("Select World ZIP", "ZIP Files (*.zip)|*.zip");
+            string filter = _profile.IsBedrockDedicated
+                ? "World Files (*.zip;*.mcworld)|*.zip;*.mcworld"
+                : "ZIP Files (*.zip)|*.zip";
+
+            var file = await _dialogService.OpenFileDialogAsync("Select World Archive", filter);
             if (file != null)
             {
                 try
                 {
-                    await _worldManager.ImportWorldZipAsync(file, Path.Combine(_serverDir, "world"), p => { });
+                    string targetWorldPath = ResolveWorldDir();
+                    await _worldManager.ImportWorldZipAsync(file, targetWorldPath, p => { });
                     LoadWorldState();
                 }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
@@ -142,7 +169,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task DeleteWorldAsync()
         {
-            var worldDir = Path.Combine(_serverDir, "world");
+            var worldDir = ResolveWorldDir();
             if (!Directory.Exists(worldDir)) return;
             if (await _dialogService.ShowDialogAsync("Confirm", "Delete current world? Cannot be undone.", DialogType.Warning) == DialogResult.Yes)
             {
@@ -158,7 +185,8 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 try
                 {
-                    await _worldManager.ImportWorldZipAsync(tempZip, Path.Combine(_serverDir, "world"), p => { });
+                    string targetWorldPath = ResolveWorldDir();
+                    await _worldManager.ImportWorldZipAsync(tempZip, targetWorldPath, p => { });
                     LoadWorldState();
                     File.Delete(tempZip);
                 }
