@@ -78,7 +78,7 @@ namespace PocketMC.Desktop.Features.Settings
         /// <summary>
         /// Dynamic button label: includes .mcworld for Bedrock engines.
         /// </summary>
-        public string ImportWorldButtonText => _profile.IsBedrockDedicated
+        public string ImportWorldButtonText => _profile.SupportsBedrockWorlds
             ? "Import World (ZIP / .mcworld)"
             : "Import World (ZIP)";
 
@@ -150,7 +150,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task UploadWorldAsync()
         {
-            string filter = _profile.IsBedrockDedicated
+            string filter = _profile.SupportsBedrockWorlds
                 ? "World Files (*.zip;*.mcworld)|*.zip;*.mcworld"
                 : "ZIP Files (*.zip)|*.zip";
 

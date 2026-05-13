@@ -28,6 +28,7 @@ public sealed class ServerSettingsProfile
     public bool SupportsAllowFlight => IsJava || IsPocketMine;
     public bool SupportsSpawnProtection => IsJava || IsPocketMine;
     public bool SupportsBedrockRules => IsBedrockDedicated || IsPocketMine;
+    public bool SupportsBedrockWorlds => IsBedrockDedicated || IsPocketMine;
     public bool SupportsGeyserSettings => IsJava && HasGeyser;
 
     public string DefaultServerPort => IsJava ? "25565" : "19132";

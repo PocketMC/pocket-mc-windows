@@ -151,7 +151,8 @@
                                             <Separator Margin="0,0,0,20" Opacity="0.15"/>
 
                                             <!-- Interactive Dummy Server Card -->
-                                            <Border Background="{StaticResource DirtBackground}" BorderThickness="2" BorderBrush="#000000" Padding="4" Margin="0,0,0,16" CornerRadius="0">
+                                            <Border Background="{StaticResource DirtBackground}" BorderThickness="2" BorderBrush="#000000" Padding="4" Margin="0,0,0,16" CornerRadius="0"
+                                                    Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto"/> <!-- Server Icon -->
@@ -246,6 +247,13 @@
                                                     </StackPanel>
                                                 </Grid>
                                             </Border>
+
+                                            <!-- Simple MOTD Editor (Non-Java) -->
+                                            <StackPanel Margin="0,0,0,16" Visibility="{Binding IsJavaSettings, Converter={StaticResource InvertedVisibilityConverter}}">
+                                                <TextBlock Text="{Binding DisplayNameLabel, FallbackValue='Server Message (MOTD)'}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                <TextBlock Text="The message displayed to players in the server list." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                <ui:TextBox Text="{Binding General.Motd, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="My Server" />
+                                            </StackPanel>
 
                                         </StackPanel>
                                     </ui:CardExpander>
@@ -470,7 +478,7 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:Button Content="{Binding World.ImportWorldButtonText}" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}"/>
                                                 <ui:Button Content="Wipe World Data" Command="{Binding World.DeleteWorldCommand}" Appearance="Danger" Margin="0,0,12,0" Icon="{ui:SymbolIcon Delete24}"/>
-                                                <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com"/>
+                                                <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}"/>
                                             </StackPanel>
                                             <TextBlock Text="Download a map from the web, then import it using the button above."
                                                        Style="{StaticResource SettingsSubtext}" Margin="0,10,0,0"/>

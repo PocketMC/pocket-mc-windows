@@ -101,14 +101,14 @@ namespace PocketMC.Desktop.Features.Settings
             // PocketMine: .phar files via Poggit browser
             // Java: JAR files via local picker
             AddPluginCommand            = new RelayCommand(
-                async _ => { if (IsPocketmine) BrowsePoggit(); else await AddPluginAsync(); },
+                async _ => await AddPluginAsync(),
                 _ => !_isRunningCheck() && !ShowVanillaWarning && _metadata.Compatibility.SupportsPlugins);
             DeletePluginCommand         = new RelayCommand(
                 async p => await DeletePluginAsync(p as string),
                 _ => !_isRunningCheck() && _metadata.Compatibility.SupportsPlugins);
             BrowseModrinthPluginsCommand = new RelayCommand(
                 _ => { if (IsPocketmine) BrowsePoggit(); else BrowseModrinth("project_type:plugin"); },
-                _ => _metadata.Compatibility.SupportsPlugins && _metadata.Compatibility.SupportsModrinth);
+                _ => _metadata.Compatibility.SupportsPlugins && (_metadata.Compatibility.SupportsModrinth || IsPocketmine));
 
             // ── Mod commands — routed by engine ──────────────────────────────────────
             // BDS: "Add Mod" triggers local .mcpack/.mcaddon import
@@ -260,7 +260,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task AddPluginAsync()
         {
-            string filter = "JAR Files (*.jar)|*.jar";
+            string filter = IsPocketmine ? "PHAR Files (*.phar)|*.phar" : "JAR Files (*.jar)|*.jar";
             var files = await _dialogService.OpenFilesDialogAsync("Select Plugin(s)", filter);
             foreach (var f in files)
             {
@@ -268,7 +268,7 @@ namespace PocketMC.Desktop.Features.Settings
                 Directory.CreateDirectory(dir);
                 await FileUtils.CopyFileAsync(f, System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f)), true);
             }
-            LoadPlugins(); _onAddonChanged();
+            LoadAddons(); _onAddonChanged();
         }
 
         private async Task DeletePluginAsync(string? path)
@@ -279,7 +279,7 @@ namespace PocketMC.Desktop.Features.Settings
                 { 
                     await FileUtils.DeleteFileAsync(path); 
                     await _manifestService.UnregisterByFileNameAsync(_serverDir, Path.GetFileName(path));
-                    LoadPlugins(); 
+                    LoadAddons(); 
                     _onAddonChanged(); 
                 }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
