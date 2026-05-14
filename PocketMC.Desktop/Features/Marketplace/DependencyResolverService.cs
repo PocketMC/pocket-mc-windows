@@ -25,6 +25,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         }
         public string? Error { get; set; }
         public string? IdAlias { get; set; }
+        public bool IsCheckboxEnabled { get; set; }
     }
 
     public class DependencyResolverService
@@ -46,7 +47,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             var results = new List<ResolvedDependency>();
             var visited = new HashSet<string>(); // ProjectId to handle cycles
-            return await ResolveRecursiveAsync(provider, serverDir, rootProjectId, mcVersion, loader, results, visited, DependencyType.Required, compat);
+            return await ResolveRecursiveAsync(provider, serverDir, rootProjectId, mcVersion, loader, results, visited, DependencyType.Required, compat, true);
         }
 
         private async Task<List<ResolvedDependency>> ResolveRecursiveAsync(
@@ -58,7 +59,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             List<ResolvedDependency> results,
             HashSet<string> visited,
             DependencyType depType,
-            EngineCompatibility compat)
+            EngineCompatibility compat,
+            bool isRoot = false)
         {
             string normalizedId = projectId.ToLowerInvariant().Trim();
             
@@ -90,9 +92,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                     ProjectId = projectId,
                     ProjectTitle = projectId, // Fallback
                     Type = depType,
-                    IsSelected = (depType == DependencyType.Required),
                     Error = "No compatible version found for this Minecraft version/loader.",
-                    IsAlreadyInstalled = alreadyInstalled
+                    IsAlreadyInstalled = alreadyInstalled,
+                    IsCheckboxEnabled = false
                 });
                 return results;
             }
@@ -120,6 +122,25 @@ namespace PocketMC.Desktop.Features.Marketplace
                 visited.Add(canonicalId);
             }
 
+            bool isCheckboxEnabled = depType switch
+            {
+                DependencyType.Required => alreadyInstalled, // Enabled if already installed (optional reinstall)
+                DependencyType.Optional => true,
+                _ => false
+            };
+
+            bool isSelected = false;
+            if (!alreadyInstalled)
+            {
+                // If not installed, Required and Optional are selected by default
+                isSelected = (depType == DependencyType.Required || depType == DependencyType.Optional);
+            }
+            else
+            {
+                // If already installed, only pre-select the root item (the item the user clicked "Reinstall" on)
+                isSelected = isRoot;
+            }
+
             var resolved = new ResolvedDependency
             {
                 ProjectId = version.ProjectId,
@@ -130,14 +151,10 @@ namespace PocketMC.Desktop.Features.Marketplace
                 DownloadUrl = version.DownloadUrl,
                 FileName = version.FileName,
                 IsAlreadyInstalled = alreadyInstalled,
-                IsSelected = (depType == DependencyType.Required || depType == DependencyType.Optional) && !alreadyInstalled,
+                IsSelected = isSelected,
+                IsCheckboxEnabled = isCheckboxEnabled,
                 IdAlias = normalizedId
             };
-
-            if (depType == DependencyType.Optional && !alreadyInstalled)
-            {
-                resolved.IsSelected = true;
-            }
 
             results.Add(resolved);
 
@@ -148,7 +165,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     if (dep.Type == DependencyType.Incompatible) continue;
                     if (dep.Type == DependencyType.Embedded) continue; 
 
-                    await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, mcVersion, loader, results, visited, dep.Type, compat);
+                    await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, mcVersion, loader, results, visited, dep.Type, compat, false);
                 }
             }
 

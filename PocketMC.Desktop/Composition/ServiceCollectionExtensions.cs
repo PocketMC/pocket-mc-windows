@@ -166,6 +166,7 @@ namespace PocketMC.Desktop.Composition
 
             services.AddSingleton<PoggitService>();
             services.AddSingleton<AddonManifestService>();
+            services.AddSingleton<AddonUpdateService>();
             services.AddSingleton<DependencyResolverService>();
 
             return services;

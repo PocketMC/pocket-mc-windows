@@ -24,20 +24,6 @@ namespace PocketMC.Desktop.Features.Marketplace
         }
     }
 
-    public class DependencyTypeToIsEnabledConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is DependencyType type)
-            {
-                // Required dependencies cannot be unchecked
-                return type != DependencyType.Required;
-            }
-            return true;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
-    }
 
     public class DependencyTypeToAppearanceConverter : IValueConverter
     {

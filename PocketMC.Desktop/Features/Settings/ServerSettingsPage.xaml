@@ -511,10 +511,43 @@
                                         <StackPanel>
                                             <TextBlock Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}"
                                                        Text="ℹ PocketMine plugins are .phar files. Use the Poggit marketplace button to browse and install them." Foreground="#89B4FA" Margin="0,0,0,10" FontSize="12" TextWrapping="Wrap"/>
-                                            <StackPanel Orientation="Horizontal">
-                                                <ui:Button Content="Local File" Command="{Binding Addons.AddPluginCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
-                                                <ui:Button Content="Plugin Marketplace" Command="{Binding Addons.BrowseModrinthPluginsCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Globe20}"/>
-                                            </StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:Button Content="Local File" Command="{Binding Addons.AddPluginCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
+                                                    <ui:Button Content="Plugin Marketplace" Command="{Binding Addons.BrowseModrinthPluginsCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Globe20}"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
+                                                        <ui:ProgressRing.Style>
+                                                            <Style TargetType="ui:ProgressRing">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ui:ProgressRing.Style>
+                                                    </ui:ProgressRing>
+                                                    <ui:Button Content="Update All" Appearance="Info"
+                                                               Command="{Binding Addons.UpdateAllPluginsCommand}"
+                                                               Icon="{ui:SymbolIcon ArrowSync20}"
+                                                               ToolTip="Check all installed plugins for updates"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <TextBlock Text="{Binding Addons.UpdateAllStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,8,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                         </StackPanel>
                                     </ui:Card>
                                     <ItemsControl ItemsSource="{Binding Addons.Plugins}" Margin="0,0,0,24">
@@ -526,8 +559,40 @@
                                                         <StackPanel>
                                                             <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14"/>
                                                             <TextBlock Text="{Binding ApiVersion, StringFormat=API: {0}}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
                                                         </StackPanel>
-                                                        <ui:Button Grid.Column="1" Content="Delete" Appearance="Danger" Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Path}" VerticalAlignment="Center"/>
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,8,0">
+                                                                <ui:ProgressRing.Style>
+                                                                    <Style TargetType="ui:ProgressRing">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </ui:ProgressRing.Style>
+                                                            </ui:ProgressRing>
+                                                            <ui:Button Content="Update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}"
+                                                                       IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
+                                                                       Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                       ToolTip="Check for updates from the marketplace"/>
+                                                            <ui:Button Content="Delete" Appearance="Danger" Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Path}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Grid>
                                                 </ui:Card>
                                             </DataTemplate>
@@ -539,10 +604,45 @@
                                                Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}"/>
                                     <ui:Card Margin="0,0,0,16" Padding="20"
                                              Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ui:Button Content="Add Mod JAR" Command="{Binding Addons.AddModCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
-                                            <ui:Button Content="Browse Marketplace" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"/>
-                                            <ui:Button Content="Import Pack" Command="{Binding Addons.ImportModpackCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon FolderZip20}"/>
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:Button Content="Add Mod JAR" Command="{Binding Addons.AddModCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
+                                                    <ui:Button Content="Browse Marketplace" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"/>
+                                                    <ui:Button Content="Import Pack" Command="{Binding Addons.ImportModpackCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon FolderZip20}"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
+                                                        <ui:ProgressRing.Style>
+                                                            <Style TargetType="ui:ProgressRing">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ui:ProgressRing.Style>
+                                                    </ui:ProgressRing>
+                                                    <ui:Button Content="Update All" Appearance="Info"
+                                                               Command="{Binding Addons.UpdateAllModsCommand}"
+                                                               Icon="{ui:SymbolIcon ArrowSync20}"
+                                                               ToolTip="Check all installed mods for updates"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <TextBlock Text="{Binding Addons.UpdateAllStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,8,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                         </StackPanel>
                                     </ui:Card>
                                     <!-- Also hide the mods list for PocketMine -->
@@ -553,8 +653,42 @@
                                                 <ui:Card Margin="0,0,0,10" Padding="16,12">
                                                     <Grid>
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
-                                                        <ui:Button Grid.Column="1" Content="Delete" Appearance="Danger" Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Path}" VerticalAlignment="Center"/>
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,8,0">
+                                                                <ui:ProgressRing.Style>
+                                                                    <Style TargetType="ui:ProgressRing">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </ui:ProgressRing.Style>
+                                                            </ui:ProgressRing>
+                                                            <ui:Button Content="Update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}"
+                                                                       IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
+                                                                       Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                       ToolTip="Check for updates from the marketplace"/>
+                                                            <ui:Button Content="Delete" Appearance="Danger" Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Path}" VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Grid>
                                                 </ui:Card>
                                             </DataTemplate>

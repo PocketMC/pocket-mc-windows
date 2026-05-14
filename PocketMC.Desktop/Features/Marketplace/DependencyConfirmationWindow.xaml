@@ -16,7 +16,7 @@
 
     <ui:FluentWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <local:DependencyTypeToIsEnabledConverter x:Key="DependencyTypeToIsEnabledConverter"/>
+
         <local:DependencyTypeToAppearanceConverter x:Key="DependencyTypeToAppearanceConverter"/>
         <pres:NullOrEmptyToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         <pres:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
@@ -46,7 +46,27 @@
 
         <ListView Grid.Row="2" ItemsSource="{Binding Dependencies}" 
                   BorderThickness="0" Background="Transparent"
-                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  SelectionMode="Single"
+                  IsHitTestVisible="True">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Focusable" Value="False"/>
+                    <Setter Property="IsTabStop" Value="False"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListViewItem">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <Grid Margin="0,4">
@@ -57,7 +77,7 @@
                         </Grid.ColumnDefinitions>
 
                         <CheckBox IsChecked="{Binding IsSelected}" 
-                                  IsEnabled="{Binding Type, Converter={StaticResource DependencyTypeToIsEnabledConverter}}"
+                                  IsEnabled="{Binding IsCheckboxEnabled}"
                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
 

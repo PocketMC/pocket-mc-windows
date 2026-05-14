@@ -45,6 +45,26 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
+        /// <summary>
+        /// Synchronous manifest load — safe to call from the UI thread without deadlocking.
+        /// Use this from synchronous methods; prefer LoadManifestAsync in async contexts.
+        /// </summary>
+        public AddonManifest LoadManifest(string serverDir)
+        {
+            string path = Path.Combine(serverDir, ManifestFileName);
+            if (!File.Exists(path)) return new AddonManifest();
+
+            try
+            {
+                string json = File.ReadAllText(path);
+                return JsonSerializer.Deserialize<AddonManifest>(json) ?? new AddonManifest();
+            }
+            catch
+            {
+                return new AddonManifest();
+            }
+        }
+
         public async Task SaveManifestAsync(string serverDir, AddonManifest manifest)
         {
             string path = Path.Combine(serverDir, ManifestFileName);
