@@ -1,6 +1,20 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.6`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.7`.
+
+## v1.6.7 - AI Intelligence Fixes & Marketplace Upgrades
+
+This release solidifies the AI summarization engine with major timezone and rendering fixes, introduces powerful new addon update capabilities to the marketplace, and continues the modernization of the app's Fluent shell.
+
+### ✨ AI Summarization & Intelligence
+* **Session Duration Accuracy**: Fixed a critical timezone calculation bug that caused AI session summaries to incorrectly report a hardcoded offset (e.g., 5h 30m) instead of the actual elapsed session uptime. The UI now dynamically recalibrates duration using strict UTC bounds, retroactively repairing older corrupted summary records.
+* **Rich Markdown Engine**: Integrated a custom Markdown pipeline to bring advanced extensions to the Server Console and Settings UI. AI summaries now perfectly render emojis, soft line breaks, and enhanced list formatting.
+* **Duration Visibility**: Injected a highly visible "Total Online Time" header directly into the AI summary markdown view.
+
+### 🛒 Addon Marketplace Enhancements
+* **Update Engine**: Introduced a complete update workflow for installed addons. You can now seamlessly check for updates on individual mods/plugins or use the new "Update All" action to upgrade all your installed addons simultaneously, fully preserving your modloader and version parity constraints.
+* **Reinstallation Fixes**: Resolved UI selection glitches within the Addon Reinstall dialog. The prompt now correctly pre-selects and lists the targeted modification required for manual re-installations.
+* **Modpack UI Cleanup**: Streamlined the "Create New Instance" wizard by deprecating and removing legacy modpack ZIP import elements, focusing the UX on the native marketplace engine.
 
 ## v1.6.6 - Server Settings Polish & Bedrock Integration
 
