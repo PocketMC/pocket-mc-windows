@@ -1,6 +1,22 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.7`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.8`.
+
+## v1.6.8 - Server Settings, Player Management & Dashboard Polish
+
+This release adds render/simulation distance controls across all server engines, completely redesigns the Player Management UI with a modern sidebar layout, and refines the dashboard loading experience with engine-aware skeleton placeholders.
+
+### ✨ New Features & Enhancements
+* **Render & Simulation Distance Sliders**: Added production-grade render distance and simulation distance sliders to Server Settings for all supported engines (Java, Bedrock, PocketMine). Each engine maps to its native config property (`view-distance`, `server-authoritative-movement`, `chunk-ticking.tick-radius`, etc.) with engine-appropriate value ranges and defaults.
+* **Player Management Sidebar Navigation**: Replaced the legacy top-level TabControl with a modern NavigationView sidebar, consistent with the Server Settings page design. "Online Players" and "Ban List" tabs now live in a clean sidebar with slide-in transition animations.
+* **OP Status Toggle Switch**: Replaced the ToggleButton for operator status with a native Windows ToggleSwitch slider control, providing a cleaner visual indicator of persistent OP state with live updates.
+* **Engine-Aware Skeleton Loading**: Dashboard instance cards now show the correct number of skeleton placeholder rows during IP resolution based on server type — Java: 1 row, Bedrock/PM: 2 rows, Java+Geyser: 3 rows. LAN IP is excluded from skeletons since it appears instantly.
+
+### 🛠️ Fixes
+* **OP Status Binding Fix**: Restored ListView containers (from ItemsControl) in the Player Management page to fix a WPF binding issue where clicking the OP toggle would permanently disconnect the `IsChecked` OneWay binding due to local value precedence.
+* **Geyser IP Visibility**: Fixed Bedrock/Geyser IP rows appearing prematurely on crossplay server cards with empty addresses. The Geyser hostname row now waits until the tunnel address is actually resolved before becoming visible.
+* **CI Warning Cleanup**: Resolved all remaining build warnings (CS0618 deprecated usage in tests, CS8625 null parameter mismatches) ensuring a zero-warning production build.
+* **Test Suite Stability**: All 183 tests passing with updated view-distance test assertions matching the new slider implementations.
 
 ## v1.6.7 - AI Intelligence Fixes & Marketplace Upgrades
 
