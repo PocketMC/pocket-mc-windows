@@ -36,6 +36,8 @@ namespace PocketMC.Desktop.Models
         public bool ForceGamemode { get; set; }
         public string DefaultPlayerPermissionLevel { get; set; } = "member";
         public string TickDistance { get; set; } = "4";
+        public string ViewDistance { get; set; } = "10";
+        public string SimulationDistance { get; set; } = "10";
 
         public Dictionary<string, string> AdvancedProperties { get; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, string> AllProperties { get; } = new(StringComparer.OrdinalIgnoreCase);

@@ -1,3 +1,4 @@
+using System;
 using PocketMC.Desktop.Core.Mvvm;
 
 namespace PocketMC.Desktop.Features.Settings;
@@ -29,6 +30,13 @@ public sealed class SettingsBedrockVM : ViewModelBase
 
     private string _tickDistance = "4";
     public string TickDistance { get => _tickDistance; set { if (SetProperty(ref _tickDistance, value)) _markDirty(); } }
+
+    private int _viewDistance = 32;
+    public int ViewDistance
+    {
+        get => _viewDistance;
+        set { if (SetProperty(ref _viewDistance, Math.Clamp(value, 5, 96))) _markDirty(); }
+    }
 
     public string[] PermissionLevels { get; }
 }

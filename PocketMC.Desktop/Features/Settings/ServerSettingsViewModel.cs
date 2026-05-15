@@ -179,6 +179,11 @@ namespace PocketMC.Desktop.Features.Settings
             World.SpawnProtection = cfg.SpawnProtection;
             World.LoadWorldState();
 
+            // View/Simulation distance
+            World.ViewDistance = int.TryParse(cfg.ViewDistance, out var vd) ? vd : 10;
+            World.SimulationDistance = int.TryParse(cfg.SimulationDistance, out var sd) ? sd : 10;
+            Bedrock.ViewDistance = int.TryParse(cfg.ViewDistance, out var bvd) ? bvd : 32;
+
             // Performance
             Performance.MinRam = cfg.MinRamMb;
             Performance.MaxRam = cfg.MaxRamMb;
@@ -445,7 +450,11 @@ namespace PocketMC.Desktop.Features.Settings
                 TexturepackRequired = Bedrock.TexturepackRequired,
                 ForceGamemode = Bedrock.ForceGamemode,
                 DefaultPlayerPermissionLevel = Bedrock.DefaultPlayerPermissionLevel,
-                TickDistance = Bedrock.TickDistance
+                TickDistance = Bedrock.TickDistance,
+                ViewDistance = Profile.IsJava
+                    ? World.ViewDistance.ToString()
+                    : (Profile.SupportsBedrockRules ? Bedrock.ViewDistance.ToString() : World.ViewDistance.ToString()),
+                SimulationDistance = World.SimulationDistance.ToString()
             };
 
             foreach (var item in Advanced.AdvancedProperties)

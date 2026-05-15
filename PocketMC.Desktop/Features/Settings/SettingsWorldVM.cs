@@ -68,6 +68,20 @@ namespace PocketMC.Desktop.Features.Settings
         private bool _allowNether = true;
         public bool AllowNether { get => _allowNether; set { if (SetProperty(ref _allowNether, value)) _markDirty(); } }
 
+        private int _viewDistance = 10;
+        public int ViewDistance
+        {
+            get => _viewDistance;
+            set { if (SetProperty(ref _viewDistance, Math.Clamp(value, 2, 64))) _markDirty(); }
+        }
+
+        private int _simulationDistance = 10;
+        public int SimulationDistance
+        {
+            get => _simulationDistance;
+            set { if (SetProperty(ref _simulationDistance, Math.Clamp(value, 2, 64))) _markDirty(); }
+        }
+
         // Existing World logic
         private string _worldStatusText = "Checking world...";
         public string WorldStatusText { get => _worldStatusText; set => SetProperty(ref _worldStatusText, value); }

@@ -41,6 +41,10 @@ public sealed class ServerConfigurationService
         "tick-distance",            // simulation radius (chunk ticks)
         "emit-server-telemetry",    // MS telemetry toggle
 
+        // ── Shared render/sim distance ────────────────────────────────────
+        "view-distance",            // render distance (chunks)
+        "simulation-distance",      // simulation distance (chunks, Java only)
+
         // ── PocketMine-MP ─────────────────────────────────────────────────
         "server-name",              // PM uses this instead of motd
         "enable-query",
@@ -99,7 +103,9 @@ public sealed class ServerConfigurationService
             TexturepackRequired = TryGetBool(props, "texturepack-required"),
             ForceGamemode = TryGetBool(props, "force-gamemode"),
             DefaultPlayerPermissionLevel = props.TryGetValue("default-player-permission-level", out var permission) ? permission : "member",
-            TickDistance = props.TryGetValue("tick-distance", out var tickDistance) ? tickDistance : "4"
+            TickDistance = props.TryGetValue("tick-distance", out var tickDistance) ? tickDistance : "4",
+            ViewDistance = props.TryGetValue("view-distance", out var viewDist) ? viewDist : (profile.IsJava ? "10" : "32"),
+            SimulationDistance = props.TryGetValue("simulation-distance", out var simDist) ? simDist : "10"
         };
 
         foreach (var property in props)
@@ -170,6 +176,10 @@ public sealed class ServerConfigurationService
         props["gamemode"] = configuration.Gamemode;
         props["difficulty"] = configuration.Difficulty;
 
+        // Render / Simulation distance (shared across all engines)
+        if (!string.IsNullOrWhiteSpace(configuration.ViewDistance))
+            props["view-distance"] = configuration.ViewDistance;
+
         if (profile.IsJava)
         {
             props["spawn-protection"] = configuration.SpawnProtection;
@@ -177,6 +187,8 @@ public sealed class ServerConfigurationService
             props["enable-command-block"] = configuration.AllowCommandBlock ? "true" : "false";
             props["allow-flight"] = configuration.AllowFlight ? "true" : "false";
             props["allow-nether"] = configuration.AllowNether ? "true" : "false";
+            if (!string.IsNullOrWhiteSpace(configuration.SimulationDistance))
+                props["simulation-distance"] = configuration.SimulationDistance;
             RemoveBedrockProperties(props);
         }
         else
@@ -195,6 +207,7 @@ public sealed class ServerConfigurationService
             props["tick-distance"] = string.IsNullOrWhiteSpace(configuration.TickDistance)
                 ? "4"
                 : configuration.TickDistance;
+            props.Remove("simulation-distance"); // Not a Bedrock/PM property
         }
 
         foreach (var key in props.Keys.Where(key => !CorePropertyKeys.Contains(key)).ToList())

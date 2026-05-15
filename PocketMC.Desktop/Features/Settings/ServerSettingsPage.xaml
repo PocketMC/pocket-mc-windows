@@ -390,6 +390,41 @@
                                                 </StackPanel>
                                             </WrapPanel>
 
+                                            <!-- Render & Simulation Distance Sliders -->
+                                            <TextBlock Text="Render &amp; Simulation Distance" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="10,4,0,2"/>
+                                            <TextBlock Text="Controls how far (in chunks) players can see and how far the server actively simulates game mechanics."
+                                                       Style="{StaticResource SettingsSubtext}" Margin="10,0,0,12"/>
+                                            <Grid Margin="10,0,10,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="View Distance:" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                    <Run Text="{Binding World.ViewDistance, Mode=OneWay}"/><Run Text=" chunks"/>
+                                                </TextBlock>
+                                                <Slider Grid.Column="2" Value="{Binding World.ViewDistance}" Minimum="3" Maximum="32"
+                                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
+                                                <TextBlock Grid.Column="3" Text="32" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                            </Grid>
+                                            <Grid Margin="10,0,10,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Simulation Distance:" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                    <Run Text="{Binding World.SimulationDistance, Mode=OneWay}"/><Run Text=" chunks"/>
+                                                </TextBlock>
+                                                <Slider Grid.Column="2" Value="{Binding World.SimulationDistance}" Minimum="3" Maximum="32"
+                                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
+                                                <TextBlock Grid.Column="3" Text="32" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                            </Grid>
+
                                             <Separator Margin="0,10,0,20" Background="#313244"/>
 
                                             <WrapPanel>
@@ -437,6 +472,26 @@
                                                     <ui:TextBox Text="{Binding Bedrock.ServerPortV6, UpdateSourceTrigger=PropertyChanged}" />
                                                 </StackPanel>
                                             </WrapPanel>
+
+                                            <!-- Bedrock Render Distance Slider -->
+                                            <TextBlock Text="Render Distance" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="10,4,0,2"/>
+                                            <TextBlock Text="The maximum distance in chunks that the server will send world data to players. Higher values increase network and memory usage."
+                                                       Style="{StaticResource SettingsSubtext}" Margin="10,0,0,12" TextWrapping="Wrap"/>
+                                            <Grid Margin="10,0,10,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="View Distance:" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                    <Run Text="{Binding Bedrock.ViewDistance, Mode=OneWay}"/><Run Text=" chunks"/>
+                                                </TextBlock>
+                                                <Slider Grid.Column="2" Value="{Binding Bedrock.ViewDistance}" Minimum="5" Maximum="96"
+                                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
+                                                <TextBlock Grid.Column="3" Text="96" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                            </Grid>
 
                                             <Separator Margin="0,10,0,20" Background="#313244"/>
 
