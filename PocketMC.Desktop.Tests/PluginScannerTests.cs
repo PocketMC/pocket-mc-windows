@@ -6,6 +6,8 @@ using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Mods;
 
+#pragma warning disable CS0618 // PluginScanner is deprecated — tests retained to verify legacy back-compat logic
+
 namespace PocketMC.Desktop.Tests;
 
 public sealed class PluginScannerTests : IDisposable

@@ -43,7 +43,7 @@ namespace PocketMC.Desktop.Tests
             File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest));
 
             // Act
-            await service.SyncManifestAsync(_tempDir, null, new EngineCompatibility("Fabric"));
+            await service.SyncManifestAsync(_tempDir, null!, new EngineCompatibility("Fabric"));
             var updated = await service.LoadManifestAsync(_tempDir);
 
             // Assert
@@ -70,7 +70,7 @@ namespace PocketMC.Desktop.Tests
             File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest));
 
             // Act
-            await service.SyncManifestAsync(_tempDir, null, new EngineCompatibility("Fabric"));
+            await service.SyncManifestAsync(_tempDir, null!, new EngineCompatibility("Fabric"));
             var updated = await service.LoadManifestAsync(_tempDir);
 
             // Assert

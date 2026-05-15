@@ -22,18 +22,20 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         string serverDir = registry.GetPath(metadata.Id)!;
         File.WriteAllLines(
             Path.Combine(serverDir, "server.properties"),
-            new[] { "motd=Hello", "max-players=12", "view-distance=9" },
+            new[] { "motd=Hello", "max-players=12", "view-distance=9", "entity-broadcast-range-percentage=75" },
             new UTF8Encoding(false));
 
         var configuration = service.Load(metadata, serverDir);
 
         Assert.Equal("Hello", configuration.Motd);
         Assert.Equal("12", configuration.MaxPlayers);
-        Assert.Equal("9", configuration.AdvancedProperties["view-distance"]);
+        Assert.Equal("9", configuration.ViewDistance);
+        Assert.Equal("75", configuration.AdvancedProperties["entity-broadcast-range-percentage"]);
         Assert.Equal("Hello", configuration.AllProperties["motd"]);
         Assert.Equal("12", configuration.AllProperties["max-players"]);
         Assert.Equal("9", configuration.AllProperties["view-distance"]);
         Assert.False(configuration.AdvancedProperties.ContainsKey("motd"));
+        Assert.False(configuration.AdvancedProperties.ContainsKey("view-distance"));
     }
 
     [Fact]
@@ -59,7 +61,8 @@ public sealed class ServerConfigurationServiceTests : IDisposable
             Pvp = true,
             AllowNether = true
         };
-        configuration.AdvancedProperties["view-distance"] = "10";
+        configuration.AdvancedProperties["entity-broadcast-range-percentage"] = "75";
+        configuration.ViewDistance = "10";
 
         service.Save(metadata, serverDir, configuration);
 
@@ -67,6 +70,7 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         Assert.Equal("New", props["motd"]);
         Assert.Equal("30", props["max-players"]);
         Assert.Equal("10", props["view-distance"]);
+        Assert.Equal("75", props["entity-broadcast-range-percentage"]);
 
         var metadataJson = File.ReadAllText(Path.Combine(serverDir, ".pocket-mc.json"));
         var savedMetadata = JsonSerializer.Deserialize<InstanceMetadata>(metadataJson)!;
