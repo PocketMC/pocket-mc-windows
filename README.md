@@ -59,7 +59,8 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 
 ## Features
 
-### Instance lifecycle
+<details>
+<summary><b>Instance lifecycle</b></summary>
 
 - Create isolated Minecraft server instances from the desktop UI.
 - Download server artifacts through provider-specific download pipelines.
@@ -69,7 +70,10 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 - Per-instance port preflight checks, probing, lease tracking, and recovery messaging help avoid local port conflicts.
 - Geyser-enabled instances patch the Bedrock listener port before launch.
 
-### Managed runtimes
+</details>
+
+<details>
+<summary><b>Managed runtimes</b></summary>
 
 - App-local Java provisioning through Adoptium.
 - Bundled Java runtime targets: **Java 8, 11, 17, 21, and 25**.
@@ -77,7 +81,10 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 - PocketMine-MP uses an app-managed PHP 8.2 PM5 runtime from the official PocketMine PHP binaries.
 - Downloads use retries, partial-file handling, safe promotion, and hash verification when upstream hashes are available.
 
-### Dashboard, console, and player tracking
+</details>
+
+<details>
+<summary><b>Dashboard, console, and player tracking</b></summary>
 
 - Dashboard cards show instance state and live server context.
 - Resource monitoring tracks CPU/RAM usage for running instances.
@@ -85,7 +92,10 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 - Player count and online player names are parsed from Java, Bedrock, and PocketMine-style output.
 - Console tools include filtering, search-oriented log handling, command input, and session history support.
 
-### Public access with Playit.gg
+</details>
+
+<details>
+<summary><b>Public access with Playit.gg</b></summary>
 
 - Built-in Playit.gg agent provisioning and setup flow.
 - Existing tunnel discovery for matching local ports.
@@ -93,7 +103,10 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 - Dashboard-ready public and numeric tunnel addresses.
 - Clear handling for offline agents, invalid tokens, unclaimed agents, and Playit account tunnel limits.
 
-### Mods, plugins, add-ons, and content
+</details>
+
+<details>
+<summary><b>Mods, plugins, add-ons, and content</b></summary>
 
 - Modrinth browser for server-side mods, plugins, and modpacks.
 - CurseForge browser support when the user provides a CurseForge API key in app settings.
@@ -102,7 +115,10 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 - Bedrock `.mcpack`, `.mcaddon`, and `.zip` ingestion with manifest parsing.
 - Bedrock behavior/resource packs are copied into the correct BDS folders and registered in the active world's JSON pack lists.
 
-### Backups and recovery
+</details>
+
+<details>
+<summary><b>Backups and recovery</b></summary>
 
 - Manual and scheduled world backups.
 - Live-server backup flow attempts RCON save synchronization first, then falls back to console save commands.
@@ -111,7 +127,10 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 - Restore uses safe ZIP extraction to avoid path traversal issues.
 - Optional external backup replication copies archives into a user-selected folder, useful with Google Drive, Dropbox, OneDrive, or another sync client.
 
-### Diagnostics, updates, and quality-of-life
+</details>
+
+<details>
+<summary><b>Diagnostics, updates, and quality-of-life</b></summary>
 
 - Dependency health checks for Playit.gg, Adoptium, and Modrinth.
 - Diagnostic reporting and support-bundle style data collection are wired into the settings flow.
@@ -120,7 +139,10 @@ PocketMC resolves available versions from upstream APIs/manifests where possible
 - Windows UWP loopback helper for Minecraft Bedrock local loopback access through `CheckNetIsolation.exe`.
 - Mica/theme settings for Windows UI polish.
 
-### AI session summaries
+</details>
+
+<details>
+<summary><b>AI session summaries</b></summary>
 
 PocketMC can generate structured server-session summaries from `pocketmc-session.log` using a user-supplied API key.
 
@@ -133,6 +155,8 @@ Supported providers:
 - Groq
 
 Logs are preprocessed before summarization. The app sanitizes obvious personal data such as IP addresses and emails before storing/exporting console output, but AI summaries still send processed log content to the provider you select.
+
+</details>
 
 ---
 
