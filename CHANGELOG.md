@@ -1,6 +1,16 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.8`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.6.9`.
+
+## v1.6.9 - Playit.gg Connectivity & Versioning Resilience
+
+This release fixes a critical Playit.gg agent connection failure by pinning to a stable, signed agent binary and correcting the partner version resolution logic to prevent upstream API registration errors.
+
+### 🌐 Resilient Playit.gg Tunneling
+* **Pinned Signed Agent Binary**: Changed the playit-agent download mechanism to target a stable, signed release version (**v0.17.1**) instead of the floating `latest` GitHub release. This prevents provisioning failures caused by experimental or broken upstream releases.
+* **Agent Version Fallback Hardening**: Fixed a bug where downloaded playit executables lacking Windows file version resources would trigger fallback to the PocketMC app version (`1.6.8` / `1.6.9`), resulting in upstream Playit API `AgentVariantVersionNotFound` registration errors. The resolver now falls back gracefully to the registered Playit agent version `0.17.1`.
+* **Automatic Agent Refresh**: Automated the deletion of deprecated local `playit.exe` installations on upgrade, forcing a clean background pull of the new signed v0.17.1 release.
+
 
 ## v1.6.8 - Server Settings, Player Management & Dashboard Polish
 
