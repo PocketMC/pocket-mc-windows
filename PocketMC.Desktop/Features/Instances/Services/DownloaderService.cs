@@ -130,7 +130,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             // Note: For 'latest' URL, the hash isn't stable. 
             // Ideally, we should fetch the hash from a sidecar file or pin the version.
             // For now, we allow the download but provide the hook for verification.
-            const string playitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-windows-x86_64.exe";
+            const string playitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
 
             string tunnelDir = Path.Combine(appRootPath, "tunnel");
             string playitPath = Path.Combine(tunnelDir, "playit.exe");

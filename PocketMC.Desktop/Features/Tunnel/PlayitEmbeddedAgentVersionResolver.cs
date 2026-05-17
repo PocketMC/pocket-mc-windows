@@ -26,8 +26,8 @@ public static class PlayitEmbeddedAgentVersionResolver
         return new PlayitPartnerAgentVersion
         {
             VersionMajor = 0,
-            VersionMinor = 15,
-            VersionPatch = 26
+            VersionMinor = 17,
+            VersionPatch = 1
         };
     }
 }
