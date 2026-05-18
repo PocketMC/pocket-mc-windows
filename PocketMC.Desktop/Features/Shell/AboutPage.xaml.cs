@@ -48,6 +48,34 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
+        private void OpenFeedbackForm_Click(object sender, RoutedEventArgs e)
+        {
+            var formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSd6cNMawAbvoELxqIF_FobaC3DptKnjQxViDh9XLcyJdNbTAQ/viewform?usp=dialog";
+            try
+            {
+                var psi = new ProcessStartInfo(formUrl) { UseShellExecute = true };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Unable to open link", ex.Message);
+            }
+        }
+
+        private void OpenGitHub_Click(object sender, RoutedEventArgs e)
+        {
+            var repoUrl = "https://github.com/PocketMC/pocket-mc-windows";
+            try
+            {
+                var psi = new ProcessStartInfo(repoUrl) { UseShellExecute = true };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Unable to open link", ex.Message);
+            }
+        }
+
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
             Process.Start(new ProcessStartInfo

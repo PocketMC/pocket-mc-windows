@@ -16,24 +16,21 @@
         </StackPanel>
 
         <StackPanel Grid.Row="1">
-            <ui:Card Padding="24" MaxWidth="600" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,12">
+            <ui:Card Padding="24" VerticalAlignment="Top" Margin="0,0,0,12">
                 <StackPanel>
                     <TextBlock Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
                     <TextBlock Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                     <TextBlock Text="Repository" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                    <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8">
-                        <Run Text="GitHub: "/>
-                        <Hyperlink NavigateUri="https://github.com/PocketMC/pocket-mc-windows.git" RequestNavigate="Hyperlink_RequestNavigate">
-                            https://github.com/PocketMC/pocket-mc-windows.git
-                        </Hyperlink>
-                    </TextBlock>
-                    <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+                    <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:Button Content="GitHub" Appearance="Secondary" Click="OpenGitHub_Click" Icon="{ui:SymbolIcon Code24}"/>
+                    </StackPanel>
                 </StackPanel>
             </ui:Card>
 
             <!-- COMMUNITY SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon People24}" MaxWidth="600" HorizontalAlignment="Left">
+            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon People24}">
                 <ui:CardExpander.Header>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -50,6 +47,27 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                         <ui:Button Content="Join Discord" Appearance="Primary" Click="OpenDiscord_Click"/>
                         <ui:Button Content="Copy Invite" Appearance="Secondary" Margin="8,0,0,0" Click="CopyDiscordInvite_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:CardExpander>
+
+            <!-- FEEDBACK SECTION -->
+            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Bug24}" Margin="0,12,0,0">
+                <ui:CardExpander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Feedback &amp; Bug Reports" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="Help us improve PocketMC by reporting bugs, submitting feedback, or suggesting new features." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </ui:CardExpander.Header>
+
+                <StackPanel Margin="16,8,16,16">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <ui:Button Content="Submit Feedback / Report Bug" Appearance="Primary" Click="OpenFeedbackForm_Click" Icon="{ui:SymbolIcon Open20}"/>
                     </StackPanel>
                 </StackPanel>
             </ui:CardExpander>
