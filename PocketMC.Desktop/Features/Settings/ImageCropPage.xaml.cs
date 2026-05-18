@@ -47,6 +47,7 @@ namespace PocketMC.Desktop.Features.Settings
                 _originalImage.BeginInit();
                 _originalImage.UriSource = new Uri(path);
                 _originalImage.CacheOption = BitmapCacheOption.OnLoad;
+                _originalImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                 _originalImage.EndInit();
                 _originalImage.Freeze();
 

@@ -79,6 +79,7 @@ namespace PocketMC.Desktop.Features.Settings
                     bmp.BeginInit();
                     bmp.UriSource = new Uri(iconPath);
                     bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                     bmp.EndInit();
                     ServerIcon = bmp;
                 }
