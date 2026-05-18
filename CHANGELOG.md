@@ -1,6 +1,38 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.1`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.2`.
+
+## v1.7.2 - Simple Voice Chat Tunneling & Networking Refinements
+
+This release adds first-class support for Simple Voice Chat with automatic detection, port configuration management, and seamless one-click tunnel provisioning. The networking and tunnel architecture receives significant improvements for enhanced stability and better diagnostic visibility.
+
+### 🎤 Simple Voice Chat Support
+* **Automatic Detection**: PocketMC now automatically detects Simple Voice Chat installations across Java, Fabric, Forge, and other modloaders. Detection works via config files, mod/plugin JARs, and console logs for comprehensive coverage.
+* **One-Click Tunnel Provisioning**: Once detected, Simple Voice Chat ports are automatically included in the tunnel provisioning workflow. Create tunnels for voice communication with a single click, just like standard server tunnels.
+* **Real-Time Port Configuration**: The application monitors Simple Voice Chat configuration files and dynamically tracks port, bind address, and voice host settings. Changes are detected and applied without requiring an app restart.
+* **Status Monitoring Dashboard**: The dashboard now displays Simple Voice Chat tunnel status alongside primary server connections, with indicators for tunnel health and public address availability.
+* **First-Run Setup Prompt**: When Simple Voice Chat is detected on a running server without an active tunnel, a non-blocking prompt guides users through one-click tunnel creation to enable voice chat connectivity.
+* **Configuration Path Tracking**: Metadata now persists Simple Voice Chat configuration paths, enabling consistent state tracking across sessions and seamless tunnel management.
+
+### 🌐 Tunnel Architecture Refinements
+* **Enhanced API Communication**: Rebuilt the PlayitApiClient with improved request/response handling and better error recovery. Token refresh logic is now more robust and includes fallback mechanisms for edge cases.
+* **Tunneling Orchestration Overhaul**: Completely refactored `InstanceTunnelOrchestrator` to elegantly handle multiple simultaneous tunnel types (primary server + Simple Voice Chat). The orchestration engine now cleanly separates tunnel lifecycle management, state tracking, and provisioning workflows.
+* **Improved Port Binding Logic**: Enhanced port preflight and diagnostics services with refined binding role detection. The system now more accurately distinguishes between primary server ports, Geyser ports, and auxiliary ports like Simple Voice Chat.
+* **Port Role Classification**: Introduced structured port binding role classification to provide granular visibility into why a port is in use and what component owns it (server, tunnel, voice chat, etc.).
+
+### 🧪 Test Coverage Expansion
+* **Simple Voice Chat Test Suite**: Added comprehensive unit tests covering detection logic, configuration parsing, first-run prompts, and lifecycle management. Tests validate behavior across Java, Fabric, and Forge scenarios.
+* **Tunnel Service Tests**: Expanded tunnel service test coverage with 400+ new assertions. Tests now validate multi-tunnel scenarios, error recovery, and API edge cases.
+* **Port Diagnostics Tests**: Enhanced port diagnostics and preflight service tests to cover new binding role scenarios and improved conflict detection.
+
+### 🛠️ Internal Improvements
+* **Application State Management**: Expanded `ApplicationState` to track Simple Voice Chat configuration and tunnel provisioning state throughout the application lifecycle.
+* **Dialog Service Refactoring**: Improved `WpfDialogService` and dialog infrastructure for better handling of non-blocking prompts and improved UI responsiveness during tunnel operations.
+* **Instance Metadata Expansion**: Extended `InstanceMetadata` with Simple Voice Chat–specific fields for comprehensive state persistence (port, tunnel ID, tunnel address, config path, warning dismissal state, status).
+
+### 🐛 Bug Fixes & Stability
+* **Tunnel State Synchronization**: Fixed edge cases where tunnel state could become desynchronized between the UI and backend service, especially during rapid server start/stop cycles.
+* **Port Conflict Resolution**: Improved port conflict detection to handle auxiliary ports (like Simple Voice Chat) without incorrectly blocking server startup.
 
 ## v1.7.1 - Backup Intelligence, Health Monitoring & UI Polish
 
