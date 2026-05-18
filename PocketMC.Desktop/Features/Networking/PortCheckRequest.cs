@@ -118,12 +118,14 @@ public sealed class PortCheckRequest
             PortBindingRole.BedrockServer => "Bedrock server",
             PortBindingRole.PocketMineServer => "PocketMine server",
             PortBindingRole.GeyserBedrock => "Geyser Bedrock",
+            PortBindingRole.SimpleVoiceChat => "Simple Voice Chat",
             _ => engine switch
             {
                 PortEngine.Java => "Java server",
                 PortEngine.BedrockDedicated => "Bedrock server",
                 PortEngine.PocketMine => "PocketMine server",
                 PortEngine.Geyser => "Geyser Bedrock",
+                PortEngine.SimpleVoiceChat => "Simple Voice Chat",
                 _ => "Server"
             }
         };

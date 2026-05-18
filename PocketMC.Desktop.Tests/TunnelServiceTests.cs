@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;
 
@@ -166,6 +167,283 @@ public sealed class TunnelServiceTests
 
         Assert.Equal(TunnelResolutionResult.TunnelStatus.Error, result.Status);
         Assert.Equal(PortFailureCode.PublicReachabilityFailure, result.FailureCode);
+    }
+
+    [Fact]
+    public async Task ResolveTunnelAsync_ForSimpleVoiceChat_CreatesNativePlayitPayload()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        string? createPayload = null;
+        int listCalls = 0;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("tunnels/create") == true)
+            {
+                using var reader = new StreamReader(req.Content!.ReadAsStream());
+                createPayload = reader.ReadToEnd();
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"status":"success","data":{"id":"voice"}}""")
+                };
+            }
+
+            listCalls++;
+            if (listCalls == 1)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"status":"success","data":{"tunnels":[]}}""")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {
+                      "status": "success",
+                      "data": {
+                        "tunnels": [
+                          {
+                            "id": "voice",
+                            "name": "voice",
+                            "tunnel_type": "mc-simple-voice-chat",
+                            "connect_addresses": [{ "type": "domain", "value": { "address": "voice.example.com:30000" } }],
+                            "public_allocations": [{ "type": "PortAllocation", "details": { "ip": "10.0.0.5", "port": 30000 } }],
+                            "origin": { "type": "agent", "details": { "config_data": { "fields": [{ "name": "local_port", "value": "24454" }] } } }
+                          }
+                        ]
+                      }
+                    }
+                    """)
+            };
+        });
+        PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
+        harness.StateMachine.TransitionTo(PlayitAgentState.Connected);
+        TunnelService service = workspace.CreateTunnelService(apiClient, harness.Service);
+
+        TunnelResolutionResult result = await service.ResolveTunnelAsync(new PortCheckRequest(
+            24454,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            bindingRole: PortBindingRole.SimpleVoiceChat,
+            engine: PortEngine.SimpleVoiceChat));
+
+        Assert.Equal(TunnelResolutionResult.TunnelStatus.AutoCreated, result.Status);
+        Assert.NotNull(createPayload);
+        using JsonDocument doc = JsonDocument.Parse(createPayload!);
+        JsonElement root = doc.RootElement;
+        JsonElement protocol = root.GetProperty("protocol");
+        Assert.Equal("tunnel-type", protocol.GetProperty("type").GetString());
+        Assert.Equal("mc-simple-voice-chat", protocol.GetProperty("details").GetString());
+        Assert.DoesNotContain("raw-ports", createPayload);
+        Assert.DoesNotContain("minecraft-bedrock", createPayload);
+    }
+
+    [Fact]
+    public async Task ResolveTunnelAsync_ForSimpleVoiceChat_DoesNotCreateMinecraftBedrockOrRawUdpTunnel()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        string? createPayload = null;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("tunnels/create") == true)
+            {
+                using var reader = new StreamReader(req.Content!.ReadAsStream());
+                createPayload = reader.ReadToEnd();
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"status":"fail","data":"RequiresPlayitPremium"}""")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"status":"success","data":{"tunnels":[]}}""")
+            };
+        });
+        PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
+        harness.StateMachine.TransitionTo(PlayitAgentState.Connected);
+        TunnelService service = workspace.CreateTunnelService(apiClient, harness.Service);
+
+        await service.ResolveTunnelAsync(new PortCheckRequest(
+            24454,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            bindingRole: PortBindingRole.SimpleVoiceChat,
+            engine: PortEngine.SimpleVoiceChat));
+
+        Assert.NotNull(createPayload);
+        Assert.DoesNotContain("minecraft-bedrock", createPayload);
+        Assert.DoesNotContain("raw-ports", createPayload);
+        Assert.Contains("mc-simple-voice-chat", createPayload);
+    }
+
+    [Fact]
+    public async Task ResolveTunnelAsync_ForSimpleVoiceChat_ReusesExistingNativeTunnel()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        bool createCalled = false;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("tunnels/create") == true)
+            {
+                createCalled = true;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {
+                      "status": "success",
+                      "data": {
+                        "tunnels": [
+                          {
+                            "id": "voice",
+                            "name": "voice",
+                            "tunnel_type": "mc-simple-voice-chat",
+                            "user_enabled": true,
+                            "connect_addresses": [{ "type": "domain", "value": { "address": "voice.example.com:30000" } }],
+                            "public_allocations": [{ "type": "PortAllocation", "details": { "ip": "10.0.0.5", "port": 30000 } }],
+                            "origin": { "type": "agent", "details": { "agent_id": "test-agent", "config_data": { "fields": [{ "name": "local_port", "value": "24454" }] } } }
+                          }
+                        ]
+                      }
+                    }
+                    """)
+            };
+        });
+        PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
+        harness.StateMachine.TransitionTo(PlayitAgentState.Connected);
+        TunnelService service = workspace.CreateTunnelService(apiClient, harness.Service);
+
+        TunnelResolutionResult result = await service.ResolveTunnelAsync(new PortCheckRequest(
+            24454,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            bindingRole: PortBindingRole.SimpleVoiceChat,
+            engine: PortEngine.SimpleVoiceChat));
+
+        Assert.Equal(TunnelResolutionResult.TunnelStatus.Found, result.Status);
+        Assert.Equal("voice.example.com:30000", result.PublicAddress);
+        Assert.False(createCalled);
+    }
+
+    [Fact]
+    public void FindTunnelForRequest_DoesNotMistakeJavaOrBedrockTunnelForSimpleVoiceChat()
+    {
+        var request = new PortCheckRequest(
+            24454,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            bindingRole: PortBindingRole.SimpleVoiceChat,
+            engine: PortEngine.SimpleVoiceChat);
+        var tunnels = new List<TunnelData>
+        {
+            new() { Id = "java", Port = 24454, PublicAddress = "java.example.com", Protocol = PortProtocol.Tcp, TunnelType = "minecraft-java", IsEnabled = true },
+            new() { Id = "bedrock", Port = 24454, PublicAddress = "bedrock.example.com", Protocol = PortProtocol.Udp, TunnelType = "minecraft-bedrock", IsEnabled = true }
+        };
+
+        TunnelData? match = PlayitApiClient.FindTunnelForRequest(tunnels, request);
+
+        Assert.Null(match);
+    }
+
+    [Fact]
+    public void FindTunnelForRequest_SimpleVoiceChatWrongPortIsNotReused()
+    {
+        var request = new PortCheckRequest(
+            24454,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            bindingRole: PortBindingRole.SimpleVoiceChat,
+            engine: PortEngine.SimpleVoiceChat);
+        var tunnels = new List<TunnelData>
+        {
+            new() { Id = "voice", Port = 24455, PublicAddress = "voice.example.com", Protocol = PortProtocol.Udp, TunnelType = "mc-simple-voice-chat", IsEnabled = true }
+        };
+
+        TunnelData? match = PlayitApiClient.FindTunnelForRequest(tunnels, request);
+
+        Assert.Null(match);
+    }
+
+    [Fact]
+    public void FindTunnelForRequest_SimpleVoiceChatDisabledTunnelIsNotReused()
+    {
+        var request = new PortCheckRequest(
+            24454,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            bindingRole: PortBindingRole.SimpleVoiceChat,
+            engine: PortEngine.SimpleVoiceChat);
+        var tunnels = new List<TunnelData>
+        {
+            new() { Id = "voice", Port = 24454, PublicAddress = "voice.example.com", Protocol = PortProtocol.Udp, TunnelType = "mc-simple-voice-chat", IsEnabled = false }
+        };
+
+        TunnelData? match = PlayitApiClient.FindTunnelForRequest(tunnels, request);
+
+        Assert.Null(match);
+    }
+
+    [Fact]
+    public void FindTunnelForRequest_SimpleVoiceChatPendingAllocationIsNotReused()
+    {
+        var request = new PortCheckRequest(
+            24454,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            bindingRole: PortBindingRole.SimpleVoiceChat,
+            engine: PortEngine.SimpleVoiceChat);
+        var tunnels = new List<TunnelData>
+        {
+            new() { Id = "voice", Port = 24454, PublicAddress = "", Protocol = PortProtocol.Udp, TunnelType = "mc-simple-voice-chat", IsEnabled = true }
+        };
+
+        TunnelData? match = PlayitApiClient.FindTunnelForRequest(tunnels, request);
+
+        Assert.Null(match);
+    }
+
+    [Fact]
+    public async Task GetTunnelsAsync_UnknownTunnelTypesDoNotCrashDeserialization()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {
+                      "status": "success",
+                      "data": {
+                        "tunnels": [
+                          {
+                            "id": "unknown",
+                            "name": "unknown",
+                            "tunnel_type": "brand-new-future-type",
+                            "user_enabled": true,
+                            "connect_addresses": [],
+                            "public_allocations": [],
+                            "origin": { "type": "agent", "details": { "config_data": { "fields": [{ "name": "local_port", "value": "12345" }] } } }
+                          }
+                        ]
+                      }
+                    }
+                    """)
+            });
+
+        TunnelListResult result = await apiClient.GetTunnelsAsync();
+
+        Assert.True(result.Success);
+        TunnelData tunnel = Assert.Single(result.Tunnels);
+        Assert.Equal("brand-new-future-type", tunnel.TunnelType);
     }
 
     [Fact]

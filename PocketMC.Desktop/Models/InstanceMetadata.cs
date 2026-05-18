@@ -37,6 +37,18 @@ namespace PocketMC.Desktop.Models
         public int? GeyserBedrockPort { get; set; } = 19132;
         public int? ServerPort { get; set; }
 
+        // Simple Voice Chat tunnel state
+        public bool SimpleVoiceChatDetected { get; set; }
+        public int? SimpleVoiceChatPort { get; set; }
+        public string? SimpleVoiceChatTunnelId { get; set; }
+        public string? SimpleVoiceChatTunnelAddress { get; set; }
+        public string? SimpleVoiceChatNumericTunnelAddress { get; set; }
+        public string? SimpleVoiceChatConfigPath { get; set; }
+        public string? SimpleVoiceChatVoiceHost { get; set; }
+        public bool SimpleVoiceChatPromptDismissed { get; set; }
+        public string? SimpleVoiceChatLastWarning { get; set; }
+        public string? SimpleVoiceChatStatus { get; set; }
+
         [System.Text.Json.Serialization.JsonIgnore]
         public EngineCompatibility Compatibility => new EngineCompatibility(ServerType);
     }

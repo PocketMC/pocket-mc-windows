@@ -111,8 +111,11 @@ public sealed class PortDiagnosticsInstanceTunnelState
     public string InstanceName { get; set; } = string.Empty;
     public bool CachedTunnelAddressPresent { get; set; }
     public string? CachedTunnelAddress { get; set; }
+    public bool CachedVoiceChatTunnelAddressPresent { get; set; }
+    public string? CachedVoiceChatTunnelAddress { get; set; }
     public List<int> ExpectedLocalPorts { get; set; } = new();
     public List<PortDiagnosticsExpectation> ExpectedTunnelPorts { get; set; } = new();
+    public List<string> Diagnostics { get; set; } = new();
 }
 
 public sealed class PortDiagnosticsDependencyHealth

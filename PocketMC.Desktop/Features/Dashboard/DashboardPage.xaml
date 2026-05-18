@@ -272,6 +272,39 @@
                                             </Grid>
                                         </Border>
                                     </StackPanel>
+
+                                    <!-- Simple Voice Chat tunnel -->
+                                    <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
+                                            Visibility="{Binding HasSimpleVoiceChatTunnelAddress, Converter={StaticResource BoolToVis}}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ui:SymbolIcon Grid.Column="0" Symbol="Mic24" Foreground="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="Simple Voice Chat" FontSize="10" Foreground="{DynamicResource SystemFillColorSuccessBrush}" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding SimpleVoiceChatTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorSuccessBrush}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopySimpleVoiceChatIp_Click"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
+                                            Visibility="{Binding SimpleVoiceChatWarningVisibility}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ui:SymbolIcon Grid.Column="0" Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="Simple Voice Chat" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding SimpleVoiceChatWarning}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
                                 </StackPanel>
 
                                 <!-- Actions -->

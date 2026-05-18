@@ -192,16 +192,20 @@ public sealed class PortDiagnosticsSnapshotBuilder
     private PortDiagnosticsInstanceTunnelState BuildInstanceTunnelState(InstanceMetadata metadata)
     {
         string? cachedAddress = _appState.GetTunnelAddress(metadata.Id);
+        string? cachedVoiceAddress = _appState.GetVoiceChatTunnelAddress(metadata.Id);
+        string? instancePath = _instanceRegistry.GetPath(metadata.Id);
         IReadOnlyList<PortCheckRequest> requests;
 
         try
         {
-            requests = _portPreflightService.BuildRequests(metadata, _instanceRegistry.GetPath(metadata.Id));
+            requests = _portPreflightService.BuildRequests(metadata, instancePath);
         }
         catch
         {
             requests = Array.Empty<PortCheckRequest>();
         }
+
+        List<string> diagnostics = BuildVoiceChatDiagnostics(requests, instancePath, cachedAddress, cachedVoiceAddress);
 
         return new PortDiagnosticsInstanceTunnelState
         {
@@ -209,17 +213,66 @@ public sealed class PortDiagnosticsSnapshotBuilder
             InstanceName = metadata.Name,
             CachedTunnelAddressPresent = !string.IsNullOrWhiteSpace(cachedAddress),
             CachedTunnelAddress = string.IsNullOrWhiteSpace(cachedAddress) ? null : RedactedPublicAddress,
+            CachedVoiceChatTunnelAddressPresent = !string.IsNullOrWhiteSpace(cachedVoiceAddress),
+            CachedVoiceChatTunnelAddress = string.IsNullOrWhiteSpace(cachedVoiceAddress) ? null : RedactedPublicAddress,
             ExpectedLocalPorts = requests.Select(x => x.Port).Distinct().OrderBy(x => x).ToList(),
             ExpectedTunnelPorts = requests
                 .Where(IsTunnelRelevantRequest)
                 .Select(BuildExpectation)
-                .ToList()
+                .ToList(),
+            Diagnostics = diagnostics
         };
+    }
+
+    private static List<string> BuildVoiceChatDiagnostics(
+        IReadOnlyList<PortCheckRequest> requests,
+        string? instancePath,
+        string? javaTunnelAddress,
+        string? voiceTunnelAddress)
+    {
+        var diagnostics = new List<string>();
+        PortCheckRequest? voiceRequest = requests.FirstOrDefault(IsSimpleVoiceChatRequest);
+        if (voiceRequest == null)
+        {
+            return diagnostics;
+        }
+
+        if (string.IsNullOrWhiteSpace(voiceTunnelAddress))
+        {
+            diagnostics.Add("Simple Voice Chat UDP tunnel missing");
+        }
+
+        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(instancePath);
+        if (detection.IsConfigPending)
+        {
+            diagnostics.Add("Simple Voice Chat config pending until first run");
+        }
+
+        if (detection.IsDetected && string.IsNullOrWhiteSpace(detection.VoiceHost))
+        {
+            diagnostics.Add("voice_host empty");
+        }
+
+        if (!string.IsNullOrWhiteSpace(detection.VoiceHost) &&
+            !string.IsNullOrWhiteSpace(javaTunnelAddress) &&
+            string.Equals(detection.VoiceHost, javaTunnelAddress, StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add("voice_host points to Java tunnel");
+        }
+
+        diagnostics.Add($"Windows Firewall: allow inbound UDP {voiceRequest.Port} for Simple Voice Chat.");
+        return diagnostics;
     }
 
     private static bool IsTunnelRelevantRequest(PortCheckRequest request)
     {
         return request.IpMode != PortIpMode.IPv6;
+    }
+
+    private static bool IsSimpleVoiceChatRequest(PortCheckRequest request)
+    {
+        return request.BindingRole == PortBindingRole.SimpleVoiceChat ||
+               request.Engine == PortEngine.SimpleVoiceChat;
     }
 
     private List<PortDiagnosticsDependencyHealth> BuildPublicConnectivityDependencies()

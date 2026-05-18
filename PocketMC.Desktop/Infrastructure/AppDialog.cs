@@ -35,8 +35,20 @@ namespace PocketMC.Desktop.Infrastructure
         /// <summary>Shows a generic dialog and returns true if the primary button was clicked.</summary>
         public static bool Show(string title, string message, AppDialogType type, AppDialogButtons buttons)
         {
+            return ShowResult(title, message, type, buttons) == Core.Interfaces.DialogResult.Yes;
+        }
+
+        public static PocketMC.Desktop.Core.Interfaces.DialogResult ShowResult(
+            string title,
+            string message,
+            AppDialogType type,
+            AppDialogButtons buttons,
+            string? primaryButtonText = null,
+            string? secondaryButtonText = null,
+            string? tertiaryButtonText = null)
+        {
             var dialog = new AppDialogWindow();
-            dialog.Configure(title, message, type, buttons);
+            dialog.Configure(title, message, type, buttons, primaryButtonText, secondaryButtonText, tertiaryButtonText);
 
             // Try to set owner to the main window for proper modality
             try
@@ -53,7 +65,7 @@ namespace PocketMC.Desktop.Infrastructure
             }
 
             dialog.ShowDialog();
-            return dialog.PrimaryClicked;
+            return dialog.Result;
         }
     }
 }

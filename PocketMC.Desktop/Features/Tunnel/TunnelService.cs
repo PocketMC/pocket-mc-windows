@@ -30,6 +30,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         public TunnelStatus Status { get; set; }
         public string? PublicAddress { get; set; }
         public string? NumericAddress { get; set; }
+        public string? TunnelId { get; set; }
         public string? ErrorMessage { get; set; }
         public bool IsTokenInvalid { get; set; }
         public bool RequiresClaim { get; set; }
@@ -115,6 +116,11 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         public async Task<TunnelResolutionResult> ResolveTunnelAsync(PortCheckRequest request)
         {
+            return await ResolveTunnelAsync(request, allowAutoCreate: true);
+        }
+
+        public async Task<TunnelResolutionResult> ResolveTunnelAsync(PortCheckRequest request, bool allowAutoCreate)
+        {
             if (_agentService.State == PlayitAgentState.ReauthRequired)
             {
                 return new TunnelResolutionResult
@@ -169,10 +175,23 @@ namespace PocketMC.Desktop.Features.Tunnel
                 {
                     Status = TunnelResolutionResult.TunnelStatus.Found,
                     PublicAddress = matching.PublicAddress,
-                    NumericAddress = matching.NumericAddress
+                    NumericAddress = matching.NumericAddress,
+                    TunnelId = matching.Id,
+                    ExistingTunnels = result.Tunnels
                 };
             }
-            // No matching tunnel exists — auto-create one via the API.
+            if (!allowAutoCreate)
+            {
+                return new TunnelResolutionResult
+                {
+                    Status = TunnelResolutionResult.TunnelStatus.Error,
+                    ErrorMessage = $"No matching Playit tunnel exists for {request.DisplayName} port {request.Port}.",
+                    FailureCode = PortFailureCode.PublicReachabilityFailure,
+                    ExistingTunnels = result.Tunnels
+                };
+            }
+
+            // No matching tunnel exists — auto-create one via the API.
             // The API will reject the request if the account's tunnel limit is reached.
             return await AutoCreateTunnelAsync(request, result.Tunnels);
         }
@@ -184,17 +203,21 @@ namespace PocketMC.Desktop.Features.Tunnel
         /// </summary>
         private async Task<TunnelResolutionResult> AutoCreateTunnelAsync(PortCheckRequest request, IReadOnlyList<TunnelData> existingTunnels)
         {
-            bool isBedrock = request.Protocol == PortProtocol.Udp ||
+            bool isSimpleVoiceChat = IsSimpleVoiceChatRequest(request);
+            bool isBedrock = !isSimpleVoiceChat &&
+                             (request.Protocol == PortProtocol.Udp ||
                              request.BindingRole is PortBindingRole.BedrockServer
                                  or PortBindingRole.PocketMineServer
                                  or PortBindingRole.GeyserBedrock ||
                              request.Engine is PortEngine.BedrockDedicated
                                  or PortEngine.PocketMine
-                                 or PortEngine.Geyser;
+                                 or PortEngine.Geyser);
 
-            string tunnelType = isBedrock ? "minecraft-bedrock" : "minecraft-java";
+            string tunnelType = isSimpleVoiceChat ? "mc-simple-voice-chat" : isBedrock ? "minecraft-bedrock" : "minecraft-java";
             string safeName = SanitizeTunnelName(request.InstanceName ?? request.DisplayName ?? "server");
-            string tunnelName = $"{safeName}-{tunnelType}";
+            string tunnelName = isSimpleVoiceChat
+                ? $"{safeName}-simple-voice-chat"
+                : $"{safeName}-{tunnelType}";
 
             _logger.LogInformation(
                 "Auto-creating Playit tunnel: Name={TunnelName}, Type={TunnelType}, Port={Port}",
@@ -255,10 +278,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                     continue;
                 }
 
-                TunnelData? created = refreshed.Tunnels.FirstOrDefault(t =>
-                    t.Port == request.Port &&
-                    (!t.Protocol.HasValue || t.Protocol.Value == request.Protocol ||
-                     t.Protocol.Value == PortProtocol.TcpAndUdp || request.Protocol == PortProtocol.TcpAndUdp));
+                TunnelData? created = PlayitApiClient.FindTunnelForRequest(refreshed.Tunnels, request);
 
                 if (created != null && !string.IsNullOrWhiteSpace(created.PublicAddress))
                 {
@@ -266,7 +286,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                     {
                         Status = TunnelResolutionResult.TunnelStatus.AutoCreated,
                         PublicAddress = created.PublicAddress,
-                        NumericAddress = created.NumericAddress
+                        NumericAddress = created.NumericAddress,
+                        TunnelId = created.Id
                     };
                 }
             }
@@ -334,7 +355,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                         {
                             Status = TunnelResolutionResult.TunnelStatus.Found,
                             PublicAddress = matching.PublicAddress,
-                            NumericAddress = matching.NumericAddress
+                            NumericAddress = matching.NumericAddress,
+                            TunnelId = matching.Id
                         };
                     }
 
@@ -372,6 +394,12 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
 
             return PortFailureCode.PublicReachabilityFailure;
+        }
+
+        private static bool IsSimpleVoiceChatRequest(PortCheckRequest request)
+        {
+            return request.BindingRole == PortBindingRole.SimpleVoiceChat ||
+                   request.Engine == PortEngine.SimpleVoiceChat;
         }
     }
 }

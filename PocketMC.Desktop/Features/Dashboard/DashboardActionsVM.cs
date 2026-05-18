@@ -95,6 +95,11 @@ namespace PocketMC.Desktop.Features.Dashboard
                     if (result != DialogResult.Yes) return;
                 }
 
+                if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm))
+                {
+                    return;
+                }
+
                 await _lifecycleService.StartAsync(vm.Metadata);
                 vm.ClearPortIssue();
                 // The update state will be handled by listening to OnInstanceStateChanged in DashboardViewModel or CardVM.
@@ -131,6 +136,11 @@ namespace PocketMC.Desktop.Features.Dashboard
 
                 // Capture session start time before stopping
                 var sessionStart = _lifecycleService.GetSessionStartTime(vm.Id) ?? DateTime.UtcNow;
+
+                if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm))
+                {
+                    return;
+                }
 
                 vm.UpdateState(ServerState.Stopping);
                 await _lifecycleService.StopAsync(vm.Id);

@@ -14,6 +14,8 @@ public class ApplicationState
     private readonly Dictionary<Guid, string> _numericTunnelAddresses = new();
     private readonly Dictionary<Guid, string> _bedrockTunnelAddresses = new();
     private readonly Dictionary<Guid, string> _bedrockNumericTunnelAddresses = new();
+    private readonly Dictionary<Guid, string> _voiceChatTunnelAddresses = new();
+    private readonly Dictionary<Guid, string> _voiceChatNumericTunnelAddresses = new();
     private readonly object _tunnelLock = new();
 
     public void SetTunnelAddress(Guid instanceId, string address)
@@ -56,6 +58,38 @@ public class ApplicationState
         lock (_tunnelLock) { return _bedrockNumericTunnelAddresses.TryGetValue(instanceId, out var a) ? a : null; }
     }
 
+    public void SetVoiceChatTunnelAddress(Guid instanceId, string address)
+    {
+        lock (_tunnelLock) { _voiceChatTunnelAddresses[instanceId] = address; }
+    }
+
+    public void SetSimpleVoiceChatTunnelAddress(Guid instanceId, string address)
+        => SetVoiceChatTunnelAddress(instanceId, address);
+
+    public string? GetVoiceChatTunnelAddress(Guid instanceId)
+    {
+        lock (_tunnelLock) { return _voiceChatTunnelAddresses.TryGetValue(instanceId, out var a) ? a : null; }
+    }
+
+    public string? GetSimpleVoiceChatTunnelAddress(Guid instanceId)
+        => GetVoiceChatTunnelAddress(instanceId);
+
+    public void SetVoiceChatNumericTunnelAddress(Guid instanceId, string address)
+    {
+        lock (_tunnelLock) { _voiceChatNumericTunnelAddresses[instanceId] = address; }
+    }
+
+    public void SetSimpleVoiceChatNumericTunnelAddress(Guid instanceId, string address)
+        => SetVoiceChatNumericTunnelAddress(instanceId, address);
+
+    public string? GetVoiceChatNumericTunnelAddress(Guid instanceId)
+    {
+        lock (_tunnelLock) { return _voiceChatNumericTunnelAddresses.TryGetValue(instanceId, out var a) ? a : null; }
+    }
+
+    public string? GetSimpleVoiceChatNumericTunnelAddress(Guid instanceId)
+        => GetVoiceChatNumericTunnelAddress(instanceId);
+
     public void ClearTunnelAddress(Guid instanceId)
     {
         lock (_tunnelLock)
@@ -64,6 +98,8 @@ public class ApplicationState
             _numericTunnelAddresses.Remove(instanceId);
             _bedrockTunnelAddresses.Remove(instanceId);
             _bedrockNumericTunnelAddresses.Remove(instanceId);
+            _voiceChatTunnelAddresses.Remove(instanceId);
+            _voiceChatNumericTunnelAddresses.Remove(instanceId);
         }
     }
     public void ApplySettings(AppSettings settings)

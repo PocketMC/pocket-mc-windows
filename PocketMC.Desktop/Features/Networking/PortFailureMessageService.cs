@@ -166,6 +166,11 @@ public sealed class PortFailureMessageService
 
     private static string BuildExternalConflictAction(PortCheckResult result, string? suggestedPortText)
     {
+        if (IsSimpleVoiceChatRequest(result.Request))
+        {
+            return "A background process or another voice server is using this UDP port. Stop that process, then check Windows Firewall allows inbound UDP 24454 or the configured Simple Voice Chat port.";
+        }
+
         if (result.Request.Protocol == PortProtocol.Udp)
         {
             return "A background process or another game server is currently using this UDP port. You must stop that process before starting this server. Also check Windows Firewall and Bedrock loopback settings for Bedrock/Geyser servers.";
@@ -180,7 +185,11 @@ public sealed class PortFailureMessageService
             ? "Check Windows Firewall and local network settings."
             : "Clear the custom server IP in Settings, or use an IP address assigned to this PC.";
 
-        if (result.Request.Protocol == PortProtocol.Udp || result.Request.Port == 19132)
+        if (IsSimpleVoiceChatRequest(result.Request))
+        {
+            baseAction += " For Simple Voice Chat, allow inbound UDP 24454 or the configured voice port in Windows Firewall.";
+        }
+        else if (result.Request.Protocol == PortProtocol.Udp || result.Request.Port == 19132)
         {
             baseAction += " For Bedrock or Geyser, also check Bedrock loopback restrictions.";
         }
@@ -190,6 +199,11 @@ public sealed class PortFailureMessageService
 
     private static string BuildPublicReachabilityAction(PortCheckResult result)
     {
+        if (IsSimpleVoiceChatRequest(result.Request))
+        {
+            return "Simple Voice Chat UDP tunnel missing. Confirm Playit has an mc-simple-voice-chat tunnel for the voice port, make sure voice_host does not point to the Java tunnel, and allow inbound UDP 24454 or the configured voice port in Windows Firewall.";
+        }
+
         if (result.Request.Engine == PortEngine.Geyser || result.Request.BindingRole == PortBindingRole.GeyserBedrock)
         {
             return "Confirm the Playit Bedrock tunnel targets the Geyser UDP port, then check Windows Firewall and Bedrock loopback settings.";
@@ -256,5 +270,11 @@ public sealed class PortFailureMessageService
             : request.DisplayName;
 
         return $"{purpose} {protocol} {ipMode} port {request.Port}{bindAddress}";
+    }
+
+    private static bool IsSimpleVoiceChatRequest(PortCheckRequest request)
+    {
+        return request.BindingRole == PortBindingRole.SimpleVoiceChat ||
+               request.Engine == PortEngine.SimpleVoiceChat;
     }
 }

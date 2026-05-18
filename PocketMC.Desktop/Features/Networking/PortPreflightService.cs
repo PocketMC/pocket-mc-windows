@@ -279,6 +279,7 @@ public sealed class PortPreflightService
         if (IsNativeBedrockServer(metadata))
         {
             AppendBedrockTargets(targets, metadata, configuration, mainPort);
+            AppendSimpleVoiceChatTarget(targets, serverDir);
             return targets;
         }
 
@@ -311,7 +312,30 @@ public sealed class PortPreflightService
                     PortEngine.Geyser));
         }
 
+        AppendSimpleVoiceChatTarget(targets, serverDir);
+
         return targets;
+    }
+
+    private static void AppendSimpleVoiceChatTarget(List<PreflightTarget> targets, string? serverDir)
+    {
+        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(serverDir);
+        if (!detection.IsDetected)
+        {
+            return;
+        }
+
+        string? bindAddress = NormalizeBindAddress(detection.BindAddress);
+        targets.Add(
+            new PreflightTarget(
+                "Simple Voice Chat",
+                detection.Port,
+                PortProtocol.Udp,
+                DetermineGeyserIpMode(detection.BindAddress),
+                bindAddress,
+                SimpleVoiceChatConfigService.DefaultPort,
+                PortBindingRole.SimpleVoiceChat,
+                PortEngine.SimpleVoiceChat));
     }
 
     private void AppendBedrockTargets(List<PreflightTarget> targets, InstanceMetadata metadata, ServerConfiguration configuration, int mainPort)
@@ -428,7 +452,19 @@ public sealed class PortPreflightService
             AutoRestartDelaySeconds = metadata.AutoRestartDelaySeconds,
             CustomJavaPath = metadata.CustomJavaPath,
             AdvancedJvmArgs = metadata.AdvancedJvmArgs,
-            HasGeyser = metadata.HasGeyser
+            HasGeyser = metadata.HasGeyser,
+            GeyserBedrockPort = metadata.GeyserBedrockPort,
+            ServerPort = metadata.ServerPort,
+            SimpleVoiceChatDetected = metadata.SimpleVoiceChatDetected,
+            SimpleVoiceChatPort = metadata.SimpleVoiceChatPort,
+            SimpleVoiceChatTunnelId = metadata.SimpleVoiceChatTunnelId,
+            SimpleVoiceChatTunnelAddress = metadata.SimpleVoiceChatTunnelAddress,
+            SimpleVoiceChatNumericTunnelAddress = metadata.SimpleVoiceChatNumericTunnelAddress,
+            SimpleVoiceChatConfigPath = metadata.SimpleVoiceChatConfigPath,
+            SimpleVoiceChatVoiceHost = metadata.SimpleVoiceChatVoiceHost,
+            SimpleVoiceChatPromptDismissed = metadata.SimpleVoiceChatPromptDismissed,
+            SimpleVoiceChatLastWarning = metadata.SimpleVoiceChatLastWarning,
+            SimpleVoiceChatStatus = metadata.SimpleVoiceChatStatus
         };
     }
 

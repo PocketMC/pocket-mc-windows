@@ -106,4 +106,41 @@ public sealed class PortDiagnosticsSnapshotBuilderTests
 
         Assert.Contains(snapshot.PublicConnectivityDependencies, dependency => dependency.Name == "Playit.gg API");
     }
+
+    [Fact]
+    public void Build_WhenSimpleVoiceChatHasNoVoiceTunnel_IncludesVoiceChatDiagnostics()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        PortPreflightService preflightService = workspace.CreatePortPreflightService();
+        PortLeaseRegistry leaseRegistry = workspace.CreatePortLeaseRegistry();
+        PortRecoveryService recoveryService = workspace.CreatePortRecoveryService();
+        PlayitApiClient playitApiClient = workspace.CreatePlayitApiClient();
+        PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
+        DependencyHealthMonitor dependencyHealthMonitor = workspace.CreateDependencyHealthMonitor();
+        var metadata = workspace.CreateInstance("Voice Diagnostics", serverType: "Fabric");
+
+        workspace.WriteServerProperties(metadata.Id, "server-port=25565");
+        workspace.WriteFile(
+            metadata.Id,
+            Path.Combine("config", "voicechat", "voicechat-server.properties"),
+            """
+            port=24454
+            voice_host=java.example.com:25565
+            """);
+        workspace.AppState.SetTunnelAddress(metadata.Id, "java.example.com:25565");
+        PortDiagnosticsSnapshotBuilder builder = workspace.CreateDiagnosticsSnapshotBuilder(
+            preflightService,
+            leaseRegistry,
+            recoveryService,
+            harness.Service,
+            playitApiClient,
+            dependencyHealthMonitor);
+
+        PortDiagnosticsSnapshot snapshot = builder.Build();
+
+        PortDiagnosticsInstanceTunnelState tunnelState = Assert.Single(snapshot.TunnelState.Instances);
+        Assert.Contains("Simple Voice Chat UDP tunnel missing", tunnelState.Diagnostics);
+        Assert.Contains("voice_host points to Java tunnel", tunnelState.Diagnostics);
+        Assert.Contains("Windows Firewall: allow inbound UDP 24454 for Simple Voice Chat.", tunnelState.Diagnostics);
+    }
 }

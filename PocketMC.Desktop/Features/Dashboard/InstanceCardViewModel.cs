@@ -25,6 +25,9 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private string? _numericTunnelAddress;
     private string? _bedrockTunnelAddress;
     private string? _bedrockNumericTunnelAddress;
+    private string? _voiceChatTunnelAddress;
+    private string? _voiceChatNumericTunnelAddress;
+    private string? _simpleVoiceChatWarning;
     private string? _bedrockIpDisplayTextOverride;
     private int _bedrockLocalPort;
     private string _ipDisplayText = "Will Appear Here!";
@@ -44,6 +47,9 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         _numericTunnelAddress = appState.GetNumericTunnelAddress(metadata.Id);
         _bedrockTunnelAddress = appState.GetBedrockTunnelAddress(metadata.Id);
         _bedrockNumericTunnelAddress = appState.GetBedrockNumericTunnelAddress(metadata.Id);
+        _voiceChatTunnelAddress = appState.GetVoiceChatTunnelAddress(metadata.Id);
+        _voiceChatNumericTunnelAddress = appState.GetVoiceChatNumericTunnelAddress(metadata.Id);
+        _simpleVoiceChatWarning = metadata.SimpleVoiceChatLastWarning;
 
         if (_serverProcessManager.IsRunning(metadata.Id))
         {
@@ -67,6 +73,11 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public int MaxPlayers => _metadata.MaxPlayers;
     public bool HasTunnelAddress => !string.IsNullOrEmpty(_tunnelAddress);
     public bool HasBedrockTunnelAddress => !string.IsNullOrEmpty(_bedrockTunnelAddress);
+    public bool HasVoiceChatTunnelAddress => !string.IsNullOrEmpty(_voiceChatTunnelAddress);
+    public bool HasSimpleVoiceChatTunnelAddress => HasVoiceChatTunnelAddress;
+    public bool HasSimpleVoiceChatWarning => !string.IsNullOrWhiteSpace(_simpleVoiceChatWarning);
+    public string? SimpleVoiceChatWarning => _simpleVoiceChatWarning;
+    public Visibility SimpleVoiceChatWarningVisibility => HasSimpleVoiceChatWarning ? Visibility.Visible : Visibility.Collapsed;
     public bool HasPortIssue => !string.IsNullOrWhiteSpace(_portIssueText);
     public Visibility PortIssueVisibility => HasPortIssue ? Visibility.Visible : Visibility.Collapsed;
     public string? PortIssueText => _portIssueText;
@@ -218,6 +229,21 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     }
     public bool HasBedrockNumericTunnelAddress => !string.IsNullOrEmpty(_bedrockNumericTunnelAddress);
 
+    public string? VoiceChatNumericTunnelAddress
+    {
+        get => _voiceChatNumericTunnelAddress;
+        set
+        {
+            if (SetProperty(ref _voiceChatNumericTunnelAddress, value))
+            {
+                OnPropertyChanged(nameof(HasVoiceChatNumericTunnelAddress));
+                OnPropertyChanged(nameof(HasSimpleVoiceChatNumericTunnelAddress));
+            }
+        }
+    }
+    public bool HasVoiceChatNumericTunnelAddress => !string.IsNullOrEmpty(_voiceChatNumericTunnelAddress);
+    public bool HasSimpleVoiceChatNumericTunnelAddress => HasVoiceChatNumericTunnelAddress;
+
     public string? TunnelAddress
     {
         get => _tunnelAddress;
@@ -244,6 +270,47 @@ public class InstanceCardViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(BedrockIpDisplayText));
             }
         }
+    }
+
+    public string? VoiceChatTunnelAddress
+    {
+        get => _voiceChatTunnelAddress;
+        set
+        {
+            if (SetProperty(ref _voiceChatTunnelAddress, value))
+            {
+                OnPropertyChanged(nameof(HasVoiceChatTunnelAddress));
+                OnPropertyChanged(nameof(HasSimpleVoiceChatTunnelAddress));
+                OnPropertyChanged(nameof(SimpleVoiceChatTunnelAddress));
+            }
+        }
+    }
+
+    public string? SimpleVoiceChatTunnelAddress
+    {
+        get => VoiceChatTunnelAddress;
+        set => VoiceChatTunnelAddress = value;
+    }
+
+    public void SetSimpleVoiceChatWarning(string warning)
+    {
+        _simpleVoiceChatWarning = warning;
+        OnPropertyChanged(nameof(HasSimpleVoiceChatWarning));
+        OnPropertyChanged(nameof(SimpleVoiceChatWarning));
+        OnPropertyChanged(nameof(SimpleVoiceChatWarningVisibility));
+    }
+
+    public void ClearSimpleVoiceChatWarning()
+    {
+        if (_simpleVoiceChatWarning == null)
+        {
+            return;
+        }
+
+        _simpleVoiceChatWarning = null;
+        OnPropertyChanged(nameof(HasSimpleVoiceChatWarning));
+        OnPropertyChanged(nameof(SimpleVoiceChatWarning));
+        OnPropertyChanged(nameof(SimpleVoiceChatWarningVisibility));
     }
 
     public string DisplayAddress => _tunnelAddress ?? "127.0.0.1";

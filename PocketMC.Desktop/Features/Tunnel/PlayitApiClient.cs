@@ -80,6 +80,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             "minecraft-java" => "Minecraft Java",
             "minecraft-bedrock" => "Minecraft Bedrock",
+            "mc-simple-voice-chat" => "Simple Voice Chat",
             _ => TunnelType ?? "Unknown"
         };
         public string LimitErrorText => $"Tunnel Limit Reached for {TunnelTypeDisplay}";
@@ -373,9 +374,24 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         public static TunnelData? FindTunnelForRequest(IEnumerable<TunnelData> tunnels, PortCheckRequest request)
         {
-            return tunnels.FirstOrDefault(t =>
+            bool isSimpleVoiceChat = request.BindingRole == PortBindingRole.SimpleVoiceChat ||
+                                     request.Engine == PortEngine.SimpleVoiceChat;
+
+            IEnumerable<TunnelData> candidates = tunnels.Where(t =>
                 t.Port == request.Port &&
                 (!t.Protocol.HasValue || ProtocolsOverlap(t.Protocol.Value, request.Protocol)));
+
+            if (isSimpleVoiceChat)
+            {
+                candidates = candidates.Where(t =>
+                    string.Equals(t.TunnelType, "mc-simple-voice-chat", StringComparison.OrdinalIgnoreCase) &&
+                    t.IsEnabled);
+
+                return candidates.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.PublicAddress));
+            }
+
+            return candidates.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.PublicAddress))
+                ?? candidates.FirstOrDefault();
         }
 
         /// <summary>
@@ -387,6 +403,28 @@ namespace PocketMC.Desktop.Features.Tunnel
         /// <returns>A <see cref="TunnelCreateResult"/> indicating success/failure and the created tunnel ID.</returns>
         public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort)
         {
+            return await CreateTunnelAsync(tunnelName, tunnelType, localPort, "global", enabled: true);
+        }
+
+        /// <summary>
+        /// Creates a PlayIt tunnel with the specified region and enabled state via v1/tunnels/create.
+        /// </summary>
+        public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort, string region, bool enabled)
+        {
+            var payload = new
+            {
+                name = tunnelName,
+                protocol = new { type = "tunnel-type", details = tunnelType },
+                origin = BuildAgentOrigin(localPort),
+                endpoint = BuildRegionEndpoint(region),
+                enabled
+            };
+
+            return await SendCreateTunnelAsync(payload);
+        }
+
+        private async Task<TunnelCreateResult> SendCreateTunnelAsync(object payload)
+        {
             string? secretKey = GetSecretKey();
             if (string.IsNullOrWhiteSpace(secretKey))
             {
@@ -400,33 +438,6 @@ namespace PocketMC.Desktop.Features.Tunnel
 
             try
             {
-                var payload = new
-                {
-                    name = tunnelName,
-                    protocol = new { type = "tunnel-type", details = tunnelType },
-                    origin = new
-                    {
-                        type = "agent",
-                        data = new
-                        {
-                            agent_id = (string?)null,
-                            config = new
-                            {
-                                fields = new[]
-                                {
-                                    new { name = "local_port", value = localPort.ToString() }
-                                }
-                            }
-                        }
-                    },
-                    endpoint = new
-                    {
-                        type = "region",
-                        details = new { region = "global", port = (int?)null }
-                    },
-                    enabled = true
-                };
-
                 using HttpRequestMessage request = BuildAuthorizedRequest(HttpMethod.Post, "/v1/tunnels/create", secretKey, payload);
                 using HttpResponseMessage response = await _httpClient.SendAsync(request);
 
@@ -480,102 +491,32 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
         }
 
-        /// <summary>
-        /// Creates a PlayIt tunnel with the specified region and enabled state via v1/tunnels/create.
-        /// </summary>
-        public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort, string region, bool enabled)
+        private static object BuildAgentOrigin(int localPort)
         {
-            string? secretKey = GetSecretKey();
-            if (string.IsNullOrWhiteSpace(secretKey))
+            return new
             {
-                return new TunnelCreateResult
+                type = "agent",
+                data = new
                 {
-                    Success = false,
-                    ErrorMessage = "PocketMC is not connected to a Playit agent yet.",
-                    RequiresClaim = true
-                };
-            }
-
-            try
-            {
-                var payload = new
-                {
-                    name = tunnelName,
-                    protocol = new { type = "tunnel-type", details = tunnelType },
-                    origin = new
+                    agent_id = (string?)null,
+                    config = new
                     {
-                        type = "agent",
-                        data = new
+                        fields = new[]
                         {
-                            agent_id = (string?)null,
-                            config = new
-                            {
-                                fields = new[]
-                                {
-                                    new { name = "local_port", value = localPort.ToString() }
-                                }
-                            }
+                            new { name = "local_port", value = localPort.ToString() }
                         }
-                    },
-                    endpoint = new
-                    {
-                        type = "region",
-                        details = new { region, port = (int?)null }
-                    },
-                    enabled
-                };
-
-                using HttpRequestMessage request = BuildAuthorizedRequest(HttpMethod.Post, "/v1/tunnels/create", secretKey, payload);
-                using HttpResponseMessage response = await _httpClient.SendAsync(request);
-
-                if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-                {
-                    return new TunnelCreateResult
-                    {
-                        Success = false,
-                        ErrorMessage = "The saved Playit credentials were rejected.",
-                        IsTokenInvalid = true
-                    };
+                    }
                 }
+            };
+        }
 
-                string body = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("Playit tunnel creation failed with HTTP {StatusCode}: {Body}", (int)response.StatusCode, body);
-                    return new TunnelCreateResult
-                    {
-                        Success = false,
-                        ErrorMessage = $"Playit API returned HTTP {(int)response.StatusCode}."
-                    };
-                }
-
-                using JsonDocument doc = JsonDocument.Parse(body);
-                JsonElement root = doc.RootElement;
-
-                string status = root.TryGetProperty("status", out JsonElement statusEl) ? statusEl.GetString() ?? "" : "";
-
-                if (status == "success" && root.TryGetProperty("data", out JsonElement data))
-                {
-                    string? createdId = data.TryGetProperty("id", out JsonElement idEl) ? idEl.GetString() : null;
-                    return new TunnelCreateResult { Success = true, TunnelId = createdId };
-                }
-
-                if (status == "fail" && root.TryGetProperty("data", out JsonElement failData))
-                {
-                    string failMessage = failData.ValueKind == JsonValueKind.String
-                        ? failData.GetString() ?? "Unknown error"
-                        : failData.ToString();
-                    return new TunnelCreateResult { Success = false, ErrorMessage = failMessage, ErrorCode = failMessage };
-                }
-
-                return new TunnelCreateResult { Success = false, ErrorMessage = $"Unexpected API response: {body}" };
-            }
-            catch (Exception ex)
+        private static object BuildRegionEndpoint(string region)
+        {
+            return new
             {
-                _logger.LogWarning(ex, "Failed to create Playit tunnel.");
-                return new TunnelCreateResult { Success = false, ErrorMessage = ex.Message };
-            }
+                type = "region",
+                details = new { region, port = (int?)null }
+            };
         }
 
         private HttpRequestMessage BuildAuthorizedRequest(HttpMethod method, string relativePath, string secretKey, object payload)
@@ -720,6 +661,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
 
             if (tunnelType.Contains("bedrock", StringComparison.OrdinalIgnoreCase) ||
+                tunnelType.Contains("simple-voice-chat", StringComparison.OrdinalIgnoreCase) ||
                 tunnelType.Contains("udp", StringComparison.OrdinalIgnoreCase))
             {
                 return PortProtocol.Udp;

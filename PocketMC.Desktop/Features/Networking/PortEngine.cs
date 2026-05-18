@@ -28,5 +28,10 @@ public enum PortEngine
     /// <summary>
     /// Geyser's Bedrock protocol listener for Java cross-play.
     /// </summary>
-    Geyser
+    Geyser,
+
+    /// <summary>
+    /// Simple Voice Chat's dedicated UDP voice server.
+    /// </summary>
+    SimpleVoiceChat
 }

@@ -9,6 +9,7 @@ namespace PocketMC.Desktop.Infrastructure
     {
         /// <summary>True if the user clicked the primary button (OK / Yes).</summary>
         public bool PrimaryClicked { get; private set; }
+        public PocketMC.Desktop.Core.Interfaces.DialogResult Result { get; private set; } = PocketMC.Desktop.Core.Interfaces.DialogResult.Cancel;
 
         public AppDialogWindow()
         {
@@ -18,7 +19,14 @@ namespace PocketMC.Desktop.Infrastructure
         /// <summary>
         /// Configures the dialog for display.
         /// </summary>
-        public void Configure(string title, string message, AppDialogType type, AppDialogButtons buttons)
+        public void Configure(
+            string title,
+            string message,
+            AppDialogType type,
+            AppDialogButtons buttons,
+            string? primaryButtonText = null,
+            string? secondaryButtonText = null,
+            string? tertiaryButtonText = null)
         {
             TxtTitle.Text = title;
             TxtMessage.Text = message;
@@ -64,27 +72,32 @@ namespace PocketMC.Desktop.Infrastructure
             switch (buttons)
             {
                 case AppDialogButtons.OkCancel:
-                    BtnPrimary.Content = "OK";
-                    BtnSecondary.Content = "Cancel";
+                    BtnPrimary.Content = primaryButtonText ?? "OK";
+                    BtnSecondary.Content = secondaryButtonText ?? "Cancel";
                     BtnSecondary.Visibility = Visibility.Visible;
+                    BtnTertiary.Visibility = Visibility.Collapsed;
                     break;
 
                 case AppDialogButtons.YesNo:
-                    BtnPrimary.Content = "Yes";
-                    BtnSecondary.Content = "No";
+                    BtnPrimary.Content = primaryButtonText ?? "Yes";
+                    BtnSecondary.Content = secondaryButtonText ?? "No";
                     BtnSecondary.Visibility = Visibility.Visible;
+                    BtnTertiary.Visibility = Visibility.Collapsed;
                     break;
 
                 case AppDialogButtons.YesNoCancel:
-                    BtnPrimary.Content = "Yes";
-                    BtnSecondary.Content = "No";
+                    BtnPrimary.Content = primaryButtonText ?? "Yes";
+                    BtnSecondary.Content = secondaryButtonText ?? "No";
+                    BtnTertiary.Content = tertiaryButtonText ?? "Cancel";
                     BtnSecondary.Visibility = Visibility.Visible;
+                    BtnTertiary.Visibility = Visibility.Visible;
                     break;
 
                 case AppDialogButtons.Ok:
                 default:
-                    BtnPrimary.Content = "OK";
+                    BtnPrimary.Content = primaryButtonText ?? "OK";
                     BtnSecondary.Visibility = Visibility.Collapsed;
+                    BtnTertiary.Visibility = Visibility.Collapsed;
                     break;
             }
         }
@@ -92,12 +105,21 @@ namespace PocketMC.Desktop.Infrastructure
         private void BtnPrimary_Click(object sender, RoutedEventArgs e)
         {
             PrimaryClicked = true;
+            Result = PocketMC.Desktop.Core.Interfaces.DialogResult.Yes;
             Close();
         }
 
         private void BtnSecondary_Click(object sender, RoutedEventArgs e)
         {
             PrimaryClicked = false;
+            Result = PocketMC.Desktop.Core.Interfaces.DialogResult.No;
+            Close();
+        }
+
+        private void BtnTertiary_Click(object sender, RoutedEventArgs e)
+        {
+            PrimaryClicked = false;
+            Result = PocketMC.Desktop.Core.Interfaces.DialogResult.Cancel;
             Close();
         }
     }

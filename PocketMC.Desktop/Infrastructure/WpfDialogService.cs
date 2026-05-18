@@ -8,7 +8,14 @@ namespace PocketMC.Desktop.Infrastructure
 {
     public class WpfDialogService : IDialogService
     {
-        public Task<DialogResult> ShowDialogAsync(string title, string message, DialogType type = DialogType.Information, bool showCancel = false)
+        public Task<DialogResult> ShowDialogAsync(
+            string title,
+            string message,
+            DialogType type = DialogType.Information,
+            bool showCancel = false,
+            string? primaryButtonText = null,
+            string? secondaryButtonText = null,
+            string? cancelButtonText = null)
         {
             var appType = type switch
             {
@@ -19,9 +26,16 @@ namespace PocketMC.Desktop.Infrastructure
             };
 
             var buttons = showCancel ? AppDialogButtons.YesNoCancel : AppDialogButtons.YesNo;
-            bool primary = AppDialog.Show(title, message, appType, buttons);
+            DialogResult result = AppDialog.ShowResult(
+                title,
+                message,
+                appType,
+                buttons,
+                primaryButtonText,
+                secondaryButtonText,
+                cancelButtonText);
 
-            return Task.FromResult(primary ? DialogResult.Yes : DialogResult.No);
+            return Task.FromResult(result);
         }
 
         public void ShowMessage(string title, string message, DialogType type = DialogType.Information)

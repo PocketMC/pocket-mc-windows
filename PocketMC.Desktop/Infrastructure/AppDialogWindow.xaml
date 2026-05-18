@@ -48,8 +48,14 @@
 
         <!-- Action buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <ui:Button x:Name="BtnTertiary"
+                       MinWidth="110"
+                       Margin="0,0,10,0"
+                       Visibility="Collapsed"
+                       Click="BtnTertiary_Click"/>
+
             <ui:Button x:Name="BtnSecondary"
-                       Width="100"
+                       MinWidth="100"
                        Margin="0,0,10,0"
                        Visibility="Collapsed"
                        Click="BtnSecondary_Click"/>
@@ -57,7 +63,7 @@
             <ui:Button x:Name="BtnPrimary"
                        Content="OK"
                        Appearance="Primary"
-                       Width="110"
+                       MinWidth="110"
                        Click="BtnPrimary_Click"
                        IsDefault="True"/>
         </StackPanel>

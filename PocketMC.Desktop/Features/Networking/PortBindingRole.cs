@@ -28,5 +28,10 @@ public enum PortBindingRole
     /// <summary>
     /// The Geyser Bedrock listener used by Java cross-play instances.
     /// </summary>
-    GeyserBedrock
+    GeyserBedrock,
+
+    /// <summary>
+    /// The Simple Voice Chat UDP listener used by the voice chat mod/plugin.
+    /// </summary>
+    SimpleVoiceChat
 }
