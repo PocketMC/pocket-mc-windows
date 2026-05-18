@@ -138,6 +138,20 @@ namespace PocketMC.Desktop.Features.Tunnel
         }
     }
 
+    public enum SimpleVoiceChatTunnelMatchStatus
+    {
+        FoundReady,
+        FoundDisabled,
+        FoundPendingAllocation,
+        FoundWrongPort,
+        FoundDifferentAgent,
+        Missing
+    }
+
+    public sealed record SimpleVoiceChatTunnelMatch(
+        SimpleVoiceChatTunnelMatchStatus Status,
+        TunnelData? Tunnel);
+
     /// <summary>
     /// Shared result type for tunnel management actions (rename, delete, enable, typeset, update).
     /// </summary>
@@ -377,28 +391,90 @@ namespace PocketMC.Desktop.Features.Tunnel
             bool isSimpleVoiceChat = request.BindingRole == PortBindingRole.SimpleVoiceChat ||
                                      request.Engine == PortEngine.SimpleVoiceChat;
 
+            if (isSimpleVoiceChat)
+            {
+                SimpleVoiceChatTunnelMatch match = FindSimpleVoiceChatTunnelStatus(tunnels, request.Port);
+                return match.Status == SimpleVoiceChatTunnelMatchStatus.FoundReady
+                    ? match.Tunnel
+                    : null;
+            }
+
             IEnumerable<TunnelData> candidates = tunnels.Where(t =>
                 t.Port == request.Port &&
                 (!t.Protocol.HasValue || ProtocolsOverlap(t.Protocol.Value, request.Protocol)));
 
-            if (isSimpleVoiceChat)
-            {
-                candidates = candidates.Where(t =>
-                    string.Equals(t.TunnelType, "mc-simple-voice-chat", StringComparison.OrdinalIgnoreCase) &&
-                    t.IsEnabled);
-
-                return candidates.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.PublicAddress));
-            }
-
             return candidates.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.PublicAddress))
                 ?? candidates.FirstOrDefault();
+        }
+
+        public static SimpleVoiceChatTunnelMatch FindSimpleVoiceChatTunnelStatus(
+            IEnumerable<TunnelData> tunnels,
+            int localPort,
+            string? currentAgentId = null)
+        {
+            List<TunnelData> voiceTunnels = tunnels
+                .Where(t => string.Equals(t.TunnelType, "mc-simple-voice-chat", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (voiceTunnels.Count == 0)
+            {
+                return new SimpleVoiceChatTunnelMatch(SimpleVoiceChatTunnelMatchStatus.Missing, null);
+            }
+
+            List<TunnelData> samePort = voiceTunnels
+                .Where(t => t.Port == localPort &&
+                            (!t.Protocol.HasValue || ProtocolsOverlap(t.Protocol.Value, PortProtocol.Udp)))
+                .ToList();
+
+            if (samePort.Count == 0)
+            {
+                return new SimpleVoiceChatTunnelMatch(SimpleVoiceChatTunnelMatchStatus.FoundWrongPort, voiceTunnels[0]);
+            }
+
+            if (!string.IsNullOrWhiteSpace(currentAgentId))
+            {
+                List<TunnelData> currentAgentMatches = samePort
+                    .Where(t => !t.HasAgentOrigin ||
+                                string.IsNullOrWhiteSpace(t.AgentId) ||
+                                string.Equals(t.AgentId, currentAgentId, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (currentAgentMatches.Count == 0)
+                {
+                    return new SimpleVoiceChatTunnelMatch(SimpleVoiceChatTunnelMatchStatus.FoundDifferentAgent, samePort[0]);
+                }
+
+                samePort = currentAgentMatches;
+            }
+
+            TunnelData? ready = samePort.FirstOrDefault(t =>
+                t.IsEnabled &&
+                !string.IsNullOrWhiteSpace(t.PublicAddress));
+            if (ready != null)
+            {
+                return new SimpleVoiceChatTunnelMatch(SimpleVoiceChatTunnelMatchStatus.FoundReady, ready);
+            }
+
+            TunnelData? disabled = samePort.FirstOrDefault(t => !t.IsEnabled);
+            if (disabled != null)
+            {
+                return new SimpleVoiceChatTunnelMatch(SimpleVoiceChatTunnelMatchStatus.FoundDisabled, disabled);
+            }
+
+            TunnelData? pending = samePort.FirstOrDefault(t => t.IsEnabled);
+            if (pending != null)
+            {
+                return new SimpleVoiceChatTunnelMatch(SimpleVoiceChatTunnelMatchStatus.FoundPendingAllocation, pending);
+            }
+
+            return new SimpleVoiceChatTunnelMatch(SimpleVoiceChatTunnelMatchStatus.Missing, null);
         }
 
         /// <summary>
         /// Automatically creates a PlayIt tunnel via the v1/tunnels/create API.
         /// </summary>
         /// <param name="tunnelName">A human-readable name for the tunnel (e.g. "my-server-minecraft-java").</param>
-        /// <param name="tunnelType">The PlayIt tunnel type: "minecraft-java" or "minecraft-bedrock".</param>
+        /// <param name="tunnelType">The PlayIt tunnel type, such as "minecraft-java", "minecraft-bedrock", or "mc-simple-voice-chat".</param>
         /// <param name="localPort">The local server port to route traffic to.</param>
         /// <returns>A <see cref="TunnelCreateResult"/> indicating success/failure and the created tunnel ID.</returns>
         public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort)

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 namespace PocketMC.Desktop.Core.Interfaces
 {
-    public enum DialogResult { Ok, Cancel, Yes, No }
+    public enum DialogResult { Ok, Cancel, Yes, No, Dismiss }
     public enum DialogType { Information, Warning, Error, Question }
 
     public interface IDialogService

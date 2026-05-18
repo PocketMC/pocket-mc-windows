@@ -115,9 +115,7 @@ public static class SimpleVoiceChatDetector
         foreach (string jarPath in Directory.EnumerateFiles(directory, "*.jar", SearchOption.TopDirectoryOnly))
         {
             string name = Path.GetFileName(jarPath);
-            if (name.StartsWith("voicechat-", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("simplevoicechat-", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("voicechat", StringComparison.OrdinalIgnoreCase))
+            if (IsBaseSimpleVoiceChatJar(name))
             {
                 path = jarPath;
                 return true;
@@ -125,6 +123,13 @@ public static class SimpleVoiceChatDetector
         }
 
         return false;
+    }
+
+    private static bool IsBaseSimpleVoiceChatJar(string name)
+    {
+        return name.StartsWith("voicechat-", StringComparison.OrdinalIgnoreCase) ||
+               name.StartsWith("simplevoicechat-", StringComparison.OrdinalIgnoreCase) ||
+               name.StartsWith("simple-voice-chat-", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryFindVoiceChatLogPort(string serverDir, out int port)
@@ -182,6 +187,22 @@ public static class SimpleVoiceChatConfigService
             ?? Path.Combine(instancePath, "config", "voicechat", "voicechat-server.properties");
     }
 
+    public static string DetectConfigPath(string instancePath, SimpleVoiceChatDetectionSource detectionSource)
+    {
+        if (string.IsNullOrWhiteSpace(instancePath))
+        {
+            throw new ArgumentException("Instance path is required.", nameof(instancePath));
+        }
+
+        string? existing = ResolveConfigPath(instancePath);
+        if (!string.IsNullOrWhiteSpace(existing))
+        {
+            return existing;
+        }
+
+        return GetDefaultConfigPath(instancePath, detectionSource);
+    }
+
     public static SimpleVoiceChatSettings ReadConfig(string instancePath)
     {
         string configPath = DetectConfigPath(instancePath);
@@ -192,7 +213,16 @@ public static class SimpleVoiceChatConfigService
 
     public static string CreateInitialConfig(string instancePath, int port, string voiceHost)
     {
-        string configPath = Path.Combine(instancePath, "config", "voicechat", "voicechat-server.properties");
+        return CreateInitialConfig(instancePath, port, voiceHost, SimpleVoiceChatDetectionSource.ModJar);
+    }
+
+    public static string CreateInitialConfig(
+        string instancePath,
+        int port,
+        string voiceHost,
+        SimpleVoiceChatDetectionSource detectionSource)
+    {
+        string configPath = DetectConfigPath(instancePath, detectionSource);
         string? parent = Path.GetDirectoryName(configPath);
         if (!string.IsNullOrWhiteSpace(parent))
         {
@@ -208,6 +238,13 @@ public static class SimpleVoiceChatConfigService
             string.Empty);
         File.WriteAllText(configPath, content);
         return configPath;
+    }
+
+    private static string GetDefaultConfigPath(string instancePath, SimpleVoiceChatDetectionSource detectionSource)
+    {
+        return detectionSource == SimpleVoiceChatDetectionSource.PluginJar
+            ? Path.Combine(instancePath, "plugins", "voicechat", "voicechat-server.properties")
+            : Path.Combine(instancePath, "config", "voicechat", "voicechat-server.properties");
     }
 
     public static bool PatchVoiceHost(string configPath, string voiceHost)

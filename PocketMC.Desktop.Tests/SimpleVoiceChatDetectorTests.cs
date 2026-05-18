@@ -7,7 +7,7 @@ public sealed class SimpleVoiceChatDetectorTests
     [Theory]
     [InlineData("voicechat-2.5.0.jar")]
     [InlineData("simplevoicechat-fabric-1.20.4.jar")]
-    [InlineData("my-server-voicechat-addon.jar")]
+    [InlineData("simple-voice-chat-fabric-1.20.4.jar")]
     public void Detect_FabricVoiceChatJar_ReturnsDetected(string jarName)
     {
         using var workspace = new PortReliabilityTestWorkspace();
@@ -20,6 +20,18 @@ public sealed class SimpleVoiceChatDetectorTests
         Assert.Equal(SimpleVoiceChatDetectionSource.ModJar, detection.Source);
         Assert.True(detection.IsConfigPending);
         Assert.Equal(24454, detection.Port);
+    }
+
+    [Fact]
+    public void Detect_GenericVoiceChatAddonWithoutConfigOrLog_DoesNotFalsePositive()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Voice Addon", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "my-server-voicechat-addon.jar"), "jar");
+
+        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+
+        Assert.False(detection.IsDetected);
     }
 
     [Fact]

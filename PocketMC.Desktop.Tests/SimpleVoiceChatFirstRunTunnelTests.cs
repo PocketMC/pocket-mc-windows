@@ -61,6 +61,52 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
     }
 
     [Fact]
+    public async Task EnsureSimpleVoiceChatBeforeStartAsync_WhenPluginJarAndConfigMissing_CreatesPluginConfigBeforeStart()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Voice Plugin First Run", serverType: "Paper");
+        workspace.WriteFile(metadata.Id, Path.Combine("plugins", "voicechat-bukkit.jar"), "jar");
+        workspace.WritePlayitSecret();
+        workspace.EnsurePlayitBinaryExists();
+        string? createPayload = null;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("tunnels/create") == true)
+            {
+                using var reader = new StreamReader(req.Content!.ReadAsStream());
+                createPayload = reader.ReadToEnd();
+                return JsonResponse("""{"status":"success","data":{"id":"voice"}}""");
+            }
+
+            return JsonResponse(createPayload == null
+                ? """{"status":"success","data":{"tunnels":[]}}"""
+                : VoiceTunnelListJson("voice.playit.gg:30000", 24454));
+        });
+        InstanceTunnelOrchestrator orchestrator = CreateOrchestrator(workspace, apiClient, DialogResult.Yes);
+        InstanceCardViewModel vm = CreateCard(workspace, metadata);
+
+        bool shouldStart = await orchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm);
+        string pluginConfigPath = Path.Combine(
+            workspace.GetInstancePath(metadata.Id),
+            "plugins",
+            "voicechat",
+            "voicechat-server.properties");
+        string modConfigPath = Path.Combine(
+            workspace.GetInstancePath(metadata.Id),
+            "config",
+            "voicechat",
+            "voicechat-server.properties");
+
+        Assert.True(shouldStart);
+        Assert.True(File.Exists(pluginConfigPath));
+        Assert.False(File.Exists(modConfigPath));
+        string config = File.ReadAllText(pluginConfigPath);
+        Assert.Contains("port=24454", config);
+        Assert.Contains("bind_address=*", config);
+        Assert.Contains("voice_host=voice.playit.gg:30000", config);
+    }
+
+    [Fact]
     public async Task EnsureSimpleVoiceChatBeforeStartAsync_WhenConfigExists_PatchesWithoutOverwritingComments()
     {
         using var workspace = new PortReliabilityTestWorkspace();
@@ -144,6 +190,28 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
 
         Assert.True(vm.Metadata.SimpleVoiceChatPromptDismissed);
         Assert.Equal(1, dialog.ShowCount);
+        Assert.True(vm.HasSimpleVoiceChatWarning);
+    }
+
+    [Fact]
+    public async Task EnsureSimpleVoiceChatBeforeStartAsync_WhenDialogIsClosed_DoesNotDismissFuturePrompt()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Voice Close", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
+        workspace.WritePlayitSecret();
+        workspace.EnsurePlayitBinaryExists();
+        var dialog = new RecordingDialogService(DialogResult.Dismiss);
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(_ =>
+            JsonResponse("""{"status":"success","data":{"tunnels":[]}}"""));
+        InstanceTunnelOrchestrator orchestrator = CreateOrchestrator(workspace, apiClient, dialog);
+        InstanceCardViewModel vm = CreateCard(workspace, metadata);
+
+        await orchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm);
+        await orchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm);
+
+        Assert.False(vm.Metadata.SimpleVoiceChatPromptDismissed);
+        Assert.Equal(2, dialog.ShowCount);
         Assert.True(vm.HasSimpleVoiceChatWarning);
     }
 

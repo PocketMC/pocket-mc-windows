@@ -411,6 +411,99 @@ public sealed class TunnelServiceTests
     }
 
     [Fact]
+    public async Task ResolveTunnelAsync_ForSimpleVoiceChat_DisabledExistingTunnelIsReportedNotDuplicated()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        bool createCalled = false;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("tunnels/create") == true)
+            {
+                createCalled = true;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(VoiceTunnelJson("voice", 24454, enabled: false, publicAddress: "voice.example.com:30000"))
+            };
+        });
+        PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
+        harness.StateMachine.TransitionTo(PlayitAgentState.Connected);
+        TunnelService service = workspace.CreateTunnelService(apiClient, harness.Service);
+
+        TunnelResolutionResult result = await service.ResolveTunnelAsync(SimpleVoiceChatRequest(24454));
+
+        Assert.Equal(TunnelResolutionResult.TunnelStatus.Error, result.Status);
+        Assert.Contains("disabled", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.False(createCalled);
+    }
+
+    [Fact]
+    public async Task ResolveTunnelAsync_ForSimpleVoiceChat_PendingAllocationIsPolledNotDuplicated()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        int listCalls = 0;
+        bool createCalled = false;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("tunnels/create") == true)
+            {
+                createCalled = true;
+            }
+
+            listCalls++;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(listCalls < 3
+                    ? VoiceTunnelJson("voice", 24454, enabled: true, publicAddress: "")
+                    : VoiceTunnelJson("voice", 24454, enabled: true, publicAddress: "voice.example.com:30000"))
+            };
+        });
+        PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
+        harness.StateMachine.TransitionTo(PlayitAgentState.Connected);
+        TunnelService service = workspace.CreateTunnelService(apiClient, harness.Service);
+
+        TunnelResolutionResult result = await service.ResolveTunnelAsync(SimpleVoiceChatRequest(24454));
+
+        Assert.Equal(TunnelResolutionResult.TunnelStatus.Found, result.Status);
+        Assert.Equal("voice.example.com:30000", result.PublicAddress);
+        Assert.True(listCalls >= 3);
+        Assert.False(createCalled);
+    }
+
+    [Fact]
+    public async Task ResolveTunnelAsync_ForSimpleVoiceChat_WrongPortIsReportedClearlyBeforeCreation()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        bool createCalled = false;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("tunnels/create") == true)
+            {
+                createCalled = true;
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(VoiceTunnelJson("voice", 24455, enabled: true, publicAddress: "voice.example.com:30000"))
+            };
+        });
+        PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
+        harness.StateMachine.TransitionTo(PlayitAgentState.Connected);
+        TunnelService service = workspace.CreateTunnelService(apiClient, harness.Service);
+
+        TunnelResolutionResult result = await service.ResolveTunnelAsync(SimpleVoiceChatRequest(24454), allowAutoCreate: false);
+
+        Assert.Equal(TunnelResolutionResult.TunnelStatus.Error, result.Status);
+        Assert.Contains("24455", result.ErrorMessage);
+        Assert.Contains("24454", result.ErrorMessage);
+        Assert.False(createCalled);
+    }
+
+    [Fact]
     public async Task GetTunnelsAsync_UnknownTunnelTypesDoNotCrashDeserialization()
     {
         using var workspace = new PortReliabilityTestWorkspace();
@@ -460,5 +553,45 @@ public sealed class TunnelServiceTests
 
         Assert.NotNull(match);
         Assert.Equal("bedrock", match.Id);
+    }
+
+    private static PortCheckRequest SimpleVoiceChatRequest(int port)
+    {
+        return new PortCheckRequest(
+            port,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            bindingRole: PortBindingRole.SimpleVoiceChat,
+            engine: PortEngine.SimpleVoiceChat);
+    }
+
+    private static string VoiceTunnelJson(string id, int port, bool enabled, string publicAddress)
+    {
+        string addresses = string.IsNullOrWhiteSpace(publicAddress)
+            ? "[]"
+            : $$"""[{ "type": "domain", "value": { "address": "{{publicAddress}}" } }]""";
+
+        string allocations = string.IsNullOrWhiteSpace(publicAddress)
+            ? "[]"
+            : """[{ "type": "PortAllocation", "details": { "ip": "10.0.0.5", "port": 30000 } }]""";
+
+        return $$"""
+        {
+          "status": "success",
+          "data": {
+            "tunnels": [
+              {
+                "id": "{{id}}",
+                "name": "{{id}}",
+                "tunnel_type": "mc-simple-voice-chat",
+                "user_enabled": {{enabled.ToString().ToLowerInvariant()}},
+                "connect_addresses": {{addresses}},
+                "public_allocations": {{allocations}},
+                "origin": { "type": "agent", "details": { "agent_id": "test-agent", "config_data": { "fields": [{ "name": "local_port", "value": "{{port}}" }] } } }
+              }
+            ]
+          }
+        }
+        """;
     }
 }

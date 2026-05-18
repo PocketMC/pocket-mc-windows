@@ -58,6 +58,7 @@ namespace PocketMC.Desktop.Features.Console
         private readonly InstanceMetadata _metadata;
         private readonly ServerProcess _serverProcess;
         private readonly IServerLifecycleService _lifecycleService;
+        private readonly InstanceTunnelOrchestrator _tunnelOrchestrator;
         private readonly AgentProvisioningService _agentProvisioning;
         private readonly ApplicationState _applicationState;
         private readonly IServiceProvider _serviceProvider;
@@ -124,6 +125,7 @@ namespace PocketMC.Desktop.Features.Console
         public ServerConsolePage(
             IAppNavigationService navigationService,
             IServerLifecycleService lifecycleService,
+            InstanceTunnelOrchestrator tunnelOrchestrator,
             AgentProvisioningService agentProvisioning,
             InstanceMetadata metadata,
             ServerProcess serverProcess,
@@ -136,6 +138,7 @@ namespace PocketMC.Desktop.Features.Console
         {
             _navigationService = navigationService;
             _lifecycleService = lifecycleService;
+            _tunnelOrchestrator = tunnelOrchestrator;
             _agentProvisioning = agentProvisioning;
             _metadata = metadata;
             _serverProcess = serverProcess;
@@ -549,6 +552,11 @@ namespace PocketMC.Desktop.Features.Console
                     {
                         return;
                     }
+                }
+
+                if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(_metadata))
+                {
+                    return;
                 }
 
                 Logs.Add(new LogLine { Text = "[PocketMC] Initiating manual restart...", TextColor = Brushes.Cyan });

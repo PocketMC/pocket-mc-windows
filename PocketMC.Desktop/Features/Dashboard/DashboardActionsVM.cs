@@ -95,7 +95,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                     if (result != DialogResult.Yes) return;
                 }
 
-                if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm))
+                if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm, isBeforeLaunch: true))
                 {
                     return;
                 }
@@ -136,11 +136,6 @@ namespace PocketMC.Desktop.Features.Dashboard
 
                 // Capture session start time before stopping
                 var sessionStart = _lifecycleService.GetSessionStartTime(vm.Id) ?? DateTime.UtcNow;
-
-                if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm))
-                {
-                    return;
-                }
 
                 vm.UpdateState(ServerState.Stopping);
                 await _lifecycleService.StopAsync(vm.Id);
@@ -226,6 +221,11 @@ namespace PocketMC.Desktop.Features.Dashboard
                     {
                         return;
                     }
+                }
+
+                if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm, isBeforeLaunch: true))
+                {
+                    return;
                 }
 
                 vm.UpdateState(ServerState.Stopping);

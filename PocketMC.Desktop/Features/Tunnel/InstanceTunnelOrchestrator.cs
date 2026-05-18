@@ -180,7 +180,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
         }
 
-        public async Task<bool> EnsureSimpleVoiceChatBeforeStartAsync(InstanceCardViewModel vm)
+        public async Task<bool> EnsureSimpleVoiceChatBeforeStartAsync(InstanceCardViewModel vm, bool isBeforeLaunch = false)
         {
             if (!_applicationState.IsConfigured || !File.Exists(_applicationState.GetPlayitExecutablePath()))
             {
@@ -200,12 +200,13 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return true;
             }
 
+            bool applyBeforeStart = isBeforeLaunch || !vm.IsRunning;
             PortCheckRequest request = BuildSimpleVoiceChatRequest(metadata, instancePath, detection);
             TunnelResolutionResult existing = await ResolveTunnelWithWarmupAsync(request, allowAutoCreate: false);
             if (existing.Status == TunnelResolutionResult.TunnelStatus.Found &&
                 !string.IsNullOrWhiteSpace(existing.PublicAddress))
             {
-                ApplySimpleVoiceChatTunnel(vm, request, existing, isBeforeStart: !vm.IsRunning);
+                ApplySimpleVoiceChatTunnel(vm, request, existing, isBeforeStart: applyBeforeStart);
                 return true;
             }
 
@@ -234,7 +235,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                      created.Status == TunnelResolutionResult.TunnelStatus.AutoCreated) &&
                     !string.IsNullOrWhiteSpace(created.PublicAddress))
                 {
-                    ApplySimpleVoiceChatTunnel(vm, request, created, isBeforeStart: !vm.IsRunning);
+                    ApplySimpleVoiceChatTunnel(vm, request, created, isBeforeStart: applyBeforeStart);
                     return true;
                 }
 
@@ -251,6 +252,81 @@ namespace PocketMC.Desktop.Features.Tunnel
                 vm,
                 "Simple Voice Chat is installed but no Playit tunnel is configured. Remote players may see voice chat as disconnected.",
                 status: "StartedWithoutVoiceTunnel");
+            return true;
+        }
+
+        public async Task<bool> EnsureSimpleVoiceChatBeforeStartAsync(InstanceMetadata metadata)
+        {
+            if (!_applicationState.IsConfigured || !File.Exists(_applicationState.GetPlayitExecutablePath()))
+            {
+                return true;
+            }
+
+            string? instancePath = _registry.GetPath(metadata.Id);
+            if (string.IsNullOrWhiteSpace(instancePath))
+            {
+                return true;
+            }
+
+            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(instancePath);
+            if (!detection.IsDetected)
+            {
+                return true;
+            }
+
+            PortCheckRequest request = BuildSimpleVoiceChatRequest(metadata, instancePath, detection);
+            TunnelResolutionResult existing = await ResolveTunnelWithWarmupAsync(request, allowAutoCreate: false);
+            if (existing.Status == TunnelResolutionResult.TunnelStatus.Found &&
+                !string.IsNullOrWhiteSpace(existing.PublicAddress))
+            {
+                ApplySimpleVoiceChatTunnel(metadata, request, existing, isBeforeStart: true);
+                return true;
+            }
+
+            if (metadata.SimpleVoiceChatPromptDismissed)
+            {
+                SaveSimpleVoiceChatMetadata(
+                    metadata,
+                    request,
+                    "Simple Voice Chat is installed but no Playit tunnel is configured. Remote players may see voice chat as disconnected.",
+                    "StartedWithoutVoiceTunnel");
+                return true;
+            }
+
+            DialogResult choice = await _dialogService.ShowDialogAsync(
+                "Simple Voice Chat needs a Playit tunnel",
+                BuildSimpleVoiceChatPromptMessage(request, existing),
+                DialogType.Warning,
+                showCancel: true,
+                primaryButtonText: "Create Simple Voice Chat tunnel",
+                secondaryButtonText: "Start without voice chat",
+                cancelButtonText: "Don't ask again for this instance");
+
+            if (choice == DialogResult.Yes)
+            {
+                TunnelResolutionResult created = await ResolveTunnelWithWarmupAsync(request, allowAutoCreate: true);
+                if ((created.Status == TunnelResolutionResult.TunnelStatus.Found ||
+                     created.Status == TunnelResolutionResult.TunnelStatus.AutoCreated) &&
+                    !string.IsNullOrWhiteSpace(created.PublicAddress))
+                {
+                    ApplySimpleVoiceChatTunnel(metadata, request, created, isBeforeStart: true);
+                    return true;
+                }
+
+                SaveSimpleVoiceChatMetadata(metadata, request, created.ErrorMessage ?? "Simple Voice Chat tunnel missing", "TunnelIssue");
+                return true;
+            }
+
+            if (choice == DialogResult.Cancel)
+            {
+                metadata.SimpleVoiceChatPromptDismissed = true;
+            }
+
+            SaveSimpleVoiceChatMetadata(
+                metadata,
+                request,
+                "Simple Voice Chat is installed but no Playit tunnel is configured. Remote players may see voice chat as disconnected.",
+                "StartedWithoutVoiceTunnel");
             return true;
         }
 
@@ -390,9 +466,17 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private string BuildSimpleVoiceChatPromptMessage(InstanceCardViewModel vm, PortCheckRequest request, TunnelResolutionResult resolution)
         {
+            return BuildSimpleVoiceChatPromptMessage(request, resolution);
+        }
+
+        private string BuildSimpleVoiceChatPromptMessage(PortCheckRequest request, TunnelResolutionResult resolution)
+        {
             SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(request.InstancePath);
             string voiceHost = string.IsNullOrWhiteSpace(detection.VoiceHost) ? "(empty)" : detection.VoiceHost!;
             string agentStatus = _playitAgentService.State.ToString();
+            string tunnelState = string.IsNullOrWhiteSpace(resolution.ErrorMessage)
+                ? string.Empty
+                : Environment.NewLine + $"Playit tunnel state: {resolution.ErrorMessage}";
 
             return
                 "This server has Simple Voice Chat installed. Minecraft traffic uses the normal server tunnel, but Simple Voice Chat uses a separate voice tunnel. Without a Simple Voice Chat tunnel, players may join the server but voice chat will show as disconnected or unplugged." +
@@ -400,7 +484,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                 $"Detected port: {request.Port}" + Environment.NewLine +
                 $"Current voice_host: {voiceHost}" + Environment.NewLine +
                 "Required Playit tunnel type: mc-simple-voice-chat" + Environment.NewLine +
-                $"Playit agent status: {agentStatus}";
+                $"Playit agent status: {agentStatus}" +
+                tunnelState;
         }
 
         private void SetSimpleVoiceChatWarning(InstanceCardViewModel vm, string warning)
@@ -463,7 +548,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
             SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(request.InstancePath);
             string configPath = detection.IsConfigPending || string.IsNullOrWhiteSpace(detection.ConfigPath)
-                ? SimpleVoiceChatConfigService.CreateInitialConfig(request.InstancePath, request.Port, resolution.PublicAddress)
+                ? SimpleVoiceChatConfigService.CreateInitialConfig(request.InstancePath, request.Port, resolution.PublicAddress, detection.Source)
                 : detection.ConfigPath!;
 
             bool changed = false;
@@ -501,6 +586,48 @@ namespace PocketMC.Desktop.Features.Tunnel
                 : null;
             vm.Metadata.SimpleVoiceChatStatus = "TunnelActive";
             _instanceManager.SaveMetadata(vm.Metadata, request.InstancePath);
+        }
+
+        private void ApplySimpleVoiceChatTunnel(
+            InstanceMetadata metadata,
+            PortCheckRequest request,
+            TunnelResolutionResult resolution,
+            bool isBeforeStart)
+        {
+            if (string.IsNullOrWhiteSpace(resolution.PublicAddress) || string.IsNullOrWhiteSpace(request.InstancePath))
+            {
+                return;
+            }
+
+            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(request.InstancePath);
+            string configPath = detection.IsConfigPending || string.IsNullOrWhiteSpace(detection.ConfigPath)
+                ? SimpleVoiceChatConfigService.CreateInitialConfig(request.InstancePath, request.Port, resolution.PublicAddress, detection.Source)
+                : detection.ConfigPath!;
+
+            bool changed = false;
+            if (!detection.IsConfigPending)
+            {
+                changed = SimpleVoiceChatConfigService.PatchVoiceHost(configPath, resolution.PublicAddress);
+            }
+
+            _applicationState.SetVoiceChatTunnelAddress(metadata.Id, resolution.PublicAddress);
+            if (!string.IsNullOrWhiteSpace(resolution.NumericAddress))
+            {
+                _applicationState.SetVoiceChatNumericTunnelAddress(metadata.Id, resolution.NumericAddress);
+            }
+
+            metadata.SimpleVoiceChatDetected = true;
+            metadata.SimpleVoiceChatPort = request.Port;
+            metadata.SimpleVoiceChatTunnelId = resolution.TunnelId;
+            metadata.SimpleVoiceChatTunnelAddress = resolution.PublicAddress;
+            metadata.SimpleVoiceChatNumericTunnelAddress = resolution.NumericAddress;
+            metadata.SimpleVoiceChatConfigPath = configPath;
+            metadata.SimpleVoiceChatVoiceHost = resolution.PublicAddress;
+            metadata.SimpleVoiceChatLastWarning = !isBeforeStart && changed
+                ? "Restart required for Simple Voice Chat tunnel changes to apply."
+                : null;
+            metadata.SimpleVoiceChatStatus = !isBeforeStart && changed ? "RestartRequired" : "TunnelActive";
+            _instanceManager.SaveMetadata(metadata, request.InstancePath);
         }
 
         private void HandleResolutionError(string instanceName, PortCheckRequest request, TunnelResolutionResult resolution)

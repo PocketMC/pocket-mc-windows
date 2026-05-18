@@ -9,7 +9,7 @@ namespace PocketMC.Desktop.Infrastructure
     {
         /// <summary>True if the user clicked the primary button (OK / Yes).</summary>
         public bool PrimaryClicked { get; private set; }
-        public PocketMC.Desktop.Core.Interfaces.DialogResult Result { get; private set; } = PocketMC.Desktop.Core.Interfaces.DialogResult.Cancel;
+        public PocketMC.Desktop.Core.Interfaces.DialogResult Result { get; private set; } = PocketMC.Desktop.Core.Interfaces.DialogResult.Dismiss;
 
         public AppDialogWindow()
         {

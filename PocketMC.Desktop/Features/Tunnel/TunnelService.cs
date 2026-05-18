@@ -168,6 +168,27 @@ namespace PocketMC.Desktop.Features.Tunnel
                 };
             }
 
+            bool isSimpleVoiceChat = IsSimpleVoiceChatRequest(request);
+            if (isSimpleVoiceChat)
+            {
+                TunnelResolutionResult? simpleVoiceChatResult =
+                    await ResolveExistingSimpleVoiceChatTunnelAsync(request, result.Tunnels);
+                if (simpleVoiceChatResult != null)
+                {
+                    bool createCorrectVoiceTunnelAfterWarning =
+                        allowAutoCreate &&
+                        simpleVoiceChatResult.ErrorMessage?.Contains("points to local port", StringComparison.OrdinalIgnoreCase) == true;
+
+                    if (simpleVoiceChatResult.Status == TunnelResolutionResult.TunnelStatus.Found ||
+                        !allowAutoCreate ||
+                        simpleVoiceChatResult.FailureCode != PortFailureCode.PublicReachabilityFailure ||
+                        !createCorrectVoiceTunnelAfterWarning)
+                    {
+                        return simpleVoiceChatResult;
+                    }
+                }
+            }
+
             var matching = PlayitApiClient.FindTunnelForRequest(result.Tunnels, request);
             if (matching != null)
             {
@@ -204,6 +225,30 @@ namespace PocketMC.Desktop.Features.Tunnel
         private async Task<TunnelResolutionResult> AutoCreateTunnelAsync(PortCheckRequest request, IReadOnlyList<TunnelData> existingTunnels)
         {
             bool isSimpleVoiceChat = IsSimpleVoiceChatRequest(request);
+            if (isSimpleVoiceChat)
+            {
+                SimpleVoiceChatTunnelMatch existing =
+                    PlayitApiClient.FindSimpleVoiceChatTunnelStatus(existingTunnels, request.Port, _apiClient.GetAgentId());
+
+                if (existing.Status == SimpleVoiceChatTunnelMatchStatus.FoundReady && existing.Tunnel != null)
+                {
+                    return Found(existing.Tunnel, existingTunnels);
+                }
+
+                if (existing.Status == SimpleVoiceChatTunnelMatchStatus.FoundDisabled && existing.Tunnel != null)
+                {
+                    TunnelResolutionResult? enabled = await TryEnableSimpleVoiceChatTunnelAsync(existing.Tunnel, request, existingTunnels);
+                    return enabled ?? BuildSimpleVoiceChatStateResult(existing, request, existingTunnels);
+                }
+
+                if (existing.Status == SimpleVoiceChatTunnelMatchStatus.FoundDisabled ||
+                    existing.Status == SimpleVoiceChatTunnelMatchStatus.FoundPendingAllocation ||
+                    existing.Status == SimpleVoiceChatTunnelMatchStatus.FoundDifferentAgent)
+                {
+                    return BuildSimpleVoiceChatStateResult(existing, request, existingTunnels);
+                }
+            }
+
             bool isBedrock = !isSimpleVoiceChat &&
                              (request.Protocol == PortProtocol.Udp ||
                              request.BindingRole is PortBindingRole.BedrockServer
@@ -303,6 +348,148 @@ namespace PocketMC.Desktop.Features.Tunnel
                 Status = TunnelResolutionResult.TunnelStatus.AutoCreated,
                 ErrorMessage = "Tunnel created but public address is not yet available."
             };
+        }
+
+        private async Task<TunnelResolutionResult?> ResolveExistingSimpleVoiceChatTunnelAsync(
+            PortCheckRequest request,
+            IReadOnlyList<TunnelData> tunnels)
+        {
+            SimpleVoiceChatTunnelMatch match =
+                PlayitApiClient.FindSimpleVoiceChatTunnelStatus(tunnels, request.Port, _apiClient.GetAgentId());
+
+            if (match.Status == SimpleVoiceChatTunnelMatchStatus.FoundReady && match.Tunnel != null)
+            {
+                return Found(match.Tunnel, tunnels);
+            }
+
+            if (match.Status == SimpleVoiceChatTunnelMatchStatus.FoundPendingAllocation)
+            {
+                TunnelResolutionResult? polled = await PollPendingSimpleVoiceChatAllocationAsync(request);
+                return polled ?? BuildSimpleVoiceChatStateResult(match, request, tunnels);
+            }
+
+            if (match.Status == SimpleVoiceChatTunnelMatchStatus.Missing)
+            {
+                return null;
+            }
+
+            return BuildSimpleVoiceChatStateResult(match, request, tunnels);
+        }
+
+        private async Task<TunnelResolutionResult?> PollPendingSimpleVoiceChatAllocationAsync(PortCheckRequest request)
+        {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                TunnelListResult refreshed = await _apiClient.GetTunnelsAsync();
+                if (!refreshed.Success)
+                {
+                    continue;
+                }
+
+                SimpleVoiceChatTunnelMatch match =
+                    PlayitApiClient.FindSimpleVoiceChatTunnelStatus(refreshed.Tunnels, request.Port, _apiClient.GetAgentId());
+                if (match.Status == SimpleVoiceChatTunnelMatchStatus.FoundReady && match.Tunnel != null)
+                {
+                    return Found(match.Tunnel, refreshed.Tunnels);
+                }
+
+                if (match.Status != SimpleVoiceChatTunnelMatchStatus.FoundPendingAllocation)
+                {
+                    return BuildSimpleVoiceChatStateResult(match, request, refreshed.Tunnels);
+                }
+            }
+
+            return null;
+        }
+
+        private static TunnelResolutionResult Found(TunnelData tunnel, IReadOnlyList<TunnelData> existingTunnels)
+        {
+            return new TunnelResolutionResult
+            {
+                Status = TunnelResolutionResult.TunnelStatus.Found,
+                PublicAddress = tunnel.PublicAddress,
+                NumericAddress = tunnel.NumericAddress,
+                TunnelId = tunnel.Id,
+                ExistingTunnels = existingTunnels
+            };
+        }
+
+        private static TunnelResolutionResult BuildSimpleVoiceChatStateResult(
+            SimpleVoiceChatTunnelMatch match,
+            PortCheckRequest request,
+            IReadOnlyList<TunnelData> existingTunnels)
+        {
+            string message = match.Status switch
+            {
+                SimpleVoiceChatTunnelMatchStatus.FoundDisabled =>
+                    $"A Simple Voice Chat Playit tunnel exists for port {request.Port}, but it is disabled.",
+                SimpleVoiceChatTunnelMatchStatus.FoundPendingAllocation =>
+                    $"A Simple Voice Chat Playit tunnel exists for port {request.Port}, but its public address is still pending.",
+                SimpleVoiceChatTunnelMatchStatus.FoundWrongPort =>
+                    $"A Simple Voice Chat Playit tunnel exists, but it points to local port {match.Tunnel?.Port} instead of {request.Port}.",
+                SimpleVoiceChatTunnelMatchStatus.FoundDifferentAgent =>
+                    "A Simple Voice Chat Playit tunnel exists for this port, but it belongs to a different Playit agent.",
+                SimpleVoiceChatTunnelMatchStatus.Missing =>
+                    $"No Simple Voice Chat Playit tunnel exists for port {request.Port}.",
+                _ => $"Simple Voice Chat tunnel is not ready for port {request.Port}."
+            };
+
+            return new TunnelResolutionResult
+            {
+                Status = TunnelResolutionResult.TunnelStatus.Error,
+                ErrorMessage = message,
+                FailureCode = PortFailureCode.PublicReachabilityFailure,
+                ExistingTunnels = existingTunnels
+            };
+        }
+
+        private async Task<TunnelResolutionResult?> TryEnableSimpleVoiceChatTunnelAsync(
+            TunnelData tunnel,
+            PortCheckRequest request,
+            IReadOnlyList<TunnelData> existingTunnels)
+        {
+            if (string.IsNullOrWhiteSpace(tunnel.Id))
+            {
+                return null;
+            }
+
+            TunnelActionResult enableResult = await _apiClient.EnableTunnelAsync(tunnel.Id, enabled: true);
+            if (!enableResult.Success)
+            {
+                return new TunnelResolutionResult
+                {
+                    Status = TunnelResolutionResult.TunnelStatus.Error,
+                    ErrorMessage = $"A disabled Simple Voice Chat tunnel exists, but PocketMC could not enable it: {enableResult.ErrorMessage}",
+                    FailureCode = PortFailureCode.PublicReachabilityFailure,
+                    ExistingTunnels = existingTunnels
+                };
+            }
+
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                TunnelListResult refreshed = await _apiClient.GetTunnelsAsync();
+                if (!refreshed.Success)
+                {
+                    continue;
+                }
+
+                SimpleVoiceChatTunnelMatch match =
+                    PlayitApiClient.FindSimpleVoiceChatTunnelStatus(refreshed.Tunnels, request.Port, _apiClient.GetAgentId());
+                if (match.Status == SimpleVoiceChatTunnelMatchStatus.FoundReady && match.Tunnel != null)
+                {
+                    return Found(match.Tunnel, refreshed.Tunnels);
+                }
+
+                if (match.Status == SimpleVoiceChatTunnelMatchStatus.FoundPendingAllocation)
+                {
+                    TunnelResolutionResult? polled = await PollPendingSimpleVoiceChatAllocationAsync(request);
+                    return polled ?? BuildSimpleVoiceChatStateResult(match, request, refreshed.Tunnels);
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
