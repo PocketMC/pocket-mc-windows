@@ -5,6 +5,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
+using PocketMC.Desktop.Features.Shell.Native;
 using Wpf.Ui.Controls;
 
 namespace PocketMC.Desktop.Features.Shell
@@ -14,6 +15,7 @@ namespace PocketMC.Desktop.Features.Shell
         private const string SolidDarkFallback = "#FF242424";
         private const string AcrylicActiveTint = "#CC202020";
         private const string MicaActiveTint = "#B8202020";
+        private const string BlurActiveTint = "#D0202020";
         private const string SolidLightFallback = "#FFF7F7F7";
         private const string TransparentTint = "#00FFFFFF";
         private const int DwmUseImmersiveDarkMode = 20;
@@ -21,7 +23,9 @@ namespace PocketMC.Desktop.Features.Shell
 
         private readonly ApplicationState _applicationState;
         private FluentWindow? _boundWindow;
+        private IntPtr _boundHwnd;
         private bool _isWindowActive = true;
+        private bool _isNativeBlurActive;
 
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
@@ -34,6 +38,20 @@ namespace PocketMC.Desktop.Features.Shell
         public void Attach(FluentWindow window)
         {
             _boundWindow = window;
+
+            // Capture the HWND once the window has a valid handle.
+            if (window.IsLoaded)
+            {
+                _boundHwnd = new WindowInteropHelper(window).Handle;
+            }
+            else
+            {
+                window.Loaded += (_, _) =>
+                {
+                    _boundHwnd = new WindowInteropHelper(window).Handle;
+                };
+            }
+
             ApplyTheme();
             RequestMicaUpdate();
         }
@@ -58,36 +76,63 @@ namespace PocketMC.Desktop.Features.Shell
 
                 if (!_isWindowActive)
                 {
+                    DisableNativeBlurIfActive();
                     ApplySolidFallback(window, SolidDarkFallback);
                     return;
                 }
 
                 if (backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase))
                 {
+                    DisableNativeBlurIfActive();
                     window.WindowBackdropType = WindowBackdropType.None;
                     window.Background = CreateBrush(SolidLightFallback);
                     SetTintLayer(window, TransparentTint);
                     return;
                 }
 
-                if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
-                    Environment.OSVersion.Version.Build >= 22000)
+                // Explicit Blur selection — works on all OS versions.
+                if (backdrop.Equals("Blur", StringComparison.OrdinalIgnoreCase))
                 {
-                    window.WindowBackdropType = WindowBackdropType.Mica;
-                    window.Background = Brushes.Transparent;
-                    SetTintLayer(window, MicaActiveTint);
+                    ApplyNativeBlur(window);
                     return;
                 }
 
-                if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase) &&
-                    Environment.OSVersion.Version.Build >= 22000)
+                // Mica — Windows 11 only; fallback to native blur on Windows 10.
+                if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase))
                 {
-                    window.WindowBackdropType = WindowBackdropType.Acrylic;
-                    window.Background = Brushes.Transparent;
-                    SetTintLayer(window, AcrylicActiveTint);
+                    if (Environment.OSVersion.Version.Build >= 22000)
+                    {
+                        DisableNativeBlurIfActive();
+                        window.WindowBackdropType = WindowBackdropType.Mica;
+                        window.Background = Brushes.Transparent;
+                        SetTintLayer(window, MicaActiveTint);
+                        return;
+                    }
+
+                    // Windows 10: Mica not supported — use native blur instead of broken overlay.
+                    ApplyNativeBlur(window);
                     return;
                 }
 
+                // Acrylic — Windows 11 only; fallback to native blur on Windows 10.
+                if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (Environment.OSVersion.Version.Build >= 22000)
+                    {
+                        DisableNativeBlurIfActive();
+                        window.WindowBackdropType = WindowBackdropType.Acrylic;
+                        window.Background = Brushes.Transparent;
+                        SetTintLayer(window, AcrylicActiveTint);
+                        return;
+                    }
+
+                    // Windows 10: Acrylic not supported — use native blur instead of broken overlay.
+                    ApplyNativeBlur(window);
+                    return;
+                }
+
+                // "None" / Solid Dark or any unrecognised value.
+                DisableNativeBlurIfActive();
                 ApplySolidFallback(window, SolidDarkFallback);
             }
             catch
@@ -131,6 +176,35 @@ namespace PocketMC.Desktop.Features.Shell
         {
             _isWindowActive = isActive;
             RequestMicaUpdate();
+        }
+
+        /// <summary>
+        /// Applies native Windows 10 blur using SetWindowCompositionAttribute,
+        /// sets the window background to transparent, and applies the dark tint layer.
+        /// </summary>
+        private void ApplyNativeBlur(FluentWindow window)
+        {
+            window.WindowBackdropType = WindowBackdropType.None;
+            window.Background = Brushes.Transparent;
+            SetTintLayer(window, BlurActiveTint);
+
+            if (_boundHwnd != IntPtr.Zero)
+            {
+                Windows10Blur.Enable(_boundHwnd);
+                _isNativeBlurActive = true;
+            }
+        }
+
+        /// <summary>
+        /// Disables native blur if it is currently active. Safe to call when blur is not active.
+        /// </summary>
+        private void DisableNativeBlurIfActive()
+        {
+            if (_isNativeBlurActive && _boundHwnd != IntPtr.Zero)
+            {
+                Windows10Blur.Disable(_boundHwnd);
+                _isNativeBlurActive = false;
+            }
         }
 
         private static void ApplyDwmDarkMode(FluentWindow window)
@@ -189,6 +263,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         public void Dispose()
         {
+            DisableNativeBlurIfActive();
         }
     }
 }
