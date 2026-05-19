@@ -70,6 +70,11 @@ namespace PocketMC.Desktop.Features.Dashboard
         {
             try
             {
+                if (vm.IsRunning) return;
+
+                vm.UpdateState(ServerState.SettingUp);
+                onStarted(vm);
+
                 var agentState = await _agentProvisioning.GetConnectionStateAsync();
                 if (agentState != AgentConnectionState.Connected)
                 {
@@ -81,6 +86,8 @@ namespace PocketMC.Desktop.Features.Dashboard
                     var dialogResult = await dialog.WaitForResultAsync();
                     if (!dialogResult)
                     {
+                        vm.UpdateState(ServerState.Stopped);
+                        onStarted(vm);
                         return;
                     }
                 }
@@ -92,11 +99,18 @@ namespace PocketMC.Desktop.Features.Dashboard
                     var result = await _dialogService.ShowDialogAsync("Low Memory",
                         $"Your system only has {availableMb}MB of available RAM. Starting this server ({requiredMb}MB) might cause significant lag or crashes.\n\nContinue anyway?",
                         DialogType.Warning, true);
-                    if (result != DialogResult.Yes) return;
+                    if (result != DialogResult.Yes)
+                    {
+                        vm.UpdateState(ServerState.Stopped);
+                        onStarted(vm);
+                        return;
+                    }
                 }
 
                 if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm, isBeforeLaunch: true))
                 {
+                    vm.UpdateState(ServerState.Stopped);
+                    onStarted(vm);
                     return;
                 }
 
@@ -208,6 +222,10 @@ namespace PocketMC.Desktop.Features.Dashboard
         {
             try
             {
+                var previousState = vm.StatusText.Contains("Online") ? ServerState.Online : ServerState.Starting;
+                vm.UpdateState(ServerState.SettingUp);
+                onStarted(vm);
+
                 var agentState = await _agentProvisioning.GetConnectionStateAsync();
                 if (agentState != AgentConnectionState.Connected)
                 {
@@ -219,16 +237,19 @@ namespace PocketMC.Desktop.Features.Dashboard
                     var dialogResult = await dialog.WaitForResultAsync();
                     if (!dialogResult)
                     {
+                        vm.UpdateState(previousState);
+                        onStarted(vm);
                         return;
                     }
                 }
 
                 if (!await _tunnelOrchestrator.EnsureSimpleVoiceChatBeforeStartAsync(vm, isBeforeLaunch: true))
                 {
+                    vm.UpdateState(previousState);
+                    onStarted(vm);
                     return;
                 }
 
-                vm.UpdateState(ServerState.Stopping);
                 await _lifecycleService.RestartAsync(vm.Id);
                 vm.ClearPortIssue();
                 onStarted(vm);

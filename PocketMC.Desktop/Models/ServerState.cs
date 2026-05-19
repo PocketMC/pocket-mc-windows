@@ -4,6 +4,7 @@ namespace PocketMC.Desktop.Models
     {
         Stopped,
         Installing,
+        SettingUp,
         Starting,
         Online,
         Stopping,
