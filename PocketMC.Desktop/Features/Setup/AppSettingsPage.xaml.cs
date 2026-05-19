@@ -84,12 +84,11 @@ namespace PocketMC.Desktop.Features.Setup
             
             // Setup Backdrop Combo
             BackdropCombo.Items.Clear();
-            if (WallpaperMicaService.IsWindows11OrLater)
+            if (Environment.OSVersion.Version.Build >= 22000)
             {
                 BackdropCombo.Items.Add(new ComboBoxItem { Content = "Mica (Windows 11)", Tag = "Mica" });
+                BackdropCombo.Items.Add(new ComboBoxItem { Content = "Acrylic", Tag = "Acrylic" });
             }
-            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Acrylic", Tag = "Acrylic" });
-            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Blur (Wallpaper)", Tag = "Blur" });
             BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Dark (None)", Tag = "None" });
             BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Light (None)", Tag = "Light" });
 

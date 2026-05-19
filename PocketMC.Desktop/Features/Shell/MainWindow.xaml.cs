@@ -51,7 +51,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         ApplyDynamicWindowSize();
 
         if (visualService is ShellVisualService concreteVisual)
-            concreteVisual.Attach(this, MicaFallbackBackground);
+            concreteVisual.Attach(this);
 
         RootNavigation.SetServiceProvider(_serviceProvider);
         RootNavigation.Navigating += OnNavigating;

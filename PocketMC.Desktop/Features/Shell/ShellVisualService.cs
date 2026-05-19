@@ -17,7 +17,6 @@ namespace PocketMC.Desktop.Features.Shell
     {
         private readonly ApplicationState _applicationState;
         private FluentWindow? _boundWindow;
-        private System.Windows.Controls.Image? _micaFallbackImage;
 
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
@@ -27,35 +26,27 @@ namespace PocketMC.Desktop.Features.Shell
             _applicationState = applicationState;
         }
 
-        public void Attach(FluentWindow window, System.Windows.Controls.Image micaFallbackImage)
+        public void Attach(FluentWindow window)
         {
             _boundWindow = window;
-            _micaFallbackImage = micaFallbackImage;
             ApplyTheme();
         }
 
         public void RequestMicaUpdate()
         {
             if (_boundWindow == null) return;
-            if (_micaFallbackImage != null) _micaFallbackImage.Visibility = Visibility.Collapsed;
 
             ApplyTheme(); // Apply theme resources first
 
             string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 
-            if (backdrop == "Mica" && WallpaperMicaService.IsWindows11OrLater)
+            if (backdrop == "Mica" && Environment.OSVersion.Version.Build >= 22000)
             {
                 _boundWindow.WindowBackdropType = WindowBackdropType.Mica;
             }
-            else if (backdrop == "Acrylic")
+            else if (backdrop == "Acrylic" && Environment.OSVersion.Version.Build >= 22000)
             {
                 _boundWindow.WindowBackdropType = WindowBackdropType.Acrylic;
-            }
-            else if (backdrop == "Blur")
-            {
-                // Use custom wallpaper fallback to keep it active when unfocused
-                _boundWindow.WindowBackdropType = WindowBackdropType.None;
-                ApplyWallpaperFallback();
             }
             else
             {
@@ -69,37 +60,6 @@ namespace PocketMC.Desktop.Features.Shell
                 int isDark = 1;
                 DwmSetWindowAttribute(helper.Handle, 20, ref isDark, sizeof(int)); // 20 is DWMWA_USE_IMMERSIVE_DARK_MODE
             }
-        }
-
-        private void ApplyWallpaperFallback()
-        {
-            if (_boundWindow == null || _micaFallbackImage == null) return;
-
-            var w = (int)Math.Max(_boundWindow.ActualWidth, SystemParameters.PrimaryScreenWidth);
-            var h = (int)Math.Max(_boundWindow.ActualHeight, SystemParameters.PrimaryScreenHeight);
-
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                try
-                {
-                    var bg = WallpaperMicaService.CreateMicaBackground(
-                        targetWidth: w,
-                        targetHeight: h,
-                        blurRadius: 120, // Increased by 50% for stronger effect
-                        tintOpacity: 0.82,
-                        tintColor: Color.FromRgb(32, 32, 32));
-
-                    _boundWindow.Dispatcher.Invoke(() =>
-                    {
-                        if (bg != null)
-                        {
-                            _micaFallbackImage.Source = bg;
-                            _micaFallbackImage.Visibility = Visibility.Visible;
-                        }
-                    });
-                }
-                catch { /* Ignore fallback failures */ }
-            });
         }
 
         public void ApplyTheme(string theme = "Dark")

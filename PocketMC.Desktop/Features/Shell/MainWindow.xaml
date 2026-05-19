@@ -19,13 +19,6 @@
         Loaded="Window_Loaded">
 
     <Grid>
-        <!-- LAYER 0: Win10 fallback Mica background (hidden on Win11) -->
-        <Image x:Name="MicaFallbackBackground"
-               Stretch="UniformToFill"
-               RenderOptions.BitmapScalingMode="HighQuality"
-               IsHitTestVisible="False"
-               Visibility="Collapsed"/>
-
         <!-- TRAY ICON -->
         <tb:TaskbarIcon x:Name="AppTrayIcon"
                         IconSource="pack://application:,,,/icon.ico"
