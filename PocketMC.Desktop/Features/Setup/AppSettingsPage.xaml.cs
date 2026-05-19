@@ -89,8 +89,9 @@ namespace PocketMC.Desktop.Features.Setup
                 BackdropCombo.Items.Add(new ComboBoxItem { Content = "Mica (Windows 11)", Tag = "Mica" });
                 BackdropCombo.Items.Add(new ComboBoxItem { Content = "Acrylic", Tag = "Acrylic" });
             }
-            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Dark (None)", Tag = "None" });
-            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Light (None)", Tag = "Light" });
+            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Wallpaper Blur", Tag = "FakeMica" });
+            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Dark", Tag = "Dark" });
+            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Light", Tag = "Light" });
 
             string savedBackdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
             foreach (ComboBoxItem item in BackdropCombo.Items)

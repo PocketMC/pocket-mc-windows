@@ -20,6 +20,7 @@ namespace PocketMC.Desktop.Features.Shell
         private const int DwmUseImmersiveDarkModeBefore20H1 = 19;
 
         private readonly ApplicationState _applicationState;
+        private readonly WallpaperMicaService _wallpaperMicaService;
         private FluentWindow? _boundWindow;
         private bool _isWindowActive = true;
 
@@ -29,6 +30,7 @@ namespace PocketMC.Desktop.Features.Shell
         public ShellVisualService(ApplicationState applicationState)
         {
             _applicationState = applicationState;
+            _wallpaperMicaService = new WallpaperMicaService();
         }
 
         public void Attach(FluentWindow window)
@@ -58,17 +60,32 @@ namespace PocketMC.Desktop.Features.Shell
 
                 if (!_isWindowActive)
                 {
+                    HideFakeMicaLayer(window);
                     ApplySolidFallback(window, SolidDarkFallback);
                     return;
                 }
 
                 if (backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase))
                 {
+                    HideFakeMicaLayer(window);
                     window.WindowBackdropType = WindowBackdropType.None;
                     window.Background = CreateBrush(SolidLightFallback);
                     SetTintLayer(window, TransparentTint);
                     return;
                 }
+
+                if (backdrop.Equals("FakeMica", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Fake Mica: use wallpaper-blur background — works on Win10 + Win11
+                    window.WindowBackdropType = WindowBackdropType.None;
+                    window.Background = CreateBrush("#FF1A1A1A");
+                    SetTintLayer(window, TransparentTint);
+                    ApplyFakeMicaLayer(window);
+                    return;
+                }
+
+                // For native Mica/Acrylic, hide the fake mica layer
+                HideFakeMicaLayer(window);
 
                 if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
                     Environment.OSVersion.Version.Build >= 22000)
@@ -133,6 +150,44 @@ namespace PocketMC.Desktop.Features.Shell
             RequestMicaUpdate();
         }
 
+        // ── Fake Mica Helpers ──────────────────────────────────────────
+
+        private void ApplyFakeMicaLayer(FluentWindow window)
+        {
+            try
+            {
+                var imageElement = window.FindName("WallpaperBlurLayer") as System.Windows.Controls.Image;
+                var tintOverlay = window.FindName("WallpaperTintOverlay") as Border;
+                if (imageElement == null || tintOverlay == null) return;
+
+                _wallpaperMicaService.Apply(window, imageElement, tintOverlay);
+            }
+            catch
+            {
+                // Non-critical — fall through silently
+            }
+        }
+
+        private void HideFakeMicaLayer(FluentWindow window)
+        {
+            try
+            {
+                var imageElement = window.FindName("WallpaperBlurLayer") as System.Windows.Controls.Image;
+                var tintOverlay = window.FindName("WallpaperTintOverlay") as Border;
+                if (imageElement != null)
+                {
+                    _wallpaperMicaService.Detach(window, imageElement);
+                }
+                if (tintOverlay != null)
+                {
+                    tintOverlay.Visibility = Visibility.Collapsed;
+                }
+            }
+            catch { }
+        }
+
+        // ── Existing Helpers ──────────────────────────────────────────
+
         private static void ApplyDwmDarkMode(FluentWindow window)
         {
             try
@@ -189,6 +244,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         public void Dispose()
         {
+            _wallpaperMicaService.Dispose();
         }
     }
 }

@@ -22,6 +22,15 @@
         Deactivated="Window_Deactivated">
 
     <Grid>
+        <!-- Fake Mica: blurred wallpaper layer (collapsed until FakeMica theme is selected) -->
+        <Image x:Name="WallpaperBlurLayer"
+               Visibility="Collapsed"
+               IsHitTestVisible="False"
+               Stretch="UniformToFill"/>
+        <Border x:Name="WallpaperTintOverlay"
+                Visibility="Collapsed"
+                IsHitTestVisible="False"/>
+
         <Border x:Name="BackdropTintLayer"
                 Background="#CC202020"
                 IsHitTestVisible="False"/>
