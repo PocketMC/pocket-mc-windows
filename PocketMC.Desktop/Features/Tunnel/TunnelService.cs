@@ -17,6 +17,8 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             /// <summary>Tunnel exists — public address is available.</summary>
             Found,
+            /// <summary>Tunnel exists, but Playit has not returned a public address yet.</summary>
+            FoundPendingAllocation,
             /// <summary>Tunnel was automatically created and its address is available.</summary>
             AutoCreated,
             /// <summary>Tunnel limit hit (4/4) — user must delete or change port.</summary>
@@ -68,6 +70,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 TunnelStatus.LimitReached => PortFailureCode.TunnelLimitReached,
                 TunnelStatus.AgentOffline => PortFailureCode.PlayitAgentOffline,
+                TunnelStatus.FoundPendingAllocation => PortFailureCode.PublicReachabilityFailure,
                 TunnelStatus.Error when IsTokenInvalid => PortFailureCode.PlayitTokenInvalid,
                 TunnelStatus.Error when RequiresClaim => PortFailureCode.PlayitClaimRequired,
                 TunnelStatus.Error => PortFailureCode.PublicReachabilityFailure,
@@ -192,6 +195,22 @@ namespace PocketMC.Desktop.Features.Tunnel
             var matching = PlayitApiClient.FindTunnelForRequest(result.Tunnels, request);
             if (matching != null)
             {
+                if (string.IsNullOrWhiteSpace(matching.PublicAddress))
+                {
+                    TunnelResolutionResult? polled = await PollForPublicAddressAsync(
+                        request,
+                        TunnelResolutionResult.TunnelStatus.Found);
+
+                    return polled ?? new TunnelResolutionResult
+                    {
+                        Status = TunnelResolutionResult.TunnelStatus.FoundPendingAllocation,
+                        ErrorMessage = "Playit tunnel exists but no public address is allocated yet.",
+                        FailureCode = PortFailureCode.PublicReachabilityFailure,
+                        TunnelId = matching.Id,
+                        ExistingTunnels = result.Tunnels
+                    };
+                }
+
                 return new TunnelResolutionResult
                 {
                     Status = TunnelResolutionResult.TunnelStatus.Found,
@@ -314,7 +333,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 if (attempt > 0)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(3));
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
                 }
 
                 TunnelListResult refreshed = await _apiClient.GetTunnelsAsync();
@@ -345,9 +364,40 @@ namespace PocketMC.Desktop.Features.Tunnel
 
             return new TunnelResolutionResult
             {
-                Status = TunnelResolutionResult.TunnelStatus.AutoCreated,
-                ErrorMessage = "Tunnel created but public address is not yet available."
+                Status = TunnelResolutionResult.TunnelStatus.FoundPendingAllocation,
+                FailureCode = PortFailureCode.PublicReachabilityFailure,
+                ErrorMessage = "Address pending: Playit tunnel created, waiting for public address allocation."
             };
+        }
+
+        private async Task<TunnelResolutionResult?> PollForPublicAddressAsync(
+            PortCheckRequest request,
+            TunnelResolutionResult.TunnelStatus successStatus)
+        {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                TunnelListResult refreshed = await _apiClient.GetTunnelsAsync();
+                if (!refreshed.Success)
+                {
+                    continue;
+                }
+
+                TunnelData? matching = PlayitApiClient.FindTunnelForRequest(refreshed.Tunnels, request);
+                if (matching != null && !string.IsNullOrWhiteSpace(matching.PublicAddress))
+                {
+                    return new TunnelResolutionResult
+                    {
+                        Status = successStatus,
+                        PublicAddress = matching.PublicAddress,
+                        NumericAddress = matching.NumericAddress,
+                        TunnelId = matching.Id,
+                        ExistingTunnels = refreshed.Tunnels
+                    };
+                }
+            }
+
+            return null;
         }
 
         private async Task<TunnelResolutionResult?> ResolveExistingSimpleVoiceChatTunnelAsync(
@@ -536,13 +586,24 @@ namespace PocketMC.Desktop.Features.Tunnel
                 if (result.Success)
                 {
                     var matching = PlayitApiClient.FindTunnelForRequest(result.Tunnels, request);
-                    if (matching != null)
+                    if (matching != null && !string.IsNullOrWhiteSpace(matching.PublicAddress))
                     {
                         return new TunnelResolutionResult
                         {
                             Status = TunnelResolutionResult.TunnelStatus.Found,
                             PublicAddress = matching.PublicAddress,
                             NumericAddress = matching.NumericAddress,
+                            TunnelId = matching.Id
+                        };
+                    }
+
+                    if (matching != null)
+                    {
+                        lastFailure = new TunnelResolutionResult
+                        {
+                            Status = TunnelResolutionResult.TunnelStatus.FoundPendingAllocation,
+                            FailureCode = PortFailureCode.PublicReachabilityFailure,
+                            ErrorMessage = "Playit tunnel found, waiting for public address allocation.",
                             TunnelId = matching.Id
                         };
                     }

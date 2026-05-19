@@ -13,6 +13,7 @@ using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -21,6 +22,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly DashboardInstanceListVM _listVm;
         private readonly DashboardMetricsVM _metricsVm;
         private readonly DashboardActionsVM _actionsVm;
+        private readonly InstanceTunnelOrchestrator _tunnelOrchestrator;
 
         private readonly InstanceRegistry _registry;
         private readonly IServerLifecycleService _lifecycleService;
@@ -47,6 +49,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             DashboardInstanceListVM listVm,
             DashboardMetricsVM metricsVm,
             DashboardActionsVM actionsVm,
+            InstanceTunnelOrchestrator tunnelOrchestrator,
             InstanceRegistry registry,
             IServerLifecycleService lifecycleService,
             IResourceMonitorService resourceMonitorService,
@@ -57,6 +60,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             _listVm = listVm;
             _metricsVm = metricsVm;
             _actionsVm = actionsVm;
+            _tunnelOrchestrator = tunnelOrchestrator;
             _registry = registry;
             _lifecycleService = lifecycleService;
             _resourceMonitorService = resourceMonitorService;
@@ -79,7 +83,12 @@ namespace PocketMC.Desktop.Features.Dashboard
 
         public void Activate()
         {
-            if (_isActive) { _listVm.LoadInstances(); return; }
+            if (_isActive)
+            {
+                _listVm.LoadInstances();
+                ResolveTunnelsForRunningInstances();
+                return;
+            }
 
             _registry.InstancesChanged += OnInstancesChanged;
             _lifecycleService.OnInstanceStateChanged += OnInstanceStateChanged;
@@ -90,6 +99,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             _isActive = true;
             _listVm.LoadInstances();
             UpdateAllLiveMetrics();
+            ResolveTunnelsForRunningInstances();
         }
 
         public void Deactivate()
@@ -113,7 +123,19 @@ namespace PocketMC.Desktop.Features.Dashboard
                 if (vm == null) return;
                 vm.UpdateState(state);
                 _metricsVm.ApplyLiveMetrics(vm);
+                if (state is ServerState.Starting or ServerState.Online)
+                {
+                    _ = _tunnelOrchestrator.EnsureTunnelFlowAsync(vm);
+                }
             });
+        }
+
+        private void ResolveTunnelsForRunningInstances()
+        {
+            foreach (var vm in Instances.Where(instance => instance.IsRunning))
+            {
+                _ = _tunnelOrchestrator.EnsureTunnelFlowAsync(vm);
+            }
         }
 
         private void OnInstanceMetricsUpdated(object? sender, InstanceMetricsUpdatedEventArgs e)

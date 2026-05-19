@@ -148,7 +148,7 @@ public static class SimpleVoiceChatDetector
                 continue;
             }
 
-            foreach (string line in File.ReadLines(logPath).Reverse().Take(500))
+            foreach (string line in ReadTailLines(logPath, 500).Reverse())
             {
                 Match match = VoiceChatStartedRegex.Match(line);
                 if (match.Success &&
@@ -161,6 +161,37 @@ public static class SimpleVoiceChatDetector
         }
 
         return false;
+    }
+
+    private static IEnumerable<string> ReadTailLines(string logPath, int maxLines)
+    {
+        var tail = new Queue<string>(maxLines);
+
+        try
+        {
+            using var stream = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream);
+
+            while (reader.ReadLine() is { } line)
+            {
+                if (tail.Count == maxLines)
+                {
+                    tail.Dequeue();
+                }
+
+                tail.Enqueue(line);
+            }
+        }
+        catch (IOException)
+        {
+            return Array.Empty<string>();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Array.Empty<string>();
+        }
+
+        return tail;
     }
 
     private static IEnumerable<string> EnumerateLogFallbackPaths(string logsDir)

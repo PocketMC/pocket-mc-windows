@@ -116,9 +116,13 @@ public class InstanceCardViewModel : INotifyPropertyChanged
 
     public void SetTunnelResolving(bool resolving)
     {
-        _tunnelErrorText = null;
-        OnPropertyChanged(nameof(HasTunnelError));
-        OnPropertyChanged(nameof(TunnelErrorText));
+        if (resolving)
+        {
+            _tunnelErrorText = null;
+            OnPropertyChanged(nameof(HasTunnelError));
+            OnPropertyChanged(nameof(TunnelErrorText));
+        }
+
         IsTunnelResolving = resolving;
     }
 

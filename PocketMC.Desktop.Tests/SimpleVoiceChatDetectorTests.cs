@@ -80,6 +80,22 @@ public sealed class SimpleVoiceChatDetectorTests
         Assert.Equal(24460, detection.Port);
     }
 
+    [Fact]
+    public void Detect_LockedLatestLog_DoesNotThrow()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Locked Voice Log", serverType: "Fabric");
+        string logPath = Path.Combine(workspace.GetInstancePath(metadata.Id), "logs", "latest.log");
+        Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+        File.WriteAllText(logPath, "[voicechat] Voice chat server started at port 24460");
+
+        using var lockedLog = new FileStream(logPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+
+        Assert.False(detection.IsDetected);
+    }
+
     [Theory]
     [InlineData("audioplayer.jar")]
     [InlineData("sound-physics-remastered.jar")]

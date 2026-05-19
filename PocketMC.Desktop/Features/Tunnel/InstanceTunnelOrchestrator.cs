@@ -90,8 +90,6 @@ namespace PocketMC.Desktop.Features.Tunnel
                 _dispatcher.Invoke(() =>
                 {
                     vm.SetTunnelResolving(true);
-                    vm.TunnelAddress = null;
-                    vm.BedrockTunnelAddress = null;
                 });
                 EnsurePlayitAgentRunning();
 
@@ -114,6 +112,11 @@ namespace PocketMC.Desktop.Features.Tunnel
                         if (!string.IsNullOrWhiteSpace(resolution.PublicAddress))
                         {
                             SetTunnelAddress(vm, request, resolution.PublicAddress, resolution.NumericAddress, resolution.TunnelId);
+                            _dispatcher.Invoke(() => vm.ClearPortIssue());
+                        }
+                        else
+                        {
+                            _dispatcher.Invoke(() => vm.SetTunnelError("Playit tunnel found, waiting for public address..."));
                         }
                         continue;
                     }
@@ -123,7 +126,20 @@ namespace PocketMC.Desktop.Features.Tunnel
                         if (!string.IsNullOrWhiteSpace(resolution.PublicAddress))
                         {
                             SetTunnelAddress(vm, request, resolution.PublicAddress, resolution.NumericAddress, resolution.TunnelId);
+                            _dispatcher.Invoke(() => vm.ClearPortIssue());
                         }
+                        else
+                        {
+                            _dispatcher.Invoke(() => vm.SetTunnelError(resolution.ErrorMessage ?? "Address pending"));
+                        }
+                        continue;
+                    }
+
+                    if (resolution.Status == TunnelResolutionResult.TunnelStatus.FoundPendingAllocation)
+                    {
+                        _dispatcher.Invoke(() =>
+                            vm.SetTunnelError(resolution.ErrorMessage ?? "Playit tunnel found, waiting for public address..."));
+                        HandleResolutionError(vm.Name, request, resolution);
                         continue;
                     }
 
@@ -131,7 +147,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                     {
                         _dispatcher.Invoke(() =>
                         {
-                            vm.SetTunnelError("Address unavailable");
+                            vm.SetTunnelError(resolution.ErrorMessage ?? "Address unavailable");
                             if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
                             {
                                 AppDialog.ShowError("Tunnel Creation Failed",
@@ -142,6 +158,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                     }
                     else if (resolution.Status == TunnelResolutionResult.TunnelStatus.AgentOffline)
                     {
+                        _dispatcher.Invoke(() =>
+                            vm.SetTunnelError(resolution.ErrorMessage ?? "Playit agent is not connected."));
                         PortCheckResult? result = resolution.ToPortCheckResult(request);
                         if (result != null)
                         {
@@ -155,7 +173,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                     {
                         _dispatcher.Invoke(() =>
                         {
-                            vm.SetTunnelError("Address unavailable");
+                            vm.SetTunnelError(resolution.ErrorMessage ?? "Address unavailable");
                             if (!string.IsNullOrEmpty(resolution.CreateErrorCode))
                             {
                                 AppDialog.ShowError("Tunnel Creation Failed",
@@ -698,6 +716,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         private void EnsurePlayitAgentRunning()
         {
             if (_playitAgentService.IsRunning) return;
+            if (_playitAgentService.State == PlayitAgentState.Connected) return;
             if (_playitAgentService.State is PlayitAgentState.AwaitingSetupCode or PlayitAgentState.ProvisioningAgent or PlayitAgentState.Starting) return;
             _playitAgentService.Start();
         }

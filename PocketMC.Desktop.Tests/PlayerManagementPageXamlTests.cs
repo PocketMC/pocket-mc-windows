@@ -5,12 +5,7 @@ public sealed class PlayerManagementPageXamlTests
     [Fact]
     public void PlayerLists_StretchRowsToKeepColumnsAligned()
     {
-        string xaml = File.ReadAllText(Path.Combine(
-            AppContext.BaseDirectory,
-            "..",
-            "..",
-            "..",
-            "..",
+        string xaml = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",
             "Features",
             "Players",

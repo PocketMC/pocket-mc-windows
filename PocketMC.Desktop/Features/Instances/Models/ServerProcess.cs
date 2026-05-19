@@ -93,6 +93,7 @@ public class ServerProcess : IDisposable
 
         _serverType = meta.ServerType;
         WorkingDirectory = workingDir;
+        CloseSessionLog();
         InitializeSessionLog(workingDir);
         CleanSessionLock(workingDir);
 
@@ -123,8 +124,7 @@ public class ServerProcess : IDisposable
         }
         catch
         {
-            _sessionLogWriter?.Dispose();
-            _sessionLogWriter = null;
+            CloseSessionLog();
             throw;
         }
     }
@@ -185,6 +185,7 @@ public class ServerProcess : IDisposable
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to force-kill after timeout."); }
         }
         SetState(ServerState.Stopped);
+        CloseSessionLog();
     }
 
     private async Task<bool> TryStopViaRconAsync(string serverDir)
@@ -226,6 +227,7 @@ public class ServerProcess : IDisposable
             _intentionalStop = true;
             try { _process.Kill(entireProcessTree: true); }
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to kill process."); }
+            CloseSessionLog();
             SetState(ServerState.Stopped);
         }
     }
@@ -357,7 +359,15 @@ public class ServerProcess : IDisposable
             OnServerCrashed?.Invoke(CrashContext!);
         }
         else SetState(ServerState.Stopped);
+        CloseSessionLog();
         OnExited?.Invoke(exitCode);
+    }
+
+    private void CloseSessionLog()
+    {
+        try { _sessionLogWriter?.Dispose(); }
+        catch { }
+        finally { _sessionLogWriter = null; }
     }
 
     private void SetState(ServerState newState)
@@ -385,8 +395,7 @@ public class ServerProcess : IDisposable
         if (!_disposed)
         {
             _disposed = true;
-            _sessionLogWriter?.Dispose();
-            _sessionLogWriter = null;
+            CloseSessionLog();
             Kill();
             _process?.Dispose();
         }

@@ -5,12 +5,7 @@ public sealed class AppDialogWindowXamlTests
     [Fact]
     public void DialogWindow_OverridesFluentWindowDefaultMinimumHeight()
     {
-        string xaml = File.ReadAllText(Path.Combine(
-            AppContext.BaseDirectory,
-            "..",
-            "..",
-            "..",
-            "..",
+        string xaml = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",
             "Infrastructure",
             "AppDialogWindow.xaml"));

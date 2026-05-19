@@ -213,6 +213,9 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         [JsonPropertyName("details")]
         public PlayitTunnelOriginDetails? Details { get; set; }
+
+        [JsonPropertyName("data")]
+        public PlayitTunnelOriginDetails? Data { get; set; }
     }
 
     internal sealed class PlayitTunnelOriginDetails
@@ -222,6 +225,9 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         [JsonPropertyName("config_data")]
         public PlayitAgentTunnelConfig? ConfigData { get; set; }
+
+        [JsonPropertyName("config")]
+        public PlayitAgentTunnelConfig? Config { get; set; }
     }
 
     internal sealed class PlayitAgentTunnelConfig
@@ -368,6 +374,21 @@ namespace PocketMC.Desktop.Features.Tunnel
                     .Cast<TunnelData>()
                     .ToList()
                     ?? new List<TunnelData>();
+
+                foreach (TunnelData tunnel in normalizedTunnels)
+                {
+                    _logger.LogDebug(
+                        "Playit tunnel normalized: Id={TunnelId}, Name={TunnelName}, Type={TunnelType}, LocalPort={LocalPort}, Protocol={Protocol}, Enabled={Enabled}, HasPublicAddress={HasPublicAddress}, HasAgentOrigin={HasAgentOrigin}, HasAgentId={HasAgentId}",
+                        tunnel.Id,
+                        tunnel.Name,
+                        tunnel.TunnelType,
+                        tunnel.Port,
+                        tunnel.Protocol,
+                        tunnel.IsEnabled,
+                        !string.IsNullOrWhiteSpace(tunnel.PublicAddress),
+                        tunnel.HasAgentOrigin,
+                        !string.IsNullOrWhiteSpace(tunnel.AgentId));
+                }
 
                 return new TunnelListResult
                 {
@@ -621,23 +642,48 @@ namespace PocketMC.Desktop.Features.Tunnel
                 Protocol = InferProtocol(tunnel.TunnelType),
                 IsEnabled = tunnel.UserEnabled,
                 HasAgentOrigin = tunnel.Origin?.Type == "agent",
-                AgentId = tunnel.Origin?.Details?.AgentId,
+                AgentId = ExtractAgentId(tunnel.Origin),
                 LocalIp = ExtractLocalIp(tunnel.Origin)
             };
         }
 
         private static int? ExtractLocalPort(PlayitTunnelOriginV1? origin)
         {
-            if (origin?.Details?.ConfigData?.Fields == null)
+            return FindPortByFieldName(origin, IsExactLocalPortField)
+                ?? FindPortByFieldName(origin, IsAcceptedPortField)
+                ?? FindPortByFieldName(origin, fieldName => fieldName.Contains("port", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string? ExtractLocalIp(PlayitTunnelOriginV1? origin)
+        {
+            foreach (PlayitAgentTunnelField field in EnumerateOriginFields(origin))
             {
-                return null;
+                if (string.Equals(field.Name, "local_ip", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(field.Name, "local_address", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(field.Name, "local-ip", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(field.Name, "localAddress", StringComparison.OrdinalIgnoreCase))
+                {
+                    return field.Value;
+                }
             }
 
-            foreach (PlayitAgentTunnelField field in origin.Details.ConfigData.Fields)
+            return null;
+        }
+
+        private static string? ExtractAgentId(PlayitTunnelOriginV1? origin)
+        {
+            return string.IsNullOrWhiteSpace(origin?.Details?.AgentId)
+                ? origin?.Data?.AgentId
+                : origin.Details.AgentId;
+        }
+
+        private static int? FindPortByFieldName(PlayitTunnelOriginV1? origin, Func<string, bool> predicate)
+        {
+            foreach (PlayitAgentTunnelField field in EnumerateOriginFields(origin))
             {
-                if ((field.Name.Contains("port", StringComparison.OrdinalIgnoreCase) ||
-                     string.Equals(field.Name, "local_port", StringComparison.OrdinalIgnoreCase)) &&
-                    int.TryParse(field.Value, out int parsedPort))
+                if (predicate(field.Name) &&
+                    int.TryParse(field.Value, out int parsedPort) &&
+                    parsedPort is >= 1 and <= 65535)
                 {
                     return parsedPort;
                 }
@@ -646,23 +692,43 @@ namespace PocketMC.Desktop.Features.Tunnel
             return null;
         }
 
-        private static string? ExtractLocalIp(PlayitTunnelOriginV1? origin)
+        private static bool IsExactLocalPortField(string fieldName)
         {
-            if (origin?.Details?.ConfigData?.Fields == null)
+            return string.Equals(fieldName, "local_port", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsAcceptedPortField(string fieldName)
+        {
+            return string.Equals(fieldName, "port", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(fieldName, "local-port", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(fieldName, "localPort", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static IEnumerable<PlayitAgentTunnelField> EnumerateOriginFields(PlayitTunnelOriginV1? origin)
+        {
+            if (origin == null)
             {
-                return null;
+                yield break;
             }
 
-            foreach (PlayitAgentTunnelField field in origin.Details.ConfigData.Fields)
+            foreach (PlayitTunnelOriginDetails? container in new[] { origin.Details, origin.Data })
             {
-                if (string.Equals(field.Name, "local_ip", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(field.Name, "local_address", StringComparison.OrdinalIgnoreCase))
+                if (container?.ConfigData?.Fields != null)
                 {
-                    return field.Value;
+                    foreach (PlayitAgentTunnelField field in container.ConfigData.Fields)
+                    {
+                        yield return field;
+                    }
+                }
+
+                if (container?.Config?.Fields != null)
+                {
+                    foreach (PlayitAgentTunnelField field in container.Config.Fields)
+                    {
+                        yield return field;
+                    }
                 }
             }
-
-            return null;
         }
 
         private static string? ExtractPublicAddress(PlayitAccountTunnelV1 tunnel)
@@ -697,36 +763,106 @@ namespace PocketMC.Desktop.Features.Tunnel
             displayAddress = null;
             JsonElement value = address.Value;
 
+            if (value.ValueKind == JsonValueKind.String)
+            {
+                displayAddress = value.GetString();
+                return true;
+            }
+
+            if (value.ValueKind != JsonValueKind.Object)
+            {
+                return false;
+            }
+
             switch (address.Type)
             {
                 case "domain":
                 case "auto":
-                    if (value.TryGetProperty("address", out JsonElement hostname))
-                    {
-                        displayAddress = hostname.GetString();
-                    }
+                    displayAddress = BuildDisplayAddress(value);
                     return true;
 
                 case "addr4":
                 case "addr6":
-                    if (value.TryGetProperty("address", out JsonElement socketAddr))
-                    {
-                        displayAddress = socketAddr.GetString();
-                    }
+                    displayAddress = BuildDisplayAddress(value);
                     return true;
 
                 case "ip4":
                 case "ip6":
-                    if (value.TryGetProperty("address", out JsonElement ip) &&
-                        value.TryGetProperty("default_port", out JsonElement port))
-                    {
-                        displayAddress = $"{ip.GetString()}:{port.GetInt32()}";
-                    }
+                    displayAddress = BuildDisplayAddress(value);
                     return true;
 
                 default:
-                    return false;
+                    displayAddress = BuildDisplayAddress(value);
+                    return !string.IsNullOrWhiteSpace(displayAddress);
             }
+        }
+
+        private static string? BuildDisplayAddress(JsonElement value)
+        {
+            string? host = GetStringProperty(value, "address")
+                ?? GetStringProperty(value, "host")
+                ?? GetStringProperty(value, "hostname")
+                ?? GetStringProperty(value, "domain")
+                ?? GetStringProperty(value, "ip");
+
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                return null;
+            }
+
+            string? port = GetStringProperty(value, "port")
+                ?? GetStringProperty(value, "default_port");
+
+            if (string.IsNullOrWhiteSpace(port) || AddressAlreadyHasPort(host))
+            {
+                return host;
+            }
+
+            return $"{host}:{port}";
+        }
+
+        private static string? GetStringProperty(JsonElement value, string propertyName)
+        {
+            if (!value.TryGetProperty(propertyName, out JsonElement property))
+            {
+                return null;
+            }
+
+            return property.ValueKind switch
+            {
+                JsonValueKind.String => property.GetString(),
+                JsonValueKind.Number when property.TryGetInt32(out int numericValue) => numericValue.ToString(),
+                _ => null
+            };
+        }
+
+        private static bool AddressAlreadyHasPort(string address)
+        {
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                return false;
+            }
+
+            if (address.StartsWith("[", StringComparison.Ordinal))
+            {
+                int closingBracket = address.IndexOf(']');
+                return closingBracket >= 0 &&
+                       closingBracket + 1 < address.Length &&
+                       address[closingBracket + 1] == ':';
+            }
+
+            int lastColon = address.LastIndexOf(':');
+            if (lastColon < 0 || lastColon == address.Length - 1)
+            {
+                return false;
+            }
+
+            if (address.IndexOf(':') != lastColon)
+            {
+                return true;
+            }
+
+            return int.TryParse(address[(lastColon + 1)..], out _);
         }
 
         private static PortProtocol? InferProtocol(string? tunnelType)

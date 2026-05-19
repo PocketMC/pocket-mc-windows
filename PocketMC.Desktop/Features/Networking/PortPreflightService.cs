@@ -319,7 +319,20 @@ public sealed class PortPreflightService
 
     private static void AppendSimpleVoiceChatTarget(List<PreflightTarget> targets, string? serverDir)
     {
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(serverDir);
+        SimpleVoiceChatDetection detection;
+        try
+        {
+            detection = SimpleVoiceChatDetector.Detect(serverDir);
+        }
+        catch (IOException)
+        {
+            return;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return;
+        }
+
         if (!detection.IsDetected)
         {
             return;
