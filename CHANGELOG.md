@@ -1,6 +1,16 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.2`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.3`.
+
+## v1.7.3 - Tunnel Display Fix (#40)
+
+This patch fixes a regression where Playit.gg tunnel IPs were not displaying on server cards despite tunnels being active.
+
+### 🐛 Bug Fixes
+* **Tunnel IP Display**: Fixed tunnel addresses now staying visible while resolving, preventing blank cards during resolution.
+* **API Response Parsing**: Added support for both Playit API response shapes to ensure tunnel data is correctly parsed regardless of API version.
+* **Pending States**: Server cards now show proper pending/error states when tunnels exist but addresses aren't yet available, instead of appearing blank.
+* **Multi-Tunnel Support**: Improved resolution for Java, Bedrock/Geyser, and Simple Voice Chat tunnels with expanded test coverage.
 
 ## v1.7.2 - Simple Voice Chat Tunneling & Networking Refinements
 
