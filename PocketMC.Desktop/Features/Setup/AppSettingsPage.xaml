@@ -68,36 +68,12 @@
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
-                        <!-- Theme Selection -->
-                        <TextBlock Text="Application Theme" FontSize="14" FontWeight="Medium" Margin="0,0,0,0"/>
-                        <TextBlock Text="Select your preferred visual theme." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
-                        <ComboBox x:Name="ThemeCombo" Width="260" HorizontalAlignment="Left" SelectionChanged="ThemeCombo_SelectionChanged">
-                            <ComboBoxItem Content="System Default" Tag="System"/>
-                            <ComboBoxItem Content="Light" Tag="Light"/>
-                            <ComboBoxItem Content="Dark" Tag="Dark"/>
+                        <!-- Backdrop Selection -->
+                        <TextBlock Text="Window Background Theme" FontSize="14" FontWeight="Medium" Margin="0,0,0,0"/>
+                        <TextBlock Text="Select your preferred window background effect." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
+                        <ComboBox x:Name="BackdropCombo" Width="260" HorizontalAlignment="Left" SelectionChanged="BackdropCombo_SelectionChanged">
+                            <!-- Items populated dynamically based on OS version -->
                         </ComboBox>
-
-                        <Separator Margin="0,16" Opacity="0.15"/>
-
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Transparent Mica Effect" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Enable transparent blur (Mica) effect for the window background. Disabling this saves GPU resources but uses a solid dark color." 
-                                           TextWrapping="Wrap" 
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                           FontSize="12" 
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleMica" 
-                                             Grid.Column="1" 
-                                             VerticalAlignment="Center" 
-                                             Checked="ToggleMica_Checked" 
-                                             Unchecked="ToggleMica_Unchecked" />
-                        </Grid>
                     </StackPanel>
                 </ui:CardExpander>
 

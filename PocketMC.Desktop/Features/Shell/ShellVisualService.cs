@@ -19,72 +19,50 @@ namespace PocketMC.Desktop.Features.Shell
         private FluentWindow? _boundWindow;
         private System.Windows.Controls.Image? _micaFallbackImage;
 
-        public bool EnableMicaEffect { get; set; }
-
         public ShellVisualService(ApplicationState applicationState)
         {
             _applicationState = applicationState;
-            SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
         }
 
         public void Attach(FluentWindow window, System.Windows.Controls.Image micaFallbackImage)
         {
             _boundWindow = window;
             _micaFallbackImage = micaFallbackImage;
-            ApplyTheme(_applicationState.Settings.ApplicationTheme);
+            ApplyTheme();
         }
 
         public void RequestMicaUpdate()
         {
             if (_boundWindow == null) return;
+            if (_micaFallbackImage != null) _micaFallbackImage.Visibility = Visibility.Collapsed;
 
-            bool enableMica = _applicationState.Settings.EnableMicaEffect;
-            EnableMicaEffect = enableMica;
+            string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 
-            if (WallpaperMicaService.IsWindows11OrLater)
+            if (backdrop == "Mica" && WallpaperMicaService.IsWindows11OrLater)
             {
-                _boundWindow.WindowBackdropType = enableMica
-                    ? WindowBackdropType.Mica
-                    : WindowBackdropType.None;
+                _boundWindow.WindowBackdropType = WindowBackdropType.Mica;
+            }
+            else if (backdrop == "Acrylic" || backdrop == "Mica")
+            {
+                if (WallpaperMicaService.IsWindows11OrLater)
+                {
+                    _boundWindow.WindowBackdropType = WindowBackdropType.Acrylic;
+                }
+                else
+                {
+                    _boundWindow.WindowBackdropType = WindowBackdropType.None;
+                    ApplyWin10Fallback();
+                }
             }
             else
             {
-                if (enableMica)
-                {
-                    ApplyWin10MicaFallback();
-                }
-                else if (_micaFallbackImage != null)
-                {
-                    _micaFallbackImage.Visibility = Visibility.Collapsed;
-                }
+                _boundWindow.WindowBackdropType = WindowBackdropType.None;
             }
         }
 
-        public void ApplyTheme(string theme)
-        {
-            if (_boundWindow == null) return;
-            
-            if (theme == "Light")
-            {
-                Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(_boundWindow);
-                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
-            }
-            else if (theme == "Dark")
-            {
-                Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(_boundWindow);
-                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
-            }
-            else
-            {
-                Wpf.Ui.Appearance.SystemThemeWatcher.Watch(_boundWindow);
-                Wpf.Ui.Appearance.ApplicationThemeManager.ApplySystemTheme();
-            }
-        }
-
-        private void ApplyWin10MicaFallback()
+        private void ApplyWin10Fallback()
         {
             if (_boundWindow == null || _micaFallbackImage == null) return;
-            if (WallpaperMicaService.IsWindows11OrLater || !_applicationState.Settings.EnableMicaEffect) return;
 
             var w = (int)Math.Max(_boundWindow.ActualWidth, SystemParameters.PrimaryScreenWidth);
             var h = (int)Math.Max(_boundWindow.ActualHeight, SystemParameters.PrimaryScreenHeight);
@@ -96,8 +74,8 @@ namespace PocketMC.Desktop.Features.Shell
                     var bg = WallpaperMicaService.CreateMicaBackground(
                         targetWidth: w,
                         targetHeight: h,
-                        blurRadius: 80,
-                        tintOpacity: 0.78,
+                        blurRadius: 120, // Increased by 50% for stronger effect
+                        tintOpacity: 0.82,
                         tintColor: Color.FromRgb(32, 32, 32));
 
                     _boundWindow.Dispatcher.Invoke(() =>
@@ -113,15 +91,20 @@ namespace PocketMC.Desktop.Features.Shell
             });
         }
 
-        private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+        public void ApplyTheme(string theme = "Dark")
         {
-            if (e.Category == UserPreferenceCategory.Desktop)
-                ApplyWin10MicaFallback();
+            if (_boundWindow == null) return;
+            
+            // Force Dark mode completely as requested
+            if (_boundWindow.IsLoaded)
+            {
+                Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(_boundWindow);
+            }
+            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
         }
 
         public void Dispose()
         {
-            SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         }
     }
 }

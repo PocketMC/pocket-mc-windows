@@ -77,6 +77,9 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        _visualService.ApplyTheme();
+        _visualService.RequestMicaUpdate();
+        
         _startupCoordinator.Start();
         _viewModel.InitializeUpdateCheck();
     }
@@ -250,7 +253,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     }
 
     public void RequestMicaUpdate() => _visualService.RequestMicaUpdate();
-    public void RequestThemeUpdate(string theme) => _visualService.ApplyTheme(theme);
 
     public void ShowRootDirectorySetup()
     {

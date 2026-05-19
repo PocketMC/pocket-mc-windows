@@ -80,18 +80,30 @@ namespace PocketMC.Desktop.Features.Setup
             DisableParentScrollViewer(this);
 
             _isInitializing = true;
-            ToggleMica.IsChecked = _applicationState.Settings.EnableMicaEffect;
             CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
-
-            // Theme setting
-            string savedTheme = _applicationState.Settings.ApplicationTheme ?? "System";
-            foreach (ComboBoxItem item in ThemeCombo.Items)
+            
+            // Setup Backdrop Combo
+            BackdropCombo.Items.Clear();
+            if (WallpaperMicaService.IsWindows11OrLater)
             {
-                if (item.Tag?.ToString() == savedTheme)
+                BackdropCombo.Items.Add(new ComboBoxItem { Content = "Mica (Windows 11)", Tag = "Mica" });
+            }
+            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Acrylic (Blurred)", Tag = "Acrylic" });
+            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Dark (None)", Tag = "None" });
+
+            string savedBackdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
+            foreach (ComboBoxItem item in BackdropCombo.Items)
+            {
+                if (item.Tag?.ToString() == savedBackdrop)
                 {
-                    ThemeCombo.SelectedItem = item;
+                    BackdropCombo.SelectedItem = item;
                     break;
                 }
+            }
+            
+            if (BackdropCombo.SelectedItem == null && BackdropCombo.Items.Count > 0)
+            {
+                BackdropCombo.SelectedIndex = 0;
             }
 
             // Set initial state
@@ -160,43 +172,19 @@ namespace PocketMC.Desktop.Features.Setup
             DependencyHealthList.ItemsSource = items;
         }
 
-        private void ToggleMica_Checked(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
-            UpdateMicaEffect(true);
-        }
-
-        private void ToggleMica_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
-            UpdateMicaEffect(false);
-        }
-
-        private void UpdateMicaEffect(bool enable)
-        {
-            var settings = _applicationState.Settings;
-            settings.EnableMicaEffect = enable;
-            _settingsManager.Save(settings);
-
-            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
-            {
-                mainWin.RequestMicaUpdate();
-            }
-        }
-
-        private void ThemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void BackdropCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isInitializing) return;
 
-            if (ThemeCombo.SelectedItem is ComboBoxItem item && item.Tag is string themeTag)
+            if (BackdropCombo.SelectedItem is ComboBoxItem item && item.Tag is string backdropTag)
             {
                 var settings = _applicationState.Settings;
-                settings.ApplicationTheme = themeTag;
+                settings.WindowBackdrop = backdropTag;
                 _settingsManager.Save(settings);
 
                 if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
                 {
-                    mainWin.RequestThemeUpdate(themeTag);
+                    mainWin.RequestMicaUpdate(); // This will apply the backdrop
                 }
             }
         }

@@ -5,8 +5,7 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
     /// </summary>
     public interface IShellVisualService
     {
-        bool EnableMicaEffect { get; set; }
         void RequestMicaUpdate();
-        void ApplyTheme(string theme);
+        void ApplyTheme(string theme = "Dark");
     }
 }
