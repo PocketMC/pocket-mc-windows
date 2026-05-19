@@ -90,6 +90,7 @@ namespace PocketMC.Desktop.Features.Setup
             }
             BackdropCombo.Items.Add(new ComboBoxItem { Content = "Acrylic (Blurred)", Tag = "Acrylic" });
             BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Dark (None)", Tag = "None" });
+            BackdropCombo.Items.Add(new ComboBoxItem { Content = "Solid Light (None)", Tag = "Light" });
 
             string savedBackdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
             foreach (ComboBoxItem item in BackdropCombo.Items)

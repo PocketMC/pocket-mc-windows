@@ -38,6 +38,8 @@ namespace PocketMC.Desktop.Features.Shell
 
             string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 
+            ApplyTheme(); // Update light/dark state before changing backdrop
+
             if (backdrop == "Mica" && WallpaperMicaService.IsWindows11OrLater)
             {
                 _boundWindow.WindowBackdropType = WindowBackdropType.Mica;
@@ -89,12 +91,20 @@ namespace PocketMC.Desktop.Features.Shell
         {
             if (_boundWindow == null) return;
             
-            // Force Dark mode completely as requested
             if (_boundWindow.IsLoaded)
             {
                 Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(_boundWindow);
             }
-            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+
+            string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
+            if (backdrop == "Light")
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
+            }
+            else
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+            }
         }
 
         public void Dispose()
