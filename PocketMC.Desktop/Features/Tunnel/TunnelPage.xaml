@@ -124,6 +124,13 @@
                                    Click="BtnDisconnect_Click"
                                    Cursor="Hand"
                                    Margin="0,0,8,0"/>
+                        <ui:Button x:Name="BtnDeleteAgent"
+                                   Content="Delete Agent"
+                                   Icon="{ui:SymbolIcon Delete24}"
+                                   Appearance="Secondary"
+                                   Click="BtnDeleteAgent_Click"
+                                   Cursor="Hand"
+                                   Margin="0,0,8,0"/>
                         <ui:Button x:Name="BtnRefresh"
                                    Content="Refresh"
                                    Icon="{ui:SymbolIcon ArrowSync24}"

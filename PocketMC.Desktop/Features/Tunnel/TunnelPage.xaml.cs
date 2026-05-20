@@ -778,6 +778,9 @@ namespace PocketMC.Desktop.Features.Tunnel
 
             BtnDisconnect.IsEnabled = !isDownloading && hasSavedConnection;
 
+            BtnDeleteAgent.Visibility = binaryExists ? Visibility.Visible : Visibility.Collapsed;
+            BtnDeleteAgent.IsEnabled = !isDownloading && !_playitAgentService.IsRunning;
+
             BtnRefresh.IsEnabled = !isDownloading;
         }
 
@@ -845,7 +848,58 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private async void BtnDisconnect_Click(object sender, RoutedEventArgs e)
         {
+            var confirm = await _dialogService.ShowDialogAsync(
+                "Disconnect Playit Agent",
+                "Are you sure you want to disconnect?\n\nThis will completely wipe your local agent secret key and configuration, making this agent unusable.\n\nNote: The old agent will still exist on your playit.gg account. You will need to manually delete it from their website.",
+                PocketMC.Desktop.Core.Interfaces.DialogType.Warning,
+                showCancel: true);
+
+            if (confirm != PocketMC.Desktop.Core.Interfaces.DialogResult.Ok && confirm != PocketMC.Desktop.Core.Interfaces.DialogResult.Yes)
+            {
+                return;
+            }
+
             _playitAgentService.Disconnect();
+            await RefreshStatusAsync();
+        }
+
+        private async void BtnDeleteAgent_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = await _dialogService.ShowDialogAsync(
+                "Delete Agent Binary",
+                "Are you sure you want to delete the playit.exe binary?\n\nThis will remove the executable from the PocketMC folder. You can download it again later.",
+                PocketMC.Desktop.Core.Interfaces.DialogType.Question,
+                showCancel: true);
+
+            if (confirm != PocketMC.Desktop.Core.Interfaces.DialogResult.Ok && confirm != PocketMC.Desktop.Core.Interfaces.DialogResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                string exePath = _applicationState.GetPlayitExecutablePath();
+                if (File.Exists(exePath))
+                {
+                    File.Delete(exePath);
+                }
+                
+                string partialPath = exePath + ".partial";
+                if (File.Exists(partialPath))
+                {
+                    File.Delete(partialPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete Playit agent binary.");
+                await _dialogService.ShowDialogAsync(
+                    "Error",
+                    $"Could not delete the file. Ensure the agent is stopped. \n\n{ex.Message}",
+                    PocketMC.Desktop.Core.Interfaces.DialogType.Error,
+                    showCancel: false);
+            }
+
             await RefreshStatusAsync();
         }
 
