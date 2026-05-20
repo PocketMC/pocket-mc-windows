@@ -181,6 +181,13 @@ namespace PocketMC.Desktop.Features.Settings
             settings ??= new AppSettings();
             settings.AiApiKeys ??= new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             settings.CloudTokens ??= new System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))
+            {
+                if (settings.CloudTokens[key] == null)
+                {
+                    settings.CloudTokens.Remove(key);
+                }
+            }
             settings.UserRemovedJavaVersions ??= new System.Collections.Generic.HashSet<int>();
             settings.CloudBackups ??= new CloudBackupSettings();
             settings.PlayitConfigDirectory ??= Path.Combine(

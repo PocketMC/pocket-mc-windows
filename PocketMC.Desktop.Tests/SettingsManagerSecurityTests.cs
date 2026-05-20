@@ -93,6 +93,24 @@ public sealed class SettingsManagerSecurityTests : IDisposable
         Assert.Equal("Mica", loaded.WindowBackdrop);
     }
 
+    [Fact]
+    public void Load_RemovesNullCloudTokenEntriesFromMalformedSettings()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        File.WriteAllText(settingsPath, """
+        {
+          "CloudTokens": {
+            "GoogleDrive": null
+          }
+        }
+        """);
+
+        AppSettings loaded = new SettingsManager(settingsPath).Load();
+
+        Assert.Empty(loaded.CloudTokens);
+    }
+
     private static string CreateCorruptedProtectedPayload()
     {
         return "dpapi:v1:" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
