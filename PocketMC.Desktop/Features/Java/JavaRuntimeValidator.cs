@@ -60,12 +60,14 @@ namespace PocketMC.Desktop.Features.Java
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(15));
 
+            Task<string> stdOutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
+            Task<string> stdErrTask = process.StandardError.ReadToEndAsync(cts.Token);
             await process.WaitForExitAsync(cts.Token);
+            await Task.WhenAll(stdOutTask, stdErrTask);
 
             if (process.ExitCode != 0)
             {
-                string stdErr = await process.StandardError.ReadToEndAsync();
-                throw new InvalidOperationException($"Java validation failed (Exit Code: {process.ExitCode}): {stdErr}");
+                throw new InvalidOperationException($"Java validation failed (Exit Code: {process.ExitCode}): {stdErrTask.Result}");
             }
         }
     }

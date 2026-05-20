@@ -22,6 +22,17 @@ namespace PocketMC.Desktop.Features.Settings
                 "settings.json");
         }
 
+        public SettingsManager(string settingsFilePath, ILogger<SettingsManager>? logger = null)
+        {
+            if (string.IsNullOrWhiteSpace(settingsFilePath))
+            {
+                throw new ArgumentException("Settings file path cannot be empty.", nameof(settingsFilePath));
+            }
+
+            _logger = logger;
+            _settingsFilePath = settingsFilePath;
+        }
+
         public AppSettings Load()
         {
             if (!File.Exists(_settingsFilePath))
@@ -137,7 +148,6 @@ namespace PocketMC.Desktop.Features.Settings
                     }
                 }
 
-                var content = JsonSerializer.Serialize(normalizedSettings, new JsonSerializerOptions { WriteIndented = true });
                 if (normalizedSettings.CloudTokens != null)
                 {
                     foreach (var kvp in normalizedSettings.CloudTokens)
@@ -157,6 +167,7 @@ namespace PocketMC.Desktop.Features.Settings
                     }
                 }
 
+                var content = JsonSerializer.Serialize(normalizedSettings, new JsonSerializerOptions { WriteIndented = true });
                 FileUtils.AtomicWriteAllText(_settingsFilePath, content);
             }
             finally

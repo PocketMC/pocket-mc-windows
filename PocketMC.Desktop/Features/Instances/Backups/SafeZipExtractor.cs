@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
+using PocketMC.Desktop.Infrastructure.Security;
 
 namespace PocketMC.Desktop.Features.Instances.Backups
 {
@@ -25,8 +26,8 @@ namespace PocketMC.Desktop.Features.Instances.Backups
 
                 foreach (var entry in archive.Entries)
                 {
-                    string destinationPath = Path.GetFullPath(Path.Combine(extractRoot, entry.FullName));
-                    if (!destinationPath.StartsWith(extractRoot, StringComparison.OrdinalIgnoreCase))
+                    string? destinationPath = PathSafety.ValidateContainedPath(extractRoot, entry.FullName);
+                    if (destinationPath == null)
                     {
                         throw new InvalidDataException($"ZIP entry '{entry.FullName}' would extract outside the destination directory.");
                     }

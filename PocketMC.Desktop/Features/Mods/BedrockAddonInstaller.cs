@@ -8,6 +8,9 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Desktop.Infrastructure.Security;
 
 namespace PocketMC.Desktop.Features.Mods;
 
@@ -68,7 +71,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         {
             Directory.CreateDirectory(tempDir);
             _logger.LogInformation("Extracting addon {File} to temp dir {TempDir}.", sourceFilePath, tempDir);
-            await Task.Run(() => ZipFile.ExtractToDirectory(sourceFilePath, tempDir, overwriteFiles: true), ct);
+            await SafeZipExtractor.ExtractAsync(sourceFilePath, tempDir);
 
             var manifests = FindManifests(tempDir);
             if (manifests.Count == 0)
@@ -100,7 +103,13 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
         foreach (var subDir in new[] { BehaviorPacksDir, ResourcePacksDir })
         {
-            string candidate = Path.Combine(serverDir, subDir, addonPathOrId);
+            string packsRoot = Path.Combine(serverDir, subDir);
+            string? candidate = PathSafety.ValidateContainedPath(packsRoot, addonPathOrId);
+            if (candidate == null)
+            {
+                continue;
+            }
+
             if (Directory.Exists(candidate))
             {
                 packDir  = candidate;
@@ -149,11 +158,13 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
         // The pack root dir is the directory that contains this manifest.json.
         string packSourceDir = Path.GetDirectoryName(manifestPath)!;
-        string packName = SanitizeDirName(manifest.Name ?? manifest.Uuid);
+        string packName = BuildPackDirectoryName(manifest);
 
         bool isBehavior = manifest.PackType == PackType.Data;
         string targetSubDir = isBehavior ? BehaviorPacksDir : ResourcePacksDir;
-        string packDestDir  = Path.Combine(serverDir, targetSubDir, packName);
+        string packsRoot = Path.Combine(serverDir, targetSubDir);
+        string packDestDir = PathSafety.ValidateContainedPath(packsRoot, packName)
+            ?? throw new InvalidOperationException($"Invalid Bedrock add-on pack directory name '{packName}'.");
 
         _logger.LogInformation(
             "Installing {Type} pack '{Name}' (uuid={Uuid}) → {Dest}.",
@@ -183,6 +194,8 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
         string uuid = doc["header"]?["uuid"]?.GetValue<string>()
             ?? throw new KeyNotFoundException("manifest.json is missing header.uuid.");
+        if (!Guid.TryParse(uuid, out _))
+            throw new JsonException("manifest.json header.uuid is not a valid UUID.");
 
         // Version is stored as an array e.g. [1, 0, 0]
         string version = "1.0.0";
@@ -251,7 +264,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         entries.Add(newEntry);
 
         var options = new JsonSerializerOptions { WriteIndented = true };
-        File.WriteAllText(jsonFilePath, entries.ToJsonString(options));
+        FileUtils.AtomicWriteAllText(jsonFilePath, entries.ToJsonString(options));
     }
 
     private void RemoveFromWorldJson(string jsonFilePath, string uuid)
@@ -266,7 +279,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
                     entries.RemoveAt(i);
             }
             var options = new JsonSerializerOptions { WriteIndented = true };
-            File.WriteAllText(jsonFilePath, entries.ToJsonString(options));
+            FileUtils.AtomicWriteAllText(jsonFilePath, entries.ToJsonString(options));
             _logger.LogInformation("Removed UUID {Uuid} from {File}.", uuid, Path.GetFileName(jsonFilePath));
         }
         catch (Exception ex)
@@ -346,8 +359,22 @@ public sealed class BedrockAddonInstaller : IAddonManager
             CopyDirectory(subDir, Path.Combine(dest, Path.GetFileName(subDir)));
     }
 
+    private static string BuildPackDirectoryName(ManifestInfo manifest)
+    {
+        string rawName = !string.IsNullOrWhiteSpace(manifest.Name) ? manifest.Name! : manifest.Uuid;
+        string packName = SanitizeDirName(rawName);
+        if (string.IsNullOrWhiteSpace(packName))
+        {
+            throw new InvalidOperationException("Bedrock add-on manifest produced an empty pack directory name.");
+        }
+
+        return packName;
+    }
+
     private static string SanitizeDirName(string name) =>
-        string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).Trim();
+        string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c))
+            .Trim()
+            .TrimEnd('.');
 
     private static int[] ParseVersionParts(string version)
     {
