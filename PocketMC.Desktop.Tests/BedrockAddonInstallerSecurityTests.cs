@@ -91,6 +91,40 @@ public sealed class BedrockAddonInstallerSecurityTests : IDisposable
         Assert.True(File.Exists(canaryPath));
     }
 
+    [Fact]
+    public void ProcessManifestAsync_ValidatesTargetPackRootBeforeCombiningPackName()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Mods",
+            "BedrockAddonInstaller.cs"));
+
+        Assert.Contains("PathSafety.ValidateContainedPath(serverDir, targetSubDir)", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("string packsRoot = Path.Combine(serverDir, targetSubDir);", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TryReadUuidAsync_OnlySuppressesExpectedReadAndJsonFailures()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Mods",
+            "BedrockAddonInstaller.cs"));
+
+        Assert.Contains("catch (IOException)", source, StringComparison.Ordinal);
+        Assert.Contains("catch (UnauthorizedAccessException)", source, StringComparison.Ordinal);
+        Assert.Contains("catch (JsonException)", source, StringComparison.Ordinal);
+        Assert.Contains("catch (NotSupportedException)", source, StringComparison.Ordinal);
+
+        int methodStart = source.IndexOf("private static async Task<string?> TryReadUuidAsync", StringComparison.Ordinal);
+        int methodEnd = source.IndexOf("    // ── World JSON management", methodStart, StringComparison.Ordinal);
+        string methodSource = source[methodStart..methodEnd];
+        Assert.DoesNotContain("catch\r\n", methodSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("catch\n", methodSource, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))

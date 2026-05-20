@@ -166,7 +166,8 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
         bool isBehavior = manifest.PackType == PackType.Data;
         string targetSubDir = isBehavior ? BehaviorPacksDir : ResourcePacksDir;
-        string packsRoot = Path.Combine(serverDir, targetSubDir);
+        string? packsRoot = PathSafety.ValidateContainedPath(serverDir, targetSubDir)
+            ?? throw new InvalidOperationException($"Bedrock add-on pack directory '{targetSubDir}' must be relative.");
         string packDestDir = PathSafety.ValidateContainedPath(packsRoot, packName)
             ?? throw new InvalidOperationException($"Invalid Bedrock add-on pack directory name '{packName}'.");
 
@@ -242,10 +243,10 @@ public sealed class BedrockAddonInstaller : IAddonManager
             var doc = await JsonNode.ParseAsync(stream, cancellationToken: ct);
             return doc?["header"]?["uuid"]?.GetValue<string>();
         }
-        catch
-        {
-            return null;
-        }
+        catch (IOException) { return null; }
+        catch (UnauthorizedAccessException) { return null; }
+        catch (JsonException) { return null; }
+        catch (NotSupportedException) { return null; }
     }
 
     // ── World JSON management ─────────────────────────────────────────────

@@ -256,6 +256,10 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         {
             await HandleServerCrashAsync(instanceId);
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogDebug("Crash recovery was cancelled for instance {InstanceId}.", instanceId);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled error while processing crash recovery for instance {InstanceId}.", instanceId);
