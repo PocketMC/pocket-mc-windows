@@ -19,6 +19,13 @@ public sealed class MarketplaceFileNameSanitizerTests
     [InlineData("   ")]
     [InlineData(".")]
     [InlineData("..")]
+    [InlineData("CON")]
+    [InlineData("CON.jar")]
+    [InlineData("NUL.zip")]
+    [InlineData("LPT1.jar")]
+    [InlineData("mod.jar ")]
+    [InlineData("mod.jar.")]
+    [InlineData("server.jar:ads")]
     public void RequireSafeFileName_ThrowsForInvalidLeafNames(string input)
     {
         Assert.Throws<InvalidOperationException>(() => MarketplaceFileNameSanitizer.RequireSafeFileName(input));
