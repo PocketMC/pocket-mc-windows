@@ -142,7 +142,7 @@ namespace PocketMC.Desktop.Features.Setup
                 ? "\uE895"
                 : IsInstalled
                     ? "\uE73E"
-                    : "\uE896";
+                    : "";
         public SolidColorBrush StatusIconForeground => HasError
             ? new SolidColorBrush(Color.FromRgb(0xFF, 0x9C, 0x9C))
             : IsProvisioning

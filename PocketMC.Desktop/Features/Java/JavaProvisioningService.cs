@@ -72,7 +72,16 @@ namespace PocketMC.Desktop.Features.Java
 
         public JavaProvisioningStatus GetStatus(int version)
         {
-            return _statuses.TryGetValue(version, out var status) ? status : CreateDefaultStatus(version);
+            if (_statuses.TryGetValue(version, out var status))
+            {
+                if (status.IsInstalled != IsJavaVersionPresent(version))
+                {
+                    status = CreateDefaultStatus(version);
+                    _statuses[version] = status;
+                }
+                return status;
+            }
+            return CreateDefaultStatus(version);
         }
 
         public Task EnsureBundledRuntimesAsync(CancellationToken cancellationToken = default)
