@@ -246,6 +246,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         catch (IOException) { return null; }
         catch (UnauthorizedAccessException) { return null; }
         catch (JsonException) { return null; }
+        catch (InvalidOperationException) { return null; }
         catch (NotSupportedException) { return null; }
     }
 

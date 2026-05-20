@@ -116,6 +116,7 @@ public sealed class BedrockAddonInstallerSecurityTests : IDisposable
         Assert.Contains("catch (IOException)", source, StringComparison.Ordinal);
         Assert.Contains("catch (UnauthorizedAccessException)", source, StringComparison.Ordinal);
         Assert.Contains("catch (JsonException)", source, StringComparison.Ordinal);
+        Assert.Contains("catch (InvalidOperationException)", source, StringComparison.Ordinal);
         Assert.Contains("catch (NotSupportedException)", source, StringComparison.Ordinal);
 
         int methodStart = source.IndexOf("private static async Task<string?> TryReadUuidAsync", StringComparison.Ordinal);
