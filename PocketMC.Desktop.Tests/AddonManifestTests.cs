@@ -77,5 +77,32 @@ namespace PocketMC.Desktop.Tests
             Assert.Single(updated.Entries);
             Assert.Equal("mod-a", updated.Entries[0].ProjectId);
         }
+
+        [Fact]
+        public async Task IsInstalledAsync_ReturnsFalseAndCleansEntry_WhenManifestFileNameEscapesAddonDirectory()
+        {
+            var service = new AddonManifestService();
+            var manifest = new AddonManifest();
+            manifest.Entries.Add(new AddonManifestEntry
+            {
+                ProjectId = "mod-a",
+                FileName = Path.Combine("..", "outside.jar"),
+                Provider = "Modrinth"
+            });
+
+            Directory.CreateDirectory(Path.Combine(_tempDir, "mods"));
+            File.WriteAllText(Path.Combine(_tempDir, "outside.jar"), "not an installed addon");
+            await service.SaveManifestAsync(_tempDir, manifest);
+
+            bool installed = await service.IsInstalledAsync(
+                _tempDir,
+                "Modrinth",
+                "mod-a",
+                new EngineCompatibility("Fabric"));
+
+            Assert.False(installed);
+            AddonManifest updated = await service.LoadManifestAsync(_tempDir);
+            Assert.Empty(updated.Entries);
+        }
     }
 }

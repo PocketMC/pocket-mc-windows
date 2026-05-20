@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Marketplace
@@ -69,12 +70,13 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             string path = Path.Combine(serverDir, ManifestFileName);
             string json = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
-            await File.WriteAllTextAsync(path, json);
+            await FileUtils.AtomicWriteAllTextAsync(path, json);
         }
 
         public async Task RegisterInstallAsync(string serverDir, string provider, string projectId, string versionId, string fileName)
         {
             var manifest = await LoadManifestAsync(serverDir);
+            string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
             
             // Remove any existing entry for this project to avoid duplicates (effectively an "update")
             manifest.Entries.RemoveAll(e => e.ProjectId == projectId && e.Provider == provider);
@@ -84,7 +86,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 Provider = provider,
                 ProjectId = projectId,
                 VersionId = versionId,
-                FileName = fileName,
+                FileName = safeFileName,
                 InstalledAt = DateTime.UtcNow
             });
 
@@ -118,9 +120,9 @@ namespace PocketMC.Desktop.Features.Marketplace
             if (entry == null) return false;
 
             // Verify file still exists on disk
-            string filePath = Path.Combine(serverDir, compat.PrimaryAddonSubDir, entry.FileName);
+            string? filePath = ResolveAddonFilePath(serverDir, compat.PrimaryAddonSubDir, entry.FileName);
             
-            if (!File.Exists(filePath))
+            if (filePath == null || !File.Exists(filePath))
             {
                 // Auto-cleanup stale manifest entry
                 await UnregisterAsync(serverDir, provider, projectId);
@@ -143,8 +145,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                 string subDir = (entry.FileName.EndsWith(".phar") || entry.FileName.EndsWith(".php")) ? "plugins" : 
                                 (entry.FileName.EndsWith(".mcpack") || entry.FileName.EndsWith(".mcaddon")) ? "behavior_packs" : "mods";
                 
-                string filePath = Path.Combine(serverDir, subDir, entry.FileName);
-                if (!File.Exists(filePath))
+                string? filePath = ResolveAddonFilePath(serverDir, subDir, entry.FileName);
+                if (filePath == null || !File.Exists(filePath))
                 {
                     entriesToRemove.Add(entry);
                 }
@@ -227,6 +229,17 @@ namespace PocketMC.Desktop.Features.Marketplace
             var sb = new StringBuilder();
             foreach (var b in hashBytes) sb.Append(b.ToString("x2"));
             return sb.ToString();
+        }
+
+        private static string? ResolveAddonFilePath(string serverDir, string subDir, string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
+            {
+                return null;
+            }
+
+            string addonDir = Path.Combine(serverDir, subDir);
+            return PathSafety.ValidateContainedPath(addonDir, fileName);
         }
     }
 }

@@ -32,7 +32,8 @@ public class BackupService
 {
     private static readonly Regex SaveCompletedRegex = new(
         @"(saved the game|saved the world|saved chunks|saved all chunks|all dimensions are saved|world saved)",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(1));
 
     private readonly ServerProcessManager _serverProcessManager;
     private readonly ServerConfigurationService _configService;
@@ -187,11 +188,22 @@ public class BackupService
 
         if (entry?.Sha256Checksum == null) return null;
 
-        var zipPath = Path.Combine(serverDir, "backups", fileName);
-        if (!File.Exists(zipPath)) return false;
+        string? zipPath = ResolveBackupFilePath(serverDir, fileName);
+        if (zipPath == null || !File.Exists(zipPath)) return false;
 
         var currentHash = ComputeSha256(zipPath);
         return string.Equals(entry.Sha256Checksum, currentHash, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? ResolveBackupFilePath(string serverDir, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
+        {
+            return null;
+        }
+
+        string backupDir = Path.Combine(serverDir, "backups");
+        return PathSafety.ValidateContainedPath(backupDir, fileName);
     }
 
     private async Task<LocalBackupResult> CreateLocalBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress)

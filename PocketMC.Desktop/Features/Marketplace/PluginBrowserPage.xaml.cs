@@ -305,6 +305,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         private async Task InstallSingleFileAsync(string url, string fileName, string providerName, string projectId, string versionId)
         {
             if (_serverDir == null && !_isModpackMode) return;
+            string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
 
             using var httpClient = _httpClientFactory.CreateClient("PocketMC.Downloads");
             using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
@@ -313,13 +314,13 @@ namespace PocketMC.Desktop.Features.Marketplace
             string destFile;
             if (_isModpackMode)
             {
-                destFile = Path.Combine(Path.GetTempPath(), fileName);
+                destFile = Path.Combine(Path.GetTempPath(), safeFileName);
             }
             else
             {
                 string destDir = Path.Combine(_serverDir!, _compat.PrimaryAddonSubDir);
                 if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
-                destFile = Path.Combine(destDir, fileName);
+                destFile = Path.Combine(destDir, safeFileName);
             }
 
             await using (var contentStream = await response.Content.ReadAsStreamAsync())
@@ -338,7 +339,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             // Register in manifest if not modpack
             if (_serverDir != null)
             {
-                await _manifestService.RegisterInstallAsync(_serverDir, providerName, projectId, versionId, fileName);
+                await _manifestService.RegisterInstallAsync(_serverDir, providerName, projectId, versionId, safeFileName);
             }
         }
     }
