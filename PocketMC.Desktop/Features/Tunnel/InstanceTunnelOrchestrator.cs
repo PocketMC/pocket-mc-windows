@@ -238,13 +238,13 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
 
             DialogResult choice = await _dialogService.ShowDialogAsync(
-                "Simple Voice Chat needs a Playit tunnel",
+                "Voice Chat Tunnel Required",
                 BuildSimpleVoiceChatPromptMessage(vm, request, existing),
                 DialogType.Warning,
                 showCancel: true,
-                primaryButtonText: "Create Simple Voice Chat tunnel",
-                secondaryButtonText: "Start without voice chat",
-                cancelButtonText: "Don't ask again for this instance");
+                primaryButtonText: "Create Tunnel",
+                secondaryButtonText: "Skip",
+                cancelButtonText: "Don't ask again");
 
             if (choice == DialogResult.Yes)
             {
@@ -312,13 +312,13 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
 
             DialogResult choice = await _dialogService.ShowDialogAsync(
-                "Simple Voice Chat needs a Playit tunnel",
+                "Voice Chat Tunnel Required",
                 BuildSimpleVoiceChatPromptMessage(request, existing),
                 DialogType.Warning,
                 showCancel: true,
-                primaryButtonText: "Create Simple Voice Chat tunnel",
-                secondaryButtonText: "Start without voice chat",
-                cancelButtonText: "Don't ask again for this instance");
+                primaryButtonText: "Create Tunnel",
+                secondaryButtonText: "Skip",
+                cancelButtonText: "Don't ask again");
 
             if (choice == DialogResult.Yes)
             {
@@ -459,13 +459,13 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
 
             DialogResult choice = await _dialogService.ShowDialogAsync(
-                "Simple Voice Chat needs a Playit tunnel",
+                "Voice Chat Tunnel Required",
                 BuildSimpleVoiceChatPromptMessage(vm, request, existing),
                 DialogType.Warning,
                 showCancel: true,
-                primaryButtonText: "Create Simple Voice Chat tunnel",
-                secondaryButtonText: "Start without voice chat",
-                cancelButtonText: "Don't ask again for this instance");
+                primaryButtonText: "Create Tunnel",
+                secondaryButtonText: "Skip",
+                cancelButtonText: "Don't ask again");
 
             if (choice == DialogResult.Yes)
             {
@@ -497,12 +497,9 @@ namespace PocketMC.Desktop.Features.Tunnel
                 : Environment.NewLine + $"Playit tunnel state: {resolution.ErrorMessage}";
 
             return
-                "This server has Simple Voice Chat installed. Minecraft traffic uses the normal server tunnel, but Simple Voice Chat uses a separate voice tunnel. Without a Simple Voice Chat tunnel, players may join the server but voice chat will show as disconnected or unplugged." +
+                "Simple Voice Chat requires its own tunnel. Without it, players can join but voice chat will appear disconnected." +
                 Environment.NewLine + Environment.NewLine +
-                $"Detected port: {request.Port}" + Environment.NewLine +
-                $"Current voice_host: {voiceHost}" + Environment.NewLine +
-                "Required Playit tunnel type: mc-simple-voice-chat" + Environment.NewLine +
-                $"Playit agent status: {agentStatus}" +
+                $"Port: {request.Port}  •  voice_host: {voiceHost}  •  Agent: {agentStatus}" +
                 tunnelState;
         }
 
