@@ -188,9 +188,9 @@ Download `Setup.exe` from the [latest release](https://github.com/PocketMC/pocke
 |-----------|---------------|
 | ![Dashboard](docs/assets/screenshot-dashboard.png) | ![Console](docs/assets/screenshot-console.png) |
 
-| Server Settings | App Settings |
-|-----------------|-----------------|
-| ![ServerSettings](docs/assets/server-settings.png) | ![Settings](docs/assets/screenshot-settings.png) |
+| Server Settings | App Settings | Backups |
+|-----------------|-----------------|---------|
+| ![ServerSettings](docs/assets/server-settings.png) | ![Settings](docs/assets/screenshot-settings.png) | ![Backups](docs/assets/screenshot-backups.png) |
 
 | Plugin Browser | Mod Marketplace |
 |-----------------|----------------|
@@ -199,6 +199,7 @@ Download `Setup.exe` from the [latest release](https://github.com/PocketMC/pocke
 | Public Tunnels | Managed Runtimes | About |
 |-----------------|----------------|-------|
 | ![Tunnels](docs/assets/tunnels.png) | ![Runtimes](docs/assets/runtimes.png) | ![About](docs/assets/about.png) |
+
 
 ---
 
