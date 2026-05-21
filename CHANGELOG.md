@@ -1,6 +1,26 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.5`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.6`.
+
+## v1.7.6 - Appearance Customization, Security Hardening & UI Polish
+
+This release introduces a new Custom Background Image option for the Wallpaper Blur theme, overhauls About page visuals and usability, and implements an extensive, codebase-wide security and robustness hardening.
+
+### 🎨 Personalization & UI Polish
+* **Custom Background Images**: Added support for choosing custom background images (`.jpg`, `.png`, `.bmp`, `.webp`, `.tiff`) under the Wallpaper Blur theme. The background renders via a high-performance Gaussian blur + freeze pipeline, incurring zero ongoing GPU overhead. Includes full browse, clear, and 'Use Wallpaper' fallback buttons with a thumbnail preview.
+* **Support & Donation Section**: Added a new expandable Support & Donation card on the About page featuring a direct link button to Buy Me a Coffee (`buymeacoffee.com/sahaj33`).
+* **High-Res Branding**: Replaced the About page branding with a high-resolution 1280x1280 logo (`logo_highres.png`). Wired layout rounding, snap-to-pixels, and high-quality Fant scaling to prevent DPI blur.
+* **Minecraft Icon Compatibility**: Kept the original 64x64 `logo.png` resource separately to ensure generated Minecraft server icons remain fully compatible with multiplayer game client server lists.
+* **About Page Scroll Fix**: Wrapped cards on the About page in an auto-scrolling container with proper scrollbar gutter padding, resolving clipping on lower-resolution monitors.
+* **AI Summary Formatting**: Fixed markdown rendering and layout bugs in the Server Console's AI Summary window.
+
+### 🛡️ Security & Robustness Hardening
+* **Directory Traversal Protection**: Implemented `PathSafety.ValidateContainedPath` across Backup, Summary, and Addon services, and added `MarketplaceFileNameSanitizer` to fully eliminate path traversal vulnerabilities.
+* **Atomic Configuration Writes**: Standardized config and manifest writes to use `FileUtils.AtomicWriteAllText` to ensure data integrity during power loss or application shutdown.
+* **ReDoS Vulnerability Mitigations**: Added processing timeouts to all `Regex` operations across the codebase.
+* **DPAPI & Process Safety**: Hardened DPAPI credential storage path handling and UWP loopback exemption check process safety.
+* **Robust Crash Recovery**: Strengthened Java runtime checks, process tree cleanups, and addon installation/uninstallation crash recovery systems.
+
 
 ## v1.7.5 - Playit Agent Safety & Java Provisioning Tweaks
 
