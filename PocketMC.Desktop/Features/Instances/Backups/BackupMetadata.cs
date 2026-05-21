@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Desktop.Infrastructure.Security;
 
 namespace PocketMC.Desktop.Features.Instances.Backups;
 
@@ -102,7 +104,7 @@ public class BackupManifest
         if (dir != null) Directory.CreateDirectory(dir);
 
         var json = JsonSerializer.Serialize(this, JsonOptions);
-        File.WriteAllText(path, json);
+        FileUtils.AtomicWriteAllText(path, json);
     }
 
     /// <summary>
@@ -122,8 +124,18 @@ public class BackupManifest
         var backupDir = Path.Combine(serverDir, "backups");
         Entries.RemoveAll(e =>
         {
-            var zipPath = Path.Combine(backupDir, e.FileName);
+            string? zipPath = ResolveBackupFilePath(backupDir, e.FileName);
             return !File.Exists(zipPath);
         });
+    }
+
+    private static string? ResolveBackupFilePath(string backupDir, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
+        {
+            return null;
+        }
+
+        return PathSafety.ValidateContainedPath(backupDir, fileName);
     }
 }

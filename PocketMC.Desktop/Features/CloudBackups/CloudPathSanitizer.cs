@@ -5,7 +5,12 @@ namespace PocketMC.Desktop.Features.CloudBackups;
 
 public static class CloudPathSanitizer
 {
-    private static readonly Regex InvalidCharsRegex = new Regex(@"[<>:""/\\|?*]", RegexOptions.Compiled);
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
+    private static readonly Regex InvalidCharsRegex = new(
+        @"[<>:""/\\|?*]",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        RegexTimeout);
     
     public static string SanitizeFolderName(string input)
     {

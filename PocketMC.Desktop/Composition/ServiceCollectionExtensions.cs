@@ -97,7 +97,6 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<PortFailureMessageService>();
 
             services.AddSingleton<IResourceMonitorService, ResourceMonitorService>();
-            services.AddSingleton(provider => (ResourceMonitorService)provider.GetRequiredService<IResourceMonitorService>());
             services.AddSingleton<BackupService>();
             services.AddSingleton<BackupSchedulerService>();
 

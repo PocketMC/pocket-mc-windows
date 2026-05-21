@@ -36,6 +36,11 @@ namespace PocketMC.Desktop.Features.Tunnel
             @"tunnel running",
             RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
 
+        private static readonly Regex LegacyTomlSecretRegex = new(
+            @"secret_key\s*=\s*""([^""]+)""",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            TimeSpan.FromSeconds(1));
+
         private readonly PlayitAgentProcessManager _processManager;
         private readonly PlayitAgentStateMachine _stateMachine;
         private readonly ApplicationState _applicationState;
@@ -352,7 +357,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             try
             {
                 string content = File.ReadAllText(tomlPath);
-                Match match = Regex.Match(content, @"secret_key\s*=\s*""([^""]+)""");
+                Match match = LegacyTomlSecretRegex.Match(content);
                 secretKey = match.Success ? match.Groups[1].Value : null;
             }
             catch (Exception ex)
@@ -382,7 +387,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllText(tomlPath, $"secret_key = \"{secretKey}\"{Environment.NewLine}");
+            FileUtils.AtomicWriteAllText(tomlPath, $"secret_key = \"{secretKey}\"{Environment.NewLine}");
         }
 
         private void DeleteRuntimeToml()

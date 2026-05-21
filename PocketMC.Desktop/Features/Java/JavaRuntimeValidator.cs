@@ -60,12 +60,42 @@ namespace PocketMC.Desktop.Features.Java
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(15));
 
-            await process.WaitForExitAsync(cts.Token);
+            Task<string> stdOutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
+            Task<string> stdErrTask = process.StandardError.ReadToEndAsync(cts.Token);
+            try
+            {
+                await process.WaitForExitAsync(cts.Token);
+                await Task.WhenAll(stdOutTask, stdErrTask);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                KillTimedOutProcess(process);
+                throw new TimeoutException("Java validation timed out.");
+            }
+            catch (OperationCanceledException)
+            {
+                KillTimedOutProcess(process);
+                throw;
+            }
 
             if (process.ExitCode != 0)
             {
-                string stdErr = await process.StandardError.ReadToEndAsync();
-                throw new InvalidOperationException($"Java validation failed (Exit Code: {process.ExitCode}): {stdErr}");
+                throw new InvalidOperationException($"Java validation failed (Exit Code: {process.ExitCode}): {stdErrTask.Result}");
+            }
+        }
+
+        private void KillTimedOutProcess(Process process)
+        {
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to kill timed-out Java validation process.");
             }
         }
     }

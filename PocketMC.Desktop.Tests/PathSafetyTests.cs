@@ -22,6 +22,10 @@ public sealed class PathSafetyTests
     [InlineData("mods/../../../escape.dll", true)]
     [InlineData("..\\windows\\system32\\evil.dll", true)]
     [InlineData("mods/..\\..\\..\\escape.exe", true)]
+    [InlineData("mods/server.jar:evil", true)]
+    [InlineData("C:\\Windows\\system32\\drivers\\etc\\hosts", true)]
+    [InlineData("\\\\?\\C:\\Windows\\system32\\drivers\\etc\\hosts", true)]
+    [InlineData("//server/share/file.txt", true)]
     public void ContainsTraversal_DetectsEscapeAttempts(string path, bool shouldBeTraversal)
     {
         Assert.Equal(shouldBeTraversal, PathSafety.ContainsTraversal(path));
@@ -53,5 +57,16 @@ public sealed class PathSafetyTests
 
         Assert.NotNull(result);
         Assert.Contains("advanced", result!);
+    }
+
+    [Theory]
+    [InlineData("mods/server.jar:payload")]
+    [InlineData("C:\\Windows\\system32\\drivers\\etc\\hosts")]
+    [InlineData("\\\\?\\C:\\Windows\\system32\\drivers\\etc\\hosts")]
+    [InlineData("//server/share/file.txt")]
+    public void ValidateContainedPath_ReturnsNull_ForWindowsSpecialPaths(string path)
+    {
+        string root = Path.Combine(Path.GetTempPath(), "test-root");
+        Assert.Null(PathSafety.ValidateContainedPath(root, path));
     }
 }

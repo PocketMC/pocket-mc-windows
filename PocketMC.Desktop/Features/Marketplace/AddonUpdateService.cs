@@ -146,11 +146,13 @@ namespace PocketMC.Desktop.Features.Marketplace
             if (updateInfo.LatestDownloadUrl == null || updateInfo.LatestFileName == null)
                 throw new InvalidOperationException("Update info is incomplete — missing download URL or filename.");
 
+            string safeLatestFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(updateInfo.LatestFileName);
+
             string destDir = Path.Combine(serverDir, compat.PrimaryAddonSubDir);
             if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
 
             // Download new file
-            string newFilePath = Path.Combine(destDir, updateInfo.LatestFileName);
+            string newFilePath = Path.Combine(destDir, safeLatestFileName);
 
             using var httpClient = _httpClientFactory.CreateClient("PocketMC.Downloads");
             using var response = await httpClient.GetAsync(updateInfo.LatestDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
@@ -163,9 +165,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             // Delete old file if it has a different name
-            if (!string.Equals(oldFileName, updateInfo.LatestFileName, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(oldFileName, safeLatestFileName, StringComparison.OrdinalIgnoreCase))
             {
-                string oldFilePath = Path.Combine(destDir, oldFileName);
+                string safeOldFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(oldFileName);
+                string oldFilePath = Path.Combine(destDir, safeOldFileName);
                 if (File.Exists(oldFilePath))
                 {
                     try { File.Delete(oldFilePath); } catch { /* Best-effort cleanup */ }
@@ -175,7 +178,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             // Update manifest entry
             await _manifestService.RegisterInstallAsync(
                 serverDir, providerName, projectId,
-                updateInfo.LatestVersionId ?? "", updateInfo.LatestFileName);
+                updateInfo.LatestVersionId ?? "", safeLatestFileName);
         }
 
         private IAddonProvider? GetProvider(string providerName)

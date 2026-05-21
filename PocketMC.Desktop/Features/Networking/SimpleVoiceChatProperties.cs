@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using PocketMC.Desktop.Infrastructure.FileSystem;
 
 namespace PocketMC.Desktop.Features.Networking;
 
@@ -32,9 +33,12 @@ public sealed record SimpleVoiceChatDetection(
 
 public static class SimpleVoiceChatDetector
 {
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
     private static readonly Regex VoiceChatStartedRegex = new(
         @"\[voicechat\]\s+Voice chat server started at port\s+(?<port>\d+)",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        RegexTimeout);
 
     public static SimpleVoiceChatDetection Detect(string? serverDir)
     {
@@ -206,6 +210,7 @@ public static class SimpleVoiceChatConfigService
     public const int DefaultPort = 24454;
     public const string DefaultBindAddress = "*";
     private const string StableNewline = "\r\n";
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
     public static string DetectConfigPath(string instancePath)
     {
@@ -267,7 +272,7 @@ public static class SimpleVoiceChatConfigService
             "bind_address=*",
             $"voice_host={voiceHost}",
             string.Empty);
-        File.WriteAllText(configPath, content);
+        FileUtils.AtomicWriteAllText(configPath, content);
         return configPath;
     }
 
@@ -390,7 +395,7 @@ public static class SimpleVoiceChatConfigService
             return false;
         }
 
-        File.WriteAllText(configPath, string.Join(newline, lines) + (hadFinalNewline ? newline : string.Empty));
+        FileUtils.AtomicWriteAllText(configPath, string.Join(newline, lines) + (hadFinalNewline ? newline : string.Empty));
         return true;
     }
 
@@ -549,7 +554,7 @@ public static class SimpleVoiceChatConfigService
 
     private static string[] SplitLines(string text)
     {
-        string[] lines = Regex.Split(text, "\r\n|\n|\r");
+        string[] lines = Regex.Split(text, "\r\n|\n|\r", RegexOptions.CultureInvariant, RegexTimeout);
         if (lines.Length > 0 && lines[^1].Length == 0 && EndsWithNewline(text))
         {
             return lines[..^1];

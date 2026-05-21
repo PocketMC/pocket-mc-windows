@@ -249,6 +249,19 @@ public sealed class PortPreflightServiceTests
         Assert.Contains("\r\n", updated);
     }
 
+    [Fact]
+    public void SimpleVoiceChatConfigService_UsesAtomicWrites_ForConfigMutations()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Networking",
+            "SimpleVoiceChatProperties.cs"));
+
+        Assert.DoesNotContain("File.WriteAllText(configPath", source);
+        Assert.Contains("FileUtils.AtomicWriteAllText(configPath", source);
+    }
+
     private static int CountOccurrences(string value, string needle)
     {
         int count = 0;

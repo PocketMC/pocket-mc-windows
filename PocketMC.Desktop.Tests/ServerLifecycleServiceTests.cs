@@ -70,4 +70,19 @@ public sealed class ServerLifecycleServiceTests
         Assert.Empty(leaseRegistry.GetLeasesForInstance(metadata.Id));
         Assert.Null(workspace.AppState.GetTunnelAddress(metadata.Id));
     }
+
+    [Fact]
+    public void CrashEventHandler_LogsCancellationSeparatelyFromUnexpectedFailures()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Instances",
+            "Services",
+            "ServerLifecycleService.cs"));
+
+        Assert.Contains("catch (OperationCanceledException)", source, StringComparison.Ordinal);
+        Assert.Contains("Crash recovery was cancelled for instance {InstanceId}.", source, StringComparison.Ordinal);
+        Assert.Contains("Unhandled error while processing crash recovery for instance {InstanceId}.", source, StringComparison.Ordinal);
+    }
 }

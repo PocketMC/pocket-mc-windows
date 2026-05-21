@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Intelligence;
@@ -40,7 +42,7 @@ public class SummaryStorageService
         }
 
         var json = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(filePath, json);
+        FileUtils.AtomicWriteAllText(filePath, json);
         return filePath;
     }
 
@@ -81,7 +83,8 @@ public class SummaryStorageService
     /// </summary>
     public SessionSummary? Read(string serverDir, string fileName)
     {
-        var filePath = Path.Combine(serverDir, SummariesFolder, fileName);
+        string? filePath = ResolveSummaryFilePath(serverDir, fileName);
+        if (filePath == null) return null;
         if (!File.Exists(filePath)) return null;
 
         try
@@ -100,7 +103,8 @@ public class SummaryStorageService
     /// </summary>
     public bool Delete(string serverDir, string fileName)
     {
-        var filePath = Path.Combine(serverDir, SummariesFolder, fileName);
+        string? filePath = ResolveSummaryFilePath(serverDir, fileName);
+        if (filePath == null) return false;
         if (!File.Exists(filePath)) return false;
 
         try
@@ -122,5 +126,16 @@ public class SummaryStorageService
         var dir = Path.Combine(serverDir, SummariesFolder);
         if (!Directory.Exists(dir)) return 0;
         return Directory.GetFiles(dir, "summary_*.json").Length;
+    }
+
+    private static string? ResolveSummaryFilePath(string serverDir, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
+        {
+            return null;
+        }
+
+        string summaryDir = Path.Combine(serverDir, SummariesFolder);
+        return PathSafety.ValidateContainedPath(summaryDir, fileName);
     }
 }

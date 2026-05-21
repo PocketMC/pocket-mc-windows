@@ -154,7 +154,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                 using var response = await httpClient.GetAsync(file.Url, HttpCompletionOption.ResponseHeadersRead);
                 response.EnsureSuccessStatusCode();
 
-                string destFile = Path.Combine(Path.GetTempPath(), file.FileName);
+                string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(file.FileName);
+                string destFile = Path.Combine(Path.GetTempPath(), safeFileName);
 
                 await using (var contentStream = await response.Content.ReadAsStreamAsync())
                 await using (var fileStream = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))

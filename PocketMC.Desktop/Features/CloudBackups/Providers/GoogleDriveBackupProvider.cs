@@ -150,7 +150,7 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         System.Diagnostics.Process.Start(psi);
 
         var receiver = new LoopbackOAuthReceiver();
-        var (code, error) = await receiver.ReceiveCodeAsync(RedirectUri + "/", ct);
+        var (code, error) = await receiver.ReceiveCodeAsync(RedirectUri + "/", ct, state);
 
         if (!string.IsNullOrEmpty(error)) throw new Exception($"Google Auth Error: {error}");
         if (string.IsNullOrEmpty(code)) throw new Exception("No code returned.");

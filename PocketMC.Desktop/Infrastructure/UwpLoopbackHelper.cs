@@ -1,6 +1,9 @@
 using System;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
+using DiagnosticsProcess = System.Diagnostics.Process;
+using DiagnosticsProcessStartInfo = System.Diagnostics.ProcessStartInfo;
 
 namespace PocketMC.Desktop.Infrastructure;
 
@@ -13,6 +16,8 @@ namespace PocketMC.Desktop.Infrastructure;
 /// </summary>
 public static class UwpLoopbackHelper
 {
+    private static readonly TimeSpan CheckNetIsolationTimeout = TimeSpan.FromSeconds(5);
+
     /// <summary>
     /// The Windows Store package family name for Minecraft Bedrock Edition (UWP).
     /// </summary>
@@ -26,22 +31,7 @@ public static class UwpLoopbackHelper
     {
         try
         {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "CheckNetIsolation.exe",
-                Arguments = "LoopbackExempt -s",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
-
-            using var proc = System.Diagnostics.Process.Start(psi);
-            if (proc == null) return false;
-
-            string output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit();
-
-            return output.Contains(MinecraftPackageFamilyName, StringComparison.OrdinalIgnoreCase);
+            return IsExemptionPresentAsync().GetAwaiter().GetResult();
         }
         catch
         {
@@ -66,7 +56,7 @@ public static class UwpLoopbackHelper
         {
             // "runas" forces the UAC elevation dialog so CheckNetIsolation can
             // write to the protected loopback-exemption registry hive.
-            var psi = new System.Diagnostics.ProcessStartInfo
+            var psi = new DiagnosticsProcessStartInfo
             {
                 FileName = "CheckNetIsolation.exe",
                 Arguments = $"LoopbackExempt -a -n=\"{MinecraftPackageFamilyName}\"",
@@ -75,7 +65,7 @@ public static class UwpLoopbackHelper
                 CreateNoWindow = false   // shell must be visible for UAC dialog
             };
 
-            using var proc = System.Diagnostics.Process.Start(psi);
+            using var proc = DiagnosticsProcess.Start(psi);
             if (proc == null) return false;
 
             await proc.WaitForExitAsync();
@@ -89,6 +79,55 @@ public static class UwpLoopbackHelper
         catch
         {
             return false;
+        }
+    }
+
+    private static async Task<bool> IsExemptionPresentAsync()
+    {
+        var psi = new DiagnosticsProcessStartInfo
+        {
+            FileName = "CheckNetIsolation.exe",
+            Arguments = "LoopbackExempt -s",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        using var proc = DiagnosticsProcess.Start(psi);
+        if (proc == null) return false;
+
+        using var cts = new CancellationTokenSource(CheckNetIsolationTimeout);
+        Task<string> outputTask = proc.StandardOutput.ReadToEndAsync(cts.Token);
+        Task<string> errorTask = proc.StandardError.ReadToEndAsync(cts.Token);
+
+        try
+        {
+            await proc.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+            await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            TryKillProcessTree(proc);
+            return false;
+        }
+
+        return proc.ExitCode == 0 &&
+               outputTask.Result.Contains(MinecraftPackageFamilyName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void TryKillProcessTree(DiagnosticsProcess proc)
+    {
+        try
+        {
+            if (!proc.HasExited)
+            {
+                proc.Kill(entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // Best-effort timeout cleanup; callers already receive false.
         }
     }
 }

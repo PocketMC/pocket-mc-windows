@@ -23,7 +23,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly IServerLifecycleService _serverLifecycleService;
         private readonly JavaProvisioningService _javaProvisioningService;
         private readonly PlayitAgentService _playitAgentService;
-        private readonly ResourceMonitorService _resourceMonitorService;
+        private readonly IResourceMonitorService _resourceMonitorService;
         private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
         private readonly ILogger<ShellStartupCoordinator> _logger;
         private IStartupShellHost? _host;
@@ -38,7 +38,7 @@ namespace PocketMC.Desktop.Features.Shell
             IServerLifecycleService serverLifecycleService,
             JavaProvisioningService javaProvisioningService,
             PlayitAgentService playitAgentService,
-            ResourceMonitorService resourceMonitorService,
+            IResourceMonitorService resourceMonitorService,
             PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
             ILogger<ShellStartupCoordinator> logger)
         {

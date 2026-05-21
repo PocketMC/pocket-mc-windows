@@ -12,37 +12,39 @@ namespace PocketMC.Desktop.Features.Intelligence;
 /// </summary>
 public static class SessionLogPreprocessor
 {
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
     // Lines matching these patterns are noise and should be removed
     private static readonly Regex[] NoisePatterns = new[]
     {
-        new Regex(@"\[DEBUG\]", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new Regex(@"Can't keep up! Is the server overloaded\?", RegexOptions.Compiled),
-        new Regex(@"moved too quickly!", RegexOptions.Compiled),
-        new Regex(@"Preparing spawn area:", RegexOptions.Compiled),
-        new Regex(@"Loaded \d+ recipes", RegexOptions.Compiled),
-        new Regex(@"Loaded \d+ advancements", RegexOptions.Compiled),
-        new Regex(@"UUID of player", RegexOptions.Compiled),
-        new Regex(@"com\.mojang\.authlib", RegexOptions.Compiled),
-        new Regex(@"LoginListener", RegexOptions.Compiled),
-        new Regex(@"Chunk stats", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        CreateRegex(@"\[DEBUG\]", RegexOptions.IgnoreCase),
+        CreateRegex(@"Can't keep up! Is the server overloaded\?"),
+        CreateRegex(@"moved too quickly!"),
+        CreateRegex(@"Preparing spawn area:"),
+        CreateRegex(@"Loaded \d+ recipes"),
+        CreateRegex(@"Loaded \d+ advancements"),
+        CreateRegex(@"UUID of player"),
+        CreateRegex(@"com\.mojang\.authlib"),
+        CreateRegex(@"LoginListener"),
+        CreateRegex(@"Chunk stats", RegexOptions.IgnoreCase),
     };
 
     // Lines matching these are important and should always be kept
     private static readonly Regex[] ImportantPatterns = new[]
     {
-        new Regex(@"joined the game", RegexOptions.Compiled),
-        new Regex(@"left the game", RegexOptions.Compiled),
-        new Regex(@"was (slain|shot|blown|killed|drowned|burnt|squashed|fell|withered|poked|fireballed|stung|starved|suffocated|squished|impaled|frozen|struck)", RegexOptions.Compiled),
-        new Regex(@"\[Server\]", RegexOptions.Compiled),
-        new Regex(@"issued server command:", RegexOptions.Compiled),
-        new Regex(@"has (made the|completed) advancement", RegexOptions.Compiled),
-        new Regex(@"has reached the goal", RegexOptions.Compiled),
-        new Regex(@"(Stopping|Starting|Done \()", RegexOptions.Compiled),
-        new Regex(@"(ERROR|WARN|FATAL)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new Regex(@"(kicked|banned|whitelisted|opped|de-opped)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new Regex(@"Teleported", RegexOptions.Compiled),
-        new Regex(@"lost connection:", RegexOptions.Compiled),
-        new Regex(@"(challenge|has completed)", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        CreateRegex(@"joined the game"),
+        CreateRegex(@"left the game"),
+        CreateRegex(@"was (slain|shot|blown|killed|drowned|burnt|squashed|fell|withered|poked|fireballed|stung|starved|suffocated|squished|impaled|frozen|struck)"),
+        CreateRegex(@"\[Server\]"),
+        CreateRegex(@"issued server command:"),
+        CreateRegex(@"has (made the|completed) advancement"),
+        CreateRegex(@"has reached the goal"),
+        CreateRegex(@"(Stopping|Starting|Done \()"),
+        CreateRegex(@"(ERROR|WARN|FATAL)", RegexOptions.IgnoreCase),
+        CreateRegex(@"(kicked|banned|whitelisted|opped|de-opped)", RegexOptions.IgnoreCase),
+        CreateRegex(@"Teleported"),
+        CreateRegex(@"lost connection:"),
+        CreateRegex(@"(challenge|has completed)", RegexOptions.IgnoreCase),
     };
 
     /// <summary>
@@ -57,7 +59,13 @@ public static class SessionLogPreprocessor
 
     private static readonly Regex IpRegex = new(
         @"\b(?:\d{1,3}\.){3}\d{1,3}\b|\b(?:[a-fA-F0-9]{1,4}:){2,7}[a-fA-F0-9]{1,4}\b",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        RegexTimeout);
+
+    private static Regex CreateRegex(string pattern, RegexOptions options = RegexOptions.None)
+    {
+        return new Regex(pattern, options | RegexOptions.Compiled | RegexOptions.CultureInvariant, RegexTimeout);
+    }
 
     /// <summary>
     /// Process raw log lines into a cleaner, AI-friendly format.
