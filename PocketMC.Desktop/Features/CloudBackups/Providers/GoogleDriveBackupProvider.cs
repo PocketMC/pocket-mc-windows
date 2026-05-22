@@ -147,7 +147,7 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         string authUrl = $"https://accounts.google.com/o/oauth2/v2/auth?client_id={ClientId}&redirect_uri={Uri.EscapeDataString(RedirectUri)}&response_type=code&scope={Uri.EscapeDataString(DriveService.Scope.DriveFile)}&access_type=offline&prompt=consent&state={state}&code_challenge={codeChallenge}&code_challenge_method=S256";
 
         var psi = new System.Diagnostics.ProcessStartInfo { FileName = authUrl, UseShellExecute = true };
-        System.Diagnostics.Process.Start(psi);
+        using var proc = System.Diagnostics.Process.Start(psi);
 
         var receiver = new LoopbackOAuthReceiver();
         var (code, error) = await receiver.ReceiveCodeAsync(RedirectUri + "/", ct, state);

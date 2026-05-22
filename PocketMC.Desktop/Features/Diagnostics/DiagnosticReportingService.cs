@@ -59,7 +59,7 @@ public class DiagnosticReportingService
     {
         // 1. Gather System Info
         string sysInfoPath = Path.Combine(tempFolder, "system-info.txt");
-        File.WriteAllText(sysInfoPath,
+        PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.AtomicWriteAllText(sysInfoPath,
             $"OS: {Environment.OSVersion}\n" +
             $"64Bit: {Environment.Is64BitOperatingSystem}\n" +
             $".NET: {Environment.Version}\n" +
@@ -70,7 +70,7 @@ public class DiagnosticReportingService
         string networkDir = Path.Combine(tempFolder, "network");
         Directory.CreateDirectory(networkDir);
         var portSnapshot = _portDiagnosticsSnapshotBuilder.Build();
-        File.WriteAllText(
+        PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.AtomicWriteAllText(
             Path.Combine(networkDir, "port-diagnostics.json"),
             JsonSerializer.Serialize(
                 portSnapshot,

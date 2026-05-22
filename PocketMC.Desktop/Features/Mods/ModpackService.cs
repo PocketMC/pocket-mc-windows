@@ -108,32 +108,27 @@ namespace PocketMC.Desktop.Features.Mods
                 }
             }
 
-            // 4. Extract Overrides — with SEC-01 zip-slip containment
-            using var archive = ZipFile.OpenRead(zipPath);
-            foreach (var entry in archive.Entries)
+            // 4. Extract Overrides — safely using SafeZipExtractor
+            string tempDir = Path.Combine(Path.GetTempPath(), $"modpack_{Guid.NewGuid():N}");
+            try
             {
-                string targetPath = "";
-                if (entry.FullName.StartsWith("overrides/")) targetPath = entry.FullName.Substring(10);
-                else if (entry.FullName.StartsWith("client_overrides/")) continue;
-
-                if (string.IsNullOrEmpty(targetPath)) continue;
-
-                string? destinationPath = PathSafety.ValidateContainedPath(instancePath, targetPath);
-                if (destinationPath == null)
+                await PocketMC.Desktop.Features.Instances.Backups.SafeZipExtractor.ExtractAsync(zipPath, tempDir);
+                string overridesDir = Path.Combine(tempDir, "overrides");
+                if (Directory.Exists(overridesDir))
                 {
-                    _logger.LogWarning("Blocked override entry with path-traversal: {EntryName}", entry.FullName);
-                    continue;
+                    await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CopyDirectoryAsync(overridesDir, instancePath);
                 }
-
-                if (string.IsNullOrEmpty(entry.Name))
+            }
+            finally
+            {
+                try
                 {
-                    Directory.CreateDirectory(destinationPath);
+                    if (Directory.Exists(tempDir))
+                    {
+                        Directory.Delete(tempDir, true);
+                    }
                 }
-                else
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
-                    entry.ExtractToFile(destinationPath, true);
-                }
+                catch { }
             }
         }
 

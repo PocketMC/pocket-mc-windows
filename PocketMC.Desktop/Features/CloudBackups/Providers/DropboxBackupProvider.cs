@@ -120,7 +120,7 @@ public class DropboxBackupProvider : ICloudBackupProvider
         string uri = $"https://www.dropbox.com/oauth2/authorize?client_id={ClientId}&response_type=code&redirect_uri={Uri.EscapeDataString(RedirectUri)}&state={state}&token_access_type=offline&code_challenge={codeChallenge}&code_challenge_method=S256";
 
         var psi = new System.Diagnostics.ProcessStartInfo { FileName = uri, UseShellExecute = true };
-        System.Diagnostics.Process.Start(psi);
+        using var proc = System.Diagnostics.Process.Start(psi);
 
         var receiver = new LoopbackOAuthReceiver();
         var (code, error) = await receiver.ReceiveCodeAsync(RedirectUri + "/", ct, state);

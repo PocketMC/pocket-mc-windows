@@ -27,7 +27,7 @@ namespace PocketMC.Desktop.Features.Shell
             try
             {
                 var psi = new ProcessStartInfo(invite) { UseShellExecute = true };
-                Process.Start(psi);
+                using var proc = Process.Start(psi);
             }
             catch (Exception ex)
             {
@@ -54,7 +54,7 @@ namespace PocketMC.Desktop.Features.Shell
             try
             {
                 var psi = new ProcessStartInfo(formUrl) { UseShellExecute = true };
-                Process.Start(psi);
+                using var proc = Process.Start(psi);
             }
             catch (Exception ex)
             {
@@ -68,7 +68,7 @@ namespace PocketMC.Desktop.Features.Shell
             try
             {
                 var psi = new ProcessStartInfo(repoUrl) { UseShellExecute = true };
-                Process.Start(psi);
+                using var proc = Process.Start(psi);
             }
             catch (Exception ex)
             {
@@ -82,7 +82,7 @@ namespace PocketMC.Desktop.Features.Shell
             try
             {
                 var psi = new ProcessStartInfo(donationUrl) { UseShellExecute = true };
-                Process.Start(psi);
+                using var proc = Process.Start(psi);
             }
             catch (Exception ex)
             {
@@ -92,7 +92,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            Process.Start(new ProcessStartInfo
+            using var proc = Process.Start(new ProcessStartInfo
             {
                 FileName = e.Uri.AbsoluteUri,
                 UseShellExecute = true
