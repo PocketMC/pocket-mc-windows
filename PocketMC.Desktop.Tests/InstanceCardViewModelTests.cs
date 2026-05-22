@@ -71,7 +71,7 @@ public sealed class InstanceCardViewModelTests
     [Fact]
     public void Constructor_WithLastPlayedAt_FormatsLastPlayedText()
     {
-        var lastPlayed = new DateTime(2026, 5, 20, 12, 30, 0, DateTimeKind.Utc);
+        var lastPlayed = DateTime.UtcNow.AddHours(-3);
         var metadata = new InstanceMetadata
         {
             Id = Guid.NewGuid(),

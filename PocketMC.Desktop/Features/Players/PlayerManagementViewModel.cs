@@ -183,7 +183,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         try
         {
-            await _serverProcess.WriteInputAsync("list");
+            await _serverProcess.WriteListCommandAsync();
         }
         catch (Exception ex)
         {

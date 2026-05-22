@@ -57,10 +57,11 @@ public class ServerProcessManagerTests
         File.Copy(Environment.GetEnvironmentVariable("ComSpec") ?? @"C:\Windows\System32\cmd.exe", serverExePath);
 
         DateTime beforeStart = DateTime.UtcNow.AddSeconds(-1);
+        ServerProcess? process = null;
 
         try
         {
-            await processManager.StartProcessAsync(metadata, workspace.RootPath);
+            process = await processManager.StartProcessAsync(metadata, workspace.RootPath);
 
             string metadataJson = File.ReadAllText(workspace.PathService.GetMetadataPath(instancePath));
             InstanceMetadata savedMetadata = JsonSerializer.Deserialize<InstanceMetadata>(metadataJson)!;
@@ -71,6 +72,12 @@ public class ServerProcessManagerTests
         }
         finally
         {
+            if (process != null)
+            {
+                var internalProc = process.GetInternalProcess();
+                try { processManager.KillProcess(metadata.Id); } catch {}
+                try { internalProc?.WaitForExit(5000); } catch {}
+            }
             processManager.ReleaseInstance(metadata.Id);
         }
     }

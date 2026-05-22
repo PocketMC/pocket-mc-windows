@@ -23,6 +23,7 @@ using PocketMC.Desktop.Features.Tunnel;
 using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Players;
+using PocketMC.Desktop.Features.Players.Services;
 
 
 namespace PocketMC.Desktop.Features.Console
@@ -355,10 +356,120 @@ namespace PocketMC.Desktop.Features.Console
                     using var stream = new System.IO.FileStream(logFile, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite);
                     using var reader = new System.IO.StreamReader(stream);
 
+                    int autoListSuppressCounter = 0;
+                    bool suppressingListResponse = false;
+
+                    int? pendingMultilinePlayerCount = null;
+                    var pendingMultilinePlayerNames = new System.Collections.Generic.List<string>();
+                    var pendingMultilineStyle = PlayerListContinuationStyle.None;
+                    var playerListParser = new PlayerListParser();
+
                     string? line;
                     while ((line = reader.ReadLine()) != null)
                     {
-                        _pendingLines.Enqueue(ColorizeLogLine(line));
+                        string sanitizedLine = LogSanitizer.SanitizeConsoleLine(line);
+                        bool shouldSuppress = false;
+
+                        if (suppressingListResponse && pendingMultilinePlayerCount.HasValue)
+                        {
+                            if (playerListParser.TryParseContinuationLine(sanitizedLine, pendingMultilineStyle, out string playerName))
+                            {
+                                pendingMultilinePlayerNames.Add(playerName);
+                                shouldSuppress = true;
+
+                                if (pendingMultilinePlayerNames.Count >= pendingMultilinePlayerCount.Value)
+                                {
+                                    pendingMultilinePlayerCount = null;
+                                    pendingMultilinePlayerNames.Clear();
+                                    pendingMultilineStyle = PlayerListContinuationStyle.None;
+                                    suppressingListResponse = false;
+                                }
+                            }
+                            else
+                            {
+                                pendingMultilinePlayerCount = null;
+                                pendingMultilinePlayerNames.Clear();
+                                pendingMultilineStyle = PlayerListContinuationStyle.None;
+                                suppressingListResponse = false;
+                            }
+                        }
+
+                        if (!shouldSuppress)
+                        {
+                            bool isListResponse = ServerProcess.IsListResponseLine(sanitizedLine);
+                            if (isListResponse)
+                            {
+                                autoListSuppressCounter++;
+
+                                if (autoListSuppressCounter >= 100)
+                                {
+                                    autoListSuppressCounter = 0;
+                                    suppressingListResponse = false;
+                                    shouldSuppress = false;
+                                }
+                                else
+                                {
+                                    suppressingListResponse = true;
+                                    shouldSuppress = true;
+
+                                    var parseResult = playerListParser.ParseLine(sanitizedLine, _metadata.ServerType);
+                                    if (parseResult != null && !parseResult.IsComplete)
+                                    {
+                                        pendingMultilinePlayerCount = parseResult.OnlinePlayerCount;
+                                        pendingMultilinePlayerNames.Clear();
+                                        pendingMultilineStyle = parseResult.ContinuationStyle;
+                                    }
+                                    else
+                                    {
+                                        pendingMultilinePlayerCount = null;
+                                        pendingMultilinePlayerNames.Clear();
+                                        pendingMultilineStyle = PlayerListContinuationStyle.None;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                suppressingListResponse = false;
+                            }
+                        }
+
+                        if (!shouldSuppress)
+                        {
+                            if (pendingMultilinePlayerCount.HasValue)
+                            {
+                                if (playerListParser.TryParseContinuationLine(sanitizedLine, pendingMultilineStyle, out string playerName))
+                                {
+                                    pendingMultilinePlayerNames.Add(playerName);
+                                    if (pendingMultilinePlayerNames.Count >= pendingMultilinePlayerCount.Value)
+                                    {
+                                        pendingMultilinePlayerCount = null;
+                                        pendingMultilinePlayerNames.Clear();
+                                        pendingMultilineStyle = PlayerListContinuationStyle.None;
+                                    }
+                                }
+                                else
+                                {
+                                    pendingMultilinePlayerCount = null;
+                                    pendingMultilinePlayerNames.Clear();
+                                    pendingMultilineStyle = PlayerListContinuationStyle.None;
+                                }
+                            }
+                            else
+                            {
+                                var parseResult = playerListParser.ParseLine(sanitizedLine, _metadata.ServerType);
+                                if (parseResult != null && !parseResult.IsComplete)
+                                {
+                                    pendingMultilinePlayerCount = parseResult.OnlinePlayerCount;
+                                    pendingMultilinePlayerNames.Clear();
+                                    pendingMultilineStyle = parseResult.ContinuationStyle;
+                                }
+                            }
+                        }
+
+                        if (!shouldSuppress)
+                        {
+                            _pendingLines.Enqueue(ColorizeLogLine(line));
+                        }
                     }
                 }
             }

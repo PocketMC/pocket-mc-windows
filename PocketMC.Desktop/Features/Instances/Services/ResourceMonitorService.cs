@@ -136,7 +136,7 @@ namespace PocketMC.Desktop.Features.Instances.Services
 
                         if (sendListCommand && sp.State == ServerState.Online)
                         {
-                            Task.Run(() => sp.WriteInputAsync("list"));
+                            Task.Run(() => sp.WriteListCommandAsync());
                         }
                     }
                     catch (Win32Exception ex)

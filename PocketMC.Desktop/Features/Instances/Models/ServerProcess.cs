@@ -46,6 +46,18 @@ public class ServerProcess : IDisposable
     private PlayerListContinuationStyle _pendingMultilineStyle = PlayerListContinuationStyle.None;
     private string _serverType = "Vanilla";
 
+    // ── List-command console suppression ──────────────────────────────
+    // Programmatic "list" commands flood the console with player-count
+    // responses every few seconds.  We suppress the output lines from
+    // OnOutputLine (the console UI feed) while keeping ALL internal
+    // processing intact (output buffer, session log, player counting).
+    // Every Nth response is still shown so the console isn't completely
+    // silent about list activity.
+    private const int ListSuppressShowEvery = 100;
+    private int _pendingAutoListCommands;
+    private int _autoListSuppressCounter;
+    private bool _suppressingListResponse;
+
     public Guid InstanceId { get; }
     public ServerState State { get; private set; } = ServerState.Stopped;
     public string WorkingDirectory { get; private set; } = string.Empty;
@@ -165,6 +177,20 @@ public class ServerProcess : IDisposable
             await _process.StandardInput.WriteLineAsync(command);
     }
 
+    /// <summary>
+    /// Sends the "list" command to the server and marks the response for
+    /// console-display suppression.  All internal processing (player count,
+    /// session log, output buffer) continues normally — only the
+    /// <see cref="OnOutputLine"/> event is suppressed for the response lines.
+    /// Every <see cref="ListSuppressShowEvery"/>th response is still emitted
+    /// so the user knows the feature is active.
+    /// </summary>
+    public async Task WriteListCommandAsync()
+    {
+        Interlocked.Increment(ref _pendingAutoListCommands);
+        await WriteInputAsync("list");
+    }
+
     public async Task StopAsync(int timeoutMs = 15000)
     {
         if (_process == null || _process.HasExited) return;
@@ -268,10 +294,67 @@ public class ServerProcess : IDisposable
         if (isError) OnErrorLine?.Invoke(sanitizedLine);
         else
         {
-            OnOutputLine?.Invoke(sanitizedLine);
+            // Player-count processing ALWAYS runs regardless of suppression.
             if (State == ServerState.Starting && (sanitizedLine.Contains("Done (") || sanitizedLine.Contains("Server started."))) SetState(ServerState.Online);
             UpdatePlayerCount(sanitizedLine);
+
+            // Determine if this line should be hidden from the console UI.
+            if (!ShouldSuppressListLine(sanitizedLine))
+            {
+                OnOutputLine?.Invoke(sanitizedLine);
+            }
         }
+    }
+
+    /// <summary>
+    /// Returns true when the line is part of an auto-generated "list"
+    /// command response and should be hidden from the console display.
+    /// </summary>
+    private bool ShouldSuppressListLine(string line)
+    {
+        // If we're in the middle of suppressing multi-line continuation,
+        // keep suppressing until the multi-line parse completes.
+        if (_suppressingListResponse && _pendingMultilinePlayerCount.HasValue)
+        {
+            return true;
+        }
+
+        // Check if this is a list-response header line.
+        bool isListResponse = IsListResponseLine(line);
+
+        if (isListResponse && Volatile.Read(ref _pendingAutoListCommands) > 0)
+        {
+            Interlocked.Decrement(ref _pendingAutoListCommands);
+            _autoListSuppressCounter++;
+
+            if (_autoListSuppressCounter >= ListSuppressShowEvery)
+            {
+                // Let this one through so the console shows periodic proof of life.
+                _autoListSuppressCounter = 0;
+                _suppressingListResponse = false;
+                return false;
+            }
+
+            // Suppress this response (and any continuation lines).
+            _suppressingListResponse = true;
+            return true;
+        }
+
+        // Not a list response — clear the suppression flag.
+        _suppressingListResponse = false;
+        return false;
+    }
+
+    /// <summary>
+    /// Detects whether a line is the header of a "list" command response
+    /// across all supported server types (Java, Bedrock, PocketMine).
+    /// </summary>
+    internal static bool IsListResponseLine(string line)
+    {
+        // Fast path: all known list-response formats contain one of these.
+        return line.Contains("players online", StringComparison.OrdinalIgnoreCase) ||
+               line.Contains("Players connected", StringComparison.OrdinalIgnoreCase) ||
+               line.Contains("Online players", StringComparison.OrdinalIgnoreCase);
     }
 
     private void UpdatePlayerCount(string line)
