@@ -490,7 +490,7 @@ namespace PocketMC.Desktop.Features.Setup
                 ExportBundleStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
 
                 // Select file in explorer
-                System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{bundlePath}\"");
+                using var proc = System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{bundlePath}\"");
             }
             catch (Exception ex)
             {

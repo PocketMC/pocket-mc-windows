@@ -240,7 +240,7 @@ public class GeyserProvisioningService
             string guidePath = Path.Combine(instancePath, "BEDROCK-CONNECT.txt");
             if (File.Exists(guidePath)) return;
 
-            File.WriteAllText(guidePath,
+            PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.AtomicWriteAllText(guidePath,
                 "=== Bedrock Cross-Play (Geyser + Floodgate) ===\n\n" +
                 "Java players:   Connect with the Java IP on port 25565 (as usual).\n" +
                 "Bedrock players: Connect with the SAME IP on Geyser's Bedrock UDP port (default: 19132).\n\n" +

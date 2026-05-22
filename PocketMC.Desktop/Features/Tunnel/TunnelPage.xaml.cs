@@ -394,7 +394,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             try
             {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                using var proc = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "https://playit.gg",
                     UseShellExecute = true

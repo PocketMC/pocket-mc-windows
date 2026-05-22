@@ -159,7 +159,7 @@ public partial class App : Application
             $".NET: {Environment.Version}{Environment.NewLine}" +
             $"{Environment.NewLine}{exception}";
 
-        File.WriteAllText(crashReportPath, contents);
+        PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.AtomicWriteAllText(crashReportPath, contents);
         return crashReportPath;
     }
 
