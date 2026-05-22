@@ -85,7 +85,10 @@ public sealed class InstanceCardViewModelTests
 
         Assert.StartsWith("Last played: ", vm.LastPlayedText);
         Assert.Contains(lastPlayed.ToLocalTime().ToString("MMM d, yyyy"), vm.LastPlayedText);
-        Assert.Equal(lastPlayed.ToLocalTime().ToString("MMM d, yyyy h:mm tt"), vm.LastPlayedValueText);
+        // LastPlayedValueText now shows relative time instead of exact date
+        Assert.Contains("ago", vm.LastPlayedValueText);
+        // Tooltip retains the exact date
+        Assert.Equal(lastPlayed.ToLocalTime().ToString("MMM d, yyyy h:mm tt"), vm.LastPlayedTooltip);
     }
 
     [Fact]
@@ -103,6 +106,77 @@ public sealed class InstanceCardViewModelTests
 
         Assert.Equal("Last played: Never", vm.LastPlayedText);
         Assert.Equal("Never", vm.LastPlayedValueText);
+        Assert.Equal("Never played", vm.LastPlayedTooltip);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_JustNow()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddSeconds(-30));
+        Assert.Equal("Just now", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_Minutes()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddMinutes(-5));
+        Assert.Equal("5 min ago", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_SingleMinute()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddMinutes(-1).AddSeconds(-10));
+        Assert.Equal("1 min ago", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_Hours()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddHours(-3));
+        Assert.Equal("3 hours ago", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_SingleHour()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddHours(-1).AddMinutes(-10));
+        Assert.Equal("1 hour ago", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_Yesterday()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddDays(-1).AddHours(-1));
+        Assert.Equal("Yesterday", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_Days()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddDays(-4));
+        Assert.Equal("4 days ago", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_Weeks()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddDays(-14));
+        Assert.Equal("2 weeks ago", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_Months()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddDays(-90));
+        Assert.Equal("3 months ago", result);
+    }
+
+    [Fact]
+    public void FormatRelativeTime_Years()
+    {
+        var result = InstanceCardViewModel.FormatRelativeTime(DateTime.UtcNow.AddDays(-400));
+        Assert.Equal("1 year ago", result);
     }
 
     private static InstanceCardViewModel CreateViewModel(PortReliabilityTestWorkspace workspace, InstanceMetadata metadata)

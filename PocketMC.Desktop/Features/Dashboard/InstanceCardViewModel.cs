@@ -77,8 +77,11 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         ? $"Last played: {_metadata.LastPlayedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)}"
         : "Last played: Never";
     public string LastPlayedValueText => _metadata.LastPlayedAt.HasValue
-        ? _metadata.LastPlayedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)
+        ? FormatRelativeTime(_metadata.LastPlayedAt.Value)
         : "Never";
+    public string LastPlayedTooltip => _metadata.LastPlayedAt.HasValue
+        ? _metadata.LastPlayedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)
+        : "Never played";
     public string CreatedText => $"Created: {_metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}";
     public string CreatedValueText => _metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
     public bool ShowCrossPlayBadge => HasGeyser;
@@ -435,12 +438,54 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CrossPlayBadgeTooltip));
         OnPropertyChanged(nameof(LastPlayedText));
         OnPropertyChanged(nameof(LastPlayedValueText));
+        OnPropertyChanged(nameof(LastPlayedTooltip));
         OnPropertyChanged(nameof(CreatedText));
         OnPropertyChanged(nameof(CreatedValueText));
         OnPropertyChanged(nameof(PlatformSummaryText));
         OnPropertyChanged(nameof(PrimaryPort));
         OnPropertyChanged(nameof(LanAddressDisplayText));
         OnPropertyChanged(nameof(BedrockIpDisplayText));
+    }
+
+    /// <summary>
+    /// Converts a UTC DateTime to a human-friendly relative time string.
+    /// Examples: "Just now", "5 min ago", "3 hours ago", "2 days ago",
+    /// "3 weeks ago", "2 months ago", "1 year ago".
+    /// </summary>
+    internal static string FormatRelativeTime(DateTime utcDateTime)
+    {
+        var elapsed = DateTime.UtcNow - utcDateTime;
+
+        if (elapsed.TotalSeconds < 60)
+            return "Just now";
+        if (elapsed.TotalMinutes < 60)
+        {
+            int minutes = (int)elapsed.TotalMinutes;
+            return minutes == 1 ? "1 min ago" : $"{minutes} min ago";
+        }
+        if (elapsed.TotalHours < 24)
+        {
+            int hours = (int)elapsed.TotalHours;
+            return hours == 1 ? "1 hour ago" : $"{hours} hours ago";
+        }
+        if (elapsed.TotalDays < 7)
+        {
+            int days = (int)elapsed.TotalDays;
+            return days == 1 ? "Yesterday" : $"{days} days ago";
+        }
+        if (elapsed.TotalDays < 30)
+        {
+            int weeks = (int)(elapsed.TotalDays / 7);
+            return weeks == 1 ? "1 week ago" : $"{weeks} weeks ago";
+        }
+        if (elapsed.TotalDays < 365)
+        {
+            int months = (int)(elapsed.TotalDays / 30);
+            return months == 1 ? "1 month ago" : $"{months} months ago";
+        }
+
+        int years = (int)(elapsed.TotalDays / 365);
+        return years == 1 ? "1 year ago" : $"{years} years ago";
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

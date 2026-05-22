@@ -159,7 +159,7 @@
                                     <UniformGrid Columns="3">
                                         <StackPanel Margin="0,0,8,0">
                                             <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Last played"/>
-                                            <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding LastPlayedValueText}"/>
+                                            <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding LastPlayedValueText}" ToolTip="{Binding LastPlayedTooltip}"/>
                                         </StackPanel>
 
                                         <StackPanel Margin="4,0,4,0" HorizontalAlignment="Stretch">
