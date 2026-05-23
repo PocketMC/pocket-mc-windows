@@ -29,6 +29,20 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         private readonly VanillaProvider _vanillaProvider;
         private readonly ILogger<ServerLaunchConfigurator> _logger;
 
+        internal Func<int, string, Task<bool>> ConfirmJavaDownloadPrompt { get; set; } = async (version, serverName) =>
+        {
+            if (System.Windows.Application.Current != null)
+            {
+                return await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    return AppDialog.Confirm(
+                        "Download Java Runtime",
+                        $"Java {version} is required to start the server '{serverName}', but it is not installed.\n\nWould you like to download and install it now?");
+                });
+            }
+            return true; // Default to true in non-WPF environments/tests
+        };
+
         public ServerLaunchConfigurator(
             JavaProvisioningService javaProvisioning, 
             PhpProvisioningService phpProvisioning,
@@ -208,7 +222,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
 
         private async Task<string> EnsureAndResolveJavaPathAsync(InstanceMetadata meta, int requiredVersion, string appRootPath, Action<string> onLog)
         {
-            // Architecture: Ensure required Java runtime is present and healthy (Auto-Repair)
+            // Architecture: Ensure required Java runtime is present and healthy (Auto-Repair / On-Demand Provisioning)
             bool expectsBundled = string.IsNullOrWhiteSpace(meta.CustomJavaPath) ||
                                   JavaRuntimeResolver.IsBundledJavaPath(meta.CustomJavaPath, requiredVersion, appRootPath);
 
@@ -218,16 +232,22 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             {
                 if (!_javaProvisioning.IsJavaVersionPresent(requiredVersion))
                 {
-                    onLog($"[PocketMC] Required Java {requiredVersion} is missing or corrupt. Starting auto-repair...");
+                    bool confirmed = await ConfirmJavaDownloadPrompt(requiredVersion, meta.Name);
+                    if (!confirmed)
+                    {
+                        throw new InvalidOperationException($"Startup aborted: Java {requiredVersion} is required but was not downloaded.");
+                    }
+
+                    onLog($"[PocketMC] Required Java {requiredVersion} is missing. Starting download...");
                     try
                     {
                         await _javaProvisioning.EnsureJavaAsync(requiredVersion);
-                        onLog($"[PocketMC] Java {requiredVersion} repaired successfully.");
+                        onLog($"[PocketMC] Java {requiredVersion} installed successfully.");
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Java auto-repair failed for instance {InstanceName}.", meta.Name);
-                        onLog($"[PocketMC] CRITICAL: Java auto-repair failed: {ex.Message}");
+                        _logger.LogError(ex, "Java provisioning failed for instance {InstanceName}.", meta.Name);
+                        onLog($"[PocketMC] CRITICAL: Java download failed: {ex.Message}");
                         throw;
                     }
                 }

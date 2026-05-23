@@ -94,6 +94,52 @@ public sealed class ServerLaunchConfiguratorTests : IDisposable
         Assert.Contains(Path.GetFileName(forgeJar), psi.ArgumentList);
     }
 
+    [Fact]
+    public async Task ConfigureAsync_WhenJavaMissing_AndUserApproves_DownloadsAndSucceeds()
+    {
+        var meta = new InstanceMetadata { MinecraftVersion = "1.20.4", ServerType = "Vanilla" };
+        File.WriteAllText(Path.Combine(_tempDirectory, "server.jar"), "");
+
+        _javaMock.Setup(x => x.IsJavaVersionPresent(17)).Returns(false);
+        _javaMock.Setup(x => x.EnsureJavaAsync(17, false, null, It.IsAny<System.Threading.CancellationToken>()))
+                 .Returns(Task.CompletedTask);
+
+        bool promptCalled = false;
+        _configurator.ConfirmJavaDownloadPrompt = (version, name) =>
+        {
+            promptCalled = true;
+            return Task.FromResult(true);
+        };
+
+        var psi = await _configurator.ConfigureAsync(meta, _tempDirectory, _tempDirectory, _ => { });
+
+        Assert.True(promptCalled);
+        _javaMock.Verify(x => x.EnsureJavaAsync(17, false, null, It.IsAny<System.Threading.CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ConfigureAsync_WhenJavaMissing_AndUserDeclines_ThrowsInvalidOperationException()
+    {
+        var meta = new InstanceMetadata { MinecraftVersion = "1.20.4", ServerType = "Vanilla" };
+        File.WriteAllText(Path.Combine(_tempDirectory, "server.jar"), "");
+
+        _javaMock.Setup(x => x.IsJavaVersionPresent(17)).Returns(false);
+
+        bool promptCalled = false;
+        _configurator.ConfirmJavaDownloadPrompt = (version, name) =>
+        {
+            promptCalled = true;
+            return Task.FromResult(false);
+        };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _configurator.ConfigureAsync(meta, _tempDirectory, _tempDirectory, _ => { }));
+
+        Assert.Contains("Startup aborted: Java 17 is required", ex.Message);
+        Assert.True(promptCalled);
+        _javaMock.Verify(x => x.EnsureJavaAsync(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<IProgress<DownloadProgress>>(), It.IsAny<System.Threading.CancellationToken>()), Times.Never);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))

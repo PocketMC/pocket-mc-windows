@@ -96,11 +96,11 @@ namespace PocketMC.Desktop.Features.Java
             lock (_backgroundProvisioningLock)
             {
                 if (_backgroundProvisioningTask is { IsCompleted: false }) return;
-                if (JavaRuntimeResolver.GetBundledJavaVersions().All(IsJavaVersionPresent)) return;
+                if (IsJavaVersionPresent(25)) return;
 
                 _backgroundProvisioningTask = Task.Run(async () =>
                 {
-                    try { await EnsureVersionsAsync(JavaRuntimeResolver.GetBundledJavaVersions(), ignoreAutomaticRetryCooldown: false, isManualUserTriggered: false, CancellationToken.None); }
+                    try { await EnsureVersionsAsync(new[] { 25 }, ignoreAutomaticRetryCooldown: false, isManualUserTriggered: false, CancellationToken.None); }
                     catch (Exception ex) { _logger.LogWarning(ex, "Background Java provisioning incomplete."); }
                 });
             }
