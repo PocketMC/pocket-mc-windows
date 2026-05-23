@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Linq;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
@@ -37,12 +39,15 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private string? _portIssueTooltip;
     private bool _isTunnelResolving;
 
-    public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager, IServerLifecycleService lifecycleService, PocketMC.Desktop.Features.Shell.ApplicationState appState)
+    private readonly InstanceRegistry _registry;
+
+    public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager, IServerLifecycleService lifecycleService, PocketMC.Desktop.Features.Shell.ApplicationState appState, InstanceRegistry registry)
     {
         _metadata = metadata;
         _serverProcessManager = serverProcessManager;
         _lifecycleService = lifecycleService;
         _appState = appState;
+        _registry = registry;
         _bedrockLocalPort = metadata.GeyserBedrockPort ?? 19132;
 
         _tunnelAddress = appState.GetTunnelAddress(metadata.Id);
@@ -84,7 +89,34 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         : "Never played";
     public string CreatedText => $"Created: {_metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}";
     public string CreatedValueText => _metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
-    public bool ShowCrossPlayBadge => HasGeyser;
+    public bool ShowCrossPlayBadge
+    {
+        get
+        {
+            if (!HasGeyser) return false;
+
+            try
+            {
+                string? path = _registry.GetPath(Id);
+                if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return false;
+
+                string pluginsDir = Path.Combine(path, "plugins");
+                string modsDir = Path.Combine(path, "mods");
+
+                bool geyserInPlugins = Directory.Exists(pluginsDir) && 
+                                       Directory.EnumerateFiles(pluginsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
+
+                bool geyserInMods = Directory.Exists(modsDir) && 
+                                     Directory.EnumerateFiles(modsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
+
+                return geyserInPlugins || geyserInMods;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
     public Visibility CrossPlayBadgeVisibility => ShowCrossPlayBadge ? Visibility.Visible : Visibility.Collapsed;
     public string CrossPlayBadgeText => "Cross-play";
     public string CrossPlayBadgeTooltip => "Java and Bedrock players can join through Geyser/Floodgate.";

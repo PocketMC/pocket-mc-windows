@@ -614,7 +614,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             _isCreating = isCreating;
             IsDownloadInProgress = isCreating;
             InputsPanel.IsEnabled = !isCreating;
-            BtnCancel.IsEnabled = !isCreating;
+            BtnCancel.IsEnabled = true;
             ProgressOverlay.Visibility = isCreating ? Visibility.Visible : Visibility.Collapsed;
 
             if (isCreating)

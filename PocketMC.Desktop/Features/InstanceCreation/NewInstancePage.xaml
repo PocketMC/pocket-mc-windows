@@ -43,44 +43,83 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0"
-                    x:Name="ErrorCallout"
-                    HorizontalAlignment="Left"
-                    Visibility="Collapsed"
-                    Background="#26F44336"
-                    BorderBrush="#66F44336"
-                    BorderThickness="1"
-                    CornerRadius="14"
-                    Padding="12"
-                    Margin="0,0,16,0">
-                <StackPanel Orientation="Horizontal">
-                    <Border Width="8"
-                            Height="8"
-                            Background="#FFB4AB"
-                            CornerRadius="4"
-                            Margin="0,5,10,0"
-                            VerticalAlignment="Top"/>
-                    <TextBlock x:Name="TxtError"
-                               Foreground="#FFE8E6"
-                               TextWrapping="Wrap"
-                           VerticalAlignment="Center"/>
-                </StackPanel>
-            </Border>
+                <Grid Grid.Column="0" Margin="0,0,24,0" VerticalAlignment="Center">
+                    <!-- Error Callout -->
+                    <Border x:Name="ErrorCallout"
+                            HorizontalAlignment="Left"
+                            Visibility="Collapsed"
+                            Background="#26F44336"
+                            BorderBrush="#66F44336"
+                            BorderThickness="1"
+                            CornerRadius="14"
+                            Padding="12">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Width="8"
+                                    Height="8"
+                                    Background="#FFB4AB"
+                                    CornerRadius="4"
+                                    Margin="0,5,10,0"
+                                    VerticalAlignment="Top"/>
+                            <TextBlock x:Name="TxtError"
+                                       Foreground="#FFE8E6"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
 
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-                <ui:Button x:Name="BtnCancel"
-                           Content="Cancel"
-                           Appearance="Secondary"
-                           Margin="0,0,8,0"
-                           Click="BtnBack_Click"/>
-                <ui:Button x:Name="BtnCreate"
-                           Content="Create and Download"
-                           Appearance="Primary"
-                           Icon="{ui:SymbolIcon ArrowDownload24}"
-                           Click="BtnCreate_Click"/>
-            </StackPanel>
+                    <!-- Progress Overlay (moved to footer) -->
+                    <StackPanel x:Name="ProgressOverlay" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
+                                <ui:ProgressRing Width="16"
+                                                 Height="16"
+                                                 IsIndeterminate="True"
+                                                 Margin="0,0,8,0"
+                                                 VerticalAlignment="Center"/>
+                                <TextBlock Text="Preparing your server files..."
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           FontWeight="SemiBold"
+                                           FontSize="13"/>
+                            </StackPanel>
+                            
+                            <TextBlock x:Name="TxtProgress"
+                                       Grid.Column="1"
+                                       Text="Waiting for download..."
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                        
+                        <ProgressBar x:Name="PrgDownload"
+                                     Minimum="0"
+                                     Maximum="100"
+                                     Height="4"
+                                     Margin="0,0,0,0"
+                                     VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <ui:Button x:Name="BtnCancel"
+                               Content="Cancel"
+                               Appearance="Secondary"
+                               Margin="0,0,8,0"
+                               Click="BtnBack_Click"/>
+                    <ui:Button x:Name="BtnCreate"
+                               Content="Create and Download"
+                               Appearance="Primary"
+                               Icon="{ui:SymbolIcon ArrowDownload24}"
+                               Click="BtnCreate_Click"/>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -350,37 +389,6 @@
                     </StackPanel>
                 </Grid>
             </ui:Card>
-
-            <Border x:Name="ProgressOverlay"
-                    Visibility="Collapsed"
-                    Background="#10FFFFFF"
-                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="14"
-                    Padding="14"
-                    Margin="0,16,0,14">
-                <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <ui:ProgressRing Width="18"
-                                     Height="18"
-                                     IsIndeterminate="True"
-                                     Margin="0,0,8,0"/>
-                    <TextBlock Text="Preparing your server files..."
-                               VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               FontWeight="SemiBold"/>
-                </StackPanel>
-                <ProgressBar x:Name="PrgDownload"
-                             Minimum="0"
-                             Maximum="100"
-                             Height="6"
-                             Margin="0,0,0,8"/>
-                <TextBlock x:Name="TxtProgress"
-                           Text="Waiting for download..."
-                           FontSize="12"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                </StackPanel>
-            </Border>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

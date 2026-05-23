@@ -251,16 +251,8 @@ public sealed class DiscordRpcService : IDiscordRpcService
 
             case ServerState.Online:
             default:
-                int playerCount = process.PlayerCount;
-                int maxPlayers = metadata.MaxPlayers;
-
                 details = $"Hosting {metadata.Name}";
-
-                // Build state string with player count and optional tunnel address
-                string? tunnelAddress = ResolveTunnelAddress(metadata);
-                state = !string.IsNullOrEmpty(tunnelAddress)
-                    ? $"{playerCount}/{maxPlayers} Players • {tunnelAddress}"
-                    : $"{playerCount}/{maxPlayers} Players • {engineLabel}";
+                state = BuildOnlineStateText(process, metadata);
 
                 smallImageKey = "pocketmc";
                 smallImageText = $"{engineLabel} {metadata.MinecraftVersion}";
@@ -298,36 +290,71 @@ public sealed class DiscordRpcService : IDiscordRpcService
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
-    private string? ResolveTunnelAddress(InstanceMetadata metadata)
+    private string BuildOnlineStateText(ServerProcess process, InstanceMetadata metadata)
     {
-        // Prefer bedrock tunnel for Bedrock/PocketMine engines
+        int playerCount = process.PlayerCount;
+        int maxPlayers = metadata.MaxPlayers;
+        string prefix = $"{playerCount}/{maxPlayers} Players";
+
         bool isBedrock = metadata.ServerType.Equals("BedrockBDS", StringComparison.OrdinalIgnoreCase) ||
                          metadata.ServerType.Equals("Pocketmine", StringComparison.OrdinalIgnoreCase);
 
         if (isBedrock)
         {
-            return _applicationState.GetBedrockTunnelAddress(metadata.Id)
+            // Native Bedrock/Pocketmine: show bedrock tunnel address (includes external port)
+            string? bedrockAddr = _applicationState.GetBedrockTunnelAddress(metadata.Id)
                 ?? _applicationState.GetTunnelAddress(metadata.Id);
+
+            if (!string.IsNullOrEmpty(bedrockAddr))
+            {
+                return $"{prefix} • {bedrockAddr}";
+            }
+            return $"{prefix} • Bedrock BDS";
         }
 
-        // Java: try primary tunnel, then bedrock (for Geyser cross-play)
-        return _applicationState.GetTunnelAddress(metadata.Id)
-            ?? _applicationState.GetBedrockTunnelAddress(metadata.Id);
+        if (metadata.HasGeyser)
+        {
+            // Java with Geyser: show Java address AND Bedrock/Geyser address
+            string? javaAddr = _applicationState.GetTunnelAddress(metadata.Id);
+            string? bedrockAddr = _applicationState.GetBedrockTunnelAddress(metadata.Id);
+
+            if (!string.IsNullOrEmpty(javaAddr) && !string.IsNullOrEmpty(bedrockAddr))
+            {
+                return $"{prefix} • Java: {javaAddr} • Bedrock: {bedrockAddr}";
+            }
+            if (!string.IsNullOrEmpty(javaAddr))
+            {
+                return $"{prefix} • Java: {javaAddr}";
+            }
+            if (!string.IsNullOrEmpty(bedrockAddr))
+            {
+                return $"{prefix} • Bedrock: {bedrockAddr}";
+            }
+
+            return $"{prefix} • {metadata.ServerType} + Geyser";
+        }
+
+        // Standard Java server
+        string? normalAddr = _applicationState.GetTunnelAddress(metadata.Id);
+        if (!string.IsNullOrEmpty(normalAddr))
+        {
+            return $"{prefix} • {normalAddr}";
+        }
+        return $"{prefix} • {metadata.ServerType}";
     }
 
     private static string GetEngineAssetKey(string serverType)
     {
-        return serverType?.ToLowerInvariant() switch
-        {
-            "vanilla" => "vanilla",
-            "paper" => "paper",
-            "fabric" => "fabric",
-            "forge" => "forge",
-            "neoforge" => "neoforge",
-            "bedrockbds" => "bedrock",
-            "pocketmine" => "pocketmine",
-            _ => "pocketmc"
-        };
+        if (string.IsNullOrEmpty(serverType)) return "pocketmc";
+        string typeLower = serverType.ToLowerInvariant();
+        if (typeLower.Contains("paper")) return "paper";
+        if (typeLower.Contains("fabric")) return "fabric";
+        if (typeLower.Contains("neoforge")) return "neoforge";
+        if (typeLower.Contains("forge")) return "forge";
+        if (typeLower.Contains("bedrock")) return "bedrock";
+        if (typeLower.Contains("pocketmine")) return "pocketmine";
+        if (typeLower.Contains("vanilla")) return "vanilla";
+        return "pocketmc";
     }
 
     private static string TruncateForDiscord(string value, int maxLength)

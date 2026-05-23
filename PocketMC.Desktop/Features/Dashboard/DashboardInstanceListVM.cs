@@ -63,7 +63,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 }
                 else
                 {
-                    var newVm = new InstanceCardViewModel(meta, _serverProcessManager, _lifecycleService, _applicationState);
+                    var newVm = new InstanceCardViewModel(meta, _serverProcessManager, _lifecycleService, _applicationState, _registry);
                     Instances.Add(newVm);
                 }
             }
