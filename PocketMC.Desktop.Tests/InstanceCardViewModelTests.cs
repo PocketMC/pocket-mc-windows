@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Windows;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Models;
 
@@ -58,6 +60,20 @@ public sealed class InstanceCardViewModelTests
         var vm = CreateViewModel(workspace, metadata);
 
         Assert.False(vm.ShowCrossPlayBadge);
+    }
+
+    [Fact]
+    public void Constructor_WithVoiceChatEnabled_ShowsVoiceChatBadge()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Voice Server", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
+        var vm = CreateViewModel(workspace, metadata);
+
+        Assert.True(vm.ShowVoiceChatBadge);
+        Assert.Equal("Voice Chat", vm.VoiceChatBadgeText);
+        Assert.Equal(Visibility.Visible, vm.VoiceChatBadgeVisibility);
+        Assert.Contains("Voice Chat", vm.VoiceChatBadgeTooltip);
     }
 
     [Fact]

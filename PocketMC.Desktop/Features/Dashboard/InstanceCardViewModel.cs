@@ -11,6 +11,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
+using PocketMC.Desktop.Features.Networking;
 
 namespace PocketMC.Desktop.Features.Dashboard;
 
@@ -93,6 +94,28 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public Visibility CrossPlayBadgeVisibility => ShowCrossPlayBadge ? Visibility.Visible : Visibility.Collapsed;
     public string CrossPlayBadgeText => "Cross-play";
     public string CrossPlayBadgeTooltip => "Java and Bedrock players can join through Geyser/Floodgate.";
+
+    public bool ShowVoiceChatBadge
+    {
+        get
+        {
+            try
+            {
+                string? path = _registry.GetPath(Id);
+                if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return false;
+                var detection = SimpleVoiceChatDetector.Detect(path);
+                return detection.IsDetected;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+    public Visibility VoiceChatBadgeVisibility => ShowVoiceChatBadge ? Visibility.Visible : Visibility.Collapsed;
+    public string VoiceChatBadgeText => "Voice Chat";
+    public string VoiceChatBadgeTooltip => "Simple Voice Chat is active on this server.";
+
     public string PlatformSummaryText => ShowCrossPlayBadge
         ? "Java + Bedrock"
         : IsBedrockServer ? "Bedrock network" : "Java network";
@@ -467,6 +490,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CrossPlayBadgeVisibility));
         OnPropertyChanged(nameof(CrossPlayBadgeText));
         OnPropertyChanged(nameof(CrossPlayBadgeTooltip));
+        OnPropertyChanged(nameof(ShowVoiceChatBadge));
+        OnPropertyChanged(nameof(VoiceChatBadgeVisibility));
+        OnPropertyChanged(nameof(VoiceChatBadgeText));
+        OnPropertyChanged(nameof(VoiceChatBadgeTooltip));
         OnPropertyChanged(nameof(LastPlayedText));
         OnPropertyChanged(nameof(LastPlayedValueText));
         OnPropertyChanged(nameof(LastPlayedTooltip));
