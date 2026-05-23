@@ -51,6 +51,8 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
         string serverName,
         AiProviderType provider,
         string apiKey,
+        string? modelName,
+        string? endpointUrl,
         DateTime sessionStart,
         DateTime sessionEnd,
         CancellationToken ct = default)
@@ -83,7 +85,7 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
             if (chunks.Count == 1)
             {
                 // Single chunk — direct summarization
-                var result = await _aiClient.SendAsync(provider, apiKey, SystemPrompt, chunks[0], ct);
+                var result = await _aiClient.SendAsync(provider, apiKey, modelName ?? "", endpointUrl ?? "", SystemPrompt, chunks[0], ct);
                 if (!result.Success)
                     return SummarizationResult.Fail($"AI API error: {result.Error}");
                 finalContent = result.Content;
@@ -97,7 +99,7 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
                 for (int i = 0; i < chunks.Count; i++)
                 {
                     var chunkPrompt = $"This is part {i + 1} of {chunks.Count} of the server logs. Summarize this section:";
-                    var result = await _aiClient.SendAsync(provider, apiKey, chunkPrompt, chunks[i], ct);
+                    var result = await _aiClient.SendAsync(provider, apiKey, modelName ?? "", endpointUrl ?? "", chunkPrompt, chunks[i], ct);
                     if (!result.Success)
                         return SummarizationResult.Fail($"AI API error on chunk {i + 1}: {result.Error}");
 
@@ -107,7 +109,7 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
                 }
 
                 // Meta-summarize
-                var metaResult = await _aiClient.SendAsync(provider, apiKey,
+                var metaResult = await _aiClient.SendAsync(provider, apiKey, modelName ?? "", endpointUrl ?? "",
                     SystemPrompt + "\n\nYou are given partial summaries of a long session. Combine them into a single cohesive summary.",
                     partialSummaries.ToString(), ct);
 

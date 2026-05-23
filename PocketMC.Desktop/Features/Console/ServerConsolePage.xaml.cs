@@ -836,7 +836,7 @@ Logs:
 ";
 
                 var result = await _aiClient
-                    .SendAsync(provider, apiKey, prompt, contextBuilder.ToString());
+                    .SendAsync(provider, apiKey, _applicationState.Settings.GetCurrentAiModel() ?? "", _applicationState.Settings.GetCurrentAiEndpoint() ?? "", prompt, contextBuilder.ToString());
 
                 if (result.Success)
                     TxtAiResponse.Markdown = result.Content;
@@ -897,6 +897,8 @@ Logs:
                     _metadata.Name,
                     provider,
                     apiKey,
+                    _applicationState.Settings.GetCurrentAiModel(),
+                    _applicationState.Settings.GetCurrentAiEndpoint(),
                     _serverProcess.StartTime ?? DateTime.UtcNow.AddHours(-1),
                     DateTime.UtcNow);
 

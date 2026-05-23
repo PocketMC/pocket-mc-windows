@@ -118,6 +118,13 @@ namespace PocketMC.Desktop.Features.Setup
 
             // AI Settings
             AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
+            
+            var initialProviderType = AiApiClient.ParseProvider(_applicationState.Settings.AiProvider ?? "Gemini");
+            var (initialDefaultModel, initialDefaultEndpoint) = AiApiClient.GetProviderDefaults(initialProviderType);
+            AiModelNameInput.Text = _applicationState.Settings.GetCurrentAiModel() ?? initialDefaultModel;
+            AiEndpointUrlInput.Text = _applicationState.Settings.GetCurrentAiEndpoint() ?? initialDefaultEndpoint;
+            EndpointUrlPanel.Visibility = initialProviderType == AiProviderType.Ollama ? Visibility.Visible : Visibility.Collapsed;
+
             ToggleAiSummarization.IsChecked = _applicationState.Settings.EnableAiSummarization;
             ToggleAutoSummarize.IsChecked = _applicationState.Settings.AlwaysAutoSummarize;
 
@@ -317,12 +324,22 @@ namespace PocketMC.Desktop.Features.Setup
             if (_isInitializing) return;
 
             var settings = _applicationState.Settings;
-            var providerStr = GetSelectedProvider().ToString();
+            var providerType = GetSelectedProvider();
+            var providerStr = providerType.ToString();
             settings.AiProvider = providerStr;
 
             // Auto-fill the key for the newly selected provider
             settings.AiApiKeys.TryGetValue(providerStr, out var key);
             AiApiKeyInput.Text = key ?? string.Empty;
+
+            settings.AiModels.TryGetValue(providerStr, out var model);
+            settings.AiEndpoints.TryGetValue(providerStr, out var endpoint);
+
+            var (defaultModel, defaultEndpoint) = AiApiClient.GetProviderDefaults(providerType);
+            AiModelNameInput.Text = !string.IsNullOrWhiteSpace(model) ? model : defaultModel;
+            AiEndpointUrlInput.Text = !string.IsNullOrWhiteSpace(endpoint) ? endpoint : defaultEndpoint;
+            
+            EndpointUrlPanel.Visibility = providerType == AiProviderType.Ollama ? Visibility.Visible : Visibility.Collapsed;
 
             _settingsManager.Save(settings);
         }
@@ -330,20 +347,23 @@ namespace PocketMC.Desktop.Features.Setup
         private async void ValidateAiKey_Click(object sender, RoutedEventArgs e)
         {
             var apiKey = AiApiKeyInput.Text.Trim();
-            if (string.IsNullOrWhiteSpace(apiKey))
+            var modelName = AiModelNameInput.Text.Trim();
+            var endpointUrl = AiEndpointUrlInput.Text.Trim();
+            var provider = GetSelectedProvider();
+
+            if (provider != AiProviderType.Ollama && string.IsNullOrWhiteSpace(apiKey))
             {
                 AiKeyStatus.Text = "⚠ Please enter an API key first.";
                 AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
                 return;
             }
 
-            var provider = GetSelectedProvider();
             AiKeyStatus.Text = $"⏳ Validating with {AiApiClient.GetDisplayName(provider)}...";
             AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
 
             try
             {
-                var result = await _aiApiClient.ValidateKeyAsync(provider, apiKey);
+                var result = await _aiApiClient.ValidateKeyAsync(provider, apiKey, modelName, endpointUrl);
                 if (result.Success)
                 {
                     AiKeyStatus.Text = "✅ API key is valid! Connection successful.";
@@ -387,6 +407,8 @@ namespace PocketMC.Desktop.Features.Setup
 
             settings.AiProvider = provider;
             settings.AiApiKeys[provider] = AiApiKeyInput.Text.Trim();
+            settings.AiModels[provider] = AiModelNameInput.Text.Trim();
+            settings.AiEndpoints[provider] = AiEndpointUrlInput.Text.Trim();
 
             settings.EnableAiSummarization = ToggleAiSummarization.IsChecked == true;
             settings.AlwaysAutoSummarize = ToggleAutoSummarize.IsChecked == true;

@@ -200,7 +200,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 notificationService.ShowInformation("AI Summary", $"Generating summary for '{vm.Name}'...");
 
                 var result = await summarizationService.SummarizeAsync(
-                    serverDir, vm.Name, provider, settings.GetCurrentAiKey()!, sessionStart, sessionEnd);
+                    serverDir, vm.Name, provider, settings.GetCurrentAiKey()!, settings.GetCurrentAiModel(), settings.GetCurrentAiEndpoint(), sessionStart, sessionEnd);
 
                 if (result.Success)
                 {

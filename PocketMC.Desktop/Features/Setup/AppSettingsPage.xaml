@@ -191,6 +191,7 @@
                             <ComboBoxItem Content="Anthropic Claude"/>
                             <ComboBoxItem Content="Mistral AI"/>
                             <ComboBoxItem Content="Groq"/>
+                            <ComboBoxItem Content="Ollama"/>
                         </ComboBox>
 
                         <Separator Margin="0,16" Opacity="0.15"/>
@@ -209,6 +210,19 @@
                             <ui:Button Grid.Column="2" Content="Save" Appearance="Primary" Click="SaveAiKey_Click"/>
                         </Grid>
                         <TextBlock x:Name="AiKeyStatus" Text="" FontSize="12" Margin="0,6,0,0" Foreground="#A6E3A1"/>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                        <!-- Advanced Model Configuration -->
+                        <TextBlock Text="Model Name" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="Leave empty to use the recommended default model for this provider." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
+                        <ui:TextBox x:Name="AiModelNameInput" PlaceholderText="e.g. llama3" Margin="0,0,0,12"/>
+
+                        <StackPanel x:Name="EndpointUrlPanel" Visibility="Collapsed">
+                            <TextBlock Text="Endpoint URL" FontSize="14" FontWeight="Medium"/>
+                            <TextBlock Text="Override the default API endpoint. Required for local models like Ollama." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
+                            <ui:TextBox x:Name="AiEndpointUrlInput" PlaceholderText="e.g. http://localhost:11434/api/chat" Margin="0,0,0,16"/>
+                        </StackPanel>
 
                         <Separator Margin="0,16" Opacity="0.15"/>
 

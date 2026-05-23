@@ -19,7 +19,8 @@ public enum AiProviderType
     OpenAI,
     Claude,
     Mistral,
-    Groq
+    Groq,
+    Ollama
 }
 
 /// <summary>
@@ -36,9 +37,13 @@ public class AiApiClient
         [AiProviderType.Gemini] = new ProviderConfig
         {
             DisplayName = "Google Gemini",
-            BuildRequest = (apiKey, systemPrompt, userContent) =>
+            DefaultModel = "gemini-2.0-flash",
+            DefaultEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent",
+            BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
+                var m = string.IsNullOrWhiteSpace(model) ? "gemini-2.0-flash" : model;
+                var e = string.IsNullOrWhiteSpace(endpoint) ? "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent" : endpoint;
+                var url = e.Contains("{0}") ? string.Format(e, m) + $"?key={apiKey}" : $"{e}?key={apiKey}";
                 var body = new
                 {
                     contents = new[]
@@ -63,12 +68,15 @@ public class AiApiClient
         [AiProviderType.OpenAI] = new ProviderConfig
         {
             DisplayName = "OpenAI",
-            BuildRequest = (apiKey, systemPrompt, userContent) =>
+            DefaultModel = "gpt-5.4-mini",
+            DefaultEndpoint = "https://api.openai.com/v1/chat/completions",
+            BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var url = "https://api.openai.com/v1/chat/completions";
+                var m = string.IsNullOrWhiteSpace(model) ? "gpt-5.4-mini" : model;
+                var url = string.IsNullOrWhiteSpace(endpoint) ? "https://api.openai.com/v1/chat/completions" : endpoint;
                 var body = new
                 {
-                    model = "gpt-4o-mini",
+                    model = m,
                     messages = new object[]
                     {
                         new { role = "system", content = systemPrompt },
@@ -92,12 +100,15 @@ public class AiApiClient
         [AiProviderType.Claude] = new ProviderConfig
         {
             DisplayName = "Anthropic Claude",
-            BuildRequest = (apiKey, systemPrompt, userContent) =>
+            DefaultModel = "claude-4-5-haiku-202605",
+            DefaultEndpoint = "https://api.anthropic.com/v1/messages",
+            BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var url = "https://api.anthropic.com/v1/messages";
+                var m = string.IsNullOrWhiteSpace(model) ? "claude-4-5-haiku-202605" : model;
+                var url = string.IsNullOrWhiteSpace(endpoint) ? "https://api.anthropic.com/v1/messages" : endpoint;
                 var body = new
                 {
-                    model = "claude-3-5-sonnet-20241022",
+                    model = m,
                     max_tokens = 4096,
                     system = systemPrompt,
                     messages = new[]
@@ -119,12 +130,15 @@ public class AiApiClient
         [AiProviderType.Mistral] = new ProviderConfig
         {
             DisplayName = "Mistral AI",
-            BuildRequest = (apiKey, systemPrompt, userContent) =>
+            DefaultModel = "mistral-small-4",
+            DefaultEndpoint = "https://api.mistral.ai/v1/chat/completions",
+            BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var url = "https://api.mistral.ai/v1/chat/completions";
+                var m = string.IsNullOrWhiteSpace(model) ? "mistral-small-4" : model;
+                var url = string.IsNullOrWhiteSpace(endpoint) ? "https://api.mistral.ai/v1/chat/completions" : endpoint;
                 var body = new
                 {
-                    model = "mistral-small-latest",
+                    model = m,
                     messages = new object[]
                     {
                         new { role = "system", content = systemPrompt },
@@ -148,12 +162,15 @@ public class AiApiClient
         [AiProviderType.Groq] = new ProviderConfig
         {
             DisplayName = "Groq",
-            BuildRequest = (apiKey, systemPrompt, userContent) =>
+            DefaultModel = "llama-3.3-70b-versatile",
+            DefaultEndpoint = "https://api.groq.com/openai/v1/chat/completions",
+            BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var url = "https://api.groq.com/openai/v1/chat/completions";
+                var m = string.IsNullOrWhiteSpace(model) ? "llama-3.3-70b-versatile" : model;
+                var url = string.IsNullOrWhiteSpace(endpoint) ? "https://api.groq.com/openai/v1/chat/completions" : endpoint;
                 var body = new
                 {
-                    model = "llama-3.3-70b-versatile",
+                    model = m,
                     messages = new object[]
                     {
                         new { role = "system", content = systemPrompt },
@@ -172,6 +189,45 @@ public class AiApiClient
                     .GetProperty("message")
                     .GetProperty("content")
                     .GetString() ?? string.Empty;
+            }
+        },
+        [AiProviderType.Ollama] = new ProviderConfig
+        {
+            DisplayName = "Ollama",
+            DefaultModel = "ministral-3:3b-cloud",
+            DefaultEndpoint = "http://localhost:11434/api/chat",
+            BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
+            {
+                var m = string.IsNullOrWhiteSpace(model) ? "ministral-3:3b-cloud" : model;
+                var url = string.IsNullOrWhiteSpace(endpoint) ? "http://localhost:11434/api/chat" : endpoint;
+                var body = new
+                {
+                    model = m,
+                    messages = new object[]
+                    {
+                        new { role = "system", content = systemPrompt },
+                        new { role = "user", content = userContent }
+                    },
+                    stream = false,
+                    options = new { temperature = 0.4, num_predict = 4096 }
+                };
+                var auth = string.IsNullOrWhiteSpace(apiKey) ? "" : $"Bearer {apiKey}";
+                return (url, JsonSerializer.Serialize(body), auth);
+            },
+            ExtractContent = (json) =>
+            {
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                
+                // Handle Ollama native response
+                if (root.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var content))
+                    return content.GetString() ?? string.Empty;
+                    
+                // Fallback for OpenAI compatible response
+                if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
+                    return choices[0].GetProperty("message").GetProperty("content").GetString() ?? string.Empty;
+                    
+                return string.Empty;
             }
         }
     };
@@ -204,17 +260,24 @@ public class AiApiClient
         return AiProviderType.Gemini;
     }
 
+    public static (string DefaultModel, string DefaultEndpoint) GetProviderDefaults(AiProviderType provider)
+    {
+        return Providers.TryGetValue(provider, out var cfg) 
+            ? (cfg.DefaultModel, cfg.DefaultEndpoint) 
+            : (string.Empty, string.Empty);
+    }
+
     /// <summary>
     /// Send a summarization request to the configured AI provider.
     /// </summary>
-    public async Task<AiApiResult> SendAsync(AiProviderType provider, string apiKey, string systemPrompt, string userContent, CancellationToken ct = default)
+    public async Task<AiApiResult> SendAsync(AiProviderType provider, string apiKey, string model, string endpoint, string systemPrompt, string userContent, CancellationToken ct = default)
     {
         if (!Providers.TryGetValue(provider, out var config))
             return AiApiResult.Fail($"Unknown provider: {provider}");
 
         try
         {
-            var (url, body, auth) = config.BuildRequest(apiKey, systemPrompt, userContent);
+            var (url, body, auth) = config.BuildRequest(apiKey, model, endpoint, systemPrompt, userContent);
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Content = new StringContent(body, Encoding.UTF8, "application/json");
@@ -225,9 +288,9 @@ public class AiApiClient
                 request.Headers.Add("x-api-key", apiKey);
                 request.Headers.Add("anthropic-version", "2023-06-01");
             }
-            else if (provider != AiProviderType.Gemini)
+            else if (provider != AiProviderType.Gemini && !string.IsNullOrWhiteSpace(auth))
             {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+                request.Headers.Authorization = System.Net.Http.Headers.AuthenticationHeaderValue.Parse(auth);
             }
 
             using var response = await _httpClient.SendAsync(request, ct);
@@ -263,9 +326,9 @@ public class AiApiClient
     /// Validates the API key by sending a minimal test request.
     /// Returns the full result so the UI can show the specific error.
     /// </summary>
-    public async Task<AiApiResult> ValidateKeyAsync(AiProviderType provider, string apiKey, CancellationToken ct = default)
+    public async Task<AiApiResult> ValidateKeyAsync(AiProviderType provider, string apiKey, string model, string endpoint, CancellationToken ct = default)
     {
-        return await SendAsync(provider, apiKey, "Reply with exactly the word OK and nothing else.", "Connectivity test.", ct);
+        return await SendAsync(provider, apiKey, model, endpoint, "Reply with exactly the word OK and nothing else.", "Connectivity test.", ct);
     }
 
     /// <summary>
@@ -309,7 +372,9 @@ public class AiApiClient
     private class ProviderConfig
     {
         public string DisplayName { get; init; } = string.Empty;
-        public Func<string, string, string, (string url, string body, string auth)> BuildRequest { get; init; } = null!;
+        public string DefaultModel { get; init; } = string.Empty;
+        public string DefaultEndpoint { get; init; } = string.Empty;
+        public Func<string, string, string, string, string, (string url, string body, string auth)> BuildRequest { get; init; } = null!;
         public Func<string, string> ExtractContent { get; init; } = null!;
     }
 }
