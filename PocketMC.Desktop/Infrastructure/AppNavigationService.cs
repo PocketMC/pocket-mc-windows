@@ -141,6 +141,7 @@ namespace PocketMC.Desktop.Infrastructure
                 nameof(ServerSettingsPage) => "Server Settings",
                 nameof(ServerConsolePage) => "Console",
                 nameof(PlayerManagementPage) => "Players",
+                "PortsMapPage" => "Ports Map",
                 _ => null
             };
         }
@@ -228,6 +229,7 @@ namespace PocketMC.Desktop.Infrastructure
             DetailRouteKind.PlayerManagement => NavigationRouteKind.PlayerManagement,
             DetailRouteKind.PlayitSetupWizard => NavigationRouteKind.PlayitSetupWizard,
             DetailRouteKind.ImageCrop => NavigationRouteKind.ImageCrop,
+            DetailRouteKind.PortsMap => NavigationRouteKind.PortsMap,
             _ => throw new ArgumentOutOfRangeException(nameof(routeKind), routeKind, null)
         };
 

@@ -884,6 +884,24 @@
                                         </UniformGrid>
                                     </Border>
 
+                                    <!-- LOCAL BACKUP LOCATION -->
+                                    <ui:Card Padding="24" Margin="0,0,0,20">
+                                        <StackPanel>
+                                            <TextBlock Text="Local Backup Destination" Style="{StaticResource SettingsHeader}"/>
+                                            <TextBlock Text="Choose where to keep local world backups. Leave blank to store backups inside the server directory." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ui:TextBox Grid.Column="0" Text="{Binding Backups.CustomBackupDirectory, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Default: [Server Folder]\backups" IsReadOnly="True" Margin="0,0,8,0"/>
+                                                <ui:Button Grid.Column="1" Content="Browse" Command="{Binding Backups.BrowseBackupDirCommand}" Margin="0,0,8,0" Width="100"/>
+                                                <ui:Button Grid.Column="2" Content="Reset" Command="{Binding Backups.ResetBackupDirCommand}" Width="80"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </ui:Card>
+
                                     <!-- AUTOMATED DATA RETENTION CONFIG -->
                                     <ui:Card Padding="24" Margin="0,0,0,20">
                                         <StackPanel>
@@ -1006,6 +1024,9 @@
                                                                 <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
                                                                         Visibility="{Binding HasMetadata, Converter={StaticResource VisibleIfTrue}}">
                                                                     <TextBlock Text="{Binding TriggerText}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                </Border>
+                                                                <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" ToolTip="{Binding FullPath}">
+                                                                    <TextBlock Text="{Binding LocationText}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                                 </Border>
                                                             </StackPanel>
 

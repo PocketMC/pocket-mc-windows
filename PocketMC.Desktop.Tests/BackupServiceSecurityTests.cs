@@ -43,7 +43,7 @@ public sealed class BackupServiceSecurityTests : IDisposable
 
         var service = new BackupService(null!, null!, null!, null!, NullLogger<BackupService>.Instance);
 
-        Assert.False(service.VerifyBackupIntegrity(serverDir, escapedFileName));
+        Assert.False(service.VerifyBackupIntegrity(serverDir, escapedFileName, outsidePath));
     }
 
     private static string ComputeSha256(string filePath)

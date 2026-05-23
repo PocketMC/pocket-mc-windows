@@ -193,6 +193,7 @@ namespace PocketMC.Desktop.Composition
             services.AddTransient<MainWindow>();
             services.AddTransient<JavaSetupPage>();
             services.AddTransient<TunnelPage>();
+            services.AddTransient<PortsMapPage>();
             services.AddTransient<AboutPage>();
             services.AddTransient<AppSettingsPage>();
             services.AddTransient<RootDirectorySetupPage>();

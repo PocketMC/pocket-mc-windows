@@ -14,6 +14,7 @@ using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Tunnel;
+using System.Threading.Tasks;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -30,6 +31,8 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly IAppNavigationService _navigationService;
         private readonly IAppDispatcher _dispatcher;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ApplicationState _applicationState;
+        private readonly PlayitApiClient _playitApiClient;
 
         private bool _isActive;
 
@@ -55,7 +58,9 @@ namespace PocketMC.Desktop.Features.Dashboard
             IResourceMonitorService resourceMonitorService,
             IAppNavigationService navigationService,
             IAppDispatcher dispatcher,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            ApplicationState applicationState,
+            PlayitApiClient playitApiClient)
         {
             _listVm = listVm;
             _metricsVm = metricsVm;
@@ -67,6 +72,8 @@ namespace PocketMC.Desktop.Features.Dashboard
             _navigationService = navigationService;
             _dispatcher = dispatcher;
             _serviceProvider = serviceProvider;
+            _applicationState = applicationState;
+            _playitApiClient = playitApiClient;
 
             NewInstanceCommand = new RelayCommand(_ => NavigateToNewInstance());
             RefreshInstancesCommand = new RelayCommand(_ => _listVm.LoadInstances());
@@ -87,6 +94,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             {
                 _listVm.LoadInstances();
                 ResolveTunnelsForRunningInstances();
+                _ = Task.Run(ResolveAllTunnelsInBackgroundAsync);
                 return;
             }
 
@@ -100,6 +108,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             _listVm.LoadInstances();
             UpdateAllLiveMetrics();
             ResolveTunnelsForRunningInstances();
+            _ = Task.Run(ResolveAllTunnelsInBackgroundAsync);
         }
 
         public void Deactivate()
@@ -177,6 +186,90 @@ namespace PocketMC.Desktop.Features.Dashboard
         private void UpdateAllLiveMetrics()
         {
             foreach (var vm in Instances) _metricsVm.ApplyLiveMetrics(vm);
+        }
+
+        private async Task ResolveAllTunnelsInBackgroundAsync()
+        {
+            try
+            {
+                var result = await _playitApiClient.GetTunnelsAsync();
+                if (!result.Success || result.Tunnels.Count == 0) return;
+
+                foreach (var vm in Instances)
+                {
+                    bool isBedrock = vm.IsBedrockServer;
+                    int mainPort = vm.Metadata.ServerPort ?? (isBedrock ? 19132 : 25565);
+
+                    // 1. Match Main Port
+                    var mainTunnel = result.Tunnels.FirstOrDefault(t =>
+                        t.Port == mainPort &&
+                        t.TunnelType == (isBedrock ? "minecraft-bedrock" : "minecraft-java"));
+
+                    if (mainTunnel != null && !string.IsNullOrEmpty(mainTunnel.PublicAddress))
+                    {
+                        _applicationState.SetTunnelAddress(vm.Id, mainTunnel.PublicAddress);
+                        if (mainTunnel.NumericAddress != null)
+                        {
+                            _applicationState.SetNumericTunnelAddress(vm.Id, mainTunnel.NumericAddress);
+                        }
+                        _dispatcher.Invoke(() =>
+                        {
+                            vm.TunnelAddress = mainTunnel.PublicAddress;
+                            vm.NumericTunnelAddress = mainTunnel.NumericAddress;
+                        });
+                    }
+
+                    // 2. Match Geyser/Bedrock Port (for Java servers)
+                    if (!isBedrock && vm.HasGeyser)
+                    {
+                        int geyserPort = vm.Metadata.GeyserBedrockPort ?? 19132;
+                        var geyserTunnel = result.Tunnels.FirstOrDefault(t =>
+                            t.Port == geyserPort &&
+                            t.TunnelType == "minecraft-bedrock");
+
+                        if (geyserTunnel != null && !string.IsNullOrEmpty(geyserTunnel.PublicAddress))
+                        {
+                            _applicationState.SetBedrockTunnelAddress(vm.Id, geyserTunnel.PublicAddress);
+                            if (geyserTunnel.NumericAddress != null)
+                            {
+                                _applicationState.SetBedrockNumericTunnelAddress(vm.Id, geyserTunnel.NumericAddress);
+                            }
+                            _dispatcher.Invoke(() =>
+                            {
+                                vm.BedrockTunnelAddress = geyserTunnel.PublicAddress;
+                                vm.BedrockNumericTunnelAddress = geyserTunnel.NumericAddress;
+                            });
+                        }
+                    }
+
+                    // 3. Match Simple Voice Chat Port
+                    if (vm.Metadata.SimpleVoiceChatDetected && vm.Metadata.SimpleVoiceChatPort.HasValue)
+                    {
+                        int voicePort = vm.Metadata.SimpleVoiceChatPort.Value;
+                        var voiceTunnel = result.Tunnels.FirstOrDefault(t =>
+                            t.Port == voicePort &&
+                            t.TunnelType == "mc-simple-voice-chat");
+
+                        if (voiceTunnel != null && !string.IsNullOrEmpty(voiceTunnel.PublicAddress))
+                        {
+                            _applicationState.SetVoiceChatTunnelAddress(vm.Id, voiceTunnel.PublicAddress);
+                            if (voiceTunnel.NumericAddress != null)
+                            {
+                                _applicationState.SetVoiceChatNumericTunnelAddress(vm.Id, voiceTunnel.NumericAddress);
+                            }
+                            _dispatcher.Invoke(() =>
+                            {
+                                vm.VoiceChatTunnelAddress = voiceTunnel.PublicAddress;
+                                vm.VoiceChatNumericTunnelAddress = voiceTunnel.NumericAddress;
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to pre-resolve offline tunnels on dashboard load: {ex.Message}");
+            }
         }
     }
 }

@@ -921,6 +921,16 @@ namespace PocketMC.Desktop.Features.Tunnel
             await RefreshStatusAsync();
         }
 
+        private void BtnPortsMap_Click(object sender, RoutedEventArgs e)
+        {
+            var portsMapPage = _serviceProvider.GetRequiredService<PortsMapPage>();
+            _navigationService.NavigateToDetailPage(
+                portsMapPage,
+                "Ports Map",
+                DetailRouteKind.PortsMap,
+                DetailBackNavigation.Tunnel);
+        }
+
         private static string FormatBytes(long bytes)
         {
             if (bytes <= 0)

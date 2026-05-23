@@ -213,6 +213,7 @@ namespace PocketMC.Desktop.Features.Settings
             foreach (var kvp in cfg.AllProperties) Advanced.AdvancedProperties.Add(Advanced.CreatePropertyItem(kvp.Key, kvp.Value));
 
             Addons.LoadAddons();
+            Backups.CustomBackupDirectory = Metadata.CustomBackupDirectory;
             Backups.LoadBackups();
 
             // AI Summaries
@@ -481,6 +482,7 @@ namespace PocketMC.Desktop.Features.Settings
             Metadata.Name = General.InstanceName;
             Metadata.Description = General.InstanceDescription;
             Metadata.AutoStartWithApp = General.AutoStartWithApp;
+            Metadata.CustomBackupDirectory = Backups.CustomBackupDirectory;
 
             _serverConfigurationService.Save(Metadata, currentServerDir, cfg);
             if (Advanced.IsRawServerPropertiesDirty)

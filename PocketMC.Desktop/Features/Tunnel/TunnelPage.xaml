@@ -17,13 +17,29 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <ui:TextBlock FontTypography="Title" Text="Tunnel" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
-            <TextBlock Text="Manage the Playit.gg agent, download the tunnel binary, and retry connections without leaving PocketMC."
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                       TextWrapping="Wrap"
-                       FontSize="13"/>
-        </StackPanel>
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <ui:TextBlock FontTypography="Title" Text="Tunnel" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+                <TextBlock Text="Manage the Playit.gg agent, download the tunnel binary, and retry connections without leaving PocketMC."
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           FontSize="13"/>
+            </StackPanel>
+            <ui:Button Grid.Column="1"
+                       x:Name="BtnPortsMap"
+                       Content="Interactive Ports Map"
+                       Icon="{ui:SymbolIcon Grid24}"
+                       Appearance="Secondary"
+                       FontSize="12"
+                       Padding="12,6"
+                       Click="BtnPortsMap_Click"
+                       Cursor="Hand"
+                       VerticalAlignment="Center"/>
+        </Grid>
 
         <Border Grid.Row="1"
                 Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"

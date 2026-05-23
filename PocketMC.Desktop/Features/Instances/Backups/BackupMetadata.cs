@@ -119,13 +119,26 @@ public class BackupManifest
     /// <summary>
     /// Remove entries whose ZIP files no longer exist on disk (pruned or manually deleted).
     /// </summary>
-    public void PurgeOrphanedEntries(string serverDir)
+    public void PurgeOrphanedEntries(string defaultBackupDir, string? customBackupDir = null)
     {
-        var backupDir = Path.Combine(serverDir, "backups");
         Entries.RemoveAll(e =>
         {
-            string? zipPath = ResolveBackupFilePath(backupDir, e.FileName);
-            return !File.Exists(zipPath);
+            string? defaultPath = ResolveBackupFilePath(defaultBackupDir, e.FileName);
+            if (defaultPath != null && File.Exists(defaultPath))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(customBackupDir))
+            {
+                string? customPath = ResolveBackupFilePath(customBackupDir, e.FileName);
+                if (customPath != null && File.Exists(customPath))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         });
     }
 

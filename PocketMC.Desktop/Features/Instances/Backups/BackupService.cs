@@ -92,14 +92,15 @@ public class BackupService
         SaveMetadata(metadata, serverDir);
 
         // Prune old backups
-        var backupDir = Path.Combine(serverDir, "backups");
+        var backupDir = GetBackupDirectory(serverDir, metadata);
         PruneOldBackups(backupDir, metadata.MaxBackupsToKeep);
 
         // Purge manifest entries whose files were pruned
         try
         {
             var manifest = BackupManifest.Load(serverDir);
-            manifest.PurgeOrphanedEntries(serverDir);
+            string defaultBackupDir = Path.Combine(serverDir, "backups");
+            manifest.PurgeOrphanedEntries(defaultBackupDir, metadata.CustomBackupDirectory);
             manifest.Save(serverDir);
         }
         catch (Exception ex)
@@ -180,29 +181,60 @@ public class BackupService
     /// Verify the integrity of a backup ZIP against its stored checksum.
     /// Returns null if no checksum is available, true if match, false if corrupt.
     /// </summary>
-    public bool? VerifyBackupIntegrity(string serverDir, string fileName)
+    public bool? VerifyBackupIntegrity(string serverDir, string fileName, string fullPath)
     {
+        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
+        {
+            return false;
+        }
+
         var manifest = BackupManifest.Load(serverDir);
         var entry = manifest.Entries.FirstOrDefault(e =>
             string.Equals(e.FileName, fileName, StringComparison.OrdinalIgnoreCase));
 
         if (entry?.Sha256Checksum == null) return null;
 
-        string? zipPath = ResolveBackupFilePath(serverDir, fileName);
-        if (zipPath == null || !File.Exists(zipPath)) return false;
+        if (string.IsNullOrWhiteSpace(fullPath) || !File.Exists(fullPath)) return false;
 
-        var currentHash = ComputeSha256(zipPath);
+        var currentHash = ComputeSha256(fullPath);
         return string.Equals(entry.Sha256Checksum, currentHash, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string? ResolveBackupFilePath(string serverDir, string fileName)
+    private string GetBackupDirectory(string serverDir, InstanceMetadata? metadata)
+    {
+        if (metadata != null && !string.IsNullOrWhiteSpace(metadata.CustomBackupDirectory))
+        {
+            return metadata.CustomBackupDirectory;
+        }
+
+        try
+        {
+            var metaFile = Path.Combine(serverDir, ".pocket-mc.json");
+            if (File.Exists(metaFile))
+            {
+                var content = File.ReadAllText(metaFile);
+                var meta = System.Text.Json.JsonSerializer.Deserialize<InstanceMetadata>(content);
+                if (meta != null && !string.IsNullOrWhiteSpace(meta.CustomBackupDirectory))
+                {
+                    return meta.CustomBackupDirectory;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore and fallback
+        }
+        return Path.Combine(serverDir, "backups");
+    }
+
+    private string? ResolveBackupFilePath(string serverDir, string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName)
         {
             return null;
         }
 
-        string backupDir = Path.Combine(serverDir, "backups");
+        string backupDir = GetBackupDirectory(serverDir, null);
         return PathSafety.ValidateContainedPath(backupDir, fileName);
     }
 
@@ -231,11 +263,24 @@ public class BackupService
             return new LocalBackupResult { Success = false, Error = new DirectoryNotFoundException($"World folder '{worldFolderName}' not found in server directory.") };
         }
 
-        var backupDir = Path.Combine(serverDir, "backups");
+        var backupDir = GetBackupDirectory(serverDir, metadata);
         Directory.CreateDirectory(backupDir);
 
         string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
         string zipPath = Path.Combine(backupDir, $"world-{timestamp}.zip");
+
+        // Safely delete pre-existing file if one exists at the same timestamp (or from a prior partial run)
+        if (File.Exists(zipPath))
+        {
+            try
+            {
+                File.Delete(zipPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete pre-existing backup file at {ZipPath}", zipPath);
+            }
+        }
 
         bool isRunning = _serverProcessManager.IsRunning(metadata.Id);
         var process = _serverProcessManager.GetProcess(metadata.Id);

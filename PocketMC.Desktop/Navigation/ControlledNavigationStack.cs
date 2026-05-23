@@ -16,7 +16,8 @@ public enum NavigationRouteKind
     ServerConsole,
     PlayerManagement,
     PlayitSetupWizard,
-    ImageCrop
+    ImageCrop,
+    PortsMap
 }
 
 public enum NavigationBackTargetKind

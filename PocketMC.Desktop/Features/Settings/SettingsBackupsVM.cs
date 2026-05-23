@@ -30,6 +30,20 @@ namespace PocketMC.Desktop.Features.Settings
         private int _maxBackupsToKeep = 5;
         public int MaxBackupsToKeep { get => _maxBackupsToKeep; set { if (SetProperty(ref _maxBackupsToKeep, value)) _markDirty(); } }
 
+        private string? _customBackupDirectory;
+        public string? CustomBackupDirectory 
+        { 
+            get => _customBackupDirectory; 
+            set 
+            { 
+                if (SetProperty(ref _customBackupDirectory, value)) 
+                { 
+                    _markDirty(); 
+                    LoadBackups(); 
+                } 
+            } 
+        }
+
         public ObservableCollection<BackupItemViewModel> BackupList { get; } = new();
 
         private bool _isBackingUp;
@@ -68,6 +82,8 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand DeleteBackupCommand { get; }
         public ICommand SaveLabelCommand { get; }
         public ICommand VerifyIntegrityCommand { get; }
+        public ICommand BrowseBackupDirCommand { get; }
+        public ICommand ResetBackupDirCommand { get; }
 
         public SettingsBackupsVM(
             InstanceMetadata metadata,
@@ -88,38 +104,85 @@ namespace PocketMC.Desktop.Features.Settings
 
             _backupIntervalHours = metadata.BackupIntervalHours;
             _maxBackupsToKeep = metadata.MaxBackupsToKeep;
-
+            _customBackupDirectory = metadata.CustomBackupDirectory;
+ 
             CreateBackupCommand = new RelayCommand(async _ => await CreateBackupAsync());
             RestoreBackupCommand = new RelayCommand(async p => await RestoreBackupAsync(p as string), _ => !_isRunningCheck());
             DeleteBackupCommand = new RelayCommand(async p => await DeleteBackupAsync(p as string));
             SaveLabelCommand = new RelayCommand(async p => await SaveLabelAsync(p as BackupItemViewModel));
             VerifyIntegrityCommand = new RelayCommand(async p => await VerifyIntegrityAsync(p as BackupItemViewModel));
+            BrowseBackupDirCommand = new RelayCommand(async _ => await BrowseBackupDirAsync());
+            ResetBackupDirCommand = new RelayCommand(_ => CustomBackupDirectory = null);
+        }
+
+        private string GetBackupDirectory()
+        {
+            return string.IsNullOrWhiteSpace(CustomBackupDirectory)
+                ? Path.Combine(_serverDir, "backups")
+                : CustomBackupDirectory;
+        }
+
+        private async Task BrowseBackupDirAsync()
+        {
+            var folder = await _dialogService.OpenFolderDialogAsync("Select Custom Backup Folder");
+            if (!string.IsNullOrWhiteSpace(folder))
+            {
+                CustomBackupDirectory = folder;
+            }
         }
 
         public void LoadBackups()
         {
             BackupList.Clear();
-            var dir = Path.Combine(_serverDir, "backups");
-            if (!Directory.Exists(dir)) 
+            
+            var defaultDir = Path.Combine(_serverDir, "backups");
+            var customDir = CustomBackupDirectory;
+
+            var directoriesToScan = new System.Collections.Generic.List<string> { defaultDir };
+            if (!string.IsNullOrWhiteSpace(customDir) && customDir != defaultDir && Directory.Exists(customDir))
             {
-                RefreshHealthWarnings();
-                return;
+                directoriesToScan.Add(customDir);
             }
+
+            var zipFiles = new System.Collections.Generic.List<string>();
+            foreach (var dir in directoriesToScan)
+            {
+                if (Directory.Exists(dir))
+                {
+                    try
+                    {
+                        zipFiles.AddRange(Directory.GetFiles(dir, "*.zip"));
+                    }
+                    catch
+                    {
+                        // Ignore scan errors for robust fallback
+                    }
+                }
+            }
+
+            var uniqueZips = zipFiles
+                .Select(f => new FileInfo(f))
+                .GroupBy(fi => fi.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(fi => !string.IsNullOrWhiteSpace(customDir) && fi.FullName.StartsWith(customDir, StringComparison.OrdinalIgnoreCase)).First())
+                .OrderByDescending(fi => fi.CreationTime)
+                .ToList();
 
             var manifest = BackupManifest.Load(_serverDir);
 
-            foreach (var zip in Directory.GetFiles(dir, "*.zip").OrderByDescending(f => File.GetCreationTime(f)))
+            foreach (var fi in uniqueZips)
             {
-                var fi = new FileInfo(zip);
                 var metaEntry = manifest.Entries.FirstOrDefault(e =>
                     string.Equals(e.FileName, fi.Name, StringComparison.OrdinalIgnoreCase));
+
+                bool isDefault = fi.FullName.StartsWith(defaultDir, StringComparison.OrdinalIgnoreCase);
 
                 var vm = new BackupItemViewModel
                 {
                     Name = fi.Name,
-                    FullPath = zip,
+                    FullPath = fi.FullName,
                     SizeMb = fi.Length / (1024.0 * 1024.0),
-                    CreatedAt = fi.CreationTime
+                    CreatedAt = fi.CreationTime,
+                    LocationText = isDefault ? "Default" : "Custom"
                 };
 
                 if (metaEntry != null)
@@ -239,7 +302,12 @@ namespace PocketMC.Desktop.Features.Settings
         private async Task CreateBackupAsync()
         {
             IsBackingUp = true;
-            try { await _backupService.RunBackupAsync(_metadata, _serverDir); LoadBackups(); }
+            try 
+            { 
+                _metadata.CustomBackupDirectory = CustomBackupDirectory;
+                await _backupService.RunBackupAsync(_metadata, _serverDir); 
+                LoadBackups(); 
+            }
             catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             finally { IsBackingUp = false; }
         }
@@ -306,7 +374,7 @@ namespace PocketMC.Desktop.Features.Settings
             try
             {
                 item.IntegrityStatusText = "Verifying...";
-                var result = await Task.Run(() => _backupService.VerifyBackupIntegrity(_serverDir, item.Name));
+                var result = await Task.Run(() => _backupService.VerifyBackupIntegrity(_serverDir, item.Name, item.FullPath));
 
                 if (result == null)
                 {
@@ -348,6 +416,9 @@ namespace PocketMC.Desktop.Features.Settings
         public string ServerType { get; set; } = "";
         public string SizeDeltaText { get; set; } = "";
         public bool HasChecksum { get; set; }
+
+        private string _locationText = "Default";
+        public string LocationText { get => _locationText; set => SetProperty(ref _locationText, value); }
 
         private bool _integrityVerified;
         public bool IntegrityVerified { get => _integrityVerified; set => SetProperty(ref _integrityVerified, value); }

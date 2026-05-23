@@ -53,6 +53,9 @@ namespace PocketMC.Desktop.Models
         // Startup behavior
         public bool AutoStartWithApp { get; set; } = false;
 
+        // Custom backup destination (added for local backup routing)
+        public string? CustomBackupDirectory { get; set; } = null;
+
         [System.Text.Json.Serialization.JsonIgnore]
         public EngineCompatibility Compatibility => new EngineCompatibility(ServerType);
     }

@@ -34,7 +34,7 @@ public sealed class BackupManifestSecurityTests : IDisposable
             FileName = Path.Combine("..", "outside.zip")
         });
 
-        manifest.PurgeOrphanedEntries(serverDir);
+        manifest.PurgeOrphanedEntries(Path.Combine(serverDir, "backups"));
 
         Assert.Empty(manifest.Entries);
     }
