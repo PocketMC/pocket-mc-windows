@@ -52,13 +52,14 @@ public sealed class SimpleVoiceChatDetectorTests
     {
         using var workspace = new PortReliabilityTestWorkspace();
         var metadata = workspace.CreateInstance("Voice Config", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
         string relativePath = Path.Combine("config", "simplevoicechat", "voicechat-server.properties");
         workspace.WriteFile(metadata.Id, relativePath, "port=25000");
 
         SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
 
         Assert.True(detection.IsDetected);
-        Assert.Equal(SimpleVoiceChatDetectionSource.ConfigFile, detection.Source);
+        Assert.Equal(SimpleVoiceChatDetectionSource.ModJar, detection.Source);
         Assert.Equal(25000, detection.Port);
         Assert.EndsWith(relativePath, detection.ConfigPath);
     }
@@ -68,6 +69,7 @@ public sealed class SimpleVoiceChatDetectorTests
     {
         using var workspace = new PortReliabilityTestWorkspace();
         var metadata = workspace.CreateInstance("Voice Log", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
         workspace.WriteFile(
             metadata.Id,
             Path.Combine("logs", "latest.log"),
@@ -85,11 +87,27 @@ public sealed class SimpleVoiceChatDetectorTests
     {
         using var workspace = new PortReliabilityTestWorkspace();
         var metadata = workspace.CreateInstance("Locked Voice Log", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
         string logPath = Path.Combine(workspace.GetInstancePath(metadata.Id), "logs", "latest.log");
         Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
         File.WriteAllText(logPath, "[voicechat] Voice chat server started at port 24460");
 
         using var lockedLog = new FileStream(logPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+
+        // Since the log is locked, it fails to read log, falling back to Pending(ModJar) which is IsDetected == true
+        Assert.True(detection.IsDetected);
+        Assert.Equal(SimpleVoiceChatDetectionSource.ModJar, detection.Source);
+    }
+
+    [Fact]
+    public void Detect_ConfigOnlyWithoutJar_ReturnsNotDetected()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Leftover Config", serverType: "Fabric");
+        string relativePath = Path.Combine("config", "simplevoicechat", "voicechat-server.properties");
+        workspace.WriteFile(metadata.Id, relativePath, "port=25000");
 
         SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
 

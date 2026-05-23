@@ -111,6 +111,7 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
     {
         using var workspace = new PortReliabilityTestWorkspace();
         var metadata = workspace.CreateInstance("Voice Existing", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
         workspace.WriteFile(
             metadata.Id,
             Path.Combine("config", "voicechat", "voicechat-server.properties"),
@@ -220,6 +221,7 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
     {
         using var workspace = new PortReliabilityTestWorkspace();
         var metadata = workspace.CreateInstance("Voice Restart", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
         workspace.WriteFile(
             metadata.Id,
             Path.Combine("config", "voicechat", "voicechat-server.properties"),

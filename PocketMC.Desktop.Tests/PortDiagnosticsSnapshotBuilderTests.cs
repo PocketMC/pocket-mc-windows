@@ -21,6 +21,7 @@ public sealed class PortDiagnosticsSnapshotBuilderTests
         metadata.HasGeyser = true;
         metadata.GeyserBedrockPort = 19140;
         workspace.SaveMetadata(metadata);
+        workspace.WriteFile(metadata.Id, Path.Combine("plugins", "Geyser.jar"), "jar");
         string instancePath = workspace.GetInstancePath(metadata.Id);
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");
         workspace.WriteFile(
@@ -118,6 +119,7 @@ public sealed class PortDiagnosticsSnapshotBuilderTests
         PlayitAgentHarness harness = workspace.CreatePlayitAgentHarness();
         DependencyHealthMonitor dependencyHealthMonitor = workspace.CreateDependencyHealthMonitor();
         var metadata = workspace.CreateInstance("Voice Diagnostics", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
 
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");
         workspace.WriteFile(

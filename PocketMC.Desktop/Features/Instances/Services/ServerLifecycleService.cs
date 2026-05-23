@@ -81,7 +81,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
             string instancePath = _registry.GetPath(meta.Id)
                 ?? throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
 
-            if (meta.HasGeyser)
+            if (meta.HasGeyser && IsGeyserJarPresent(instancePath))
             {
                 _geyserProvisioningService.PatchGeyserConfigPort(instancePath, meta.GeyserBedrockPort ?? 19132);
             }
@@ -510,5 +510,31 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
             result.Request.Port,
             retryDelay.TotalSeconds,
             attemptNumber + 1);
+    }
+
+    private static bool IsGeyserJarPresent(string instancePath)
+    {
+        if (string.IsNullOrWhiteSpace(instancePath) || !Directory.Exists(instancePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            string pluginsDir = Path.Combine(instancePath, "plugins");
+            string modsDir = Path.Combine(instancePath, "mods");
+
+            bool geyserInPlugins = Directory.Exists(pluginsDir) && 
+                                   Directory.EnumerateFiles(pluginsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
+
+            bool geyserInMods = Directory.Exists(modsDir) && 
+                                 Directory.EnumerateFiles(modsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
+
+            return geyserInPlugins || geyserInMods;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

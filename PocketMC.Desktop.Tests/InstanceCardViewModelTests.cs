@@ -9,16 +9,13 @@ public sealed class InstanceCardViewModelTests
     [Fact]
     public void Constructor_WithGeyserBedrockPort_SetsBedrockLocalPort()
     {
-        var metadata = new InstanceMetadata
-        {
-            Id = Guid.NewGuid(),
-            Name = "Geyser Server",
-            ServerType = "Paper",
-            HasGeyser = true,
-            GeyserBedrockPort = 19145
-        };
-
         using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Geyser Server", serverType: "Paper");
+        metadata.HasGeyser = true;
+        metadata.GeyserBedrockPort = 19145;
+        workspace.SaveMetadata(metadata);
+        workspace.WriteFile(metadata.Id, Path.Combine("plugins", "Geyser.jar"), "jar");
+
         var processManager = workspace.CreateServerProcessManager();
         var probeService = workspace.CreatePortProbeService();
         var leaseRegistry = workspace.CreatePortLeaseRegistry();

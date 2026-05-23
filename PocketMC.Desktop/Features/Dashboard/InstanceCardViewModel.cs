@@ -89,34 +89,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         : "Never played";
     public string CreatedText => $"Created: {_metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}";
     public string CreatedValueText => _metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
-    public bool ShowCrossPlayBadge
-    {
-        get
-        {
-            if (!HasGeyser) return false;
-
-            try
-            {
-                string? path = _registry.GetPath(Id);
-                if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return false;
-
-                string pluginsDir = Path.Combine(path, "plugins");
-                string modsDir = Path.Combine(path, "mods");
-
-                bool geyserInPlugins = Directory.Exists(pluginsDir) && 
-                                       Directory.EnumerateFiles(pluginsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
-
-                bool geyserInMods = Directory.Exists(modsDir) && 
-                                     Directory.EnumerateFiles(modsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
-
-                return geyserInPlugins || geyserInMods;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-    }
+    public bool ShowCrossPlayBadge => HasGeyser;
     public Visibility CrossPlayBadgeVisibility => ShowCrossPlayBadge ? Visibility.Visible : Visibility.Collapsed;
     public string CrossPlayBadgeText => "Cross-play";
     public string CrossPlayBadgeTooltip => "Java and Bedrock players can join through Geyser/Floodgate.";
@@ -176,7 +149,33 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         _metadata.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
 
     /// <summary>True when a Java server has Geyser cross-play enabled.</summary>
-    public bool HasGeyser => _metadata.HasGeyser;
+    public bool HasGeyser
+    {
+        get
+        {
+            if (!_metadata.HasGeyser) return false;
+            try
+            {
+                string? path = _registry.GetPath(Id);
+                if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return false;
+
+                string pluginsDir = Path.Combine(path, "plugins");
+                string modsDir = Path.Combine(path, "mods");
+
+                bool geyserInPlugins = Directory.Exists(pluginsDir) && 
+                                       Directory.EnumerateFiles(pluginsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
+
+                bool geyserInMods = Directory.Exists(modsDir) && 
+                                     Directory.EnumerateFiles(modsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
+
+                return geyserInPlugins || geyserInMods;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
 
     /// <summary>Whether to show a separate Bedrock IP row on the card.
     /// Only meaningful for Java servers with Geyser cross-play enabled, where

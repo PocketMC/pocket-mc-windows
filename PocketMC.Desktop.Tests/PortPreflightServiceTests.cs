@@ -69,6 +69,7 @@ public sealed class PortPreflightServiceTests
         metadata.HasGeyser = true;
         metadata.GeyserBedrockPort = 19140;
         workspace.SaveMetadata(metadata);
+        workspace.WriteFile(metadata.Id, Path.Combine("plugins", "Geyser.jar"), "jar");
 
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");
         workspace.WriteFile(
@@ -103,6 +104,7 @@ public sealed class PortPreflightServiceTests
         using var workspace = new PortReliabilityTestWorkspace();
         var service = workspace.CreatePortPreflightService();
         var metadata = workspace.CreateInstance("Voice Fabric", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
 
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");
         workspace.WriteFile(
@@ -131,6 +133,7 @@ public sealed class PortPreflightServiceTests
         using var workspace = new PortReliabilityTestWorkspace();
         var service = workspace.CreatePortPreflightService();
         var metadata = workspace.CreateInstance("Voice Plugin", serverType: "Paper");
+        workspace.WriteFile(metadata.Id, Path.Combine("plugins", "voicechat-bukkit.jar"), "jar");
 
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");
         workspace.WriteFile(
@@ -171,6 +174,7 @@ public sealed class PortPreflightServiceTests
         using var workspace = new PortReliabilityTestWorkspace();
         var service = workspace.CreatePortPreflightService();
         var metadata = workspace.CreateInstance("Voice Default", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
 
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");
         workspace.WriteFile(
@@ -194,6 +198,7 @@ public sealed class PortPreflightServiceTests
         using var workspace = new PortReliabilityTestWorkspace();
         var service = workspace.CreatePortPreflightService();
         var metadata = workspace.CreateInstance("Voice Custom", serverType: "Fabric");
+        workspace.WriteFile(metadata.Id, Path.Combine("mods", "voicechat-2.5.0.jar"), "jar");
 
         workspace.WriteServerProperties(metadata.Id, "server-port=25565");
         workspace.WriteFile(

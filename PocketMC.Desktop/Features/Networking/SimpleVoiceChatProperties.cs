@@ -47,26 +47,26 @@ public static class SimpleVoiceChatDetector
             return NotDetected();
         }
 
+        bool hasModJar = TryFindVoiceChatJar(Path.Combine(serverDir, "mods"), out _);
+        bool hasPluginJar = TryFindVoiceChatJar(Path.Combine(serverDir, "plugins"), out _);
+
+        if (!hasModJar && !hasPluginJar)
+        {
+            return NotDetected();
+        }
+
+        var source = hasPluginJar ? SimpleVoiceChatDetectionSource.PluginJar : SimpleVoiceChatDetectionSource.ModJar;
+
         if (SimpleVoiceChatConfigService.TryLoad(serverDir, out SimpleVoiceChatSettings settings))
         {
             return new SimpleVoiceChatDetection(
                 true,
-                SimpleVoiceChatDetectionSource.ConfigFile,
+                source,
                 settings.Port,
                 settings.BindAddress,
                 settings.VoiceHost,
                 settings.ConfigPath,
                 IsConfigPending: false);
-        }
-
-        if (TryFindVoiceChatJar(Path.Combine(serverDir, "mods"), out _))
-        {
-            return Pending(SimpleVoiceChatDetectionSource.ModJar);
-        }
-
-        if (TryFindVoiceChatJar(Path.Combine(serverDir, "plugins"), out _))
-        {
-            return Pending(SimpleVoiceChatDetectionSource.PluginJar);
         }
 
         if (TryFindVoiceChatLogPort(serverDir, out int logPort))
@@ -81,7 +81,7 @@ public static class SimpleVoiceChatDetector
                 IsConfigPending: true);
         }
 
-        return NotDetected();
+        return Pending(source);
     }
 
     private static SimpleVoiceChatDetection Pending(SimpleVoiceChatDetectionSource source)

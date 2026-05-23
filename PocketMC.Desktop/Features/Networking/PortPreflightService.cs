@@ -294,7 +294,7 @@ public sealed class PortPreflightService
                 PortBindingRole.JavaServer,
                 PortEngine.Java));
 
-        if (metadata.HasGeyser)
+        if (metadata.HasGeyser && IsGeyserJarPresent(serverDir))
         {
             GeyserNetworkSettings geyserSettings = LoadGeyserNetworkSettings(serverDir);
             int geyserPort = metadata.GeyserBedrockPort ?? DefaultBedrockPort;
@@ -873,5 +873,31 @@ public sealed class PortPreflightService
         bool CloneRemotePort)
     {
         public static GeyserNetworkSettings Default { get; } = new(PortPreflightService.DefaultBedrockPort, "0.0.0.0", false);
+    }
+
+    private static bool IsGeyserJarPresent(string? serverDir)
+    {
+        if (string.IsNullOrWhiteSpace(serverDir) || !Directory.Exists(serverDir))
+        {
+            return false;
+        }
+
+        try
+        {
+            string pluginsDir = Path.Combine(serverDir, "plugins");
+            string modsDir = Path.Combine(serverDir, "mods");
+
+            bool geyserInPlugins = Directory.Exists(pluginsDir) && 
+                                   Directory.EnumerateFiles(pluginsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
+
+            bool geyserInMods = Directory.Exists(modsDir) && 
+                                 Directory.EnumerateFiles(modsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
+
+            return geyserInPlugins || geyserInMods;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
