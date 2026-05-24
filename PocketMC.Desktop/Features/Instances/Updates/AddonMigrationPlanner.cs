@@ -151,6 +151,8 @@ public sealed class AddonMigrationPlanner
                 TargetFileName = safeTargetFileName,
                 TargetSubDirectory = subDirectory,
                 DownloadUrl = update.LatestDownloadUrl ?? string.Empty,
+                Hash = update.Hash,
+                HashType = update.HashType,
                 VersionName = update.LatestVersionName ?? update.LatestVersionId ?? string.Empty
             });
         }
@@ -243,6 +245,8 @@ public sealed class AddonMigrationPlanner
                     TargetFileName = safeFileName,
                     TargetSubDirectory = ResolveDefaultAddonSubDirectory(targetCompatibility, safeFileName),
                     DownloadUrl = dependency.DownloadUrl,
+                    Hash = dependency.Hash,
+                    HashType = dependency.HashType,
                     VersionName = dependency.VersionName,
                     IsDependency = true
                 });

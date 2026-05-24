@@ -49,6 +49,8 @@ public sealed class AddonMigrationItem
     public string TargetFileName { get; set; } = string.Empty;
     public string TargetSubDirectory { get; set; } = string.Empty;
     public string DownloadUrl { get; set; } = string.Empty;
+    public string? Hash { get; set; }
+    public string? HashType { get; set; }
     public string VersionName { get; set; } = string.Empty;
     public string? StagedFilePath { get; set; }
     public bool IsDependency { get; set; }

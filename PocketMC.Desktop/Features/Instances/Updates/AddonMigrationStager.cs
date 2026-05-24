@@ -1,5 +1,7 @@
 using System.IO;
 using System.Net.Http;
+using Microsoft.Extensions.Logging.Abstractions;
+using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Infrastructure.Security;
 
@@ -7,11 +9,11 @@ namespace PocketMC.Desktop.Features.Instances.Updates;
 
 public sealed class AddonMigrationStager
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly DownloaderService _downloader;
 
     public AddonMigrationStager(IHttpClientFactory httpClientFactory)
     {
-        _httpClientFactory = httpClientFactory;
+        _downloader = new DownloaderService(httpClientFactory, NullLogger<DownloaderService>.Instance);
     }
 
     public async Task StageAsync(
@@ -38,24 +40,13 @@ public sealed class AddonMigrationStager
             string? stagedPath = PathSafety.ValidateContainedPath(stagingRoot, safeFileName)
                 ?? throw new InvalidOperationException($"Invalid staged addon file path for '{safeFileName}'.");
 
-            using HttpClient client = _httpClientFactory.CreateClient("PocketMC.Downloads");
-            using HttpResponseMessage response = await client.GetAsync(
+            await _downloader.DownloadFileAsync(
                 item.DownloadUrl,
-                HttpCompletionOption.ResponseHeadersRead,
+                stagedPath,
+                item.Hash,
+                item.HashType,
+                progress,
                 cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            await using (Stream contentStream = await response.Content.ReadAsStreamAsync(cancellationToken))
-            await using (FileStream fileStream = new(
-                             stagedPath,
-                             FileMode.Create,
-                             FileAccess.Write,
-                             FileShare.None,
-                             bufferSize: 81920,
-                             useAsync: true))
-            {
-                await contentStream.CopyToAsync(fileStream, cancellationToken);
-            }
 
             ValidateNonEmptyFile(stagedPath);
             item.StagedFilePath = stagedPath;

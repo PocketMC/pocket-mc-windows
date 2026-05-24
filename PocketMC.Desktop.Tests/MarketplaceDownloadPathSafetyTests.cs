@@ -6,7 +6,7 @@ public sealed class MarketplaceDownloadPathSafetyTests
     [InlineData(
         new[] { "PocketMC.Desktop", "Features", "Marketplace", "PluginBrowserPage.xaml.cs" },
         "Path.Combine(destDir, fileName)",
-        "MarketplaceFileNameSanitizer.RequireSafeFileName(fileName)")]
+        "MarketplaceDownloadPolicy.RequireCompatibleFileName(fileName")]
     [InlineData(
         new[] { "PocketMC.Desktop", "Features", "Marketplace", "MapBrowserPage.xaml.cs" },
         "Path.Combine(Path.GetTempPath(), file.FileName)",
@@ -14,7 +14,7 @@ public sealed class MarketplaceDownloadPathSafetyTests
     [InlineData(
         new[] { "PocketMC.Desktop", "Features", "Marketplace", "AddonUpdateService.cs" },
         "Path.Combine(destDir, updateInfo.LatestFileName)",
-        "MarketplaceFileNameSanitizer.RequireSafeFileName(updateInfo.LatestFileName)")]
+        "MarketplaceDownloadPolicy.RequireCompatibleFileName(updateInfo.LatestFileName")]
     public void MarketplaceDownloadWriters_NormalizeProviderFileNamesBeforeCombiningPaths(
         string[] sourcePath,
         string unsafePathCombine,
@@ -24,5 +24,21 @@ public sealed class MarketplaceDownloadPathSafetyTests
 
         Assert.DoesNotContain(unsafePathCombine, source);
         Assert.Contains(expectedSanitizerCall, source);
+    }
+
+    [Theory]
+    [InlineData("PluginBrowserPage.xaml.cs")]
+    [InlineData("AddonUpdateService.cs")]
+    public void MarketplaceInstallAndUpdatePaths_UseSafeInstallerInsteadOfDirectFileStream(string fileName)
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Marketplace",
+            fileName));
+
+        Assert.Contains("MarketplaceFileInstaller", source);
+        Assert.DoesNotContain("new FileStream", source);
+        Assert.DoesNotContain("FileMode.Create", source);
     }
 }

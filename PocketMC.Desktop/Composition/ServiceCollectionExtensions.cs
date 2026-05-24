@@ -191,6 +191,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
                 provider => provider.GetRequiredService<PoggitService>());
             services.AddSingleton<AddonManifestService>();
+            services.AddSingleton<MarketplaceFileInstaller>();
             services.AddSingleton<AddonUpdateService>();
             services.AddSingleton<DependencyResolverService>();
 

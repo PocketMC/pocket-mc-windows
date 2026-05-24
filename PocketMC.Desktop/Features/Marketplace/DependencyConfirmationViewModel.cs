@@ -29,7 +29,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             HasIncompatible = Dependencies.Any(d => d.Type == Models.DependencyType.Incompatible);
-            HasErrors = Dependencies.Any(d => !string.IsNullOrEmpty(d.Error));
+            HasErrors = Dependencies.Any(d => !string.IsNullOrEmpty(d.Error) || !string.IsNullOrEmpty(d.Warning));
 
             ConfirmCommand = new RelayCommand(_ => { Result = true; CloseRequested?.Invoke(); });
             CancelCommand = new RelayCommand(_ => { Result = false; CloseRequested?.Invoke(); });

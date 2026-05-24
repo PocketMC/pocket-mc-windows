@@ -29,6 +29,7 @@ namespace PocketMC.Desktop.Features.Mods
         public string Loader { get; set; } = "";
         public string LoaderVersion { get; set; } = "";
         public List<ModpackFile> Mods { get; set; } = new();
+        public ModpackOverrideExtractionResult? OverrideExtractionResult { get; set; }
     }
 
     public class ModpackFile

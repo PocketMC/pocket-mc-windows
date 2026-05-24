@@ -56,6 +56,9 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         [JsonPropertyName("dependencies")]
         public List<ModrinthDependency> Dependencies { get; set; } = new();
+
+        [JsonPropertyName("version_type")]
+        public string VersionType { get; set; } = "release";
     }
 
     public class ModrinthDependency
@@ -80,6 +83,9 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         [JsonPropertyName("primary")]
         public bool IsPrimary { get; set; }
+
+        [JsonPropertyName("hashes")]
+        public Dictionary<string, string> Hashes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     public class ModrinthProject
@@ -218,8 +224,16 @@ namespace PocketMC.Desktop.Features.Marketplace
                 ProjectId = v.ProjectId,
                 ProjectTitle = projectTitle,
                 FileName = primaryFile.FileName,
-                DownloadUrl = primaryFile.Url
+                DownloadUrl = primaryFile.Url,
+                Hash = GetPreferredHash(primaryFile, out string? hashType),
+                HashType = hashType,
+                ReleaseType = string.IsNullOrWhiteSpace(v.VersionType) ? "release" : v.VersionType
             };
+
+            if (!result.ReleaseType.Equals("release", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Warnings.Add($"Only a {result.ReleaseType} version is available for this selection. Review before installing.");
+            }
 
             foreach (var dep in v.Dependencies)
             {
@@ -260,7 +274,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 var versions = await _httpClient.GetFromJsonAsync<List<ModrinthVersion>>(url);
 
                 if (versions?.Count > 0)
-                    return versions[0];
+                    return SelectPreferredVersion(versions);
 
                 if (!string.IsNullOrWhiteSpace(loader))
                 {
@@ -270,8 +284,10 @@ namespace PocketMC.Desktop.Features.Marketplace
                         : baseUrl;
 
                     var relaxedVersions = await _httpClient.GetFromJsonAsync<List<ModrinthVersion>>(relaxedUrl) ?? new();
-                    var loaderMatch = relaxedVersions.Find(v => v.Loaders.Any(l => l.Equals(loader, StringComparison.OrdinalIgnoreCase)));
-                    if (loaderMatch != null) return loaderMatch;
+                    var loaderMatches = relaxedVersions
+                        .Where(v => v.Loaders.Any(l => l.Equals(loader, StringComparison.OrdinalIgnoreCase)))
+                        .ToList();
+                    if (loaderMatches.Count > 0) return SelectPreferredVersion(loaderMatches);
                     return null;
                 }
 
@@ -281,6 +297,30 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 return null;
             }
+        }
+
+        private static ModrinthVersion SelectPreferredVersion(IReadOnlyList<ModrinthVersion> versions)
+        {
+            return versions.FirstOrDefault(v => v.VersionType.Equals("release", StringComparison.OrdinalIgnoreCase))
+                ?? versions[0];
+        }
+
+        private static string? GetPreferredHash(ModrinthFile file, out string? hashType)
+        {
+            if (file.Hashes.TryGetValue("sha512", out string? sha512) && !string.IsNullOrWhiteSpace(sha512))
+            {
+                hashType = "sha512";
+                return sha512;
+            }
+
+            if (file.Hashes.TryGetValue("sha1", out string? sha1) && !string.IsNullOrWhiteSpace(sha1))
+            {
+                hashType = "sha1";
+                return sha1;
+            }
+
+            hashType = null;
+            return null;
         }
     }
 }

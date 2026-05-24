@@ -81,10 +81,20 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
             _logger.LogInformation("Found {Count} manifest(s) in addon.", manifests.Count);
 
+            int installedCount = 0;
             foreach (var manifestPath in manifests)
             {
                 ct.ThrowIfCancellationRequested();
-                await ProcessManifestAsync(manifestPath, serverDir, ct);
+                if (await ProcessManifestAsync(manifestPath, serverDir, ct))
+                {
+                    installedCount++;
+                }
+            }
+
+            if (installedCount == 0)
+            {
+                throw new InvalidOperationException(
+                    $"No valid Bedrock add-on manifests were installed from '{Path.GetFileName(sourceFilePath)}'.");
             }
         }
         finally
@@ -147,7 +157,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
     // ── Core installation logic ────────────────────────────────────────────
 
-    private async Task ProcessManifestAsync(string manifestPath, string serverDir, CancellationToken ct)
+    private async Task<bool> ProcessManifestAsync(string manifestPath, string serverDir, CancellationToken ct)
     {
         ManifestInfo manifest;
         try
@@ -157,7 +167,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Skipping invalid manifest at {Path}.", manifestPath);
-            return;
+            return false;
         }
 
         // The pack root dir is the directory that contains this manifest.json.
@@ -187,6 +197,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
         RegisterInWorldJson(worldJson, manifest.Uuid, manifest.Version);
         _logger.LogInformation("Pack registered in {WorldJson}.", Path.GetFileName(worldJson));
+        return true;
     }
 
     // ── Manifest parsing ──────────────────────────────────────────────────
@@ -202,11 +213,16 @@ public sealed class BedrockAddonInstaller : IAddonManager
         if (!Guid.TryParse(uuid, out _))
             throw new JsonException("manifest.json header.uuid is not a valid UUID.");
 
-        // Version is stored as an array e.g. [1, 0, 0]
         string version = "1.0.0";
         var verNode = doc["header"]?["version"];
         if (verNode is JsonArray arr && arr.Count >= 3)
+        {
             version = $"{arr[0]!.GetValue<int>()}.{arr[1]!.GetValue<int>()}.{arr[2]!.GetValue<int>()}";
+        }
+        else if (verNode is JsonValue value && value.TryGetValue<string>(out string? versionString))
+        {
+            version = NormalizeVersionString(versionString);
+        }
 
         // Determine pack type from the modules array
         var moduleType = doc["modules"]?[0]?["type"]?.GetValue<string>() ?? "";
@@ -446,6 +462,17 @@ public sealed class BedrockAddonInstaller : IAddonManager
         for (int i = 0; i < Math.Min(3, parts.Length); i++)
             if (int.TryParse(parts[i], out int v)) result[i] = v;
         return result;
+    }
+
+    private static string NormalizeVersionString(string version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return "1.0.0";
+        }
+
+        int[] parts = ParseVersionParts(version);
+        return $"{parts[0]}.{parts[1]}.{parts[2]}";
     }
 
     private void TryDeleteDirectory(string dir)

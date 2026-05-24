@@ -138,7 +138,7 @@ public sealed class InstanceUpdateServiceTests : IDisposable
 
         var stager = new AddonMigrationStager(new FailingHttpClientFactory());
 
-        await Assert.ThrowsAsync<HttpRequestException>(() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             stager.StageAsync(plan, Path.Combine(serverDir, ".pocketmc-updates", "staging", "op", "addons")));
 
         Assert.Equal("live", File.ReadAllText(livePath));

@@ -18,6 +18,7 @@ using PocketMC.Desktop.Features.Marketplace.Models;
 using Wpf.Ui.Controls;
 using System.Collections.ObjectModel;
 using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Infrastructure.Security;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxImage = System.Windows.MessageBoxImage;
 
@@ -30,6 +31,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly CurseForgeService _curseForge;
         private readonly PoggitService _poggit;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly MarketplaceFileInstaller _fileInstaller;
         private readonly string? _serverDir;
         private readonly string _mcVersion;
         private readonly string _projectType;
@@ -53,6 +55,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             DependencyResolverService resolver,
             AddonManifestService manifestService,
             IHttpClientFactory httpClientFactory,
+            MarketplaceFileInstaller fileInstaller,
             string? serverDir,
             string mcVersion,
             string projectType,
@@ -67,6 +70,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             _resolver = resolver;
             _manifestService = manifestService;
             _httpClientFactory = httpClientFactory;
+            _fileInstaller = fileInstaller;
             _serverDir = serverDir;
             _mcVersion = mcVersion;
             _projectType = projectType;
@@ -264,7 +268,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                         vm.State = InstallState.NotInstalled; 
                         return; 
                     }
-                    await InstallSingleFileAsync(pVersion.DownloadUrl, pVersion.FileName, "Poggit", pVersion.ProjectId, pVersion.Id);
+                    await InstallSingleFileAsync(pVersion.DownloadUrl, pVersion.FileName, "Poggit", pVersion.ProjectId, pVersion.Id, pVersion.Hash, pVersion.HashType);
                     
                     vm.State = InstallState.Installed;
                     vm.IsActionEnabled = true;
@@ -273,6 +277,12 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                 if (_serverDir == null) return;
                 var resolved = await _resolver.ResolveAsync(provider, _serverDir, projectId, mcVersionArg, _compat.LoaderName, _compat);
+                if (vm.Provider == "CurseForge" && !ConfirmMarketplaceRisk(vm.Title, resolved.FirstOrDefault()?.FileName ?? vm.Title))
+                {
+                    vm.IsActionEnabled = true;
+                    vm.State = InstallState.NotInstalled;
+                    return;
+                }
                 
                 // --- 2. User Confirmation ---
                 var confVm = new DependencyConfirmationViewModel(resolved);
@@ -287,7 +297,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 // --- 3. Batch Installation ---
                 foreach (var item in resolved.Where(d => d.IsSelected))
                 {
-                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "");
+                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType);
                 }
 
                 vm.State = InstallState.Installed;
@@ -302,31 +312,55 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        private async Task InstallSingleFileAsync(string url, string fileName, string providerName, string projectId, string versionId)
+        private bool ConfirmMarketplaceRisk(string projectTitle, string fileName)
+        {
+            MarketplaceInstallRisk risk = MarketplaceInstallRiskAnalyzer.Analyze(providerName: "CurseForge", _projectType, projectTitle, fileName);
+            if (!risk.RequiresConfirmation)
+            {
+                return true;
+            }
+
+            return PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
+                "CurseForge Compatibility Warning",
+                string.Join(Environment.NewLine + Environment.NewLine, risk.Warnings) +
+                Environment.NewLine + Environment.NewLine +
+                "Install anyway?");
+        }
+
+        private async Task InstallSingleFileAsync(
+            string url,
+            string fileName,
+            string providerName,
+            string projectId,
+            string versionId,
+            string? hash,
+            string? hashType)
         {
             if (_serverDir == null && !_isModpackMode) return;
-            string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
-
-            using var httpClient = _httpClientFactory.CreateClient("PocketMC.Downloads");
-            using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-            response.EnsureSuccessStatusCode();
+            string safeFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(fileName, _compat, _isModpackMode);
 
             string destFile;
             if (_isModpackMode)
             {
-                destFile = Path.Combine(Path.GetTempPath(), safeFileName);
+                destFile = PathSafety.ValidateContainedPath(Path.GetTempPath(), safeFileName)
+                    ?? throw new InvalidOperationException($"Invalid marketplace download file name '{safeFileName}'.");
             }
             else
             {
-                string destDir = Path.Combine(_serverDir!, _compat.PrimaryAddonSubDir);
+                string destDir = PathSafety.ValidateContainedPath(_serverDir!, _compat.PrimaryAddonSubDir)
+                    ?? throw new InvalidOperationException($"Invalid add-on directory '{_compat.PrimaryAddonSubDir}'.");
                 if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
-                destFile = Path.Combine(destDir, safeFileName);
+                destFile = PathSafety.ValidateContainedPath(destDir, safeFileName)
+                    ?? throw new InvalidOperationException($"Invalid marketplace add-on file name '{safeFileName}'.");
             }
 
-            await using (var contentStream = await response.Content.ReadAsStreamAsync())
-            await using (var fileStream = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+            await _fileInstaller.InstallAsync(url, destFile, hash, hashType);
+            IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile);
+            if (metadataWarnings.Count > 0)
             {
-                await contentStream.CopyToAsync(fileStream);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
+                    "Marketplace Compatibility Warning",
+                    string.Join(Environment.NewLine + Environment.NewLine, metadataWarnings));
             }
 
             if (_isModpackMode)

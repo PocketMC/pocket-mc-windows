@@ -317,8 +317,15 @@ namespace PocketMC.Desktop.Features.Marketplace
                 ProjectId = project?.Id ?? fileNode["modId"]?.ToString() ?? "",
                 ProjectTitle = project?.Title ?? "Unknown Project",
                 FileName = fileName,
-                DownloadUrl = downloadUrl
+                DownloadUrl = downloadUrl,
+                ReleaseType = MapReleaseType(fileNode["releaseType"])
             };
+
+            (v.Hash, v.HashType) = GetPreferredHash(fileNode);
+            if (!v.ReleaseType.Equals("release", StringComparison.OrdinalIgnoreCase))
+            {
+                v.Warnings.Add($"Only a {v.ReleaseType} CurseForge file is available for this selection. Review before installing.");
+            }
 
             var deps = fileNode["dependencies"]?.AsArray();
             if (deps != null)
@@ -373,18 +380,22 @@ namespace PocketMC.Desktop.Features.Marketplace
                 var files = rootNode?["data"]?.AsArray();
                 if (files == null || files.Count == 0) return null;
 
-                JsonNode? latestFile = null;
+                var matchingFiles = new List<JsonNode>();
                 foreach (var file in files)
                 {
                     if (file == null) continue;
                     if (string.IsNullOrWhiteSpace(loader) || FileSupportsLoader(file, loader))
                     {
-                        latestFile = file;
-                        break;
+                        matchingFiles.Add(file);
                     }
                 }
 
-                latestFile ??= files[0];
+                if (matchingFiles.Count == 0 && !string.IsNullOrWhiteSpace(loader))
+                {
+                    return null;
+                }
+
+                JsonNode? latestFile = SelectPreferredFile(matchingFiles.Count > 0 ? matchingFiles : files.Where(file => file != null)!);
                 if (latestFile == null) return null;
 
                 return (latestFile, projectInfo);
@@ -412,10 +423,59 @@ namespace PocketMC.Desktop.Features.Marketplace
                     {
                         Url = mv.DownloadUrl,
                         FileName = mv.FileName,
-                        IsPrimary = true
+                        IsPrimary = true,
+                        Hashes = string.IsNullOrWhiteSpace(mv.Hash) || string.IsNullOrWhiteSpace(mv.HashType)
+                            ? new Dictionary<string, string>()
+                            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                            {
+                                [mv.HashType] = mv.Hash
+                            }
                     }
-                }
+                },
+                VersionType = mv.ReleaseType
             };
+        }
+
+        private static JsonNode? SelectPreferredFile(IEnumerable<JsonNode?> files)
+        {
+            var materialized = files.Where(file => file != null).Cast<JsonNode>().ToList();
+            return materialized.FirstOrDefault(file => MapReleaseType(file["releaseType"]).Equals("release", StringComparison.OrdinalIgnoreCase))
+                ?? materialized.FirstOrDefault();
+        }
+
+        private static string MapReleaseType(JsonNode? releaseTypeNode)
+        {
+            int releaseType = 1;
+            if (releaseTypeNode != null)
+            {
+                int.TryParse(releaseTypeNode.ToString(), out releaseType);
+            }
+
+            return releaseType switch
+            {
+                2 => "beta",
+                3 => "alpha",
+                _ => "release"
+            };
+        }
+
+        private static (string? Hash, string? HashType) GetPreferredHash(JsonNode fileNode)
+        {
+            var hashes = fileNode["hashes"]?.AsArray();
+            if (hashes == null) return (null, null);
+
+            foreach (var hash in hashes)
+            {
+                if (hash == null) continue;
+                int algo = hash["algo"]?.GetValue<int>() ?? 0;
+                string? value = hash["value"]?.ToString();
+                if (algo == 1 && !string.IsNullOrWhiteSpace(value))
+                {
+                    return (value, "sha1");
+                }
+            }
+
+            return (null, null);
         }
     }
 }

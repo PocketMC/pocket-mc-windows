@@ -84,6 +84,8 @@
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock Text="{Binding ProjectTitle}" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                             <TextBlock Text="{Binding VersionName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{Binding Warning}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                       Visibility="{Binding Warning, Converter={StaticResource StringToVisibilityConverter}}"/>
                             <TextBlock Text="{Binding Error}" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}" 
                                        Visibility="{Binding Error, Converter={StaticResource StringToVisibilityConverter}}"/>
                         </StackPanel>

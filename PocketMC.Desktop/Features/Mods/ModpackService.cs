@@ -108,7 +108,13 @@ namespace PocketMC.Desktop.Features.Mods
                 }
             }
 
-            // 4. Extract Overrides — with SEC-01 zip-slip containment
+            // 4. Extract safe overrides only.
+            pack.OverrideExtractionResult = await ExtractOverridesAsync(zipPath, instancePath);
+        }
+
+        public async Task<ModpackOverrideExtractionResult> ExtractOverridesAsync(string zipPath, string instancePath)
+        {
+            var result = new ModpackOverrideExtractionResult();
             using var archive = ZipFile.OpenRead(zipPath);
             foreach (var entry in archive.Entries)
             {
@@ -118,10 +124,19 @@ namespace PocketMC.Desktop.Features.Mods
 
                 if (string.IsNullOrEmpty(targetPath)) continue;
 
-                string? destinationPath = PathSafety.ValidateContainedPath(instancePath, targetPath);
+                if (!ModpackOverridePolicy.TryValidate(targetPath, out string normalizedTargetPath, out string reason))
+                {
+                    result.SkippedOverrides.Add(new ModpackSkippedOverride(targetPath.Replace('\\', '/'), reason));
+                    _logger.LogWarning("Skipped unsafe modpack override {EntryName}: {Reason}", entry.FullName, reason);
+                    continue;
+                }
+
+                string? destinationPath = PathSafety.ValidateContainedPath(instancePath, normalizedTargetPath);
                 if (destinationPath == null)
                 {
-                    _logger.LogWarning("Blocked override entry with path-traversal: {EntryName}", entry.FullName);
+                    const string containmentReason = "Override path escapes the instance root.";
+                    result.SkippedOverrides.Add(new ModpackSkippedOverride(normalizedTargetPath, containmentReason));
+                    _logger.LogWarning("Skipped unsafe modpack override {EntryName}: {Reason}", entry.FullName, containmentReason);
                     continue;
                 }
 
@@ -133,8 +148,11 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
                     entry.ExtractToFile(destinationPath, true);
+                    result.ExtractedOverrideCount++;
                 }
             }
+
+            return result;
         }
 
         private async Task ResolveModUrlsAsync(ModpackImportResult pack)

@@ -20,10 +20,21 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             _logger = logger;
         }
 
+        public Task DownloadFileAsync(
+            string url,
+            string destinationPath,
+            string? expectedHash = null,
+            IProgress<DownloadProgress>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            return DownloadFileAsync(url, destinationPath, expectedHash, null, progress, cancellationToken);
+        }
+
         public async Task DownloadFileAsync(
             string url, 
             string destinationPath, 
-            string? expectedHash = null,
+            string? expectedHash,
+            string? expectedHashType,
             IProgress<DownloadProgress>? progress = null, 
             CancellationToken cancellationToken = default)
         {
@@ -81,9 +92,9 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                     // Verification
                     if (!string.IsNullOrEmpty(expectedHash))
                     {
-                        string hashType = expectedHash.Length == 40 ? "SHA1" : "SHA256";
+                        string hashType = NormalizeHashType(expectedHash, expectedHashType);
                         _logger.LogInformation("Verifying {HashType} hash for {DestinationPath}...", hashType, destinationPath);
-                        bool isValid = await VerifyHashAsync(partialPath, expectedHash, cancellationToken);
+                        bool isValid = await VerifyHashAsync(partialPath, expectedHash, hashType, cancellationToken);
                         if (!isValid)
                         {
                             TryDeleteFile(partialPath);
@@ -111,9 +122,31 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             throw new InvalidOperationException($"Failed to download '{url}' after {maxAttempts} attempts.", lastException);
         }
 
-        private async Task<bool> VerifyHashAsync(string filePath, string expectedHash, CancellationToken cancellationToken)
+        private static string NormalizeHashType(string expectedHash, string? expectedHashType)
         {
-            using HashAlgorithm hasher = expectedHash.Length == 40 ? SHA1.Create() : SHA256.Create();
+            if (!string.IsNullOrWhiteSpace(expectedHashType))
+            {
+                return expectedHashType.Replace("-", "", StringComparison.OrdinalIgnoreCase).ToUpperInvariant();
+            }
+
+            return expectedHash.Length switch
+            {
+                40 => "SHA1",
+                64 => "SHA256",
+                128 => "SHA512",
+                _ => throw new NotSupportedException($"Unsupported hash length '{expectedHash.Length}'.")
+            };
+        }
+
+        private async Task<bool> VerifyHashAsync(string filePath, string expectedHash, string hashType, CancellationToken cancellationToken)
+        {
+            using HashAlgorithm hasher = hashType switch
+            {
+                "SHA1" => SHA1.Create(),
+                "SHA256" => SHA256.Create(),
+                "SHA512" => SHA512.Create(),
+                _ => throw new NotSupportedException($"Unsupported hash type '{hashType}'.")
+            };
             await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
             
             byte[] hashBytes = await hasher.ComputeHashAsync(stream, cancellationToken);

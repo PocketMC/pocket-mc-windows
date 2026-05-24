@@ -17,6 +17,9 @@ namespace PocketMC.Desktop.Features.Marketplace
         public DependencyType Type { get; set; }
         public string DownloadUrl { get; set; } = "";
         public string FileName { get; set; } = "";
+        public string? Hash { get; set; }
+        public string? HashType { get; set; }
+        public string ReleaseType { get; set; } = "release";
         public bool IsAlreadyInstalled { get; set; }
         public bool IsSelected
         {
@@ -24,6 +27,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             set => SetProperty(ref _isSelected, value);
         }
         public string? Error { get; set; }
+        public string? Warning { get; set; }
         public string? IdAlias { get; set; }
         public bool IsCheckboxEnabled { get; set; }
     }
@@ -150,10 +154,14 @@ namespace PocketMC.Desktop.Features.Marketplace
                 Type = depType,
                 DownloadUrl = version.DownloadUrl,
                 FileName = version.FileName,
+                Hash = version.Hash,
+                HashType = version.HashType,
+                ReleaseType = version.ReleaseType,
                 IsAlreadyInstalled = alreadyInstalled,
                 IsSelected = isSelected,
                 IsCheckboxEnabled = isCheckboxEnabled,
-                IdAlias = normalizedId
+                IdAlias = normalizedId,
+                Warning = version.Warnings.FirstOrDefault()
             };
 
             results.Add(resolved);
