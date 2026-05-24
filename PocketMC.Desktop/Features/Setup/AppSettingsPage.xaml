@@ -216,7 +216,14 @@
                         <!-- Advanced Model Configuration -->
                         <TextBlock Text="Model Name" FontSize="14" FontWeight="Medium"/>
                         <TextBlock Text="Leave empty to use the recommended default model for this provider." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
-                        <ui:TextBox x:Name="AiModelNameInput" PlaceholderText="e.g. llama3" Margin="0,0,0,12"/>
+                        <ComboBox x:Name="AiModelCombo" 
+                                  IsEditable="True" 
+                                  Width="260" 
+                                  HorizontalAlignment="Left" 
+                                  Margin="0,0,0,12" 
+                                  SelectionChanged="AiModelCombo_SelectionChanged"
+                                  TextBoxBase.TextChanged="AiModelCombo_TextChanged"/>
+
 
                         <StackPanel x:Name="EndpointUrlPanel" Visibility="Collapsed">
                             <TextBlock Text="Endpoint URL" FontSize="14" FontWeight="Medium"/>

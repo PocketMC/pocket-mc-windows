@@ -31,6 +31,18 @@ namespace PocketMC.Desktop.Features.Setup
         public string Details { get; set; } = string.Empty;
     }
 
+    public class AiModelInfo
+    {
+        public string ModelName { get; }
+
+        public AiModelInfo(string modelName)
+        {
+            ModelName = modelName;
+        }
+
+        public override string ToString() => ModelName;
+    }
+
     public partial class AppSettingsPage : Page
     {
         private readonly ApplicationState _applicationState;
@@ -124,7 +136,10 @@ namespace PocketMC.Desktop.Features.Setup
             
             var initialProviderType = AiApiClient.ParseProvider(_applicationState.Settings.AiProvider ?? "Gemini");
             var (initialDefaultModel, initialDefaultEndpoint) = AiApiClient.GetProviderDefaults(initialProviderType);
-            AiModelNameInput.Text = _applicationState.Settings.GetCurrentAiModel() ?? initialDefaultModel;
+            
+            PopulateModelsForProvider(initialProviderType);
+            SetSelectedModel(_applicationState.Settings.GetCurrentAiModel() ?? initialDefaultModel);
+
             AiEndpointUrlInput.Text = _applicationState.Settings.GetCurrentAiEndpoint() ?? initialDefaultEndpoint;
             EndpointUrlPanel.Visibility = initialProviderType == AiProviderType.Ollama ? Visibility.Visible : Visibility.Collapsed;
 
@@ -315,7 +330,6 @@ namespace PocketMC.Desktop.Features.Setup
                 CustomBgPlaceholderIcon.Visibility = Visibility.Visible;
             }
         }
-
         private void SaveApiKey_Click(object sender, RoutedEventArgs e)
         {
             _applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Text.Trim();
@@ -341,8 +355,10 @@ namespace PocketMC.Desktop.Features.Setup
             settings.AiModels.TryGetValue(providerStr, out var model);
             settings.AiEndpoints.TryGetValue(providerStr, out var endpoint);
 
+            PopulateModelsForProvider(providerType);
+
             var (defaultModel, defaultEndpoint) = AiApiClient.GetProviderDefaults(providerType);
-            AiModelNameInput.Text = !string.IsNullOrWhiteSpace(model) ? model : defaultModel;
+            SetSelectedModel(!string.IsNullOrWhiteSpace(model) ? model : defaultModel);
             AiEndpointUrlInput.Text = !string.IsNullOrWhiteSpace(endpoint) ? endpoint : defaultEndpoint;
             
             EndpointUrlPanel.Visibility = providerType == AiProviderType.Ollama ? Visibility.Visible : Visibility.Collapsed;
@@ -350,10 +366,99 @@ namespace PocketMC.Desktop.Features.Setup
             _settingsManager.Save(settings);
         }
 
+        private void AiModelCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+            SaveAiSettings();
+        }
+
+        private void AiModelCombo_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+            SaveAiSettings();
+        }
+
+        private void PopulateModelsForProvider(AiProviderType provider)
+        {
+            if (AiModelCombo == null) return;
+
+            AiModelCombo.Items.Clear();
+
+            var models = GetModelsForProvider(provider);
+            foreach (var m in models)
+            {
+                AiModelCombo.Items.Add(m);
+            }
+        }
+
+        private System.Collections.Generic.List<AiModelInfo> GetModelsForProvider(AiProviderType provider)
+        {
+            var list = new System.Collections.Generic.List<AiModelInfo>();
+            switch (provider)
+            {
+                case AiProviderType.Gemini:
+                    list.Add(new AiModelInfo("gemini-2.5-flash"));
+                    list.Add(new AiModelInfo("gemini-2.0-flash"));
+                    list.Add(new AiModelInfo("gemini-1.5-flash"));
+                    list.Add(new AiModelInfo("gemini-2.5-pro"));
+                    list.Add(new AiModelInfo("gemini-2.0-pro-exp"));
+                    list.Add(new AiModelInfo("gemini-1.5-pro"));
+                    break;
+                case AiProviderType.OpenAI:
+                    list.Add(new AiModelInfo("gpt-4o-mini"));
+                    list.Add(new AiModelInfo("gpt-4o"));
+                    list.Add(new AiModelInfo("o1-mini"));
+                    list.Add(new AiModelInfo("o3-mini"));
+                    break;
+                case AiProviderType.Claude:
+                    list.Add(new AiModelInfo("claude-3-5-haiku-latest"));
+                    list.Add(new AiModelInfo("claude-3-5-sonnet-latest"));
+                    list.Add(new AiModelInfo("claude-3-opus-latest"));
+                    break;
+                case AiProviderType.Mistral:
+                    list.Add(new AiModelInfo("open-mistral-7b"));
+                    list.Add(new AiModelInfo("mistral-tiny"));
+                    list.Add(new AiModelInfo("mistral-small-latest"));
+                    list.Add(new AiModelInfo("mistral-medium-latest"));
+                    list.Add(new AiModelInfo("mistral-large-latest"));
+                    break;
+                case AiProviderType.Groq:
+                    list.Add(new AiModelInfo("llama-3.3-70b-versatile"));
+                    list.Add(new AiModelInfo("llama3-8b-8192"));
+                    list.Add(new AiModelInfo("mixtral-8x7b-32768"));
+                    list.Add(new AiModelInfo("gemma2-9b-it"));
+                    break;
+                case AiProviderType.Ollama:
+                    list.Add(new AiModelInfo("llama3"));
+                    list.Add(new AiModelInfo("mistral"));
+                    list.Add(new AiModelInfo("gemma2"));
+                    list.Add(new AiModelInfo("phi3"));
+                    break;
+            }
+            return list;
+        }
+
+        private void SetSelectedModel(string modelName)
+        {
+            if (AiModelCombo == null) return;
+
+            foreach (var item in AiModelCombo.Items)
+            {
+                if (item is AiModelInfo info && string.Equals(info.ModelName, modelName, StringComparison.OrdinalIgnoreCase))
+                {
+                    AiModelCombo.SelectedItem = info;
+                    return;
+                }
+            }
+
+            AiModelCombo.SelectedItem = null;
+            AiModelCombo.Text = modelName;
+        }
+
         private async void ValidateAiKey_Click(object sender, RoutedEventArgs e)
         {
             var apiKey = AiApiKeyInput.Text.Trim();
-            var modelName = AiModelNameInput.Text.Trim();
+            var modelName = AiModelCombo.Text.Trim();
             var endpointUrl = AiEndpointUrlInput.Text.Trim();
             var provider = GetSelectedProvider();
 
@@ -364,7 +469,11 @@ namespace PocketMC.Desktop.Features.Setup
                 return;
             }
 
-            AiKeyStatus.Text = $"⏳ Validating with {AiApiClient.GetDisplayName(provider)}...";
+            string maskedKey = apiKey.Length > 8 
+                ? apiKey[..4] + "..." + apiKey[^4..] 
+                : "invalid/too-short";
+
+            AiKeyStatus.Text = $"⏳ Validating {AiApiClient.GetDisplayName(provider)} with key {maskedKey}...";
             AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
 
             try
@@ -413,7 +522,7 @@ namespace PocketMC.Desktop.Features.Setup
 
             settings.AiProvider = provider;
             settings.AiApiKeys[provider] = AiApiKeyInput.Text.Trim();
-            settings.AiModels[provider] = AiModelNameInput.Text.Trim();
+            settings.AiModels[provider] = AiModelCombo.Text.Trim();
             settings.AiEndpoints[provider] = AiEndpointUrlInput.Text.Trim();
 
             settings.EnableAiSummarization = ToggleAiSummarization.IsChecked == true;
@@ -423,8 +532,12 @@ namespace PocketMC.Desktop.Features.Setup
 
         private AiProviderType GetSelectedProvider()
         {
-            if (AiProviderCombo.SelectedItem is ComboBoxItem item && item.Content is string name)
-                return AiApiClient.ParseProvider(name);
+            if (AiProviderCombo.SelectedItem is ComboBoxItem item)
+            {
+                string? name = item.Content?.ToString()?.Trim();
+                if (!string.IsNullOrWhiteSpace(name))
+                    return AiApiClient.ParseProvider(name);
+            }
             return AiProviderType.Gemini;
         }
 
