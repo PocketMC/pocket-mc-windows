@@ -9,7 +9,7 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <StartupObject>PocketMC.Desktop.Program</StartupObject>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
-    <Version>1.8</Version>
+    <Version>1.8.0</Version>
     <AssemblyVersion>1.8.0</AssemblyVersion>
     <FileVersion>1.8.0</FileVersion>
   </PropertyGroup>
