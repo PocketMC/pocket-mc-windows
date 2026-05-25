@@ -104,5 +104,63 @@ namespace PocketMC.Desktop.Tests
             AddonManifest updated = await service.LoadManifestAsync(_tempDir);
             Assert.Empty(updated.Entries);
         }
+
+        [Fact]
+        public async Task LoadManifestAsync_BackwardCompatibility_LoadsWithoutNewFields()
+        {
+            var service = new AddonManifestService();
+            string json = @"{
+                ""Entries"": [
+                    {
+                        ""Provider"": ""Modrinth"",
+                        ""ProjectId"": ""mod-b"",
+                        ""VersionId"": ""v2"",
+                        ""FileName"": ""mod-b.jar"",
+                        ""InstalledAt"": ""2026-05-25T00:00:00Z""
+                    }
+                ]
+            }";
+            string manifestPath = Path.Combine(_tempDir, "addon_manifest.json");
+            File.WriteAllText(manifestPath, json);
+
+            var manifest = await service.LoadManifestAsync(_tempDir);
+
+            Assert.Single(manifest.Entries);
+            var entry = manifest.Entries[0];
+            Assert.Equal("mod-b", entry.ProjectId);
+            Assert.Null(entry.ProjectTitle);
+            Assert.Null(entry.ProjectSlug);
+            Assert.Null(entry.IconUrl);
+            Assert.Null(entry.DisplayName);
+        }
+
+        [Fact]
+        public async Task RegisterInstallAsync_SavesNewFieldsCorrectly()
+        {
+            var service = new AddonManifestService();
+
+            await service.RegisterInstallAsync(_tempDir, "Modrinth", "mod-c", "v3", "mod-c.jar", "My Mod", "http://icon.url", "My Mod Display");
+
+            var manifest = await service.LoadManifestAsync(_tempDir);
+            Assert.Single(manifest.Entries);
+            var entry = manifest.Entries[0];
+            Assert.Equal("mod-c", entry.ProjectId);
+            Assert.Equal("My Mod", entry.ProjectTitle);
+            Assert.Equal("http://icon.url", entry.IconUrl);
+            Assert.Equal("My Mod Display", entry.DisplayName);
+        }
+
+        [Fact]
+        public async Task UpdateManifestFileNameAsync_UpdatesNameCorrectly()
+        {
+            var service = new AddonManifestService();
+            await service.RegisterInstallAsync(_tempDir, "Modrinth", "mod-d", "v4", "mod-d.jar", "My Mod D", null, null);
+
+            await service.UpdateManifestFileNameAsync(_tempDir, "mod-d.jar", "mod-d.jar.disabled");
+
+            var manifest = await service.LoadManifestAsync(_tempDir);
+            Assert.Single(manifest.Entries);
+            Assert.Equal("mod-d.jar.disabled", manifest.Entries[0].FileName);
+        }
     }
 }

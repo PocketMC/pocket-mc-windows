@@ -23,6 +23,7 @@ using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Presentation;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Marketplace;
+using System.Windows.Media;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -43,8 +44,46 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly AddonUpdateService _updateService;
 
         // ── Installed addon collections ──────────────────────────────────
+        private List<PluginItemViewModel> _allPlugins = new();
+        private List<ModItemViewModel> _allMods = new();
+
         public ObservableCollection<PluginItemViewModel> Plugins { get; } = new();
         public ObservableCollection<ModItemViewModel> Mods { get; } = new();
+
+        // ── Search & Filter ──────────────────────────────────────────────
+        private string _searchText = "";
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (SetProperty(ref _searchText, value))
+                {
+                    ApplyFiltersAndSort();
+                }
+            }
+        }
+
+        private string _selectedSortOption = "Name";
+        public string SelectedSortOption
+        {
+            get => _selectedSortOption;
+            set
+            {
+                if (SetProperty(ref _selectedSortOption, value))
+                {
+                    ApplyFiltersAndSort();
+                }
+            }
+        }
+
+        public List<string> SortOptions { get; } = new()
+        {
+            "Name", "Last Modified", "Size", "Loader Type", "Source", "Warnings First"
+        };
+
+        public int WarningsCount => _allMods.Count(m => m.HasWarnings) + _allPlugins.Count(p => p.HasWarnings);
+        public bool HasWarningsBanner => WarningsCount > 0;
 
         // ── Engine predicates ────────────────────────────────────────────
         public bool ShowVanillaWarning   => _metadata.ServerType?.StartsWith("Vanilla",    StringComparison.OrdinalIgnoreCase) == true;
@@ -81,6 +120,10 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand UpdateModCommand { get; }
         public ICommand UpdateAllPluginsCommand { get; }
         public ICommand UpdateAllModsCommand { get; }
+
+        // Extra context commands
+        public ICommand OpenFolderCommand { get; }
+        public ICommand ToggleModActiveCommand { get; }
 
         // Update All state
         private bool _isUpdatingAll;
@@ -170,37 +213,59 @@ namespace PocketMC.Desktop.Features.Settings
             UpdateAllModsCommand = new RelayCommand(
                 async _ => await UpdateAllAddonsAsync(isPlugins: false),
                 _ => !_isRunningCheck() && !_isUpdatingAll && Mods.Any(m => m.IsTracked));
+
+            OpenFolderCommand = new RelayCommand(p => OpenContainingFolder(p as string));
+            ToggleModActiveCommand = new RelayCommand(async p => await ToggleModActiveAsync(p as string), _ => !_isRunningCheck());
         }
 
         public void LoadAddons()
         {
-            // Fire-and-forget: heavy I/O (manifest, file scan, JAR introspection)
-            // runs on a thread-pool thread; only collection updates touch the UI thread.
-            _ = Task.Run(() =>
+            LoadAddonsInternal(false);
+        }
+
+        internal void LoadAddonsSync()
+        {
+            LoadAddonsInternal(true);
+        }
+
+        private void LoadAddonsInternal(bool runSync)
+        {
+            Action action = () =>
             {
                 var manifest = _manifestService.LoadManifest(_serverDir);
 
                 if (IsBedrockDedicated)
                 {
                     var items = BuildBedrockAddonList();
-                    DispatchToUI(() => { Mods.Clear(); foreach (var m in items) Mods.Add(m); });
+                    _allMods = items;
+                    _allPlugins = new List<PluginItemViewModel>();
+                    ApplyFiltersAndSort();
                 }
                 else if (IsPocketmine)
                 {
                     var items = BuildPocketminePluginList(manifest);
-                    DispatchToUI(() => { Plugins.Clear(); foreach (var p in items) Plugins.Add(p); });
+                    _allPlugins = items;
+                    _allMods = new List<ModItemViewModel>();
+                    ApplyFiltersAndSort();
                 }
                 else
                 {
                     var pluginItems = BuildJavaPluginList(manifest);
                     var modItems = BuildJavaModList(manifest);
-                    DispatchToUI(() =>
-                    {
-                        Plugins.Clear(); foreach (var p in pluginItems) Plugins.Add(p);
-                        Mods.Clear();    foreach (var m in modItems) Mods.Add(m);
-                    });
+                    _allPlugins = pluginItems;
+                    _allMods = modItems;
+                    ApplyFiltersAndSort();
                 }
-            });
+            };
+
+            if (runSync)
+            {
+                action();
+            }
+            else
+            {
+                _ = Task.Run(action);
+            }
         }
 
         private static void DispatchToUI(Action action)
@@ -223,10 +288,14 @@ namespace PocketMC.Desktop.Features.Settings
                 result.Add(new ModItemViewModel
                 {
                     Name         = addon.Name,
+                    DisplayName  = addon.Name,
+                    FileName     = Path.GetFileName(addon.FilePath),
                     Path         = addon.FilePath,
                     SizeKb       = addon.SizeKb,
                     LastModified = addon.LastModified,
-                    AddonType    = addon.AddonType
+                    AddonType    = addon.AddonType,
+                    SourceLabel  = "Manual",
+                    Icon         = AddonIconService.BedrockFallback
                 });
             }
             return result;
@@ -290,15 +359,20 @@ namespace PocketMC.Desktop.Features.Settings
                 var entry = manifest.Entries.FirstOrDefault(e =>
                     e.FileName.Equals(fi.Name, StringComparison.OrdinalIgnoreCase));
 
+                string sourceLabel = entry != null ? (entry.Provider ?? "Manual") : "Manual";
+
                 result.Add(new PluginItemViewModel
                 {
-                    Name         = fi.Name,
+                    Name         = entry?.DisplayName ?? entry?.ProjectTitle ?? fi.Name,
+                    FileName     = fi.Name,
                     Path         = file,
                     ApiVersion   = "PocketMine",
                     SizeKb       = fi.Length / 1024.0,
                     IsMismatch   = false,
                     LastModified = fi.LastWriteTime,
-                    ManifestEntry = entry
+                    ManifestEntry = entry,
+                    SourceLabel  = sourceLabel,
+                    Icon         = AddonIconService.PluginFallback
                 });
             }
             return result;
@@ -322,18 +396,57 @@ namespace PocketMC.Desktop.Features.Settings
             foreach (var file in Directory.GetFiles(dir, "*.jar"))
             {
                 var fi      = new FileInfo(file);
-                string api  = PluginScanner.TryGetApiVersion(file) ?? "Unknown";
-                string name = PluginScanner.TryGetPluginName(file) ?? fi.Name;
-                bool bad    = PluginScanner.IsIncompatible(api == "Unknown" ? null : api, _metadata.MinecraftVersion);
                 var entry = manifest.Entries.FirstOrDefault(e =>
                     e.FileName.Equals(fi.Name, StringComparison.OrdinalIgnoreCase));
+
+                var metadata = JavaModMetadataService.ScanJar(file);
+
+                string api  = PluginScanner.TryGetApiVersion(file) ?? "Unknown";
+                string name;
+                if (entry != null && !string.IsNullOrEmpty(entry.DisplayName))
+                {
+                    name = entry.DisplayName;
+                }
+                else if (entry != null && !string.IsNullOrEmpty(entry.ProjectTitle))
+                {
+                    name = entry.ProjectTitle;
+                }
+                else if (!string.IsNullOrEmpty(metadata.DisplayName) && metadata.LoaderType == "Plugin")
+                {
+                    name = metadata.DisplayName;
+                }
+                else
+                {
+                    name = PluginScanner.TryGetPluginName(file) ?? metadata.DisplayName;
+                }
+
+                bool bad    = PluginScanner.IsIncompatible(api == "Unknown" ? null : api, _metadata.MinecraftVersion);
+
+                var warnings = new List<string>();
+                if (bad)
+                {
+                    warnings.Add($"Incompatible API version ({api}). Server is running {_metadata.MinecraftVersion}.");
+                }
+                if (metadata.Warnings.Count > 0)
+                {
+                    warnings.AddRange(metadata.Warnings);
+                }
+
+                ImageSource? icon = AddonIconService.GetIcon(file, "Plugin", metadata.IconBytes);
+                string sourceLabel = entry != null ? (entry.Provider ?? "Manual") : "Manual";
 
                 result.Add(new PluginItemViewModel
                 {
                     Name = name, Path = file, ApiVersion = api,
                     SizeKb = fi.Length / 1024.0, IsMismatch = bad,
                     LastModified = fi.LastWriteTime,
-                    ManifestEntry = entry
+                    ManifestEntry = entry,
+                    FileName = fi.Name,
+                    Version = metadata.Version ?? (api != "Unknown" ? api : null),
+                    SourceLabel = sourceLabel,
+                    Icon = icon,
+                    HasWarnings = warnings.Count > 0,
+                    WarningText = string.Join(Environment.NewLine, warnings)
                 });
             }
 #pragma warning restore CS0618
@@ -374,18 +487,64 @@ namespace PocketMC.Desktop.Features.Settings
             var dir = System.IO.Path.Combine(_serverDir, "mods");
             if (!Directory.Exists(dir)) return result;
 
-            foreach (var file in Directory.GetFiles(dir, "*.jar"))
+            var files = Directory.GetFiles(dir, "*.jar")
+                .Concat(Directory.GetFiles(dir, "*.jar.disabled"))
+                .ToArray();
+
+            foreach (var file in files)
             {
                 var fi = new FileInfo(file);
                 var entry = manifest.Entries.FirstOrDefault(e =>
                     e.FileName.Equals(fi.Name, StringComparison.OrdinalIgnoreCase));
 
+                var metadata = JavaModMetadataService.ScanJar(file);
+
+                string displayName = "";
+                if (!string.IsNullOrEmpty(metadata.DisplayName) && metadata.LoaderType != "Unknown")
+                {
+                    displayName = metadata.DisplayName;
+                }
+                else if (entry != null && !string.IsNullOrEmpty(entry.DisplayName))
+                {
+                    displayName = entry.DisplayName;
+                }
+                else if (entry != null && !string.IsNullOrEmpty(entry.ProjectTitle))
+                {
+                    displayName = entry.ProjectTitle;
+                }
+                else
+                {
+                    displayName = metadata.DisplayName;
+                }
+
+                var warnings = new List<string>(metadata.Warnings);
+                ImageSource? icon = AddonIconService.GetIcon(file, metadata.LoaderType, metadata.IconBytes);
+                string sourceLabel = entry != null ? (entry.Provider ?? "Manual") : "Manual";
+
+                bool isDisabled = fi.Name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase);
+                if (isDisabled)
+                {
+                    warnings.Add("This mod is currently disabled.");
+                }
+
                 result.Add(new ModItemViewModel
                 {
-                    Name = fi.Name, Path = file,
+                    Name = displayName,
+                    DisplayName = displayName,
+                    FileName = fi.Name,
+                    Path = file,
                     SizeKb = fi.Length / 1024.0,
                     LastModified = fi.LastWriteTime,
-                    ManifestEntry = entry
+                    ManifestEntry = entry,
+                    Version = metadata.Version,
+                    LoaderType = metadata.LoaderType,
+                    SourceLabel = sourceLabel,
+                    Icon = icon,
+                    HasWarnings = warnings.Count > 0,
+                    WarningText = string.Join(Environment.NewLine, warnings),
+                    IsClientOnly = metadata.IsClientOnly,
+                    IsMetadataUnknown = metadata.LoaderType == "Unknown",
+                    IsDisabled = isDisabled
                 });
             }
             return result;
@@ -859,6 +1018,126 @@ namespace PocketMC.Desktop.Features.Settings
 
             return $"{updateCount} of {totalTrackedCount} addon(s) have updates:\n\n{nameList}\n\nDo you want to install all updates now?" + warningText;
         }
+
+        public void ApplyFiltersAndSort()
+        {
+            DispatchToUI(() =>
+            {
+                // Apply filter to plugins
+                var filteredPlugins = _allPlugins.AsEnumerable();
+                if (!string.IsNullOrWhiteSpace(SearchText))
+                {
+                    string query = SearchText.Trim();
+                    filteredPlugins = filteredPlugins.Where(p =>
+                        p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        p.FileName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        p.SourceLabel.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        (p.Version != null && p.Version.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    );
+                }
+
+                // Apply sort to plugins
+                filteredPlugins = SelectedSortOption switch
+                {
+                    "Last Modified" => filteredPlugins.OrderByDescending(p => p.LastModified),
+                    "Size" => filteredPlugins.OrderByDescending(p => p.SizeKb),
+                    "Source" => filteredPlugins.OrderBy(p => p.SourceLabel).ThenBy(p => p.Name),
+                    "Warnings First" => filteredPlugins.OrderByDescending(p => p.HasWarnings).ThenBy(p => p.Name),
+                    _ => filteredPlugins.OrderBy(p => p.Name)
+                };
+
+                // Apply filter to mods
+                var filteredMods = _allMods.AsEnumerable();
+                if (!string.IsNullOrWhiteSpace(SearchText))
+                {
+                    string query = SearchText.Trim();
+                    filteredMods = filteredMods.Where(m =>
+                        m.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        m.FileName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        m.LoaderType.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        m.SourceLabel.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        (m.Version != null && m.Version.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    );
+                }
+
+                // Apply sort to mods
+                filteredMods = SelectedSortOption switch
+                {
+                    "Last Modified" => filteredMods.OrderByDescending(m => m.LastModified),
+                    "Size" => filteredMods.OrderByDescending(m => m.SizeKb),
+                    "Loader Type" => filteredMods.OrderBy(m => m.LoaderType).ThenBy(m => m.Name),
+                    "Source" => filteredMods.OrderBy(m => m.SourceLabel).ThenBy(m => m.Name),
+                    "Warnings First" => filteredMods.OrderByDescending(m => m.HasWarnings).ThenBy(m => m.Name),
+                    _ => filteredMods.OrderBy(m => m.Name)
+                };
+
+                // Repopulate observable collections
+                Plugins.Clear();
+                foreach (var p in filteredPlugins) Plugins.Add(p);
+
+                Mods.Clear();
+                foreach (var m in filteredMods) Mods.Add(m);
+
+                OnPropertyChanged(nameof(WarningsCount));
+                OnPropertyChanged(nameof(HasWarningsBanner));
+            });
+        }
+
+        private void OpenContainingFolder(string? path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+            try
+            {
+                string dir = Path.GetDirectoryName(path) ?? "";
+                if (Directory.Exists(dir))
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"/select,\"{path}\"",
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch { /* Ignore */ }
+        }
+
+        internal async Task ToggleModActiveAsync(string? path)
+        {
+            if (string.IsNullOrEmpty(path)) return;
+            if (_isRunningCheck())
+            {
+                _dialogService.ShowMessage("Server is Running", "Cannot enable or disable mods while the server is running.", DialogType.Warning);
+                return;
+            }
+            try
+            {
+                string dir = Path.GetDirectoryName(path) ?? "";
+                string fileName = Path.GetFileName(path);
+                string newPath;
+                if (fileName.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase))
+                {
+                    string activeName = fileName.Substring(0, fileName.Length - ".disabled".Length);
+                    newPath = Path.Combine(dir, activeName);
+                }
+                else
+                {
+                    newPath = path + ".disabled";
+                }
+
+                if (File.Exists(path))
+                {
+                    File.Move(path, newPath);
+                    await _manifestService.UpdateManifestFileNameAsync(_serverDir, Path.GetFileName(path), Path.GetFileName(newPath));
+                }
+                LoadAddons();
+                _onAddonChanged();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Error", ex.Message, DialogType.Error);
+            }
+        }
     }
 
     // ── View models ───────────────────────────────────────────────────────
@@ -892,6 +1171,16 @@ namespace PocketMC.Desktop.Features.Settings
 
         /// <summary>True when this addon is tracked in the manifest (marketplace-installed).</summary>
         public bool IsTracked => ManifestEntry != null;
+
+        // Extended fields for richer UI
+        public string FileName { get; set; } = "";
+        public string? Version { get; set; }
+        public string SourceLabel { get; set; } = "Manual";
+        public ImageSource? Icon { get; set; }
+        public bool HasWarnings { get; set; }
+        public string WarningText { get; set; } = "";
+        public bool IsDisabled { get; set; }
+        public bool HasVersion => !string.IsNullOrEmpty(Version);
     }
 
     public class ModItemViewModel : Core.Mvvm.ViewModelBase
@@ -923,6 +1212,20 @@ namespace PocketMC.Desktop.Features.Settings
 
         /// <summary>True when this addon is tracked in the manifest (marketplace-installed).</summary>
         public bool IsTracked => ManifestEntry != null;
+
+        // Extended fields for richer UI
+        public string FileName { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string? Version { get; set; }
+        public string LoaderType { get; set; } = "Unknown";
+        public string SourceLabel { get; set; } = "Manual";
+        public ImageSource? Icon { get; set; }
+        public bool HasWarnings { get; set; }
+        public string WarningText { get; set; } = "";
+        public bool IsClientOnly { get; set; }
+        public bool IsMetadataUnknown { get; set; }
+        public bool IsDisabled { get; set; }
+        public bool HasVersion => !string.IsNullOrEmpty(Version);
     }
 
 }

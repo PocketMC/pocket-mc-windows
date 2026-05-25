@@ -268,7 +268,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                         vm.State = InstallState.NotInstalled; 
                         return; 
                     }
-                    await InstallSingleFileAsync(pVersion.DownloadUrl, pVersion.FileName, "Poggit", pVersion.ProjectId, pVersion.Id, pVersion.Hash, pVersion.HashType);
+                    await InstallSingleFileAsync(pVersion.DownloadUrl, pVersion.FileName, "Poggit", pVersion.ProjectId, pVersion.Id, pVersion.Hash, pVersion.HashType, vm.Title, vm.IconUrl, vm.Title);
                     
                     vm.State = InstallState.Installed;
                     vm.IsActionEnabled = true;
@@ -297,7 +297,12 @@ namespace PocketMC.Desktop.Features.Marketplace
                 // --- 3. Batch Installation ---
                 foreach (var item in resolved.Where(d => d.IsSelected))
                 {
-                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType);
+                    bool isRoot = item.ProjectId.Equals(projectId, StringComparison.OrdinalIgnoreCase);
+                    string? title = isRoot ? vm.Title : item.ProjectTitle;
+                    string? icon = isRoot ? vm.IconUrl : null;
+                    string? disp = isRoot ? vm.Title : item.ProjectTitle;
+
+                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp);
                 }
 
                 vm.State = InstallState.Installed;
@@ -334,7 +339,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             string projectId,
             string versionId,
             string? hash,
-            string? hashType)
+            string? hashType,
+            string? projectTitle = null,
+            string? iconUrl = null,
+            string? displayName = null)
         {
             if (_serverDir == null && !_isModpackMode) return;
             string safeFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(fileName, _compat, _isModpackMode);
@@ -373,7 +381,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             // Register in manifest if not modpack
             if (_serverDir != null)
             {
-                await _manifestService.RegisterInstallAsync(_serverDir, providerName, projectId, versionId, safeFileName);
+                await _manifestService.RegisterInstallAsync(_serverDir, providerName, projectId, versionId, safeFileName, projectTitle, iconUrl, displayName);
             }
         }
     }

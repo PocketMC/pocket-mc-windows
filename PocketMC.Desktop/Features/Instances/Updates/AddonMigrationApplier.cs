@@ -105,6 +105,15 @@ public sealed class AddonMigrationApplier
         foreach (AddonMigrationItem item in items)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var existing = manifest.Entries.FirstOrDefault(entry =>
+                entry.Provider.Equals(item.Provider, StringComparison.OrdinalIgnoreCase) &&
+                entry.ProjectId.Equals(item.ProjectId, StringComparison.OrdinalIgnoreCase));
+
+            string? projectTitle = !string.IsNullOrEmpty(item.ProjectTitle) ? item.ProjectTitle : existing?.ProjectTitle;
+            string? projectSlug = existing?.ProjectSlug;
+            string? iconUrl = existing?.IconUrl;
+            string? displayName = existing?.DisplayName ?? (!string.IsNullOrEmpty(item.ProjectTitle) ? item.ProjectTitle : null);
+
             manifest.Entries.RemoveAll(entry =>
                 entry.Provider.Equals(item.Provider, StringComparison.OrdinalIgnoreCase) &&
                 entry.ProjectId.Equals(item.ProjectId, StringComparison.OrdinalIgnoreCase));
@@ -115,7 +124,11 @@ public sealed class AddonMigrationApplier
                 ProjectId = item.ProjectId,
                 VersionId = item.TargetVersionId,
                 FileName = MarketplaceFileNameSanitizer.RequireSafeFileName(item.TargetFileName),
-                InstalledAt = DateTime.UtcNow
+                InstalledAt = DateTime.UtcNow,
+                ProjectTitle = projectTitle,
+                ProjectSlug = projectSlug,
+                IconUrl = iconUrl,
+                DisplayName = displayName
             });
         }
 

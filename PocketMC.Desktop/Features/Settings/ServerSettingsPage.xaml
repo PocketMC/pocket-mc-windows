@@ -707,6 +707,50 @@
                         <TabItem Header="Addons">
                             <ScrollViewer x:Name="AddonsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
+                                    <!-- Search and Sort Control Bar -->
+                                    <Grid Margin="4,0,4,16" Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource InvertedVisibilityConverter}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="220"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Search Box -->
+                                        <ui:TextBox Text="{Binding Addons.SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                                    PlaceholderText="Search plugins and mods..."
+                                                    Icon="{ui:SymbolIcon Search20}"
+                                                    Margin="0,0,12,0"
+                                                    VerticalAlignment="Center"/>
+                                        
+                                        <!-- Sort Dropdown -->
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="Sort:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <ComboBox Grid.Column="1" 
+                                                      ItemsSource="{Binding Addons.SortOptions}" 
+                                                      SelectedItem="{Binding Addons.SelectedSortOption}" 
+                                                      VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <!-- Warning Summary Banner -->
+                                    <ui:Card Visibility="{Binding Addons.HasWarningsBanner, Converter={StaticResource VisibleIfTrue}}"
+                                             Background="#2D1E24" BorderBrush="#F38BA8" BorderThickness="1"
+                                             Margin="4,0,4,16" Padding="12">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:SymbolIcon Symbol="Warning24" Foreground="#F38BA8" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                            <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="#F38BA8">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0} suspicious or client-only add-on(s) detected. Server might crash or ignore them.">
+                                                        <Binding Path="Addons.WarningsCount"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </ui:Card>
+
                                     <!-- Vanilla Empty State -->
                                     <ui:Card Padding="32" Margin="0,0,0,16"
                                              Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource VisibleIfTrue}}">
@@ -768,12 +812,48 @@
                                     <ItemsControl ItemsSource="{Binding Addons.Plugins}" Margin="0,0,0,24">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <ui:Card Margin="0,0,0,10" Padding="16,12">
+                                                <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                    <ui:Card.ContextMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem Header="Open Folder" 
+                                                                      Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                      CommandParameter="{Binding Path}">
+                                                                <MenuItem.Icon>
+                                                                    <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                        </ContextMenu>
+                                                    </ui:Card.ContextMenu>
                                                     <Grid>
-                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                        <StackPanel>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        
+                                                        <!-- Icon -->
+                                                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="{DynamicResource ControlAltFillColorTertiaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" ClipToBounds="True">
+                                                            <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                        </Border>
+                                                        
+                                                        <!-- Info -->
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14"/>
-                                                            <TextBlock Text="{Binding ApiVersion, StringFormat=API: {0}}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                            
+                                                            <!-- Subtitle: Filename · API version · Source -->
+                                                            <WrapPanel Margin="0,2,0,0" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                <TextBlock Text="{Binding ApiVersion, StringFormat=API: {0}}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                <TextBlock Text="{Binding SourceLabel}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                            </WrapPanel>
+                                                            
+                                                            <!-- Warning message if any -->
+                                                            <TextBlock Visibility="{Binding HasWarnings, Converter={StaticResource VisibleIfTrue}}"
+                                                                       Text="{Binding WarningText}" FontSize="11" Foreground="#F38BA8" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                                            
+                                                            <!-- Update status -->
                                                             <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0">
                                                                 <TextBlock.Style>
                                                                     <Style TargetType="TextBlock">
@@ -787,7 +867,9 @@
                                                                 </TextBlock.Style>
                                                             </TextBlock>
                                                         </StackPanel>
-                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        
+                                                        <!-- Action buttons -->
+                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                                             <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,8,0">
                                                                 <ui:ProgressRing.Style>
                                                                     <Style TargetType="ui:ProgressRing">
@@ -860,16 +942,106 @@
                                             </TextBlock>
                                         </StackPanel>
                                     </ui:Card>
-                                    <!-- Also hide the mods list for PocketMine -->
                                     <ItemsControl ItemsSource="{Binding Addons.Mods}"
-                                                  Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}">
+                                                   Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <ui:Card Margin="0,0,0,10" Padding="16,12">
+                                                <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                    <ui:Card.ContextMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                      CommandParameter="{Binding Path}">
+                                                                <MenuItem.Style>
+                                                                    <Style TargetType="MenuItem">
+                                                                        <Setter Property="Header" Value="Disable Mod"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                                <Setter Property="Header" Value="Enable Mod"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </MenuItem.Style>
+                                                                <MenuItem.Icon>
+                                                                    <ui:SymbolIcon Symbol="Power20"/>
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="Open Folder" 
+                                                                      Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                      CommandParameter="{Binding Path}">
+                                                                <MenuItem.Icon>
+                                                                    <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                        </ContextMenu>
+                                                    </ui:Card.ContextMenu>
                                                     <Grid>
-                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                        <StackPanel>
-                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                        <Grid.Style>
+                                                            <Style TargetType="Grid">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                        <Setter Property="Opacity" Value="0.6"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Grid.Style>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- Icon -->
+                                                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="{DynamicResource ControlAltFillColorTertiaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" ClipToBounds="True">
+                                                            <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                        </Border>
+
+                                                        <!-- Info -->
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                                
+                                                                <!-- Disabled badge -->
+                                                                <Border Visibility="{Binding IsDisabled, Converter={StaticResource VisibleIfTrue}}"
+                                                                        Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
+                                                                    <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                                </Border>
+
+                                                                <!-- Warning Icon -->
+                                                                <ui:SymbolIcon Symbol="Warning16" Foreground="#F38BA8" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                               Visibility="{Binding HasWarnings, Converter={StaticResource VisibleIfTrue}}"
+                                                                               ToolTip="{Binding WarningText}"/>
+                                                            </StackPanel>
+
+                                                            <!-- Subtitle: Filename · Loader · Version · Source -->
+                                                            <WrapPanel Margin="0,4,0,0" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                
+                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                    <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                </Border>
+                                                                
+                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding HasVersion, Converter={StaticResource VisibleIfTrue}}">
+                                                                    <TextBlock Text="v" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                    <TextBlock Text="{Binding Version}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                    <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                </StackPanel>
+                                                                
+                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2">
+                                                                    <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                </Border>
+                                                            </WrapPanel>
+
+                                                            <!-- Client Only warning banner -->
+                                                            <Border Visibility="{Binding IsClientOnly, Converter={StaticResource VisibleIfTrue}}"
+                                                                    Background="#2D1E24" BorderBrush="#F38BA8" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,6,0,0" HorizontalAlignment="Left">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <ui:SymbolIcon Symbol="Warning12" Foreground="#F38BA8" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                                    <TextBlock Text="Client-only addon. Server will ignore it." FontSize="11" Foreground="#F38BA8" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                            </Border>
+
+                                                            <!-- Update status -->
                                                             <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0">
                                                                 <TextBlock.Style>
                                                                     <Style TargetType="TextBlock">
@@ -883,7 +1055,9 @@
                                                                 </TextBlock.Style>
                                                             </TextBlock>
                                                         </StackPanel>
-                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+
+                                                        <!-- Actions -->
+                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                                             <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,8,0">
                                                                 <ui:ProgressRing.Style>
                                                                     <Style TargetType="ui:ProgressRing">
@@ -899,9 +1073,22 @@
                                                             <ui:Button Content="Update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding}"
-                                                                       IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
-                                                                       ToolTip="Check for updates from the marketplace"/>
+                                                                       ToolTip="Check for updates from the marketplace">
+                                                                <ui:Button.Style>
+                                                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                                                        <Setter Property="IsEnabled" Value="True"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </ui:Button.Style>
+                                                            </ui:Button>
                                                             <ui:Button Content="Delete" Appearance="Danger" Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Path}" VerticalAlignment="Center"/>
                                                         </StackPanel>
                                                     </Grid>

@@ -207,10 +207,27 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
             }
 
-            // Update manifest entry
+            // Update manifest entry preserving or refreshing display metadata
+            string? iconUrl = null;
+            string? displayName = null;
+            string? projectTitle = updateInfo.ProjectTitle;
+
+            var oldManifest = await _manifestService.LoadManifestAsync(serverDir);
+            var oldEntry = oldManifest.Entries.FirstOrDefault(e => e.ProjectId == projectId && e.Provider == providerName);
+            if (oldEntry != null)
+            {
+                iconUrl = oldEntry.IconUrl;
+                displayName = oldEntry.DisplayName;
+                if (string.IsNullOrEmpty(projectTitle))
+                {
+                    projectTitle = oldEntry.ProjectTitle;
+                }
+            }
+
             await _manifestService.RegisterInstallAsync(
                 serverDir, providerName, projectId,
-                updateInfo.LatestVersionId ?? "", safeLatestFileName);
+                updateInfo.LatestVersionId ?? "", safeLatestFileName,
+                projectTitle, iconUrl, displayName);
         }
 
         private IAddonProvider? GetProvider(string providerName)

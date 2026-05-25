@@ -19,6 +19,10 @@ namespace PocketMC.Desktop.Features.Marketplace
         public string VersionId { get; set; } = "";
         public string FileName { get; set; } = "";
         public DateTime InstalledAt { get; set; }
+        public string? ProjectTitle { get; set; }
+        public string? ProjectSlug { get; set; }
+        public string? IconUrl { get; set; }
+        public string? DisplayName { get; set; }
     }
 
     public class AddonManifest
@@ -75,22 +79,58 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         public async Task RegisterInstallAsync(string serverDir, string provider, string projectId, string versionId, string fileName)
         {
+            await RegisterInstallAsync(serverDir, provider, projectId, versionId, fileName, null, null, null);
+        }
+
+        public async Task RegisterInstallAsync(
+            string serverDir,
+            string provider,
+            string projectId,
+            string versionId,
+            string fileName,
+            string? projectTitle,
+            string? iconUrl,
+            string? displayName)
+        {
             var manifest = await LoadManifestAsync(serverDir);
             string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
-            
+
+            // Look up existing entry to preserve properties
+            var existing = manifest.Entries.FirstOrDefault(e => e.ProjectId == projectId && e.Provider == provider);
+            string? projectSlug = existing?.ProjectSlug;
+
+            projectTitle ??= existing?.ProjectTitle;
+            iconUrl ??= existing?.IconUrl;
+            displayName ??= existing?.DisplayName;
+
             // Remove any existing entry for this project to avoid duplicates (effectively an "update")
             manifest.Entries.RemoveAll(e => e.ProjectId == projectId && e.Provider == provider);
-            
+
             manifest.Entries.Add(new AddonManifestEntry
             {
                 Provider = provider,
                 ProjectId = projectId,
                 VersionId = versionId,
                 FileName = safeFileName,
-                InstalledAt = DateTime.UtcNow
+                InstalledAt = DateTime.UtcNow,
+                ProjectTitle = projectTitle,
+                ProjectSlug = projectSlug,
+                IconUrl = iconUrl,
+                DisplayName = displayName
             });
 
             await SaveManifestAsync(serverDir, manifest);
+        }
+
+        public async Task UpdateManifestFileNameAsync(string serverDir, string oldFileName, string newFileName)
+        {
+            var manifest = await LoadManifestAsync(serverDir);
+            var entry = manifest.Entries.FirstOrDefault(e => e.FileName.Equals(oldFileName, StringComparison.OrdinalIgnoreCase));
+            if (entry != null)
+            {
+                entry.FileName = newFileName;
+                await SaveManifestAsync(serverDir, manifest);
+            }
         }
 
         public async Task UnregisterAsync(string serverDir, string provider, string projectId)
