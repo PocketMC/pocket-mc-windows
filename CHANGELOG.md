@@ -1,6 +1,127 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.7.7`.
+This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.8.0`.
+
+## PocketMC Windows v1.8.0
+
+### Highlights
+
+- Added a Version & Updates workflow for server instances, including update preview, staged artifact downloads, compatible marketplace add-on migration, backups, snapshots, and rollback support.
+- Console logs now persist per instance across app restarts, with read-only last-session viewing for stopped or crashed servers.
+- Added Windows startup, minimized-to-tray, close-to-tray, per-instance server auto-start, and Discord Rich Presence options.
+- Improved marketplace/add-on reliability with safer downloads, hash-aware installs, better dependency resolution, add-on metadata display, search, sorting, icons, and server-side warnings.
+- Added an Interactive Ports Map and per-instance custom local backup destinations for easier server operations.
+
+### Added
+
+- New Version & Updates tab in server settings for selecting newer target versions, previewing update plans, applying updates, and rolling back incomplete updates.
+- Update planning now reports required Java version changes, tracked/manual add-on counts, compatible updates, incompatible add-ons, dependency additions, warnings, and rollback availability.
+- New staged instance update pipeline for server artifacts and marketplace add-ons, with update journals, per-instance update locks, snapshots, world backups, and rollback handling.
+- Persistent console log history with `pocketmc-current-session.log`, `pocketmc-last-session.log`, archived session logs, and legacy `pocketmc-session.log` fallback.
+- Read-only console mode for stopped/crashed servers or after an app restart, including a visible banner explaining that the page is showing the last session log.
+- Windows startup settings:
+  - Start PocketMC with Windows
+  - Start minimized to tray
+  - Minimize to tray on close
+- Tray startup support using the existing tray icon system, including a hidden/minimized launch path for `--windows-startup --minimized`.
+- Per-instance “Auto-start server at PocketMC startup” setting for normal app launches.
+- Discord Rich Presence integration showing active server status, server type/version, player count, uptime, and a join/download button.
+- App Settings toggle for Discord Rich Presence.
+- Interactive Ports Map from the Tunnel page, showing server ports, Playit tunnel addresses, port roles, online/offline state, and copy/navigation actions.
+- Port editing from the Ports Map for stopped servers, with collision checks across main, Geyser, and Simple Voice Chat ports.
+- Per-instance local backup destination selection, with backup cards labeled as Default or Custom and full-path tooltips.
+- Add-on search and sorting in server settings, including sort modes for name, last modified, size, loader type, source, and warnings first.
+- Java mod/plugin metadata scanning for Fabric, Quilt, Forge, NeoForge, legacy Forge, Bukkit/Paper plugin metadata, versions, dependencies, icons, and side-support hints.
+- Add-on icons and fallback icons for mods, plugins, Bedrock packs, and unknown files.
+- Side-support badges for mods, including client-only, server-only, client + server, optional on server, and unknown.
+- Marketplace install risk warnings for suspicious client-only mods and provider metadata limitations.
+- Safer modpack override extraction that reports skipped unsafe override files instead of blindly applying protected paths.
+- AI model picker with provider-specific model suggestions while still allowing custom model text.
+- Simple Voice Chat badge on dashboard cards when a server appears to include Simple Voice Chat.
+
+### Improved
+
+- Console history loading now reads only the configured tail of the log buffer asynchronously, reducing UI freezes on large log files.
+- Console search, filtering, copy logs, crash banner, AI line analysis, and AI session summaries continue to work with the new current/last-session log model.
+- Dashboard log navigation can open a console page even when there is no live `ServerProcess`, as long as the instance path exists.
+- Server logs are rotated before a new session starts, preserving the previous current log as the last session and as a timestamped archive.
+- Marketplace downloads now use a staging folder, non-empty file validation, safe promotion, cleanup of partial files, and provider hash verification when available.
+- Marketplace file validation now rejects incompatible extensions by server family, such as non-JAR files for Java add-ons or non-PHAR files for PocketMine.
+- Modrinth, CurseForge, and Poggit metadata handling now carries more provider data, including hashes, release type, project titles, icons, side metadata, selected loader, and matched Minecraft version where available.
+- Dependency resolution now tries exact dependency version IDs first and falls back to compatible versions when needed.
+- Dependency confirmation UI now shows more useful version, loader, Minecraft version, project, and error details.
+- Marketplace update/reinstall confirmation messages now include provider warnings before installing.
+- Update All summaries now include warnings gathered from individual add-on update checks.
+- Instance update add-on migration preserves manual/untracked add-ons and warns when they cannot be updated automatically.
+- Bedrock server updates preserve worlds, packs, config, properties, allowlist/permissions, and related server data while replacing server binaries.
+- Java provisioning now prompts before downloading a missing required Java runtime during server startup.
+- Adoptium Java resolution now tries JRE packages first and falls back to JDK packages if no JRE is available.
+- Background Java provisioning now focuses on Java 25 by default, with older required versions provisioned on demand.
+- Dashboard startup now resolves existing Playit tunnels in the background for running and offline instances.
+- Simple Voice Chat detection now checks for an actual mod/plugin JAR before reporting detection and reads the new current/last console session logs as fallback sources.
+- Backup integrity checks now verify the actual displayed backup path, including custom backup locations.
+- Backup manifest cleanup now considers both default and custom backup directories before purging entries.
+- Geyser port configuration updates now check for a Geyser JAR before patching related config.
+- Mistral AI default model changed from `mistral-small-4` to `mistral-medium-3-5`.
+
+### Fixed
+
+- Fixed console opening behavior for stopped or historical instances that no longer have an in-memory process object after app restart.
+- Fixed previous console session logs being overwritten at the start of a new server session before they could be viewed later.
+- Fixed the console page attempting to subscribe to live process events when no live process exists.
+- Fixed live-only console controls being available in read-only last-session mode.
+- Fixed large session logs causing expensive full-file loading in the console.
+- Fixed required dependency failures still allowing dependency installation to proceed.
+- Fixed Bedrock add-on manifest parsing for packs that provide `header.version` as a string instead of an array.
+- Fixed Bedrock add-on installs silently succeeding when no valid add-on manifest was installed.
+- Fixed unsafe modpack overrides being able to target protected roots, protected files, dangerous extensions, or paths outside the instance.
+- Fixed marketplace update paths to use safe contained paths and compatible filenames during add-on replacement.
+- Fixed add-on manifest tracking when installed files are renamed or updated.
+- Fixed custom backup folders not being considered for backup integrity checks and orphan cleanup.
+- Fixed Simple Voice Chat false positives from stale configs/logs when no voice chat JAR is present.
+- Fixed server start behavior so missing bundled Java versions require user confirmation instead of silently starting repair/download work.
+- Fixed Windows close behavior so tray exit still performs a real graceful shutdown even when “Minimize to tray on close” is enabled.
+- Fixed Windows startup minimized launches so they do not auto-start Minecraft servers.
+
+### Changed
+
+- Console session logs now use the new current/last/archive naming scheme. The old `logs/pocketmc-session.log` remains supported as a fallback.
+- Windows startup registration uses the current-user Run key and launches PocketMC with `--windows-startup --minimized` when minimized startup is enabled.
+- Closing the main window can now hide PocketMC to the tray based on settings, while running-server safety still hides to tray as before.
+- Normal app startup can auto-start selected server instances; Windows startup/minimized launch intentionally skips server auto-start.
+- Discord Rich Presence is now part of app-level behavior and can be toggled from App Settings.
+- Add-on list display now favors marketplace/project metadata and scanned JAR metadata over raw filenames when available.
+- Add-on manifests now store additional project/display metadata for future updates and richer UI display.
+- Server update operations now use staging and journals instead of direct live-folder replacement.
+- Background Java provisioning no longer attempts to download every bundled Java version up front.
+- App settings now include startup/tray behavior flags and Discord Rich Presence preference.
+- Instance metadata now includes per-server auto-start and custom backup directory settings.
+
+### Technical Notes
+
+- Added `ConsoleLogHistoryService` to own session log rotation, tail reads, archive naming, current/last/legacy lookup, and UI-safe log loading.
+- Added `WindowsStartupService` for per-user startup registration without admin rights.
+- Added pure startup argument parsing and close-to-tray decision helpers to make startup and close behavior testable.
+- Added a new instance update subsystem with planner, artifact stager, add-on migration planner/stager/applier, rollback service, update journal store, and update lock service.
+- Added marketplace install hardening through `MarketplaceFileInstaller`, `MarketplaceDownloadPolicy`, `MarketplaceArchiveInspector`, and `MarketplaceInstallRiskAnalyzer`.
+- Added Java add-on metadata scanning and cached icon extraction for richer add-on management.
+- Added `DiscordRichPresence` package dependency and `IDiscordRpcService` abstraction.
+- Expanded tests across update rollback/staging, marketplace install safety, dependency resolution, provider metadata, Java/mod metadata scanning, Bedrock add-on manifests, console log history, Windows startup/tray behavior, add-on display filtering, and source-level navigation contracts.
+
+### Upgrade Notes
+
+- No manual console log migration is required. Existing `logs/pocketmc-session.log` files are still used as a fallback when no new current/last session logs exist.
+- New Windows startup and tray settings default to off. Enabling Start with Windows writes only to the current user registry key and should not require admin rights.
+- Discord Rich Presence is controlled by the new App Settings toggle. Disable it there if you do not want PocketMC activity shown on Discord.
+- Background Java setup now downloads Java 25 by default. Servers requiring older Java versions may prompt for a download on first start after upgrading.
+- Version update controls are intended for stopped servers and will stage files, create a snapshot, and run a backup before applying changes.
+- Existing manual or untracked add-ons are preserved during version updates but may not be updated automatically.
+- Automatic Bedrock add-on updates are not supported by the new migration planner; Bedrock packs are preserved and warnings are shown where relevant.
+- Windows startup/minimized launches do not auto-start Minecraft servers, even if individual instances are configured to auto-start during normal app launch.
+
+### Full Summary
+
+PocketMC Windows v1.7.8 focuses on operational reliability for server owners: safer server version updates, persistent console history, richer add-on management, better marketplace safety, improved Java provisioning, custom backup destinations, and clearer networking visibility. It also adds practical desktop behavior controls such as Windows startup, tray startup, close-to-tray, per-instance app-launch auto-start, and Discord Rich Presence while preserving safe defaults around server startup and shutdown.
 
 ## v1.7.7 - Custom AI Providers, Rich Creator Wizard & UX Polish
 
