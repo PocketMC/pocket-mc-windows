@@ -120,28 +120,130 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         public string Name => "Modrinth";
 
-        public async Task<List<ModrinthHit>> SearchAsync(string type, string mcVersion, string loader, string sort = "relevance", string query = "", int offset = 0)
+        public static IReadOnlyList<string> BuildMinecraftVersionCandidates(string mcVersion)
+        {
+            if (string.IsNullOrEmpty(mcVersion) || mcVersion == "*")
+            {
+                return new[] { "" };
+            }
+
+            var parts = mcVersion.Split('.');
+            if (parts.Length == 3)
+            {
+                return new[] { mcVersion, $"{parts[0]}.{parts[1]}" };
+            }
+
+            return new[] { mcVersion };
+        }
+
+        public static ModrinthFile? SelectCompatibleFile(ModrinthVersion version, string loader)
+        {
+            if (version.Files == null || version.Files.Count == 0) return null;
+            if (version.Files.Count == 1) return version.Files[0];
+
+            var normalizedLoader = loader.ToLowerInvariant();
+
+            // Filter out files that are clearly for a different loader based on filename
+            var candidates = new List<ModrinthFile>();
+            foreach (var f in version.Files)
+            {
+                if (string.IsNullOrEmpty(f.FileName)) continue;
+                var fn = f.FileName.ToLowerInvariant();
+                
+                // If we want a plugin loader (paper/spigot/bukkit), but the file mentions fabric/forge/neoforge/quilt, exclude it
+                if (IsPluginLoader(normalizedLoader))
+                {
+                    if (fn.Contains("fabric") || fn.Contains("forge") || fn.Contains("neoforge") || fn.Contains("quilt"))
+                    {
+                        continue;
+                    }
+                }
+                else if (normalizedLoader == "fabric")
+                {
+                    if (fn.Contains("forge") || fn.Contains("neoforge"))
+                    {
+                        continue;
+                    }
+                }
+                else if (normalizedLoader == "forge")
+                {
+                    if (fn.Contains("fabric") || fn.Contains("neoforge"))
+                    {
+                        continue;
+                    }
+                }
+                else if (normalizedLoader == "neoforge")
+                {
+                    if (fn.Contains("fabric") || (fn.Contains("forge") && !fn.Contains("neoforge")))
+                    {
+                        continue;
+                    }
+                }
+
+                candidates.Add(f);
+            }
+
+            if (candidates.Count == 0)
+            {
+                candidates = version.Files;
+            }
+
+            // Try to find a file where filename mentions the loader specifically
+            var loaderMentioned = candidates.FirstOrDefault(f => f.FileName != null && f.FileName.ToLowerInvariant().Contains(normalizedLoader));
+            if (loaderMentioned != null) return loaderMentioned;
+
+            // Try primary file
+            var primary = candidates.FirstOrDefault(f => f.IsPrimary);
+            if (primary != null) return primary;
+
+            return candidates.FirstOrDefault();
+        }
+
+        private static bool IsPluginLoader(string loader)
+        {
+            return loader == "paper" || loader == "spigot" || loader == "bukkit";
+        }
+
+        public async Task<List<ModrinthHit>> SearchAsync(string type, string mcVersion, IReadOnlyList<string> loaders, string sort = "relevance", string query = "", int offset = 0)
+        {
+            var mcCandidates = BuildMinecraftVersionCandidates(mcVersion);
+            
+            foreach (var mcCand in mcCandidates)
+            {
+                var hits = await SearchInternalAsync(type, mcCand, loaders, sort, query, offset);
+                if (hits.Count > 0)
+                {
+                    return hits;
+                }
+            }
+
+            return new List<ModrinthHit>();
+        }
+
+        private async Task<List<ModrinthHit>> SearchInternalAsync(string type, string mcVersion, IReadOnlyList<string> loaders, string sort, string query, int offset)
         {
             try
             {
-                // type is expected as "project_type:plugin" or "project_type:mod" or "project_type:modpack"
-                string facetsStr = $"[\"{type}\"]";
+                var facetList = new List<List<string>>();
+                facetList.Add(new List<string> { type });
+
                 if (type == "project_type:mod")
                 {
-                    // Ensure we only see mods that can run on a server
-                    facetsStr += ",[\"server_side:required\",\"server_side:optional\"]";
+                    facetList.Add(new List<string> { "server_side:required", "server_side:optional" });
                 }
 
                 if (!string.IsNullOrEmpty(mcVersion) && mcVersion != "*")
                 {
-                    facetsStr += $",[\"versions:{mcVersion}\"]";
+                    facetList.Add(new List<string> { $"versions:{mcVersion}" });
                 }
-                if (type == "project_type:mod" && !string.IsNullOrWhiteSpace(loader))
-                {
-                    facetsStr += $",[\"categories:{loader}\"]";
-                }
-                string facets = $"[{facetsStr}]";
 
+                if ((type == "project_type:mod" || type == "project_type:plugin") && loaders != null && loaders.Count > 0)
+                {
+                    var loaderFacet = loaders.Select(l => $"categories:{l.ToLowerInvariant()}").ToList();
+                    facetList.Add(loaderFacet);
+                }
+
+                string facets = JsonSerializer.Serialize(facetList);
                 string url = $"https://api.modrinth.com/v2/search?query={Uri.EscapeDataString(query)}&facets={Uri.EscapeDataString(facets)}&limit=20&offset={offset}&index={sort}";
 
                 var result = await _httpClient.GetFromJsonAsync<ModrinthSearchResult>(url);
@@ -155,13 +257,40 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string slug, string mcVersion, string loader)
         {
-            var mVersion = await GetLatestVersionAsync(slug, mcVersion, loader);
-            if (mVersion == null) return null;
+            return await ((IAddonProvider)this).GetLatestVersionAsync(slug, mcVersion, new[] { loader });
+        }
 
-            // We need project title for the UI summary
+        async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string slug, string mcVersion, IReadOnlyList<string> loaderCandidates)
+        {
+            var mcCandidates = BuildMinecraftVersionCandidates(mcVersion);
             var projectInfo = await GetProjectInfoAsync(slug);
+            string projectSlug = projectInfo?.Slug ?? slug;
 
-            return MapToMarketplaceVersion(mVersion, projectInfo);
+            foreach (var mcCand in mcCandidates)
+            {
+                foreach (var loaderCand in loaderCandidates)
+                {
+                    var mVersion = await GetLatestVersionAsync(projectSlug, mcCand, loaderCand);
+                    if (mVersion != null)
+                    {
+                        var compatFile = SelectCompatibleFile(mVersion, loaderCand);
+                        if (compatFile != null)
+                        {
+                            var mv = MapToMarketplaceVersion(mVersion, projectInfo);
+                            mv.DownloadUrl = compatFile.Url;
+                            mv.FileName = compatFile.FileName;
+                            mv.Hash = GetPreferredHash(compatFile, out string? hashType);
+                            mv.HashType = hashType;
+                            mv.SelectedLoader = loaderCand;
+                            mv.MatchedMinecraftVersion = mcCand;
+                            mv.IconUrl = projectInfo?.IconUrl;
+                            return mv;
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         public async Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId)
@@ -237,7 +366,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                 HashType = hashType,
                 ReleaseType = string.IsNullOrWhiteSpace(v.VersionType) ? "release" : v.VersionType,
                 ClientSide = projectInfo?.ClientSide,
-                ServerSide = projectInfo?.ServerSide
+                ServerSide = projectInfo?.ServerSide,
+                IconUrl = projectInfo?.IconUrl
             };
 
             if (!result.ReleaseType.Equals("release", StringComparison.OrdinalIgnoreCase))

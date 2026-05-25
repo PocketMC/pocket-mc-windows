@@ -54,5 +54,16 @@ namespace PocketMC.Desktop.Tests.Models
             Assert.True(compat.SupportsPoggit);
             Assert.False(compat.SupportsModrinth);
         }
+
+        [Theory]
+        [InlineData("Paper 1.21", new[] { "paper", "spigot", "bukkit" })]
+        [InlineData("Spigot 1.21", new[] { "spigot", "bukkit" })]
+        [InlineData("Fabric 1.21", new[] { "fabric" })]
+        [InlineData("Quilt 1.21", new[] { "quilt", "fabric" })]
+        public void CompatibleLoaderNames_ShouldBePopulatedCorrectly(string serverType, string[] expectedLoaders)
+        {
+            var compat = new EngineCompatibility(serverType);
+            Assert.Equal(expectedLoaders, compat.CompatibleLoaderNames);
+        }
     }
 }

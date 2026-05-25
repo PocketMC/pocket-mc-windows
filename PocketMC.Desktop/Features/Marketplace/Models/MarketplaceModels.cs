@@ -28,17 +28,21 @@ namespace PocketMC.Desktop.Features.Marketplace.Models
         public string DownloadUrl { get; set; } = "";
         public string? Hash { get; set; }
         public string? HashType { get; set; }
-        public string ReleaseType { get; set; } = "release";
+        public string? ReleaseType { get; set; } = "release";
         public List<string> Warnings { get; set; } = new();
         public List<MarketplaceDependency> Dependencies { get; set; } = new();
         public string? ClientSide { get; set; }
         public string? ServerSide { get; set; }
+        public string? SelectedLoader { get; set; }
+        public string? MatchedMinecraftVersion { get; set; }
+        public string? IconUrl { get; set; }
     }
 
     public interface IAddonProvider
     {
         string Name { get; }
         Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, string loader);
+        Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, IReadOnlyList<string> loaderCandidates);
         Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId);
         Task<MarketplaceProjectInfo?> GetProjectInfoAsync(string projectId);
     }

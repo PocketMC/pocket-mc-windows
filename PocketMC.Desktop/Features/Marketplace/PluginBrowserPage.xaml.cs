@@ -172,7 +172,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
                 else
                 {
-                    hits = await _modrinth.SearchAsync(_projectType, mcVersionArg, _compat.LoaderName, sort, query, _currentOffset);
+                    hits = await _modrinth.SearchAsync(_projectType, mcVersionArg, _compat.CompatibleLoaderNames, sort, query, _currentOffset);
                 }
 
                 foreach (var hit in hits)
@@ -275,9 +275,21 @@ namespace PocketMC.Desktop.Features.Marketplace
                     return;
                 }
 
-                if (_serverDir == null) return;
                 var resolved = await _resolver.ResolveAsync(provider, _serverDir, projectId, mcVersionArg, _compat.LoaderName, _compat);
-                if (vm.Provider == "CurseForge" && !ConfirmMarketplaceRisk(vm.Title, resolved.FirstOrDefault()?.FileName ?? vm.Title))
+                var rootResolved = resolved.FirstOrDefault();
+                if (rootResolved == null || string.IsNullOrEmpty(rootResolved.DownloadUrl) || !string.IsNullOrEmpty(rootResolved.Error))
+                {
+                    string details = rootResolved?.Error ?? "No compatible version found.";
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
+                        "No compatible version found",
+                        $"PocketMC could not find a compatible version of {vm.Title} for Minecraft {mcVersionArg}.{Environment.NewLine}{Environment.NewLine}Details: {details}");
+
+                    vm.State = InstallState.NotInstalled;
+                    vm.IsActionEnabled = true;
+                    return;
+                }
+
+                if (vm.Provider == "CurseForge" && !ConfirmMarketplaceRisk(vm.Title, rootResolved.FileName ?? vm.Title))
                 {
                     vm.IsActionEnabled = true;
                     vm.State = InstallState.NotInstalled;

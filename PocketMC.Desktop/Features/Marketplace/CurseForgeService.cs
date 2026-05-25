@@ -251,6 +251,30 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
+        async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string projectId, string mcVersion, IReadOnlyList<string> loaderCandidates)
+        {
+            if (loaderCandidates == null || loaderCandidates.Count == 0)
+            {
+                var res = await GetLatestVersionWithProjectInfoAsync(projectId, mcVersion, "");
+                if (res != null) return MapToMarketplaceVersion(res.Value.File, res.Value.Project);
+                return null;
+            }
+
+            foreach (var loader in loaderCandidates)
+            {
+                var res = await GetLatestVersionWithProjectInfoAsync(projectId, mcVersion, loader);
+                if (res != null)
+                {
+                    var mv = MapToMarketplaceVersion(res.Value.File, res.Value.Project);
+                    mv.SelectedLoader = loader;
+                    mv.MatchedMinecraftVersion = mcVersion;
+                    return mv;
+                }
+            }
+
+            return null;
+        }
+
         async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string projectId, string mcVersion, string loader)
         {
             var result = await GetLatestVersionWithProjectInfoAsync(projectId, mcVersion, loader);

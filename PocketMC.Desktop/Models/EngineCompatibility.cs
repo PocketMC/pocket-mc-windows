@@ -29,6 +29,7 @@ namespace PocketMC.Desktop.Models
 
         public string PrimaryAddonSubDir { get; }
         public string LoaderName { get; }
+        public IReadOnlyList<string> CompatibleLoaderNames { get; }
 
         public EngineCompatibility(string serverType)
         {
@@ -43,6 +44,14 @@ namespace PocketMC.Desktop.Models
                 SupportsCurseForge = true;
                 PrimaryAddonSubDir = "plugins";
                 LoaderName = "spigot"; // Modrinth uses spigot/paper/bukkit
+                if (ServerType.StartsWith("Paper", StringComparison.OrdinalIgnoreCase))
+                {
+                    CompatibleLoaderNames = new[] { "paper", "spigot", "bukkit" };
+                }
+                else
+                {
+                    CompatibleLoaderNames = new[] { "spigot", "bukkit" };
+                }
             }
             else if (ServerType.StartsWith("Fabric", StringComparison.OrdinalIgnoreCase))
             {
@@ -53,6 +62,18 @@ namespace PocketMC.Desktop.Models
                 SupportsCurseForge = true;
                 PrimaryAddonSubDir = "mods";
                 LoaderName = "fabric";
+                CompatibleLoaderNames = new[] { "fabric" };
+            }
+            else if (ServerType.StartsWith("Quilt", StringComparison.OrdinalIgnoreCase))
+            {
+                Family = EngineFamily.Fabric;
+                SupportsMods = true;
+                SupportsModpacks = true;
+                SupportsModrinth = true;
+                SupportsCurseForge = true;
+                PrimaryAddonSubDir = "mods";
+                LoaderName = "quilt";
+                CompatibleLoaderNames = new[] { "quilt", "fabric" };
             }
             else if (ServerType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase))
             {
@@ -63,6 +84,7 @@ namespace PocketMC.Desktop.Models
                 SupportsCurseForge = true;
                 PrimaryAddonSubDir = "mods";
                 LoaderName = "forge";
+                CompatibleLoaderNames = new[] { "forge" };
             }
             else if (ServerType.StartsWith("NeoForge", StringComparison.OrdinalIgnoreCase))
             {
@@ -73,6 +95,7 @@ namespace PocketMC.Desktop.Models
                 SupportsCurseForge = true;
                 PrimaryAddonSubDir = "mods";
                 LoaderName = "neoforge";
+                CompatibleLoaderNames = new[] { "neoforge" };
             }
             else if (ServerType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
             {
@@ -81,6 +104,7 @@ namespace PocketMC.Desktop.Models
                 SupportsPoggit = true;
                 PrimaryAddonSubDir = "plugins";
                 LoaderName = "pocketmine";
+                CompatibleLoaderNames = new[] { "pocketmine" };
             }
             else if (ServerType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase))
             {
@@ -90,12 +114,14 @@ namespace PocketMC.Desktop.Models
                 // but we might allow local imports to behavior_packs
                 PrimaryAddonSubDir = "behavior_packs";
                 LoaderName = "bedrock";
+                CompatibleLoaderNames = new[] { "bedrock" };
             }
             else
             {
                 Family = EngineFamily.Vanilla;
                 PrimaryAddonSubDir = "mods"; // Fallback
                 LoaderName = "vanilla";
+                CompatibleLoaderNames = new[] { "vanilla" };
             }
         }
 

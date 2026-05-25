@@ -78,6 +78,11 @@ namespace PocketMC.Desktop.Features.Marketplace
             return await ((IAddonProvider)this).GetLatestVersionAsync(name, "", "");
         }
 
+        async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string projectId, string mcVersion, IReadOnlyList<string> loaderCandidates)
+        {
+            return await ((IAddonProvider)this).GetLatestVersionAsync(projectId, mcVersion, loaderCandidates.Count > 0 ? loaderCandidates[0] : "");
+        }
+
         async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string projectId, string mcVersion, string loader)
         {
             string url = $"https://poggit.pmmp.io/releases.json?name={Uri.EscapeDataString(projectId)}";

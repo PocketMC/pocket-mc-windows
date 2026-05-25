@@ -100,6 +100,244 @@ public sealed class ModrinthServiceMetadataTests
         Assert.Equal("release", version.ReleaseType);
     }
 
+    [Fact]
+    public async Task GetLatestVersionAsync_ForPaper_TriesPaperSpigotBukkitInOrder()
+    {
+        var queriedUrls = new List<string>();
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string url = request.RequestUri?.ToString() ?? "";
+            queriedUrls.Add(url);
+
+            if (url.Contains("/version"))
+            {
+                if (url.Contains("bukkit"))
+                {
+                    return MarketplaceHttpResponses.Json("""
+                    [
+                      {
+                        "id": "bukkit-version",
+                        "project_id": "proj-1",
+                        "name": "Bukkit Version",
+                        "version_type": "release",
+                        "loaders": ["bukkit"],
+                        "files": [{ "url": "https://cdn.example/bukkit.jar", "filename": "bukkit.jar", "primary": true }]
+                      }
+                    ]
+                    """);
+                }
+                return MarketplaceHttpResponses.Json("[]");
+            }
+            if (url.Contains("/project/test-project"))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "proj-1", "slug": "test-project", "title": "Test Project" }""");
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var version = await ((IAddonProvider)service).GetLatestVersionAsync("test-project", "1.21.1", new[] { "paper", "spigot", "bukkit" });
+
+        Assert.NotNull(version);
+        Assert.Equal("bukkit-version", version.Id);
+        var versionQueries = queriedUrls.Where(u => u.Contains("/version")).ToList();
+        Assert.Equal(5, versionQueries.Count);
+        Assert.Contains("paper", versionQueries[0].ToLowerInvariant());
+        Assert.Contains("spigot", versionQueries[2].ToLowerInvariant());
+        Assert.Contains("bukkit", versionQueries[4].ToLowerInvariant());
+    }
+
+    [Fact]
+    public async Task GetLatestVersionAsync_ForSpigot_TriesSpigotBukkitInOrder()
+    {
+        var queriedUrls = new List<string>();
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string url = request.RequestUri?.ToString() ?? "";
+            queriedUrls.Add(url);
+
+            if (url.Contains("/version"))
+            {
+                if (url.Contains("bukkit"))
+                {
+                    return MarketplaceHttpResponses.Json("""
+                    [
+                      {
+                        "id": "bukkit-version",
+                        "project_id": "proj-1",
+                        "name": "Bukkit Version",
+                        "version_type": "release",
+                        "loaders": ["bukkit"],
+                        "files": [{ "url": "https://cdn.example/bukkit.jar", "filename": "bukkit.jar", "primary": true }]
+                      }
+                    ]
+                    """);
+                }
+                return MarketplaceHttpResponses.Json("[]");
+            }
+            if (url.Contains("/project/test-project"))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "proj-1", "slug": "test-project", "title": "Test Project" }""");
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var version = await ((IAddonProvider)service).GetLatestVersionAsync("test-project", "1.21.1", new[] { "spigot", "bukkit" });
+
+        Assert.NotNull(version);
+        Assert.Equal("bukkit-version", version.Id);
+        var versionQueries = queriedUrls.Where(u => u.Contains("/version")).ToList();
+        Assert.Equal(3, versionQueries.Count);
+        Assert.Contains("spigot", versionQueries[0].ToLowerInvariant());
+        Assert.Contains("bukkit", versionQueries[2].ToLowerInvariant());
+    }
+
+    [Fact]
+    public async Task GetLatestVersionAsync_ExactVersionAndPaperMatch_Works()
+    {
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string url = request.RequestUri?.ToString() ?? "";
+            if (url.Contains("/version") && url.Contains("1.21.1") && url.Contains("paper"))
+            {
+                return MarketplaceHttpResponses.Json("""
+                [
+                  {
+                    "id": "paper-1.21.1-version",
+                    "project_id": "proj-1",
+                    "name": "Paper 1.21.1 Version",
+                    "version_type": "release",
+                    "loaders": ["paper"],
+                    "files": [{ "url": "https://cdn.example/paper.jar", "filename": "paper.jar", "primary": true }]
+                  }
+                ]
+                """);
+            }
+            if (url.Contains("/project/test-project"))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "proj-1", "slug": "test-project", "title": "Test Project" }""");
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var version = await ((IAddonProvider)service).GetLatestVersionAsync("test-project", "1.21.1", new[] { "paper" });
+
+        Assert.NotNull(version);
+        Assert.Equal("paper-1.21.1-version", version.Id);
+    }
+
+    [Fact]
+    public async Task GetLatestVersionAsync_ExactVersionFails_FallbackWorks()
+    {
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string url = request.RequestUri?.ToString() ?? "";
+            if (url.Contains("/version"))
+            {
+                if (url.Contains("1.21") && !url.Contains("1.21.1") && url.Contains("paper"))
+                {
+                    return MarketplaceHttpResponses.Json("""
+                    [
+                      {
+                        "id": "paper-1.21-version",
+                        "project_id": "proj-1",
+                        "name": "Paper 1.21 Version",
+                        "version_type": "release",
+                        "loaders": ["paper"],
+                        "files": [{ "url": "https://cdn.example/paper.jar", "filename": "paper.jar", "primary": true }]
+                      }
+                    ]
+                    """);
+                }
+                return MarketplaceHttpResponses.Json("[]");
+            }
+            if (url.Contains("/project/test-project"))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "proj-1", "slug": "test-project", "title": "Test Project" }""");
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var version = await ((IAddonProvider)service).GetLatestVersionAsync("test-project", "1.21.1", new[] { "paper" });
+
+        Assert.NotNull(version);
+        Assert.Equal("paper-1.21-version", version.Id);
+    }
+
+    [Fact]
+    public void SelectCompatibleFile_DoesNotSelectFabricFileForPaper()
+    {
+        var modVersion = new ModrinthVersion
+        {
+            Files = new List<ModrinthFile>
+            {
+                new ModrinthFile { FileName = "mod-fabric.jar", Url = "https://example.com/fabric.jar", IsPrimary = false },
+                new ModrinthFile { FileName = "mod-paper.jar", Url = "https://example.com/paper.jar", IsPrimary = true }
+            }
+        };
+
+        var selected = ModrinthService.SelectCompatibleFile(modVersion, "paper");
+        Assert.NotNull(selected);
+        Assert.Equal("mod-paper.jar", selected.FileName);
+    }
+
+    [Fact]
+    public async Task GetLatestVersionAsync_NonReleaseFallback_AddsWarning()
+    {
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string url = request.RequestUri?.ToString() ?? "";
+            if (url.Contains("/project/test-project/version"))
+            {
+                return MarketplaceHttpResponses.Json("""
+                [
+                  {
+                    "id": "beta-version",
+                    "project_id": "proj-1",
+                    "name": "Beta Version",
+                    "version_type": "beta",
+                    "loaders": ["paper"],
+                    "files": [{ "url": "https://cdn.example/beta.jar", "filename": "beta.jar", "primary": true }]
+                  }
+                ]
+                """);
+            }
+            if (url.Contains("/project/test-project"))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "proj-1", "slug": "test-project", "title": "Test Project" }""");
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var version = await ((IAddonProvider)service).GetLatestVersionAsync("test-project", "1.21.1", new[] { "paper" });
+
+        Assert.NotNull(version);
+        Assert.Equal("beta-version", version.Id);
+        Assert.NotEmpty(version.Warnings);
+        Assert.Contains("beta", version.Warnings[0]);
+    }
+
+    [Fact]
+    public async Task GetLatestVersionAsync_NoCompatibleLoader_ReturnsNull()
+    {
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string url = request.RequestUri?.ToString() ?? "";
+            if (url.Contains("/project/test-project/version"))
+            {
+                return MarketplaceHttpResponses.Json("[]");
+            }
+            if (url.Contains("/project/test-project"))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "proj-1", "slug": "test-project", "title": "Test Project" }""");
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var version = await ((IAddonProvider)service).GetLatestVersionAsync("test-project", "1.21.1", new[] { "paper" });
+
+        Assert.Null(version);
+    }
+
     private static ModrinthService CreateService(Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> responder)
     {
         return new ModrinthService(new HttpClient(new MarketplaceDelegateHttpMessageHandler(responder)));

@@ -13,15 +13,31 @@ namespace PocketMC.Desktop.Tests
         private class MockProvider : IAddonProvider
         {
             public string Name => "Mock";
-            public Dictionary<string, MarketplaceVersion> Versions = new();
+            public Dictionary<string, MarketplaceVersion> Versions = new(StringComparer.OrdinalIgnoreCase);
+            public Dictionary<string, MarketplaceVersion> VersionsById = new(StringComparer.OrdinalIgnoreCase);
+            public Dictionary<string, MarketplaceProjectInfo> ProjectInfos = new(StringComparer.OrdinalIgnoreCase);
 
             public Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, string loader)
             {
                 return Task.FromResult(Versions.GetValueOrDefault(projectId));
             }
 
-            public Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId) => Task.FromResult<MarketplaceVersion?>(null);
-            public Task<MarketplaceProjectInfo?> GetProjectInfoAsync(string projectId) => Task.FromResult<MarketplaceProjectInfo?>(null);
+            public Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, IReadOnlyList<string> loaderCandidates)
+            {
+                return Task.FromResult(Versions.GetValueOrDefault(projectId));
+            }
+
+            public Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId)
+            {
+                if (VersionsById.TryGetValue(versionId, out var v)) return Task.FromResult<MarketplaceVersion?>(v);
+                return Task.FromResult<MarketplaceVersion?>(null);
+            }
+
+            public Task<MarketplaceProjectInfo?> GetProjectInfoAsync(string projectId)
+            {
+                if (ProjectInfos.TryGetValue(projectId, out var p)) return Task.FromResult<MarketplaceProjectInfo?>(p);
+                return Task.FromResult<MarketplaceProjectInfo?>(null);
+            }
         }
 
         [Fact]
@@ -154,6 +170,129 @@ namespace PocketMC.Desktop.Tests
             // Assert
             Assert.Single(results);
             Assert.Equal("A", results[0].ProjectId);
+        }
+
+        [Fact]
+        public async Task ResolveAsync_ShouldResolveDependencyVersionIdViaGetVersionByIdAsync()
+        {
+            var provider = new MockProvider();
+            provider.Versions["A"] = new MarketplaceVersion
+            {
+                ProjectId = "A",
+                ProjectTitle = "Mod A",
+                Dependencies = new List<MarketplaceDependency>
+                {
+                    new MarketplaceDependency { ProjectId = "B", VersionId = "B-VER-123", Type = DependencyType.Required }
+                }
+            };
+            provider.VersionsById["B-VER-123"] = new MarketplaceVersion
+            {
+                Id = "B-VER-123",
+                ProjectId = "B",
+                ProjectTitle = "Mod B Special File",
+                FileName = "special-b.jar"
+            };
+
+            var resolver = new DependencyResolverService(new AddonManifestService());
+
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric", new EngineCompatibility("Fabric"));
+
+            Assert.Equal(2, results.Count);
+            var bDep = results.FirstOrDefault(r => r.ProjectId == "B");
+            Assert.NotNull(bDep);
+            Assert.Equal("B-VER-123", bDep.VersionId);
+            Assert.Equal("Mod B Special File", bDep.ProjectTitle);
+            Assert.Equal("special-b.jar", bDep.FileName);
+        }
+
+        [Fact]
+        public async Task ResolveAsync_ShouldFallbackToLatestCompatibleIfVersionIdFetchFails()
+        {
+            var provider = new MockProvider();
+            provider.Versions["A"] = new MarketplaceVersion
+            {
+                ProjectId = "A",
+                ProjectTitle = "Mod A",
+                Dependencies = new List<MarketplaceDependency>
+                {
+                    new MarketplaceDependency { ProjectId = "B", VersionId = "B-VER-NONEXISTENT", Type = DependencyType.Required }
+                }
+            };
+            provider.Versions["B"] = new MarketplaceVersion
+            {
+                Id = "B-LATEST",
+                ProjectId = "B",
+                ProjectTitle = "Mod B Latest"
+            };
+
+            var resolver = new DependencyResolverService(new AddonManifestService());
+
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric", new EngineCompatibility("Fabric"));
+
+            Assert.Equal(2, results.Count);
+            var bDep = results.FirstOrDefault(r => r.ProjectId == "B");
+            Assert.NotNull(bDep);
+            Assert.Equal("B-LATEST", bDep.VersionId);
+            Assert.Equal("Mod B Latest", bDep.ProjectTitle);
+        }
+
+        [Fact]
+        public async Task ResolveAsync_FailedDependency_FetchesProjectTitleFromGetProjectInfoAsync()
+        {
+            var provider = new MockProvider();
+            provider.Versions["A"] = new MarketplaceVersion
+            {
+                ProjectId = "A",
+                Dependencies = new List<MarketplaceDependency>
+                {
+                    new MarketplaceDependency { ProjectId = "B", Type = DependencyType.Required }
+                }
+            };
+            provider.ProjectInfos["B"] = new MarketplaceProjectInfo
+            {
+                Id = "B",
+                Title = "Mod B Readable Name"
+            };
+
+            var resolver = new DependencyResolverService(new AddonManifestService());
+
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "A", "1.20.1", "fabric", new EngineCompatibility("Fabric"));
+
+            Assert.Equal(2, results.Count);
+            var bDep = results.FirstOrDefault(r => r.ProjectId == "B");
+            Assert.NotNull(bDep);
+            Assert.Equal("Mod B Readable Name", bDep.ProjectTitle);
+            Assert.NotNull(bDep.Error);
+        }
+
+        [Fact]
+        public void DependencyConfirmationViewModel_OptionalFailure_DoesNotBlockInstall()
+        {
+            var deps = new List<ResolvedDependency>
+            {
+                new ResolvedDependency { ProjectId = "A", IsSelected = true, Type = DependencyType.Required },
+                new ResolvedDependency { ProjectId = "B", IsSelected = false, Type = DependencyType.Optional, Error = "Failed to resolve B." }
+            };
+
+            var vm = new DependencyConfirmationViewModel(deps);
+
+            Assert.False(vm.HasFailedRequiredDependency);
+            Assert.True(vm.CanInstall);
+        }
+
+        [Fact]
+        public void DependencyConfirmationViewModel_RequiredFailure_BlocksInstall()
+        {
+            var deps = new List<ResolvedDependency>
+            {
+                new ResolvedDependency { ProjectId = "A", IsSelected = true, Type = DependencyType.Required },
+                new ResolvedDependency { ProjectId = "B", IsSelected = false, Type = DependencyType.Required, Error = "Failed to resolve required dependency B." }
+            };
+
+            var vm = new DependencyConfirmationViewModel(deps);
+
+            Assert.True(vm.HasFailedRequiredDependency);
+            Assert.False(vm.CanInstall);
         }
     }
 }

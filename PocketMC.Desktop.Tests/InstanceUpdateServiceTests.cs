@@ -723,6 +723,11 @@ public sealed class InstanceUpdateServiceTests : IDisposable
             return Task.FromResult(Versions.GetValueOrDefault(projectId));
         }
 
+        public Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, IReadOnlyList<string> loaderCandidates)
+        {
+            return Task.FromResult(Versions.GetValueOrDefault(projectId));
+        }
+
         public Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId)
         {
             MarketplaceVersion? version = Versions.Values.FirstOrDefault(v => v.Id == versionId);

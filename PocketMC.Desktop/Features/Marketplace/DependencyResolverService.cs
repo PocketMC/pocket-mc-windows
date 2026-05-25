@@ -35,6 +35,10 @@ namespace PocketMC.Desktop.Features.Marketplace
         public bool IsCheckboxEnabled { get; set; }
         public string? ClientSide { get; set; }
         public string? ServerSide { get; set; }
+        public string? SelectedLoader { get; set; }
+        public string? MatchedMinecraftVersion { get; set; }
+        public string? IconUrl { get; set; }
+        public string Provider { get; set; } = "";
     }
 
     public class DependencyResolverService
@@ -56,13 +60,58 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             var results = new List<ResolvedDependency>();
             var visited = new HashSet<string>(); // ProjectId to handle cycles
-            return await ResolveRecursiveAsync(provider, serverDir, rootProjectId, mcVersion, loader, results, visited, DependencyType.Required, compat, true);
+            return await ResolveRecursiveAsync(provider, serverDir, rootProjectId, null, mcVersion, loader, results, visited, DependencyType.Required, compat, true);
+        }
+
+        private static string FirstCharToUpper(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "";
+            if (input.Length == 1) return input.ToUpperInvariant();
+            return char.ToUpperInvariant(input[0]) + input[1..];
+        }
+
+        private static bool IsFileCompatibleWithEngine(string fileName, EngineCompatibility compat)
+        {
+            if (string.IsNullOrEmpty(fileName)) return true;
+            var fn = fileName.ToLowerInvariant();
+
+            if (compat.Family == EngineFamily.Spigot)
+            {
+                if (fn.Contains("fabric") || fn.Contains("forge") || fn.Contains("neoforge") || fn.Contains("quilt"))
+                {
+                    return false;
+                }
+            }
+            else if (compat.Family == EngineFamily.Fabric)
+            {
+                if (fn.Contains("forge") || fn.Contains("neoforge"))
+                {
+                    return false;
+                }
+            }
+            else if (compat.Family == EngineFamily.Forge)
+            {
+                if (fn.Contains("fabric") || fn.Contains("neoforge"))
+                {
+                    return false;
+                }
+            }
+            else if (compat.Family == EngineFamily.NeoForge)
+            {
+                if (fn.Contains("fabric") || (fn.Contains("forge") && !fn.Contains("neoforge")))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private async Task<List<ResolvedDependency>> ResolveRecursiveAsync(
             IAddonProvider provider,
             string serverDir,
             string projectId,
+            string? versionId,
             string mcVersion,
             string loader,
             List<ResolvedDependency> results,
@@ -93,17 +142,57 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             bool alreadyInstalled = await _manifestService.IsInstalledAsync(serverDir, provider.Name, projectId, compat);
             
-            var version = await provider.GetLatestVersionAsync(projectId, mcVersion, loader);
+            MarketplaceVersion? version = null;
+
+            // Try resolving by exact versionId first
+            if (!string.IsNullOrEmpty(versionId))
+            {
+                try
+                {
+                    var resolvedVer = await provider.GetVersionByIdAsync(versionId);
+                    if (resolvedVer != null)
+                    {
+                        if (IsFileCompatibleWithEngine(resolvedVer.FileName, compat))
+                        {
+                            version = resolvedVer;
+                            version.SelectedLoader = compat.LoaderName;
+                            version.MatchedMinecraftVersion = mcVersion;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Fallback to latest compat version below
+                }
+            }
+
+            // Fallback to latest compatible version
             if (version == null)
             {
+                version = await provider.GetLatestVersionAsync(projectId, mcVersion, compat.CompatibleLoaderNames);
+            }
+
+            if (version == null)
+            {
+                var projectInfo = await provider.GetProjectInfoAsync(projectId);
+                string title = projectInfo?.Title ?? projectId;
+                string? iconUrl = projectInfo?.IconUrl;
+
+                var mcCandidates = ModrinthService.BuildMinecraftVersionCandidates(mcVersion);
+                string triedMcVersions = string.Join(" or ", mcCandidates.Where(c => !string.IsNullOrEmpty(c)));
+                string triedLoaders = string.Join("/", compat.CompatibleLoaderNames.Select(l => FirstCharToUpper(l)));
+                string errorMsg = $"No compatible {triedLoaders} version found for Minecraft {triedMcVersions}.";
+
                 results.Add(new ResolvedDependency
                 {
                     ProjectId = projectId,
-                    ProjectTitle = projectId, // Fallback
+                    ProjectTitle = title,
                     Type = depType,
-                    Error = "No compatible version found for this Minecraft version/loader.",
+                    Error = errorMsg,
                     IsAlreadyInstalled = alreadyInstalled,
-                    IsCheckboxEnabled = false
+                    IsCheckboxEnabled = false,
+                    IconUrl = iconUrl,
+                    Provider = provider.Name
                 });
                 return results;
             }
@@ -161,14 +250,18 @@ namespace PocketMC.Desktop.Features.Marketplace
                 FileName = version.FileName,
                 Hash = version.Hash,
                 HashType = version.HashType,
-                ReleaseType = version.ReleaseType,
+                ReleaseType = version.ReleaseType ?? "release",
                 IsAlreadyInstalled = alreadyInstalled,
                 IsSelected = isSelected,
                 IsCheckboxEnabled = isCheckboxEnabled,
                 IdAlias = normalizedId,
                 Warning = version.Warnings.FirstOrDefault(),
                 ClientSide = version.ClientSide,
-                ServerSide = version.ServerSide
+                ServerSide = version.ServerSide,
+                SelectedLoader = version.SelectedLoader,
+                MatchedMinecraftVersion = version.MatchedMinecraftVersion,
+                IconUrl = version.IconUrl,
+                Provider = provider.Name
             };
 
             results.Add(resolved);
@@ -180,7 +273,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     if (dep.Type == DependencyType.Incompatible) continue;
                     if (dep.Type == DependencyType.Embedded) continue; 
 
-                    await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, mcVersion, loader, results, visited, dep.Type, compat, false);
+                    await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, dep.VersionId, mcVersion, loader, results, visited, dep.Type, compat, false);
                 }
             }
 

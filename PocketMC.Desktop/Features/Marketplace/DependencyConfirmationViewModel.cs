@@ -17,7 +17,9 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         public bool? Result { get; private set; }
 
-        public bool CanInstall => !HasIncompatible && Dependencies.Any(d => d.IsSelected);
+        public bool HasFailedRequiredDependency => Dependencies.Any(d => d.Type == Models.DependencyType.Required && !string.IsNullOrEmpty(d.Error));
+
+        public bool CanInstall => !HasIncompatible && !HasFailedRequiredDependency && Dependencies.Any(d => d.IsSelected);
 
         public DependencyConfirmationViewModel(IEnumerable<ResolvedDependency> dependencies)
         {
