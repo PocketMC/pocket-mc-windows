@@ -239,6 +239,14 @@ public sealed class ServerConfigurationService
         return props.TryGetValue(key, out value);
     }
 
+    public void SaveProperty(string serverDir, string key, string value)
+    {
+        string propsFile = GetPropertiesPath(serverDir);
+        var props = ServerPropertiesParser.Read(propsFile);
+        props[key] = value;
+        ServerPropertiesParser.Write(propsFile, props);
+    }
+
     public string LoadRawProperties(string serverDir)
     {
         string propsFile = GetPropertiesPath(serverDir);

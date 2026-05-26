@@ -41,6 +41,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     private readonly BanSidecarService _banSidecarService;
     private readonly WhitelistService _whitelistService;
     private readonly ServerRuntimeSettingApplier _runtimeApplier;
+    private readonly ServerConfigurationService _configService;
     private readonly InstanceMetadata _metadata;
     private readonly ServerProcess _serverProcess;
     private readonly ILogger<PlayerManagementViewModel> _logger;
@@ -86,6 +87,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         _banSidecarService = banSidecarService;
         _whitelistService = whitelistService;
         _runtimeApplier = runtimeApplier;
+        _configService = configService;
         _metadata = metadata;
         _serverProcess = serverProcess;
         _logger = logger;
@@ -125,6 +127,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         _ = ImportBedrockPlayerMapFromOutputBufferAsync();
         ApplyOnlinePlayers(_serverProcess.OnlinePlayerNames, _serverProcess.LastPlayerListUpdatedUtc);
         _ = RefreshPersistentStateAsync();
+        _ = LoadWhitelistAsync();
         _ = RequestPlayerListAsync();
     }
 
@@ -248,7 +251,10 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         // 2. Refresh persistent state (OP, bans) from authoritative files
         await RefreshPersistentStateAsync();
 
-        // 3. Re-fetch per-player gamemode from the latest source
+        // 3. Load whitelist data
+        await LoadWhitelistAsync();
+
+        // 4. Re-fetch per-player gamemode from the latest source
         List<string> onlineNames = new();
         await _dispatcher.InvokeAsync(() =>
         {
@@ -1129,9 +1135,24 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         bool newValue = !IsWhitelistEnabled;
         IsWhitelistEnabled = newValue;
 
+        _configService.SaveProperty(_serverProcess.WorkingDirectory, "white-list", newValue ? "true" : "false");
+
         if (IsServerOnline)
         {
             await _runtimeApplier.ApplyWhitelistToggleAsync(_metadata.Id, newValue);
+        }
+    }
+
+    private bool IsValidUsernameForCommand(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username)) return false;
+        if (IsBedrock)
+        {
+            return !username.Any(c => char.IsControl(c) || c == '"' || c == '\\' || c == '\n' || c == '\r');
+        }
+        else
+        {
+            return Regex.IsMatch(username, @"^[A-Za-z0-9_]{3,16}$");
         }
     }
 
@@ -1140,17 +1161,33 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         string username = WhitelistAddUsername?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(username)) return;
 
+        if (!IsValidUsernameForCommand(username))
+        {
+            _dialogService.ShowMessage("Invalid Username", 
+                "The username contains invalid characters. Java usernames must be 3-16 alphanumeric characters. Bedrock usernames can contain spaces but no control characters, quotes, or backslashes.", 
+                DialogType.Error);
+            return;
+        }
+
         if (IsServerOnline)
         {
             await _runtimeApplier.ApplyWhitelistAddAsync(_metadata.Id, username);
+            WhitelistAddUsername = string.Empty;
+            await LoadWhitelistAsync();
         }
         else
         {
-            await _whitelistService.AddPlayerAsync(_metadata, username);
-        }
+            var result = await _whitelistService.AddPlayerAsync(_metadata, username);
+            WhitelistAddUsername = string.Empty;
+            await LoadWhitelistAsync();
 
-        WhitelistAddUsername = string.Empty;
-        await LoadWhitelistAsync();
+            if (result == WhitelistAddResult.AddedWithOfflineUuidFallback)
+            {
+                _dialogService.ShowMessage("Warning", 
+                    $"Failed to resolve Mojang UUID for '{username}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.", 
+                    DialogType.Warning);
+            }
+        }
     }
 
     private async Task RemoveFromWhitelistAsync(string? username)

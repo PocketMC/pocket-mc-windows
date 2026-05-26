@@ -551,7 +551,7 @@
                                             </WrapPanel>
 
                                             <!-- Render & Simulation Distance Sliders -->
-                                            <TextBlock Text="Render &amp; Simulation Distance" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="10,4,0,2"/>
+                                            <TextBlock Text="Render &amp; Simulation Distance (Requires Restart)" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="10,4,0,2"/>
                                             <TextBlock Text="Controls how far (in chunks) players can see and how far the server actively simulates game mechanics."
                                                        Style="{StaticResource SettingsSubtext}" Margin="10,0,0,12"/>
                                             <Grid Margin="10,0,10,8">
@@ -634,7 +634,7 @@
                                             </WrapPanel>
 
                                             <!-- Bedrock Render Distance Slider -->
-                                            <TextBlock Text="Render Distance" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="10,4,0,2"/>
+                                            <TextBlock Text="Render Distance (Requires Restart)" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="10,4,0,2"/>
                                             <TextBlock Text="The maximum distance in chunks that the server will send world data to players. Higher values increase network and memory usage."
                                                        Style="{StaticResource SettingsSubtext}" Margin="10,0,0,12" TextWrapping="Wrap"/>
                                             <Grid Margin="10,0,10,12">
@@ -667,59 +667,6 @@
                                                     <ui:ToggleSwitch IsChecked="{Binding Bedrock.ForceGamemode}" Content="Force Default Gamemode" />
                                                 </StackPanel>
                                             </WrapPanel>
-                                        </StackPanel>
-                                    </ui:Card>
-
-                                    <!-- LIVE CONTROLS (online only) -->
-                                    <ui:Card Padding="32" Margin="0,0,0,16"
-                                             Visibility="{Binding LiveControls.IsVisible, Converter={StaticResource VisibleIfTrue}}">
-                                        <StackPanel>
-                                            <Grid Margin="0,0,0,10">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <ui:SymbolIcon Symbol="Play24" FontSize="18" Foreground="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                                <StackPanel Grid.Column="1">
-                                                    <TextBlock Text="Live Controls" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                    <TextBlock Text="These controls send commands to the running server immediately. Changes are not persisted to config files."
-                                                               FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                                                </StackPanel>
-                                            </Grid>
-
-                                            <Separator Margin="0,4,0,12" Background="{DynamicResource ControlStrokeColorDefaultBrush}"/>
-
-                                            <!-- Gamerule toggles -->
-                                            <StackPanel Visibility="{Binding LiveControls.SupportsGamerules, Converter={StaticResource VisibleIfTrue}}">
-                                                <WrapPanel Margin="0,0,0,8">
-                                                    <StackPanel Margin="0,0,20,8" MinWidth="200">
-                                                        <ui:ToggleSwitch IsChecked="{Binding LiveControls.DoDaylightCycle}"
-                                                                         Content="Day/Night Cycle"
-                                                                         OnContent="" OffContent=""/>
-                                                    </StackPanel>
-                                                    <StackPanel Margin="0,0,20,8" MinWidth="200">
-                                                        <ui:ToggleSwitch IsChecked="{Binding LiveControls.DoWeatherCycle}"
-                                                                         Content="Weather Cycle"
-                                                                         OnContent="" OffContent=""/>
-                                                    </StackPanel>
-                                                </WrapPanel>
-                                            </StackPanel>
-
-                                            <!-- Weather control -->
-                                            <StackPanel Visibility="{Binding LiveControls.SupportsWeather, Converter={StaticResource VisibleIfTrue}}"
-                                                        Margin="0,4,0,0">
-                                                <TextBlock Text="Set Weather" FontSize="13" FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ComboBox ItemsSource="{Binding LiveControls.WeatherOptions}"
-                                                              SelectedItem="{Binding LiveControls.SelectedWeather}"
-                                                              MinWidth="140" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                    <ui:Button Content="Apply"
-                                                               Appearance="Primary"
-                                                               Icon="{ui:SymbolIcon Checkmark24}"
-                                                               Command="{Binding LiveControls.SetWeatherCommand}"/>
-                                                </StackPanel>
-                                            </StackPanel>
                                         </StackPanel>
                                     </ui:Card>
                                 </StackPanel>
@@ -892,6 +839,13 @@
                                                                     <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                 </MenuItem.Icon>
                                                             </MenuItem>
+                                                            <MenuItem Header="Delete" 
+                                                                      Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                      CommandParameter="{Binding Path}">
+                                                                <MenuItem.Icon>
+                                                                    <ui:SymbolIcon Symbol="Delete20" Foreground="Red"/>
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
                                                         </ContextMenu>
                                                     </ui:Card.ContextMenu>
                                                     <Grid>
@@ -988,6 +942,11 @@
                                                                        Visibility="{Binding IsDisabled, Converter={StaticResource InvertedVisibilityConverter}}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
                                                                        ToolTip="Check for updates from the marketplace"/>
+                                                            <ui:Button Content="Delete" Appearance="Danger" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding Path}"
+                                                                       Icon="{ui:SymbolIcon Delete20}"
+                                                                       ToolTip="Delete plugin from disk"/>
                                                         </StackPanel>
                                                     </Grid>
                                                 </ui:Card>
@@ -1069,6 +1028,13 @@
                                                                       CommandParameter="{Binding Path}">
                                                                 <MenuItem.Icon>
                                                                     <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="Delete" 
+                                                                      Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                      CommandParameter="{Binding Path}">
+                                                                <MenuItem.Icon>
+                                                                    <ui:SymbolIcon Symbol="Delete20" Foreground="Red"/>
                                                                 </MenuItem.Icon>
                                                             </MenuItem>
                                                         </ContextMenu>
@@ -1194,6 +1160,11 @@
                                                                     </Style>
                                                                 </ui:Button.Style>
                                                             </ui:Button>
+                                                            <ui:Button Content="Delete" Appearance="Danger" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding Path}"
+                                                                       Icon="{ui:SymbolIcon Delete20}"
+                                                                       ToolTip="Delete mod from disk"/>
                                                         </StackPanel>
                                                     </Grid>
                                                 </ui:Card>

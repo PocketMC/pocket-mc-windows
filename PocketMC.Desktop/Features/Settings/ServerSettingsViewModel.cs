@@ -55,7 +55,6 @@ namespace PocketMC.Desktop.Features.Settings
         public SettingsAdvancedVM Advanced { get; }
         public SettingsSummariesVM Summaries { get; }
         public ServerCloudBackupViewModel CloudBackups { get; }
-        public LiveControlsVM LiveControls { get; }
 
         private bool _isAiSummarizationAvailable;
         public bool IsAiSummarizationAvailable { get => _isAiSummarizationAvailable; set => SetProperty(ref _isAiSummarizationAvailable, value); }
@@ -167,8 +166,6 @@ namespace PocketMC.Desktop.Features.Settings
                 () => ServerDir,
                 () => IsRunning);
 
-            LiveControls = new LiveControlsVM(_runtimeApplier, metadata.Id, metadata.Compatibility.Family);
-
             SaveCommand = new RelayCommand(_ => SaveConfigurations(), _ => !IsTransientState);
             CancelCommand = new RelayCommand(async _ => await CancelAsync());
             ResolvePlayitCommand = new RelayCommand(_ => _ = ResolveTunnelAddressAsync(playitApiClient));
@@ -267,8 +264,6 @@ namespace PocketMC.Desktop.Features.Settings
             }
 
             Addons?.RefreshRunningState();
-            if (LiveControls != null)
-                LiveControls.IsVisible = running;
         }
 
         private void MarkChanged() { if (!IsLoading) HasUnsavedChanges = true; }
@@ -525,6 +520,7 @@ namespace PocketMC.Desktop.Features.Settings
                 // Apply live settings that can be sent as commands without restart
                 _ = _runtimeApplier.ApplyDifficultyAsync(Metadata.Id, cfg.Difficulty);
                 _ = _runtimeApplier.ApplyWhitelistToggleAsync(Metadata.Id, cfg.WhiteList);
+                _ = _runtimeApplier.ApplyDefaultGamemodeAsync(Metadata.Id, cfg.Gamemode);
 
                 IsRestartRequired = true;
             }

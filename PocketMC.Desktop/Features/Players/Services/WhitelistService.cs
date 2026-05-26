@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -12,6 +13,14 @@ using PocketMC.Desktop.Helpers;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Players.Services;
+
+public enum WhitelistAddResult
+{
+    AddedWithOnlineUuid,
+    AddedWithOfflineUuidFallback,
+    AddedWithOfflineUuid,
+    AlreadyExists
+}
 
 public sealed class WhitelistEntry
 {
@@ -26,12 +35,44 @@ public sealed class WhitelistEntry
 public sealed class WhitelistService
 {
     private readonly InstanceRegistry _registry;
+    private readonly ServerConfigurationService _configService;
     private readonly ILogger<WhitelistService> _logger;
+    private static readonly HttpClient _httpClient = new();
 
-    public WhitelistService(InstanceRegistry registry, ILogger<WhitelistService> logger)
+    public WhitelistService(InstanceRegistry registry, ServerConfigurationService configService, ILogger<WhitelistService> logger)
     {
         _registry = registry;
+        _configService = configService;
         _logger = logger;
+    }
+
+    private async Task<string?> FetchOnlineUuidAsync(string username)
+    {
+        try
+        {
+            string url = $"https://api.mojang.com/users/profiles/minecraft/{Uri.EscapeDataString(username)}";
+            using var response = await _httpClient.GetAsync(url);
+            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                return null;
+            }
+            response.EnsureSuccessStatusCode();
+            string json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("id", out var idProp))
+            {
+                string rawId = idProp.GetString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(rawId))
+                {
+                    return Guid.Parse(rawId).ToString();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to resolve online UUID for Mojang account {Username}", username);
+        }
+        return null;
     }
 
     public async Task<List<WhitelistEntry>> GetWhitelistedPlayersAsync(InstanceMetadata instance)
@@ -52,24 +93,56 @@ public sealed class WhitelistService
         }
     }
 
-    public async Task AddPlayerAsync(InstanceMetadata instance, string username)
+    public async Task<WhitelistAddResult> AddPlayerAsync(InstanceMetadata instance, string username)
     {
         string? serverRoot = _registry.GetPath(instance.Id);
-        if (string.IsNullOrWhiteSpace(serverRoot)) return;
+        if (string.IsNullOrWhiteSpace(serverRoot))
+            return WhitelistAddResult.AddedWithOfflineUuid;
 
         string path = GetWhitelistPath(serverRoot, instance);
         var entries = await ReadWhitelistAsync(path, instance);
 
         if (entries.Any(e => string.Equals(e.Name, username, StringComparison.OrdinalIgnoreCase)))
-            return; // Already whitelisted
+            return WhitelistAddResult.AlreadyExists;
+
+        bool isJava = !CommandFormatter.IsBedrock(instance.ServerType) && !CommandFormatter.IsPocketMine(instance.ServerType);
+        bool onlineMode = false;
+        if (isJava && _configService.TryGetProperty(serverRoot, "online-mode", out string? onlineModeStr))
+        {
+            onlineMode = string.Equals(onlineModeStr, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        string uuid = string.Empty;
+        WhitelistAddResult result;
+
+        if (isJava && onlineMode)
+        {
+            string? onlineUuid = await FetchOnlineUuidAsync(username);
+            if (onlineUuid != null)
+            {
+                uuid = onlineUuid;
+                result = WhitelistAddResult.AddedWithOnlineUuid;
+            }
+            else
+            {
+                uuid = GenerateOfflineUuid(username);
+                result = WhitelistAddResult.AddedWithOfflineUuidFallback;
+            }
+        }
+        else
+        {
+            uuid = GenerateOfflineUuid(username);
+            result = WhitelistAddResult.AddedWithOfflineUuid;
+        }
 
         entries.Add(new WhitelistEntry
         {
-            Uuid = GenerateOfflineUuid(username),
+            Uuid = uuid,
             Name = username
         });
 
         await WriteWhitelistAsync(path, entries, instance);
+        return result;
     }
 
     public async Task RemovePlayerAsync(InstanceMetadata instance, string username)

@@ -57,34 +57,13 @@ public sealed class ServerRuntimeSettingApplier
     public Task ApplyWhitelistRemoveAsync(Guid instanceId, string playerName)
         => SendIfOnlineAsync(instanceId, $"whitelist remove {playerName}");
 
-    /// <summary>
-    /// Apply a gamerule change. Only supported on Java and BDS (not PocketMine).
-    /// </summary>
-    public Task ApplyGameruleAsync(Guid instanceId, EngineFamily family, string rule, string value)
-    {
-        if (family == EngineFamily.Pocketmine)
-        {
-            _logger.LogDebug("Skipping gamerule {Rule} — PocketMine does not support gamerule commands.", rule);
-            return Task.CompletedTask;
-        }
 
-        return SendIfOnlineAsync(instanceId, $"gamerule {rule} {value}");
-    }
 
     /// <summary>
-    /// Set weather. Java: "weather clear|rain|thunder". BDS: same syntax.
-    /// PocketMine does not support the weather command natively.
+    /// Apply default gamemode live. Supported on Java and BDS.
     /// </summary>
-    public Task ApplyWeatherAsync(Guid instanceId, EngineFamily family, string weather)
-    {
-        if (family == EngineFamily.Pocketmine)
-        {
-            _logger.LogDebug("Skipping weather command — PocketMine does not support it natively.");
-            return Task.CompletedTask;
-        }
-
-        return SendIfOnlineAsync(instanceId, $"weather {weather}");
-    }
+    public Task ApplyDefaultGamemodeAsync(Guid instanceId, string gamemode)
+        => SendIfOnlineAsync(instanceId, $"defaultgamemode {gamemode}");
 
     private async Task SendIfOnlineAsync(Guid instanceId, string command)
     {
