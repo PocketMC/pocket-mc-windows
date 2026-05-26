@@ -1,662 +1,1014 @@
 # Changelog
 
-This file summarizes the Pocket MC Desktop release line from `v1.0.0` to `v1.8.0`.
+This changelog is organized from newest to oldest and rewritten from release-to-release diffs, changed-file hotspots, commit scope, and the previous release notes. Each entry explains what changed, why it changed, and what users or maintainers should watch during upgrades.
 
-## v1.8.0
+## Diff Analysis Summary
 
-### Highlights
+- `v1.8.0...master`: 6 unreleased commits focused on add-on inventory/toggle/update workflows, whitelist support, runtime setting application, backup restore hardening, and add-on settings refactoring.
+- `v1.7.7...v1.8.0`: 24 commits focused on safe instance version updates, persistent console history, marketplace hardening, custom backup destinations, Windows startup/tray behavior, and Discord Rich Presence.
+- `v1.7.6...v1.7.7`: 10 commits focused on AI provider flexibility, Paper API v3 migration, creation wizard UX, console preprocessing, and dashboard polish.
+- `v1.7.5...v1.7.6`: 19 commits focused on security hardening, custom wallpaper backgrounds, markdown/summary rendering, path safety, atomic writes, DPAPI/process safety, and expanded tests.
+- `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
+- `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
+- `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
 
-- Added a Version & Updates workflow for server instances, including update preview, staged artifact downloads, compatible marketplace add-on migration, backups, snapshots, and rollback support.
-- Console logs now persist per instance across app restarts, with read-only last-session viewing for stopped or crashed servers.
-- Added Windows startup, minimized-to-tray, close-to-tray, per-instance server auto-start, and Discord Rich Presence options.
-- Improved marketplace/add-on reliability with safer downloads, hash-aware installs, better dependency resolution, add-on metadata display, search, sorting, icons, and server-side warnings.
-- Added an Interactive Ports Map and per-instance custom local backup destinations for easier server operations.
+---
 
-### Added
+## Unreleased
 
-- New Version & Updates tab in server settings for selecting newer target versions, previewing update plans, applying updates, and rolling back incomplete updates.
-- Update planning now reports required Java version changes, tracked/manual add-on counts, compatible updates, incompatible add-ons, dependency additions, warnings, and rollback availability.
-- New staged instance update pipeline for server artifacts and marketplace add-ons, with update journals, per-instance update locks, snapshots, world backups, and rollback handling.
-- Persistent console log history with `pocketmc-current-session.log`, `pocketmc-last-session.log`, archived session logs, and legacy `pocketmc-session.log` fallback.
-- Read-only console mode for stopped/crashed servers or after an app restart, including a visible banner explaining that the page is showing the last session log.
-- Windows startup settings:
-  - Start PocketMC with Windows
-  - Start minimized to tray
-  - Minimize to tray on close
-- Tray startup support using the existing tray icon system, including a hidden/minimized launch path for `--windows-startup --minimized`.
-- Per-instance “Auto-start server at PocketMC startup” setting for normal app launches.
-- Discord Rich Presence integration showing active server status, server type/version, player count, uptime, and a join/download button.
-- App Settings toggle for Discord Rich Presence.
-- Interactive Ports Map from the Tunnel page, showing server ports, Playit tunnel addresses, port roles, online/offline state, and copy/navigation actions.
-- Port editing from the Ports Map for stopped servers, with collision checks across main, Geyser, and Simple Voice Chat ports.
-- Per-instance local backup destination selection, with backup cards labeled as Default or Custom and full-path tooltips.
-- Add-on search and sorting in server settings, including sort modes for name, last modified, size, loader type, source, and warnings first.
-- Java mod/plugin metadata scanning for Fabric, Quilt, Forge, NeoForge, legacy Forge, Bukkit/Paper plugin metadata, versions, dependencies, icons, and side-support hints.
-- Add-on icons and fallback icons for mods, plugins, Bedrock packs, and unknown files.
-- Side-support badges for mods, including client-only, server-only, client + server, optional on server, and unknown.
-- Marketplace install risk warnings for suspicious client-only mods and provider metadata limitations.
-- Safer modpack override extraction that reports skipped unsafe override files instead of blindly applying protected paths.
-- AI model picker with provider-specific model suggestions while still allowing custom model text.
-- Simple Voice Chat badge on dashboard cards when a server appears to include Simple Voice Chat.
+### Summary
 
-### Improved
-
-- Console history loading now reads only the configured tail of the log buffer asynchronously, reducing UI freezes on large log files.
-- Console search, filtering, copy logs, crash banner, AI line analysis, and AI session summaries continue to work with the new current/last-session log model.
-- Dashboard log navigation can open a console page even when there is no live `ServerProcess`, as long as the instance path exists.
-- Server logs are rotated before a new session starts, preserving the previous current log as the last session and as a timestamped archive.
-- Marketplace downloads now use a staging folder, non-empty file validation, safe promotion, cleanup of partial files, and provider hash verification when available.
-- Marketplace file validation now rejects incompatible extensions by server family, such as non-JAR files for Java add-ons or non-PHAR files for PocketMine.
-- Modrinth, CurseForge, and Poggit metadata handling now carries more provider data, including hashes, release type, project titles, icons, side metadata, selected loader, and matched Minecraft version where available.
-- Dependency resolution now tries exact dependency version IDs first and falls back to compatible versions when needed.
-- Dependency confirmation UI now shows more useful version, loader, Minecraft version, project, and error details.
-- Marketplace update/reinstall confirmation messages now include provider warnings before installing.
-- Update All summaries now include warnings gathered from individual add-on update checks.
-- Instance update add-on migration preserves manual/untracked add-ons and warns when they cannot be updated automatically.
-- Bedrock server updates preserve worlds, packs, config, properties, allowlist/permissions, and related server data while replacing server binaries.
-- Java provisioning now prompts before downloading a missing required Java runtime during server startup.
-- Adoptium Java resolution now tries JRE packages first and falls back to JDK packages if no JRE is available.
-- Background Java provisioning now focuses on Java 25 by default, with older required versions provisioned on demand.
-- Dashboard startup now resolves existing Playit tunnels in the background for running and offline instances.
-- Simple Voice Chat detection now checks for an actual mod/plugin JAR before reporting detection and reads the new current/last console session logs as fallback sources.
-- Backup integrity checks now verify the actual displayed backup path, including custom backup locations.
-- Backup manifest cleanup now considers both default and custom backup directories before purging entries.
-- Geyser port configuration updates now check for a Geyser JAR before patching related config.
-- Mistral AI default model changed from `mistral-small-4` to `mistral-medium-3-5`.
-
-### Fixed
-
-- Fixed console opening behavior for stopped or historical instances that no longer have an in-memory process object after app restart.
-- Fixed previous console session logs being overwritten at the start of a new server session before they could be viewed later.
-- Fixed the console page attempting to subscribe to live process events when no live process exists.
-- Fixed live-only console controls being available in read-only last-session mode.
-- Fixed large session logs causing expensive full-file loading in the console.
-- Fixed required dependency failures still allowing dependency installation to proceed.
-- Fixed Bedrock add-on manifest parsing for packs that provide `header.version` as a string instead of an array.
-- Fixed Bedrock add-on installs silently succeeding when no valid add-on manifest was installed.
-- Fixed unsafe modpack overrides being able to target protected roots, protected files, dangerous extensions, or paths outside the instance.
-- Fixed marketplace update paths to use safe contained paths and compatible filenames during add-on replacement.
-- Fixed add-on manifest tracking when installed files are renamed or updated.
-- Fixed custom backup folders not being considered for backup integrity checks and orphan cleanup.
-- Fixed Simple Voice Chat false positives from stale configs/logs when no voice chat JAR is present.
-- Fixed server start behavior so missing bundled Java versions require user confirmation instead of silently starting repair/download work.
-- Fixed Windows close behavior so tray exit still performs a real graceful shutdown even when “Minimize to tray on close” is enabled.
-- Fixed Windows startup minimized launches so they do not auto-start Minecraft servers.
+Current `master` is ahead of `v1.8.0`. The unreleased work appears to continue the v1.8 reliability direction by cleaning up add-on management internals, adding proper add-on enable/disable state handling, improving update checks, expanding player/whitelist controls, and adding tests around backup restore and add-on workflows.
 
 ### Changed
 
-- Console session logs now use the new current/last/archive naming scheme. The old `logs/pocketmc-session.log` remains supported as a fallback.
-- Windows startup registration uses the current-user Run key and launches PocketMC with `--windows-startup --minimized` when minimized startup is enabled.
-- Closing the main window can now hide PocketMC to the tray based on settings, while running-server safety still hides to tray as before.
-- Normal app startup can auto-start selected server instances; Windows startup/minimized launch intentionally skips server auto-start.
-- Discord Rich Presence is now part of app-level behavior and can be toggled from App Settings.
-- Add-on list display now favors marketplace/project metadata and scanned JAR metadata over raw filenames when available.
-- Add-on manifests now store additional project/display metadata for future updates and richer UI display.
-- Server update operations now use staging and journals instead of direct live-folder replacement.
-- Background Java provisioning no longer attempts to download every bundled Java version up front.
-- App settings now include startup/tray behavior flags and Discord Rich Presence preference.
-- Instance metadata now includes per-server auto-start and custom backup directory settings.
+- Added an add-on inventory model for classifying installed mods/plugins/packs by kind, state, filename policy, and update status.
+- Added add-on toggle support so installed add-ons can be enabled or disabled without users manually renaming or moving files.
+- Added add-on update-check models and services to separate update detection from UI code.
+- Refactored `SettingsAddonsVM`, reducing the chance that file scanning, UI presentation, and state mutation all fight inside the same view model like three raccoons in a trench coat.
+- Added whitelist support in player management.
+- Added a `ServerRuntimeSettingApplier` path for safer server configuration application.
+- Expanded tests for add-on management, backup restore, whitelist/player management XAML, add-on display behavior, and startup coordination.
 
-### Technical Notes
+### Reasoning
 
-- Added `ConsoleLogHistoryService` to own session log rotation, tail reads, archive naming, current/last/legacy lookup, and UI-safe log loading.
-- Added `WindowsStartupService` for per-user startup registration without admin rights.
-- Added pure startup argument parsing and close-to-tray decision helpers to make startup and close behavior testable.
-- Added a new instance update subsystem with planner, artifact stager, add-on migration planner/stager/applier, rollback service, update journal store, and update lock service.
-- Added marketplace install hardening through `MarketplaceFileInstaller`, `MarketplaceDownloadPolicy`, `MarketplaceArchiveInspector`, and `MarketplaceInstallRiskAnalyzer`.
-- Added Java add-on metadata scanning and cached icon extraction for richer add-on management.
-- Added `DiscordRichPresence` package dependency and `IDiscordRpcService` abstraction.
-- Expanded tests across update rollback/staging, marketplace install safety, dependency resolution, provider metadata, Java/mod metadata scanning, Bedrock add-on manifests, console log history, Windows startup/tray behavior, add-on display filtering, and source-level navigation contracts.
+This is maintenance-heavy work, not flashy marketing glitter. The reasoning is solid: add-on management was becoming a bundle of install, display, scan, update, and user-state concerns. Splitting inventory, state, toggle, and update checking creates cleaner ownership and makes future marketplace/update work less fragile.
 
-### Upgrade Notes
+### Upgrade Impact
 
-- No manual console log migration is required. Existing `logs/pocketmc-session.log` files are still used as a fallback when no new current/last session logs exist.
-- New Windows startup and tray settings default to off. Enabling Start with Windows writes only to the current user registry key and should not require admin rights.
-- Discord Rich Presence is controlled by the new App Settings toggle. Disable it there if you do not want PocketMC activity shown on Discord.
-- Background Java setup now downloads Java 25 by default. Servers requiring older Java versions may prompt for a download on first start after upgrading.
-- Version update controls are intended for stopped servers and will stage files, create a snapshot, and run a backup before applying changes.
-- Existing manual or untracked add-ons are preserved during version updates but may not be updated automatically.
-- Automatic Bedrock add-on updates are not supported by the new migration planner; Bedrock packs are preserved and warnings are shown where relevant.
-- Windows startup/minimized launches do not auto-start Minecraft servers, even if individual instances are configured to auto-start during normal app launch.
+- Treat this as unreleased until tagged.
+- Add-on state and toggle behavior should be tested against Fabric/Forge/NeoForge/Paper/PocketMine cases before release.
+- Backup restore paths now have more test coverage, but restore remains high-risk because it writes into live server data.
 
-### Full Summary
+---
 
-PocketMC Windows v1.7.8 focuses on operational reliability for server owners: safer server version updates, persistent console history, richer add-on management, better marketplace safety, improved Java provisioning, custom backup destinations, and clearer networking visibility. It also adds practical desktop behavior controls such as Windows startup, tray startup, close-to-tray, per-instance app-launch auto-start, and Discord Rich Presence while preserving safe defaults around server startup and shutdown.
+## v1.8.0 - Instance Version Updates, Persistent Console History & Desktop Operations
 
-## v1.7.7 - Custom AI Providers, Rich Creator Wizard & UX Polish
+### Summary
 
-This release introduces comprehensive local/cloud Ollama support, dynamic per-provider AI models and custom endpoints, a major overhaul to the New Instance creation page featuring inline world importing and advanced world/gameplay configurations, a platform migration to the PaperMC v3 API, and numerous dashboard visual and console efficiency polishments.
+v1.8.0 is a major operational reliability release. It adds a real update pipeline for existing server instances, persistent current/last console logs, richer add-on metadata, safer marketplace installs, per-instance backup destinations, Windows startup/tray controls, per-server app-launch auto-start, Discord Rich Presence, and an Interactive Ports Map.
 
-### 🤖 AI & Console Intelligence
-* **Ollama & Advanced AI Configurations**: Added first-class support for Ollama local/cloud models (defaulting to `ministral-3:3b-cloud`) and dynamic model overrides + custom endpoint configurations for all AI providers.
-* **Smart Endpoint URL Toggle**: The Endpoint URL text box now dynamically hides and only becomes visible when Ollama is selected, maintaining a clutter-free settings view.
-* **Pre-flight Log Deduplication**: Implemented consecutive identical log line collapsing during AI preprocessing (e.g., appending "(repeated N times)"), significantly reducing token consumption and processing costs from repetitive server spam.
-* **Console Spam Suppression**: Replicated runtime player list suppression logic when loading console history from `pocketmc-session.log`. Hides programmatic list command outputs in the UI (showing only 1 in 100 entries) to minimize screen clutter.
+### Diff Basis
 
-### ⚙️ New Instance Wizard & Gameplay Presets
-* **Upfront Gameplay Configurations**: Added a "World & Gameplay Settings" section to the New Instance page, allowing players to set Level Seed, World Type, Gamemode, Difficulty, and Player Limits before creating the server.
-* **Custom World Import**: Enabled direct Minecraft world imports (`.zip` and `.mcworld`) during creation with dynamic, engine-aware extraction path resolution (Java vs. Bedrock/PocketMine).
-* **Creation Layout Refinements**: Redesigned the Wizard UI with a sleek two-column side-by-side layout, dynamic one-column vertical collapse for smaller screens (<780px), a bottom-pinned Footer Action Bar with locked parent scrolling, and fixed mouse-wheel scroll event swallowing.
+The `v1.7.7...v1.8.0` diff contains 24 commits and a wide set of changes across updates, marketplace, console, backups, networking, desktop startup, tests, and UI. The largest new areas are the `Features/Instances/Updates` subsystem, `ConsoleLogHistoryService`, `DiscordRpcService`, marketplace file/install hardening, Java mod metadata scanning, and `PortsMapPage`.
 
-### ☕ Platform Migration & Platform Stability
-* **PaperMC API v3 Migration**: Re-engineered the Paper engine to consume the new `fill.papermc.io/v3` API endpoint, resolving potential deprecation blocks. Includes a compliant User-Agent, content-addressed build resolver (`/builds/{id}`), stable release sorting, and robust fallback parsers.
+### Added
 
-### 🎨 Dashboard & Layout Polish
-* **Human-Friendly Relative Times**: Upgraded the instance card's "Last Played" field to show elegant relative time descriptions (e.g., "Just now", "Yesterday", "3 hours ago"), while preserving exact timestamps in a hover tooltip.
-* **Streamlined Card Metadata**: Consolidated card metadata layout into a single clean `UniformGrid`, removing duplicate RAM and Slots fields and aligning the RAM text perfectly.
+- Version & Updates workflow for stopped server instances.
+- Update planning with target version selection, Java runtime requirements, compatible/incompatible add-on reporting, warnings, backups, snapshots, staging, journals, locks, and rollback support.
+- Staged update application for server artifacts and marketplace add-ons.
+- Add-on migration planning, staging, and application for tracked marketplace add-ons.
+- Persistent console history using current, last-session, archive, and legacy fallback log files.
+- Read-only last-session console mode for stopped/crashed servers or app restarts.
+- Windows startup, start minimized to tray, minimize to tray on close, and per-instance auto-start settings.
+- Discord Rich Presence with active server state, version/type, player count, uptime, and join/download action.
+- Interactive Ports Map showing instance ports, Playit tunnel addresses, role/status metadata, and edit/copy/navigation actions.
+- Per-instance custom local backup directory support.
+- Add-on search, sorting, icons, metadata scanning, side-support badges, and warning-first filtering.
+- Java mod/plugin metadata scanning for Fabric, Quilt, Forge, NeoForge, legacy Forge, and Bukkit/Paper plugin metadata.
+- Marketplace install risk warnings and safer modpack override inspection.
 
-### 🛠️ Bug Fixes & Reliability
-* **Fault Tolerance Layout Fix**: Wrapped the Fault Tolerance card in a top-aligned StackPanel, preventing it from awkwardly floating in the center of the settings page.
-* **Unit Test Resilience**: Patched file-locking `UnauthorizedAccessException` and time-dependency failures in the test suite to ensure stable builds.
+### Fixed
+
+- Console pages can now open for stopped or historical instances after app restart.
+- Previous console session logs are no longer overwritten before users can view them.
+- Large console logs now load as tails instead of freezing the UI by reading entire files.
+- Dependency resolution no longer continues after required dependency failures.
+- Marketplace install/update paths now validate staged files, expected extensions, filenames, hashes, and contained paths.
+- Bedrock add-on manifest parsing handles string and array versions.
+- Bedrock add-on installs now fail properly when no valid manifest is installed.
+- Unsafe modpack overrides are blocked from escaping the instance folder or touching protected files.
+- Custom backup directories are now included in integrity checks and manifest cleanup.
+- Simple Voice Chat detection now requires an actual mod/plugin JAR instead of trusting stale configs/logs.
+- Missing bundled Java runtimes now require user confirmation before download/repair.
+- Tray-close behavior still performs graceful shutdown when exiting.
+- Windows startup minimized launches intentionally skip Minecraft server auto-start.
+
+### Reasoning
+
+The app moved from “create and run servers” toward “operate servers safely over time.” Existing server updates, persistent logs, rollback, and backup-aware changes are the difference between a toy launcher and a tool people can trust with worlds they actually care about. Marketplace hardening also matters because add-on downloads touch executable code and archive extraction, which are exactly where bad assumptions go to become security incidents.
+
+### Upgrade Impact
+
+- Existing `logs/pocketmc-session.log` remains supported as a fallback.
+- Version updates should be run on stopped servers.
+- Manual/untracked add-ons are preserved but may not update automatically.
+- Bedrock packs are preserved during updates, but automatic Bedrock add-on update migration is not supported.
+- Windows startup and tray settings default to off.
+- Discord Rich Presence is controlled by App Settings.
+- Background Java setup defaults to Java 25; older Java versions are prompted on demand.
+
+---
+
+## v1.7.7 - Custom AI Providers, Creator Wizard Improvements & Paper API v3
+
+### Summary
+
+v1.7.7 improves AI configuration, reduces console summary token waste, modernizes the new instance wizard, adds inline world import and gameplay presets, migrates Paper downloads to the PaperMC v3 API, and polishes dashboard metadata.
+
+### Diff Basis
+
+The `v1.7.6...v1.7.7` diff contains 10 commits. The most visible code changes are in the new instance page, AI client/preprocessor, Paper provider, dashboard card view model, and console history loading.
+
+### Changed
+
+- Added Ollama/local-cloud model support and custom endpoint/model overrides across AI providers.
+- Hid the endpoint URL input unless it is relevant to the selected provider.
+- Added consecutive log-line deduplication before AI processing.
+- Suppressed repeated player-list command spam when loading historical console logs.
+- Added level seed, world type, gamemode, difficulty, player limit, and custom world import options during instance creation.
+- Refactored the creation wizard into a cleaner two-column layout with responsive collapse and a pinned footer action bar.
+- Migrated Paper provider resolution to the PaperMC v3 API.
+- Improved dashboard “Last Played” display with relative times and exact tooltips.
+- Consolidated card metadata to reduce duplicate RAM/slot display clutter.
+
+### Fixed
+
+- Fault Tolerance card alignment in settings.
+- Test flakiness around file locks and time-dependent assertions.
+
+### Reasoning
+
+The AI work reduces wasted tokens and configuration friction. The wizard changes move important server choices earlier, where they belong. The Paper API migration is defensive maintenance: depending on old upstream endpoints is a great way to wake up to broken server creation and a user base holding pitchforks made of bug reports.
+
+### Upgrade Impact
+
+- Users using custom AI endpoints should verify provider/model settings after upgrade.
+- Paper server creation should be more resilient against upstream API changes.
+
+---
 
 ## v1.7.6 - Appearance Customization, Security Hardening & UI Polish
 
-This release introduces a new Custom Background Image option for the Wallpaper Blur theme, overhauls About page visuals and usability, and implements an extensive, codebase-wide security and robustness hardening.
+### Summary
 
-### 🎨 Personalization & UI Polish
-* **Custom Background Images**: Added support for choosing custom background images (`.jpg`, `.png`, `.bmp`, `.webp`, `.tiff`) under the Wallpaper Blur theme. The background renders via a high-performance Gaussian blur + freeze pipeline, incurring zero ongoing GPU overhead. Includes full browse, clear, and 'Use Wallpaper' fallback buttons with a thumbnail preview.
-* **Support & Donation Section**: Added a new expandable Support & Donation card on the About page featuring a direct link button to Buy Me a Coffee (`buymeacoffee.com/sahaj33`).
-* **High-Res Branding**: Replaced the About page branding with a high-resolution 1280x1280 logo (`logo_highres.png`). Wired layout rounding, snap-to-pixels, and high-quality Fant scaling to prevent DPI blur.
-* **Minecraft Icon Compatibility**: Kept the original 64x64 `logo.png` resource separately to ensure generated Minecraft server icons remain fully compatible with multiplayer game client server lists.
-* **About Page Scroll Fix**: Wrapped cards on the About page in an auto-scrolling container with proper scrollbar gutter padding, resolving clipping on lower-resolution monitors.
-* **AI Summary Formatting**: Fixed markdown rendering Emojis and layout bugs in the Server Console's AI Summary window.
+v1.7.6 adds custom wallpaper background support, improves About page visuals, and performs a broad security and robustness hardening pass.
 
-### 🛡️ Security & Robustness Hardening
-* **Directory Traversal Protection**: Implemented `PathSafety.ValidateContainedPath` across Backup, Summary, and Addon services, and added `MarketplaceFileNameSanitizer` to fully eliminate path traversal vulnerabilities.
-* **Atomic Configuration Writes**: Standardized config and manifest writes to use `FileUtils.AtomicWriteAllText` to ensure data integrity during power loss or application shutdown.
-* **ReDoS Vulnerability Mitigations**: Added processing timeouts to all `Regex` operations across the codebase.
-* **DPAPI & Process Safety**: Hardened DPAPI credential storage path handling and UWP loopback exemption check process safety.
-* **Robust Crash Recovery**: Strengthened Java runtime checks, process tree cleanups, and addon installation/uninstallation crash recovery systems.
+### Diff Basis
 
+The `v1.7.5...v1.7.6` diff contains 19 commits. Most changes are security/test-focused, with major work in path validation, settings writes, markdown rendering, DPAPI/process handling, Bedrock add-on safety, and About/appearance UI.
+
+### Added
+
+- Custom background image support for the Wallpaper Blur theme.
+- Browse, clear, use-wallpaper fallback, and preview controls for custom backgrounds.
+- High-resolution About page logo while preserving the small Minecraft-compatible logo asset.
+- Support/donation card and About page scroll fixes.
+- Native markdown viewer and emoji formatting improvements for AI summaries.
+- Additional security tests for paths, regex timeouts, DPAPI, Bedrock add-ons, settings, disk writes, process/job objects, RCON, and loopback handling.
+
+### Fixed and Hardened
+
+- Directory traversal protections across backup, summary, cloud, add-on, and extraction paths.
+- Atomic config/manifest writes to reduce corruption risk during shutdown or power loss.
+- Regex operations now use timeouts to reduce ReDoS risk.
+- DPAPI credential path handling is stricter.
+- UWP loopback checks avoid sync-context deadlocks.
+- Java runtime validation and process cleanup paths are more robust.
+- Bedrock add-on installer now rejects unsafe or malformed archive paths more consistently.
+- AI summary formatting handles markdown and emoji output more reliably.
+
+### Reasoning
+
+This release was about making the app less trusting. That is good engineering. A local server manager downloads files, extracts archives, stores credentials, edits configs, and launches processes. Every one of those verbs is a tiny invitation for chaos if guardrails are weak.
+
+### Upgrade Impact
+
+- Custom background images should be treated as UI preferences only, not core runtime state.
+- Security changes may reject paths or add-ons that previously worked only because validation was too permissive.
+
+---
 
 ## v1.7.5 - Playit Agent Safety & Java Provisioning Tweaks
 
-This release hardens the Playit.gg Tunnel connection flows with safety guards and UI cleanups, and significantly improves the Java runtime setup experience with better ordering and bug fixes.
+### Summary
 
-### 🌐 Tunnel Management & Safety
-* **Playit Agent Disconnect Guard**: Added a confirmation dialog to the "Disconnect" button on the Tunnel Page to warn users that their local secret key will be wiped, preventing accidental credential loss.
-* **Delete Agent Button**: Added a new "Delete Agent" button to the Tunnel Page to securely remove the local `playit.exe` binary. The button is only enabled when the agent is fully stopped to prevent OS file-lock crashes.
-* **Instance Card IP Decluttering**: Removed the display of the Simple Voice Chat tunnel IP on the dashboard instance cards. The voice chat IP is now correctly routed to the config file exclusively, preventing dashboard clutter and confusion.
-* **Skeleton Loader Fixes**: Fixed a bug where skeleton loaders on the dashboard would disappear prematurely before Bedrock/Playit IPs had fully resolved.
+v1.7.5 hardens Playit agent controls and improves Java runtime ordering and cache correctness.
 
-### ☕ Java Provisioning Improvements
-* **Smart Download Ordering**: The background Java provisioning engine now downloads runtimes in descending order (Java 25 first, down to Java 8), ensuring modern servers can be started faster on a fresh installation.
-* **Setup Page Order**: The Java Setup page now properly displays runtimes in descending chronological order (25, 21, 17, 11, 8), keeping the most relevant versions at the top.
-* **Ghost State Fix**: Fixed a bug where a manually deleted Java runtime would still appear as "Installed" when switching tabs due to aggressive caching. The provisioning service now actively verifies the physical folder presence.
-* **Duplicate Icon Fix**: Fixed a visual glitch on the Java Setup page that caused a duplicate download icon to appear alongside the main download button.
+### Changed
+
+- Added a confirmation dialog before disconnecting the Playit agent, since that action wipes the local secret key.
+- Added a Delete Agent action for removing the local `playit.exe`, only enabled when the agent is stopped.
+- Removed Simple Voice Chat tunnel IP display from dashboard cards to reduce confusion.
+- Fixed dashboard skeleton loaders disappearing before Bedrock/Playit addresses fully resolve.
+- Changed Java provisioning order to prioritize Java 25 first, then older versions.
+- Updated Java Setup ordering to show newer runtimes first.
+
+### Fixed
+
+- Manually deleted Java runtimes no longer appear as installed after tab switching or refresh.
+- Duplicate Java Setup download icon issue.
+
+### Reasoning
+
+This release reduces accidental destructive actions and fixes runtime state lying to the user. “Installed” should mean installed, not “we remembered it fondly from before deletion.”
+
+### Upgrade Impact
+
+- Java runtime state is more filesystem-backed and less cache-trusting.
+- Users who intentionally deleted runtimes should see more accurate status.
+
+---
+
 ## v1.7.4 - System-Wide Backdrops, Wallpaper Blur & Startup Safeguards
 
-This release introduces an advanced, unified window backdrop system featuring a new high-performance **Wallpaper Blur** theme for all Windows versions, native light theme compatibility, and true native Acrylic styling. It also improves application safety by introducing a dedicated server startup state to prevent race conditions and refines the overall user experience.
+### Summary
 
-### 🎨 System-Wide Backdrop & Theming Overhaul
-* **Wallpaper Blur Theme**: Added a beautiful "Wallpaper Blur" option that extracts the desktop wallpaper via registry/SPI fallback, pre-renders a fast Gaussian blur into a frozen bitmap, and displays it as a static background fill. This works seamlessly across both Windows 10 and Windows 11 without requiring native composition APIs.
-* **Unified Backdrop Selector**: Replaced disjointed backdrop and theme toggles in App Settings with a single cohesive Window Background Theme dropdown, dynamically offering Mica (exclusive to Windows 11), Acrylic, Wallpaper Blur, Solid Dark, and Solid Light.
-* **True Native Acrylic**: Rebuilt the Windows Native Acrylic implementation using direct P-Invoke calls to `dwmapi.dll` (`DwmSetWindowAttribute`) to forcefully inject the immersive dark mode attribute. This guarantees that native backdrops match the dark themed composition perfectly.
-* **Windows 11 Glass Enhancements**: Bypassed native DWM behavior on Windows 11 that aggressively fallbacks to a solid flat gray when the window loses focus. The frosted glass effect now remains active and beautiful even when unfocused.
-* **Dynamic Light Theme**: Added a "Solid Light (None)" option. The visual service now dynamically switches the entire application UI between light and dark modes based on backdrop selection, eliminating the hardcoded dark mode lock.
-* **Window Activation and Performance**: Refactored the backdrop application and window activation state tracking. Purged complex, heavy fallback logic and consolidated native window composition to improve rendering efficiency and prevent startup lags.
+v1.7.4 introduces the unified window backdrop system, Wallpaper Blur, improved Acrylic behavior, dynamic light theme support, and safer server startup state handling.
 
-### ⚙️ Server Startup & State Safety
-* **`SettingUp` Server State**: Introduced a new `ServerState.SettingUp` state to prevent concurrent server startup race conditions. The UI now transitions the card to a disabled "⚙ Setting Up..." state, blocking subsequent clicks during pre-flight setups.
-* **Graceful State Reversion**: Added robust error and cancel handling. If pre-flight actions (such as Simple Voice Chat tunnel creation or memory warnings) are aborted by the user, the UI gracefully reverts to its previous offline state.
+### Changed
 
-### 💎 User Experience & UI Polish
-* **Clean Confirmation Dialogs**: Overhauled the `WpfDialogService` to stop displaying redundant "No" and "Cancel" buttons. Simple confirmation dialogs now cleanly default to a two-button (`Yes`/`No`) layout unless third-party custom cancellation button text is explicitly provided.
-* **Enhanced Metric Targets**: Wrapped the entire "PLAYERS" badge (label and numeric count) on the dashboard instance cards inside a transparent hand-cursor button. This increases the click area substantially, offering a larger and more accessible interactive target while maintaining perfect layout alignment.
+- Added Wallpaper Blur theme for Windows 10 and Windows 11 using pre-rendered blurred wallpaper.
+- Unified Mica, Acrylic, Wallpaper Blur, Solid Dark, and Solid Light into a single background selector.
+- Reworked native Acrylic handling with DWM/PInvoke-backed dark mode attributes.
+- Improved unfocused-window behavior so frosted effects remain visually consistent.
+- Added dynamic light theme support instead of forcing dark UI everywhere.
+- Added `ServerState.SettingUp` to block duplicate startup attempts during preflight work.
+- Improved cancel/error handling so aborted preflight flows revert server state correctly.
+- Simplified confirmation dialog button layouts.
+- Enlarged clickable player metric target on dashboard cards.
 
-## v1.7.3 - Tunnel Display Fix (#40)
+### Reasoning
 
-This patch fixes a regression where Playit.gg tunnel IPs were not displaying on server cards despite tunnels being active.
+This was half UX polish, half state safety. Visual themes matter because the app is a desktop product, but `SettingUp` matters more: double-click startup races are how users get duplicate processes, broken ports, and bug reports that read like haunted-house transcripts.
 
-### 🐛 Bug Fixes
-* **Tunnel IP Display**: Fixed tunnel addresses now staying visible while resolving, preventing blank cards during resolution.
-* **API Response Parsing**: Added support for both Playit API response shapes to ensure tunnel data is correctly parsed regardless of API version.
-* **Pending States**: Server cards now show proper pending/error states when tunnels exist but addresses aren't yet available, instead of appearing blank.
-* **Multi-Tunnel Support**: Improved resolution for Java, Bedrock/Geyser, and Simple Voice Chat tunnels with expanded test coverage.
+### Upgrade Impact
+
+- Theme settings become more explicit.
+- Startup flow should be safer during Playit, memory, or Simple Voice Chat preflight prompts.
+
+---
+
+## v1.7.3 - Tunnel Display Fix
+
+### Summary
+
+v1.7.3 fixes Playit tunnel addresses disappearing from server cards even when tunnels are active.
+
+### Fixed
+
+- Tunnel addresses now remain visible while resolving.
+- Server cards show pending/error states when tunnels exist but addresses are not allocated yet.
+- Playit API parsing supports multiple response shapes.
+- Java, Bedrock/Geyser, and Simple Voice Chat tunnel resolution paths have expanded coverage.
+
+### Reasoning
+
+Blank connection cards are not “minimal UI.” They are silent failure wearing a clean shirt. This patch makes tunnel state visible and actionable.
+
+### Upgrade Impact
+
+- Users should see clearer dashboard tunnel state during address allocation or tunnel-limit conditions.
+
+---
 
 ## v1.7.2 - Simple Voice Chat Tunneling & Networking Refinements
 
-This release adds first-class support for Simple Voice Chat with automatic detection, port configuration management, and seamless one-click tunnel provisioning. The networking and tunnel architecture receives significant improvements for enhanced stability and better diagnostic visibility.
+### Summary
 
-### 🎤 Simple Voice Chat Support
-* **Automatic Detection**: PocketMC now automatically detects Simple Voice Chat installations across Java, Fabric, Forge, and other modloaders. Detection works via config files, mod/plugin JARs, and console logs for comprehensive coverage.
-* **One-Click Tunnel Provisioning**: Once detected, Simple Voice Chat ports are automatically included in the tunnel provisioning workflow. Create tunnels for voice communication with a single click, just like standard server tunnels.
-* **Real-Time Port Configuration**: The application monitors Simple Voice Chat configuration files and dynamically tracks port, bind address, and voice host settings. Changes are detected and applied without requiring an app restart.
-* **Status Monitoring Dashboard**: The dashboard now displays Simple Voice Chat tunnel status alongside primary server connections, with indicators for tunnel health and public address availability.
-* **First-Run Setup Prompt**: When Simple Voice Chat is detected on a running server without an active tunnel, a non-blocking prompt guides users through one-click tunnel creation to enable voice chat connectivity.
-* **Configuration Path Tracking**: Metadata now persists Simple Voice Chat configuration paths, enabling consistent state tracking across sessions and seamless tunnel management.
+v1.7.2 adds first-class Simple Voice Chat support with automatic detection, configuration tracking, and one-click tunnel provisioning. It also refactors tunnel orchestration for multi-tunnel scenarios.
 
-### 🌐 Tunnel Architecture Refinements
-* **Enhanced API Communication**: Rebuilt the PlayitApiClient with improved request/response handling and better error recovery. Token refresh logic is now more robust and includes fallback mechanisms for edge cases.
-* **Tunneling Orchestration Overhaul**: Completely refactored `InstanceTunnelOrchestrator` to elegantly handle multiple simultaneous tunnel types (primary server + Simple Voice Chat). The orchestration engine now cleanly separates tunnel lifecycle management, state tracking, and provisioning workflows.
-* **Improved Port Binding Logic**: Enhanced port preflight and diagnostics services with refined binding role detection. The system now more accurately distinguishes between primary server ports, Geyser ports, and auxiliary ports like Simple Voice Chat.
-* **Port Role Classification**: Introduced structured port binding role classification to provide granular visibility into why a port is in use and what component owns it (server, tunnel, voice chat, etc.).
+### Added
 
-### 🧪 Test Coverage Expansion
-* **Simple Voice Chat Test Suite**: Added comprehensive unit tests covering detection logic, configuration parsing, first-run prompts, and lifecycle management. Tests validate behavior across Java, Fabric, and Forge scenarios.
-* **Tunnel Service Tests**: Expanded tunnel service test coverage with 400+ new assertions. Tests now validate multi-tunnel scenarios, error recovery, and API edge cases.
-* **Port Diagnostics Tests**: Enhanced port diagnostics and preflight service tests to cover new binding role scenarios and improved conflict detection.
+- Detection for Simple Voice Chat across mod/plugin JARs, configs, and logs.
+- Simple Voice Chat port/config tracking.
+- Non-blocking first-run prompt for creating a voice tunnel.
+- Dashboard status for voice tunnel health and public address availability.
+- Metadata fields for voice config path, port, tunnel ID, address, warning state, and status.
+- Tests for detection, parsing, first-run prompts, and tunnel lifecycle behavior.
 
-### 🛠️ Internal Improvements
-* **Application State Management**: Expanded `ApplicationState` to track Simple Voice Chat configuration and tunnel provisioning state throughout the application lifecycle.
-* **Dialog Service Refactoring**: Improved `WpfDialogService` and dialog infrastructure for better handling of non-blocking prompts and improved UI responsiveness during tunnel operations.
-* **Instance Metadata Expansion**: Extended `InstanceMetadata` with Simple Voice Chat–specific fields for comprehensive state persistence (port, tunnel ID, tunnel address, config path, warning dismissal state, status).
+### Changed
 
-### 🐛 Bug Fixes & Stability
-* **Tunnel State Synchronization**: Fixed edge cases where tunnel state could become desynchronized between the UI and backend service, especially during rapid server start/stop cycles.
-* **Port Conflict Resolution**: Improved port conflict detection to handle auxiliary ports (like Simple Voice Chat) without incorrectly blocking server startup.
+- Refactored `InstanceTunnelOrchestrator` to handle primary server and voice tunnel flows separately.
+- Improved Playit API request/response handling and token refresh fallbacks.
+- Added richer port binding role classification for diagnostics and preflight checks.
+- Improved port conflict detection for auxiliary ports.
+
+### Reasoning
+
+Simple Voice Chat is not just “another port.” It has first-run config timing, UDP behavior, server-mod detection, and tunnel lifecycle problems. Treating it as a real feature instead of a manual footnote makes cross-network voice setups much less miserable.
+
+### Upgrade Impact
+
+- Existing servers with Simple Voice Chat may prompt for tunnel creation.
+- Voice chat may still require the mod/plugin to generate config on first launch before final tunnel patching.
+
+---
 
 ## v1.7.1 - Backup Intelligence, Health Monitoring & UI Polish
 
-This release transforms the backup system from a simple archive list into a fully versioned, metadata-rich history with proactive health monitoring. It also fixes a server icon caching bug and adds a feedback section to the About page.
+### Summary
 
-### 📦 Backup Versioning UI
-* **Sequential Version Badges**: Every backup now receives a versioned identifier (v1, v2, v3…) displayed as a prominent blue badge, making it easy to track backup progression over time.
-* **Trigger Identification**: Each backup card clearly indicates whether it was created manually or by the automated scheduler via a labeled badge.
-* **Size Delta Tracking**: The size difference from the previous backup is displayed inline (e.g. "+2.3 MB"), giving immediate visibility into world growth between snapshots.
+v1.7.1 upgrades backups from plain archives into versioned, metadata-rich records with integrity checks, health warnings, and better About page links.
 
-### 📋 Backup Metadata & History Viewer
-* **Rich Backup Cards**: Each backup now displays its creation timestamp, file size, server type, and Minecraft version — all captured at the moment of backup creation.
-* **Editable Labels**: Users can annotate any backup with a custom label (e.g. "Before Wither fight" or "Pre-update snapshot") that persists across sessions via the backup manifest.
-* **SHA-256 Integrity Verification**: A dedicated shield button per backup runs a full SHA-256 checksum validation against the original hash recorded at creation time, immediately alerting if a backup file has become corrupted.
-* **Persistent Manifest**: All metadata is stored in a `backup-manifest.json` file alongside backup archives, surviving app restarts and providing a complete audit trail.
+### Added
 
-### 🛡️ Backup Health Warnings
-* **Disk Space Monitoring**: The backup tab now monitors available drive space in real-time — amber warning at <2 GB remaining, critical red alert at <1 GB.
-* **Failed Backup Alerts**: If a scheduled or manual backup fails, the failure reason and timestamp are recorded and surfaced as a prominent banner on the next visit.
-* **Overdue Schedule Detection**: When a scheduled backup misses its window by more than 1 hour, an overdue warning is displayed with the exact delay.
-* **Backup Stats Summary Bar**: A new metrics strip at the top of the Backups tab shows total backup size, time since last backup, and remaining disk space at a glance.
+- Sequential backup version badges.
+- Manual/scheduled trigger labels.
+- Size delta tracking between backups.
+- Backup cards with timestamp, size, server type, and Minecraft version.
+- Editable backup labels stored in `backup-manifest.json`.
+- SHA-256 integrity verification per backup.
+- Disk-space, failed-backup, overdue-schedule, and summary-bar warnings.
+- Feedback/bug report card and native GitHub button in the About page.
 
-### 🐛 Bug Fixes
-* **Server Icon Persistence**: Fixed a WPF image caching issue where the custom server icon reverted to the default Pocket MC logo after reloading the Server Settings page, despite the file being correctly saved to disk. Added `BitmapCreateOptions.IgnoreImageCache` to both `SettingsGeneralVM` and `ImageCropPage`.
+### Fixed
 
-### 🎨 About Page Improvements
-* **Feedback & Bug Reports Section**: Added a new expandable card linking to the Google Forms feedback/bug report form, accessible via a single-click button.
-* **Native GitHub Button**: Replaced the inline hyperlink for the GitHub repository with a proper native Fluent UI button for visual consistency.
-* **Full-Width Card Layout**: Removed the 600px max-width constraint from About page cards so they stretch to match the full application window, consistent with all other pages.
+- Server icon caching issue that caused custom icons to revert visually after settings reload.
+
+### Reasoning
+
+Backups only matter if users can trust, identify, and restore the right one. Metadata, checksums, labels, and health warnings turn backups into operational history instead of a folder full of mystery ZIPs.
+
+### Upgrade Impact
+
+- Backup manifests become more important for display and integrity features.
+- Existing backups without metadata may show less historical detail than new backups.
+
+---
 
 ## v1.7.0 - Robust Cloud Backups, Secure OAuth Proxy & One-Click Restore
 
-This major release introduces native cloud backups and one-click cloud restorations for **Google Drive**, **Dropbox**, and **OneDrive**, backed by a secure hybrid proxy architecture that shields API secrets from the open-source client.
+### Summary
 
-### ☁️ Cloud Backups & One-Click Restore
-* **One-Click Cloud Restoration**: Restoring server worlds from the cloud is now fully integrated. Click the new "Restore" button next to any remote backup to download, extract, and automatically apply files directly to your server.
-* **Write-Safety Guards**: To prevent write conflicts and world data corruption, the cloud restore action is strictly gated. The UI automatically disables the Restore button while the Minecraft server is actively running.
-* **Direct Provider Integration**: Fully integrated compiled API clients (`Dropbox.Api`, `Google.Apis.Drive.v3`, and `Microsoft.Identity.Client` via MSAL.NET) for direct, robust communication with cloud servers without local file-sync utilities.
-* **DPAPI Token Protection**: All user access and refresh tokens are securely encrypted using Windows Data Protection API (DPAPI) at rest and locked to your local Windows user profile.
+v1.7.0 adds native cloud backup and restore support for Google Drive, Dropbox, and OneDrive using a hybrid OAuth architecture.
 
-### 🔒 Secure Hybrid OAuth Architecture
-* **Google OAuth Helper Proxy**: Built and deployed a stateless ASP.NET Core helper proxy backend to handle Google Drive OAuth token exchanges and refresh requests. This securely shields the Google client secret from the open-source repository while offering 100% transparency.
-* **PKCE Public Client Flow**: Integrated native PKCE (Proof Key for Code Exchange) auth flows for Dropbox and OneDrive, communicating directly from the desktop application to the providers with zero middle-man involvement.
-* **Verbose Diagnostic Handlers**: Rebuilt the cloud provider exception handlers to catch and report full HTTP response bodies from OAuth servers, simplifying troubleshooting for developer setup validation (e.g., Google's testing-state consent constraints).
+### Added
 
-### 📖 Enhanced Project Documentation
-* **Comprehensive Documentation Port**: Added a brand-new guide detailing the Playit.gg Tunnel Integration (**docs/playit-tunnels.md**) with Mermaid sequencing and error diagnosis.
-* **Upgraded Backup Guides**: Redesigned **docs/cloud-backups.md** to fully document the secure token proxy architecture, restore steps, and Google/Dropbox/OneDrive developer console setup configurations.
+- One-click cloud restore for remote backups.
+- Restore write-safety guards that disable restore while servers are running.
+- Direct provider integrations for Dropbox, Google Drive, and OneDrive.
+- DPAPI encryption for stored cloud access and refresh tokens.
+- Google OAuth helper proxy for secure token exchange without exposing client secrets in the open-source app.
+- PKCE public-client flows for Dropbox and OneDrive.
+- Verbose OAuth/provider diagnostic handling.
+- Cloud backup documentation and Playit tunnel integration documentation.
+
+### Reasoning
+
+Cloud backups are high-value, but OAuth secrets in an open-source desktop client are a trap with neon lights. The hybrid proxy approach keeps Google secrets out of the repo while letting Dropbox/OneDrive use public-client flows properly.
+
+### Upgrade Impact
+
+- Users must authenticate providers before cloud backup/restore.
+- Restore is intentionally blocked for running servers to prevent world corruption.
+- Developer setup requires correct OAuth/proxy configuration.
+
+---
 
 ## v1.6.9 - Playit.gg Connectivity & Versioning Resilience
 
-This release fixes a critical Playit.gg agent connection failure by pinning to a stable, signed agent binary and correcting the partner version resolution logic to prevent upstream API registration errors.
+### Summary
 
-### 🌐 Resilient Playit.gg Tunneling
-* **Pinned Signed Agent Binary**: Changed the playit-agent download mechanism to target a stable, signed release version (**v0.17.1**) instead of the floating `latest` GitHub release. This prevents provisioning failures caused by experimental or broken upstream releases.
-* **Agent Version Fallback Hardening**: Fixed a bug where downloaded playit executables lacking Windows file version resources would trigger fallback to the PocketMC app version (`1.6.8` / `1.6.9`), resulting in upstream Playit API `AgentVariantVersionNotFound` registration errors. The resolver now falls back gracefully to the registered Playit agent version `0.17.1`.
-* **Automatic Agent Refresh**: Automated the deletion of deprecated local `playit.exe` installations on upgrade, forcing a clean background pull of the new signed v0.17.1 release.
+v1.6.9 fixes Playit agent provisioning failures by pinning a stable signed agent and correcting version fallback behavior.
 
+### Fixed
+
+- Pinned Playit agent downloads to signed `v0.17.1` instead of floating latest.
+- Fixed fallback behavior where missing executable version metadata could incorrectly use the PocketMC app version.
+- Deprecated local `playit.exe` files are refreshed on upgrade.
+
+### Reasoning
+
+Network integration cannot depend on whatever upstream labels “latest” today. Pinning a known-good agent reduces random breakage from upstream release churn, humanity’s favorite way to outsource chaos.
+
+### Upgrade Impact
+
+- Existing Playit agent binaries may be replaced automatically.
+- Playit registration should avoid `AgentVariantVersionNotFound` caused by incorrect version fallback.
+
+---
 
 ## v1.6.8 - Server Settings, Player Management & Dashboard Polish
 
-This release adds render/simulation distance controls across all server engines, completely redesigns the Player Management UI with a modern sidebar layout, and refines the dashboard loading experience with engine-aware skeleton placeholders.
+### Summary
 
-### ✨ New Features & Enhancements
-* **Render & Simulation Distance Sliders**: Added production-grade render distance and simulation distance sliders to Server Settings for all supported engines (Java, Bedrock, PocketMine). Each engine maps to its native config property (`view-distance`, `server-authoritative-movement`, `chunk-ticking.tick-radius`, etc.) with engine-appropriate value ranges and defaults.
-* **Player Management Sidebar Navigation**: Replaced the legacy top-level TabControl with a modern NavigationView sidebar, consistent with the Server Settings page design. "Online Players" and "Ban List" tabs now live in a clean sidebar with slide-in transition animations.
-* **OP Status Toggle Switch**: Replaced the ToggleButton for operator status with a native Windows ToggleSwitch slider control, providing a cleaner visual indicator of persistent OP state with live updates.
-* **Engine-Aware Skeleton Loading**: Dashboard instance cards now show the correct number of skeleton placeholder rows during IP resolution based on server type — Java: 1 row, Bedrock/PM: 2 rows, Java+Geyser: 3 rows. LAN IP is excluded from skeletons since it appears instantly.
+v1.6.8 expands server settings with render/simulation distance controls, redesigns Player Management, and improves dashboard loading indicators.
 
-### 🛠️ Fixes
-* **OP Status Binding Fix**: Restored ListView containers (from ItemsControl) in the Player Management page to fix a WPF binding issue where clicking the OP toggle would permanently disconnect the `IsChecked` OneWay binding due to local value precedence.
-* **Geyser IP Visibility**: Fixed Bedrock/Geyser IP rows appearing prematurely on crossplay server cards with empty addresses. The Geyser hostname row now waits until the tunnel address is actually resolved before becoming visible.
-* **CI Warning Cleanup**: Resolved all remaining build warnings (CS0618 deprecated usage in tests, CS8625 null parameter mismatches) ensuring a zero-warning production build.
-* **Test Suite Stability**: All 183 tests passing with updated view-distance test assertions matching the new slider implementations.
+### Added
+
+- Render and simulation distance sliders for Java, Bedrock, and PocketMine engines.
+- Player Management sidebar navigation.
+- OP status ToggleSwitch with live updates.
+- Engine-aware dashboard skeleton loading rows.
+
+### Fixed
+
+- OP status binding bug caused by switching to non-ListView containers.
+- Geyser IP rows no longer show before addresses resolve.
+- Remaining build warnings were cleaned up.
+- Test suite updated for slider behavior.
+
+### Reasoning
+
+This release improves day-to-day administration. Settings should map to the server engine users actually run, and dashboard loading states should not imply nonexistent addresses.
+
+### Upgrade Impact
+
+- Player management UI behavior changes visually but keeps the same administrative goal.
+- Engine-specific settings are more accurate.
+
+---
 
 ## v1.6.7 - AI Intelligence Fixes & Marketplace Upgrades
 
-This release solidifies the AI summarization engine with major timezone and rendering fixes, introduces powerful new addon update capabilities to the marketplace, and continues the modernization of the app's Fluent shell.
+### Summary
 
-### ✨ AI Summarization & Intelligence
-* **Session Duration Accuracy**: Fixed a critical timezone calculation bug that caused AI session summaries to incorrectly report a hardcoded offset (e.g., 5h 30m) instead of the actual elapsed session uptime. The UI now dynamically recalibrates duration using strict UTC bounds, retroactively repairing older corrupted summary records.
-* **Rich Markdown Engine**: Integrated a custom Markdown pipeline to bring advanced extensions to the Server Console and Settings UI. AI summaries now perfectly render emojis, soft line breaks, and enhanced list formatting.
-* **Duration Visibility**: Injected a highly visible "Total Online Time" header directly into the AI summary markdown view.
+v1.6.7 fixes AI summary timing, improves markdown rendering, and adds installed add-on update workflows.
 
-### 🛒 Addon Marketplace Enhancements
-* **Update Engine**: Introduced a complete update workflow for installed addons. You can now seamlessly check for updates on individual mods/plugins or use the new "Update All" action to upgrade all your installed addons simultaneously, fully preserving your modloader and version parity constraints.
-* **Reinstallation Fixes**: Resolved UI selection glitches within the Addon Reinstall dialog. The prompt now correctly pre-selects and lists the targeted modification required for manual re-installations.
-* **Modpack UI Cleanup**: Streamlined the "Create New Instance" wizard by deprecating and removing legacy modpack ZIP import elements, focusing the UX on the native marketplace engine.
+### Added
+
+- Installed add-on update checks.
+- Individual update and Update All actions for marketplace add-ons.
+- Rich markdown rendering for AI summaries.
+- “Total Online Time” header in summaries.
+
+### Fixed
+
+- Session duration timezone bug that produced hardcoded offset-like values.
+- AI summary rendering for emojis, soft line breaks, and list formatting.
+- Add-on reinstall dialog preselection.
+- Removed legacy modpack ZIP UI from the new instance wizard.
+
+### Reasoning
+
+AI summaries are only useful if the time math is not nonsense. Add-on update support also reduces maintenance friction for servers that rely on marketplace-installed content.
+
+### Upgrade Impact
+
+- Older corrupted summary durations may be recalculated.
+- Add-on updates still depend on provider metadata quality and loader/version compatibility.
+
+---
 
 ## v1.6.6 - Server Settings Polish & Bedrock Integration
 
-This release brings significant refinement to the server settings experience, properly adapting UI workflows (such as world imports and marketplace integrations) to natively support Bedrock and PocketMine server engines without visual glitches or incorrect capabilities.
+### Summary
 
-### ✨ New Features & Enhancements
-* **Vanilla Addons Empty State**: Added a clear empty state warning in the Addons tab for Vanilla servers, explaining that Vanilla does not support plugins/mods and guiding users to change their server engine.
-* **Player Management Refresh**: The refresh button in the Player Management panel now actively re-fetches live OP status and gamemodes for players across all server engine types.
-* **Unified Bedrock Configurations**: Cleaned up the server settings configurations for Bedrock and PocketMine instances. Removed the interactive dummy server card preview (which is primarily Java-focused) and replaced it with a dedicated, reliable MOTD/Server Name text field. Hidden the Java-exclusive "Browse Maps" button for these engines.
+v1.6.6 improves server settings behavior for Bedrock and PocketMine and removes Java-centric UI assumptions from non-Java engines.
 
-### 🛠️ Fixes
-* **Engine-Aware World Imports**: Improved the world import functionality to be fully engine-aware for Bedrock and PocketMine servers, seamlessly supporting `.mcworld` exports alongside standard ZIP archives.
-* **PocketMine Addon Marketplace**: Fixed a UI glitch in PocketMine's Addons section where the Plugin Marketplace button was erroneously disabled and the Local File import button incorrectly opened the Poggit web browser.
-* **Gameplay Rules UI Rendering**: Resolved a rendering glitch involving an overlapping separator line in the Gameplay Rules tab of the server settings.
-* **Test Suite Stabilization**: Fixed test regressions caused by recent updates to player name quoting logic for Java servers.
+### Added
+
+- Vanilla add-ons empty state explaining that Vanilla servers do not support mods/plugins.
+- Player Management refresh now reloads live OP status and gamemodes.
+- Dedicated Bedrock/PocketMine MOTD/server-name workflow.
+
+### Fixed
+
+- Bedrock/PocketMine world imports support `.mcworld` and ZIP archives more reliably.
+- PocketMine Addons tab correctly enables marketplace/local file behavior.
+- Gameplay Rules separator rendering issue.
+- Test regressions from Java player-name quoting changes.
+
+### Reasoning
+
+The app supports more than Java now, so Java-only assumptions in settings become bugs. This release tightens engine-aware UX instead of making Bedrock users navigate Java-shaped nonsense.
+
+### Upgrade Impact
+
+- Bedrock/PocketMine settings should show fewer irrelevant Java-only controls.
+- World import behavior is more engine-specific.
+
+---
 
 ## v1.6.5 - Cross-Play & PocketMine Player Management Fixes
 
-This patch release resolves critical player management issues for cross-play (Floodgate) and PocketMine environments, ensuring that bans and operator commands work reliably across all player types.
+### Summary
 
-### 🛠️ Fixes & Enhancements
-* **Cross-Play Ban & Op Reliability**: Fixed an issue where Java Edition servers would fail to ban or op Bedrock players connected via Floodgate. PocketMC now correctly formats player names without quotes for Java servers, preventing "Player does not exist" errors when interacting with Bedrock players (e.g., `.PlayerName`).
-* **PocketMine Ban Parsing**: Fixed a bug where PocketMine's `banned-players.txt` was not being read correctly due to its pipe-delimited format. The player list UI now accurately displays banned PocketMine players and allows for successful unbanning.
+v1.6.5 fixes ban/op handling for Floodgate players and PocketMine banned-player parsing.
+
+### Fixed
+
+- Java servers now format Floodgate Bedrock player names correctly for ban/op commands.
+- PocketMine `banned-players.txt` pipe-delimited format is parsed correctly.
+- PocketMine unban operations now work from the UI.
+
+### Reasoning
+
+Cross-play administration fails fast when player names are formatted incorrectly. This patch fixes real admin commands, not decorative UI dust.
+
+### Upgrade Impact
+
+- Cross-play player moderation should be more reliable after upgrade.
+- PocketMine ban lists should display accurately.
+
+---
 
 ## v1.6.4 - Player Management, Console Intelligence & Bedrock Profiles
 
-This release introduces a new player management suite, intelligent console log filtering, and engine-aware settings profiles to provide native configuration options for Bedrock servers.
+### Summary
 
-### ✨ New Features
-* **Player Management Suite**: Introduced a comprehensive player management UI powered by a new state file service. Administrators can now natively view and manage operators, banned players, banned IPs, and whitelists directly from the UI without editing JSON files.
-* **Console Log Intelligence**: Added a new log classification engine to intelligently parse, classify, and filter server console logs by severity and origin, reducing log spam and improving readability.
-* **Engine-Aware Settings Profiles**: Re-architected the settings backend with a new profiling system. The application now provides engine-specific UI configurations and dropdowns (e.g., Gamemodes, Level Types) tailored to the active server's engine.
-* **Native Bedrock Settings**: Added a dedicated Bedrock settings view exposing Bedrock-exclusive properties including `server-portv6`, `allow-cheats`, `texturepack-required`, `force-gamemode`, `default-player-permission-level`, and `tick-distance`.
+v1.6.4 adds the first major Player Management suite, console log classification/filtering, and engine-aware settings profiles.
 
-### 🛠️ Fixes & Enhancements
-* **Dynamic World Backups**: Refactored the backup service to parse server properties files dynamically. Backups now correctly identify and target the active world folder name for Bedrock and Pocketmine instead of assuming the default `world/` directory.
-* **CI Changelog Extraction**: Updated the production build GitHub workflow to improve release note extraction algorithms during automated deployments.
-* **Settings Cleanup**: Removed legacy tunnel limit dialog classes and cleaned up redundant dependencies across multiple settings panels.
+### Added
+
+- Player Management UI for operators, banned players, banned IPs, and whitelists.
+- State-file-backed player administration services.
+- Console log classification and severity/origin filtering.
+- Engine-aware settings profiles.
+- Native Bedrock settings for Bedrock-specific properties.
+
+### Fixed and Improved
+
+- Backup service dynamically resolves Bedrock/PocketMine world folders instead of assuming `world/`.
+- Production release-note extraction in CI was improved.
+- Legacy tunnel limit dialog classes and redundant settings dependencies were cleaned up.
+
+### Reasoning
+
+This is where PocketMC becomes more server-admin tool than launcher. Player controls, logs, and engine-aware settings are core operational features.
+
+### Upgrade Impact
+
+- Settings and backup behavior become more engine-specific.
+- Existing Bedrock/PocketMine instances benefit from more accurate world targeting.
+
+---
 
 ## v1.6.3 - Installation Lifecycle & UI Safety
 
-This release brings major stability enhancements to the server installation process, introducing download cancellation, safety locks, and better real-time status tracking across the application.
+### Summary
 
-### 🔒 Safety & Installation Control
-* **Download Cancellation**: You can now safely cancel server software downloads mid-way. Doing so instantly cleans up all partially downloaded files and deletes the pending server folder automatically.
-* **Navigation Lock & Prompts**: The application now intelligently locks sidebar navigation while a server is downloading. Attempting to close PocketMC during an active download will now trigger a safety confirmation dialog.
-* **Explicit Installing State**: Introduced a dedicated `Installing` status. This provides accurate visual feedback when servers are processing installers (like Forge/Fabric) and allows you to halt the installation if it hangs.
+v1.6.3 adds cancellation, safety locks, and better install state tracking for server software downloads and setup flows.
 
-### 📈 Performance & Networking
-* **Console Anti-Freeze**: Added advanced output throttling and a defensive buffer drain to the server console. This completely prevents UI freezes and memory crashes when high-volume installer logs or spam errors flood the terminal.
-* **Live Tunnel Updates**: The tunnel management UI has been rebuilt to support real-time state tracking without visual flickering. Tunnels waiting for a public address are now continuously polled in the background.
-* **Wizard Redirection**: Fixed the dashboard connection flow to properly redirect first-time users straight to the Playit setup wizard.
+### Added
 
-### 🛠️ Ecosystem Enhancements & Fixes
-* **Java Download Dialog**: Added a dedicated visual progress dialog when downloading missing Java runtimes, keeping you informed rather than freezing the background.
-* **Dynamic Bedrock Backups**: The backup engine now dynamically reads your Bedrock server's configuration to locate the exact world folder name, ensuring your backups never miss their target.
-* **Floodgate Fixes**: Fixed an issue where Floodgate (cross-play addon) failed to install on Paper and Spigot servers by routing the download directly through the GeyserMC official API.
-* **UI Polish**: Tightened the Tunnel Page layout by disabling unnecessary scrollbars.
+- Safe cancellation for server downloads with cleanup of partial files and pending folders.
+- Sidebar navigation lock during downloads.
+- Close confirmation during active downloads.
+- Explicit `Installing` status for installer-processing states.
+- Java runtime download progress dialog.
+- Runtime provisioning gate.
+- More resilient tunnel polling.
+
+### Fixed
+
+- Console anti-freeze output throttling for high-volume logs.
+- First-time Playit dashboard connection flow redirects correctly.
+- Bedrock backups dynamically resolve the configured world folder.
+- Floodgate installs for Paper/Spigot use official GeyserMC API routing.
+- Tunnel page scrollbar polish.
+
+### Reasoning
+
+Install flows are vulnerable to half-finished state. Cancel buttons, locks, and explicit statuses stop the app from pretending a server exists before the files and setup actually make sense.
+
+### Upgrade Impact
+
+- Interrupted installs should clean up more reliably.
+- Users should see clearer progress when runtime downloads are required.
+
+---
 
 ## v1.6.2 - LAN Connectivity & Resilient Tunneling
 
-This release introduces LAN IP visibility to the dashboard for easier local play and overhauls the Playit.gg tunnel creation logic to be more resilient and informative.
+### Summary
 
-### 🏠 LAN Connectivity
-* **Dashboard LAN IP Display**: You can now view your server's Local Area Network (LAN) IP and port directly on the instance cards. This makes it easier to connect from other devices on the same network without needing a public tunnel.
-* **One-Click Copy**: Added a dedicated copy button for LAN addresses, mirroring the functionality for public tunnel addresses.
-* **Port Persistence**: Improved internal metadata tracking to ensure server ports are accurately cached and displayed even when the server is offline.
+v1.6.2 adds LAN address visibility and improves Playit tunnel creation failure handling.
 
-### 🌐 Resilient Playit.gg Integration
-* **API-Driven Limit Handling**: Moved away from hardcoded tunnel limits. PocketMC now communicates directly with the Playit API to determine if you've reached your tunnel quota, providing real-time feedback.
-* **Actionable Error Messaging**: If a tunnel cannot be created due to account limits, the application now displays a clear, actionable message with a direct link to upgrade or manage your tunnels, rather than a generic failure.
-* **Persistent Creation Dialog**: The manual "Create Tunnel" dialog now remains open if a creation attempt fails, allowing you to fix configuration issues or view error details without losing your progress.
-* **Non-Blocking Auto-Provisioning**: Failures during automatic tunnel creation (at server startup) are now handled as non-blocking notifications. Your server will still start, and you'll be notified of the connectivity issue to resolve it later.
+### Added
 
-### 🛠️ Internal Improvements
-* **Metadata Reliability**: Refactored `InstanceMetadata` to better track primary networking ports across different server engines.
-* **Standardized Failure Paths**: Unified error handling between manual tunnel creation and automatic background provisioning for a more consistent user experience.
+- LAN IP and port display on instance cards.
+- Copy button for LAN addresses.
+- Better port metadata persistence for offline display.
+- API-driven Playit tunnel limit handling.
+- Persistent manual tunnel creation dialog after failures.
+- Non-blocking auto-provisioning failure notifications.
+
+### Reasoning
+
+Not every server connection needs a public tunnel. Showing LAN addresses helps local play immediately, while better tunnel-limit handling turns vague failure into something users can act on.
+
+### Upgrade Impact
+
+- Dashboard cards now show local and public connection paths more clearly.
+- Tunnel-limit failures should be less cryptic.
+
+---
 
 ## v1.6.1 - Cross-Play & UI Tweaks
 
-This is a minor patch release focusing on fixing cross-play port configuration and polishing the dashboard UI for Bedrock servers.
+### Summary
 
-### ✨ Enhancements & Fixes
-* **Geyser Config Port Patching**: Fixed an issue where the Geyser config port was not being properly patched on startup for non-Spigot loaders (Fabric, Forge, NeoForge). The patching engine now correctly searches the `config/` directory.
-* **Bedrock IP Copy Behavior**: Fixed a bug where clicking the "Copy" button next to a cross-play server's Bedrock Hostname incorrectly copied the numeric IP address instead of the hostname.
-* **Dedicated Bedrock UI Icons**: Updated the Dashboard UI to display the correct native Bedrock icon (Cube) instead of the default Desktop icon for dedicated Bedrock instances, ensuring visual consistency across all Bedrock connection types.
+v1.6.1 fixes cross-play config patching and improves Bedrock dashboard presentation.
+
+### Fixed
+
+- Geyser config port patching for Fabric, Forge, and NeoForge by searching the correct `config/` path.
+- Cross-play Bedrock hostname copy button no longer copies numeric IP by mistake.
+- Dedicated Bedrock cards use a more appropriate icon.
+
+### Reasoning
+
+Small patch, real pain removed. Copy buttons should copy what they say, which is apparently a bar modern software still trips over.
+
+### Upgrade Impact
+
+- Cross-play connection info should be more accurate.
+- Non-Spigot Geyser port patching should behave correctly.
+
+---
 
 ## v1.6.0 - Dynamic Theming & Advanced Tunnel Management
 
-### 🎨 Dynamic Theming & UI Enhancements
-* **User-Selectable Themes**: Added a new application theme toggle in App Settings allowing you to freely switch between Light, Dark, and System Default themes without needing to restart the application.
-* **Intelligent Color Adaptability**: Overhauled dashboard and tunnel interfaces to use dynamic resources, ensuring high readability and vibrant aesthetics regardless of the active theme.
+### Summary
 
-### 🌐 Advanced Playit.gg Tunnel Management
-* **Automated Provisioning**: Eliminated the manual tunnel guide. Tunnels are now seamlessly and automatically provisioned in the background the moment you start your server.
-* **Full Tunnel Controls**: The Tunnel Page has been upgraded with a comprehensive management suite. You can now rename tunnels, change local ports, toggle them on/off, and delete them directly from the PocketMC UI.
-* **Explicit Editing States**: Refactored the tunnel renaming and port editing fields to require explicit "Save" actions, preventing accidental misconfigurations.
-* **Connection Transparency**: Added dynamic skeleton loading indicators and clearer error states to the Dashboard's instance cards, providing immediate visual feedback while tunnel addresses are being resolved or if they hit rate limits.
+v1.6.0 adds user-selectable themes and replaces manual tunnel guidance with automated Playit tunnel management.
+
+### Added
+
+- Light, Dark, and System theme selection.
+- Dynamic resources for readable dashboard/tunnel UI across themes.
+- Automated tunnel provisioning on server start.
+- Tunnel rename, local port edit, enable/disable, and delete controls.
+- Explicit Save states for tunnel edits.
+- Skeleton loading and clearer error states during tunnel resolution.
+
+### Reasoning
+
+This release removes manual tunnel setup friction. Users want to run a server, not perform a small networking ritual under fluorescent lighting.
+
+### Upgrade Impact
+
+- Tunnel management becomes app-driven instead of guide-driven.
+- Theme preference becomes configurable.
+
+---
 
 ## v1.5.4 - Playit.gg Connection Gate & Settings Refactor
 
-### 🚀 Playit.gg Connectivity Gate
-* **Pre-Start Warning Dialog**: Added a non-blocking `PreStartAgentWarningWindow` that intercepts server startups if the Playit.gg agent is disconnected or pending setup, guiding users to resolve the issue before launching.
-* **Centralized State Management**: Integrated `AgentProvisioningService` to act as the single source of truth for tunnel states globally across the application.
-* **Smart State Handling**: Accurately categorizes pending states like `AwaitingSetupCode` to trigger the warning gate, providing a smoother connection setup flow.
+### Summary
 
-### 🛠️ UI & Settings Refactor
-* **Removed Legacy Software Updates**: Removed the redundant "Software Updates" expander from the Server Settings page, cleaning up the UI and relying on the application's core update mechanisms.
+v1.5.4 adds a pre-start Playit agent warning gate and cleans up server settings.
 
-### 🧪 Test Coverage Improvements
-* **Network Reliability**: Introduced `PortReliabilityTestWorkspace` helper class to facilitate robust network-related component testing.
-* **JVM & File Handling Tests**: Added comprehensive unit tests for `ServerLaunchConfigurator` to verify version-specific JVM arguments and proper file management during server startup.
+### Added
+
+- Pre-start warning dialog when the Playit agent is disconnected or awaiting setup.
+- Centralized agent/tunnel state using `AgentProvisioningService`.
+- Better handling for pending states such as `AwaitingSetupCode`.
+- Network reliability test helper.
+- Additional server launch configurator tests.
+
+### Removed
+
+- Legacy Software Updates expander from Server Settings.
+
+### Reasoning
+
+Starting a server while the tunnel agent is clearly not ready creates avoidable confusion. This release makes connection readiness visible before startup instead of after users wonder why nobody can join.
+
+### Upgrade Impact
+
+- Server startup may show a warning if Playit is disconnected or not linked.
+
+---
 
 ## v1.5.3 - Java Management, Networking & Setup Fixes
 
-### 🔒 Playit.gg Security & UX Hardening
-* **New Guided Setup Wizard**: Replaced the manual setup flow with a 4-step guided wizard that simplifies agent linking and removes the need for users to manually manage secret keys.
-* **UI Cleanup**: Removed legacy fields for "Secret Key" and "Provisioning Backend" to provide a cleaner, more secure dashboard experience.
+### Summary
 
-### ☕ Java Runtime Lifecycle Management
-* **User Intent Persistence**: Added a "User Removed" flag to the app configuration. Manually deleted runtimes will no longer be automatically re-downloaded at startup, respecting your decision to save disk space.
-* **Active Instance Protection**: The system now blocks the deletion of any Java runtime that is currently being used by a running server instance to prevent unexpected crashes.
-* **Individual Restore Controls**: Added a "Download" button to each missing runtime row. You can now restore specific Java versions individually without being forced to download all missing bundled runtimes.
-* **Atomic Deletion Logic**: Implemented safe-guarding logic that ensures your intent flag is only saved if the deletion is successful, with automatic rollback on file-system errors.
+v1.5.3 improves Playit setup UX, Java runtime lifecycle controls, and port conflict messaging.
 
-### 🌐 Networking & Port Resolution
-* **Dynamic Port Reservation**: Fixed a bug where offline servers would permanently block ports. Ports are now dynamically released when an instance is stopped, allowing other servers to use them.
-* **Improved Error Messaging**: Updated port conflict dialogs to be more actionable. The app now specifically identifies when an external process is holding a port and provides clearer guidance on how to resolve the conflict.
+### Added
 
-### 🛠️ Internal Improvements
-* **Settings Architecture**: Expanded `AppSettings` to support complex state tracking for managed runtimes.
-* **Provisioning Flow**: Refined `JavaProvisioningService` to distinguish between background maintenance and manual user-triggered repairs.
+- Four-step Playit setup wizard.
+- Per-runtime Download controls for missing Java versions.
+- User-removed Java runtime intent tracking.
+- Protection against deleting Java runtimes used by running servers.
+- Atomic deletion state handling with rollback on filesystem failure.
+
+### Fixed
+
+- Offline servers no longer permanently reserve ports.
+- Port conflict dialogs better identify external processes and likely fixes.
+- Removed legacy Secret Key and Provisioning Backend fields.
+
+### Reasoning
+
+This release respects user intent around Java runtimes and makes setup less error-prone. If users delete a runtime, the app should not immediately resurrect it like a cursed folder.
+
+### Upgrade Impact
+
+- Java provisioning becomes more selective.
+- Playit setup becomes guided and safer.
+
+---
 
 ## v1.5.2 - Intelligence Safeguards & Under-the-Hood Fixes
 
-This release introduces safety guardrails for the AI summarization feature to protect against unexpected token costs, fixes native Bedrock port conflicts, and removes console command suggestions for a cleaner, faster experience.
+### Summary
 
-### ✨ Enhancements & Fixes
+v1.5.2 adds AI summary cost safeguards, improves summarization prompts, fixes Bedrock IPv6 port conflicts, and simplifies console UI.
 
-- **AI Token Safeguards:** Added a size threshold check for server session logs. Generating an AI summary for extremely large sessions (>1.5MB of logs) will now prompt a warning dialog to prevent accidental token over-consumption.
-- **Enhanced AI Prompt:** The backend summarization prompt has been fully overhauled to instruct the model to ignore Personally Identifiable Information (PII) like IPs and emails, and to focus more heavily on performance metrics and configuration issues.
-- **Bedrock Port Conflict Fix:** IPv6 ports (`server-portv6`) are now automatically bound and assigned based on the selected IPv4 port (`server-port + 1`) when editing Server Settings. This resolves the `ipv6 port conflict` crashes entirely when running multiple native instances on the same host.
-- **Console Streamlining**: Slashed out the bulky command suggestion overlay from the server console. This provides a cleaner UI, stops accidental command misfires, and prevents the application from constantly parsing massive log text streams for new command syntaxes.
+### Added
+
+- Large-log warning before AI summarization for sessions above roughly 1.5 MB.
+- Improved summarization prompt that ignores PII and focuses on performance/configuration issues.
+
+### Fixed
+
+- Bedrock IPv6 port is assigned from IPv4 port + 1 to avoid multi-instance conflicts.
+- Removed command suggestion overlay from the console to reduce accidental commands and heavy parsing.
+
+### Reasoning
+
+AI features should not surprise users with cost or privacy risk. Console suggestions were also doing too much for too little benefit.
+
+### Upgrade Impact
+
+- Users may see warnings before summarizing large sessions.
+- Bedrock multi-instance port behavior should be safer.
 
 ---
 
 ## v1.5.1 - Setup UX Fixes & Active Server Indicators
 
-This is a minor patch release focusing on improving the first-time user experience and minor dashboard UI tweaks.
+### Summary
 
-### ✨ Enhancements & Fixes
+v1.5.1 improves first-time setup and dashboard visibility.
 
-- **Setup Directory Auto-Creation:** Fixed an issue during the first-time setup where selecting the default directory (`Documents/PocketMC`) would fail if it did not already exist. The application now intelligently pre-creates this directory and enables the "Continue" button by default.
-- **Active Instance Indicators:** Added a dynamic emerald-green highlight border around running server cards on the Dashboard, allowing you to easily spot online servers.
+### Fixed and Improved
+
+- Default setup directory is created automatically if missing.
+- Continue button can be enabled for the default directory.
+- Running server cards receive an emerald highlight border.
+
+### Reasoning
+
+First-run setup should not fail because the default folder does not exist yet. That is the software equivalent of forgetting to open the door after inviting someone in.
+
+### Upgrade Impact
+
+- First-time users should have a smoother setup path.
+- Running instances are easier to spot.
 
 ---
 
 ## v1.5.0 - Modloader Expansion, Marketplace Intelligence & Instance Management
 
-This release adds NeoForge as a supported modloader, introduces engine-aware addon management with full dependency resolution in the marketplace, and ships a suite of instance management improvements including renaming, customization, and minimum version filtering. Loader-aware filtering for Modrinth and CurseForge is now fully enforced, and several false-warning and fallback bugs are resolved.
+### Summary
 
-### 🧩 Modloader Expansion
+v1.5.0 adds NeoForge support, loader-aware marketplace filtering, dependency resolution, instance renaming, and stronger release/documentation infrastructure.
 
-- **NeoForge Support:** NeoForge is now a fully supported modloader option in the instance creation workflow, joining Fabric and Forge.
-- **Loader-Aware Filtering:** Modrinth and CurseForge search results are now filtered by the active loader (Fabric / Forge / NeoForge) to prevent incompatible addon installs (#17).
-- **Modrinth Fallback Hardening:** The Modrinth relaxed query no longer falls back to an arbitrary loader. When a version is not found, a clear message is returned instead of a misleading result (#18).
+### Added
 
-### 🛒 Marketplace Intelligence
+- NeoForge server creation support.
+- Loader-aware Modrinth and CurseForge search filtering.
+- `EngineCompatibility` model for marketplace compatibility.
+- Dependency resolver and add-on manifest tracking.
+- Instance renaming with collision detection and case-safe directory moves.
+- Instance name and description editing.
+- Minimum version filtering in providers.
+- Issue templates, contributing docs, license, funding link, and CI release publishing improvements.
 
-- **EngineCompatibility Model:** Introduced a new `EngineCompatibility` model so addons in the marketplace are resolved and displayed based on the active server engine.
-- **Dependency Resolution:** The marketplace now automatically resolves addon dependencies and manages addon manifests, reducing manual setup for complex modpacks.
-- **False Warning Reduction:** Eliminated spurious incompatible-loader warnings that appeared during addon install even when the loader was valid.
+### Fixed
 
-### 📁 Instance Management
+- Modrinth relaxed fallback no longer returns arbitrary incompatible loaders.
+- Spurious incompatible-loader warnings reduced.
+- Multi-monitor window persistence task removed due to layout issues.
+- `.devin` directory removed.
 
-- **Instance Renaming:** Instances can now be renamed directly from the UI, with collision detection and case-safe directory moves to prevent filesystem conflicts.
-- **Name & Description Customization:** Added support for editing instance names and descriptions from within the instance settings panel.
-- **Minimum Version Filtering:** Server providers now respect minimum version constraints during instance creation, with testability improvements to the underlying filtering logic.
+### Reasoning
 
-### 📦 Infrastructure & Documentation
+This release formalizes compatibility. Marketplace installs without loader/version checks are just random JAR roulette with extra steps.
 
-- **Project Rename:** The project name has been corrected from `PocketMC` to `Pocket MC` across the application and repository.
-- **CI Improvements:** Added portable test release publishing with artifact upload to the CI pipeline. Production build workflow now includes version checks and improved release logic.
-- **Documentation:** Added detailed documentation for Pocket MC Desktop. README structure and content revised to reflect current features.
-- **Funding:** Added a Buy Me a Coffee link to the repository for community support.
+### Upgrade Impact
 
-### 🗑️ Removed
-
-- **Multi-Monitor Window Persistence:** Removed the multi-monitor window persistence task, which caused layout issues across display configurations.
-- **`.devin` Directory:** Removed the `.devin` directory from the repository.
+- Marketplace results should be more relevant.
+- Instance directory changes are safer, but renaming still needs filesystem permissions.
 
 ---
 
-## v1.4.3 - Port Engine, Cross-Play, & UI Enhancements
+## v1.4.3 - Port Engine, Cross-Play & UI Enhancements
 
-This release introduces a new port reliability engine to improve server startup stability, adds configurable Geyser Bedrock port support, modernizes the dashboard UI, and streamlines release workflows.
+### Summary
 
-### 🔌 Port Reliability Engine
+v1.4.3 introduces a port reliability engine, configurable Geyser Bedrock ports, dashboard UI modernization, and release workflow improvements.
 
-- **Robust Port Resolution:** Added a new port reliability engine and comprehensive tests to prevent port binding conflicts and improve server startup resilience.
-- **Conflict Logic Patch:** Updated preflight checks to only block startup if another instance is actively running, ignoring duplicate config-level ports.
+### Added
 
-### 🎮 Cross-Play & Networking
+- Port reliability engine with tests.
+- Configurable per-instance Geyser Bedrock UDP ports.
+- Numeric IP display alongside hostnames.
+- Separate copy buttons for precise address copying.
+- Automatic Geyser config patching.
+- Fabric API auto-download during Geyser setup for Fabric servers.
+- Modern dashboard grid layout and enhanced connection blocks.
 
-- **Configurable Geyser Port:** Added support for per-instance Geyser Bedrock UDP ports, allowing concurrent cross-play servers.
-- **Dual-IP Display:** Integrated numeric IP addresses alongside hostnames for all tunnel types, with separate copy buttons for precision.
-- **Tunnel Auto-Patching:** Geyser configuration files are now automatically patched with the correct Bedrock UDP port on startup.
-- **Fabric API Automation:** Added automatic `fabric-api` downloading during Geyser setup for Fabric servers to resolve mod dependency crashes.
+### Fixed
 
-### 💎 Dashboard & UI Polish
+- Duplicate config-level ports no longer block startup unless another instance is actually running.
+- Session log handle leaks after server exit.
+- Clipboard crashes during IP copy.
+- Build locking during publishing.
+- XAML symbol rendering crashes.
+- Console scrolling behavior.
 
-- **Modern Grid Layout:** Replaced the legacy list view with a clean, responsive layout featuring fixed headers and scrollable instance areas.
-- **Enhanced IP Blocks:** Redesigned connection sections to cleanly display both hostnames and numeric IPs, with state-aware visibility (IPs hide when server is stopped).
-- **Compact Actions:** Reorganized dashboard buttons into a balanced 2x2 grid for improved accessibility and a cleaner look.
-- **Scroll Precision:** Fixed console scrolling behavior, disabling unreliable "smooth" scroll for standard high-performance WPF scrolling.
+### Reasoning
 
-### 🐛 Bug Fixes & Stability
+The networking model needed to become explicit. Multiple instances, cross-play, Geyser, and tunnels cannot be managed reliably with “hope port 25565 is free.”
 
-- **Log Handle Leaks:** Fixed a critical issue where session log handles remained open after server exit, preventing instance deletion and causing filesystem locking errors.
-- **Clipboard Resilience:** Implemented robust clipboard handling with retries to prevent application crashes during IP copy actions.
-- **Build Locking:** Fixed file access errors during publishing by ensuring clean process termination.
-- **Crash Resilience:** Fixed UI-related rendering crashes caused by invalid XAML symbols.
+### Upgrade Impact
 
-### 📦 Infrastructure & Documentation
+- Users running multiple cross-play servers should see fewer port collisions.
+- Dashboard connection information becomes more detailed.
 
-- **Automated Deployments:** Enhanced CI workflows with package cleanup and integrated GitHub Release creation.
-- **Documentation:** Updated README and screenshots to reflect current UI and networking features.
+---
 
 ## v1.4.2 - UI Modernization & Observatory Hardening
 
-This release focuses on bringing a premium, high-impact visual experience to PocketMC while significantly enhancing the diagnostic tools and cross-play stability.
+### Summary
 
-### ✨ Modernized Observatory
+v1.4.2 improves AI summary presentation, console filtering/search, command history, and Geyser/Floodgate provisioning.
 
-- **Emerald-Themed Intelligence:** Rebuilt the AI Summary panel with better markdown styling system.
-- **Rich Markdown Rendering:** Integrated `Markdig.Wpf` to render structured AI session summaries with support for bold, italics, and formatted lists.
+### Added
 
-### 📟 Advanced Console Features
+- Emerald-themed AI Summary panel.
+- `Markdig.Wpf` markdown rendering.
+- Severity filters for console logs.
+- Regex console search.
+- Command history navigation and command suggestions.
+- CI/CD workflow hardening.
+- Single-source versioning sync across project files, changelog, and CI.
 
-- **Smart Log Filtering:** Added high-performance UI toggles to filter logs by severity (Chat, Info, Warn, Error, System).
-- **Regex Search Engine:** Integrated a powerful Regular Expression search bar for the console, allowing advanced users to isolate specific server events with surgical precision.
-- **Command Intelligence:** Implemented command history navigation (Up/Down keys) and intelligent auto-suggestions for Minecraft commands based on real-time server output.
+### Fixed
 
-### 🌐 Cross-Play Reliability
+- Geyser/Floodgate provisioning migrated to Modrinth builds to resolve Fabric download failures.
+- Partial plugin download cleanup and retry behavior improved.
 
-- **Modrinth API Migration:** Overhauled the Geyser and Floodgate provisioning pipeline. PocketMC now fetches builds directly from Modrinth, resolving critical download failures for Fabric servers.
-- **Failure Resilience:** Improved error handling during instance creation, ensuring that partial plugin downloads are cleaned up and retried automatically.
+### Reasoning
 
-### 📦 Infrastructure
+This release improves observability. Servers fail in noisy ways, so log filtering, regex search, and readable summaries help users find the actual problem instead of drowning in console soup.
 
-- **CI/CD Workflow Hardening:** Refactored the GitHub Actions production pipeline to ensure consistent versioning and more reliable Velopack release distribution.
-- **Versioning Single-Source:** Synchronized project versions across `.csproj`, `CHANGELOG.md`, and CI variables.
+### Upgrade Impact
+
+- AI and console UI should be easier to scan.
+- Cross-play setup should be more reliable for Fabric servers.
+
+---
 
 ## v1.4.0 - Bedrock & PocketMine Protocol Expansion
 
-This milestone transforms PocketMC into a multi-protocol powerhouse, adding first-class support for native Bedrock Edition (BDS) and PocketMine-MP engines alongside Java!
+### Summary
 
-### 🟢 Bedrock Dedicated Server (BDS) Support
+v1.4.0 expands PocketMC from Java-only management into multi-protocol hosting with native Bedrock Dedicated Server and PocketMine-MP support.
 
-- **Full Version Discovery:** Integrated the kittizz community manifest, enabling one-click installation for 45+ versions of Bedrock (including stable and preview releases).
-- **Bedrock Add-on Management:** Native support for `.mcpack` and `.mcaddon` files. Importing an addon automatically handles file extraction and updates `world_behavior_packs.json` / `world_resource_packs.json` for you.
-- **Fixed Provisioning Failures:** Rebuilt the BDS download pipeline to use system temp directories, resolving "Access Denied" errors during instance creation.
-- **UWP Loopback Automation:** Added a hardware-level "Fix Bedrock LAN" tool in settings that automates `CheckNetIsolation.exe` loopback exemptions, allowing you to connect to local servers from Minecraft for Windows.
+### Added
 
-### 🔵 PocketMine-MP Support
+- Bedrock Dedicated Server version discovery via community manifest.
+- One-click BDS installation.
+- Bedrock `.mcpack` and `.mcaddon` import support.
+- Automatic `world_behavior_packs.json` and `world_resource_packs.json` updates.
+- UWP loopback helper for Minecraft for Windows local connections.
+- PocketMine-MP support with app-managed PHP runtime.
+- Poggit marketplace support for PocketMine plugins.
+- PocketMine generator sanity patching.
+- Engine-aware Addons tab filtering.
+- Native Bedrock/PocketMine dashboard adjustments.
 
-- **PHP Runtime Orchestrator:** PocketMC now automatically provisions and manages sandboxed PHP 8.x runtimes for PocketMine instances.
-- **Poggit Marketplace:** Integrated Poggit browsing for PocketMine plugins. The "Plugin Marketplace" button now intelligently switches sources based on your server engine.
-- **Auto-Generator Patching:** Implemented a world-generator sanity check that automatically patches `server.properties` (e.g., `minecraft:normal` → `DEFAULT`) to prevent common "Unknown generator" startup crashes.
+### Fixed
 
-### ✨ Dashboard & UI Polish
+- BDS provisioning now uses safe temp paths to reduce access-denied failures.
+- Native Bedrock duplicate Bedrock IP row is suppressed.
 
-- **Engine-Aware Settings:** The Addons tab now dynamically filters content. Java-only sections (like Modrinth/Forge) are hidden when managing Bedrock or PocketMine instances.
-- **IP Duplicate Suppression:** The dashboard card now intelligently hides the secondary "Bedrock IP" row for native Bedrock servers to reduce clutter.
-- **Dashboard Grid Layout:** Modernized the instance card layout with improved metrics scannability and connection clarity.
+### Reasoning
+
+This is a milestone release because it changes the product boundary. PocketMC stops being only a Java server helper and becomes a local-first Minecraft server manager across Java, Bedrock, and PocketMine.
+
+### Upgrade Impact
+
+- Users can create native Bedrock and PocketMine servers.
+- Bedrock local connections may require UWP loopback exemption.
+
+---
 
 ## v1.3.0 - Architectural Hardening & Observability
 
-This release focuses entirely on massive under-the-hood structural improvements designed to make PocketMC safer, significantly more resilient to failures, and vastly easier to debug. Known internally as "Phase 1 & 2 of the Architecture Audit," this brings PocketMC from a prototype state into production-ready territory!
+### Summary
 
-### 🛡️ Security & Integrity Engine (Phase 1)
+v1.3.0 is an architecture and reliability hardening release. It adds artifact verification, graceful shutdown, PII scrubbing, RCON-based command execution, dependency health monitoring, support bundles, and major modular refactoring.
 
-- **Artifact Verification:** Implemented deep SHA1/SHA256 signature verification directly into the `DownloaderService`. Any Playit daemon or Paper/Vanilla jar you pull from external networks is now heavily hashed to detect silent corruption or man-in-the-middle tammpering.
-- **Graceful Lifecycle System:** Hardened the exit behaviors! Instead of blindly closing and triggering unrecorded player kicks, exiting the app now yields a custom 15-second `IApplicationLifecycleService.GracefulShutdownAsync()` loop that saves worlds and closes network tunnels correctly before quitting.
-- **PII Scrubbing:** Heavily extended the `LogSanitizer`. PocketMC will now procedurally scrub personal metadata (like IPv4 strings and emails) from console captures using advanced RegEx pipelines before your crash logs ever touch an AI summary model.
-- **RCON Client Engine:** StandardInput has been officially deprecated for interacting with Java child processes. PocketMC has fully migrated to a robust managed `RconClient` handling `try/catch` and direct socket control to eliminate standard I/O synchronization deadlocks on high server loads.
+### Added
 
-### 🔭 Diagnostic & Recovery Engine (Phase 2)
+- SHA1/SHA256 artifact verification in downloads.
+- Graceful app/server lifecycle shutdown via `IApplicationLifecycleService`.
+- Extended PII scrubbing for logs before AI summaries.
+- Managed RCON client for Java process interaction.
+- Dependency health monitor for Adoptium, Playit.gg, and Modrinth.
+- Support bundle export with masked sensitive properties.
+- External backup replication directory support.
+- `IAssetProvider` abstraction.
+- Moved resource monitoring into the instance/services architecture.
 
-- **External Dependency Orchestrator:** Added a dynamic background thread loop (`DependencyHealthMonitor`) that constantly polls external microservices. Your settings page now features a **live dashboard** monitoring native latency status against **Adoptium**, **Playit.gg**, and **Modrinth**. You'll instantly know if a server failure is on your end or theirs.
-- **Disaster Recovery (Off-site Replications):** Significantly expanded the local automated snapshot tool. You can now configure an external sync directory (e.g., Google Drive/Dropbox sync folder) inside your Settings menu. Upon completing a local ZIP backup, PocketMC will autonomously replicate that payload identically to your secondary disk.
-- **"One-Click" Support Bundles:** Implemented an asynchronous `DiagnosticReportingService`. With a single click inside Settings, PocketMC packages your system specs, Java variables, global app logs, masked properties, and native crash-reports into one dense support ZIP on your desktop—completely wiping all clear-text passwords (like `rcon.password`) out of the bundle before it drops!
-- **UI Modernization Refactors:** Abstracted away huge layers of tech-debt by decoupling the `ResourceMonitorService` and abstracting logic into `IAssetProvider`, eliminating major background memory leaks.
+### Reasoning
 
-### 🔧 Internal Refactors
+This release attacks prototype debt. It adds integrity checks, safer shutdowns, less private log leakage, and better failure diagnostics, which are the boring pieces users only notice when missing.
 
-- Rebuilt architecture directory hierarchies shifting away from clustered `Providers` into a clean modular format (`Features/Instances`).
-- Added graceful fallbacks to the new Update Engine banner checking systems.
-- Handled UI context cleanup for settings panels and fixed missing null validation reference warnings.
+### Upgrade Impact
 
-## v1.2.5
+- Shutdown behavior becomes more deliberate.
+- Diagnostics and support bundles should make bug reports easier to act on.
+- Internal structure changes affect maintainers more than users.
 
-- Add dependency health monitoring and external backup replication.
-- Support bundle export to settings page.
-- RCON client, download hash verification, and PII redaction.
-- Extract graceful shutdown into IApplicationLifecycleService.
-- Move ResourceMonitorService and add IAssetProvider abstraction.
-- Initialize update check on startup, refresh settings button state, and add pack icon.
+---
 
-## v1.2.4
+## v1.2.5 - Health Monitoring, Support Bundles & Lifecycle Safety
 
-- Added Discord/community support in the app and README.
+### Summary
+
+v1.2.5 adds dependency health checks, external backup replication, support bundle export, RCON support, hash verification, PII redaction, graceful shutdown extraction, and update-check initialization.
+
+### Changed
+
+- Added dependency health monitoring.
+- Added external backup replication.
+- Added support bundle export.
+- Added RCON client, download hash verification, and PII redaction.
+- Extracted graceful shutdown into `IApplicationLifecycleService`.
+- Moved `ResourceMonitorService` and introduced `IAssetProvider`.
+- Initialized update checks on startup.
+- Refreshed settings button state and added pack icon support.
+
+### Reasoning
+
+This release laid the foundation for the larger v1.3.0 hardening work. It begins separating operational concerns from UI glue.
+
+### Upgrade Impact
+
+- Diagnostics and update status become more visible.
+- Backup replication can be configured separately from local backups.
+
+---
+
+## v1.2.4 - Community, Release & Packaging Guidance
+
+### Summary
+
+v1.2.4 improves community/support links and release packaging documentation.
+
+### Changed
+
+- Added Discord/community support references in the app and README.
 - Added release and packaging guidance for Velopack.
-- Updated the release workflow notes to use a repository secret named `RELEASE_PAT`.
+- Updated release workflow notes to use `RELEASE_PAT`.
 
-## v1.2.3
+### Reasoning
 
-- Migrated installation and update packaging from Inno Setup to Velopack.
-- Added Velopack startup bootstrapping before WPF application startup.
-- Added automatic update checks in the shell layer.
-- Updated GitHub Actions to publish `win-x64` output, pack Velopack releases, and upload release assets.
-- Removed `installer.iss` and updated the build/install documentation.
+A project needs a support path and a repeatable release process. Otherwise every release becomes a hand-crafted little disaster.
 
-## v1.0.0
+### Upgrade Impact
 
-- Initial stable PocketMC Desktop release.
-- Core WPF desktop shell for managing Minecraft server instances, dashboard, console, settings, backups, Java setup, Playit.gg tunneling, and notifications.
+- Mainly documentation and release process impact.
+
+---
+
+## v1.2.3 - Velopack Migration
+
+### Summary
+
+v1.2.3 migrates installation and update packaging from Inno Setup to Velopack.
+
+### Added
+
+- Velopack startup bootstrapping before WPF startup.
+- Automatic update checks in the shell layer.
+- GitHub Actions publishing for `win-x64` output.
+- Velopack packing and release asset upload.
+
+### Removed
+
+- Inno Setup installer script.
+
+### Reasoning
+
+Velopack gives the app a cleaner path toward auto-updates and modern Windows distribution. Inno Setup is fine until update UX matters, and then the suffering begins.
+
+### Upgrade Impact
+
+- Packaging and update behavior changes.
+- Maintainers should use the Velopack release workflow instead of the removed Inno script.
+
+---
+
+## v1.0.0 - Initial Stable Release
+
+### Summary
+
+v1.0.0 is the initial stable PocketMC Windows desktop release.
+
+### Included
+
+- Core WPF desktop shell.
+- Minecraft server instance management.
+- Dashboard, console, settings, and backup pages.
+- Java setup support.
+- Playit.gg tunneling integration.
+- Windows notifications and basic app shell behavior.
+
+### Reasoning
+
+This version established the core product loop: create a server, run it locally, manage it from a GUI, and expose it through tunneling without requiring users to live inside a terminal like it is a character-building exercise.
+
+### Upgrade Impact
+
+- Baseline release.
