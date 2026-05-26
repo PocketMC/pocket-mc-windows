@@ -91,6 +91,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<ConsoleLogHistoryService>();
             services.AddSingleton<ServerStateFileService>();
             services.AddSingleton<BanSidecarService>();
+            services.AddSingleton<WhitelistService>();
             services.AddSingleton<ServerLifecycleService>();
             services.AddSingleton<IServerLifecycleService>(
                 provider => provider.GetRequiredService<ServerLifecycleService>());
@@ -121,6 +122,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<InstanceRegistry>();
             services.AddSingleton<InstanceManager>();
             services.AddSingleton<ServerConfigurationService>();
+            services.AddSingleton<ServerRuntimeSettingApplier>();
             services.AddSingleton<WorldManager>();
             services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.PortDiagnosticsSnapshotBuilder>();
             services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService>();

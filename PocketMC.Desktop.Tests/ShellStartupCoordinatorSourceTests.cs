@@ -3,7 +3,7 @@ namespace PocketMC.Desktop.Tests;
 public sealed class ShellStartupCoordinatorSourceTests
 {
     [Fact]
-    public void WindowsStartupLaunch_SkipsServerAutoStarts()
+    public void WindowsStartupLaunch_AlwaysTriggersServerAutoStarts()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",
@@ -12,7 +12,9 @@ public sealed class ShellStartupCoordinatorSourceTests
             "ShellStartupCoordinator.cs"));
 
         Assert.Contains("AppStartupOptions startupOptions", source);
-        Assert.Contains("!_startupOptions.IsWindowsStartup", source);
-        Assert.Contains("Skipping server auto-start during Windows startup launch.", source);
+        // The IsWindowsStartup guard was removed — auto-starts should always fire
+        Assert.DoesNotContain("!_startupOptions.IsWindowsStartup", source);
+        Assert.DoesNotContain("Skipping server auto-start during Windows startup launch.", source);
+        Assert.Contains("TriggerServerAutoStarts()", source);
     }
 }

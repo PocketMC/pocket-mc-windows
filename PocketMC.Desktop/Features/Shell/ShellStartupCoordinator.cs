@@ -161,14 +161,7 @@ namespace PocketMC.Desktop.Features.Shell
             else
             {
                 _host.NavigateToDashboard();
-                if (!_startupOptions.IsWindowsStartup)
-                {
-                    TriggerServerAutoStarts();
-                }
-                else
-                {
-                    _logger.LogInformation("Skipping server auto-start during Windows startup launch.");
-                }
+                TriggerServerAutoStarts();
             }
 
             if (!_playitStartupAttempted)

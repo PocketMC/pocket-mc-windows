@@ -1129,6 +1129,8 @@ namespace PocketMC.Desktop.Features.Settings
         public string ToggleToolTip => CanEnable || CanDisable
             ? $"{ToggleActionLabel} this plugin"
             : "Stop the server before enabling or disabling mods/plugins.";
+        public bool IsEnabled => !IsDisabled;
+        public bool CanToggle => CanEnable || CanDisable;
     }
 
     public class ModItemViewModel : Core.Mvvm.ViewModelBase
@@ -1186,6 +1188,8 @@ namespace PocketMC.Desktop.Features.Settings
         public string ToggleToolTip => CanEnable || CanDisable
             ? $"{ToggleActionLabel} this mod"
             : "Stop the server before enabling or disabling mods/plugins.";
+        public bool IsEnabled => !IsDisabled;
+        public bool CanToggle => CanEnable || CanDisable;
 
         public string SideLabel { get; set; } = "Unknown";
         public ModSideSupport SideSupport { get; set; }

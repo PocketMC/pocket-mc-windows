@@ -13,7 +13,9 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Players.Services;
+using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Helpers;
 using PocketMC.Desktop.Models;
@@ -37,6 +39,8 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     private readonly IAppDispatcher _dispatcher;
     private readonly ServerStateFileService _stateFileService;
     private readonly BanSidecarService _banSidecarService;
+    private readonly WhitelistService _whitelistService;
+    private readonly ServerRuntimeSettingApplier _runtimeApplier;
     private readonly InstanceMetadata _metadata;
     private readonly ServerProcess _serverProcess;
     private readonly ILogger<PlayerManagementViewModel> _logger;
@@ -58,6 +62,8 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     private bool _hasLoadedOpState;
     private bool _isRefreshingState;
     private string _lastUpdatedText = "Waiting for player list";
+    private bool _isWhitelistEnabled;
+    private string _whitelistAddUsername = string.Empty;
 
     public PlayerManagementViewModel(
         IAppNavigationService navigationService,
@@ -65,6 +71,9 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         IAppDispatcher dispatcher,
         ServerStateFileService stateFileService,
         BanSidecarService banSidecarService,
+        WhitelistService whitelistService,
+        ServerRuntimeSettingApplier runtimeApplier,
+        ServerConfigurationService configService,
         ApplicationState applicationState,
         InstanceMetadata metadata,
         ServerProcess serverProcess,
@@ -75,6 +84,8 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         _dispatcher = dispatcher;
         _stateFileService = stateFileService;
         _banSidecarService = banSidecarService;
+        _whitelistService = whitelistService;
+        _runtimeApplier = runtimeApplier;
         _metadata = metadata;
         _serverProcess = serverProcess;
         _logger = logger;
@@ -83,8 +94,16 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             applicationState.GetRequiredAppRootPath(),
             _serverProcess.WorkingDirectory);
 
+        // Read initial whitelist state from config
+        if (configService.TryGetProperty(_serverProcess.WorkingDirectory, "white-list", out string? wlValue))
+            _isWhitelistEnabled = string.Equals(wlValue, "true", StringComparison.OrdinalIgnoreCase);
+
         BackCommand = new RelayCommand(_ => NavigateBack());
         RefreshCommand = new AsyncRelayCommand(_ => RefreshAllPlayerDataAsync());
+        ToggleWhitelistCommand = new AsyncRelayCommand(_ => ToggleWhitelistAsync());
+        AddToWhitelistCommand = new AsyncRelayCommand(_ => AddToWhitelistAsync(), _ => !string.IsNullOrWhiteSpace(WhitelistAddUsername));
+        RemoveFromWhitelistCommand = new AsyncRelayCommand(param => RemoveFromWhitelistAsync(param as string));
+        ReloadWhitelistCommand = new AsyncRelayCommand(_ => ReloadWhitelistAsync(), _ => IsServerOnline);
 
         _serverProcess.OnOnlinePlayersUpdated += OnOnlinePlayersUpdated;
         _serverProcess.OnOutputLine += OnOutputLine;
@@ -111,8 +130,13 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<PlayerViewModel> OnlinePlayers { get; } = new();
     public ObservableCollection<BannedPlayerViewModel> BannedPlayers { get; } = new();
+    public ObservableCollection<WhitelistPlayerViewModel> WhitelistedPlayers { get; } = new();
     public ICommand BackCommand { get; }
     public ICommand RefreshCommand { get; }
+    public ICommand ToggleWhitelistCommand { get; }
+    public ICommand AddToWhitelistCommand { get; }
+    public ICommand RemoveFromWhitelistCommand { get; }
+    public ICommand ReloadWhitelistCommand { get; }
 
     public string InstanceName => _metadata.Name;
     public string ServerType => _metadata.ServerType;
@@ -123,6 +147,25 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     public bool IsServerOnline => _serverProcess.State == ServerState.Online;
     public bool HasOnlinePlayers => OnlinePlayers.Count > 0;
     public bool HasBannedPlayers => BannedPlayers.Count > 0;
+    public bool HasWhitelistedPlayers => WhitelistedPlayers.Count > 0;
+
+    public bool IsWhitelistEnabled
+    {
+        get => _isWhitelistEnabled;
+        private set => SetProperty(ref _isWhitelistEnabled, value);
+    }
+
+    public string WhitelistAddUsername
+    {
+        get => _whitelistAddUsername;
+        set
+        {
+            if (SetProperty(ref _whitelistAddUsername, value))
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+        }
+    }
+
+    public string EmptyWhitelistText => "No whitelisted players found.";
 
     public string EmptyOnlineText
     {
@@ -1053,6 +1096,88 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         }
     }
 
+    // ── Whitelist management ────────────────────────────────────────────
+
+    public async Task LoadWhitelistAsync()
+    {
+        try
+        {
+            var entries = await _whitelistService.GetWhitelistedPlayersAsync(_metadata);
+            _dispatcher.Invoke(() =>
+            {
+                WhitelistedPlayers.Clear();
+                foreach (var entry in entries)
+                {
+                    WhitelistedPlayers.Add(new WhitelistPlayerViewModel
+                    {
+                        Name = entry.Name,
+                        IsServerOnline = IsServerOnline,
+                        RemoveCommand = RemoveFromWhitelistCommand
+                    });
+                }
+                OnPropertyChanged(nameof(HasWhitelistedPlayers));
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load whitelist.");
+        }
+    }
+
+    private async Task ToggleWhitelistAsync()
+    {
+        bool newValue = !IsWhitelistEnabled;
+        IsWhitelistEnabled = newValue;
+
+        if (IsServerOnline)
+        {
+            await _runtimeApplier.ApplyWhitelistToggleAsync(_metadata.Id, newValue);
+        }
+    }
+
+    private async Task AddToWhitelistAsync()
+    {
+        string username = WhitelistAddUsername?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(username)) return;
+
+        if (IsServerOnline)
+        {
+            await _runtimeApplier.ApplyWhitelistAddAsync(_metadata.Id, username);
+        }
+        else
+        {
+            await _whitelistService.AddPlayerAsync(_metadata, username);
+        }
+
+        WhitelistAddUsername = string.Empty;
+        await LoadWhitelistAsync();
+    }
+
+    private async Task RemoveFromWhitelistAsync(string? username)
+    {
+        if (string.IsNullOrWhiteSpace(username)) return;
+
+        if (IsServerOnline)
+        {
+            await _runtimeApplier.ApplyWhitelistRemoveAsync(_metadata.Id, username);
+        }
+        else
+        {
+            await _whitelistService.RemovePlayerAsync(_metadata, username);
+        }
+
+        await LoadWhitelistAsync();
+    }
+
+    private async Task ReloadWhitelistAsync()
+    {
+        if (!IsServerOnline) return;
+        await _runtimeApplier.ApplyWhitelistReloadAsync(_metadata.Id);
+        // Wait a moment for the server to reload, then refresh our list
+        await Task.Delay(500);
+        await LoadWhitelistAsync();
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -1113,4 +1238,11 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         {
         }
     }
+}
+
+public sealed class WhitelistPlayerViewModel : ViewModelBase
+{
+    public string Name { get; set; } = string.Empty;
+    public bool IsServerOnline { get; set; }
+    public ICommand? RemoveCommand { get; set; }
 }

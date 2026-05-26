@@ -139,6 +139,12 @@ public partial class PlayerManagementPage : Page, IDisposable, ITitleBarContextS
             _isSynchronizingTabSelection = false;
         }
 
+        // Trigger whitelist load when switching to the Whitelist tab
+        if (MainTabControl.SelectedIndex == 2)
+        {
+            _ = ViewModel.LoadWhitelistAsync();
+        }
+
         QueueTabTransitionAnimation();
     }
 
@@ -215,6 +221,7 @@ public partial class PlayerManagementPage : Page, IDisposable, ITitleBarContextS
         {
             0 => OnlineScrollViewer,
             1 => BanListScrollViewer,
+            2 => WhitelistScrollViewer,
             _ => null
         };
     }

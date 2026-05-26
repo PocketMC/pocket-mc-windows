@@ -669,6 +669,59 @@
                                             </WrapPanel>
                                         </StackPanel>
                                     </ui:Card>
+
+                                    <!-- LIVE CONTROLS (online only) -->
+                                    <ui:Card Padding="32" Margin="0,0,0,16"
+                                             Visibility="{Binding LiveControls.IsVisible, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ui:SymbolIcon Symbol="Play24" FontSize="18" Foreground="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="Live Controls" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                    <TextBlock Text="These controls send commands to the running server immediately. Changes are not persisted to config files."
+                                                               FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <Separator Margin="0,4,0,12" Background="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+
+                                            <!-- Gamerule toggles -->
+                                            <StackPanel Visibility="{Binding LiveControls.SupportsGamerules, Converter={StaticResource VisibleIfTrue}}">
+                                                <WrapPanel Margin="0,0,0,8">
+                                                    <StackPanel Margin="0,0,20,8" MinWidth="200">
+                                                        <ui:ToggleSwitch IsChecked="{Binding LiveControls.DoDaylightCycle}"
+                                                                         Content="Day/Night Cycle"
+                                                                         OnContent="" OffContent=""/>
+                                                    </StackPanel>
+                                                    <StackPanel Margin="0,0,20,8" MinWidth="200">
+                                                        <ui:ToggleSwitch IsChecked="{Binding LiveControls.DoWeatherCycle}"
+                                                                         Content="Weather Cycle"
+                                                                         OnContent="" OffContent=""/>
+                                                    </StackPanel>
+                                                </WrapPanel>
+                                            </StackPanel>
+
+                                            <!-- Weather control -->
+                                            <StackPanel Visibility="{Binding LiveControls.SupportsWeather, Converter={StaticResource VisibleIfTrue}}"
+                                                        Margin="0,4,0,0">
+                                                <TextBlock Text="Set Weather" FontSize="13" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ComboBox ItemsSource="{Binding LiveControls.WeatherOptions}"
+                                                              SelectedItem="{Binding LiveControls.SelectedWeather}"
+                                                              MinWidth="140" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                    <ui:Button Content="Apply"
+                                                               Appearance="Primary"
+                                                               Icon="{ui:SymbolIcon Checkmark24}"
+                                                               Command="{Binding LiveControls.SetWeatherCommand}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ui:Card>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
@@ -916,16 +969,13 @@
                                                                     </Style>
                                                                 </ui:ProgressRing.Style>
                                                             </ui:ProgressRing>
-                                                            <ui:Button Content="Enable" Appearance="Primary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}"
-                                                                       Visibility="{Binding CanEnable, Converter={StaticResource VisibleIfTrue}}"
-                                                                       ToolTip="{Binding ToggleToolTip}"/>
-                                                            <ui:Button Content="Disable" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}"
-                                                                       Visibility="{Binding CanDisable, Converter={StaticResource VisibleIfTrue}}"
-                                                                       ToolTip="{Binding ToggleToolTip}"/>
+                                                            <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                                             Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                             CommandParameter="{Binding}"
+                                                                             IsEnabled="{Binding CanToggle}"
+                                                                             ToolTip="{Binding ToggleToolTip}"
+                                                                             OnContent="" OffContent="" Content=""
+                                                                             VerticalAlignment="Center" Margin="0,0,8,0"/>
                                                             <ui:Button Content="Open" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
@@ -1113,16 +1163,13 @@
                                                                     </Style>
                                                                 </ui:ProgressRing.Style>
                                                             </ui:ProgressRing>
-                                                            <ui:Button Content="Enable" Appearance="Primary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}"
-                                                                       Visibility="{Binding CanEnable, Converter={StaticResource VisibleIfTrue}}"
-                                                                       ToolTip="{Binding ToggleToolTip}"/>
-                                                            <ui:Button Content="Disable" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}"
-                                                                       Visibility="{Binding CanDisable, Converter={StaticResource VisibleIfTrue}}"
-                                                                       ToolTip="{Binding ToggleToolTip}"/>
+                                                            <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                                             Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                             CommandParameter="{Binding}"
+                                                                             IsEnabled="{Binding CanToggle}"
+                                                                             ToolTip="{Binding ToggleToolTip}"
+                                                                             OnContent="" OffContent="" Content=""
+                                                                             VerticalAlignment="Center" Margin="0,0,8,0"/>
                                                             <ui:Button Content="Open" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"

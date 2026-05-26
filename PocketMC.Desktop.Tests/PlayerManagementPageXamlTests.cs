@@ -11,9 +11,9 @@ public sealed class PlayerManagementPageXamlTests
             "Players",
             "PlayerManagementPage.xaml"));
 
-        Assert.Equal(2, CountOccurrences(xaml, "<ListView.ItemContainerStyle>"));
-        Assert.Equal(2, CountOccurrences(xaml, "Property=\"HorizontalContentAlignment\" Value=\"Stretch\""));
-        Assert.Equal(2, CountOccurrences(xaml, "<ContentPresenter HorizontalAlignment=\"{TemplateBinding HorizontalContentAlignment}\"/>"));
+        Assert.Equal(3, CountOccurrences(xaml, "<ListView.ItemContainerStyle>"));
+        Assert.Equal(3, CountOccurrences(xaml, "Property=\"HorizontalContentAlignment\" Value=\"Stretch\""));
+        Assert.Equal(3, CountOccurrences(xaml, "<ContentPresenter HorizontalAlignment=\"{TemplateBinding HorizontalContentAlignment}\"/>"));
     }
 
     private static int CountOccurrences(string value, string expected)

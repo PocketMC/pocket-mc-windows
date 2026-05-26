@@ -31,6 +31,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly InstanceManager _instanceManager;
         private readonly InstanceRegistry _registry;
         private readonly ServerConfigurationService _serverConfigurationService;
+        private readonly ServerRuntimeSettingApplier _runtimeApplier;
         private readonly PortPreflightService _portPreflightService;
         private readonly IServerLifecycleService _lifecycleService;
         private readonly IDialogService _dialogService;
@@ -54,6 +55,7 @@ namespace PocketMC.Desktop.Features.Settings
         public SettingsAdvancedVM Advanced { get; }
         public SettingsSummariesVM Summaries { get; }
         public ServerCloudBackupViewModel CloudBackups { get; }
+        public LiveControlsVM LiveControls { get; }
 
         private bool _isAiSummarizationAvailable;
         public bool IsAiSummarizationAvailable { get => _isAiSummarizationAvailable; set => SetProperty(ref _isAiSummarizationAvailable, value); }
@@ -117,6 +119,7 @@ namespace PocketMC.Desktop.Features.Settings
             _instanceManager = instanceManager;
             _registry = registry;
             _serverConfigurationService = serverConfigurationService;
+            _runtimeApplier = (ServerRuntimeSettingApplier)serviceProvider.GetService(typeof(ServerRuntimeSettingApplier))!;
             _portPreflightService = portPreflightService;
             _lifecycleService = lifecycleService;
             _dialogService = dialogService;
@@ -163,6 +166,8 @@ namespace PocketMC.Desktop.Features.Settings
                 backupService,
                 () => ServerDir,
                 () => IsRunning);
+
+            LiveControls = new LiveControlsVM(_runtimeApplier, metadata.Id, metadata.Compatibility.Family);
 
             SaveCommand = new RelayCommand(_ => SaveConfigurations(), _ => !IsTransientState);
             CancelCommand = new RelayCommand(async _ => await CancelAsync());
@@ -262,6 +267,8 @@ namespace PocketMC.Desktop.Features.Settings
             }
 
             Addons?.RefreshRunningState();
+            if (LiveControls != null)
+                LiveControls.IsVisible = running;
         }
 
         private void MarkChanged() { if (!IsLoading) HasUnsavedChanges = true; }
@@ -515,6 +522,10 @@ namespace PocketMC.Desktop.Features.Settings
 
             if (IsRunning)
             {
+                // Apply live settings that can be sent as commands without restart
+                _ = _runtimeApplier.ApplyDifficultyAsync(Metadata.Id, cfg.Difficulty);
+                _ = _runtimeApplier.ApplyWhitelistToggleAsync(Metadata.Id, cfg.WhiteList);
+
                 IsRestartRequired = true;
             }
             else

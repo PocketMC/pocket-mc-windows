@@ -84,6 +84,7 @@
                     <ui:NavigationView.MenuItems>
                         <ui:NavigationViewItem Content="Online Players" Icon="{ui:SymbolIcon People24}" Click="NavItem_Click" IsActive="True"/>
                         <ui:NavigationViewItem Content="Ban List" Icon="{ui:SymbolIcon ShieldDismiss24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="Whitelist" Icon="{ui:SymbolIcon Shield24}" Click="NavItem_Click"/>
                     </ui:NavigationView.MenuItems>
                 </ui:NavigationView>
 
@@ -394,6 +395,154 @@
                                                            HorizontalAlignment="Center"
                                                            Margin="0,0,0,8"/>
                                             <TextBlock Text="{Binding EmptyBanText}"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                       FontSize="14"
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+
+                        <!-- TAB 3: WHITELIST -->
+                        <TabItem Header="Whitelist">
+                            <ScrollViewer x:Name="WhitelistScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
+                                <StackPanel>
+                                    <!-- Whitelist Toggle -->
+                                    <Border Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                            CornerRadius="8"
+                                            Padding="16"
+                                            Margin="0,0,0,16">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Whitelist Enforcement"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="When enabled, only whitelisted players can join the server."
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                           Margin="0,4,0,0"/>
+                                            </StackPanel>
+                                            <ui:ToggleSwitch Grid.Column="1"
+                                                             IsChecked="{Binding IsWhitelistEnabled, Mode=OneWay}"
+                                                             Command="{Binding ToggleWhitelistCommand}"
+                                                             OnContent="" OffContent="" Content=""
+                                                             VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Add Player + Reload -->
+                                    <Border Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                            CornerRadius="8"
+                                            Padding="16"
+                                            Margin="0,0,0,16">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ui:TextBox Text="{Binding WhitelistAddUsername, UpdateSourceTrigger=PropertyChanged}"
+                                                        PlaceholderText="Enter player name"
+                                                        Margin="0,0,8,0"
+                                                        VerticalAlignment="Center"/>
+                                            <ui:Button Grid.Column="1"
+                                                       Content="Add"
+                                                       Appearance="Primary"
+                                                       Icon="{ui:SymbolIcon Add20}"
+                                                       Command="{Binding AddToWhitelistCommand}"
+                                                       Margin="0,0,8,0"/>
+                                            <ui:Button Grid.Column="2"
+                                                       Content="Reload"
+                                                       Appearance="Secondary"
+                                                       Icon="{ui:SymbolIcon ArrowClockwise24}"
+                                                       Command="{Binding ReloadWhitelistCommand}"
+                                                       ToolTip="Reload whitelist from disk (server must be online)"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Column Headers -->
+                                    <Border Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                            CornerRadius="6"
+                                            Padding="12,8"
+                                            Margin="0,0,0,6"
+                                            Visibility="{Binding HasWhitelistedPlayers, Converter={StaticResource BoolToVis}}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="110"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="Player Name" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="Actions" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Whitelist Entries -->
+                                    <ListView ItemsSource="{Binding WhitelistedPlayers}"
+                                              Background="Transparent"
+                                              BorderThickness="0"
+                                              Visibility="{Binding HasWhitelistedPlayers, Converter={StaticResource BoolToVis}}"
+                                              ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                        <ListView.ItemContainerStyle>
+                                            <Style TargetType="ListViewItem">
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="ListViewItem">
+                                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </ListView.ItemContainerStyle>
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="6"
+                                                        BorderThickness="1"
+                                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                                        Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                                        Padding="12"
+                                                        Margin="0,0,0,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="110"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   FontSize="14"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   VerticalAlignment="Center"/>
+                                                        <ui:Button Grid.Column="1"
+                                                                   Content="Remove"
+                                                                   Appearance="Secondary"
+                                                                   Command="{Binding RemoveCommand}"
+                                                                   CommandParameter="{Binding Name}"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+
+                                    <!-- Empty State -->
+                                    <Border Visibility="{Binding HasWhitelistedPlayers, Converter={StaticResource InverseBoolToVis}}"
+                                            Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                            CornerRadius="8"
+                                            Padding="24">
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <ui:SymbolIcon Symbol="Shield24"
+                                                           Width="32"
+                                                           Height="32"
+                                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,0,0,8"/>
+                                            <TextBlock Text="{Binding EmptyWhitelistText}"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                        FontSize="14"
                                                        HorizontalAlignment="Center"/>
