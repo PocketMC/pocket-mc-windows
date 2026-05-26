@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.Diagnostics;
@@ -60,7 +61,7 @@ public class DiagnosticReportingService
     {
         // 1. Gather System Info
         string sysInfoPath = Path.Combine(tempFolder, "system-info.txt");
-        File.WriteAllText(sysInfoPath,
+        FileUtils.AtomicWriteAllText(sysInfoPath,
             $"OS: {Environment.OSVersion}\n" +
             $"64Bit: {Environment.Is64BitOperatingSystem}\n" +
             $".NET: {Environment.Version}\n" +
@@ -71,7 +72,7 @@ public class DiagnosticReportingService
         string networkDir = Path.Combine(tempFolder, "network");
         Directory.CreateDirectory(networkDir);
         var portSnapshot = _portDiagnosticsSnapshotBuilder.Build();
-        File.WriteAllText(
+        FileUtils.AtomicWriteAllText(
             Path.Combine(networkDir, "port-diagnostics.json"),
             JsonSerializer.Serialize(
                 portSnapshot,

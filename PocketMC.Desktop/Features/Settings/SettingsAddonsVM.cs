@@ -1113,7 +1113,7 @@ namespace PocketMC.Desktop.Features.Settings
                 string dir = Path.GetDirectoryName(path) ?? "";
                 if (Directory.Exists(dir))
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    using var proc = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "explorer.exe",
                         Arguments = $"/select,\"{path}\"",

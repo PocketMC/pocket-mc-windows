@@ -714,7 +714,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         {
             try
             {
-                Process.Start(new ProcessStartInfo
+                using var proc = Process.Start(new ProcessStartInfo
                 {
                     FileName = e.Uri.AbsoluteUri,
                     UseShellExecute = true
