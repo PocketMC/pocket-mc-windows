@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
+using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Models;
 using Xunit;
@@ -28,7 +30,10 @@ namespace PocketMC.Desktop.Tests
             _dialogService = new FakeDialogService();
 
             var manifestService = new AddonManifestService();
+            var stateStore = new AddonStateStore();
+            var lifecycleService = new FakeLifecycleService();
             _serviceProvider.Register<AddonManifestService>(manifestService);
+            _serviceProvider.Register<AddonStateStore>(stateStore);
             _serviceProvider.Register<BedrockAddonInstaller>(new BedrockAddonInstaller(NullLogger<BedrockAddonInstaller>.Instance));
 
             var updateService = new AddonUpdateService(
@@ -41,6 +46,23 @@ namespace PocketMC.Desktop.Tests
                 null!
             );
             _serviceProvider.Register<AddonUpdateService>(updateService);
+            _serviceProvider.Register<AddonInventoryService>(
+                new AddonInventoryService(
+                    manifestService,
+                    stateStore,
+                    lifecycleService,
+                    NullLogger<AddonInventoryService>.Instance));
+            _serviceProvider.Register<AddonToggleService>(
+                new AddonToggleService(
+                    stateStore,
+                    lifecycleService,
+                    NullLogger<AddonToggleService>.Instance,
+                    manifestService));
+            _serviceProvider.Register<AddonUpdateCheckService>(
+                new AddonUpdateCheckService(
+                    manifestService,
+                    updateService,
+                    NullLogger<AddonUpdateCheckService>.Instance));
         }
 
         public void Dispose()
@@ -187,16 +209,16 @@ namespace PocketMC.Desktop.Tests
             vm.LoadAddonsSync();
 
             // Assert - Disabled
-            string disabledPath = Path.Combine(_tempDir, "mods", "test-toggle.jar.disabled");
+            string disabledPath = Path.Combine(_tempDir, "mods", ".disabled", "test-toggle.jar.disabled-by-pocketmc");
             Assert.True(File.Exists(disabledPath));
             Assert.False(File.Exists(Path.Combine(_tempDir, "mods", "test-toggle.jar")));
 
             var manifestService = _serviceProvider.GetService(typeof(AddonManifestService)) as AddonManifestService;
             var updatedManifest = await manifestService!.LoadManifestAsync(_tempDir);
-            Assert.Equal("test-toggle.jar.disabled", updatedManifest.Entries[0].FileName);
+            Assert.Equal("test-toggle.jar", updatedManifest.Entries[0].FileName);
 
             vm.LoadAddonsSync();
-            var disabledItem = vm.Mods.First(m => m.FileName == "test-toggle.jar.disabled");
+            var disabledItem = vm.Mods.First(m => m.FileName == "test-toggle.jar");
             Assert.True(disabledItem.IsDisabled);
 
             // Act - Re-enable
@@ -249,7 +271,7 @@ namespace PocketMC.Desktop.Tests
 
             // Assert
             Assert.True(File.Exists(Path.Combine(_tempDir, "mods", "test-running.jar")));
-            Assert.False(File.Exists(Path.Combine(_tempDir, "mods", "test-running.jar.disabled")));
+            Assert.False(File.Exists(Path.Combine(_tempDir, "mods", ".disabled", "test-running.jar.disabled-by-pocketmc")));
             Assert.True(_dialogService.ShowMessageCalled);
             Assert.Equal("Server is Running", _dialogService.LastMessageTitle);
         }
@@ -389,5 +411,23 @@ namespace PocketMC.Desktop.Tests
         public Task<string?> OpenFolderDialogAsync(string title) => Task.FromResult<string?>(null);
         public Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult<string?>(null);
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(new string[0]);
+    }
+
+    public class FakeLifecycleService : IServerLifecycleService
+    {
+        public event Action<Guid, ServerState>? OnInstanceStateChanged;
+        public event Action<Guid, int>? OnRestartCountdownTick;
+
+        public Task StartAsync(InstanceMetadata meta) => Task.CompletedTask;
+        public Task StopAsync(Guid instanceId) => Task.CompletedTask;
+        public void Kill(Guid instanceId) { }
+        public void KillAll() { }
+        public bool IsRunning(Guid instanceId) => false;
+        public bool IsWaitingToRestart(Guid instanceId) => false;
+        public void AbortRestartDelay(Guid instanceId) { }
+        public Task RestartAsync(Guid instanceId) => Task.CompletedTask;
+        public ServerProcess? GetProcess(Guid instanceId) => null;
+        public DateTime? GetSessionStartTime(Guid instanceId) => null;
+        public Task ReleaseInstanceAsync(Guid instanceId) => Task.CompletedTask;
     }
 }

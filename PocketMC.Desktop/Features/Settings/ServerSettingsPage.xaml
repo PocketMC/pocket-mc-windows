@@ -15,6 +15,7 @@
         <BooleanToVisibilityConverter x:Key="VisibleIfTrue"/>
         <presentation:InverseBooleanToVisibilityConverter x:Key="InvertedVisibilityConverter" xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"/>
         <presentation:InverseBooleanConverter x:Key="InvertedBooleanConverter" xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"/>
+        <presentation:NullOrEmptyToVisibilityConverter x:Key="VisibleIfNotEmpty" xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"/>
         <settings:MinecraftMotdConverter x:Key="MotdConverter" xmlns:settings="clr-namespace:PocketMC.Desktop.Features.Settings"/>
 
         <ImageBrush x:Key="DirtBackground" ImageSource="pack://application:,,,/Assets/dark_dirt.png" Viewport="0,0,45,46" ViewportUnits="Absolute" TileMode="Tile" Stretch="Fill" />
@@ -751,6 +752,15 @@
                                         </StackPanel>
                                     </ui:Card>
 
+                                    <ui:Card Visibility="{Binding Addons.ShowServerRunningAddonMessage, Converter={StaticResource VisibleIfTrue}}"
+                                             Background="#2A2535" BorderBrush="#CBA6F7" BorderThickness="1"
+                                             Margin="4,0,4,16" Padding="12">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:SymbolIcon Symbol="Info24" Foreground="#CBA6F7" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Addons.ServerRunningAddonMessage}" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="#CBA6F7" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </ui:Card>
+
                                     <!-- Vanilla Empty State -->
                                     <ui:Card Padding="32" Margin="0,0,0,16"
                                              Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource VisibleIfTrue}}">
@@ -815,6 +825,13 @@
                                                 <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                     <ui:Card.ContextMenu>
                                                         <ContextMenu>
+                                                            <MenuItem Header="{Binding ToggleActionLabel}"
+                                                                      Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                      CommandParameter="{Binding}">
+                                                                <MenuItem.Icon>
+                                                                    <ui:SymbolIcon Symbol="Power20"/>
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
                                                             <MenuItem Header="Open Folder" 
                                                                       Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                       CommandParameter="{Binding Path}">
@@ -825,6 +842,15 @@
                                                         </ContextMenu>
                                                     </ui:Card.ContextMenu>
                                                     <Grid>
+                                                        <Grid.Style>
+                                                            <Style TargetType="Grid">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                        <Setter Property="Opacity" Value="0.6"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Grid.Style>
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="Auto"/>
                                                             <ColumnDefinition Width="*"/>
@@ -838,15 +864,33 @@
                                                         
                                                         <!-- Info -->
                                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14"/>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                                <Border Visibility="{Binding IsDisabled, Converter={StaticResource VisibleIfTrue}}"
+                                                                        Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
+                                                                    <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                                </Border>
+                                                            </StackPanel>
                                                             
-                                                            <!-- Subtitle: Filename · API version · Source -->
+                                                            <!-- Subtitle: Filename · Loader · Version · Source · Side -->
                                                             <WrapPanel Margin="0,2,0,0" VerticalAlignment="Center">
                                                                 <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                                 <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                                                <TextBlock Text="{Binding ApiVersion, StringFormat=API: {0}}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                    <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                </Border>
+                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding HasVersion, Converter={StaticResource VisibleIfTrue}}">
+                                                                    <TextBlock Text="v" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                    <TextBlock Text="{Binding Version}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                    <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                </StackPanel>
+                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                    <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                </Border>
                                                                 <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                                                <TextBlock Text="{Binding SourceLabel}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2">
+                                                                    <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                </Border>
                                                             </WrapPanel>
                                                             
                                                             <!-- Warning message if any -->
@@ -854,18 +898,8 @@
                                                                        Text="{Binding WarningText}" FontSize="11" Foreground="#F38BA8" Margin="0,4,0,0" TextWrapping="Wrap"/>
                                                             
                                                             <!-- Update status -->
-                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBlock.Style>
-                                                            </TextBlock>
+                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0"
+                                                                       Visibility="{Binding UpdateStatusText, Converter={StaticResource VisibleIfNotEmpty}}"/>
                                                         </StackPanel>
                                                         
                                                         <!-- Action buttons -->
@@ -882,13 +916,28 @@
                                                                     </Style>
                                                                 </ui:ProgressRing.Style>
                                                             </ui:ProgressRing>
-                                                            <ui:Button Content="Update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                            <ui:Button Content="Enable" Appearance="Primary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}"
+                                                                       Visibility="{Binding CanEnable, Converter={StaticResource VisibleIfTrue}}"
+                                                                       ToolTip="{Binding ToggleToolTip}"/>
+                                                            <ui:Button Content="Disable" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}"
+                                                                       Visibility="{Binding CanDisable, Converter={StaticResource VisibleIfTrue}}"
+                                                                       ToolTip="{Binding ToggleToolTip}"/>
+                                                            <ui:Button Content="Open" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding Path}"
+                                                                       Icon="{ui:SymbolIcon FolderOpen20}"
+                                                                       ToolTip="Open file location"/>
+                                                            <ui:Button Content="Check update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding}"
                                                                        IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
+                                                                       Visibility="{Binding IsDisabled, Converter={StaticResource InvertedVisibilityConverter}}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
                                                                        ToolTip="Check for updates from the marketplace"/>
-                                                            <ui:Button Content="Delete" Appearance="Danger" Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Path}" VerticalAlignment="Center"/>
                                                         </StackPanel>
                                                     </Grid>
                                                 </ui:Card>
@@ -950,7 +999,7 @@
                                                     <ui:Card.ContextMenu>
                                                         <ContextMenu>
                                                             <MenuItem Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                      CommandParameter="{Binding Path}">
+                                                                      CommandParameter="{Binding}">
                                                                 <MenuItem.Style>
                                                                     <Style TargetType="MenuItem">
                                                                         <Setter Property="Header" Value="Disable Mod"/>
@@ -1046,18 +1095,8 @@
                                                             </Border>
 
                                                             <!-- Update status -->
-                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBlock.Style>
-                                                            </TextBlock>
+                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0"
+                                                                       Visibility="{Binding UpdateStatusText, Converter={StaticResource VisibleIfNotEmpty}}"/>
                                                         </StackPanel>
 
                                                         <!-- Actions -->
@@ -1074,7 +1113,22 @@
                                                                     </Style>
                                                                 </ui:ProgressRing.Style>
                                                             </ui:ProgressRing>
-                                                            <ui:Button Content="Update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                            <ui:Button Content="Enable" Appearance="Primary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}"
+                                                                       Visibility="{Binding CanEnable, Converter={StaticResource VisibleIfTrue}}"
+                                                                       ToolTip="{Binding ToggleToolTip}"/>
+                                                            <ui:Button Content="Disable" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}"
+                                                                       Visibility="{Binding CanDisable, Converter={StaticResource VisibleIfTrue}}"
+                                                                       ToolTip="{Binding ToggleToolTip}"/>
+                                                            <ui:Button Content="Open" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding Path}"
+                                                                       Icon="{ui:SymbolIcon FolderOpen20}"
+                                                                       ToolTip="Open file location"/>
+                                                            <ui:Button Content="Check update" Appearance="Info" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
@@ -1093,7 +1147,6 @@
                                                                     </Style>
                                                                 </ui:Button.Style>
                                                             </ui:Button>
-                                                            <ui:Button Content="Delete" Appearance="Danger" Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Path}" VerticalAlignment="Center"/>
                                                         </StackPanel>
                                                     </Grid>
                                                 </ui:Card>

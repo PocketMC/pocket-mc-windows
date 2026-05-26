@@ -260,6 +260,8 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 IsRestartRequired = false;
             }
+
+            Addons?.RefreshRunningState();
         }
 
         private void MarkChanged() { if (!IsLoading) HasUnsavedChanges = true; }

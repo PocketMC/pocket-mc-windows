@@ -227,7 +227,11 @@ namespace PocketMC.Desktop.Features.Marketplace
             await _manifestService.RegisterInstallAsync(
                 serverDir, providerName, projectId,
                 updateInfo.LatestVersionId ?? "", safeLatestFileName,
-                projectTitle, iconUrl, displayName);
+                projectTitle, iconUrl, displayName,
+                fileHash: updateInfo.Hash,
+                fileHashType: updateInfo.HashType,
+                minecraftVersion: null,
+                loader: compat.LoaderName);
         }
 
         private IAddonProvider? GetProvider(string providerName)

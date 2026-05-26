@@ -198,6 +198,10 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<MarketplaceFileInstaller>();
             services.AddSingleton<AddonUpdateService>();
             services.AddSingleton<DependencyResolverService>();
+            services.AddSingleton<AddonStateStore>();
+            services.AddSingleton<AddonInventoryService>();
+            services.AddSingleton<AddonToggleService>();
+            services.AddSingleton<AddonUpdateCheckService>();
 
             services.AddSingleton<AddonMigrationPlanner>();
             services.AddSingleton<AddonMigrationStager>();

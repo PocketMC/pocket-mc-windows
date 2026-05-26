@@ -395,7 +395,21 @@ namespace PocketMC.Desktop.Features.Marketplace
             // Register in manifest if not modpack
             if (_serverDir != null)
             {
-                await _manifestService.RegisterInstallAsync(_serverDir, providerName, projectId, versionId, safeFileName, projectTitle, iconUrl, displayName, clientSide, serverSide);
+                await _manifestService.RegisterInstallAsync(
+                    _serverDir,
+                    providerName,
+                    projectId,
+                    versionId,
+                    safeFileName,
+                    projectTitle,
+                    iconUrl,
+                    displayName,
+                    clientSide,
+                    serverSide,
+                    hash,
+                    hashType,
+                    _mcVersion,
+                    _compat.LoaderName);
             }
         }
     }

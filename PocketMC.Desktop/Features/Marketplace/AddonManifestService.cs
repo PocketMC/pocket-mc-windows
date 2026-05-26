@@ -25,6 +25,10 @@ namespace PocketMC.Desktop.Features.Marketplace
         public string? DisplayName { get; set; }
         public string? ClientSide { get; set; }
         public string? ServerSide { get; set; }
+        public string? FileHash { get; set; }
+        public string? FileHashType { get; set; }
+        public string? MinecraftVersion { get; set; }
+        public string? Loader { get; set; }
     }
 
     public class AddonManifest
@@ -94,7 +98,11 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? iconUrl,
             string? displayName,
             string? clientSide = null,
-            string? serverSide = null)
+            string? serverSide = null,
+            string? fileHash = null,
+            string? fileHashType = null,
+            string? minecraftVersion = null,
+            string? loader = null)
         {
             var manifest = await LoadManifestAsync(serverDir);
             string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
@@ -108,6 +116,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             displayName ??= existing?.DisplayName;
             clientSide ??= existing?.ClientSide;
             serverSide ??= existing?.ServerSide;
+            fileHash ??= existing?.FileHash;
+            fileHashType ??= existing?.FileHashType;
+            minecraftVersion ??= existing?.MinecraftVersion;
+            loader ??= existing?.Loader;
 
             // Remove any existing entry for this project to avoid duplicates (effectively an "update")
             manifest.Entries.RemoveAll(e => e.ProjectId == projectId && e.Provider == provider);
@@ -124,7 +136,11 @@ namespace PocketMC.Desktop.Features.Marketplace
                 IconUrl = iconUrl,
                 DisplayName = displayName,
                 ClientSide = clientSide,
-                ServerSide = serverSide
+                ServerSide = serverSide,
+                FileHash = fileHash,
+                FileHashType = fileHashType,
+                MinecraftVersion = minecraftVersion,
+                Loader = loader
             });
 
             await SaveManifestAsync(serverDir, manifest);
