@@ -15,6 +15,9 @@ namespace PocketMC.Desktop.Models
 
     public class AppSettings
     {
+        public const int CurrentSchemaVersion = 1;
+
+        public int SchemaVersion { get; set; } = CurrentSchemaVersion;
         public string? AppRootPath { get; set; }
         public string? PlayitConfigDirectory { get; set; }
         public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }
