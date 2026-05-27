@@ -43,11 +43,20 @@ jobs:
         shell: pwsh
         run: |
           $audit = dotnet list PocketMC.Desktop.sln package --vulnerable --include-transitive 2>&1
+          $exitCode = $LASTEXITCODE
           $audit | ForEach-Object { Write-Host $_ }
+
+          if ($exitCode -ne 0) {
+            Write-Warning "NuGet vulnerability audit command exited with code $exitCode. Continuing so build/test results remain visible."
+          }
 
           $hasCriticalOrHigh = $audit | Select-String -Pattern "\b(Critical|High)\b"
           if ($hasCriticalOrHigh) {
-            Write-Error "Critical or High NuGet vulnerabilities detected. Review and update dependencies before release."
+            if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref }}" -eq "refs/heads/master") {
+              Write-Error "Critical or High NuGet vulnerabilities detected. Review and update dependencies before release."
+            }
+
+            Write-Warning "Critical or High NuGet vulnerabilities detected. This PR reports them without blocking; master release builds still fail closed."
           }
 
       - name: Debug Build
