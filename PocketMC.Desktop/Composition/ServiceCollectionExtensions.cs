@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Console;
+using PocketMC.Desktop.Features.Diagnostics;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
@@ -124,9 +125,11 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<ServerConfigurationService>();
             services.AddSingleton<ServerRuntimeSettingApplier>();
             services.AddSingleton<WorldManager>();
-            services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.PortDiagnosticsSnapshotBuilder>();
-            services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService>();
-            services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor>();
+            services.AddSingleton<PortDiagnosticsSnapshotBuilder>();
+            services.AddSingleton<DiagnosticReportingService>();
+            services.AddSingleton<DependencyHealthMonitor>();
+            services.AddSingleton<SupportBundleRedactor>();
+            services.AddSingleton<SupportBundleService>();
             
             services.AddSingleton<PhpProvisioningService>();
             services.AddSingleton<GeyserProvisioningService>();
