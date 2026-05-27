@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Instances.Services;
@@ -24,6 +25,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private readonly IShellVisualService _visualService;
     private readonly ShellStartupCoordinator _startupCoordinator;
     private readonly ShellViewModel _viewModel;
+    private readonly InstanceCreationStateService _instanceCreationState;
     private readonly ILogger<MainWindow> _logger;
 
     private Type _lastShellPageType = typeof(DashboardPage);
@@ -37,6 +39,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         IShellVisualService visualService,
         ShellStartupCoordinator startupCoordinator,
         ShellViewModel viewModel,
+        InstanceCreationStateService instanceCreationState,
         ILogger<MainWindow> logger)
     {
         _serviceProvider = serviceProvider;
@@ -44,6 +47,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         _visualService = visualService;
         _startupCoordinator = startupCoordinator;
         _viewModel = viewModel;
+        _instanceCreationState = instanceCreationState;
         _logger = logger;
 
         DataContext = _viewModel;
@@ -153,8 +157,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             return;
         }
 
-        if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen && 
-            PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.IsDownloadInProgress)
+        if (_instanceCreationState.ShouldBlockNavigationAway)
         {
             args.Cancel = true;
             return;
@@ -323,8 +326,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         bool downloadExitConfirmed = false;
-        if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen && 
-            PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.IsDownloadInProgress)
+        if (_instanceCreationState.IsCreationInProgress)
         {
             var result = Infrastructure.AppDialog.Confirm(
                 "Cancel Download?",
