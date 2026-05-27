@@ -116,6 +116,8 @@ namespace PocketMC.Desktop.Features.Settings
         private AppSettings Normalize(AppSettings? settings)
         {
             settings ??= new AppSettings();
+            ValidateSchemaVersion(settings.SchemaVersion, AppSettings.CurrentSchemaVersion, "app settings");
+            settings.SchemaVersion = AppSettings.CurrentSchemaVersion;
             settings.AiApiKeys ??= new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             settings.CloudTokens ??= new System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet>(StringComparer.OrdinalIgnoreCase);
             foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))
@@ -141,6 +143,19 @@ namespace PocketMC.Desktop.Features.Settings
             }
 
             return settings;
+        }
+
+        private static void ValidateSchemaVersion(int schemaVersion, int currentVersion, string modelName)
+        {
+            if (schemaVersion <= 0)
+            {
+                return;
+            }
+
+            if (schemaVersion > currentVersion)
+            {
+                throw new NotSupportedException($"This PocketMC build cannot read {modelName} schema version {schemaVersion}. Current supported version is {currentVersion}.");
+            }
         }
 
         private void ProtectSecrets(AppSettings settings)
