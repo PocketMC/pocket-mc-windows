@@ -157,7 +157,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             return;
         }
 
-        if (_instanceCreationState.ShouldBlockNavigationAway)
+        if (IsInstanceCreationBusy())
         {
             args.Cancel = true;
             return;
@@ -169,6 +169,13 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         if (_serviceProvider.GetService<IAppNavigationService>() is { } nav)
             nav.NavigateToShellPage(pageType!);
     }
+
+    private bool IsInstanceCreationBusy() =>
+        _instanceCreationState.ShouldBlockNavigationAway ||
+        (NewInstancePage.InstanceCreatePageIsOpen && NewInstancePage.IsDownloadInProgress);
+
+    private bool IsInstanceCreationInProgress() =>
+        _instanceCreationState.IsCreationInProgress || NewInstancePage.IsDownloadInProgress;
 
     private void SyncNavigationSelection(Type? pageType)
     {
@@ -326,7 +333,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         bool downloadExitConfirmed = false;
-        if (_instanceCreationState.IsCreationInProgress)
+        if (IsInstanceCreationInProgress())
         {
             var result = Infrastructure.AppDialog.Confirm(
                 "Cancel Download?",
