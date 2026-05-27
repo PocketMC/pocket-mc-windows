@@ -32,7 +32,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly PoggitService _poggit;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly MarketplaceFileInstaller _fileInstaller;
-        private readonly string? _serverDir;
+        private readonly string _serverDir;
         private readonly string _mcVersion;
         private readonly string _projectType;
         private readonly bool _isModpackMode;
@@ -71,7 +71,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             _manifestService = manifestService;
             _httpClientFactory = httpClientFactory;
             _fileInstaller = fileInstaller;
-            _serverDir = serverDir;
+            _serverDir = serverDir ?? string.Empty;
             _mcVersion = mcVersion;
             _projectType = projectType;
             _isModpackMode = projectType.Contains("modpack");
@@ -103,7 +103,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             else TxtSearch.PlaceholderText = "Search mods...";
             Loaded += async (s, e) => 
             {
-                if (_serverDir != null)
+                if (!string.IsNullOrWhiteSpace(_serverDir))
                 {
                     await _manifestService.SyncManifestAsync(_serverDir, _modrinth, _compat);
                 }
@@ -190,7 +190,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                             Provider = isCurseForge ? "CurseForge" : (isPoggit ? "Poggit" : "Modrinth")
                         };
 
-                        if (_serverDir != null)
+                        if (!string.IsNullOrWhiteSpace(_serverDir))
                         {
                             bool installed = await _manifestService.IsInstalledAsync(_serverDir, vm.Provider, vm.ProjectId, _compat);
                             vm.State = installed ? InstallState.Installed : InstallState.NotInstalled;
@@ -246,6 +246,16 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             try
             {
+                if (!_isModpackMode && string.IsNullOrWhiteSpace(_serverDir))
+                {
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
+                        "Missing server folder",
+                        "PocketMC could not resolve the server folder for this marketplace install.");
+                    vm.State = InstallState.NotInstalled;
+                    vm.IsActionEnabled = true;
+                    return;
+                }
+
                 string projectId = vm.ProjectId;
                 if (string.IsNullOrEmpty(projectId)) projectId = vm.Slug;
 
@@ -358,7 +368,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? clientSide = null,
             string? serverSide = null)
         {
-            if (_serverDir == null && !_isModpackMode) return;
+            if (string.IsNullOrWhiteSpace(_serverDir) && !_isModpackMode) return;
             string safeFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(fileName, _compat, _isModpackMode);
 
             string destFile;
@@ -369,7 +379,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             else
             {
-                string destDir = PathSafety.ValidateContainedPath(_serverDir!, _compat.PrimaryAddonSubDir)
+                string destDir = PathSafety.ValidateContainedPath(_serverDir, _compat.PrimaryAddonSubDir)
                     ?? throw new InvalidOperationException($"Invalid add-on directory '{_compat.PrimaryAddonSubDir}'.");
                 if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
                 destFile = PathSafety.ValidateContainedPath(destDir, safeFileName)
@@ -393,7 +403,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             // Register in manifest if not modpack
-            if (_serverDir != null)
+            if (!string.IsNullOrWhiteSpace(_serverDir))
             {
                 await _manifestService.RegisterInstallAsync(
                     _serverDir,
