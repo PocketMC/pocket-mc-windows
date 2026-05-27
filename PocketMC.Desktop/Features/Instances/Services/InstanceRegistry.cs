@@ -51,6 +51,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
 
         public void Register(InstanceMetadata metadata, string path)
         {
+            NormalizeMetadata(metadata);
             _pathCache[metadata.Id] = path;
             _metadataCache[metadata.Id] = metadata;
             _cacheInitialized = true;
@@ -115,12 +116,34 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             {
                 string content = File.ReadAllText(file);
                 metadata = JsonSerializer.Deserialize<InstanceMetadata>(content);
-                return metadata != null;
+                if (metadata == null) return false;
+
+                NormalizeMetadata(metadata);
+                return true;
+            }
+            catch (NotSupportedException ex)
+            {
+                _logger.LogWarning(ex, "Skipping unsupported metadata schema at {File}", file);
+                metadata = null;
+                return false;
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Skipping malformed metadata at {File}", file);
                 return false;
+            }
+        }
+
+        private static void NormalizeMetadata(InstanceMetadata metadata)
+        {
+            if (metadata.SchemaVersion > InstanceMetadata.CurrentSchemaVersion)
+            {
+                throw new NotSupportedException($"This PocketMC build cannot read instance metadata schema version {metadata.SchemaVersion}. Current supported version is {InstanceMetadata.CurrentSchemaVersion}.");
+            }
+
+            if (metadata.SchemaVersion <= 0)
+            {
+                metadata.SchemaVersion = InstanceMetadata.CurrentSchemaVersion;
             }
         }
 
