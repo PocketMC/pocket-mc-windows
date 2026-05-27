@@ -15,10 +15,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         private const string DownloadClientName = "PocketMC.Downloads";
         private const string PlayitAgentVersion = "0.17.1";
         private const string PlayitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
-
-        // Playit does not currently expose a stable checksum in the app's source of truth.
-        // Keep this nullable until a verified upstream SHA256 is recorded, then fail closed on mismatch.
-        private const string? PlayitExpectedSha256 = null;
+        private const string? PlayitExpectedSha256 = "9b00d6ff7d37d1052e5ae097e1348e11deae8617cd7a8ba39d1777f2006316a3";
 
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<DownloaderService> _logger;
