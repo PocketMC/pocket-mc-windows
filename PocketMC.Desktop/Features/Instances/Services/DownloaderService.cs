@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using PocketMC.Desktop.Features.Instances.Models;
 using System.IO;
 using System.Net.Http;
@@ -11,6 +13,13 @@ namespace PocketMC.Desktop.Features.Instances.Services;
     public class DownloaderService
     {
         private const string DownloadClientName = "PocketMC.Downloads";
+        private const string PlayitAgentVersion = "0.17.1";
+        private const string PlayitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
+
+        // Playit does not currently expose a stable checksum in the app's source of truth.
+        // Keep this nullable until a verified upstream SHA256 is recorded, then fail closed on mismatch.
+        private const string? PlayitExpectedSha256 = null;
+
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<DownloaderService> _logger;
 
@@ -89,7 +98,6 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                         await DownloadToPartialAsync(response, partialPath, existingBytes, progress, cancellationToken);
                     }
 
-                    // Verification
                     if (!string.IsNullOrEmpty(expectedHash))
                     {
                         string hashType = NormalizeHashType(expectedHash, expectedHashType);
@@ -156,27 +164,90 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         }
 
         /// <summary>
-        /// Downloads playit.exe into <appRoot>/tunnel/playit.exe if not already present.
+        /// Downloads playit.exe into &lt;appRoot&gt;/tunnel/playit.exe if not already present.
+        /// The executable is staged first and must pass configured verification before promotion.
         /// </summary>
         public async Task EnsurePlayitDownloadedAsync(string appRootPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
         {
-            // Note: For 'latest' URL, the hash isn't stable. 
-            // Ideally, we should fetch the hash from a sidecar file or pin the version.
-            // For now, we allow the download but provide the hook for verification.
-            const string playitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
-
             string tunnelDir = Path.Combine(appRootPath, "tunnel");
             string playitPath = Path.Combine(tunnelDir, "playit.exe");
 
             if (File.Exists(playitPath))
             {
-                return;
+                if (await ValidatePlayitExecutableAsync(playitPath, cancellationToken))
+                {
+                    return;
+                }
+
+                _logger.LogWarning("Existing Playit agent at {PlayitPath} failed validation and will be replaced.", playitPath);
+                TryDeleteFile(playitPath);
             }
 
             Directory.CreateDirectory(tunnelDir);
-            await DownloadFileAsync(playitDownloadUrl, playitPath, null, progress, cancellationToken);
+
+            string stagedPath = Path.Combine(tunnelDir, $"playit-{PlayitAgentVersion}-{Guid.NewGuid():N}.exe");
+            try
+            {
+                await DownloadFileAsync(
+                    PlayitDownloadUrl,
+                    stagedPath,
+                    PlayitExpectedSha256,
+                    PlayitExpectedSha256 == null ? null : "SHA256",
+                    progress,
+                    cancellationToken);
+
+                if (!await ValidatePlayitExecutableAsync(stagedPath, cancellationToken))
+                {
+                    throw new CryptographicException("Downloaded Playit agent failed executable signature validation.");
+                }
+
+                await PromoteCompletedDownloadAsync(stagedPath, playitPath, cancellationToken);
+            }
+            catch
+            {
+                TryDeleteFile(stagedPath);
+                TryDeleteFile(stagedPath + ".partial");
+                throw;
+            }
         }
-// ... rest of file (ExtractZipAsync, etc.)
+
+        private async Task<bool> ValidatePlayitExecutableAsync(string filePath, CancellationToken cancellationToken)
+        {
+            if (!File.Exists(filePath))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(PlayitExpectedSha256))
+            {
+                return await VerifyHashAsync(filePath, PlayitExpectedSha256, "SHA256", cancellationToken);
+            }
+
+            try
+            {
+                using X509Certificate certificate = X509Certificate.CreateFromSignedFile(filePath);
+                string subject = certificate.Subject ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(subject))
+                {
+                    _logger.LogWarning("Playit agent signature exists but has an empty certificate subject: {FilePath}", filePath);
+                    return false;
+                }
+
+                FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(filePath);
+                _logger.LogInformation(
+                    "Validated signed Playit agent {FilePath}. Publisher={Publisher}, Product={ProductName}, FileVersion={FileVersion}",
+                    filePath,
+                    subject,
+                    versionInfo.ProductName,
+                    versionInfo.FileVersion);
+                return true;
+            }
+            catch (Exception ex) when (ex is CryptographicException or FileNotFoundException or ArgumentException)
+            {
+                _logger.LogError(ex, "Playit agent executable failed signed-file validation: {FilePath}", filePath);
+                return false;
+            }
+        }
 
         public Task ExtractZipAsync(string zipPath, string extractPath, IProgress<DownloadProgress>? progress = null)
         {
@@ -314,4 +385,3 @@ namespace PocketMC.Desktop.Features.Instances.Services;
             }
         }
     }
-
