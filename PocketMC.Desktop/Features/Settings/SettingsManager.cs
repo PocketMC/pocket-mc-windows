@@ -11,8 +11,11 @@ namespace PocketMC.Desktop.Features.Settings
 {
     public class SettingsManager
     {
+        private static readonly JsonSerializerOptions SettingsJsonOptions = new() { WriteIndented = true };
+
         private readonly string _settingsFilePath;
         private readonly ILogger<SettingsManager>? _logger;
+        private readonly object _settingsLock = new();
 
         public SettingsManager(ILogger<SettingsManager>? logger = null)
         {
@@ -36,129 +39,57 @@ namespace PocketMC.Desktop.Features.Settings
 
         public AppSettings Load()
         {
-            if (!File.Exists(_settingsFilePath))
+            lock (_settingsLock)
             {
-                return CreateDefaultSettings();
-            }
+                if (!File.Exists(_settingsFilePath))
+                {
+                    return CreateDefaultSettings();
+                }
 
-            AppSettings? settings;
-            try
-            {
-                var content = File.ReadAllText(_settingsFilePath);
-                settings = JsonSerializer.Deserialize<AppSettings>(content);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "Failed to load settings from {SettingsFilePath}. Falling back to defaults.", _settingsFilePath);
-                return CreateDefaultSettings();
-            }
+                AppSettings? settings;
+                try
+                {
+                    var content = File.ReadAllText(_settingsFilePath);
+                    settings = JsonSerializer.Deserialize<AppSettings>(content);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "Failed to load settings from {SettingsFilePath}. Falling back to defaults.", _settingsFilePath);
+                    return CreateDefaultSettings();
+                }
 
-            settings = Normalize(settings);
-            UnprotectSecrets(settings);
-            return settings;
+                settings = Normalize(settings);
+                UnprotectSecrets(settings);
+                return settings;
+            }
         }
 
         public void Save(AppSettings settings)
         {
-            var normalizedSettings = Normalize(settings);
-            var directory = Path.GetDirectoryName(_settingsFilePath);
-            if (!Directory.Exists(directory) && directory != null)
+            if (settings == null)
             {
-                Directory.CreateDirectory(directory);
+                throw new ArgumentNullException(nameof(settings));
             }
 
-            var originalCurseForgeKey = normalizedSettings.CurseForgeApiKey;
-            var originalPlayitSecret = normalizedSettings.PlayitPartnerConnection?.AgentSecretKey;
-            var originalAiApiKeys = new System.Collections.Generic.Dictionary<string, string>(normalizedSettings.AiApiKeys, StringComparer.OrdinalIgnoreCase);
-
-            var originalCloudTokens = new System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet>(StringComparer.OrdinalIgnoreCase);
-            if (normalizedSettings.CloudTokens != null)
+            lock (_settingsLock)
             {
-                foreach (var kvp in normalizedSettings.CloudTokens)
+                var normalizedSettings = Normalize(CloneSettings(settings));
+                var directory = Path.GetDirectoryName(_settingsFilePath);
+                if (!Directory.Exists(directory) && directory != null)
                 {
-                    originalCloudTokens[kvp.Key] = new CloudOAuthTokenSet
-                    {
-                        Provider = kvp.Value.Provider,
-                        AccessToken = kvp.Value.AccessToken,
-                        RefreshToken = kvp.Value.RefreshToken,
-                        ExpiresAtUtc = kvp.Value.ExpiresAtUtc,
-                        Scope = kvp.Value.Scope,
-                        TokenType = kvp.Value.TokenType,
-                        AccountId = kvp.Value.AccountId
-                    };
-                }
-            }
-
-            try
-            {
-                if (!string.IsNullOrEmpty(normalizedSettings.CurseForgeApiKey))
-                {
-                    normalizedSettings.CurseForgeApiKey = DataProtector.Protect(normalizedSettings.CurseForgeApiKey);
+                    Directory.CreateDirectory(directory);
                 }
 
-                if (!string.IsNullOrEmpty(normalizedSettings.PlayitPartnerConnection?.AgentSecretKey))
-                {
-                    normalizedSettings.PlayitPartnerConnection.AgentSecretKey =
-                        DataProtector.Protect(normalizedSettings.PlayitPartnerConnection.AgentSecretKey);
-                }
+                ProtectSecrets(normalizedSettings);
 
-                foreach (var kvp in originalAiApiKeys)
-                {
-                    if (!string.IsNullOrEmpty(kvp.Value))
-                    {
-                        normalizedSettings.AiApiKeys[kvp.Key] = DataProtector.Protect(kvp.Value);
-                    }
-                }
-
-                if (normalizedSettings.CloudTokens != null)
-                {
-                    foreach (var kvp in normalizedSettings.CloudTokens)
-                    {
-                        var tokenSet = kvp.Value;
-                        if (tokenSet != null)
-                        {
-                            if (!string.IsNullOrEmpty(tokenSet.AccessToken))
-                            {
-                                tokenSet.AccessToken = DataProtector.Protect(tokenSet.AccessToken);
-                            }
-                            if (!string.IsNullOrEmpty(tokenSet.RefreshToken))
-                            {
-                                tokenSet.RefreshToken = DataProtector.Protect(tokenSet.RefreshToken);
-                            }
-                        }
-                    }
-                }
-
-                var content = JsonSerializer.Serialize(normalizedSettings, new JsonSerializerOptions { WriteIndented = true });
+                var content = JsonSerializer.Serialize(normalizedSettings, SettingsJsonOptions);
                 FileUtils.AtomicWriteAllText(_settingsFilePath, content);
-            }
-            finally
-            {
-                normalizedSettings.CurseForgeApiKey = originalCurseForgeKey;
-                if (normalizedSettings.PlayitPartnerConnection != null)
-                {
-                    normalizedSettings.PlayitPartnerConnection.AgentSecretKey = originalPlayitSecret;
-                }
-                
-                normalizedSettings.AiApiKeys.Clear();
-                foreach (var kvp in originalAiApiKeys)
-                {
-                    normalizedSettings.AiApiKeys[kvp.Key] = kvp.Value;
-                }
-                if (normalizedSettings.CloudTokens != null)
-                {
-                    normalizedSettings.CloudTokens.Clear();
-                    foreach (var kvp in originalCloudTokens)
-                    {
-                        normalizedSettings.CloudTokens[kvp.Key] = kvp.Value;
-                    }
-                }
             }
         }
 
         public string GetPlayitTomlPath(AppSettings? settings = null)
         {
-            var effectiveSettings = Normalize(settings ?? Load());
+            var effectiveSettings = Normalize(settings == null ? Load() : CloneSettings(settings));
             return Path.Combine(effectiveSettings.PlayitConfigDirectory!, "playit.toml");
         }
 
@@ -174,6 +105,12 @@ namespace PocketMC.Desktop.Features.Settings
         private AppSettings CreateDefaultSettings()
         {
             return Normalize(new AppSettings());
+        }
+
+        private static AppSettings CloneSettings(AppSettings settings)
+        {
+            string json = JsonSerializer.Serialize(settings, SettingsJsonOptions);
+            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
         }
 
         private AppSettings Normalize(AppSettings? settings)
@@ -204,6 +141,49 @@ namespace PocketMC.Desktop.Features.Settings
             }
 
             return settings;
+        }
+
+        private void ProtectSecrets(AppSettings settings)
+        {
+            if (!string.IsNullOrEmpty(settings.CurseForgeApiKey))
+            {
+                settings.CurseForgeApiKey = DataProtector.Protect(settings.CurseForgeApiKey);
+            }
+
+            if (!string.IsNullOrEmpty(settings.PlayitPartnerConnection?.AgentSecretKey))
+            {
+                settings.PlayitPartnerConnection.AgentSecretKey =
+                    DataProtector.Protect(settings.PlayitPartnerConnection.AgentSecretKey);
+            }
+
+            foreach (var key in new System.Collections.Generic.List<string>(settings.AiApiKeys.Keys))
+            {
+                string value = settings.AiApiKeys[key];
+                if (!string.IsNullOrEmpty(value))
+                {
+                    settings.AiApiKeys[key] = DataProtector.Protect(value);
+                }
+            }
+
+            foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))
+            {
+                var tokenSet = settings.CloudTokens[key];
+                if (tokenSet == null)
+                {
+                    settings.CloudTokens.Remove(key);
+                    continue;
+                }
+
+                if (!string.IsNullOrEmpty(tokenSet.AccessToken))
+                {
+                    tokenSet.AccessToken = DataProtector.Protect(tokenSet.AccessToken);
+                }
+
+                if (!string.IsNullOrEmpty(tokenSet.RefreshToken))
+                {
+                    tokenSet.RefreshToken = DataProtector.Protect(tokenSet.RefreshToken);
+                }
+            }
         }
 
         private void UnprotectSecrets(AppSettings settings)
