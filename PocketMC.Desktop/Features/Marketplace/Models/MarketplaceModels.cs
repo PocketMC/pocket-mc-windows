@@ -28,7 +28,7 @@ namespace PocketMC.Desktop.Features.Marketplace.Models
         public string DownloadUrl { get; set; } = "";
         public string? Hash { get; set; }
         public string? HashType { get; set; }
-        public string? ReleaseType { get; set; } = "release";
+        public string ReleaseType { get; set; } = "release";
         public List<string> Warnings { get; set; } = new();
         public List<MarketplaceDependency> Dependencies { get; set; } = new();
         public string? ClientSide { get; set; }
