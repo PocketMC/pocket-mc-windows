@@ -1,4 +1,6 @@
+using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -98,7 +100,9 @@ OS64Bit: {Environment.Is64BitOperatingSystem}
             settings.AlwaysAutoSummarize,
             settings.ConsoleBufferSize,
             settings.EnableDiscordRpc,
-            CloudBackupsEnabled = settings.CloudBackups?.Providers?.Any(p => p.IsEnabled) == true
+            CloudBackupsEnabled = settings.CloudBackups?.EnableCloudBackups == true,
+            CloudBackupTargetCount = settings.CloudBackups?.Targets?.Count ?? 0,
+            EnabledCloudBackupTargetCount = settings.CloudBackups?.Targets?.Count(t => t.Enabled) ?? 0
         };
 
         string json = JsonSerializer.Serialize(safe, new JsonSerializerOptions { WriteIndented = true });
