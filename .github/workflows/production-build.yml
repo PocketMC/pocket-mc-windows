@@ -7,11 +7,14 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: windows-latest
+
+    permissions:
+      contents: write
 
     env:
       DOTNET_VERSION: "8.0.x"
@@ -33,11 +36,25 @@ jobs:
       - name: Install Velopack
         run: dotnet tool install -g vpk
 
+      - name: Restore
+        run: dotnet restore PocketMC.Desktop.sln
+
+      - name: Audit NuGet vulnerabilities
+        shell: pwsh
+        run: |
+          $audit = dotnet list PocketMC.Desktop.sln package --vulnerable --include-transitive 2>&1
+          $audit | ForEach-Object { Write-Host $_ }
+
+          $hasCriticalOrHigh = $audit | Select-String -Pattern "\b(Critical|High)\b"
+          if ($hasCriticalOrHigh) {
+            Write-Error "Critical or High NuGet vulnerabilities detected. Review and update dependencies before release."
+          }
+
       - name: Debug Build
-        run: dotnet build PocketMC.Desktop.sln -c Debug
+        run: dotnet build PocketMC.Desktop.sln -c Debug --no-restore
 
       - name: Release Build
-        run: dotnet build PocketMC.Desktop.sln -c Release
+        run: dotnet build PocketMC.Desktop.sln -c Release --no-restore
 
       - name: Run Tests
         run: dotnet test PocketMC.Desktop.sln --no-build
@@ -62,13 +79,21 @@ jobs:
             -p:DebugSymbols=false `
             -o "Test Release/Portable"
 
+      - name: Verify portable artifact
+        shell: pwsh
+        run: |
+          $exe = "Test Release/Portable/PocketMC.Desktop.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "Portable executable was not produced at $exe"
+          }
+
       - name: Upload Test Release Portable Artifact
         uses: actions/upload-artifact@v4
         with:
           name: PocketMC-Test-Portable-${{ github.run_number }}
           path: Test Release/Portable/
 
-      # 🔽 KEEP THIS (for Velopack delta support, NOT version logic)
+      # Previous release assets are needed for Velopack delta support.
       - name: Download previous release assets
         uses: robinraju/release-downloader@v1
         with:
@@ -78,7 +103,7 @@ jobs:
           out-file-path: Releases
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 🔍 Get latest GitHub release version (source of truth)
+      # Get latest GitHub release version.
       - name: Get latest release version
         id: latest
         shell: pwsh
@@ -99,7 +124,6 @@ jobs:
             echo "version=none" >> $env:GITHUB_OUTPUT
           }
 
-      # 🧠 Compare versions
       - name: Compare versions
         id: compare
         shell: pwsh
@@ -120,7 +144,6 @@ jobs:
             echo "skip=false" >> $env:GITHUB_OUTPUT
           }
 
-      # 🚀 Pack only if version changed
       - name: Pack with Velopack
         if: steps.compare.outputs.skip == 'false'
         run: >
@@ -128,7 +151,25 @@ jobs:
           --packDir publish --mainExe PocketMC.Desktop.exe --framework net8.0,net8.0-aspnetcore
           --runtime ${{ env.RUNTIME }} --outputDir Releases
 
-      # 📦 Upload only if packaged
+      - name: Verify release artifacts
+        if: steps.compare.outputs.skip == 'false'
+        shell: pwsh
+        run: |
+          $required = @(
+            "Releases/PocketMC-${{ env.VERSION }}-full.nupkg",
+            "Releases/PocketMC-win-Setup.exe",
+            "Releases/PocketMC-win-Portable.zip",
+            "Releases/releases.win.json",
+            "Releases/assets.win.json",
+            "Releases/RELEASES"
+          )
+
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              Write-Error "Missing expected release artifact: $path"
+            }
+          }
+
       - name: Upload Release Artifacts
         if: steps.compare.outputs.skip == 'false'
         uses: actions/upload-artifact@v4
@@ -136,9 +177,6 @@ jobs:
           name: PocketMC-Release-${{ env.VERSION }}
           path: Releases/
 
-          # ... existing steps up to Pack with Velopack ...
-
-      # Extract release notes from CHANGELOG.md for this version
       - name: Extract release notes from CHANGELOG
         if: steps.compare.outputs.skip == 'false'
         id: notes
@@ -153,36 +191,29 @@ jobs:
           $pattern = '(?s)' + [regex]::Escape($header) + '.*?(?=^## |\Z)'
           $match = [regex]::Match($changelog, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
           
-          if ($match.Success) {
-            $body = $match.Value.Trim()
-            # Strip the header line itself
-            $body = $body -replace '(?m)^## v.*?`r?`n', ''
-            
-            # Write multiline string to GITHUB_OUTPUT using EOF delimiter
-            $EOF = [guid]::NewGuid().ToString()
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
-            Add-Content -Path $env:GITHUB_OUTPUT -Value $body
-            Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
-            
-            Write-Host "Extracted notes for v$version"
-          } else {
-            $EOF = [guid]::NewGuid().ToString()
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
-            Add-Content -Path $env:GITHUB_OUTPUT -Value "### Release v$version`n`nNo matching section found in CHANGELOG.md. Update it before bumping version."
-            Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
-            
-            Write-Warning "No changelog section for v$version"
+          if (-not $match.Success) {
+            Write-Error "No CHANGELOG.md section found for v$version. Add '## v$version' before release."
           }
 
-      # 🚀 Create GitHub Release and upload assets
+          $body = $match.Value.Trim()
+          # Strip the header line itself
+          $body = $body -replace '(?m)^## v.*?`r?`n', ''
+          
+          $EOF = [guid]::NewGuid().ToString()
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $body
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
+          
+          Write-Host "Extracted notes for v$version"
+
       - name: Create GitHub Release
         if: steps.compare.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
-         tag_name: v${{ env.VERSION }}
-         name: PocketMC v${{ env.VERSION }}
-         body: ${{ steps.notes.outputs.body }}
-         files: |
+          tag_name: v${{ env.VERSION }}
+          name: PocketMC v${{ env.VERSION }}
+          body: ${{ steps.notes.outputs.body }}
+          files: |
             Releases/PocketMC-${{ env.VERSION }}-full.nupkg
             Releases/PocketMC-${{ env.VERSION }}-delta.nupkg
             Releases/PocketMC-win-Setup.exe
@@ -190,7 +221,7 @@ jobs:
             Releases/releases.win.json
             Releases/assets.win.json
             Releases/RELEASES
-         draft: false
-         prerelease: false
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
