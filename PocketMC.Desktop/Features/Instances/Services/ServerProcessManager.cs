@@ -61,9 +61,6 @@ public class ServerProcessManager
 
     public async Task<ServerProcess> StartProcessAsync(InstanceMetadata meta, string appRootPath)
     {
-        if (_activeProcesses.ContainsKey(meta.Id))
-            throw new InvalidOperationException($"Server '{meta.Name}' is already running.");
-
         var instancePath = _registry.GetPath(meta.Id)
             ?? throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
 
@@ -75,6 +72,14 @@ public class ServerProcessManager
             _consoleLogHistoryService,
             _loggerFactory.CreateLogger<ServerProcess>());
 
+        if (!_activeProcesses.TryAdd(meta.Id, serverProcess))
+        {
+            serverProcess.Dispose();
+            throw new InvalidOperationException($"Server '{meta.Name}' is already running or starting.");
+        }
+
+        _historicalProcesses[meta.Id] = serverProcess;
+
         serverProcess.OnStateChanged += state =>
         {
             OnInstanceStateChanged?.Invoke(meta.Id, state);
@@ -83,9 +88,6 @@ public class ServerProcessManager
         };
 
         serverProcess.OnServerCrashed += crashLog => OnServerCrashed?.Invoke(meta.Id, crashLog);
-
-        _activeProcesses[meta.Id] = serverProcess;
-        _historicalProcesses[meta.Id] = serverProcess;
 
         try
         {
@@ -96,6 +98,7 @@ public class ServerProcessManager
         catch
         {
             _activeProcesses.TryRemove(meta.Id, out _);
+            serverProcess.Dispose();
             throw;
         }
 
