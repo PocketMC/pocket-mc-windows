@@ -1,6 +1,6 @@
 using System;
 
-namespace PocketMC.Desktop.Application.Results;
+namespace PocketMC.Desktop.Core.Results;
 
 public enum OperationFailureKind
 {
