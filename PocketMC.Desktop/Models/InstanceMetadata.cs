@@ -4,6 +4,9 @@ namespace PocketMC.Desktop.Models
 {
     public class InstanceMetadata
     {
+        public const int CurrentSchemaVersion = 1;
+
+        public int SchemaVersion { get; set; } = CurrentSchemaVersion;
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
@@ -17,7 +20,6 @@ namespace PocketMC.Desktop.Models
         public int MinRamMb { get; set; } = 1024;
         public int MaxRamMb { get; set; } = 4096;
 
-        // Backup configuration
         // Backup configuration
         public int BackupIntervalHours { get; set; } = 0; // 0 = manual only
         public int MaxBackupsToKeep { get; set; } = 10;
