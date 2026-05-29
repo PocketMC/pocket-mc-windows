@@ -1173,24 +1173,23 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        // Always write the file directly so the UI refreshes instantly.
+        // When online, also send the runtime command so the running server picks it up.
+        var result = await _whitelistService.AddPlayerAsync(_metadata, username);
+
         if (IsServerOnline)
         {
             await _runtimeApplier.ApplyWhitelistAddAsync(_metadata.Id, username);
-            WhitelistAddUsername = string.Empty;
-            await LoadWhitelistAsync();
         }
-        else
-        {
-            var result = await _whitelistService.AddPlayerAsync(_metadata, username);
-            WhitelistAddUsername = string.Empty;
-            await LoadWhitelistAsync();
 
-            if (result == WhitelistAddResult.AddedWithOfflineUuidFallback)
-            {
-                _dialogService.ShowMessage("Warning", 
-                    $"Failed to resolve Mojang UUID for '{username}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.", 
-                    DialogType.Warning);
-            }
+        WhitelistAddUsername = string.Empty;
+        await LoadWhitelistAsync();
+
+        if (result == WhitelistAddResult.AddedWithOfflineUuidFallback)
+        {
+            _dialogService.ShowMessage("Warning", 
+                $"Failed to resolve Mojang UUID for '{username}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.", 
+                DialogType.Warning);
         }
     }
 
@@ -1198,13 +1197,13 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     {
         if (string.IsNullOrWhiteSpace(username)) return;
 
+        // Always write the file directly so the UI refreshes instantly.
+        // When online, also send the runtime command so the running server picks it up.
+        await _whitelistService.RemovePlayerAsync(_metadata, username);
+
         if (IsServerOnline)
         {
             await _runtimeApplier.ApplyWhitelistRemoveAsync(_metadata.Id, username);
-        }
-        else
-        {
-            await _whitelistService.RemovePlayerAsync(_metadata, username);
         }
 
         await LoadWhitelistAsync();
