@@ -492,7 +492,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                             }
                     }
                 },
-                VersionType = mv.ReleaseType
+                VersionType = mv.ReleaseType ?? "release"
             };
         }
 

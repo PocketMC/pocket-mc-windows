@@ -155,7 +155,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     ProjectTitle = latestVersion.ProjectTitle,
                     Hash = latestVersion.Hash,
                     HashType = latestVersion.HashType,
-                    ReleaseType = latestVersion.ReleaseType,
+                    ReleaseType = latestVersion.ReleaseType ?? "release",
                     Warnings = latestVersion.Warnings.ToList()
                 };
             }

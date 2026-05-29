@@ -942,6 +942,22 @@
                                                                        Visibility="{Binding IsDisabled, Converter={StaticResource InvertedVisibilityConverter}}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
                                                                        ToolTip="Check for updates from the marketplace"/>
+                                                            <ui:Button Content="Install Update" Appearance="Success" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.InstallAddonUpdateCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}"
+                                                                       Icon="{ui:SymbolIcon ArrowDownload20}"
+                                                                       ToolTip="Download and install the available update">
+                                                                <ui:Button.Style>
+                                                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding UpdateStatus}" Value="UpdateAvailable">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </ui:Button.Style>
+                                                            </ui:Button>
                                                             <ui:Button Content="Delete" Appearance="Danger" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
@@ -1155,6 +1171,22 @@
                                                                             </DataTrigger>
                                                                             <DataTrigger Binding="{Binding IsDisabled}" Value="True">
                                                                                 <Setter Property="IsEnabled" Value="False"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </ui:Button.Style>
+                                                            </ui:Button>
+                                                            <ui:Button Content="Install Update" Appearance="Success" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                       Command="{Binding DataContext.Addons.InstallAddonUpdateCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                       CommandParameter="{Binding}"
+                                                                       Icon="{ui:SymbolIcon ArrowDownload20}"
+                                                                       ToolTip="Download and install the available update">
+                                                                <ui:Button.Style>
+                                                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding UpdateStatus}" Value="UpdateAvailable">
+                                                                                <Setter Property="Visibility" Value="Visible"/>
                                                                             </DataTrigger>
                                                                         </Style.Triggers>
                                                                     </Style>

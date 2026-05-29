@@ -275,7 +275,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     return;
                 }
 
-                var resolved = await _resolver.ResolveAsync(provider, _serverDir, projectId, mcVersionArg, _compat.LoaderName, _compat);
+                var resolved = await _resolver.ResolveAsync(provider, _serverDir!, projectId, mcVersionArg, _compat.LoaderName, _compat);
                 var rootResolved = resolved.FirstOrDefault();
                 if (rootResolved == null || string.IsNullOrEmpty(rootResolved.DownloadUrl) || !string.IsNullOrEmpty(rootResolved.Error))
                 {
