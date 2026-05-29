@@ -134,11 +134,6 @@ public sealed class AddonInventoryService
         string sideLabel = ResolveSideLabel(sideSupport, jarMetadata.SideLabel);
         var warnings = new List<string>(jarMetadata.Warnings);
 
-        if (itemState == AddonState.Disabled)
-        {
-            warnings.Add("This add-on is currently disabled.");
-        }
-
         FileInfo? fileInfo = TryGetFileInfo(fullPath);
         string disabledPath = itemState == AddonState.Disabled
             ? fullPath

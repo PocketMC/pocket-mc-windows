@@ -544,5 +544,117 @@ modId=""test4""";
             Assert.Equal(ModSideSupport.Unknown, meta4.SideSupport);
             Assert.False(meta4.IsClientOnly);
         }
+
+        [Fact]
+        public void ScanJar_ForgeClientSideOnlyInDescription_DoesNotFlagAsClientOnly()
+        {
+            // clientSideOnly=true appears ONLY inside a triple-quoted description.
+            // This must NOT mark the mod as client-only.
+            string toml = @"
+modLoader=""javafml""
+loaderVersion=""[36,)""
+
+[[mods]]
+modId=""servermod""
+displayName=""Server Mod""
+version=""1.0.0""
+description='''
+This is a server-side mod. Note: if you see clientSideOnly=true in old docs,
+that refers to legacy Forge config and does not apply here.
+'''
+";
+
+            string jarPath = CreateTempJar("forge-desc-false-positive.jar", a =>
+            {
+                using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
+                w.Write(toml);
+            });
+            var metadata = JavaModMetadataService.ScanJar(jarPath);
+
+            Assert.Equal("servermod", metadata.ModId);
+            Assert.False(metadata.IsClientOnly, "clientSideOnly inside a description should not flag the mod.");
+            Assert.Equal(ModSideSupport.Unknown, metadata.SideSupport);
+        }
+
+        [Fact]
+        public void ScanJar_ForgeClientSideOnlyInComment_DoesNotFlagAsClientOnly()
+        {
+            // clientSideOnly=true appears ONLY in a # comment line.
+            string toml = @"
+modLoader=""javafml""
+loaderVersion=""[36,)""
+
+[[mods]]
+modId=""servermod2""
+displayName=""Server Mod 2""
+version=""2.0.0""
+# clientSideOnly=true  -- this is commented out
+";
+
+            string jarPath = CreateTempJar("forge-comment-false-positive.jar", a =>
+            {
+                using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
+                w.Write(toml);
+            });
+            var metadata = JavaModMetadataService.ScanJar(jarPath);
+
+            Assert.Equal("servermod2", metadata.ModId);
+            Assert.False(metadata.IsClientOnly, "clientSideOnly in a comment should not flag the mod.");
+            Assert.Equal(ModSideSupport.Unknown, metadata.SideSupport);
+        }
+
+        [Fact]
+        public void ScanJar_ForgeClientSideOnlyInQuotedValue_DoesNotFlagAsClientOnly()
+        {
+            // clientSideOnly=true appears inside a regular quoted string value (e.g. as part of a description).
+            string toml = @"
+modLoader=""javafml""
+loaderVersion=""[36,)""
+
+[[mods]]
+modId=""servermod3""
+displayName=""Server Mod 3""
+version=""3.0.0""
+description=""Set clientSideOnly=true in your client config to enable overlays.""
+";
+
+            string jarPath = CreateTempJar("forge-quoted-false-positive.jar", a =>
+            {
+                using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
+                w.Write(toml);
+            });
+            var metadata = JavaModMetadataService.ScanJar(jarPath);
+
+            Assert.Equal("servermod3", metadata.ModId);
+            Assert.False(metadata.IsClientOnly, "clientSideOnly inside a quoted string value should not flag the mod.");
+            Assert.Equal(ModSideSupport.Unknown, metadata.SideSupport);
+        }
+
+        [Fact]
+        public void ScanJar_ForgeClientSideOnlyInInlineComment_DoesNotFlagAsClientOnly()
+        {
+            // clientSideOnly=true appears in an inline comment after a real key=value.
+            string toml = @"
+modLoader=""javafml""
+loaderVersion=""[36,)""
+
+[[mods]]
+modId=""servermod4""
+displayName=""Server Mod 4""
+version=""4.0.0""
+someOtherKey=""value"" # clientSideOnly=true was removed in v2
+";
+
+            string jarPath = CreateTempJar("forge-inline-comment-false-positive.jar", a =>
+            {
+                using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
+                w.Write(toml);
+            });
+            var metadata = JavaModMetadataService.ScanJar(jarPath);
+
+            Assert.Equal("servermod4", metadata.ModId);
+            Assert.False(metadata.IsClientOnly, "clientSideOnly in an inline comment should not flag the mod.");
+            Assert.Equal(ModSideSupport.Unknown, metadata.SideSupport);
+        }
     }
 }

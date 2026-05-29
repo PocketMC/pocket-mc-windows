@@ -54,7 +54,8 @@ public sealed class AddonToggleService
             return AddonToggleResult.Fail(AddonToggleErrorCodes.NotFound, "This add-on file no longer exists.");
         }
 
-        JavaModMetadata metadataSnapshot = JavaModMetadataService.ScanJar(resolution.FullPath);
+        IAddonMetadataScanner scanner = AddonMetadataScannerFactory.GetScanner(metadata.Compatibility);
+        JavaModMetadata metadataSnapshot = scanner.Scan(resolution.FullPath);
         AddonStateDocument state = await _stateStore.LoadAsync(instanceRoot, cancellationToken);
         AddonStateEntry? entry = AddonStateStore.FindByRelativePath(state, kind, resolution.RelativePath);
 
@@ -96,9 +97,19 @@ public sealed class AddonToggleService
         };
 
         entry.DisabledRelativePath = AddonFileNamePolicy.NormalizeRelativePath(disabledRelativePath);
-        entry.LastKnownDisplayName = metadataSnapshot.DisplayName;
-        entry.LoaderType = metadataSnapshot.LoaderType;
-        entry.Version = metadataSnapshot.Version;
+        // For non-Java engines (Bedrock, Pocketmine) the passthrough scanner
+        // returns minimal info.  Prefer the existing state entry values so we
+        // do not wipe previously-known metadata to "Unknown" / null.
+        bool scannerHasRichMetadata = !metadataSnapshot.LoaderType.Equals("Native", StringComparison.OrdinalIgnoreCase);
+        entry.LastKnownDisplayName = scannerHasRichMetadata
+            ? metadataSnapshot.DisplayName
+            : (!string.IsNullOrWhiteSpace(entry.LastKnownDisplayName) ? entry.LastKnownDisplayName : metadataSnapshot.DisplayName);
+        entry.LoaderType = scannerHasRichMetadata
+            ? metadataSnapshot.LoaderType
+            : (!string.IsNullOrWhiteSpace(entry.LoaderType) && !entry.LoaderType.Equals("Unknown", StringComparison.OrdinalIgnoreCase) ? entry.LoaderType : metadataSnapshot.LoaderType);
+        entry.Version = scannerHasRichMetadata
+            ? metadataSnapshot.Version
+            : (entry.Version ?? metadataSnapshot.Version);
         entry.Provenance = provenance ?? entry.Provenance;
         entry.LastToggledUtc = DateTime.UtcNow;
         entry.DisabledReason = disabledReason;

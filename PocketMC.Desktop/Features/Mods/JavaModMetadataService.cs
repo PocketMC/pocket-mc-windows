@@ -415,8 +415,11 @@ namespace PocketMC.Desktop.Features.Mods
                     ExtractIconBytes(archive, logo, metadata);
                 }
 
-                bool isClientOnly = Regex.IsMatch(toml, @"clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase, regexTimeout);
-                bool hasDisplayTest = Regex.IsMatch(toml, @"displayTest\s*=\s*", RegexOptions.IgnoreCase, regexTimeout);
+                // Use a TOML-aware scan that skips comments, multi-line strings,
+                // and quoted values to avoid false-positive side detection.
+                bool isClientOnly = IsActiveTomlKeyTrue(toml, "clientSideOnly");
+                bool hasDisplayTest = HasActiveTomlKey(toml, "displayTest");
+
 
                 if (isClientOnly)
                 {
@@ -600,6 +603,143 @@ namespace PocketMC.Desktop.Features.Mods
             string cleaned = withoutExt.Replace('-', ' ').Replace('_', ' ');
             cleaned = Regex.Replace(cleaned, @"\s+", " ", RegexOptions.None, TimeSpan.FromMilliseconds(100));
             return cleaned.Trim();
+        }
+
+        /// <summary>
+        /// Returns true when the TOML content contains a bare key <paramref name="key"/>
+        /// whose value is literally <c>true</c> (case-insensitive), ignoring commented
+        /// lines, triple-quoted multi-line string bodies, and occurrences inside
+        /// quoted string values.
+        /// </summary>
+        private static bool IsActiveTomlKeyTrue(string toml, string key)
+        {
+            var regexTimeout = TimeSpan.FromMilliseconds(100);
+            var pattern = $@"^\s*{Regex.Escape(key)}\s*=\s*true\s*$";
+            foreach (string line in EnumerateActiveTomlLines(toml))
+            {
+                if (Regex.IsMatch(line, pattern, RegexOptions.IgnoreCase, regexTimeout))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true when the TOML content contains a bare key <paramref name="key"/>
+        /// followed by <c>=</c>, ignoring commented lines, multi-line string bodies,
+        /// and occurrences inside quoted string values.
+        /// </summary>
+        private static bool HasActiveTomlKey(string toml, string key)
+        {
+            var regexTimeout = TimeSpan.FromMilliseconds(100);
+            var pattern = $@"^\s*{Regex.Escape(key)}\s*=";
+            foreach (string line in EnumerateActiveTomlLines(toml))
+            {
+                if (Regex.IsMatch(line, pattern, RegexOptions.IgnoreCase, regexTimeout))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Yields only the "active" lines of a TOML document: lines that are not
+        /// comments, not inside triple-quoted multi-line strings (<c>'''</c> or
+        /// <c>"""</c>), and have any inline <c>#</c> comments stripped.
+        /// This is intentionally conservative — it is not a full TOML parser, but
+        /// it is sufficient for detecting bare key = value pairs without false
+        /// positives from description blocks, comments, or string values.
+        /// </summary>
+        private static IEnumerable<string> EnumerateActiveTomlLines(string toml)
+        {
+            bool inMultiLineString = false;
+            string multiLineDelimiter = "";
+
+            foreach (string rawLine in toml.Split('\n'))
+            {
+                string line = rawLine.TrimEnd('\r');
+
+                // If we are inside a multi-line string, look for the closing delimiter.
+                if (inMultiLineString)
+                {
+                    if (line.Contains(multiLineDelimiter))
+                    {
+                        inMultiLineString = false;
+                    }
+                    // Either way, skip this line — it is string content, not a key = value pair.
+                    continue;
+                }
+
+                string trimmed = line.TrimStart();
+
+                // Skip full-line comments.
+                if (trimmed.StartsWith('#'))
+                {
+                    continue;
+                }
+
+                // Detect the start of a multi-line string value (triple quotes).
+                // A line like:  description = '''  or  description = """
+                // The content after the opening delimiter (including this line) is string body.
+                if (trimmed.Contains("'''") || trimmed.Contains("\"\"\""))
+                {
+                    string delimiter = trimmed.Contains("'''") ? "'''" : "\"\"\"";
+                    int firstIdx = trimmed.IndexOf(delimiter, StringComparison.Ordinal);
+                    int secondIdx = trimmed.IndexOf(delimiter, firstIdx + 3, StringComparison.Ordinal);
+
+                    if (secondIdx < 0)
+                    {
+                        // Opening delimiter without closing on the same line — entering multi-line string.
+                        inMultiLineString = true;
+                        multiLineDelimiter = delimiter;
+                        continue;
+                    }
+                    // Both delimiters on same line — this is a single-line triple-quoted string.
+                    // Fall through to yield the line (the key=value itself is still valid to inspect
+                    // because clientSideOnly / displayTest would never use triple-quoted values).
+                }
+
+                // Strip inline comments: anything after an unquoted '#'.
+                // Simple heuristic: find '#' that is not inside a quoted value.
+                string active = StripInlineComment(trimmed);
+
+                if (!string.IsNullOrWhiteSpace(active))
+                {
+                    yield return active;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Strips an inline comment from a TOML line by finding the first '#' that
+        /// is not inside a quoted string. Returns the portion before the comment.
+        /// </summary>
+        private static string StripInlineComment(string line)
+        {
+            bool inSingleQuote = false;
+            bool inDoubleQuote = false;
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+
+                if (c == '\'' && !inDoubleQuote)
+                {
+                    inSingleQuote = !inSingleQuote;
+                }
+                else if (c == '"' && !inSingleQuote)
+                {
+                    inDoubleQuote = !inDoubleQuote;
+                }
+                else if (c == '#' && !inSingleQuote && !inDoubleQuote)
+                {
+                    return line[..i];
+                }
+            }
+
+            return line;
         }
     }
 }
