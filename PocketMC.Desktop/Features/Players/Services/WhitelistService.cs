@@ -158,10 +158,15 @@ public sealed class WhitelistService
 
     private static string GetWhitelistPath(string serverRoot, InstanceMetadata instance)
     {
-        // PocketMine uses white-list.txt, Java/BDS use whitelist.json
+        // PocketMine uses white-list.txt
         if (CommandFormatter.IsPocketMine(instance.ServerType))
             return Path.Combine(serverRoot, "white-list.txt");
 
+        // Bedrock Dedicated Server uses allowlist.json
+        if (CommandFormatter.IsBedrock(instance.ServerType))
+            return Path.Combine(serverRoot, "allowlist.json");
+
+        // Java servers use whitelist.json
         return Path.Combine(serverRoot, "whitelist.json");
     }
 
@@ -182,7 +187,7 @@ public sealed class WhitelistService
                 .ToList();
         }
 
-        // Java / BDS: JSON array
+        // JSON array format (both Bedrock and Java)
         string json = await ReadTextSafeAsync(path);
         if (string.IsNullOrWhiteSpace(json))
             return new List<WhitelistEntry>();
@@ -191,15 +196,21 @@ public sealed class WhitelistService
         if (document.RootElement.ValueKind != JsonValueKind.Array)
             return new List<WhitelistEntry>();
 
+        bool isBedrock = CommandFormatter.IsBedrock(instance.ServerType);
         var entries = new List<WhitelistEntry>();
         foreach (var element in document.RootElement.EnumerateArray())
         {
             string name = TryGetString(element, "name");
             if (string.IsNullOrWhiteSpace(name)) continue;
 
+            // Bedrock allowlist.json uses "xuid"; Java whitelist.json uses "uuid"
+            string identifier = isBedrock
+                ? TryGetString(element, "xuid")
+                : TryGetString(element, "uuid");
+
             entries.Add(new WhitelistEntry
             {
-                Uuid = TryGetString(element, "uuid"),
+                Uuid = identifier,
                 Name = name
             });
         }
@@ -216,16 +227,32 @@ public sealed class WhitelistService
             return;
         }
 
-        // Java / BDS: JSON array
         var options = new JsonSerializerOptions { WriteIndented = true };
-        var jsonEntries = entries.Select(e => new Dictionary<string, string>
+
+        if (CommandFormatter.IsBedrock(instance.ServerType))
+        {
+            // Bedrock allowlist.json format: [{"ignoresPlayerLimit":false,"name":"PlayerName","xuid":"..."}]
+            var jsonEntries = entries.Select(e => new Dictionary<string, object>
+            {
+                { "ignoresPlayerLimit", false },
+                { "name", e.Name },
+                { "xuid", e.Uuid }
+            }).ToArray();
+
+            string json = JsonSerializer.Serialize(jsonEntries, options);
+            await File.WriteAllTextAsync(path, json, new UTF8Encoding(false));
+            return;
+        }
+
+        // Java: whitelist.json format: [{"uuid":"...","name":"..."}]
+        var javaEntries = entries.Select(e => new Dictionary<string, string>
         {
             { "uuid", e.Uuid },
             { "name", e.Name }
         }).ToArray();
 
-        string json = JsonSerializer.Serialize(jsonEntries, options);
-        await File.WriteAllTextAsync(path, json, new UTF8Encoding(false));
+        string javaJson = JsonSerializer.Serialize(javaEntries, options);
+        await File.WriteAllTextAsync(path, javaJson, new UTF8Encoding(false));
     }
 
     /// <summary>

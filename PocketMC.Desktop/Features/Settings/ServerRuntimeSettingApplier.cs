@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Helpers;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Settings;
@@ -15,13 +16,16 @@ namespace PocketMC.Desktop.Features.Settings;
 public sealed class ServerRuntimeSettingApplier
 {
     private readonly ServerProcessManager _processManager;
+    private readonly InstanceRegistry _instanceRegistry;
     private readonly ILogger<ServerRuntimeSettingApplier> _logger;
 
     public ServerRuntimeSettingApplier(
         ServerProcessManager processManager,
+        InstanceRegistry instanceRegistry,
         ILogger<ServerRuntimeSettingApplier> logger)
     {
         _processManager = processManager;
+        _instanceRegistry = instanceRegistry;
         _logger = logger;
     }
 
@@ -33,29 +37,46 @@ public sealed class ServerRuntimeSettingApplier
         => SendIfOnlineAsync(instanceId, $"difficulty {difficulty}");
 
     /// <summary>
-    /// Toggle whitelist on/off. Java: "whitelist on|off". BDS: same syntax.
-    /// PocketMine: "whitelist on|off" also works.
+    /// Toggle whitelist/allowlist on/off.
+    /// Java/PocketMine: "whitelist on|off". BDS: "allowlist on|off".
     /// </summary>
     public Task ApplyWhitelistToggleAsync(Guid instanceId, bool enabled)
-        => SendIfOnlineAsync(instanceId, $"whitelist {(enabled ? "on" : "off")}");
+    {
+        string prefix = GetWhitelistCommandPrefix(instanceId);
+        return SendIfOnlineAsync(instanceId, $"{prefix} {(enabled ? "on" : "off")}");
+    }
 
     /// <summary>
-    /// Reload whitelist from disk. Java/BDS/PocketMine all support "whitelist reload".
+    /// Reload whitelist/allowlist from disk.
+    /// Java/PocketMine: "whitelist reload". BDS: "allowlist reload".
     /// </summary>
     public Task ApplyWhitelistReloadAsync(Guid instanceId)
-        => SendIfOnlineAsync(instanceId, "whitelist reload");
+    {
+        string prefix = GetWhitelistCommandPrefix(instanceId);
+        return SendIfOnlineAsync(instanceId, $"{prefix} reload");
+    }
 
     /// <summary>
-    /// Add a player to the whitelist by name. Requires server online.
+    /// Add a player to the whitelist/allowlist by name. Requires server online.
+    /// Java/PocketMine: "whitelist add". BDS: "allowlist add".
+    /// Player name is always quoted to handle names with spaces (e.g., Bedrock gamertags).
     /// </summary>
     public Task ApplyWhitelistAddAsync(Guid instanceId, string playerName)
-        => SendIfOnlineAsync(instanceId, $"whitelist add {playerName}");
+    {
+        string prefix = GetWhitelistCommandPrefix(instanceId);
+        return SendIfOnlineAsync(instanceId, $"{prefix} add {QuotePlayerName(playerName)}");
+    }
 
     /// <summary>
-    /// Remove a player from the whitelist by name. Requires server online.
+    /// Remove a player from the whitelist/allowlist by name. Requires server online.
+    /// Java/PocketMine: "whitelist remove". BDS: "allowlist remove".
+    /// Player name is always quoted to handle names with spaces (e.g., Bedrock gamertags).
     /// </summary>
     public Task ApplyWhitelistRemoveAsync(Guid instanceId, string playerName)
-        => SendIfOnlineAsync(instanceId, $"whitelist remove {playerName}");
+    {
+        string prefix = GetWhitelistCommandPrefix(instanceId);
+        return SendIfOnlineAsync(instanceId, $"{prefix} remove {QuotePlayerName(playerName)}");
+    }
 
 
 
@@ -64,6 +85,32 @@ public sealed class ServerRuntimeSettingApplier
     /// </summary>
     public Task ApplyDefaultGamemodeAsync(Guid instanceId, string gamemode)
         => SendIfOnlineAsync(instanceId, $"defaultgamemode {gamemode}");
+
+    /// <summary>
+    /// Returns "allowlist" for Bedrock Dedicated Server, "whitelist" for all other engines.
+    /// </summary>
+    private string GetWhitelistCommandPrefix(Guid instanceId)
+    {
+        InstanceMetadata? metadata = _instanceRegistry.GetById(instanceId);
+        if (metadata != null && CommandFormatter.IsBedrock(metadata.ServerType))
+        {
+            return "allowlist";
+        }
+
+        return "whitelist";
+    }
+
+    /// <summary>
+    /// Wraps a player name in double quotes, escaping any embedded quotes or backslashes.
+    /// Safe for all server types — Minecraft servers universally accept quoted names.
+    /// </summary>
+    private static string QuotePlayerName(string playerName)
+    {
+        string escaped = playerName
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal);
+        return $"\"{escaped}\"";
+    }
 
     private async Task SendIfOnlineAsync(Guid instanceId, string command)
     {

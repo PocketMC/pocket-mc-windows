@@ -96,9 +96,11 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             applicationState.GetRequiredAppRootPath(),
             _serverProcess.WorkingDirectory);
 
-        // Read initial whitelist state from config
+        // Read initial whitelist state from config (Java uses "white-list", Bedrock uses "allow-list")
         if (configService.TryGetProperty(_serverProcess.WorkingDirectory, "white-list", out string? wlValue))
             _isWhitelistEnabled = string.Equals(wlValue, "true", StringComparison.OrdinalIgnoreCase);
+        else if (configService.TryGetProperty(_serverProcess.WorkingDirectory, "allow-list", out string? alValue))
+            _isWhitelistEnabled = string.Equals(alValue, "true", StringComparison.OrdinalIgnoreCase);
 
         BackCommand = new RelayCommand(_ => NavigateBack());
         RefreshCommand = new AsyncRelayCommand(_ => RefreshAllPlayerDataAsync());
@@ -1135,7 +1137,9 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         bool newValue = !IsWhitelistEnabled;
         IsWhitelistEnabled = newValue;
 
-        _configService.SaveProperty(_serverProcess.WorkingDirectory, "white-list", newValue ? "true" : "false");
+        // Bedrock uses "allow-list", Java/PocketMine use "white-list"
+        string propertyKey = IsBedrock ? "allow-list" : "white-list";
+        _configService.SaveProperty(_serverProcess.WorkingDirectory, propertyKey, newValue ? "true" : "false");
 
         if (IsServerOnline)
         {

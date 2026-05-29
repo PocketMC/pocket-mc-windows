@@ -183,6 +183,7 @@ public sealed class ServerStateFileService
         if (CommandFormatter.IsBedrock(instance.ServerType))
         {
             yield return "permissions.json";
+            yield return "allowlist.json";
             yield return BanSidecarService.FileName;
             yield break;
         }

@@ -27,6 +27,7 @@ public sealed class ServerConfigurationService
         "online-mode",
         "pvp",
         "white-list",
+        "allow-list",
         "gamemode",
         "difficulty",
         "enable-command-block",
@@ -93,7 +94,7 @@ public sealed class ServerConfigurationService
             LevelType = props.TryGetValue("level-type", out var levelType) ? levelType : profile.DefaultLevelType,
             OnlineMode = TryGetBool(props, "online-mode"),
             Pvp = props.TryGetValue("pvp", out var pvp) ? pvp == "true" : true,
-            WhiteList = TryGetBool(props, "white-list"),
+            WhiteList = TryGetBool(props, "white-list") || TryGetBool(props, "allow-list"),
             Gamemode = props.TryGetValue("gamemode", out var gamemode) ? gamemode : "survival",
             Difficulty = props.TryGetValue("difficulty", out var difficulty) ? difficulty : "easy",
             AllowCommandBlock = TryGetBool(props, "enable-command-block"),
@@ -172,7 +173,17 @@ public sealed class ServerConfigurationService
 
         props["online-mode"] = configuration.OnlineMode ? "true" : "false";
         props["pvp"] = configuration.Pvp ? "true" : "false";
-        props["white-list"] = configuration.WhiteList ? "true" : "false";
+        // Bedrock/PocketMine use "allow-list", Java uses "white-list"
+        if (profile.IsJava)
+        {
+            props["white-list"] = configuration.WhiteList ? "true" : "false";
+            props.Remove("allow-list");
+        }
+        else
+        {
+            props["allow-list"] = configuration.WhiteList ? "true" : "false";
+            props.Remove("white-list");
+        }
         props["gamemode"] = configuration.Gamemode;
         props["difficulty"] = configuration.Difficulty;
 
