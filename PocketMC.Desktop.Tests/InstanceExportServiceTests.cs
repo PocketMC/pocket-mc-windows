@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Tests;
@@ -220,7 +221,7 @@ public sealed class InstanceExportServiceTests : IDisposable
     }
 
     private static InstanceExportService CreateService() =>
-        new(new AddonManifestService(), NullLogger<InstanceExportService>.Instance);
+        new(new AddonManifestService(), new ApplicationState(), NullLogger<InstanceExportService>.Instance);
 
     private static InstanceExportManifest ReadManifest(ZipArchive archive)
     {

@@ -11,6 +11,7 @@ using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.Instances.ImportExport;
 
@@ -37,6 +38,7 @@ public sealed class InstanceImportService : IInstanceImportService
     private readonly MarketplaceFileInstaller _marketplaceFileInstaller;
     private readonly AddonManifestService _addonManifestService;
     private readonly BedrockAddonInstaller _bedrockAddonInstaller;
+    private readonly ApplicationState _applicationState;
     private readonly ILogger<InstanceImportService> _logger;
     private readonly SemaphoreSlim _addonManifestUpdateLock = new(1, 1);
 
@@ -49,6 +51,7 @@ public sealed class InstanceImportService : IInstanceImportService
         MarketplaceFileInstaller marketplaceFileInstaller,
         AddonManifestService addonManifestService,
         BedrockAddonInstaller bedrockAddonInstaller,
+        ApplicationState applicationState,
         ILogger<InstanceImportService> logger)
     {
         _pathService = pathService;
@@ -59,6 +62,7 @@ public sealed class InstanceImportService : IInstanceImportService
         _marketplaceFileInstaller = marketplaceFileInstaller;
         _addonManifestService = addonManifestService;
         _bedrockAddonInstaller = bedrockAddonInstaller;
+        _applicationState = applicationState;
         _logger = logger;
     }
 
@@ -209,10 +213,15 @@ public sealed class InstanceImportService : IInstanceImportService
                 .ConfigureAwait(false);
 
             Report(progress, "Preparing imported instance...", 90);
-            InstanceMetadata metadata = await PrepareStagedServerForPromotionAsync(stagingResult, request, cancellationToken)
+            
+            InstanceMetadata metadata = await ReadImportedMetadataAsync(stagingResult.MetadataPath, cancellationToken)
+                .ConfigureAwait(false);
+            
+            string finalPath = ResolveUniqueInstancePath(FirstNonEmpty(request.RequestedName, stagingResult.Manifest.ServerMeta.Name, metadata.Name, "Imported Server"));
+            
+            await PrepareStagedServerForPromotionAsync(metadata, stagingResult, request, finalPath, cancellationToken)
                 .ConfigureAwait(false);
 
-            string finalPath = ResolveUniqueInstancePath(metadata.Name);
             Report(progress, "Promoting imported instance...", 95);
             Directory.Move(stagingResult.ServerDirectory, finalPath);
             promoted = true;
@@ -240,13 +249,13 @@ public sealed class InstanceImportService : IInstanceImportService
         }
     }
 
-    private async Task<InstanceMetadata> PrepareStagedServerForPromotionAsync(
+    private async Task PrepareStagedServerForPromotionAsync(
+        InstanceMetadata metadata,
         InstanceImportStagingResult stagingResult,
         InstanceImportRequest request,
+        string finalPath,
         CancellationToken cancellationToken)
     {
-        InstanceMetadata metadata = await ReadImportedMetadataAsync(stagingResult.MetadataPath, cancellationToken)
-            .ConfigureAwait(false);
         InstanceExportManifest manifest = stagingResult.Manifest;
 
         metadata.Id = Guid.NewGuid();
@@ -258,13 +267,57 @@ public sealed class InstanceImportService : IInstanceImportService
         metadata.CreatedAt = DateTime.UtcNow;
         metadata.LastPlayedAt = null;
         metadata.LastBackupTime = null;
+
+        // Tunnel state must be cleared because it's machine specific.
+        metadata.SimpleVoiceChatTunnelId = null;
+        metadata.SimpleVoiceChatTunnelAddress = null;
+        metadata.SimpleVoiceChatNumericTunnelAddress = null;
+        metadata.SimpleVoiceChatStatus = null;
+        metadata.SimpleVoiceChatLastWarning = null;
+        metadata.SimpleVoiceChatDetected = false;
+        metadata.SimpleVoiceChatConfigPath = null;
+
+        string appRoot = _applicationState.IsConfigured ? _applicationState.GetRequiredAppRootPath() : string.Empty;
+        metadata.CustomJavaPath = RestorePortablePath(metadata.CustomJavaPath, appRoot, isFile: true);
         metadata.CustomBackupDirectory = null;
 
         await WriteMetadataAsync(Path.Combine(stagingResult.ServerDirectory, InstancePathService.MetadataFileName), metadata, cancellationToken)
             .ConfigureAwait(false);
         await CopyIconIntoStagedServerAsync(stagingResult, cancellationToken).ConfigureAwait(false);
+    }
 
-        return metadata;
+    private static string? RestorePortablePath(string? relativePath, string appRoot, bool isFile)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+        {
+            return null;
+        }
+
+        try
+        {
+            if (Path.IsPathRooted(relativePath))
+            {
+                if (isFile && File.Exists(relativePath)) return relativePath;
+                if (!isFile && Directory.Exists(relativePath)) return relativePath;
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(appRoot))
+            {
+                return null;
+            }
+
+            string fullPath = Path.GetFullPath(Path.Combine(appRoot, relativePath));
+
+            if (isFile && File.Exists(fullPath)) return fullPath;
+            if (!isFile && Directory.Exists(fullPath)) return fullPath;
+        }
+        catch
+        {
+            // Ignore parsing errors
+        }
+
+        return null;
     }
 
     private static async Task ScrubStagedBackupStateAsync(

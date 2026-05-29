@@ -325,6 +325,7 @@ public sealed class InstanceImportServiceTests : IDisposable
             new MarketplaceFileInstaller(downloader, NullLogger<MarketplaceFileInstaller>.Instance),
             addonManifestService,
             new BedrockAddonInstaller(NullLogger<BedrockAddonInstaller>.Instance),
+            state,
             NullLogger<InstanceImportService>.Instance);
     }
 

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.Instances.ImportExport;
 
@@ -70,11 +71,16 @@ public sealed class InstanceExportService : IInstanceExportService
     };
 
     private readonly AddonManifestService _addonManifestService;
+    private readonly ApplicationState _applicationState;
     private readonly ILogger<InstanceExportService> _logger;
 
-    public InstanceExportService(AddonManifestService addonManifestService, ILogger<InstanceExportService> logger)
+    public InstanceExportService(
+        AddonManifestService addonManifestService, 
+        ApplicationState applicationState,
+        ILogger<InstanceExportService> logger)
     {
         _addonManifestService = addonManifestService;
+        _applicationState = applicationState;
         _logger = logger;
     }
 
@@ -115,7 +121,7 @@ public sealed class InstanceExportService : IInstanceExportService
             using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: false))
             {
                 await AddJsonEntryAsync(archive, "manifest.json", manifest, cancellationToken).ConfigureAwait(false);
-                await AddMetadataEntryAsync(archive, metadata, instanceRoot, cancellationToken).ConfigureAwait(false);
+                await AddMetadataEntryAsync(archive, metadata, instanceRoot, _applicationState, cancellationToken).ConfigureAwait(false);
                 await AddIconEntryAsync(archive, instanceRoot, cancellationToken).ConfigureAwait(false);
 
                 await foreach (ExportFile file in EnumerateExportFilesAsync(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, cancellationToken)
@@ -509,9 +515,10 @@ public sealed class InstanceExportService : IInstanceExportService
         ZipArchive archive,
         InstanceMetadata metadata,
         string instanceRoot,
+        ApplicationState applicationState,
         CancellationToken cancellationToken)
     {
-        InstanceMetadata portableMetadata = await CreatePortableMetadataSnapshotAsync(metadata, instanceRoot, cancellationToken)
+        InstanceMetadata portableMetadata = await CreatePortableMetadataSnapshotAsync(metadata, instanceRoot, applicationState, cancellationToken)
             .ConfigureAwait(false);
         await AddJsonEntryAsync(archive, ExportedMetadataFileName, portableMetadata, cancellationToken).ConfigureAwait(false);
     }
@@ -519,6 +526,7 @@ public sealed class InstanceExportService : IInstanceExportService
     private static async Task<InstanceMetadata> CreatePortableMetadataSnapshotAsync(
         InstanceMetadata requestMetadata,
         string instanceRoot,
+        ApplicationState applicationState,
         CancellationToken cancellationToken)
     {
         InstanceMetadata source = requestMetadata;
@@ -553,8 +561,53 @@ public sealed class InstanceExportService : IInstanceExportService
         snapshot.Id = Guid.Empty;
         snapshot.LastPlayedAt = null;
         snapshot.LastBackupTime = null;
+        
+        string appRoot = string.Empty;
+        if (applicationState.IsConfigured)
+        {
+            appRoot = applicationState.GetRequiredAppRootPath();
+        }
+
+        snapshot.CustomJavaPath = MakePathPortable(snapshot.CustomJavaPath, appRoot);
+        snapshot.SimpleVoiceChatConfigPath = MakePathPortable(snapshot.SimpleVoiceChatConfigPath, appRoot);
         snapshot.CustomBackupDirectory = null;
+
         return snapshot;
+    }
+
+    private static string? MakePathPortable(string? path, string appRoot)
+    {
+        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(appRoot))
+        {
+            return path;
+        }
+
+        try
+        {
+            if (!Path.IsPathRooted(path))
+            {
+                return path;
+            }
+
+            string fullPath = Path.GetFullPath(path);
+            string fullAppRoot = Path.GetFullPath(appRoot);
+
+            if (fullPath.StartsWith(fullAppRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                string relative = Path.GetRelativePath(fullAppRoot, fullPath);
+                // Never use absolute paths pointing into the app root
+                if (!relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative))
+                {
+                    return relative;
+                }
+            }
+        }
+        catch
+        {
+            // If path parsing fails, leave it as is or omit it. It's safer to just return original in case of error.
+        }
+
+        return path;
     }
 
     private static InstanceMetadata CloneMetadata(InstanceMetadata metadata)
