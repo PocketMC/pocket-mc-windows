@@ -480,18 +480,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private string BuildSimpleVoiceChatPromptMessage(PortCheckRequest request, TunnelResolutionResult resolution)
         {
-            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(request.InstancePath);
-            string voiceHost = string.IsNullOrWhiteSpace(detection.VoiceHost) ? "(empty)" : detection.VoiceHost!;
-            string agentStatus = _playitAgentService.State.ToString();
-            string tunnelState = string.IsNullOrWhiteSpace(resolution.ErrorMessage)
-                ? string.Empty
-                : Environment.NewLine + $"Playit tunnel state: {resolution.ErrorMessage}";
-
-            return
-                "Simple Voice Chat requires its own tunnel. Without it, players can join but voice chat will appear disconnected." +
-                Environment.NewLine + Environment.NewLine +
-                $"Port: {request.Port}  •  voice_host: {voiceHost}  •  Agent: {agentStatus}" +
-                tunnelState;
+            return "Simple Voice Chat requires its own tunnel. Without it, players can join but voice chat will appear disconnected.";
         }
 
         private void SetSimpleVoiceChatWarning(InstanceCardViewModel vm, string warning)
