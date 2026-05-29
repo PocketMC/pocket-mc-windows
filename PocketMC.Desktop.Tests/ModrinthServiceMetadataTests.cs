@@ -55,6 +55,61 @@ public sealed class ModrinthServiceMetadataTests
     }
 
     [Fact]
+    public async Task GetVersionByHashAsync_SelectsFileMatchingManifestHash()
+    {
+        const string matchingHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        const string otherHash = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string path = request.RequestUri?.AbsolutePath ?? "";
+            if (path.EndsWith("/version_files", StringComparison.OrdinalIgnoreCase))
+            {
+                return MarketplaceHttpResponses.Json($$"""
+                {
+                  "{{matchingHash}}": {
+                    "id": "v1",
+                    "project_id": "project-1",
+                    "name": "Release 1",
+                    "version_type": "release",
+                    "loaders": ["fabric"],
+                    "files": [
+                      {
+                        "url": "https://cdn.example/wrong.jar",
+                        "filename": "wrong.jar",
+                        "primary": true,
+                        "hashes": { "sha512": "{{otherHash}}" }
+                      },
+                      {
+                        "url": "https://cdn.example/right.jar",
+                        "filename": "right.jar",
+                        "primary": false,
+                        "hashes": { "sha512": "{{matchingHash}}" }
+                      }
+                    ]
+                  }
+                }
+                """);
+            }
+
+            if (path.EndsWith("/project/project-1", StringComparison.OrdinalIgnoreCase))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "project-1", "slug": "project-one", "title": "Project One" }""");
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        MarketplaceVersion? version = await service.GetVersionByHashAsync(matchingHash, "sha512", new[] { "fabric" });
+
+        Assert.NotNull(version);
+        Assert.Equal("right.jar", version.FileName);
+        Assert.Equal("https://cdn.example/right.jar", version.DownloadUrl);
+        Assert.Equal(matchingHash, version.Hash);
+        Assert.Equal("fabric", version.SelectedLoader);
+    }
+
+    [Fact]
     public async Task LatestVersion_PrefersReleaseOverBeta()
     {
         ModrinthService service = CreateService((request, _) =>

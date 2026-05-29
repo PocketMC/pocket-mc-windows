@@ -11,6 +11,7 @@ using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Updates;
 using PocketMC.Desktop.Features.Java;
@@ -105,6 +106,8 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IResourceMonitorService, ResourceMonitorService>();
             services.AddSingleton<BackupService>();
             services.AddSingleton<BackupSchedulerService>();
+            services.AddSingleton<IInstanceExportService, InstanceExportService>();
+            services.AddSingleton<IInstanceImportService, InstanceImportService>();
             services.AddSingleton<IDiscordRpcService, DiscordRpcService>();
 
             services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.CloudBackupUploadHistoryStore>();
@@ -242,6 +245,8 @@ namespace PocketMC.Desktop.Composition
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<ServerSettingsViewModel>();
             services.AddTransient<CloudBackupSettingsViewModel>();
+            services.AddTransient<InstanceImportViewModel>();
+            services.AddTransient<InstanceImportPage>();
 
             services.AddTransient<DashboardPage>();
             services.AddTransient<NewInstancePage>();

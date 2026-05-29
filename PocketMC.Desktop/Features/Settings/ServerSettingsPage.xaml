@@ -1112,7 +1112,10 @@
                                                                     <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                                 </Border>
                                                                 
-                                                                <Border Background="{Binding SideBadgeBackground}" CornerRadius="4" Padding="6,2">
+                                                                <Border Background="{Binding SideBadgeBackground}"
+                                                                        CornerRadius="4"
+                                                                        Padding="6,2"
+                                                                        Visibility="{Binding ShowSideBadge, Converter={StaticResource VisibleIfTrue}}">
                                                                     <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding SideBadgeForeground}"/>
                                                                 </Border>
                                                             </WrapPanel>

@@ -230,6 +230,8 @@ namespace PocketMC.Desktop.Infrastructure
             DetailRouteKind.PlayitSetupWizard => NavigationRouteKind.PlayitSetupWizard,
             DetailRouteKind.ImageCrop => NavigationRouteKind.ImageCrop,
             DetailRouteKind.PortsMap => NavigationRouteKind.PortsMap,
+            DetailRouteKind.InstanceImport => NavigationRouteKind.InstanceImport,
+            DetailRouteKind.InstanceExport => NavigationRouteKind.InstanceExport,
             _ => throw new ArgumentOutOfRangeException(nameof(routeKind), routeKind, null)
         };
 

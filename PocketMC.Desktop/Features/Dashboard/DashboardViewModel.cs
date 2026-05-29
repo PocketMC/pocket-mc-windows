@@ -45,6 +45,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         public ICommand DeleteInstanceCommand { get; }
         public ICommand OpenFolderCommand { get; }
         public ICommand CopyCrashReportCommand { get; }
+        public ICommand ExportInstanceCommand { get; }
         public ICommand ServerSettingsCommand { get; }
         public ICommand OpenConsoleCommand { get; }
         public ICommand OpenPlayersCommand { get; }
@@ -83,6 +84,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             DeleteInstanceCommand = new AsyncRelayCommand(async p => { if (p is InstanceCardViewModel vm) await _actionsVm.DeleteInstanceAsync(vm); });
             OpenFolderCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenFolder(vm); });
             CopyCrashReportCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.CopyCrashReport(vm); });
+            ExportInstanceCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenExportPage(vm); });
             ServerSettingsCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenSettings(vm); });
             OpenConsoleCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenConsole(vm); });
             OpenPlayersCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenPlayers(vm); });

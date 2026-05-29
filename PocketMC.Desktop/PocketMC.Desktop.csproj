@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Dropbox.Api" Version="7.0.0" />
     <PackageReference Include="fNbt" Version="0.6.4" />
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.74.0.4135" />

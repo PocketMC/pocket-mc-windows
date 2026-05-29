@@ -25,11 +25,13 @@ using PocketMC.Desktop.Features.Mods;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Features.Instances.ImportExport;
 
 namespace PocketMC.Desktop.Features.InstanceCreation
 {
     public partial class NewInstancePage : Page
     {
+        private readonly IServiceProvider _serviceProvider;
         private readonly IAppNavigationService _navigationService;
         private readonly InstanceManager _instanceManager;
         private readonly InstanceRegistry _registry;
@@ -71,9 +73,11 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             DownloaderService downloader,
             ILogger<NewInstancePage> logger,
             IDialogService dialogService,
-            WorldManager worldManager)
+            WorldManager worldManager,
+            IServiceProvider serviceProvider)
         {
             InitializeComponent();
+            _serviceProvider = serviceProvider;
             _navigationService = navigationService;
             _instanceManager = instanceManager;
             _registry = registry;
@@ -342,6 +346,30 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             {
                 _logger.LogError(ex, "Failed to browse for custom world archive.");
                 ShowError($"Failed to browse for world: {ex.Message}");
+            }
+        }
+
+        private void BtnImportInstance_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_isCreating)
+                {
+                    ShowError("Wait for the current server creation to finish before importing another instance.");
+                    return;
+                }
+
+                var page = ActivatorUtilities.CreateInstance<InstanceImportPage>(_serviceProvider);
+                _navigationService.NavigateToDetailPage(
+                    page,
+                    "Import Instance",
+                    DetailRouteKind.InstanceImport,
+                    DetailBackNavigation.PreviousDetail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to open the instance import page.");
+                ShowError($"PocketMC could not open the import page: {ex.Message}");
             }
         }
 

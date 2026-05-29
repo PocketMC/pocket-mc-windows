@@ -1431,6 +1431,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         public string SideLabel { get; set; } = "Unknown";
         public ModSideSupport SideSupport { get; set; }
+        public bool ShowSideBadge => SideSupport == ModSideSupport.ClientOnly;
 
         public Brush SideBadgeBackground
         {
@@ -1439,9 +1440,6 @@ namespace PocketMC.Desktop.Features.Settings
                 string hex = SideSupport switch
                 {
                     ModSideSupport.ClientOnly => "#2D1E24",
-                    ModSideSupport.ServerOnly => "#1E2838",
-                    ModSideSupport.ClientAndServer => "#1E382A",
-                    ModSideSupport.OptionalOnServer => "#38351E",
                     _ => "#282828"
                 };
                 return (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
@@ -1455,9 +1453,6 @@ namespace PocketMC.Desktop.Features.Settings
                 string hex = SideSupport switch
                 {
                     ModSideSupport.ClientOnly => "#F38BA8",
-                    ModSideSupport.ServerOnly => "#89B4FA",
-                    ModSideSupport.ClientAndServer => "#A6E3A1",
-                    ModSideSupport.OptionalOnServer => "#F9E2AF",
                     _ => "#A6ADC8"
                 };
                 return (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;

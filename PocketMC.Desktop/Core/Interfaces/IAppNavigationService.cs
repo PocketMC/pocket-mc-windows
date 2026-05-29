@@ -13,7 +13,9 @@ namespace PocketMC.Desktop.Core.Interfaces
         PlayerManagement,
         PlayitSetupWizard,
         ImageCrop,
-        PortsMap
+        PortsMap,
+        InstanceImport,
+        InstanceExport
     }
 
     public enum DetailBackNavigation

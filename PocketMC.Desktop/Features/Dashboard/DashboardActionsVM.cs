@@ -23,6 +23,7 @@ using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Players;
+using PocketMC.Desktop.Features.Instances.ImportExport;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -309,6 +310,47 @@ namespace PocketMC.Desktop.Features.Dashboard
                 }
             }
             _dialogService.ShowMessage("Not Found", "No crash reports found.", DialogType.Information);
+        }
+
+        public void OpenExportPage(InstanceCardViewModel vm)
+        {
+            try
+            {
+                string? instancePath = _registry.GetPath(vm.Id);
+                if (string.IsNullOrWhiteSpace(instancePath) || !Directory.Exists(instancePath))
+                {
+                    _dialogService.ShowMessage("Export Unavailable", "PocketMC could not find this instance folder.", DialogType.Warning);
+                    return;
+                }
+
+                var viewModel = ActivatorUtilities.CreateInstance<InstanceExportViewModel>(
+                    _serviceProvider,
+                    vm.Metadata,
+                    instancePath);
+
+                if (vm.IsRunning)
+                {
+                    viewModel.UseConfigOnlyDefaultForRunningServer();
+                }
+
+                var page = ActivatorUtilities.CreateInstance<InstanceExportPage>(
+                    _serviceProvider,
+                    viewModel);
+                _navigationService.NavigateToDetailPage(
+                    page,
+                    $"Export: {vm.Name}",
+                    DetailRouteKind.InstanceExport,
+                    DetailBackNavigation.Dashboard,
+                    clearDetailStack: true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to open the export page for {ServerName}.", vm.Name);
+                _dialogService.ShowMessage(
+                    "Export Failed",
+                    $"PocketMC could not open the export page for '{vm.Name}'.\n\n{ex.Message}",
+                    DialogType.Error);
+            }
         }
 
         public void OpenSettings(InstanceCardViewModel vm)

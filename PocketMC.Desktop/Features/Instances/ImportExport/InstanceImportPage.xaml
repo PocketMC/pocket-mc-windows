@@ -1,0 +1,272 @@
+<Page x:Class="PocketMC.Desktop.Features.Instances.ImportExport.InstanceImportPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      ScrollViewer.VerticalScrollBarVisibility="Disabled"
+      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+      Title="Import Instance">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Page.Resources>
+
+    <Grid Margin="28,20,28,24">
+        <DockPanel LastChildFill="True">
+            <Grid DockPanel.Dock="Top" MaxWidth="1040" HorizontalAlignment="Stretch" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:Button Content="Back"
+                               Appearance="Secondary"
+                               Icon="{ui:SymbolIcon ArrowLeft24}"
+                               MinWidth="88"
+                               Margin="0,0,14,0"
+                               Click="BtnBack_Click"/>
+                    <StackPanel>
+                        <ui:TextBlock FontTypography="Title"
+                                      Text="Import Instance"
+                                      Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="Restore a Pocket MC export package and rebuild missing server files from its manifest."
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   FontSize="13"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+
+            <Border DockPanel.Dock="Bottom"
+                    Margin="0,16,0,0"
+                    Padding="20,16"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:ProgressRing Grid.Column="0"
+                                     Width="20"
+                                     Height="20"
+                                     IsIndeterminate="True"
+                                     Visibility="{Binding IsImporting, Converter={StaticResource BoolToVis}}"
+                                     Margin="0,0,12,0"
+                                     VerticalAlignment="Center"/>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding CurrentStep}"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"/>
+
+                    <ui:Button Grid.Column="2"
+                               Content="Cancel"
+                               Appearance="Secondary"
+                               Width="104"
+                               Command="{Binding CancelImportCommand}"/>
+                    <ui:Button Grid.Column="4"
+                               Content="Import"
+                               Appearance="Primary"
+                               Icon="{ui:SymbolIcon ArrowUpload24}"
+                               Width="124"
+                               Command="{Binding ImportCommand}"/>
+                </Grid>
+            </Border>
+
+            <ScrollViewer x:Name="PageScroller"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          CanContentScroll="False"
+                          PanningMode="VerticalOnly">
+                <StackPanel MaxWidth="1040" HorizontalAlignment="Stretch">
+                    <Border Padding="22"
+                            CornerRadius="8"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+                                <TextBlock Text="Import package"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ui:TextBox Grid.Column="0"
+                                                Text="{Binding ZipPath, UpdateSourceTrigger=PropertyChanged}"
+                                                PlaceholderText="Select a .zip exported from Pocket MC"
+                                                MinHeight="40"
+                                                Margin="0,0,8,0"/>
+                                    <ui:Button Grid.Column="1"
+                                               Content="Browse"
+                                               Icon="{ui:SymbolIcon FolderOpen20}"
+                                               Appearance="Secondary"
+                                               MinHeight="40"
+                                               Click="BtnBrowse_Click"/>
+                                </Grid>
+
+                                <TextBlock Text="Instance name override"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           Margin="0,18,0,8"/>
+                                <ui:TextBox Text="{Binding RequestedName, UpdateSourceTrigger=PropertyChanged}"
+                                            PlaceholderText="Optional. Leave blank to use the exported name."
+                                            MinHeight="40"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Grid Margin="0,0,0,16"
+                          Visibility="{Binding IsImporting, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0"
+                                Padding="18"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Overall progress"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding OverallProgress, StringFormat={}{0:0}%}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </Grid>
+                                <ProgressBar Minimum="0"
+                                             Maximum="100"
+                                             Height="6"
+                                             Value="{Binding OverallProgress, Mode=OneWay}"/>
+                                <TextBlock Text="{Binding CurrentItem}"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2"
+                                Padding="18"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Downloads"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                               FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding DownloadProgress, StringFormat={}{0:0}%}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </Grid>
+                                <ProgressBar Minimum="0"
+                                             Maximum="100"
+                                             Height="6"
+                                             Value="{Binding DownloadProgress, Mode=OneWay}"/>
+                                <TextBlock Text="Server binaries and remote add-ons are restored from providers."
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Border Padding="14"
+                            CornerRadius="8"
+                            BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
+                            BorderThickness="1"
+                            Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                            Margin="0,0,0,16"
+                            Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Warning24"
+                                               Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                                               Margin="0,0,10,0"
+                                               VerticalAlignment="Top"/>
+                                <TextBlock Text="{Binding ErrorMessage}"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Border Margin="34,10,0,0"
+                                    Padding="10"
+                                    CornerRadius="6"
+                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    Visibility="{Binding HasUnavailableAddon, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <TextBlock Text="The import was rolled back before the active instances folder was changed."
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding UnavailableAddonDetails}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="14"
+                            CornerRadius="8"
+                            BorderBrush="{DynamicResource SystemFillColorSuccessBrush}"
+                            BorderThickness="1"
+                            Background="{DynamicResource SystemFillColorSuccessBackgroundBrush}"
+                            Visibility="{Binding IsComplete, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon Grid.Column="0"
+                                           Symbol="Checkmark24"
+                                           Foreground="{DynamicResource SystemFillColorSuccessBrush}"
+                                           Margin="0,0,10,0"
+                                           VerticalAlignment="Top"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="The imported instance is ready on the dashboard."
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Center"/>
+                            <ui:Button Grid.Column="2"
+                                       Content="View Dashboard"
+                                       Appearance="Primary"
+                                       Icon="{ui:SymbolIcon Home24}"
+                                       Margin="16,0,0,0"
+                                       Click="BtnDashboard_Click"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</Page>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -111,6 +112,8 @@ namespace PocketMC.Desktop.Features.Marketplace
 
     public class ModrinthService : IAddonProvider
     {
+        private const int MaxProviderAttempts = 3;
+
         private readonly HttpClient _httpClient;
 
         public ModrinthService(HttpClient httpClient)
@@ -140,6 +143,10 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             if (version.Files == null || version.Files.Count == 0) return null;
             if (version.Files.Count == 1) return version.Files[0];
+            if (string.IsNullOrWhiteSpace(loader))
+            {
+                return version.Files.FirstOrDefault(f => f.IsPrimary) ?? version.Files.FirstOrDefault();
+            }
 
             var normalizedLoader = loader.ToLowerInvariant();
 
@@ -246,7 +253,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 string facets = JsonSerializer.Serialize(facetList);
                 string url = $"https://api.modrinth.com/v2/search?query={Uri.EscapeDataString(query)}&facets={Uri.EscapeDataString(facets)}&limit=20&offset={offset}&index={sort}";
 
-                var result = await _httpClient.GetFromJsonAsync<ModrinthSearchResult>(url);
+                var result = await GetFromJsonWithRetryAsync<ModrinthSearchResult>(url).ConfigureAwait(false);
                 return result?.Hits ?? new();
             }
             catch
@@ -263,20 +270,20 @@ namespace PocketMC.Desktop.Features.Marketplace
         async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string slug, string mcVersion, IReadOnlyList<string> loaderCandidates)
         {
             var mcCandidates = BuildMinecraftVersionCandidates(mcVersion);
-            var projectInfo = await GetProjectInfoAsync(slug);
+            var projectInfo = await GetProjectInfoAsync(slug).ConfigureAwait(false);
             string projectSlug = projectInfo?.Slug ?? slug;
 
             foreach (var mcCand in mcCandidates)
             {
                 foreach (var loaderCand in loaderCandidates)
                 {
-                    var mVersion = await GetLatestVersionAsync(projectSlug, mcCand, loaderCand);
+                    var mVersion = await GetLatestVersionAsync(projectSlug, mcCand, loaderCand).ConfigureAwait(false);
                     if (mVersion != null)
                     {
                         var compatFile = SelectCompatibleFile(mVersion, loaderCand);
                         if (compatFile != null)
                         {
-                            var mv = MapToMarketplaceVersion(mVersion, projectInfo);
+                            var mv = MapToMarketplaceVersion(mVersion, projectInfo, compatFile);
                             mv.DownloadUrl = compatFile.Url;
                             mv.FileName = compatFile.FileName;
                             mv.Hash = GetPreferredHash(compatFile, out string? hashType);
@@ -298,10 +305,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             try
             {
                 string url = $"https://api.modrinth.com/v2/version/{versionId}";
-                var mVersion = await _httpClient.GetFromJsonAsync<ModrinthVersion>(url);
+                var mVersion = await GetFromJsonWithRetryAsync<ModrinthVersion>(url).ConfigureAwait(false);
                 if (mVersion == null) return null;
 
-                var projectInfo = await GetProjectInfoAsync(mVersion.ProjectId);
+                var projectInfo = await GetProjectInfoAsync(mVersion.ProjectId).ConfigureAwait(false);
                 return MapToMarketplaceVersion(mVersion, projectInfo);
             }
             catch
@@ -310,15 +317,100 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        public async Task<Dictionary<string, ModrinthVersion>> GetVersionsByHashesAsync(IEnumerable<string> hashes)
+        public Task<Dictionary<string, ModrinthVersion>> GetVersionsByHashesAsync(IEnumerable<string> hashes) =>
+            GetVersionsByHashesAsync(hashes, "sha1");
+
+        public async Task<MarketplaceVersion?> GetVersionByHashAsync(
+            string hash,
+            string? algorithm,
+            IReadOnlyList<string> loaderCandidates)
+        {
+            string? normalizedAlgorithm = NormalizeHashAlgorithm(hash, algorithm);
+            if (string.IsNullOrWhiteSpace(normalizedAlgorithm))
+            {
+                return null;
+            }
+
+            Dictionary<string, ModrinthVersion> versions = await GetVersionsByHashesAsync(new[] { hash }, normalizedAlgorithm)
+                .ConfigureAwait(false);
+
+            ModrinthVersion? version = versions
+                .FirstOrDefault(pair => pair.Key.Equals(hash, StringComparison.OrdinalIgnoreCase))
+                .Value;
+            if (version == null || string.IsNullOrWhiteSpace(version.Id))
+            {
+                return null;
+            }
+
+            ModrinthFile? matchedFile = version.Files.FirstOrDefault(file =>
+                file.Hashes.TryGetValue(normalizedAlgorithm, out string? candidateHash) &&
+                candidateHash.Equals(hash, StringComparison.OrdinalIgnoreCase));
+
+            MarketplaceProjectInfo? projectInfo = await GetProjectInfoAsync(version.ProjectId).ConfigureAwait(false);
+            MarketplaceVersion mapped = MapToMarketplaceVersion(version, projectInfo, matchedFile);
+
+            foreach (string loader in loaderCandidates ?? Array.Empty<string>())
+            {
+                if (version.Loaders.Any(candidate => candidate.Equals(loader, StringComparison.OrdinalIgnoreCase)))
+                {
+                    mapped.SelectedLoader = loader;
+                    break;
+                }
+            }
+
+            return mapped;
+        }
+
+        public async Task<MarketplaceVersion?> FindVersionBySearchAsync(
+            string query,
+            string addonType,
+            string mcVersion,
+            IReadOnlyList<string> loaderCandidates)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return null;
+            }
+
+            foreach (string projectType in GetProjectTypeFacets(addonType))
+            {
+                List<ModrinthHit> hits = await SearchAsync(projectType, mcVersion, loaderCandidates, "relevance", query, 0)
+                    .ConfigureAwait(false);
+
+                foreach (ModrinthHit hit in hits.Where(hit => IsLikelyProjectMatch(query, hit)))
+                {
+                    string projectKey = FirstNonEmpty(hit.ProjectId, hit.Slug);
+                    if (string.IsNullOrWhiteSpace(projectKey))
+                    {
+                        continue;
+                    }
+
+                    MarketplaceVersion? version = await ((IAddonProvider)this)
+                        .GetLatestVersionAsync(projectKey, mcVersion, loaderCandidates)
+                        .ConfigureAwait(false);
+                    if (version != null)
+                    {
+                        version.ProjectTitle = FirstNonEmpty(version.ProjectTitle, hit.Title);
+                        return version;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private async Task<Dictionary<string, ModrinthVersion>> GetVersionsByHashesAsync(
+            IEnumerable<string> hashes,
+            string algorithm)
         {
             try
             {
-                var requestBody = new { hashes = hashes.ToList(), algorithm = "sha1" };
-                var response = await _httpClient.PostAsJsonAsync("https://api.modrinth.com/v2/version_files", requestBody);
-                if (!response.IsSuccessStatusCode) return new();
-
-                return await response.Content.ReadFromJsonAsync<Dictionary<string, ModrinthVersion>>() ?? new();
+                var requestBody = new { hashes = hashes.ToList(), algorithm };
+                return await PostJsonForJsonWithRetryAsync<Dictionary<string, ModrinthVersion>>(
+                        "https://api.modrinth.com/v2/version_files",
+                        requestBody)
+                    .ConfigureAwait(false)
+                    ?? new();
             }
             catch
             {
@@ -331,7 +423,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             try
             {
                 string url = $"https://api.modrinth.com/v2/project/{projectIdOrSlug}";
-                var project = await _httpClient.GetFromJsonAsync<ModrinthProject>(url);
+                var project = await GetFromJsonWithRetryAsync<ModrinthProject>(url).ConfigureAwait(false);
                 if (project == null) return null;
 
                 return new MarketplaceProjectInfo
@@ -350,9 +442,12 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        private MarketplaceVersion MapToMarketplaceVersion(ModrinthVersion v, MarketplaceProjectInfo? projectInfo)
+        private MarketplaceVersion MapToMarketplaceVersion(
+            ModrinthVersion v,
+            MarketplaceProjectInfo? projectInfo,
+            ModrinthFile? preferredFile = null)
         {
-            var primaryFile = v.Files.FirstOrDefault(f => f.IsPrimary) ?? v.Files.FirstOrDefault() ?? new ModrinthFile();
+            var primaryFile = preferredFile ?? v.Files.FirstOrDefault(f => f.IsPrimary) ?? v.Files.FirstOrDefault() ?? new ModrinthFile();
             
             var result = new MarketplaceVersion
             {
@@ -411,7 +506,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     queryParams.Add($"loaders={Uri.EscapeDataString(JsonSerializer.Serialize(new[] { loader }))}");
 
                 string url = queryParams.Count > 0 ? $"{baseUrl}?{string.Join("&", queryParams)}" : baseUrl;
-                var versions = await _httpClient.GetFromJsonAsync<List<ModrinthVersion>>(url);
+                var versions = await GetFromJsonWithRetryAsync<List<ModrinthVersion>>(url).ConfigureAwait(false);
 
                 if (versions?.Count > 0)
                     return SelectPreferredVersion(versions);
@@ -423,7 +518,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                         ? $"{baseUrl}?game_versions={Uri.EscapeDataString(JsonSerializer.Serialize(new[] { mcVersion }))}"
                         : baseUrl;
 
-                    var relaxedVersions = await _httpClient.GetFromJsonAsync<List<ModrinthVersion>>(relaxedUrl) ?? new();
+                    var relaxedVersions = await GetFromJsonWithRetryAsync<List<ModrinthVersion>>(relaxedUrl)
+                        .ConfigureAwait(false) ?? new();
                     var loaderMatches = relaxedVersions
                         .Where(v => v.Loaders.Any(l => l.Equals(loader, StringComparison.OrdinalIgnoreCase)))
                         .ToList();
@@ -443,6 +539,196 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             return versions.FirstOrDefault(v => v.VersionType.Equals("release", StringComparison.OrdinalIgnoreCase))
                 ?? versions[0];
+        }
+
+        private async Task<T?> GetFromJsonWithRetryAsync<T>(string url)
+        {
+            for (int attempt = 1; attempt <= MaxProviderAttempts; attempt++)
+            {
+                try
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    using HttpResponseMessage response = await _httpClient
+                        .SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
+                        .ConfigureAwait(false);
+
+                    if (response.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return default;
+                    }
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        if (ShouldRetryStatus(response.StatusCode) && attempt < MaxProviderAttempts)
+                        {
+                            await Task.Delay(GetRetryDelay(attempt)).ConfigureAwait(false);
+                            continue;
+                        }
+
+                        return default;
+                    }
+
+                    return await response.Content.ReadFromJsonAsync<T>().ConfigureAwait(false);
+                }
+                catch (Exception ex) when (IsRetryableProviderException(ex) && attempt < MaxProviderAttempts)
+                {
+                    await Task.Delay(GetRetryDelay(attempt)).ConfigureAwait(false);
+                }
+                catch
+                {
+                    return default;
+                }
+            }
+
+            return default;
+        }
+
+        private async Task<T?> PostJsonForJsonWithRetryAsync<T>(string url, object body)
+        {
+            for (int attempt = 1; attempt <= MaxProviderAttempts; attempt++)
+            {
+                try
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Post, url)
+                    {
+                        Content = JsonContent.Create(body)
+                    };
+
+                    using HttpResponseMessage response = await _httpClient
+                        .SendAsync(request, HttpCompletionOption.ResponseHeadersRead)
+                        .ConfigureAwait(false);
+
+                    if (response.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        return default;
+                    }
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        if (ShouldRetryStatus(response.StatusCode) && attempt < MaxProviderAttempts)
+                        {
+                            await Task.Delay(GetRetryDelay(attempt)).ConfigureAwait(false);
+                            continue;
+                        }
+
+                        return default;
+                    }
+
+                    return await response.Content.ReadFromJsonAsync<T>().ConfigureAwait(false);
+                }
+                catch (Exception ex) when (IsRetryableProviderException(ex) && attempt < MaxProviderAttempts)
+                {
+                    await Task.Delay(GetRetryDelay(attempt)).ConfigureAwait(false);
+                }
+                catch
+                {
+                    return default;
+                }
+            }
+
+            return default;
+        }
+
+        private static bool ShouldRetryStatus(HttpStatusCode statusCode)
+        {
+            int numericStatus = (int)statusCode;
+            return statusCode is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests ||
+                   numericStatus >= 500;
+        }
+
+        private static bool IsRetryableProviderException(Exception ex) =>
+            ex is HttpRequestException or TaskCanceledException;
+
+        private static TimeSpan GetRetryDelay(int attempt) => attempt switch
+        {
+            1 => TimeSpan.FromMilliseconds(300),
+            2 => TimeSpan.FromMilliseconds(900),
+            _ => TimeSpan.FromSeconds(2)
+        };
+
+        private static string? NormalizeHashAlgorithm(string hash, string? algorithm)
+        {
+            string normalized = (algorithm ?? string.Empty)
+                .Replace("-", string.Empty, StringComparison.OrdinalIgnoreCase)
+                .ToLowerInvariant();
+
+            if (normalized is "sha1" or "sha512")
+            {
+                return normalized;
+            }
+
+            return hash.Length switch
+            {
+                40 => "sha1",
+                128 => "sha512",
+                _ => null
+            };
+        }
+
+        private static IReadOnlyList<string> GetProjectTypeFacets(string addonType)
+        {
+            string normalized = addonType?.ToLowerInvariant() ?? string.Empty;
+            if (normalized.Contains("plugin", StringComparison.OrdinalIgnoreCase))
+            {
+                return new[] { "project_type:plugin", "project_type:mod" };
+            }
+
+            if (normalized.Contains("datapack", StringComparison.OrdinalIgnoreCase) ||
+                normalized.Contains("data_pack", StringComparison.OrdinalIgnoreCase))
+            {
+                return new[] { "project_type:datapack" };
+            }
+
+            return new[] { "project_type:mod", "project_type:plugin" };
+        }
+
+        private static bool IsLikelyProjectMatch(string query, ModrinthHit hit)
+        {
+            string normalizedQuery = NormalizeSearchText(query);
+            if (string.IsNullOrWhiteSpace(normalizedQuery))
+            {
+                return false;
+            }
+
+            string normalizedTitle = NormalizeSearchText(hit.Title);
+            string normalizedSlug = NormalizeSearchText(hit.Slug);
+
+            return IsStrongTextMatch(normalizedQuery, normalizedTitle) ||
+                   IsStrongTextMatch(normalizedQuery, normalizedSlug);
+        }
+
+        private static bool IsStrongTextMatch(string query, string candidate)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                return false;
+            }
+
+            return query.Equals(candidate, StringComparison.OrdinalIgnoreCase) ||
+                   query.StartsWith(candidate, StringComparison.OrdinalIgnoreCase) ||
+                   candidate.StartsWith(query, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeSearchText(string? value)
+        {
+            var chars = (value ?? string.Empty)
+                .Where(char.IsLetterOrDigit)
+                .Select(char.ToLowerInvariant)
+                .ToArray();
+            return new string(chars);
+        }
+
+        private static string FirstNonEmpty(params string?[] values)
+        {
+            foreach (string? value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
         }
 
         private static string? GetPreferredHash(ModrinthFile file, out string? hashType)

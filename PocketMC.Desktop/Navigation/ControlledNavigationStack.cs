@@ -17,7 +17,9 @@ public enum NavigationRouteKind
     PlayerManagement,
     PlayitSetupWizard,
     ImageCrop,
-    PortsMap
+    PortsMap,
+    InstanceImport,
+    InstanceExport
 }
 
 public enum NavigationBackTargetKind

@@ -1,0 +1,168 @@
+using System.Diagnostics;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
+using Microsoft.Win32;
+using PocketMC.Desktop.Core.Interfaces;
+
+namespace PocketMC.Desktop.Features.Instances.ImportExport;
+
+public partial class InstanceExportPage : Page
+{
+    private readonly IAppNavigationService _navigationService;
+    private readonly MouseWheelEventHandler _previewMouseWheelHandler;
+    private bool _isForwardingMouseWheel;
+
+    public InstanceExportPage(
+        IAppNavigationService navigationService,
+        InstanceExportViewModel viewModel)
+    {
+        InitializeComponent();
+        _navigationService = navigationService;
+        ViewModel = viewModel;
+        DataContext = ViewModel;
+        _previewMouseWheelHandler = OnPagePreviewMouseWheel;
+
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    public InstanceExportViewModel ViewModel { get; }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        AddHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler, true);
+        DisableParentScrollViewer(this);
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        RemoveHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler);
+    }
+
+    private void BtnBrowse_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save Pocket MC Instance Export",
+            Filter = "Pocket MC Instance Export (*.zip)|*.zip",
+            DefaultExt = ".zip",
+            AddExtension = true,
+            OverwritePrompt = true,
+            FileName = Path.GetFileName(ViewModel.DestinationZipPath),
+            InitialDirectory = Path.GetDirectoryName(ViewModel.DestinationZipPath)
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            ViewModel.DestinationZipPath = dialog.FileName;
+        }
+    }
+
+    private void BtnBack_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.IsExporting && ViewModel.CancelExportCommand.CanExecute(null))
+        {
+            ViewModel.CancelExportCommand.Execute(null);
+            return;
+        }
+
+        if (!_navigationService.NavigateBack())
+        {
+            _navigationService.NavigateToDashboard();
+        }
+    }
+
+    private void BtnOpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        string? exportPath = ViewModel.ExportResult?.ZipPath;
+        string? folder = string.IsNullOrWhiteSpace(exportPath)
+            ? null
+            : Path.GetDirectoryName(exportPath);
+
+        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+        {
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = folder,
+            UseShellExecute = true
+        });
+    }
+
+    private void OnPagePreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (_isForwardingMouseWheel || e.OriginalSource is not DependencyObject source)
+        {
+            return;
+        }
+
+        if (FindAncestor<ScrollBar>(source) != null ||
+            FindAncestor<ComboBox>(source)?.IsDropDownOpen == true ||
+            FindAncestor<Popup>(source) != null ||
+            PageScroller.ScrollableHeight <= 0)
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        try
+        {
+            _isForwardingMouseWheel = true;
+            int steps = Math.Max(1, Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine) * 3;
+            for (int i = 0; i < steps; i++)
+            {
+                if (e.Delta > 0)
+                {
+                    PageScroller.LineUp();
+                }
+                else
+                {
+                    PageScroller.LineDown();
+                }
+            }
+        }
+        finally
+        {
+            _isForwardingMouseWheel = false;
+        }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+    {
+        while (current != null)
+        {
+            if (current is T match)
+            {
+                return match;
+            }
+
+            DependencyObject? visualParent = null;
+            try { visualParent = VisualTreeHelper.GetParent(current); } catch { }
+            current = visualParent ?? LogicalTreeHelper.GetParent(current);
+        }
+
+        return null;
+    }
+
+    private static void DisableParentScrollViewer(DependencyObject obj)
+    {
+        DependencyObject? parent = VisualTreeHelper.GetParent(obj);
+        while (parent != null)
+        {
+            if (parent is ScrollViewer scrollViewer)
+            {
+                scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+            }
+
+            parent = VisualTreeHelper.GetParent(parent);
+        }
+    }
+}

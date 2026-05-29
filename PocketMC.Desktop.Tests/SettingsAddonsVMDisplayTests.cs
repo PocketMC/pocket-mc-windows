@@ -357,21 +357,25 @@ namespace PocketMC.Desktop.Tests
             Assert.Equal(ModSideSupport.ClientOnly, item1.SideSupport);
             Assert.True(item1.IsClientOnly);
             Assert.Equal("Client-only", item1.SideLabel);
+            Assert.True(item1.ShowSideBadge);
 
             var item2 = vm.Mods.First(m => m.FileName == hybridMod);
             Assert.Equal(ModSideSupport.ClientAndServer, item2.SideSupport);
             Assert.False(item2.IsClientOnly);
             Assert.Equal("Client + Server", item2.SideLabel);
+            Assert.False(item2.ShowSideBadge);
 
             var item3 = vm.Mods.First(m => m.FileName == manifestMod);
             Assert.Equal(ModSideSupport.ClientOnly, item3.SideSupport);
             Assert.True(item3.IsClientOnly);
             Assert.Equal("Client-only", item3.SideLabel);
+            Assert.True(item3.ShowSideBadge);
 
             var item4 = vm.Mods.First(m => m.FileName == optionalMod);
             Assert.Equal(ModSideSupport.OptionalOnServer, item4.SideSupport);
             Assert.False(item4.IsClientOnly);
             Assert.Equal("Optional on server", item4.SideLabel);
+            Assert.False(item4.ShowSideBadge);
         }
     }
 

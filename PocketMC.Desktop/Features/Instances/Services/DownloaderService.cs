@@ -261,10 +261,20 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                 });
         }
 
-        private static bool IsRetryable(Exception ex) =>
-            ex is HttpRequestException
-            or IOException
-            or TaskCanceledException;
+        private static bool IsRetryable(Exception ex)
+        {
+            if (ex is HttpRequestException httpRequestException &&
+                httpRequestException.StatusCode is HttpStatusCode statusCode)
+            {
+                int numericStatus = (int)statusCode;
+                return statusCode is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests ||
+                       numericStatus >= 500;
+            }
+
+            return ex is HttpRequestException
+                or IOException
+                or TaskCanceledException;
+        }
 
         private static long GetExistingPartialLength(string partialPath)
         {

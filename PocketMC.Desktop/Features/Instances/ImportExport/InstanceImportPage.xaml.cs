@@ -1,0 +1,155 @@
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
+using Microsoft.Win32;
+using PocketMC.Desktop.Core.Interfaces;
+
+namespace PocketMC.Desktop.Features.Instances.ImportExport;
+
+public partial class InstanceImportPage : Page
+{
+    private readonly IAppNavigationService _navigationService;
+    private readonly MouseWheelEventHandler _previewMouseWheelHandler;
+    private bool _isForwardingMouseWheel;
+
+    public InstanceImportPage(
+        IAppNavigationService navigationService,
+        InstanceImportViewModel viewModel)
+    {
+        InitializeComponent();
+        _navigationService = navigationService;
+        ViewModel = viewModel;
+        DataContext = ViewModel;
+        _previewMouseWheelHandler = OnPagePreviewMouseWheel;
+
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    public InstanceImportViewModel ViewModel { get; }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        AddHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler, true);
+        DisableParentScrollViewer(this);
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        RemoveHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler);
+    }
+
+    private void BtnBrowse_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Select Pocket MC Instance Export",
+            Filter = "Pocket MC Instance Export (*.zip)|*.zip|All Files (*.*)|*.*",
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        ViewModel.ZipPath = dialog.FileName;
+        if (string.IsNullOrWhiteSpace(ViewModel.RequestedName))
+        {
+            ViewModel.RequestedName = Path.GetFileNameWithoutExtension(dialog.FileName);
+        }
+    }
+
+    private void BtnBack_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.IsImporting && ViewModel.CancelImportCommand.CanExecute(null))
+        {
+            ViewModel.CancelImportCommand.Execute(null);
+            return;
+        }
+
+        if (!_navigationService.NavigateBack())
+        {
+            _navigationService.NavigateToDashboard();
+        }
+    }
+
+    private void BtnDashboard_Click(object sender, RoutedEventArgs e)
+    {
+        _navigationService.NavigateToDashboard();
+    }
+
+    private void OnPagePreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (_isForwardingMouseWheel || e.OriginalSource is not DependencyObject source)
+        {
+            return;
+        }
+
+        if (FindAncestor<ScrollBar>(source) != null ||
+            FindAncestor<ComboBox>(source)?.IsDropDownOpen == true ||
+            FindAncestor<Popup>(source) != null ||
+            PageScroller.ScrollableHeight <= 0)
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        try
+        {
+            _isForwardingMouseWheel = true;
+            int steps = Math.Max(1, Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine) * 3;
+            for (int i = 0; i < steps; i++)
+            {
+                if (e.Delta > 0)
+                {
+                    PageScroller.LineUp();
+                }
+                else
+                {
+                    PageScroller.LineDown();
+                }
+            }
+        }
+        finally
+        {
+            _isForwardingMouseWheel = false;
+        }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+    {
+        while (current != null)
+        {
+            if (current is T match)
+            {
+                return match;
+            }
+
+            DependencyObject? visualParent = null;
+            try { visualParent = VisualTreeHelper.GetParent(current); } catch { }
+            current = visualParent ?? LogicalTreeHelper.GetParent(current);
+        }
+
+        return null;
+    }
+
+    private static void DisableParentScrollViewer(DependencyObject obj)
+    {
+        DependencyObject? parent = VisualTreeHelper.GetParent(obj);
+        while (parent != null)
+        {
+            if (parent is ScrollViewer scrollViewer)
+            {
+                scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+            }
+
+            parent = VisualTreeHelper.GetParent(parent);
+        }
+    }
+}
