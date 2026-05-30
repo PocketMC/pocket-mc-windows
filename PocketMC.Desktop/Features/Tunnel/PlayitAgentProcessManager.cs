@@ -104,6 +104,32 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
         }
 
+        public async Task StopAsync(CancellationToken token = default)
+        {
+            if (_process == null)
+                return;
+
+            try
+            {
+                if (!_process.HasExited)
+                {
+                    _process.Kill(entireProcessTree: true);
+                    await _process.WaitForExitAsync(token);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error killing playit process.");
+            }
+            finally
+            {
+                _process.Dispose();
+                _process = null;
+                _logWriter?.Dispose();
+                _logWriter = null;
+            }
+        }
+
         public void Log(string message)
         {
             string timestamped = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] {message}";

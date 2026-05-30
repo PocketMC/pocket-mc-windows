@@ -876,28 +876,59 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return;
             }
 
-            try
+            bool success = false;
+            while (!success)
             {
-                string exePath = _applicationState.GetPlayitExecutablePath();
-                if (File.Exists(exePath))
+                try
                 {
-                    File.Delete(exePath);
+                    success = await _playitAgentService.DeleteAgentBinaryAsync();
+                    if (success)
+                    {
+                        break;
+                    }
                 }
-                
-                string partialPath = exePath + ".partial";
-                if (File.Exists(partialPath))
+                catch (Exception ex)
                 {
-                    File.Delete(partialPath);
+                    _logger.LogWarning(ex, "Failed to delete Playit agent binary.");
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to delete Playit agent binary.");
-                await _dialogService.ShowDialogAsync(
-                    "Error",
-                    $"Could not delete the file. Ensure the agent is stopped. \n\n{ex.Message}",
+
+                var result = await _dialogService.ShowDialogAsync(
+                    "Could not delete Playit agent",
+                    "PocketMC stopped the agent, but Windows is still blocking access to playit.exe.",
                     PocketMC.Desktop.Core.Interfaces.DialogType.Error,
-                    showCancel: false);
+                    showCancel: true,
+                    primaryButtonText: "Force Stop & Retry",
+                    secondaryButtonText: "Open Folder",
+                    cancelButtonText: "Restart Required");
+
+                if (result == PocketMC.Desktop.Core.Interfaces.DialogResult.Yes)
+                {
+                    continue;
+                }
+                else if (result == PocketMC.Desktop.Core.Interfaces.DialogResult.No)
+                {
+                    try
+                    {
+                        string tunnelDir = Path.Combine(_applicationState.GetRequiredAppRootPath(), "tunnel");
+                        if (Directory.Exists(tunnelDir))
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = tunnelDir,
+                                UseShellExecute = true
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to open tunnel directory.");
+                    }
+                    break;
+                }
+                else
+                {
+                    break;
+                }
             }
 
             await RefreshStatusAsync();

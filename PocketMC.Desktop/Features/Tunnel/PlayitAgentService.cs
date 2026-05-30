@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -101,6 +102,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         public void Start()
         {
+            CleanPendingDeletes();
             CancelPendingRestart();
             if (IsRunning) return;
             LastErrorMessage = null;
@@ -149,6 +151,15 @@ namespace PocketMC.Desktop.Features.Tunnel
             _manualStopRequested = true;
             CancelPendingRestart();
             _processManager.Stop();
+            _stateMachine.TransitionTo(PlayitAgentState.Stopped);
+            Interlocked.Exchange(ref _unexpectedRestartAttempts, 0);
+        }
+
+        public async Task StopAsync(CancellationToken token = default)
+        {
+            _manualStopRequested = true;
+            CancelPendingRestart();
+            await _processManager.StopAsync(token);
             _stateMachine.TransitionTo(PlayitAgentState.Stopped);
             Interlocked.Exchange(ref _unexpectedRestartAttempts, 0);
         }
@@ -419,6 +430,185 @@ namespace PocketMC.Desktop.Features.Tunnel
                 await _downloaderService.EnsurePlayitDownloadedAsync(_applicationState.GetRequiredAppRootPath(), progress, _downloadCancellation.Token);
             }
             finally { _isDownloadingBinary = false; OnDownloadStatusChanged?.Invoke(this, false); }
+        }
+
+        public async Task<bool> DeleteAgentBinaryAsync(CancellationToken token = default)
+        {
+            await StopAsync(token);
+            _downloadCancellation?.Cancel();
+
+            string exePath = _applicationState.GetPlayitExecutablePath();
+            await StopOrphanPlayitProcessesAsync(exePath, token);
+
+            bool exeDeleted = false;
+            bool partialDeleted = false;
+
+            try
+            {
+                await DeleteFileWithRetryAsync(exePath, token);
+                exeDeleted = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete playit.exe, attempting fallback to rename as delete-pending.");
+                try
+                {
+                    string directory = Path.GetDirectoryName(exePath) ?? string.Empty;
+                    string timestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
+                    string pendingPath = Path.Combine(directory, $"playit.{timestamp}.delete-pending.exe");
+                    if (File.Exists(exePath))
+                    {
+                        File.SetAttributes(exePath, FileAttributes.Normal);
+                        File.Move(exePath, pendingPath);
+                        _logger.LogInformation("Successfully renamed playit.exe to {PendingPath}", pendingPath);
+                        exeDeleted = true;
+                    }
+                    else
+                    {
+                        exeDeleted = true;
+                    }
+                }
+                catch (Exception renameEx)
+                {
+                    _logger.LogError(renameEx, "Failed to rename playit.exe to delete-pending.");
+                }
+            }
+
+            string partialPath = exePath + ".partial";
+            try
+            {
+                await DeleteFileWithRetryAsync(partialPath, token);
+                partialDeleted = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete partial playit file, attempting fallback to rename.");
+                try
+                {
+                    string directory = Path.GetDirectoryName(partialPath) ?? string.Empty;
+                    string timestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
+                    string pendingPath = Path.Combine(directory, $"playit.partial.{timestamp}.delete-pending.exe");
+                    if (File.Exists(partialPath))
+                    {
+                        File.SetAttributes(partialPath, FileAttributes.Normal);
+                        File.Move(partialPath, pendingPath);
+                        partialDeleted = true;
+                    }
+                    else
+                    {
+                        partialDeleted = true;
+                    }
+                }
+                catch (Exception renameEx)
+                {
+                    _logger.LogError(renameEx, "Failed to rename partial file to delete-pending.");
+                }
+            }
+
+            // Fire state change event to let the UI refresh its state and buttons
+            _stateMachine.TransitionTo(PlayitAgentState.Stopped);
+
+            return exeDeleted && partialDeleted;
+        }
+
+        private async Task StopOrphanPlayitProcessesAsync(string exePath, CancellationToken token)
+        {
+            string targetPath = Path.GetFullPath(exePath);
+
+            foreach (Process process in Process.GetProcessesByName("playit"))
+            {
+                try
+                {
+                    string? processPath = process.MainModule?.FileName;
+
+                    if (!string.Equals(
+                            Path.GetFullPath(processPath ?? string.Empty),
+                            targetPath,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                        await process.WaitForExitAsync(token);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to inspect or terminate orphan playit process.");
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            }
+        }
+
+        private static async Task DeleteFileWithRetryAsync(string path, CancellationToken token)
+        {
+            if (!File.Exists(path))
+                return;
+
+            File.SetAttributes(path, FileAttributes.Normal);
+
+            for (int attempt = 1; attempt <= 8; attempt++)
+            {
+                try
+                {
+                    using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+                    {
+                        // File is not locked, we can delete it safely
+                    }
+                    File.Delete(path);
+                    return;
+                }
+                catch (IOException) when (attempt < 8)
+                {
+                    await Task.Delay(250 * attempt, token);
+                }
+                catch (UnauthorizedAccessException) when (attempt < 8)
+                {
+                    await Task.Delay(250 * attempt, token);
+                }
+            }
+
+            // On the final attempt, verify exclusive access one last time.
+            // If it throws, the exception will propagate to trigger the rename fallback.
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+            }
+            File.Delete(path);
+        }
+
+        public void CleanPendingDeletes()
+        {
+            if (!_applicationState.IsConfigured) return;
+
+            try
+            {
+                string tunnelDir = Path.Combine(_applicationState.GetRequiredAppRootPath(), "tunnel");
+                if (!Directory.Exists(tunnelDir)) return;
+
+                foreach (string file in Directory.GetFiles(tunnelDir, "*.delete-pending.exe"))
+                {
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                        _logger.LogInformation("Cleaned up pending delete file: {File}", file);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to clean up pending delete file on startup: {File}", file);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to scan for pending delete files.");
+            }
         }
 
         public void Dispose()
