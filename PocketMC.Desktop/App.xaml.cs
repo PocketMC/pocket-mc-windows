@@ -23,6 +23,7 @@ using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Composition;
+using PocketMC.Desktop.Infrastructure.Power;
 
 using System.Net.Http;
 using System.Net;
@@ -65,6 +66,7 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         await _host.StartAsync();
+        Services.GetRequiredService<ServerSleepPreventionCoordinator>().Refresh();
 
         var mainWindow = Services.GetRequiredService<MainWindow>();
         if (Services.GetService<IAppNavigationService>() is IAppNavigationService appNavigationService)

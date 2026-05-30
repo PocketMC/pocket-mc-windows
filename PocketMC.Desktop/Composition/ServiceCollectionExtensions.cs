@@ -26,6 +26,7 @@ using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Infrastructure.Power;
 using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Composition
@@ -57,6 +58,9 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<WindowsToastNotificationService>();
             services.AddSingleton<INotificationService>(
                 provider => provider.GetRequiredService<WindowsToastNotificationService>());
+            services.AddSingleton<IExecutionStateApi, Kernel32ExecutionStateApi>();
+            services.AddSingleton<SleepPreventionService>();
+            services.AddSingleton<ServerSleepPreventionCoordinator>();
 
             services.AddHttpClient<PocketMC.Desktop.Features.Intelligence.AiApiClient>(client =>
             {

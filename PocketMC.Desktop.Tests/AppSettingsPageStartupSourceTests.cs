@@ -33,4 +33,35 @@ public sealed class AppSettingsPageStartupSourceTests
         Assert.Contains("RevertAppBehaviorToggles", source);
         Assert.Contains("Could not update Windows startup settings", source);
     }
+
+    [Fact]
+    public void Xaml_DefinesPowerManagementSleepPreventionToggle()
+    {
+        string xaml = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Setup",
+            "AppSettingsPage.xaml"));
+
+        Assert.Contains("Power Management", xaml);
+        Assert.Contains("Keep this PC awake while servers are running", xaml);
+        Assert.Contains("Allows the screen to turn off, but prevents Windows from sleeping so servers and tunnels stay online.", xaml);
+        Assert.Contains("x:Name=\"ToggleKeepComputerAwakeWhileServersRunning\"", xaml);
+        Assert.Contains("ToggleKeepComputerAwakeWhileServersRunning_Changed", xaml);
+    }
+
+    [Fact]
+    public void CodeBehind_SavesSleepPreventionSettingAndRefreshesCoordinator()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Setup",
+            "AppSettingsPage.xaml.cs"));
+
+        Assert.Contains("ServerSleepPreventionCoordinator", source);
+        Assert.Contains("ToggleKeepComputerAwakeWhileServersRunning.IsChecked = _applicationState.Settings.KeepComputerAwakeWhileServersRunning", source);
+        Assert.Contains("settings.KeepComputerAwakeWhileServersRunning = ToggleKeepComputerAwakeWhileServersRunning.IsChecked == true", source);
+        Assert.Contains("_sleepPreventionCoordinator.Refresh()", source);
+    }
 }

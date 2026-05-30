@@ -20,6 +20,7 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Infrastructure.Power;
 
 namespace PocketMC.Desktop.Features.Setup
 {
@@ -54,6 +55,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
         private readonly IDiscordRpcService _discordRpcService;
         private readonly WindowsStartupService _windowsStartupService;
+        private readonly ServerSleepPreventionCoordinator _sleepPreventionCoordinator;
         private bool _isInitializing = true;
         private readonly MouseWheelEventHandler _previewMouseWheelHandler;
         private bool _isForwardingMouseWheel;
@@ -70,7 +72,8 @@ namespace PocketMC.Desktop.Features.Setup
             PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
             CloudBackupSettingsViewModel cloudBackups,
             WindowsStartupService windowsStartupService,
-            IDiscordRpcService discordRpcService)
+            IDiscordRpcService discordRpcService,
+            ServerSleepPreventionCoordinator sleepPreventionCoordinator)
         {
             InitializeComponent();
             _previewMouseWheelHandler = OnPagePreviewMouseWheel;
@@ -83,6 +86,7 @@ namespace PocketMC.Desktop.Features.Setup
             _healthMonitor = healthMonitor;
             _windowsStartupService = windowsStartupService;
             _discordRpcService = discordRpcService;
+            _sleepPreventionCoordinator = sleepPreventionCoordinator;
             CloudBackups = cloudBackups;
 
             Loaded += AppSettingsPage_Loaded;
@@ -136,6 +140,7 @@ namespace PocketMC.Desktop.Features.Setup
             ToggleStartWithWindows.IsChecked = _applicationState.Settings.StartWithWindows;
             ToggleStartMinimizedToTray.IsChecked = _applicationState.Settings.StartMinimizedToTray;
             ToggleMinimizeToTrayOnClose.IsChecked = _applicationState.Settings.MinimizeToTrayOnClose;
+            ToggleKeepComputerAwakeWhileServersRunning.IsChecked = _applicationState.Settings.KeepComputerAwakeWhileServersRunning;
 
             // AI Settings
             AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
@@ -218,6 +223,31 @@ namespace PocketMC.Desktop.Features.Setup
             }
         }
 
+        private void ToggleKeepComputerAwakeWhileServersRunning_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            bool previousKeepAwake = settings.KeepComputerAwakeWhileServersRunning;
+            settings.KeepComputerAwakeWhileServersRunning = ToggleKeepComputerAwakeWhileServersRunning.IsChecked == true;
+
+            try
+            {
+                _settingsManager.Save(settings);
+                _sleepPreventionCoordinator.Refresh();
+            }
+            catch (Exception ex)
+            {
+                settings.KeepComputerAwakeWhileServersRunning = previousKeepAwake;
+                RevertPowerManagementToggle(previousKeepAwake);
+                _sleepPreventionCoordinator.Refresh();
+                _dialogService.ShowMessage(
+                    "Settings Error",
+                    $"Could not update power management settings:\n{ex.Message}",
+                    DialogType.Error);
+            }
+        }
+
         private void SaveStartupBehaviorSettings()
         {
             var settings = _applicationState.Settings;
@@ -270,6 +300,14 @@ namespace PocketMC.Desktop.Features.Setup
             ToggleStartWithWindows.IsChecked = startWithWindows;
             ToggleStartMinimizedToTray.IsChecked = startMinimizedToTray;
             ToggleMinimizeToTrayOnClose.IsChecked = minimizeToTrayOnClose;
+            _isInitializing = wasInitializing;
+        }
+
+        private void RevertPowerManagementToggle(bool keepComputerAwakeWhileServersRunning)
+        {
+            bool wasInitializing = _isInitializing;
+            _isInitializing = true;
+            ToggleKeepComputerAwakeWhileServersRunning.IsChecked = keepComputerAwakeWhileServersRunning;
             _isInitializing = wasInitializing;
         }
 
