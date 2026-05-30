@@ -123,6 +123,18 @@ public static class InstanceAddonTypes
     public const string McAddon = "mcaddon";
 }
 
+public sealed class ProviderIdentity
+{
+    [JsonPropertyName("provider")]
+    public string Provider { get; set; } = string.Empty;
+
+    [JsonPropertyName("projectId")]
+    public string ProjectId { get; set; } = string.Empty;
+
+    [JsonPropertyName("versionId")]
+    public string VersionId { get; set; } = string.Empty;
+}
+
 [JsonConverter(typeof(InstanceAddonManifestJsonConverter))]
 public abstract class InstanceAddonManifest
 {
@@ -145,6 +157,29 @@ public abstract class InstanceAddonManifest
     [JsonPropertyName("relativePath")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? RelativePath { get; set; }
+
+    [JsonPropertyName("size")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? Size { get; set; }
+
+    [JsonPropertyName("sha1")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Sha1 { get; set; }
+
+    [JsonPropertyName("sha512")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Sha512 { get; set; }
+
+    [JsonPropertyName("isDisabled")]
+    public bool IsDisabled { get; set; }
+
+    [JsonPropertyName("packagedPath")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PackagedPath { get; set; }
+
+    [JsonPropertyName("providerIdentities")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<ProviderIdentity>? ProviderIdentities { get; set; }
 }
 
 public sealed class JavaAddonManifest : InstanceAddonManifest
@@ -166,6 +201,10 @@ public sealed class JavaAddonManifest : InstanceAddonManifest
     [JsonPropertyName("loader")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Loader { get; set; }
+
+    [JsonPropertyName("downloadUrl")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DownloadUrl { get; set; }
 }
 
 public sealed class BedrockAddonManifest : InstanceAddonManifest
@@ -250,7 +289,8 @@ public sealed class InstanceAddonManifestJsonConverter : JsonConverter<InstanceA
                 ProjectId = ManifestJson.ReadString(root, "projectId"),
                 VersionId = ManifestJson.ReadString(root, "versionId"),
                 Hash = ManifestJson.ReadString(root, "hash"),
-                Loader = ManifestJson.ReadString(root, "loader")
+                Loader = ManifestJson.ReadString(root, "loader"),
+                DownloadUrl = ManifestJson.ReadString(root, "downloadUrl")
             };
 
         manifest.Name = ManifestJson.ReadString(root, "name") ?? string.Empty;
@@ -258,6 +298,15 @@ public sealed class InstanceAddonManifestJsonConverter : JsonConverter<InstanceA
         manifest.Provider = ManifestJson.ReadString(root, "provider") ?? "Local";
         manifest.FileName = ManifestJson.ReadString(root, "fileName");
         manifest.RelativePath = ManifestJson.ReadString(root, "relativePath");
+
+        // Canonical identity fields
+        manifest.Size = ManifestJson.ReadLong(root, "size");
+        manifest.Sha1 = ManifestJson.ReadString(root, "sha1");
+        manifest.Sha512 = ManifestJson.ReadString(root, "sha512");
+        manifest.IsDisabled = ManifestJson.ReadBool(root, "isDisabled");
+        manifest.PackagedPath = ManifestJson.ReadString(root, "packagedPath");
+        manifest.ProviderIdentities = ManifestJson.ReadProviderIdentities(root, "providerIdentities");
+
         return manifest;
     }
 
@@ -270,6 +319,38 @@ public sealed class InstanceAddonManifestJsonConverter : JsonConverter<InstanceA
         WriteOptionalString(writer, "fileName", value.FileName);
         WriteOptionalString(writer, "relativePath", value.RelativePath);
 
+        // Canonical identity fields
+        if (value.Size.HasValue)
+        {
+            writer.WriteNumber("size", value.Size.Value);
+        }
+
+        WriteOptionalString(writer, "sha1", value.Sha1);
+        WriteOptionalString(writer, "sha512", value.Sha512);
+
+        if (value.IsDisabled)
+        {
+            writer.WriteBoolean("isDisabled", true);
+        }
+
+        WriteOptionalString(writer, "packagedPath", value.PackagedPath);
+
+        if (value.ProviderIdentities is { Count: > 0 })
+        {
+            writer.WritePropertyName("providerIdentities");
+            writer.WriteStartArray();
+            foreach (ProviderIdentity identity in value.ProviderIdentities)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("provider", identity.Provider);
+                writer.WriteString("projectId", identity.ProjectId);
+                writer.WriteString("versionId", identity.VersionId);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+        }
+
         switch (value)
         {
             case JavaAddonManifest java:
@@ -277,6 +358,7 @@ public sealed class InstanceAddonManifestJsonConverter : JsonConverter<InstanceA
                 WriteOptionalString(writer, "versionId", java.VersionId);
                 WriteOptionalString(writer, "hash", java.Hash);
                 WriteOptionalString(writer, "loader", java.Loader);
+                WriteOptionalString(writer, "downloadUrl", java.DownloadUrl);
                 break;
             case BedrockAddonManifest bedrock:
                 WriteOptionalString(writer, "uuid", bedrock.Uuid);
@@ -319,6 +401,59 @@ internal static class ManifestJson
         return property.ValueKind == JsonValueKind.String
             ? property.GetString()
             : property.GetRawText();
+    }
+
+    public static long? ReadLong(JsonElement element, string propertyName)
+    {
+        if (!TryGetProperty(element, propertyName, out JsonElement property) ||
+            property.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (property.ValueKind == JsonValueKind.Number && property.TryGetInt64(out long value))
+        {
+            return value;
+        }
+
+        return null;
+    }
+
+    public static bool ReadBool(JsonElement element, string propertyName)
+    {
+        if (!TryGetProperty(element, propertyName, out JsonElement property))
+        {
+            return false;
+        }
+
+        return property.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            _ => false
+        };
+    }
+
+    public static List<ProviderIdentity>? ReadProviderIdentities(JsonElement element, string propertyName)
+    {
+        if (!TryGetProperty(element, propertyName, out JsonElement property) ||
+            property.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var identities = new List<ProviderIdentity>();
+        foreach (JsonElement item in property.EnumerateArray())
+        {
+            identities.Add(new ProviderIdentity
+            {
+                Provider = ReadString(item, "provider") ?? string.Empty,
+                ProjectId = ReadString(item, "projectId") ?? string.Empty,
+                VersionId = ReadString(item, "versionId") ?? string.Empty
+            });
+        }
+
+        return identities.Count > 0 ? identities : null;
     }
 
     public static bool PlatformEquals(string value, InstanceServerPlatform platform) =>

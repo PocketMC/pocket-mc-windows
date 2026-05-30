@@ -60,6 +60,9 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         [JsonPropertyName("version_type")]
         public string VersionType { get; set; } = "release";
+
+        [JsonPropertyName("game_versions")]
+        public List<string> GameVersions { get; set; } = new();
     }
 
     public class ModrinthDependency
@@ -561,7 +564,25 @@ namespace PocketMC.Desktop.Features.Marketplace
                     {
                         if (ShouldRetryStatus(response.StatusCode) && attempt < MaxProviderAttempts)
                         {
-                            await Task.Delay(GetRetryDelay(attempt)).ConfigureAwait(false);
+                            var delay = GetRetryDelay(attempt);
+                            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                            {
+                                if (response.Headers.TryGetValues("Retry-After", out var values) &&
+                                    int.TryParse(values.FirstOrDefault(), out int seconds))
+                                {
+                                    delay = TimeSpan.FromSeconds(seconds);
+                                }
+                                else if (response.Headers.TryGetValues("X-RateLimit-Reset", out var resetValues) &&
+                                         int.TryParse(resetValues.FirstOrDefault(), out int resetSeconds))
+                                {
+                                    delay = TimeSpan.FromSeconds(resetSeconds);
+                                }
+                                else
+                                {
+                                    delay = TimeSpan.FromSeconds(5);
+                                }
+                            }
+                            await Task.Delay(delay).ConfigureAwait(false);
                             continue;
                         }
 
@@ -607,7 +628,25 @@ namespace PocketMC.Desktop.Features.Marketplace
                     {
                         if (ShouldRetryStatus(response.StatusCode) && attempt < MaxProviderAttempts)
                         {
-                            await Task.Delay(GetRetryDelay(attempt)).ConfigureAwait(false);
+                            var delay = GetRetryDelay(attempt);
+                            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                            {
+                                if (response.Headers.TryGetValues("Retry-After", out var values) &&
+                                    int.TryParse(values.FirstOrDefault(), out int seconds))
+                                {
+                                    delay = TimeSpan.FromSeconds(seconds);
+                                }
+                                else if (response.Headers.TryGetValues("X-RateLimit-Reset", out var resetValues) &&
+                                         int.TryParse(resetValues.FirstOrDefault(), out int resetSeconds))
+                                {
+                                    delay = TimeSpan.FromSeconds(resetSeconds);
+                                }
+                                else
+                                {
+                                    delay = TimeSpan.FromSeconds(5);
+                                }
+                            }
+                            await Task.Delay(delay).ConfigureAwait(false);
                             continue;
                         }
 

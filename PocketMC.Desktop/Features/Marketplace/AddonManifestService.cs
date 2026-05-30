@@ -29,6 +29,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         public string? FileHashType { get; set; }
         public string? MinecraftVersion { get; set; }
         public string? Loader { get; set; }
+        public string? DownloadUrl { get; set; }
     }
 
     public class AddonManifest
@@ -102,7 +103,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? fileHash = null,
             string? fileHashType = null,
             string? minecraftVersion = null,
-            string? loader = null)
+            string? loader = null,
+            string? downloadUrl = null)
         {
             var manifest = await LoadManifestAsync(serverDir);
             string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
@@ -120,6 +122,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             fileHashType ??= existing?.FileHashType;
             minecraftVersion ??= existing?.MinecraftVersion;
             loader ??= existing?.Loader;
+            downloadUrl ??= existing?.DownloadUrl;
 
             // Remove any existing entry for this project to avoid duplicates (effectively an "update")
             manifest.Entries.RemoveAll(e => e.ProjectId == projectId && e.Provider == provider);
@@ -140,7 +143,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                 FileHash = fileHash,
                 FileHashType = fileHashType,
                 MinecraftVersion = minecraftVersion,
-                Loader = loader
+                Loader = loader,
+                DownloadUrl = downloadUrl
             });
 
             await SaveManifestAsync(serverDir, manifest);
@@ -264,13 +268,35 @@ namespace PocketMC.Desktop.Features.Marketplace
                             var version = kvp.Value;
                             if (hashToLocalPath.TryGetValue(hash, out string? localPath))
                             {
+                                var projectInfo = await modrinth.GetProjectInfoAsync(version.ProjectId).ConfigureAwait(false);
+                                var file = version.Files.FirstOrDefault(f => f.Hashes.ContainsValue(hash)) ?? 
+                                           version.Files.FirstOrDefault(f => f.IsPrimary) ?? 
+                                           version.Files.FirstOrDefault();
+                                string? fileHash = null;
+                                string? fileHashType = null;
+                                if (file != null)
+                                {
+                                    fileHash = hash;
+                                    fileHashType = file.Hashes.FirstOrDefault(h => h.Value.Equals(hash, StringComparison.OrdinalIgnoreCase)).Key ?? "sha1";
+                                }
+
                                 manifest.Entries.Add(new AddonManifestEntry
                                 {
                                     Provider = "Modrinth",
                                     ProjectId = version.ProjectId,
                                     VersionId = version.Id,
                                     FileName = Path.GetFileName(localPath),
-                                    InstalledAt = DateTime.UtcNow
+                                    InstalledAt = DateTime.UtcNow,
+                                    ProjectTitle = projectInfo?.Title ?? version.Name,
+                                    DisplayName = version.Name,
+                                    IconUrl = projectInfo?.IconUrl,
+                                    ClientSide = projectInfo?.ClientSide,
+                                    ServerSide = projectInfo?.ServerSide,
+                                    FileHash = fileHash,
+                                    FileHashType = fileHashType,
+                                    MinecraftVersion = version.GameVersions.FirstOrDefault(),
+                                    Loader = version.Loaders.FirstOrDefault() ?? compat.LoaderName,
+                                    DownloadUrl = file?.Url
                                 });
                                 modified = true;
                             }

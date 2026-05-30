@@ -12,6 +12,7 @@ using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Infrastructure;
 using Wpf.Ui.Controls;
 
@@ -158,6 +159,36 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         {
             args.Cancel = true;
             return;
+        }
+
+        var importService = _serviceProvider.GetRequiredService<IInstanceImportService>();
+        var exportService = _serviceProvider.GetRequiredService<IInstanceExportService>();
+        if (importService.IsActive || exportService.IsActive)
+        {
+            var dialogResult = Infrastructure.AppDialog.ShowResult(
+                "Operation In Progress",
+                "An import/export operation is currently running. Cancelling now may leave the instance incomplete and all current progress will be lost. Are you sure you want to cancel?",
+                Infrastructure.AppDialogType.Warning,
+                Infrastructure.AppDialogButtons.YesNo,
+                primaryButtonText: "Continue Operation",
+                secondaryButtonText: "Cancel Operation"
+            );
+
+            if (dialogResult == PocketMC.Desktop.Core.Interfaces.DialogResult.No) // Cancel Operation
+            {
+                if (importService.IsActive) importService.Cancel();
+                if (exportService.IsActive) exportService.Cancel();
+
+                while (importService.IsActive || exportService.IsActive)
+                {
+                    System.Threading.Thread.Sleep(50);
+                }
+            }
+            else // Continue Operation
+            {
+                args.Cancel = true;
+                return;
+            }
         }
 
         if (!IsShellPageType(pageType)) return;
@@ -322,6 +353,52 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        var importService = _serviceProvider.GetRequiredService<IInstanceImportService>();
+        var exportService = _serviceProvider.GetRequiredService<IInstanceExportService>();
+        if (importService.IsActive || exportService.IsActive)
+        {
+            e.Cancel = true;
+
+            var dialogResult = Infrastructure.AppDialog.ShowResult(
+                "Operation In Progress",
+                "An import/export operation is currently running. Cancelling now may leave the instance incomplete and all current progress will be lost. Are you sure you want to cancel?",
+                Infrastructure.AppDialogType.Warning,
+                Infrastructure.AppDialogButtons.YesNo,
+                primaryButtonText: "Continue Operation",
+                secondaryButtonText: "Cancel Operation"
+            );
+
+            if (dialogResult == PocketMC.Desktop.Core.Interfaces.DialogResult.No) // Cancel Operation
+            {
+                if (importService.IsActive) importService.Cancel();
+                if (exportService.IsActive) exportService.Cancel();
+
+                var controller = new System.Windows.Threading.DispatcherFrame();
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    while (importService.IsActive || exportService.IsActive)
+                    {
+                        await System.Threading.Tasks.Task.Delay(50);
+                    }
+                    controller.Continue = false;
+                });
+
+                var originalCursor = Mouse.OverrideCursor;
+                Mouse.OverrideCursor = Cursors.Wait;
+                try
+                {
+                    System.Windows.Threading.Dispatcher.PushFrame(controller);
+                }
+                finally
+                {
+                    Mouse.OverrideCursor = originalCursor;
+                }
+
+                CloseApp();
+            }
+            return;
+        }
+
         bool downloadExitConfirmed = false;
         if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen && 
             PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.IsDownloadInProgress)

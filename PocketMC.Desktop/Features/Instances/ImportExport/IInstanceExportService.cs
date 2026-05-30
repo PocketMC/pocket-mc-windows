@@ -8,6 +8,9 @@ public interface IInstanceExportService
         InstanceExportRequest request,
         IProgress<InstanceTransferProgress>? progress = null,
         CancellationToken cancellationToken = default);
+
+    bool IsActive { get; }
+    void Cancel();
 }
 
 public sealed class InstanceExportRequest

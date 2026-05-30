@@ -72,6 +72,8 @@ public sealed class InstanceExportViewModelTests
     {
         public Func<InstanceExportRequest, IProgress<InstanceTransferProgress>?, CancellationToken, Task<InstanceExportResult>>? ExportHandler { get; set; }
         public InstanceExportRequest? LastRequest { get; private set; }
+        public bool IsActive { get; set; }
+        public void Cancel() { }
 
         public Task<InstanceExportResult> ExportAsync(
             InstanceExportRequest request,

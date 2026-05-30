@@ -64,15 +64,79 @@ public partial class InstanceExportPage : Page
 
     private void BtnBack_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.IsExporting && ViewModel.CancelExportCommand.CanExecute(null))
+        if (ViewModel.IsExporting)
         {
-            ViewModel.CancelExportCommand.Execute(null);
+            var dialogResult = PocketMC.Desktop.Infrastructure.AppDialog.ShowResult(
+                "Operation In Progress",
+                "An import/export operation is currently running. Cancelling now may leave the instance incomplete and all current progress will be lost. Are you sure you want to cancel?",
+                Infrastructure.AppDialogType.Warning,
+                Infrastructure.AppDialogButtons.YesNo,
+                primaryButtonText: "Continue Operation",
+                secondaryButtonText: "Cancel Operation"
+            );
+
+            if (dialogResult == PocketMC.Desktop.Core.Interfaces.DialogResult.No) // Cancel Operation
+            {
+                if (ViewModel.CancelExportCommand.CanExecute(null))
+                {
+                    ViewModel.CancelExportCommand.Execute(null);
+                }
+
+                var controller = new System.Windows.Threading.DispatcherFrame();
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    while (ViewModel.IsExporting)
+                    {
+                        await System.Threading.Tasks.Task.Delay(50);
+                    }
+                    controller.Continue = false;
+                });
+
+                var originalCursor = Mouse.OverrideCursor;
+                Mouse.OverrideCursor = Cursors.Wait;
+                try
+                {
+                    System.Windows.Threading.Dispatcher.PushFrame(controller);
+                }
+                finally
+                {
+                    Mouse.OverrideCursor = originalCursor;
+                }
+
+                if (!_navigationService.NavigateBack())
+                {
+                    _navigationService.NavigateToDashboard();
+                }
+            }
             return;
         }
 
         if (!_navigationService.NavigateBack())
         {
             _navigationService.NavigateToDashboard();
+        }
+    }
+
+    private void BtnCancel_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.IsExporting)
+        {
+            var dialogResult = PocketMC.Desktop.Infrastructure.AppDialog.ShowResult(
+                "Operation In Progress",
+                "An import/export operation is currently running. Cancelling now may leave the instance incomplete and all current progress will be lost. Are you sure you want to cancel?",
+                Infrastructure.AppDialogType.Warning,
+                Infrastructure.AppDialogButtons.YesNo,
+                primaryButtonText: "Continue Operation",
+                secondaryButtonText: "Cancel Operation"
+            );
+
+            if (dialogResult == PocketMC.Desktop.Core.Interfaces.DialogResult.No) // Cancel Operation
+            {
+                if (ViewModel.CancelExportCommand.CanExecute(null))
+                {
+                    ViewModel.CancelExportCommand.Execute(null);
+                }
+            }
         }
     }
 

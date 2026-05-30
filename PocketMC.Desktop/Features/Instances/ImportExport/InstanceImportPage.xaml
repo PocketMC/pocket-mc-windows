@@ -64,11 +64,13 @@
                                TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center"/>
 
-                    <ui:Button Grid.Column="2"
+                    <ui:Button x:Name="BtnCancel"
+                               Grid.Column="2"
                                Content="Cancel"
                                Appearance="Secondary"
                                Width="104"
-                               Command="{Binding CancelImportCommand}"/>
+                               IsEnabled="{Binding IsImporting}"
+                               Click="BtnCancel_Click"/>
                     <ui:Button Grid.Column="4"
                                Content="Import"
                                Appearance="Primary"
@@ -129,74 +131,36 @@
                         </Grid>
                     </Border>
 
-                    <Grid Margin="0,0,0,16"
-                          Visibility="{Binding IsImporting, Converter={StaticResource BoolToVis}}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="16"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Border Grid.Column="0"
-                                Padding="18"
-                                CornerRadius="8"
-                                BorderThickness="1"
-                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                                Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}">
-                            <StackPanel>
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Overall progress"
-                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                               FontWeight="SemiBold"/>
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding OverallProgress, StringFormat={}{0:0}%}"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                </Grid>
-                                <ProgressBar Minimum="0"
-                                             Maximum="100"
-                                             Height="6"
-                                             Value="{Binding OverallProgress, Mode=OneWay}"/>
-                                <TextBlock Text="{Binding CurrentItem}"
-                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                           TextTrimming="CharacterEllipsis"
-                                           Margin="0,10,0,0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Grid.Column="2"
-                                Padding="18"
-                                CornerRadius="8"
-                                BorderThickness="1"
-                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                                Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}">
-                            <StackPanel>
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Downloads"
-                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                               FontWeight="SemiBold"/>
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding DownloadProgress, StringFormat={}{0:0}%}"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                </Grid>
-                                <ProgressBar Minimum="0"
-                                             Maximum="100"
-                                             Height="6"
-                                             Value="{Binding DownloadProgress, Mode=OneWay}"/>
-                                <TextBlock Text="Server binaries and remote add-ons are restored from providers."
-                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                           TextWrapping="Wrap"
-                                           Margin="0,10,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
+                    <Border Margin="0,0,0,16"
+                            Padding="18"
+                            CornerRadius="8"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                            Visibility="{Binding IsImporting, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Overall progress"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding OverallProgress, StringFormat={}{0:0}%}"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            </Grid>
+                            <ProgressBar Minimum="0"
+                                         Maximum="100"
+                                         Height="6"
+                                         Value="{Binding OverallProgress, Mode=OneWay}"/>
+                            <TextBlock Text="{Binding CurrentItem}"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
 
                     <Border Padding="14"
                             CornerRadius="8"

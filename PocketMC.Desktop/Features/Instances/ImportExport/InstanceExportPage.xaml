@@ -64,11 +64,13 @@
                                TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center"/>
 
-                    <ui:Button Grid.Column="2"
+                    <ui:Button x:Name="BtnCancel"
+                               Grid.Column="2"
                                Content="Cancel"
                                Appearance="Secondary"
                                Width="104"
-                               Command="{Binding CancelExportCommand}"/>
+                               IsEnabled="{Binding IsExporting}"
+                               Click="BtnCancel_Click"/>
                     <ui:Button Grid.Column="4"
                                Content="Export"
                                Appearance="Primary"

@@ -41,6 +41,10 @@ public sealed class InstanceImportService : IInstanceImportService
     private readonly ApplicationState _applicationState;
     private readonly ILogger<InstanceImportService> _logger;
     private readonly SemaphoreSlim _addonManifestUpdateLock = new(1, 1);
+    private CancellationTokenSource? _activeCts;
+
+    public bool IsActive => _activeCts != null;
+    public void Cancel() => _activeCts?.Cancel();
 
     public InstanceImportService(
         InstancePathService pathService,
@@ -198,28 +202,31 @@ public sealed class InstanceImportService : IInstanceImportService
         InstanceImportStagingResult? stagingResult = null;
         bool promoted = false;
 
+        _activeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        CancellationToken linkedToken = _activeCts.Token;
+
         try
         {
             stagingResult = await StageImportAsync(
                     request,
                     CreateMappedProgress(progress, 0, 25),
-                    cancellationToken)
+                    linkedToken)
                 .ConfigureAwait(false);
 
             await ReconstructStagedImportAsync(
                     stagingResult,
                     CreateMappedProgress(progress, 25, 90),
-                    cancellationToken)
+                    linkedToken)
                 .ConfigureAwait(false);
 
             Report(progress, "Preparing imported instance...", 90);
             
-            InstanceMetadata metadata = await ReadImportedMetadataAsync(stagingResult.MetadataPath, cancellationToken)
+            InstanceMetadata metadata = await ReadImportedMetadataAsync(stagingResult.MetadataPath, linkedToken)
                 .ConfigureAwait(false);
             
             string finalPath = ResolveUniqueInstancePath(FirstNonEmpty(request.RequestedName, stagingResult.Manifest.ServerMeta.Name, metadata.Name, "Imported Server"));
             
-            await PrepareStagedServerForPromotionAsync(metadata, stagingResult, request, finalPath, cancellationToken)
+            await PrepareStagedServerForPromotionAsync(metadata, stagingResult, request, finalPath, linkedToken)
                 .ConfigureAwait(false);
 
             Report(progress, "Promoting imported instance...", 95);
@@ -235,7 +242,8 @@ public sealed class InstanceImportService : IInstanceImportService
                 InstanceId = metadata.Id,
                 InstancePath = finalPath,
                 Metadata = metadata,
-                Manifest = stagingResult.Manifest
+                Manifest = stagingResult.Manifest,
+                Report = stagingResult.Report
             };
         }
         catch
@@ -246,6 +254,11 @@ public sealed class InstanceImportService : IInstanceImportService
             }
 
             throw;
+        }
+        finally
+        {
+            _activeCts?.Dispose();
+            _activeCts = null;
         }
     }
 
@@ -585,41 +598,159 @@ public sealed class InstanceImportService : IInstanceImportService
         IProgress<InstanceTransferProgress>? progress,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<InstanceAddonManifest> remoteAddons = stagingResult.Manifest.Addons
-            .Where(addon => !addon.Provider.Equals("Local", StringComparison.OrdinalIgnoreCase))
-            .ToArray();
+        IReadOnlyList<InstanceAddonManifest> allAddons = stagingResult.Manifest.Addons;
 
-        if (remoteAddons.Count == 0)
+        var report = stagingResult.Report;
+        report.InstanceName = stagingResult.Manifest.ServerMeta.Name;
+        report.TotalAddons = allAddons.Count;
+
+        if (allAddons.Count == 0)
         {
-            Report(progress, "No remote add-ons to download.", 100);
+            Report(progress, "No add-ons to restore.", 100);
             return;
         }
 
+        var addonProgress = new System.Collections.Concurrent.ConcurrentDictionary<string, double>();
+        foreach (var addon in allAddons)
+        {
+            addonProgress[addon.Name] = 0;
+        }
+
+        object progressLock = new object();
+        double lastReportedOverall = 40;
+
+        void ReportAddonProgress(string addonName, double localPercentage)
+        {
+            addonProgress[addonName] = localPercentage;
+            lock (progressLock)
+            {
+                double sum = 0;
+                foreach (var name in addonProgress.Keys)
+                {
+                    sum += addonProgress[name];
+                }
+                double avg = sum / allAddons.Count;
+                double overall = 40 + (avg * 0.6); // Map 0-100% of addons to 40-100% of reconstruction
+                if (overall > lastReportedOverall)
+                {
+                    lastReportedOverall = overall;
+                    Report(progress, "Restoring add-ons...", overall, addonName);
+                }
+            }
+        }
+
         using var semaphore = new SemaphoreSlim(MaxParallelAddonDownloads);
-        int completed = 0;
-        var tasks = remoteAddons.Select(async addon =>
+        var reportEntries = new System.Collections.Concurrent.ConcurrentBag<AddonImportReportEntry>();
+
+        var tasks = allAddons.Select(async addon =>
         {
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            string? resolutionSource = null;
+            string status = "failed";
+            string? reason = null;
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Report(progress, $"Downloading add-on {addon.Name}...", CalculateAddonOverallProgress(completed, remoteAddons.Count), addon.Name);
+                ReportAddonProgress(addon.Name, 0);
 
+                // Step 1: Try to restore from the packaged file in the ZIP
+                bool restoredFromPackage = false;
+                if (addon is JavaAddonManifest javaAddon)
+                {
+                    restoredFromPackage = await TryRestorePackagedJavaAddonAsync(
+                            stagingResult, javaAddon, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                if (restoredFromPackage)
+                {
+                    resolutionSource = "Packaged File";
+                    status = "restoredFromPackage";
+                    reason = "Restored from packaged file in export ZIP.";
+                    ReportAddonProgress(addon.Name, 100);
+                    reportEntries.Add(new AddonImportReportEntry
+                    {
+                        Name = addon.Name,
+                        Provider = addon.Provider,
+                        FileName = addon.FileName ?? "",
+                        Success = true,
+                        ResolutionSource = resolutionSource,
+                        Status = status,
+                        Reason = reason
+                    });
+                    return;
+                }
+
+                // Step 2: For Local-only addons with no download capability, skip
+                if (addon.Provider.Equals("Local", StringComparison.OrdinalIgnoreCase) &&
+                    addon is JavaAddonManifest localJava &&
+                    string.IsNullOrWhiteSpace(localJava.DownloadUrl) &&
+                    string.IsNullOrWhiteSpace(localJava.ProjectId) &&
+                    (addon.ProviderIdentities == null || addon.ProviderIdentities.Count == 0))
+                {
+                    status = "skipped";
+                    reason = "Local-only addon with no download source and no packaged file.";
+                    ReportAddonProgress(addon.Name, 100);
+                    reportEntries.Add(new AddonImportReportEntry
+                    {
+                        Name = addon.Name,
+                        Provider = addon.Provider,
+                        FileName = addon.FileName ?? "",
+                        Success = false,
+                        ResolutionSource = "None",
+                        Status = status,
+                        Reason = reason
+                    });
+                    return;
+                }
+
+                // Step 3: Fall back to provider download
                 switch (stagingResult.Manifest.Software.Platform)
                 {
                     case InstanceServerPlatform.Java:
-                        await DownloadJavaAddonAsync(stagingResult, (JavaAddonManifest)addon, progress, cancellationToken)
+                        resolutionSource = await DownloadJavaAddonAsync(stagingResult, (JavaAddonManifest)addon, ReportAddonProgress, cancellationToken)
                             .ConfigureAwait(false);
                         break;
 
                     case InstanceServerPlatform.Bedrock:
-                        await DownloadBedrockAddonAsync(stagingResult, (BedrockAddonManifest)addon, progress, cancellationToken)
+                        resolutionSource = await DownloadBedrockAddonAsync(stagingResult, (BedrockAddonManifest)addon, ReportAddonProgress, cancellationToken)
                             .ConfigureAwait(false);
                         break;
                 }
 
-                int finished = Interlocked.Increment(ref completed);
-                Report(progress, $"Downloaded add-on {addon.Name}.", CalculateAddonOverallProgress(finished, remoteAddons.Count), addon.Name);
+                status = "downloadedFromProvider";
+                reason = $"Downloaded from {resolutionSource ?? addon.Provider}.";
+                ReportAddonProgress(addon.Name, 100);
+                reportEntries.Add(new AddonImportReportEntry
+                {
+                    Name = addon.Name,
+                    Provider = addon.Provider,
+                    FileName = addon.FileName ?? "",
+                    Success = true,
+                    ResolutionSource = resolutionSource ?? "Unknown",
+                    Status = status,
+                    Reason = reason
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to restore add-on {AddonName}.", addon.Name);
+                ReportAddonProgress(addon.Name, 100); // Mark as done for progress calculation
+                reportEntries.Add(new AddonImportReportEntry
+                {
+                    Name = addon.Name,
+                    Provider = addon.Provider,
+                    FileName = addon.FileName ?? "",
+                    Success = false,
+                    ResolutionSource = resolutionSource ?? "None",
+                    ErrorMessage = ex.Message,
+                    Status = "failed",
+                    Reason = ex.Message
+                });
             }
             finally
             {
@@ -628,14 +759,311 @@ public sealed class InstanceImportService : IInstanceImportService
         });
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Populate report results
+        report.Addons.AddRange(reportEntries);
+        report.SuccessfulAddons = report.Addons.Count(a => a.Success);
+        report.FailedAddons = report.Addons.Count(a => !a.Success);
+        report.RestoredFromPackage = report.Addons.Count(a => a.Status == "restoredFromPackage");
+        report.DownloadedFromProvider = report.Addons.Count(a => a.Status == "downloadedFromProvider");
+        report.Skipped = report.Addons.Count(a => a.Status == "skipped");
+        report.Failed = report.Addons.Count(a => a.Status == "failed");
+
+        // Save detailed import report
+        try
+        {
+            string reportPath = Path.Combine(stagingResult.ServerDirectory, "import_report.json");
+            string reportJson = JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true });
+            await FileUtils.AtomicWriteAllTextAsync(reportPath, reportJson, cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to write import_report.json to server directory.");
+        }
     }
 
-    private async Task DownloadJavaAddonAsync(
+    /// <summary>
+    /// Attempts to restore a Java addon from its packaged file in the extracted ZIP.
+    /// Returns true if the file was found and restored, false if it needs to be downloaded.
+    /// </summary>
+    private async Task<bool> TryRestorePackagedJavaAddonAsync(
         InstanceImportStagingResult stagingResult,
         JavaAddonManifest addon,
-        IProgress<InstanceTransferProgress>? progress,
         CancellationToken cancellationToken)
     {
+        // Determine possible source paths in the staging directory
+        string? sourceFilePath = null;
+
+        // Try PackagedPath first (relative to staging root, e.g. "server/mods/MyMod.jar")
+        if (!string.IsNullOrWhiteSpace(addon.PackagedPath))
+        {
+            string candidate = Path.Combine(stagingResult.StagingDirectory, addon.PackagedPath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(candidate))
+            {
+                sourceFilePath = candidate;
+            }
+        }
+
+        // Try RelativePath (relative to server directory, e.g. "mods/MyMod.jar")
+        if (sourceFilePath == null && !string.IsNullOrWhiteSpace(addon.RelativePath))
+        {
+            string candidate = Path.Combine(stagingResult.ServerDirectory, addon.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(candidate))
+            {
+                sourceFilePath = candidate;
+            }
+        }
+
+        // Try FileName in the addon type directory
+        if (sourceFilePath == null && !string.IsNullOrWhiteSpace(addon.FileName))
+        {
+            string addonDirectory = ResolveJavaAddonDirectory(stagingResult.ServerDirectory, addon.Type);
+            string candidate = Path.Combine(addonDirectory, addon.FileName);
+            if (File.Exists(candidate))
+            {
+                sourceFilePath = candidate;
+            }
+
+            // Also check for disabled variant
+            if (sourceFilePath == null && AddonFileNamePolicy.IsEnabledJarFileName(addon.FileName))
+            {
+                string disabledCandidate = Path.Combine(addonDirectory, AddonFileNamePolicy.GetDisabledFileName(addon.FileName));
+                if (File.Exists(disabledCandidate))
+                {
+                    sourceFilePath = disabledCandidate;
+                }
+            }
+        }
+
+        if (sourceFilePath == null || !File.Exists(sourceFilePath))
+        {
+            return false;
+        }
+
+        // Verify file is not empty
+        var fileInfo = new FileInfo(sourceFilePath);
+        if (fileInfo.Length <= 0)
+        {
+            return false;
+        }
+
+        // Verify size if metadata is available
+        if (addon.Size.HasValue && addon.Size.Value > 0 && fileInfo.Length != addon.Size.Value)
+        {
+            _logger.LogWarning(
+                "Packaged file size mismatch for {AddonName}: expected {Expected} bytes, got {Actual} bytes. Falling back to download.",
+                addon.Name, addon.Size.Value, fileInfo.Length);
+            return false;
+        }
+
+        // Determine the correct destination based on disabled state
+        string destinationDirectory = ResolveJavaAddonDirectory(stagingResult.ServerDirectory, addon.Type);
+        string enabledFileName = addon.FileName ?? Path.GetFileName(sourceFilePath);
+
+        // Normalize the enabled filename (strip disabled suffix if present)
+        if (AddonFileNamePolicy.IsDisabledJarFileName(enabledFileName))
+        {
+            enabledFileName = AddonFileNamePolicy.GetOriginalFileNameFromDisabled(enabledFileName);
+        }
+
+        string finalFileName;
+        if (addon.IsDisabled && AddonFileNamePolicy.IsEnabledJarFileName(enabledFileName))
+        {
+            finalFileName = AddonFileNamePolicy.GetDisabledFileName(enabledFileName);
+        }
+        else
+        {
+            finalFileName = enabledFileName;
+        }
+
+        string destinationPath = Path.Combine(destinationDirectory, finalFileName);
+
+        // Move/copy the file to the correct location if needed
+        if (!sourceFilePath.Equals(destinationPath, StringComparison.OrdinalIgnoreCase))
+        {
+            Directory.CreateDirectory(destinationDirectory);
+            if (File.Exists(destinationPath))
+            {
+                File.Delete(destinationPath);
+            }
+
+            File.Move(sourceFilePath, destinationPath);
+        }
+
+        // Register addon install in the local manifest using provider identities
+        await RegisterRestoredAddonAsync(stagingResult, addon, enabledFileName, cancellationToken)
+            .ConfigureAwait(false);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Registers a restored-from-package addon in the local addon_manifest.json,
+    /// using the primary provider identity if available.
+    /// </summary>
+    private async Task RegisterRestoredAddonAsync(
+        InstanceImportStagingResult stagingResult,
+        JavaAddonManifest addon,
+        string fileName,
+        CancellationToken cancellationToken)
+    {
+        // Determine the best provider identity
+        string provider = addon.Provider;
+        string projectId = addon.ProjectId ?? string.Empty;
+        string versionId = addon.VersionId ?? string.Empty;
+
+        if (addon.ProviderIdentities is { Count: > 0 })
+        {
+            ProviderIdentity primary = addon.ProviderIdentities[0];
+            if (!string.IsNullOrWhiteSpace(primary.Provider))
+            {
+                provider = primary.Provider;
+                projectId = primary.ProjectId;
+                versionId = primary.VersionId;
+            }
+        }
+
+        // Only register if this is actually a tracked addon (not purely local)
+        if (provider.Equals("Local", StringComparison.OrdinalIgnoreCase) &&
+            string.IsNullOrWhiteSpace(projectId))
+        {
+            return;
+        }
+
+        await _addonManifestUpdateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            string? hash = null;
+            string? hashType = null;
+
+            if (!string.IsNullOrWhiteSpace(addon.Sha512))
+            {
+                hash = addon.Sha512;
+                hashType = "sha512";
+            }
+            else if (!string.IsNullOrWhiteSpace(addon.Hash))
+            {
+                int separator = addon.Hash.IndexOf('-', StringComparison.Ordinal);
+                if (separator > 0 && separator < addon.Hash.Length - 1)
+                {
+                    hashType = addon.Hash[..separator];
+                    hash = addon.Hash[(separator + 1)..];
+                }
+                else
+                {
+                    hash = addon.Hash;
+                }
+            }
+
+            await _addonManifestService.RegisterInstallAsync(
+                    stagingResult.ServerDirectory,
+                    provider,
+                    projectId,
+                    versionId,
+                    fileName,
+                    addon.Name,
+                    null,
+                    addon.Name,
+                    null,
+                    null,
+                    hash,
+                    hashType,
+                    stagingResult.Manifest.Software.MinecraftVersion,
+                    addon.Loader,
+                    addon is JavaAddonManifest java ? java.DownloadUrl : null)
+                .ConfigureAwait(false);
+
+            // Register additional provider identities
+            if (addon.ProviderIdentities is { Count: > 1 })
+            {
+                for (int i = 1; i < addon.ProviderIdentities.Count; i++)
+                {
+                    ProviderIdentity identity = addon.ProviderIdentities[i];
+                    if (!string.IsNullOrWhiteSpace(identity.Provider) &&
+                        !identity.Provider.Equals("Local", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await _addonManifestService.RegisterInstallAsync(
+                                stagingResult.ServerDirectory,
+                                identity.Provider,
+                                identity.ProjectId,
+                                identity.VersionId,
+                                fileName,
+                                addon.Name,
+                                null,
+                                addon.Name,
+                                null,
+                                null,
+                                hash,
+                                hashType,
+                                stagingResult.Manifest.Software.MinecraftVersion,
+                                addon.Loader)
+                            .ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            _addonManifestUpdateLock.Release();
+        }
+    }
+
+    private async Task<string> DownloadJavaAddonAsync(
+        InstanceImportStagingResult stagingResult,
+        JavaAddonManifest addon,
+        Action<string, double> reportProgressAction,
+        CancellationToken cancellationToken)
+    {
+        string destinationDirectory = ResolveJavaAddonDirectory(stagingResult.ServerDirectory, addon.Type);
+        string? destinationPath = null;
+
+        // Try direct download first if DownloadUrl is available
+        if (!string.IsNullOrWhiteSpace(addon.DownloadUrl))
+        {
+            try
+            {
+                string fileName = RequireSafeAddonFileName(
+                    FirstNonEmpty(addon.FileName, $"{addon.Name}.jar"),
+                    ".jar");
+                destinationPath = Path.Combine(destinationDirectory, fileName);
+                HashSpec hash = ResolveHash(null, null, addon.Hash);
+
+                var directProgress = new Progress<DownloadProgress>(download =>
+                {
+                    double localPercentage = download.TotalBytes > 0 ? download.Percentage : 0;
+                    reportProgressAction(addon.Name, localPercentage);
+                });
+
+                await _marketplaceFileInstaller.InstallAsync(
+                        addon.DownloadUrl,
+                        destinationPath,
+                        hash.Hash,
+                        hash.HashType,
+                        directProgress,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                await RegisterJavaAddonInstallDirectAsync(
+                        stagingResult,
+                        addon,
+                        fileName,
+                        hash,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                return "Direct Download URL";
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "Direct download failed for Java add-on {AddonName} from {Url}. Falling back to Modrinth resolution.", addon.Name, addon.DownloadUrl);
+                if (!string.IsNullOrWhiteSpace(destinationPath))
+                {
+                    TryDeleteFile(destinationPath);
+                    TryDeleteFile(destinationPath + ".partial");
+                }
+            }
+        }
+
         IAddonProvider provider = ResolveAddonProvider(addon.Provider, addon);
         IReadOnlyList<JavaAddonDownloadCandidate> candidates = await ResolveJavaAddonDownloadCandidatesAsync(
                 provider,
@@ -644,7 +1072,6 @@ public sealed class InstanceImportService : IInstanceImportService
                 cancellationToken)
             .ConfigureAwait(false);
 
-        string destinationDirectory = ResolveJavaAddonDirectory(stagingResult.ServerDirectory, addon.Type);
         var failures = new List<string>();
         Exception? lastException = null;
 
@@ -653,8 +1080,6 @@ public sealed class InstanceImportService : IInstanceImportService
             cancellationToken.ThrowIfCancellationRequested();
 
             MarketplaceVersion version = candidate.Version;
-            string? destinationPath = null;
-
             try
             {
                 string fileName = RequireSafeAddonFileName(
@@ -663,12 +1088,18 @@ public sealed class InstanceImportService : IInstanceImportService
                 destinationPath = Path.Combine(destinationDirectory, fileName);
                 HashSpec hash = ResolveJavaCandidateHash(candidate, addon);
 
+                var candidateProgress = new Progress<DownloadProgress>(download =>
+                {
+                    double localPercentage = download.TotalBytes > 0 ? download.Percentage : 0;
+                    reportProgressAction(addon.Name, localPercentage);
+                });
+
                 await _marketplaceFileInstaller.InstallAsync(
                         version.DownloadUrl,
                         destinationPath,
                         hash.Hash,
                         hash.HashType,
-                        CreateDownloadProgress(progress, $"Downloading add-on {addon.Name}...", 40, 100, addon.Name),
+                        candidateProgress,
                         cancellationToken)
                     .ConfigureAwait(false);
 
@@ -682,7 +1113,7 @@ public sealed class InstanceImportService : IInstanceImportService
                         cancellationToken)
                     .ConfigureAwait(false);
 
-                return;
+                return candidate.Source;
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not AddonUnavailableException)
             {
@@ -738,6 +1169,40 @@ public sealed class InstanceImportService : IInstanceImportService
                     hash.HashType,
                     stagingResult.Manifest.Software.MinecraftVersion,
                     FirstNonEmpty(version.SelectedLoader, addon.Loader, stagingResult.Manifest.Software.Type))
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            _addonManifestUpdateLock.Release();
+        }
+    }
+
+    private async Task RegisterJavaAddonInstallDirectAsync(
+        InstanceImportStagingResult stagingResult,
+        JavaAddonManifest addon,
+        string fileName,
+        HashSpec hash,
+        CancellationToken cancellationToken)
+    {
+        await _addonManifestUpdateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _addonManifestService.RegisterInstallAsync(
+                    stagingResult.ServerDirectory,
+                    addon.Provider,
+                    addon.ProjectId ?? string.Empty,
+                    addon.VersionId ?? string.Empty,
+                    fileName,
+                    addon.Name,
+                    null,
+                    addon.Name,
+                    null,
+                    null,
+                    hash.Hash,
+                    hash.HashType,
+                    stagingResult.Manifest.Software.MinecraftVersion,
+                    addon.Loader,
+                    addon.DownloadUrl)
                 .ConfigureAwait(false);
         }
         finally
@@ -807,10 +1272,10 @@ public sealed class InstanceImportService : IInstanceImportService
         return candidates;
     }
 
-    private async Task DownloadBedrockAddonAsync(
+    private async Task<string> DownloadBedrockAddonAsync(
         InstanceImportStagingResult stagingResult,
         BedrockAddonManifest addon,
-        IProgress<InstanceTransferProgress>? progress,
+        Action<string, double> reportProgressAction,
         CancellationToken cancellationToken)
     {
         string downloadsDirectory = GetDownloadsDirectory(stagingResult);
@@ -819,6 +1284,7 @@ public sealed class InstanceImportService : IInstanceImportService
         string downloadUrl = addon.DownloadUrl ?? string.Empty;
         string fileName = RequireSafeAddonFileName(FirstNonEmpty(addon.FileName, $"{addon.Name}.mcpack"), ".mcpack", ".mcaddon", ".zip");
         HashSpec hash = ResolveHash(null, null, addon.Hash);
+        string source = "Direct Download URL";
 
         if (string.IsNullOrWhiteSpace(downloadUrl))
         {
@@ -829,6 +1295,7 @@ public sealed class InstanceImportService : IInstanceImportService
             downloadUrl = version.DownloadUrl;
             fileName = RequireSafeAddonFileName(FirstNonEmpty(version.FileName, addon.FileName, $"{addon.Name}.mcpack"), ".mcpack", ".mcaddon", ".zip");
             hash = ResolveHash(version.Hash, version.HashType, addon.Hash);
+            source = provider.Name;
         }
 
         if (string.IsNullOrWhiteSpace(downloadUrl))
@@ -839,17 +1306,25 @@ public sealed class InstanceImportService : IInstanceImportService
         string archivePath = Path.Combine(downloadsDirectory, fileName);
         try
         {
+            var bedrockProgress = new Progress<DownloadProgress>(download =>
+            {
+                double localPercentage = download.TotalBytes > 0 ? download.Percentage : 0;
+                reportProgressAction(addon.Name, localPercentage);
+            });
+
             await _marketplaceFileInstaller.InstallAsync(
                     downloadUrl,
                     archivePath,
                     hash.Hash,
                     hash.HashType,
-                    CreateDownloadProgress(progress, $"Downloading add-on {addon.Name}...", 40, 100, addon.Name),
+                    bedrockProgress,
                     cancellationToken)
                 .ConfigureAwait(false);
 
             await _bedrockAddonInstaller.InstallAsync(archivePath, stagingResult.ServerDirectory, cancellationToken)
                 .ConfigureAwait(false);
+
+            return source;
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not AddonUnavailableException)
         {
@@ -1534,9 +2009,12 @@ public sealed class InstanceImportService : IInstanceImportService
                 if (!addon.Provider.Equals("Local", StringComparison.OrdinalIgnoreCase) &&
                     string.IsNullOrWhiteSpace(java.ProjectId) &&
                     string.IsNullOrWhiteSpace(java.VersionId) &&
-                    string.IsNullOrWhiteSpace(java.Hash))
+                    string.IsNullOrWhiteSpace(java.Hash) &&
+                    string.IsNullOrWhiteSpace(addon.PackagedPath) &&
+                    string.IsNullOrWhiteSpace(java.DownloadUrl) &&
+                    (addon.ProviderIdentities == null || addon.ProviderIdentities.Count == 0))
                 {
-                    throw new InvalidDataException($"Remote Java add-on '{addon.Name}' is missing projectId, versionId, or a provider hash.");
+                    throw new InvalidDataException($"Remote Java add-on '{addon.Name}' is missing projectId, versionId, hash, packagedPath, or providerIdentities.");
                 }
 
                 break;

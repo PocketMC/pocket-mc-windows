@@ -282,7 +282,7 @@ public sealed class InstanceImportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ImportAsync_RemoteAddonUnavailable_CleansStagingAndDoesNotCreateActiveInstance()
+    public async Task ImportAsync_RemoteAddonUnavailable_RecordsFailureInReportAndCreatesInstance()
     {
         string zipPath = Path.Combine(_root, "missing-addon-import.zip");
         CreateValidImportZip(zipPath);
@@ -290,15 +290,27 @@ public sealed class InstanceImportServiceTests : IDisposable
             softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") },
             addonProviders: new[] { new FakeAddonProvider("Modrinth") });
 
-        await Assert.ThrowsAsync<AddonUnavailableException>(() => service.ImportAsync(new InstanceImportRequest
+        InstanceImportResult result = await service.ImportAsync(new InstanceImportRequest
         {
             ZipPath = zipPath
-        }));
+        });
 
-        string serversRoot = Path.Combine(_root, "servers");
-        Assert.False(Directory.Exists(Path.Combine(serversRoot, ".staging")));
-        Assert.False(Directory.Exists(Path.Combine(serversRoot, "import-test")));
-        Assert.Empty(_lastRegistry!.GetAll());
+        Assert.Equal(Path.Combine(_root, "servers", "import-test"), result.InstancePath);
+        Assert.True(File.Exists(Path.Combine(result.InstancePath, "server.jar")));
+        Assert.False(File.Exists(Path.Combine(result.InstancePath, "plugins", "Essentials.jar")));
+        Assert.True(File.Exists(Path.Combine(result.InstancePath, "import_report.json")));
+
+        Assert.NotNull(result.Report);
+        Assert.Equal(1, result.Report.TotalAddons);
+        Assert.Equal(0, result.Report.SuccessfulAddons);
+        Assert.Equal(1, result.Report.FailedAddons);
+
+        var failedAddon = result.Report.Addons.Single();
+        Assert.Equal("Essentials", failedAddon.Name);
+        Assert.False(failedAddon.Success);
+        Assert.NotNull(failedAddon.ErrorMessage);
+
+        Assert.Equal(result.InstancePath, _lastRegistry!.GetPath(result.InstanceId));
     }
 
     private InstanceImportService CreateService(

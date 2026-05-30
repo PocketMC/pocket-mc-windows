@@ -22,11 +22,18 @@ namespace PocketMC.Desktop.Infrastructure
         private readonly ControlledNavigationStack _detailStack = new();
         private readonly List<DetailPageEntry> _detailPages = new();
         private readonly IShellUIStateService _uiStateService;
+        private readonly Features.Instances.ImportExport.IInstanceImportService _importService;
+        private readonly Features.Instances.ImportExport.IInstanceExportService _exportService;
         private IShellHost? _shellHost;
 
-        public AppNavigationService(IShellUIStateService uiStateService)
+        public AppNavigationService(
+            IShellUIStateService uiStateService,
+            Features.Instances.ImportExport.IInstanceImportService importService,
+            Features.Instances.ImportExport.IInstanceExportService exportService)
         {
             _uiStateService = uiStateService;
+            _importService = importService;
+            _exportService = exportService;
         }
 
         public void Initialize(IShellHost shellHost)
@@ -34,8 +41,42 @@ namespace PocketMC.Desktop.Infrastructure
             _shellHost = shellHost;
         }
 
+        private bool ConfirmAndCancelActiveOperations()
+        {
+            if (!_importService.IsActive && !_exportService.IsActive)
+            {
+                return true;
+            }
+
+            var result = AppDialog.ShowResult(
+                "Operation In Progress",
+                "An import/export operation is currently running. Cancelling now may leave the instance incomplete and all current progress will be lost. Are you sure you want to cancel?",
+                AppDialogType.Warning,
+                AppDialogButtons.YesNo,
+                primaryButtonText: "Continue Operation",
+                secondaryButtonText: "Cancel Operation"
+            );
+
+            if (result == PocketMC.Desktop.Core.Interfaces.DialogResult.No) // Cancel Operation
+            {
+                if (_importService.IsActive) _importService.Cancel();
+                if (_exportService.IsActive) _exportService.Cancel();
+
+                // Wait until active state is false
+                while (_importService.IsActive || _exportService.IsActive)
+                {
+                    System.Threading.Thread.Sleep(50);
+                }
+                return true;
+            }
+
+            // Continue Operation (cancel navigation)
+            return false;
+        }
+
         public bool NavigateToDashboard()
         {
+            if (!ConfirmAndCancelActiveOperations()) return false;
             if (_shellHost == null) return false;
 
             bool navigated = _shellHost.ShowShellPage(typeof(DashboardPage));
@@ -50,6 +91,7 @@ namespace PocketMC.Desktop.Infrastructure
 
         public bool NavigateToTunnel()
         {
+            if (!ConfirmAndCancelActiveOperations()) return false;
             if (_shellHost == null) return false;
 
             bool navigated = _shellHost.ShowShellPage(typeof(TunnelPage));
@@ -64,6 +106,7 @@ namespace PocketMC.Desktop.Infrastructure
 
         public bool NavigateToShellPage(Type pageType)
         {
+            if (!ConfirmAndCancelActiveOperations()) return false;
             if (_shellHost == null) return false;
 
             bool navigated = _shellHost.ShowShellPage(pageType);
@@ -83,6 +126,7 @@ namespace PocketMC.Desktop.Infrastructure
             DetailBackNavigation backNavigation,
             bool clearDetailStack = false)
         {
+            if (!ConfirmAndCancelActiveOperations()) return false;
             if (_shellHost == null) return false;
 
             ValidateDetailTransition(routeKind, backNavigation);
@@ -105,6 +149,7 @@ namespace PocketMC.Desktop.Infrastructure
 
         public bool NavigateBack()
         {
+            if (!ConfirmAndCancelActiveOperations()) return false;
             if (_shellHost == null) return false;
 
             ControlledBackNavigationResult result = _detailStack.NavigateBack();

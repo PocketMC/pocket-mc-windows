@@ -113,6 +113,8 @@ public sealed class InstanceImportViewModelTests
     {
         public Func<InstanceImportRequest, IProgress<InstanceTransferProgress>?, CancellationToken, Task<InstanceImportResult>>? ImportHandler { get; set; }
         public InstanceImportRequest? LastRequest { get; private set; }
+        public bool IsActive { get; set; }
+        public void Cancel() { }
 
         public Task<InstanceExportManifest> ReadManifestAsync(
             string zipPath,

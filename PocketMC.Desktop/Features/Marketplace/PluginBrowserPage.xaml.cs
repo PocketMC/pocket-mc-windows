@@ -409,7 +409,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                     hash,
                     hashType,
                     _mcVersion,
-                    _compat.LoaderName);
+                    _compat.LoaderName,
+                    downloadUrl: url);
             }
         }
     }

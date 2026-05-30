@@ -1,10 +1,12 @@
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 
@@ -73,6 +75,7 @@ public sealed class InstanceExportService : IInstanceExportService
     private readonly AddonManifestService _addonManifestService;
     private readonly ApplicationState _applicationState;
     private readonly ILogger<InstanceExportService> _logger;
+    private CancellationTokenSource? _activeCts;
 
     public InstanceExportService(
         AddonManifestService addonManifestService, 
@@ -84,12 +87,18 @@ public sealed class InstanceExportService : IInstanceExportService
         _logger = logger;
     }
 
+    public bool IsActive => _activeCts != null;
+    public void Cancel() => _activeCts?.Cancel();
+
     public async Task<InstanceExportResult> ExportAsync(
         InstanceExportRequest request,
         IProgress<InstanceTransferProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        _activeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        CancellationToken linkedToken = _activeCts.Token;
 
         string instanceRoot = ValidateInstanceRoot(request.InstancePath);
         string destinationZipPath = ValidateDestinationPath(request.DestinationZipPath, instanceRoot);
@@ -105,9 +114,9 @@ public sealed class InstanceExportService : IInstanceExportService
         try
         {
             Report(progress, "Preparing export manifest...", 0);
-            InstanceExportManifest manifest = await BuildManifestAsync(metadata, instanceRoot, isJava, cancellationToken)
+            InstanceExportManifest manifest = await BuildManifestAsync(metadata, instanceRoot, isJava, linkedToken)
                 .ConfigureAwait(false);
-            long totalBytes = EstimateExportBytes(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, cancellationToken);
+            long totalBytes = EstimateExportBytes(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken);
             long copiedBytes = 0;
 
             await using (var zipStream = new FileStream(tempZipPath, new FileStreamOptions
@@ -120,17 +129,17 @@ public sealed class InstanceExportService : IInstanceExportService
             }))
             using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: false))
             {
-                await AddJsonEntryAsync(archive, "manifest.json", manifest, cancellationToken).ConfigureAwait(false);
-                await AddMetadataEntryAsync(archive, metadata, instanceRoot, _applicationState, cancellationToken).ConfigureAwait(false);
-                await AddIconEntryAsync(archive, instanceRoot, cancellationToken).ConfigureAwait(false);
+                await AddJsonEntryAsync(archive, "manifest.json", manifest, linkedToken).ConfigureAwait(false);
+                await AddMetadataEntryAsync(archive, metadata, instanceRoot, _applicationState, linkedToken).ConfigureAwait(false);
+                await AddIconEntryAsync(archive, instanceRoot, linkedToken).ConfigureAwait(false);
 
-                await foreach (ExportFile file in EnumerateExportFilesAsync(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, cancellationToken)
+                await foreach (ExportFile file in EnumerateExportFilesAsync(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken)
                     .ConfigureAwait(false))
                 {
                     string entryName = ToZipEntryName(Path.Combine("server", file.RelativePath));
                     Report(progress, $"Exporting {file.RelativePath}...", CalculateProgress(copiedBytes, totalBytes), file.RelativePath);
 
-                    await AddFileEntryAsync(archive, file.FullPath, entryName, cancellationToken).ConfigureAwait(false);
+                    await AddFileEntryAsync(archive, file.FullPath, entryName, linkedToken).ConfigureAwait(false);
                     copiedBytes += file.SizeBytes;
                 }
             }
@@ -151,6 +160,11 @@ public sealed class InstanceExportService : IInstanceExportService
         {
             TryDeleteFile(tempZipPath);
             throw;
+        }
+        finally
+        {
+            _activeCts?.Dispose();
+            _activeCts = null;
         }
     }
 
@@ -221,8 +235,8 @@ public sealed class InstanceExportService : IInstanceExportService
 
         if (isJava)
         {
-            AddJavaProviderAddons(addons, metadata, instanceRoot, providerManifest);
-            AddLocalJavaAddons(addons, metadata, instanceRoot, providerManifest, cancellationToken);
+            await BuildCanonicalJavaAddonsAsync(addons, metadata, instanceRoot, providerManifest, cancellationToken)
+                .ConfigureAwait(false);
         }
         else
         {
@@ -231,48 +245,45 @@ public sealed class InstanceExportService : IInstanceExportService
         }
 
         return addons
-            .DistinctBy(addon => $"{addon.Provider}|{addon.Type}|{GetAddonIdentity(addon)}", StringComparer.OrdinalIgnoreCase)
             .OrderBy(addon => addon.Type, StringComparer.OrdinalIgnoreCase)
             .ThenBy(addon => addon.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
 
-    private static void AddJavaProviderAddons(
-        List<InstanceAddonManifest> addons,
-        InstanceMetadata metadata,
-        string instanceRoot,
-        AddonManifest providerManifest)
-    {
-        foreach (AddonManifestEntry entry in providerManifest.Entries)
-        {
-            if (!LooksLikeJavaAddon(entry.FileName))
-            {
-                continue;
-            }
-
-            string addonType = ResolveJavaAddonType(metadata, instanceRoot, entry.FileName);
-            addons.Add(new JavaAddonManifest
-            {
-                Name = FirstNonEmpty(entry.DisplayName, entry.ProjectTitle, Path.GetFileNameWithoutExtension(entry.FileName)),
-                Type = addonType,
-                Provider = FirstNonEmpty(entry.Provider, "Local"),
-                ProjectId = EmptyToNull(entry.ProjectId),
-                VersionId = EmptyToNull(entry.VersionId),
-                Hash = FormatHash(entry.FileHashType, entry.FileHash),
-                Loader = EmptyToNull(entry.Loader ?? metadata.Compatibility.LoaderName),
-                FileName = EmptyToNull(entry.FileName),
-                RelativePath = ResolveAddonRelativePath(instanceRoot, addonType, entry.FileName)
-            });
-        }
-    }
-
-    private static void AddLocalJavaAddons(
+    /// <summary>
+    /// Scans the physical mods/ and plugins/ directories to produce exactly one canonical
+    /// manifest entry per physical file. Provider metadata from addon_manifest.json is merged
+    /// into ProviderIdentities rather than producing duplicate entries.
+    /// </summary>
+    private static async Task BuildCanonicalJavaAddonsAsync(
         List<InstanceAddonManifest> addons,
         InstanceMetadata metadata,
         string instanceRoot,
         AddonManifest providerManifest,
         CancellationToken cancellationToken)
     {
+        // Build a lookup from normalized filename to all matching provider entries.
+        var entryLookup = new Dictionary<string, List<AddonManifestEntry>>(StringComparer.OrdinalIgnoreCase);
+        foreach (AddonManifestEntry entry in providerManifest.Entries)
+        {
+            if (!LooksLikeJavaAddon(entry.FileName) && !LooksLikeDisabledJavaAddon(entry.FileName))
+            {
+                continue;
+            }
+
+            string key = NormalizeAddonFileName(entry.FileName);
+            if (!entryLookup.TryGetValue(key, out List<AddonManifestEntry>? list))
+            {
+                list = new List<AddonManifestEntry>();
+                entryLookup[key] = list;
+            }
+
+            list.Add(entry);
+        }
+
+        // Track which files we've already processed to avoid duplicates
+        var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach ((string directoryName, string addonType) in new[]
         {
             ("plugins", InstanceAddonTypes.Plugin),
@@ -285,29 +296,141 @@ public sealed class InstanceExportService : IInstanceExportService
                 continue;
             }
 
-            foreach (string file in Directory.EnumerateFiles(directory, "*.jar", SearchOption.TopDirectoryOnly))
+            foreach (string file in Directory.EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string fileName = Path.GetFileName(file);
 
-                if (providerManifest.Entries.Any(entry => entry.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase)) ||
-                    addons.Any(addon => addon.FileName?.Equals(fileName, StringComparison.OrdinalIgnoreCase) == true))
+                bool isEnabled = AddonFileNamePolicy.IsEnabledJarFileName(fileName);
+                bool isDisabled = AddonFileNamePolicy.IsDisabledJarFileName(fileName);
+
+                if (!isEnabled && !isDisabled)
                 {
                     continue;
                 }
 
+                if (!processedFiles.Add(fileName))
+                {
+                    continue;
+                }
+
+                // Compute file identity
+                var fileInfo = new FileInfo(file);
+                (string sha1, string sha512) = await ComputeFileHashesAsync(file, cancellationToken).ConfigureAwait(false);
+
+                string normalizedName = NormalizeAddonFileName(fileName);
+                string enabledFileName = isDisabled
+                    ? AddonFileNamePolicy.GetOriginalFileNameFromDisabled(fileName)
+                    : fileName;
+
+                // Merge all provider manifest entries that match this file
+                var matchingEntries = new List<AddonManifestEntry>();
+                if (entryLookup.TryGetValue(normalizedName, out List<AddonManifestEntry>? byName))
+                {
+                    matchingEntries.AddRange(byName);
+                }
+
+                // Also check by enabled filename directly if different from normalized
+                if (!enabledFileName.Equals(normalizedName, StringComparison.OrdinalIgnoreCase) &&
+                    entryLookup.TryGetValue(enabledFileName, out List<AddonManifestEntry>? byEnabled))
+                {
+                    foreach (var entry in byEnabled)
+                    {
+                        if (!matchingEntries.Contains(entry))
+                        {
+                            matchingEntries.Add(entry);
+                        }
+                    }
+                }
+
+                // Build provider identities from all matching entries
+                List<ProviderIdentity>? providerIdentities = null;
+                if (matchingEntries.Count > 0)
+                {
+                    providerIdentities = new List<ProviderIdentity>();
+                    foreach (AddonManifestEntry entry in matchingEntries)
+                    {
+                        if (!string.IsNullOrWhiteSpace(entry.Provider) &&
+                            !entry.Provider.Equals("Local", StringComparison.OrdinalIgnoreCase))
+                        {
+                            providerIdentities.Add(new ProviderIdentity
+                            {
+                                Provider = entry.Provider,
+                                ProjectId = entry.ProjectId ?? string.Empty,
+                                VersionId = entry.VersionId ?? string.Empty
+                            });
+                        }
+                    }
+
+                    if (providerIdentities.Count == 0)
+                    {
+                        providerIdentities = null;
+                    }
+                }
+
+                // Pick the best display name and primary provider from matched entries
+                AddonManifestEntry? primary = matchingEntries.FirstOrDefault(
+                    e => !string.IsNullOrWhiteSpace(e.Provider) &&
+                         !e.Provider.Equals("Local", StringComparison.OrdinalIgnoreCase))
+                    ?? matchingEntries.FirstOrDefault();
+
+                string provider = primary != null
+                    ? FirstNonEmpty(primary.Provider, "Local")
+                    : "Local";
+                string name = primary != null
+                    ? FirstNonEmpty(primary.DisplayName, primary.ProjectTitle, Path.GetFileNameWithoutExtension(enabledFileName))
+                    : Path.GetFileNameWithoutExtension(enabledFileName);
+
+                string relativePath = ToPortableRelativePath(instanceRoot, file);
+
                 addons.Add(new JavaAddonManifest
                 {
-                    Name = Path.GetFileNameWithoutExtension(fileName),
+                    Name = name,
                     Type = addonType,
-                    Provider = "Local",
-                    FileName = fileName,
-                    RelativePath = ToPortableRelativePath(instanceRoot, file),
-                    Loader = metadata.Compatibility.LoaderName
+                    Provider = provider,
+                    FileName = enabledFileName,
+                    RelativePath = relativePath,
+                    Size = fileInfo.Length,
+                    Sha1 = sha1,
+                    Sha512 = sha512,
+                    IsDisabled = isDisabled,
+                    PackagedPath = ToPortableRelativePath("server", relativePath),
+                    ProviderIdentities = providerIdentities,
+                    ProjectId = primary != null ? EmptyToNull(primary.ProjectId) : null,
+                    VersionId = primary != null ? EmptyToNull(primary.VersionId) : null,
+                    Hash = primary != null ? FormatHash(primary.FileHashType, primary.FileHash) : $"sha512-{sha512}",
+                    Loader = EmptyToNull(primary?.Loader ?? metadata.Compatibility.LoaderName),
+                    DownloadUrl = primary != null ? EmptyToNull(primary.DownloadUrl) : null
                 });
             }
         }
     }
+
+    private static async Task<(string sha1, string sha512)> ComputeFileHashesAsync(
+        string filePath,
+        CancellationToken cancellationToken)
+    {
+        byte[] fileBytes = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
+        string sha1 = Convert.ToHexString(SHA1.HashData(fileBytes)).ToLowerInvariant();
+        string sha512 = Convert.ToHexString(SHA512.HashData(fileBytes)).ToLowerInvariant();
+        return (sha1, sha512);
+    }
+
+    /// <summary>
+    /// Normalizes a file name by stripping the disabled suffix if present.
+    /// </summary>
+    private static string NormalizeAddonFileName(string fileName)
+    {
+        if (AddonFileNamePolicy.IsDisabledJarFileName(fileName))
+        {
+            return AddonFileNamePolicy.GetOriginalFileNameFromDisabled(fileName);
+        }
+
+        return fileName;
+    }
+
+    private static bool LooksLikeDisabledJavaAddon(string fileName) =>
+        fileName.EndsWith(".jar" + AddonFileNamePolicy.DisabledSuffix, StringComparison.OrdinalIgnoreCase);
 
     private static void AddBedrockProviderAddons(
         List<InstanceAddonManifest> addons,
@@ -662,14 +785,15 @@ public sealed class InstanceExportService : IInstanceExportService
             return true;
         }
 
-        if (isJava)
+        if (!isJava)
         {
-            return fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) ||
-                   fileName.EndsWith(".jar.disabled-by-pocketmc", StringComparison.OrdinalIgnoreCase);
+            string extension = Path.GetExtension(fileName);
+            return BedrockBinaryExtensions.Contains(extension);
         }
 
-        string extension = Path.GetExtension(fileName);
-        return BedrockBinaryExtensions.Contains(extension);
+        // Java: include .jar and .jar.disabled-by-pocketmc in the ZIP for self-contained packaging.
+        // Only skip server JARs at the root (server.jar, installer.jar) which are in the instance root, not in mods/plugins.
+        return false;
     }
 
     private static bool IsWorldDirectory(string directoryName, bool isJava)
@@ -756,21 +880,6 @@ public sealed class InstanceExportService : IInstanceExportService
         return serverType.Trim();
     }
 
-    private static string ResolveJavaAddonType(InstanceMetadata metadata, string instanceRoot, string fileName)
-    {
-        if (File.Exists(Path.Combine(instanceRoot, "plugins", fileName)))
-        {
-            return InstanceAddonTypes.Plugin;
-        }
-
-        if (File.Exists(Path.Combine(instanceRoot, "mods", fileName)))
-        {
-            return InstanceAddonTypes.Mod;
-        }
-
-        return metadata.Compatibility.SupportsPlugins ? InstanceAddonTypes.Plugin : InstanceAddonTypes.Mod;
-    }
-
     private static string ResolveBedrockAddonType(string instanceRoot, string fileName)
     {
         if (File.Exists(Path.Combine(instanceRoot, "resource_packs", fileName)))
@@ -839,15 +948,6 @@ public sealed class InstanceExportService : IInstanceExportService
 
         return "Unknown";
     }
-
-    private static string GetAddonIdentity(InstanceAddonManifest addon) =>
-        addon switch
-        {
-            JavaAddonManifest java => FirstNonEmpty(java.ProjectId, java.FileName, java.RelativePath, java.Name),
-            BedrockAddonManifest bedrock => FirstNonEmpty(bedrock.Uuid, bedrock.FileName, bedrock.RelativePath, bedrock.Name),
-            _ => FirstNonEmpty(addon.FileName, addon.RelativePath, addon.Name)
-        };
-
     private static string? ReadString(JsonElement element, string propertyName)
     {
         if (!element.TryGetProperty(propertyName, out JsonElement property) ||

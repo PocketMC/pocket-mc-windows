@@ -231,7 +231,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                 fileHash: updateInfo.Hash,
                 fileHashType: updateInfo.HashType,
                 minecraftVersion: null,
-                loader: compat.LoaderName);
+                loader: compat.LoaderName,
+                downloadUrl: updateInfo.LatestDownloadUrl);
         }
 
         private IAddonProvider? GetProvider(string providerName)
