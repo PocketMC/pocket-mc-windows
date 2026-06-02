@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using PocketMC.Desktop.Models;
@@ -131,6 +132,40 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public string? PortIssueText => _portIssueText;
     public string? PortIssueTooltip => _portIssueTooltip;
 
+    public string PrimaryJoinLabel => IsBedrockServer ? "Bedrock join address" : "Java join address";
+    public string PrimaryJoinHint => IsBedrockServer
+        ? "For Bedrock players outside your Wi-Fi."
+        : "For Java players outside your Wi-Fi.";
+    public string LanJoinHint => "For players on the same Wi-Fi/network.";
+    public string BedrockJoinHint => "For Bedrock players joining this Java server through Geyser.";
+    public string NumericJoinHint => "Fallback numeric address for consoles and clients that reject hostnames.";
+    public bool HasAnyShareableAddress => HasTunnelAddress || HasBedrockTunnelAddress || HasNumericTunnelAddress || HasBedrockNumericTunnelAddress || HasLanAddress;
+    public Visibility ShareInviteVisibility => HasAnyShareableAddress ? Visibility.Visible : Visibility.Collapsed;
+
+    public string HealthSummaryText
+    {
+        get
+        {
+            if (HasPortIssue) return "Needs attention: port conflict";
+            if (_state == ServerState.Crashed) return "Needs attention: last run crashed";
+            if (_isTunnelResolving) return "Starting public connection...";
+            if (IsRunning && HasTunnelAddress) return "Healthy: public address ready";
+            if (IsRunning) return "Running: LAN address ready";
+            return "Ready when you are";
+        }
+    }
+
+    public Brush HealthSummaryBrush
+    {
+        get
+        {
+            if (HasPortIssue || _state == ServerState.Crashed) return Brushes.OrangeRed;
+            if (IsRunning && HasTunnelAddress) return Brushes.LimeGreen;
+            if (IsRunning) return Brushes.DeepSkyBlue;
+            return Brushes.Gray;
+        }
+    }
+
     /// <summary>True while the tunnel connect address is being resolved.</summary>
     public bool IsTunnelResolving
     {
@@ -143,6 +178,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(ShowBedrockNumericSkeleton));
                 OnPropertyChanged(nameof(ShowGeyserHostnameSkeleton));
                 OnPropertyChanged(nameof(ShowGeyserNumericSkeleton));
+                OnPropertyChanged(nameof(HealthSummaryText));
+                OnPropertyChanged(nameof(HealthSummaryBrush));
             }
         }
     }
@@ -276,6 +313,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(HasNumericTunnelAddress));
                 OnPropertyChanged(nameof(ShowBedrockNumericSkeleton));
+                OnPropertyChanged(nameof(HasAnyShareableAddress));
+                OnPropertyChanged(nameof(ShareInviteVisibility));
             }
         }
     }
@@ -290,6 +329,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(HasBedrockNumericTunnelAddress));
                 OnPropertyChanged(nameof(ShowGeyserNumericSkeleton));
+                OnPropertyChanged(nameof(HasAnyShareableAddress));
+                OnPropertyChanged(nameof(ShareInviteVisibility));
             }
         }
     }
@@ -321,6 +362,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(HasTunnelAddress));
                 OnPropertyChanged(nameof(BedrockIpDisplayText));
                 OnPropertyChanged(nameof(ShowPrimaryTunnelSkeleton));
+                OnPropertyChanged(nameof(HasAnyShareableAddress));
+                OnPropertyChanged(nameof(ShareInviteVisibility));
+                OnPropertyChanged(nameof(HealthSummaryText));
+                OnPropertyChanged(nameof(HealthSummaryBrush));
                 UpdateIpDisplay();
             }
         }
@@ -336,6 +381,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(HasBedrockTunnelAddress));
                 OnPropertyChanged(nameof(BedrockIpDisplayText));
                 OnPropertyChanged(nameof(ShowGeyserHostnameSkeleton));
+                OnPropertyChanged(nameof(HasAnyShareableAddress));
+                OnPropertyChanged(nameof(ShareInviteVisibility));
             }
         }
     }
@@ -358,6 +405,43 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     {
         get => VoiceChatTunnelAddress;
         set => VoiceChatTunnelAddress = value;
+    }
+
+    public string BuildInviteMessage()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Join my Minecraft server: {Name}");
+        sb.AppendLine($"Version: {MinecraftVersion}");
+
+        if (HasTunnelAddress)
+        {
+            sb.AppendLine($"{(IsBedrockServer ? "Bedrock" : "Java")}: {TunnelAddress}");
+        }
+        else if (HasLanAddress)
+        {
+            sb.AppendLine($"LAN: {LanAddressDisplayText}");
+        }
+
+        if (ShowBedrockIp && HasBedrockTunnelAddress)
+        {
+            sb.AppendLine($"Bedrock: {BedrockTunnelAddress}");
+        }
+
+        if (IsBedrockServer && HasNumericTunnelAddress)
+        {
+            sb.AppendLine($"Bedrock numeric fallback: {NumericTunnelAddress}");
+        }
+        else if (ShowBedrockIp && HasBedrockNumericTunnelAddress)
+        {
+            sb.AppendLine($"Bedrock numeric fallback: {BedrockNumericTunnelAddress}");
+        }
+
+        if (HasVoiceChatTunnelAddress)
+        {
+            sb.AppendLine($"Simple Voice Chat: {VoiceChatTunnelAddress}");
+        }
+
+        return sb.ToString().TrimEnd();
     }
 
     public void SetSimpleVoiceChatWarning(string warning)
@@ -407,6 +491,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(StoppedControlsVisibility));
             OnPropertyChanged(nameof(StopButtonText));
             OnPropertyChanged(nameof(HasLanAddress));
+            OnPropertyChanged(nameof(HasAnyShareableAddress));
+            OnPropertyChanged(nameof(ShareInviteVisibility));
+            OnPropertyChanged(nameof(HealthSummaryText));
+            OnPropertyChanged(nameof(HealthSummaryBrush));
         }
     }
 
@@ -418,6 +506,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(PortIssueVisibility));
         OnPropertyChanged(nameof(PortIssueText));
         OnPropertyChanged(nameof(PortIssueTooltip));
+        OnPropertyChanged(nameof(HealthSummaryText));
+        OnPropertyChanged(nameof(HealthSummaryBrush));
     }
 
     public void ClearPortIssue()
@@ -433,6 +523,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(PortIssueVisibility));
         OnPropertyChanged(nameof(PortIssueText));
         OnPropertyChanged(nameof(PortIssueTooltip));
+        OnPropertyChanged(nameof(HealthSummaryText));
+        OnPropertyChanged(nameof(HealthSummaryBrush));
     }
 
     public void SetBedrockLocalPort(int port)
@@ -503,6 +595,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(PrimaryPort));
         OnPropertyChanged(nameof(LanAddressDisplayText));
         OnPropertyChanged(nameof(BedrockIpDisplayText));
+        OnPropertyChanged(nameof(PrimaryJoinLabel));
+        OnPropertyChanged(nameof(PrimaryJoinHint));
+        OnPropertyChanged(nameof(HealthSummaryText));
+        OnPropertyChanged(nameof(HealthSummaryBrush));
     }
 
     /// <summary>
