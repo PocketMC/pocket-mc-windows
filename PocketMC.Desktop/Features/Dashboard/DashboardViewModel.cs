@@ -1,6 +1,8 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Core.Interfaces;
@@ -38,6 +40,8 @@ namespace PocketMC.Desktop.Features.Dashboard
         private bool _isActive;
 
         public ObservableCollection<InstanceCardViewModel> Instances => _listVm.Instances;
+        public Visibility EmptyStateVisibility => Instances.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility ServerListVisibility => Instances.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         public ICommand NewInstanceCommand { get; }
         public ICommand ImportInstanceCommand { get; }
         public ICommand RefreshInstancesCommand { get; }
@@ -77,6 +81,8 @@ namespace PocketMC.Desktop.Features.Dashboard
             _serviceProvider = serviceProvider;
             _applicationState = applicationState;
             _playitApiClient = playitApiClient;
+
+            Instances.CollectionChanged += OnInstancesCollectionChanged;
 
             NewInstanceCommand = new RelayCommand(_ => NavigateToNewInstance());
             ImportInstanceCommand = new RelayCommand(_ => NavigateToImportInstance());
@@ -125,6 +131,12 @@ namespace PocketMC.Desktop.Features.Dashboard
             _resourceMonitorService.InstanceMetricsUpdated -= OnInstanceMetricsUpdated;
             _resourceMonitorService.GlobalMetricsUpdated -= OnGlobalMetricsUpdated;
             _isActive = false;
+        }
+
+        private void OnInstancesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(EmptyStateVisibility));
+            OnPropertyChanged(nameof(ServerListVisibility));
         }
 
         private void OnInstancesChanged(object? sender, EventArgs e) => _dispatcher.Invoke(_listVm.LoadInstances);
