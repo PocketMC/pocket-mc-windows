@@ -98,7 +98,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 if (availableMb < requiredMb + 512)
                 {
                     var result = await _dialogService.ShowDialogAsync("Low Memory",
-                        $"Your system only has {availableMb}MB of available RAM. Starting this server ({requiredMb}MB) might cause significant lag or crashes.\n\nContinue anyway?",
+                        $"Your system only has {availableMb}MB of available RAM. This server is configured for {requiredMb}MB. Starting it anyway may cause lag, crashes, or Windows doing its usual dramatic coughing.\n\nContinue anyway?",
                         DialogType.Warning, true);
                     if (result != DialogResult.Yes)
                     {
@@ -117,7 +117,6 @@ namespace PocketMC.Desktop.Features.Dashboard
 
                 await _lifecycleService.StartAsync(vm.Metadata);
                 vm.ClearPortIssue();
-                // The update state will be handled by listening to OnInstanceStateChanged in DashboardViewModel or CardVM.
                 onStarted(vm);
 
                 _ = _tunnelOrchestrator.EnsureTunnelFlowAsync(vm);
@@ -131,7 +130,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 vm.UpdateState(ServerState.Stopped);
                 onStarted(vm);
                 _logger.LogError(ex, "Failed to start server {ServerName}.", vm.Name);
-                _dialogService.ShowMessage("Start Failed", $"PocketMC could not start '{vm.Name}'.\n\n{ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Start Failed", $"PocketMC could not start '{vm.Name}'.\n\nWhat you can try:\n- Open the console logs\n- Check Java and RAM settings\n- Check whether another server is using the same port\n\nTechnical detail:\n{ex.Message}", DialogType.Error);
             }
         }
 
@@ -149,13 +148,11 @@ namespace PocketMC.Desktop.Features.Dashboard
 
                 if (_lifecycleService.GetProcess(vm.Id) == null) return;
 
-                // Capture session start time before stopping
                 var sessionStart = _lifecycleService.GetSessionStartTime(vm.Id) ?? DateTime.UtcNow;
 
                 vm.UpdateState(ServerState.Stopping);
                 await _lifecycleService.StopAsync(vm.Id);
 
-                // Trigger AI summarization flow after stop completes
                 _ = TriggerAiSummarizationAsync(vm, sessionStart);
             }
             catch (Exception ex)
@@ -173,26 +170,23 @@ namespace PocketMC.Desktop.Features.Dashboard
             {
                 var settings = _applicationState.Settings;
 
-                // Check if feature is enabled and configured
                 if (!settings.EnableAiSummarization || string.IsNullOrWhiteSpace(settings.GetCurrentAiKey()))
                     return;
 
                 string? serverDir = _registry.GetPath(vm.Id);
                 if (serverDir == null) return;
 
-                // Either auto-generate or ask the user
                 if (!settings.AlwaysAutoSummarize)
                 {
                     var response = await _dialogService.ShowDialogAsync(
                         "AI Session Summary",
-                        $"Generate an AI summary for this '{vm.Name}' session?\n\nThis will send the session logs to {settings.AiProvider} for analysis.",
+                        $"Generate an AI summary for this '{vm.Name}' session?\n\nThis sends the session logs to {settings.AiProvider} for analysis. Logs may contain player names, IP addresses, local paths, chat, or tokens. Review your settings before sending anything sensitive. Because apparently computers need privacy warnings now, and honestly, they do.",
                         DialogType.Question, true);
 
                     if (response != DialogResult.Yes)
                         return;
                 }
 
-                // Run summarization asynchronously
                 var summarizationService = (SessionSummarizationService)_serviceProvider.GetService(typeof(SessionSummarizationService))!;
                 var provider = AiApiClient.ParseProvider(settings.AiProvider);
                 var sessionEnd = DateTime.UtcNow;
@@ -215,7 +209,6 @@ namespace PocketMC.Desktop.Features.Dashboard
             catch (Exception ex)
             {
                 _logger.LogError(ex, "AI summarization failed for {Server}.", vm.Name);
-                // Intentionally swallowed — summarization failure must never affect server operations
             }
         }
 
@@ -265,7 +258,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 vm.UpdateState(ServerState.Stopped);
                 onStarted(vm);
                 _logger.LogError(ex, "Failed to restart server {ServerName}.", vm.Name);
-                _dialogService.ShowMessage("Restart Failed", $"PocketMC could not restart '{vm.Name}'.\n\n{ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Restart Failed", $"PocketMC could not restart '{vm.Name}'.\n\nTry opening the console, checking the port, and reviewing Java/RAM settings.\n\nTechnical detail:\n{ex.Message}", DialogType.Error);
             }
         }
 
@@ -273,11 +266,16 @@ namespace PocketMC.Desktop.Features.Dashboard
         {
             if (_lifecycleService.IsRunning(vm.Id))
             {
-                _dialogService.ShowMessage("Server Running", "Cannot delete a running server. Stop it first.", DialogType.Warning);
+                _dialogService.ShowMessage("Server Running", "Cannot delete a running server. Stop it first so PocketMC does not delete files while Java is still hugging them.", DialogType.Warning);
                 return;
             }
 
-            var prompt = await _dialogService.ShowDialogAsync("Delete Server", $"Are you sure you want to completely erase the {vm.Name} server?", DialogType.Warning, false);
+            var prompt = await _dialogService.ShowDialogAsync(
+                "Delete Server Permanently",
+                $"Delete '{vm.Name}' permanently?\n\nThis deletes the server folder, including world files, configuration, installed mods/plugins, and logs. Backups stored outside this server folder are not deleted.\n\nThis cannot be undone. Continue?",
+                DialogType.Warning,
+                true);
+
             if (prompt == DialogResult.Yes)
             {
                 await _lifecycleService.ReleaseInstanceAsync(vm.Id);
@@ -319,7 +317,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 string? instancePath = _registry.GetPath(vm.Id);
                 if (string.IsNullOrWhiteSpace(instancePath) || !Directory.Exists(instancePath))
                 {
-                    _dialogService.ShowMessage("Export Unavailable", "PocketMC could not find this instance folder.", DialogType.Warning);
+                    _dialogService.ShowMessage("Export Unavailable", "PocketMC could not find this server folder.", DialogType.Warning);
                     return;
                 }
 
@@ -408,7 +406,10 @@ namespace PocketMC.Desktop.Features.Dashboard
                 primary.Request.Protocol,
                 primary.Request.IpMode);
 
-            _dialogService.ShowMessage(displayInfo.Title, displayInfo.Message, DialogType.Warning);
+            _dialogService.ShowMessage(
+                displayInfo.Title,
+                displayInfo.Message + "\n\nFix options:\n- Change this server's port in Settings\n- Stop the other app using the port\n- Open the server folder and inspect logs if the port looks correct",
+                DialogType.Warning);
         }
     }
 }
