@@ -12,6 +12,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.InstanceCreation;
+using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Tunnel;
 using System.Threading.Tasks;
@@ -38,6 +39,7 @@ namespace PocketMC.Desktop.Features.Dashboard
 
         public ObservableCollection<InstanceCardViewModel> Instances => _listVm.Instances;
         public ICommand NewInstanceCommand { get; }
+        public ICommand ImportInstanceCommand { get; }
         public ICommand RefreshInstancesCommand { get; }
         public ICommand StartServerCommand { get; }
         public ICommand StopServerCommand { get; }
@@ -77,6 +79,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             _playitApiClient = playitApiClient;
 
             NewInstanceCommand = new RelayCommand(_ => NavigateToNewInstance());
+            ImportInstanceCommand = new RelayCommand(_ => NavigateToImportInstance());
             RefreshInstancesCommand = new RelayCommand(_ => _listVm.LoadInstances());
             StartServerCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.StartServer(vm, _metricsVm.ApplyLiveMetrics); });
             StopServerCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.StopServer(vm, _metricsVm.ApplyLiveMetrics); });
@@ -182,7 +185,18 @@ namespace PocketMC.Desktop.Features.Dashboard
         private void NavigateToNewInstance()
         {
             var page = ActivatorUtilities.CreateInstance<NewInstancePage>(_serviceProvider);
-            _navigationService.NavigateToDetailPage(page, "New Instance", DetailRouteKind.NewInstance, DetailBackNavigation.Dashboard, true);
+            _navigationService.NavigateToDetailPage(page, "New Server", DetailRouteKind.NewInstance, DetailBackNavigation.Dashboard, true);
+        }
+
+        private void NavigateToImportInstance()
+        {
+            var page = ActivatorUtilities.CreateInstance<InstanceImportPage>(_serviceProvider);
+            _navigationService.NavigateToDetailPage(
+                page,
+                "Import Server",
+                DetailRouteKind.InstanceImport,
+                DetailBackNavigation.Dashboard,
+                true);
         }
 
         private void UpdateAllLiveMetrics()
