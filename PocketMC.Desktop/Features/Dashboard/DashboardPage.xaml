@@ -9,7 +9,6 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <presentation:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVis"/>
 
-        <!-- Reusable skeleton placeholder row for tunnel IP resolution -->
         <Style x:Key="SkeletonRow" TargetType="ContentControl">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="IsTabStop" Value="False"/>
@@ -87,12 +86,34 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,24" Orientation="Horizontal">
-            <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-            <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand"/>
-        </StackPanel>
+        <Grid Grid.Row="0" Margin="0,0,0,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <ui:TextBlock FontTypography="Title" Text="Servers" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+                <TextBlock Text="Create, import, start, monitor, and share your Minecraft servers from one place. Somehow civilization continues." FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:Button Content="Import Server" Icon="{ui:SymbolIcon ArrowUpload24}" Appearance="Secondary" Command="{Binding ImportInstanceCommand}" Cursor="Hand" Margin="0,0,10,0"/>
+                <ui:Button Content="Create Server" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding NewInstanceCommand}" Cursor="Hand"/>
+            </StackPanel>
+        </Grid>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ui:Card Grid.Row="1" Padding="40" MaxWidth="560" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding EmptyStateVisibility}">
+            <StackPanel HorizontalAlignment="Center">
+                <ui:SymbolIcon Symbol="Cube24" FontSize="42" HorizontalAlignment="Center" Foreground="{DynamicResource SystemFillColorAttentionBrush}" Margin="0,0,0,16"/>
+                <ui:TextBlock FontTypography="Subtitle" Text="No servers yet" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <TextBlock Text="Create your first Minecraft server or import an existing one. PocketMC will handle the files, versions, and connection setup so you can avoid the ancient ritual of random ZIP folders." TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,20"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <ui:Button Content="Create Server" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding NewInstanceCommand}" Margin="0,0,10,0"/>
+                    <ui:Button Content="Import Server" Icon="{ui:SymbolIcon ArrowUpload24}" Appearance="Secondary" Command="{Binding ImportInstanceCommand}"/>
+                </StackPanel>
+            </StackPanel>
+        </ui:Card>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="{Binding ServerListVisibility}">
             <ItemsControl ItemsSource="{Binding Instances}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -101,7 +122,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <ui:Card Margin="12" Width="340">
+                        <ui:Card Margin="12" Width="360">
                             <ui:Card.Style>
                                 <Style TargetType="ui:Card" BasedOn="{StaticResource {x:Type ui:Card}}">
                                     <Style.Triggers>
@@ -113,14 +134,14 @@
                             </ui:Card.Style>
                             <Grid Margin="4">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/> <!-- Header -->
-                                    <RowDefinition Height="Auto"/> <!-- Metadata -->
-                                    <RowDefinition Height="Auto"/> <!-- Metrics -->
-                                    <RowDefinition Height="Auto"/> <!-- Connections -->
-                                    <RowDefinition Height="Auto"/> <!-- Actions -->
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- Header -->
                                 <Grid Grid.Row="0" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -129,10 +150,10 @@
                                     <StackPanel Grid.Column="0">
                                         <ui:TextBlock FontTypography="Subtitle" Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
                                         <WrapPanel Margin="0,6,0,0">
-                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0" ToolTip="Minecraft version">
                                                 <TextBlock Text="{Binding MinecraftVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
-                                            <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                            <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2" Margin="0,0,4,0" ToolTip="Server software type">
                                                 <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="{DynamicResource SystemFillColorAttentionBrush}" FontWeight="SemiBold"/>
                                             </Border>
                                             <Border Background="#2234D399" BorderBrush="#5534D399" BorderThickness="1" CornerRadius="4" Padding="6,2" Visibility="{Binding CrossPlayBadgeVisibility}" ToolTip="{Binding CrossPlayBadgeTooltip}">
@@ -143,34 +164,34 @@
                                             </Border>
                                         </WrapPanel>
                                         <TextBlock Text="{Binding Description}" FontSize="12" Foreground="SlateGray" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="32" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource NullOrEmptyToVis}}"/>
-                                        <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="Bold" FontSize="11" Margin="0,8,0,0"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="Bold" FontSize="11" Margin="0,0,10,0"/>
+                                            <TextBlock Text="{Binding HealthSummaryText}" Foreground="{Binding HealthSummaryBrush}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
                                     </StackPanel>
                                     <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}" Click="BtnMoreOptions_Click" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Page}}">
                                         <ui:Button.ContextMenu>
                                             <ContextMenu>
                                                 <MenuItem Header="Copy Crash Report" Command="{Binding PlacementTarget.Tag.CopyCrashReportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                                 <MenuItem Header="Open Folder" Command="{Binding PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                                <MenuItem Header="Export Instance" Command="{Binding PlacementTarget.Tag.ExportInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                <MenuItem Header="Export Server" Command="{Binding PlacementTarget.Tag.ExportInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                                 <Separator/>
-                                                <MenuItem Header="Delete Instance" Command="{Binding PlacementTarget.Tag.DeleteInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                <MenuItem Header="Delete Server" Command="{Binding PlacementTarget.Tag.DeleteInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                             </ContextMenu>
                                         </ui:Button.ContextMenu>
                                     </ui:Button>
                                 </Grid>
 
-                                <!-- Metadata -->
                                 <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
                                     <UniformGrid Columns="3">
                                         <StackPanel Margin="0,0,8,0">
                                             <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Last played"/>
                                             <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding LastPlayedValueText}" ToolTip="{Binding LastPlayedTooltip}"/>
                                         </StackPanel>
-
                                         <StackPanel Margin="4,0,4,0" HorizontalAlignment="Stretch">
                                             <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Created" TextAlignment="Center"/>
                                             <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding CreatedValueText}" TextAlignment="Center"/>
                                         </StackPanel>
-
                                         <StackPanel Margin="8,0,0,0">
                                             <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Platform" TextAlignment="Right"/>
                                             <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding PlatformSummaryText}" TextAlignment="Right"/>
@@ -178,7 +199,6 @@
                                     </UniformGrid>
                                 </Border>
 
-                                <!-- Metrics -->
                                 <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,16">
                                     <UniformGrid Columns="3">
                                         <StackPanel HorizontalAlignment="Center">
@@ -189,16 +209,7 @@
                                             <TextBlock Text="RAM" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <TextBlock Text="{Binding RamText}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
-                                        <ui:Button Appearance="Transparent"
-                                                   Padding="12,6"
-                                                   Margin="0,-6"
-                                                   MinWidth="0"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   Command="{Binding DataContext.OpenPlayersCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                   CommandParameter="{Binding}"
-                                                   ToolTip="Manage online players"
-                                                   Cursor="Hand">
+                                        <ui:Button Appearance="Transparent" Padding="12,6" Margin="0,-6" MinWidth="0" HorizontalAlignment="Center" VerticalAlignment="Center" Command="{Binding DataContext.OpenPlayersCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" ToolTip="Manage online players" Cursor="Hand">
                                             <StackPanel HorizontalAlignment="Center">
                                                 <TextBlock Text="PLAYERS" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
                                                 <TextBlock Text="{Binding PlayerStatus}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
@@ -207,17 +218,12 @@
                                     </UniformGrid>
                                 </Border>
 
-                                <!-- Connections -->
-                                <StackPanel Grid.Row="3" Margin="0,0,0,16" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
-
-
-
-                                    <!-- Skeleton: Primary tunnel address -->
+                                <StackPanel Grid.Row="3" Margin="0,0,0,12" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Join addresses" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6"/>
                                     <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowPrimaryTunnelSkeleton, Converter={StaticResource BoolToVis}}"/>
 
-                                    <!-- Primary Connection (Java or Native Bedrock) -->
-                                    <Border Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}"
-                                            Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">                                        <Grid>
+                                    <Border Visibility="{Binding HasTunnelAddress, Converter={StaticResource BoolToVis}}" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                        <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
@@ -237,14 +243,16 @@
                                                     </Style>
                                                 </ui:SymbolIcon.Style>
                                             </ui:SymbolIcon>
-                                            <TextBlock Grid.Column="1" Text="{Binding TunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding PrimaryJoinLabel}" FontSize="10" Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding PrimaryJoinHint}" FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding TunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click" ToolTip="Copy join address"/>
                                         </Grid>
                                     </Border>
 
-                                    <!-- Local Network (LAN) IP -->
-                                    <Border Visibility="{Binding HasLanAddress, Converter={StaticResource BoolToVis}}"
-                                            Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                    <Border Visibility="{Binding HasLanAddress, Converter={StaticResource BoolToVis}}" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -253,20 +261,17 @@
                                             </Grid.ColumnDefinitions>
                                             <ui:SymbolIcon Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="Local Network (LAN)" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="Bold"/>
+                                                <TextBlock Text="LAN address" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding LanJoinHint}" FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
                                                 <TextBlock Text="{Binding LanAddressDisplayText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
-                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyLanIp_Click"/>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyLanIp_Click" ToolTip="Copy LAN address"/>
                                         </Grid>
                                     </Border>
 
-                                    <!-- Bedrock-specific Tunnels (Native Bedrock Numeric, or Geyser Hostname + Numeric) -->
                                     <StackPanel Visibility="{Binding IsBedrockServer, Converter={StaticResource BoolToVis}}">
-                                        <!-- Skeleton: Native Bedrock numeric IP -->
                                         <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowBedrockNumericSkeleton, Converter={StaticResource BoolToVis}}"/>
-                                        <!-- Native Bedrock Numeric IP -->
-                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
-                                                Visibility="{Binding HasNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
+                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4" Visibility="{Binding HasNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
@@ -274,18 +279,19 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding NumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyNumericIp_Click"/>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="Numeric fallback" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding NumericJoinHint}" FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding NumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyNumericIp_Click" ToolTip="Copy numeric fallback"/>
                                             </Grid>
                                         </Border>
                                     </StackPanel>
 
                                     <StackPanel Visibility="{Binding ShowBedrockIp, Converter={StaticResource BoolToVis}}">
-                                        <!-- Skeleton: Geyser Bedrock hostname -->
                                         <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowGeyserHostnameSkeleton, Converter={StaticResource BoolToVis}}"/>
-                                        <!-- Geyser Bedrock Hostname -->
-                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
-                                                Visibility="{Binding HasBedrockTunnelAddress, Converter={StaticResource BoolToVis}}">
+                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4" Visibility="{Binding HasBedrockTunnelAddress, Converter={StaticResource BoolToVis}}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
@@ -294,15 +300,14 @@
                                                 </Grid.ColumnDefinitions>
                                                 <ui:SymbolIcon Grid.Column="0" Symbol="Cube24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="Bedrock" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
+                                                    <TextBlock Text="Bedrock via Geyser" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding BedrockJoinHint}" FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding BedrockTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click"/>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click" ToolTip="Copy Bedrock address"/>
                                             </Grid>
                                         </Border>
-                                        <!-- Skeleton: Geyser Bedrock numeric -->
                                         <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowGeyserNumericSkeleton, Converter={StaticResource BoolToVis}}"/>
-                                        <!-- Geyser Bedrock Numeric -->
                                         <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Visibility="{Binding HasBedrockNumericTunnelAddress, Converter={StaticResource BoolToVis}}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -311,15 +316,20 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding BedrockNumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockNumericIp_Click"/>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="Bedrock numeric fallback" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding NumericJoinHint}" FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding BedrockNumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockNumericIp_Click" ToolTip="Copy Bedrock numeric fallback"/>
                                             </Grid>
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>
 
-                                <!-- Actions -->
-                                <Grid Grid.Row="4">
+                                <ui:Button Grid.Row="4" Content="Copy Invite Message" Appearance="Secondary" Icon="{ui:SymbolIcon Copy24}" Click="BtnCopyInvite_Click" Visibility="{Binding ShareInviteVisibility}" Margin="2,0,2,10" HorizontalAlignment="Stretch" ToolTip="Copies a friendly message with the right addresses and version."/>
+
+                                <Grid Grid.Row="5">
                                     <UniformGrid Columns="2" Visibility="{Binding StoppedControlsVisibility}">
                                         <ui:Button Content="Start" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
                                         <ui:Button Content="Logs" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
