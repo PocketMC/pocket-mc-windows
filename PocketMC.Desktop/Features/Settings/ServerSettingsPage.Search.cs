@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -32,7 +31,11 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 sidebarHost.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 sidebarHost.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-                Grid.SetRow(SidebarList, 1);
+
+                foreach (UIElement child in sidebarHost.Children)
+                {
+                    Grid.SetRow(child, 1);
+                }
             }
 
             _settingsSearchBox = new Wpf.Ui.Controls.TextBox
@@ -44,6 +47,7 @@ namespace PocketMC.Desktop.Features.Settings
             };
             _settingsSearchBox.TextChanged += SettingsSearchBox_TextChanged;
 
+            Grid.SetColumn(_settingsSearchBox, Grid.GetColumn(SidebarList));
             Grid.SetRow(_settingsSearchBox, 0);
             sidebarHost.Children.Add(_settingsSearchBox);
 
