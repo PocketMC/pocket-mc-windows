@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -54,7 +55,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                     string zipPath = files[0];
                     if (zipPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                     {
-                        PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo("Info", "Modpack import is now available from Server Settings > Mods.");
+                        PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo("Import Server", "Import existing servers from the Dashboard with Import Server, or install mods from Server Settings > Addons.");
                     }
                 }
             }
@@ -112,6 +113,14 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
         }
 
+        private async void BtnCopyInvite_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm)
+            {
+                await TrySetClipboardText(vm.BuildInviteMessage());
+                await ShowCopiedFeedback(fe, "Copied invite");
+            }
+        }
 
         private async Task TrySetClipboardText(string text)
         {
@@ -135,9 +144,27 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
         }
 
-        private async Task ShowCopiedFeedback(FrameworkElement element)
+        private async Task ShowCopiedFeedback(FrameworkElement element, string message = "Copied")
         {
-            // Visual feedback placeholder
+            if (element is Button button)
+            {
+                object? originalContent = button.Content;
+                button.Content = message;
+                await Task.Delay(1200);
+                if (button.Content?.ToString() == message)
+                {
+                    button.Content = originalContent;
+                }
+            }
+            else
+            {
+                element.ToolTip = message;
+                await Task.Delay(1200);
+                if (element.ToolTip?.ToString() == message)
+                {
+                    element.ClearValue(FrameworkElement.ToolTipProperty);
+                }
+            }
         }
 
         private async void BtnCopyBedrockIp_Click(object sender, RoutedEventArgs e)
@@ -148,14 +175,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 if (addressToCopy.Contains("local") || string.IsNullOrWhiteSpace(addressToCopy)) return;
 
                 await TrySetClipboardText(addressToCopy);
-
-                // Keep the property nulling clean so we can read the raw string for saving
-                vm.BedrockIpDisplayText = "\u2713 Copied";
-                await System.Threading.Tasks.Task.Delay(1500);
-                if (vm.BedrockIpDisplayText == "\u2713 Copied")
-                {
-                    vm.BedrockIpDisplayText = null!; // resets to computed property
-                }
+                await ShowCopiedFeedback(fe);
             }
         }
         private void DashScroller_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
