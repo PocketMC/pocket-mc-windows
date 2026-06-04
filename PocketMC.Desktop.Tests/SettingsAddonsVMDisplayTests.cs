@@ -419,8 +419,8 @@ namespace PocketMC.Desktop.Tests
 
     public class FakeLifecycleService : IServerLifecycleService
     {
-        public event Action<Guid, ServerState>? OnInstanceStateChanged;
-        public event Action<Guid, int>? OnRestartCountdownTick;
+        public event Action<Guid, ServerState>? OnInstanceStateChanged { add { } remove { } }
+        public event Action<Guid, int>? OnRestartCountdownTick { add { } remove { } }
 
         public Task StartAsync(InstanceMetadata meta) => Task.CompletedTask;
         public Task StopAsync(Guid instanceId) => Task.CompletedTask;
