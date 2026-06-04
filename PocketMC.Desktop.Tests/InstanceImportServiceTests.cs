@@ -123,17 +123,12 @@ public sealed class InstanceImportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ReconstructStagedImportAsync_JavaDownloadsServerJarAndRemoteAddon()
+    public async Task ReconstructStagedImportAsync_JavaRestoresPackagedAddon()
     {
-        string zipPath = Path.Combine(_root, "java-remote-addon.zip");
+        string zipPath = Path.Combine(_root, "java-packaged-addon.zip");
         CreateValidImportZip(zipPath);
         InstanceImportService service = CreateService(
-            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") },
-            addonProviders: new[] { new FakeAddonProvider("Modrinth") },
-            httpResponses: new Dictionary<string, byte[]>
-            {
-                ["https://downloads.test/Essentials.jar"] = "addon jar"u8.ToArray()
-            });
+            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") });
 
         InstanceImportStagingResult staged = await service.StageImportAsync(new InstanceImportRequest
         {
@@ -145,65 +140,6 @@ public sealed class InstanceImportServiceTests : IDisposable
         Assert.Equal("server jar", File.ReadAllText(Path.Combine(staged.ServerDirectory, "server.jar")));
         Assert.Equal("addon jar", File.ReadAllText(Path.Combine(staged.ServerDirectory, "plugins", "Essentials.jar")));
         Assert.True(File.Exists(Path.Combine(staged.ServerDirectory, "addon_manifest.json")));
-    }
-
-    [Fact]
-    public async Task ReconstructStagedImportAsync_JavaFallsBackToProjectLookupWhenExactVersionLookupFails()
-    {
-        string zipPath = Path.Combine(_root, "java-project-fallback.zip");
-        CreateValidImportZip(zipPath);
-        var provider = new FallbackAddonProvider(
-            "Modrinth",
-            versionById: null,
-            latestVersion: CreateAddonVersion("essentials", "latest", "Essentials.jar", "https://downloads.test/Essentials.jar"));
-        InstanceImportService service = CreateService(
-            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") },
-            addonProviders: new IAddonProvider[] { provider },
-            httpResponses: new Dictionary<string, byte[]>
-            {
-                ["https://downloads.test/Essentials.jar"] = "addon jar"u8.ToArray()
-            });
-
-        InstanceImportStagingResult staged = await service.StageImportAsync(new InstanceImportRequest
-        {
-            ZipPath = zipPath
-        });
-
-        await service.ReconstructStagedImportAsync(staged);
-
-        Assert.Equal(1, provider.VersionByIdCalls);
-        Assert.True(provider.LatestVersionCalls >= 1);
-        Assert.Equal("addon jar", File.ReadAllText(Path.Combine(staged.ServerDirectory, "plugins", "Essentials.jar")));
-    }
-
-    [Fact]
-    public async Task ReconstructStagedImportAsync_JavaTriesNextCandidateWhenExactDownloadUrlFails()
-    {
-        string zipPath = Path.Combine(_root, "java-download-fallback.zip");
-        CreateValidImportZip(zipPath);
-        var provider = new FallbackAddonProvider(
-            "Modrinth",
-            versionById: CreateAddonVersion("essentials", "1.3", "Essentials-bad.jar", "https://downloads.test/missing.jar"),
-            latestVersion: CreateAddonVersion("essentials", "latest", "Essentials.jar", "https://downloads.test/Essentials.jar"));
-        InstanceImportService service = CreateService(
-            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") },
-            addonProviders: new IAddonProvider[] { provider },
-            httpResponses: new Dictionary<string, byte[]>
-            {
-                ["https://downloads.test/Essentials.jar"] = "addon jar"u8.ToArray()
-            });
-
-        InstanceImportStagingResult staged = await service.StageImportAsync(new InstanceImportRequest
-        {
-            ZipPath = zipPath
-        });
-
-        await service.ReconstructStagedImportAsync(staged);
-
-        Assert.Equal(1, provider.VersionByIdCalls);
-        Assert.True(provider.LatestVersionCalls >= 1);
-        Assert.False(File.Exists(Path.Combine(staged.ServerDirectory, "plugins", "Essentials-bad.jar")));
-        Assert.Equal("addon jar", File.ReadAllText(Path.Combine(staged.ServerDirectory, "plugins", "Essentials.jar")));
     }
 
     [Fact]
@@ -231,12 +167,7 @@ public sealed class InstanceImportServiceTests : IDisposable
         string zipPath = Path.Combine(_root, "complete-import.zip");
         CreateValidImportZip(zipPath);
         InstanceImportService service = CreateService(
-            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") },
-            addonProviders: new[] { new FakeAddonProvider("Modrinth") },
-            httpResponses: new Dictionary<string, byte[]>
-            {
-                ["https://downloads.test/Essentials.jar"] = "addon jar"u8.ToArray()
-            });
+            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") });
 
         InstanceImportResult result = await service.ImportAsync(new InstanceImportRequest
         {
@@ -282,13 +213,12 @@ public sealed class InstanceImportServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ImportAsync_RemoteAddonUnavailable_RecordsFailureInReportAndCreatesInstance()
+    public async Task ImportAsync_PackagedAddonMissing_RecordsFailureInReportAndCreatesInstance()
     {
         string zipPath = Path.Combine(_root, "missing-addon-import.zip");
-        CreateValidImportZip(zipPath);
+        CreateValidImportZip(zipPath, includeAddonFile: false);
         InstanceImportService service = CreateService(
-            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") },
-            addonProviders: new[] { new FakeAddonProvider("Modrinth") });
+            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") });
 
         InstanceImportResult result = await service.ImportAsync(new InstanceImportRequest
         {
@@ -308,14 +238,13 @@ public sealed class InstanceImportServiceTests : IDisposable
         var failedAddon = result.Report.Addons.Single();
         Assert.Equal("Essentials", failedAddon.Name);
         Assert.False(failedAddon.Success);
-        Assert.NotNull(failedAddon.ErrorMessage);
+        Assert.Equal("failed", failedAddon.Status);
 
         Assert.Equal(result.InstancePath, _lastRegistry!.GetPath(result.InstanceId));
     }
 
     private InstanceImportService CreateService(
         IReadOnlyList<IServerSoftwareProvider>? softwareProviders = null,
-        IReadOnlyList<IAddonProvider>? addonProviders = null,
         IReadOnlyDictionary<string, byte[]>? httpResponses = null)
     {
         var state = new ApplicationState();
@@ -332,16 +261,13 @@ public sealed class InstanceImportServiceTests : IDisposable
             pathService,
             registry,
             softwareProviders ?? Array.Empty<IServerSoftwareProvider>(),
-            addonProviders ?? Array.Empty<IAddonProvider>(),
             downloader,
-            new MarketplaceFileInstaller(downloader, NullLogger<MarketplaceFileInstaller>.Instance),
             addonManifestService,
-            new BedrockAddonInstaller(NullLogger<BedrockAddonInstaller>.Instance),
             state,
             NullLogger<InstanceImportService>.Instance);
     }
 
-    private static void CreateValidImportZip(string zipPath)
+    private static void CreateValidImportZip(string zipPath, bool includeAddonFile = true)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(zipPath)!);
 
@@ -350,6 +276,10 @@ public sealed class InstanceImportServiceTests : IDisposable
         AddEntry(archive, "pocket-mc.json", "{\"name\":\"Import Test\"}");
         AddEntry(archive, "server/server.properties", "motd=Import Test");
         AddEntry(archive, "server/world/level.dat", "world");
+        if (includeAddonFile)
+        {
+            AddEntry(archive, "server/plugins/Essentials.jar", "addon jar");
+        }
     }
 
     private static void CreateBedrockImportZip(string zipPath)
@@ -438,7 +368,10 @@ public sealed class InstanceImportServiceTests : IDisposable
               "type": "plugin",
               "provider": "Modrinth",
               "projectId": "essentials",
-              "versionId": "1.3"
+              "versionId": "1.3",
+              "fileName": "Essentials.jar",
+              "relativePath": "plugins/Essentials.jar",
+              "packagedPath": "server/plugins/Essentials.jar"
             }
           ]
         }
@@ -515,80 +448,7 @@ public sealed class InstanceImportServiceTests : IDisposable
         }
     }
 
-    private sealed class FallbackAddonProvider : IAddonProvider
-    {
-        private readonly MarketplaceVersion? _versionById;
-        private readonly MarketplaceVersion? _latestVersion;
 
-        public FallbackAddonProvider(
-            string name,
-            MarketplaceVersion? versionById,
-            MarketplaceVersion? latestVersion)
-        {
-            Name = name;
-            _versionById = versionById;
-            _latestVersion = latestVersion;
-        }
-
-        public string Name { get; }
-        public int VersionByIdCalls { get; private set; }
-        public int LatestVersionCalls { get; private set; }
-
-        public Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, string loader)
-        {
-            LatestVersionCalls++;
-            return Task.FromResult(_latestVersion);
-        }
-
-        public Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, IReadOnlyList<string> loaderCandidates)
-        {
-            LatestVersionCalls++;
-            return Task.FromResult(_latestVersion);
-        }
-
-        public Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId)
-        {
-            VersionByIdCalls++;
-            return Task.FromResult(_versionById);
-        }
-
-        public Task<MarketplaceProjectInfo?> GetProjectInfoAsync(string projectId) =>
-            Task.FromResult<MarketplaceProjectInfo?>(new MarketplaceProjectInfo { Id = projectId, Title = "Essentials" });
-    }
-
-    private sealed class FakeAddonProvider : IAddonProvider
-    {
-        public FakeAddonProvider(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
-
-        public Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, string loader) =>
-            Task.FromResult<MarketplaceVersion?>(CreateVersion(projectId, "latest"));
-
-        public Task<MarketplaceVersion?> GetLatestVersionAsync(string projectId, string mcVersion, IReadOnlyList<string> loaderCandidates) =>
-            Task.FromResult<MarketplaceVersion?>(CreateVersion(projectId, "latest"));
-
-        public Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId) =>
-            Task.FromResult<MarketplaceVersion?>(CreateVersion("essentials", versionId));
-
-        public Task<MarketplaceProjectInfo?> GetProjectInfoAsync(string projectId) =>
-            Task.FromResult<MarketplaceProjectInfo?>(new MarketplaceProjectInfo { Id = projectId, Title = "Essentials" });
-
-        private static MarketplaceVersion CreateVersion(string projectId, string versionId) => new()
-        {
-            Id = versionId,
-            ProjectId = projectId,
-            ProjectTitle = "Essentials",
-            FileName = "Essentials.jar",
-            DownloadUrl = "https://downloads.test/Essentials.jar",
-            Hash = null,
-            HashType = null,
-            SelectedLoader = "paper"
-        };
-    }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory
     {

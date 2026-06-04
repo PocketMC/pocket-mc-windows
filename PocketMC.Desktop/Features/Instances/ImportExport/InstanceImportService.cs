@@ -24,8 +24,6 @@ public sealed class InstanceImportService : IInstanceImportService
     private const string ServerPropertiesEntryName = "server/server.properties";
     private const string StagingDirectoryName = ".staging";
     private const string DownloadsDirectoryName = ".downloads";
-    private const int MaxParallelAddonDownloads = 3;
-
     private static readonly byte[] LocalFileHeader = [0x50, 0x4B, 0x03, 0x04];
     private static readonly byte[] EmptyArchiveHeader = [0x50, 0x4B, 0x05, 0x06];
     private static readonly byte[] SpannedArchiveHeader = [0x50, 0x4B, 0x07, 0x08];
@@ -33,11 +31,8 @@ public sealed class InstanceImportService : IInstanceImportService
     private readonly InstancePathService _pathService;
     private readonly InstanceRegistry _registry;
     private readonly IReadOnlyList<IServerSoftwareProvider> _softwareProviders;
-    private readonly IReadOnlyDictionary<string, IAddonProvider> _addonProviders;
     private readonly DownloaderService _downloader;
-    private readonly MarketplaceFileInstaller _marketplaceFileInstaller;
     private readonly AddonManifestService _addonManifestService;
-    private readonly BedrockAddonInstaller _bedrockAddonInstaller;
     private readonly ApplicationState _applicationState;
     private readonly ILogger<InstanceImportService> _logger;
     private readonly SemaphoreSlim _addonManifestUpdateLock = new(1, 1);
@@ -50,22 +45,16 @@ public sealed class InstanceImportService : IInstanceImportService
         InstancePathService pathService,
         InstanceRegistry registry,
         IEnumerable<IServerSoftwareProvider> softwareProviders,
-        IEnumerable<IAddonProvider> addonProviders,
         DownloaderService downloader,
-        MarketplaceFileInstaller marketplaceFileInstaller,
         AddonManifestService addonManifestService,
-        BedrockAddonInstaller bedrockAddonInstaller,
         ApplicationState applicationState,
         ILogger<InstanceImportService> logger)
     {
         _pathService = pathService;
         _registry = registry;
         _softwareProviders = softwareProviders.ToArray();
-        _addonProviders = addonProviders.ToDictionary(provider => provider.Name, StringComparer.OrdinalIgnoreCase);
         _downloader = downloader;
-        _marketplaceFileInstaller = marketplaceFileInstaller;
         _addonManifestService = addonManifestService;
-        _bedrockAddonInstaller = bedrockAddonInstaller;
         _applicationState = applicationState;
         _logger = logger;
     }
@@ -186,8 +175,8 @@ public sealed class InstanceImportService : IInstanceImportService
         Report(progress, "Downloading server software...", 0);
         await DownloadServerSoftwareAsync(stagingResult, progress, cancellationToken).ConfigureAwait(false);
 
-        Report(progress, "Downloading add-ons...", 40);
-        await DownloadAddonsAsync(stagingResult, progress, cancellationToken).ConfigureAwait(false);
+        Report(progress, "Restoring packaged add-ons...", 40);
+        await RestorePackagedAddonsAsync(stagingResult, progress, cancellationToken).ConfigureAwait(false);
 
         Report(progress, "Reconstruction complete.", 100);
     }
@@ -593,7 +582,7 @@ public sealed class InstanceImportService : IInstanceImportService
         ValidateNonEmptyFile(artifactPath, "PocketMine-MP runtime");
     }
 
-    private async Task DownloadAddonsAsync(
+    private async Task RestorePackagedAddonsAsync(
         InstanceImportStagingResult stagingResult,
         IProgress<InstanceTransferProgress>? progress,
         CancellationToken cancellationToken)
@@ -610,164 +599,52 @@ public sealed class InstanceImportService : IInstanceImportService
             return;
         }
 
-        var addonProgress = new System.Collections.Concurrent.ConcurrentDictionary<string, double>();
-        foreach (var addon in allAddons)
+        foreach (InstanceAddonManifest addon in allAddons)
         {
-            addonProgress[addon.Name] = 0;
-        }
+            cancellationToken.ThrowIfCancellationRequested();
 
-        object progressLock = new object();
-        double lastReportedOverall = 40;
-
-        void ReportAddonProgress(string addonName, double localPercentage)
-        {
-            addonProgress[addonName] = localPercentage;
-            lock (progressLock)
+            if (addon is JavaAddonManifest javaAddon)
             {
-                double sum = 0;
-                foreach (var name in addonProgress.Keys)
-                {
-                    sum += addonProgress[name];
-                }
-                double avg = sum / allAddons.Count;
-                double overall = 40 + (avg * 0.6); // Map 0-100% of addons to 40-100% of reconstruction
-                if (overall > lastReportedOverall)
-                {
-                    lastReportedOverall = overall;
-                    Report(progress, "Restoring add-ons...", overall, addonName);
-                }
-            }
-        }
+                bool restored = await TryRestorePackagedJavaAddonAsync(
+                    stagingResult,
+                    javaAddon,
+                    cancellationToken).ConfigureAwait(false);
 
-        using var semaphore = new SemaphoreSlim(MaxParallelAddonDownloads);
-        var reportEntries = new System.Collections.Concurrent.ConcurrentBag<AddonImportReportEntry>();
-
-        var tasks = allAddons.Select(async addon =>
-        {
-            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-            string? resolutionSource = null;
-            string status = "failed";
-            string? reason = null;
-            try
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                ReportAddonProgress(addon.Name, 0);
-
-                // Step 1: Try to restore from the packaged file in the ZIP
-                bool restoredFromPackage = false;
-                if (addon is JavaAddonManifest javaAddon)
-                {
-                    restoredFromPackage = await TryRestorePackagedJavaAddonAsync(
-                            stagingResult, javaAddon, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-
-                if (restoredFromPackage)
-                {
-                    resolutionSource = "Packaged File";
-                    status = "restoredFromPackage";
-                    reason = "Restored from packaged file in export ZIP.";
-                    ReportAddonProgress(addon.Name, 100);
-                    reportEntries.Add(new AddonImportReportEntry
-                    {
-                        Name = addon.Name,
-                        Provider = addon.Provider,
-                        FileName = addon.FileName ?? "",
-                        Success = true,
-                        ResolutionSource = resolutionSource,
-                        Status = status,
-                        Reason = reason
-                    });
-                    return;
-                }
-
-                // Step 2: For Local-only addons with no download capability, skip
-                if (addon.Provider.Equals("Local", StringComparison.OrdinalIgnoreCase) &&
-                    addon is JavaAddonManifest localJava &&
-                    string.IsNullOrWhiteSpace(localJava.DownloadUrl) &&
-                    string.IsNullOrWhiteSpace(localJava.ProjectId) &&
-                    (addon.ProviderIdentities == null || addon.ProviderIdentities.Count == 0))
-                {
-                    status = "skipped";
-                    reason = "Local-only addon with no download source and no packaged file.";
-                    ReportAddonProgress(addon.Name, 100);
-                    reportEntries.Add(new AddonImportReportEntry
-                    {
-                        Name = addon.Name,
-                        Provider = addon.Provider,
-                        FileName = addon.FileName ?? "",
-                        Success = false,
-                        ResolutionSource = "None",
-                        Status = status,
-                        Reason = reason
-                    });
-                    return;
-                }
-
-                // Step 3: Fall back to provider download
-                switch (stagingResult.Manifest.Software.Platform)
-                {
-                    case InstanceServerPlatform.Java:
-                        resolutionSource = await DownloadJavaAddonAsync(stagingResult, (JavaAddonManifest)addon, ReportAddonProgress, cancellationToken)
-                            .ConfigureAwait(false);
-                        break;
-
-                    case InstanceServerPlatform.Bedrock:
-                        resolutionSource = await DownloadBedrockAddonAsync(stagingResult, (BedrockAddonManifest)addon, ReportAddonProgress, cancellationToken)
-                            .ConfigureAwait(false);
-                        break;
-                }
-
-                status = "downloadedFromProvider";
-                reason = $"Downloaded from {resolutionSource ?? addon.Provider}.";
-                ReportAddonProgress(addon.Name, 100);
-                reportEntries.Add(new AddonImportReportEntry
+                report.Addons.Add(new AddonImportReportEntry
                 {
                     Name = addon.Name,
                     Provider = addon.Provider,
                     FileName = addon.FileName ?? "",
-                    Success = true,
-                    ResolutionSource = resolutionSource ?? "Unknown",
-                    Status = status,
-                    Reason = reason
+                    Success = restored,
+                    ResolutionSource = restored ? "Packaged File" : "None",
+                    Status = restored ? "restoredFromPackage" : "failed",
+                    Reason = restored
+                        ? "Restored from packaged file in export ZIP."
+                        : "Packaged add-on file was missing or invalid in export ZIP."
                 });
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to restore add-on {AddonName}.", addon.Name);
-                ReportAddonProgress(addon.Name, 100); // Mark as done for progress calculation
-                reportEntries.Add(new AddonImportReportEntry
-                {
-                    Name = addon.Name,
-                    Provider = addon.Provider,
-                    FileName = addon.FileName ?? "",
-                    Success = false,
-                    ResolutionSource = resolutionSource ?? "None",
-                    ErrorMessage = ex.Message,
-                    Status = "failed",
-                    Reason = ex.Message
-                });
-            }
-            finally
-            {
-                semaphore.Release();
-            }
-        });
 
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+                continue;
+            }
 
-        // Populate report results
-        report.Addons.AddRange(reportEntries);
+            // For Bedrock, the pack directories are already inside server/.
+            report.Addons.Add(new AddonImportReportEntry
+            {
+                Name = addon.Name,
+                Provider = addon.Provider,
+                FileName = addon.FileName ?? "",
+                Success = true,
+                ResolutionSource = "Packaged Directory",
+                Status = "restoredFromPackage",
+                Reason = "Restored from packaged Bedrock server files in export ZIP."
+            });
+        }
+
         report.SuccessfulAddons = report.Addons.Count(a => a.Success);
         report.FailedAddons = report.Addons.Count(a => !a.Success);
-        report.RestoredFromPackage = report.Addons.Count(a => a.Status == "restoredFromPackage");
-        report.DownloadedFromProvider = report.Addons.Count(a => a.Status == "downloadedFromProvider");
-        report.Skipped = report.Addons.Count(a => a.Status == "skipped");
-        report.Failed = report.Addons.Count(a => a.Status == "failed");
+        report.RestoredFromPackage = report.SuccessfulAddons;
+        report.DownloadedFromProvider = 0;
+        report.Skipped = 0;
+        report.Failed = report.FailedAddons;
 
         // Save detailed import report
         try
@@ -1008,605 +885,7 @@ public sealed class InstanceImportService : IInstanceImportService
         }
     }
 
-    private async Task<string> DownloadJavaAddonAsync(
-        InstanceImportStagingResult stagingResult,
-        JavaAddonManifest addon,
-        Action<string, double> reportProgressAction,
-        CancellationToken cancellationToken)
-    {
-        string destinationDirectory = ResolveJavaAddonDirectory(stagingResult.ServerDirectory, addon.Type);
-        string? destinationPath = null;
 
-        // Try direct download first if DownloadUrl is available
-        if (!string.IsNullOrWhiteSpace(addon.DownloadUrl))
-        {
-            try
-            {
-                string fileName = RequireSafeAddonFileName(
-                    FirstNonEmpty(addon.FileName, $"{addon.Name}.jar"),
-                    ".jar");
-                destinationPath = Path.Combine(destinationDirectory, fileName);
-                HashSpec hash = ResolveHash(null, null, addon.Hash);
-
-                var directProgress = new Progress<DownloadProgress>(download =>
-                {
-                    double localPercentage = download.TotalBytes > 0 ? download.Percentage : 0;
-                    reportProgressAction(addon.Name, localPercentage);
-                });
-
-                await _marketplaceFileInstaller.InstallAsync(
-                        addon.DownloadUrl,
-                        destinationPath,
-                        hash.Hash,
-                        hash.HashType,
-                        directProgress,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-
-                await RegisterJavaAddonInstallDirectAsync(
-                        stagingResult,
-                        addon,
-                        fileName,
-                        hash,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-
-                return "Direct Download URL";
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                _logger.LogWarning(ex, "Direct download failed for Java add-on {AddonName} from {Url}. Falling back to Modrinth resolution.", addon.Name, addon.DownloadUrl);
-                if (!string.IsNullOrWhiteSpace(destinationPath))
-                {
-                    TryDeleteFile(destinationPath);
-                    TryDeleteFile(destinationPath + ".partial");
-                }
-            }
-        }
-
-        IAddonProvider provider = ResolveAddonProvider(addon.Provider, addon);
-        IReadOnlyList<JavaAddonDownloadCandidate> candidates = await ResolveJavaAddonDownloadCandidatesAsync(
-                provider,
-                addon,
-                stagingResult.Manifest,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        var failures = new List<string>();
-        Exception? lastException = null;
-
-        foreach (JavaAddonDownloadCandidate candidate in candidates)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            MarketplaceVersion version = candidate.Version;
-            try
-            {
-                string fileName = RequireSafeAddonFileName(
-                    FirstNonEmpty(version.FileName, addon.FileName, $"{addon.Name}.jar"),
-                    ".jar");
-                destinationPath = Path.Combine(destinationDirectory, fileName);
-                HashSpec hash = ResolveJavaCandidateHash(candidate, addon);
-
-                var candidateProgress = new Progress<DownloadProgress>(download =>
-                {
-                    double localPercentage = download.TotalBytes > 0 ? download.Percentage : 0;
-                    reportProgressAction(addon.Name, localPercentage);
-                });
-
-                await _marketplaceFileInstaller.InstallAsync(
-                        version.DownloadUrl,
-                        destinationPath,
-                        hash.Hash,
-                        hash.HashType,
-                        candidateProgress,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-
-                await RegisterJavaAddonInstallAsync(
-                        stagingResult,
-                        addon,
-                        provider,
-                        version,
-                        fileName,
-                        hash,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-
-                return candidate.Source;
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException and not AddonUnavailableException)
-            {
-                lastException = ex;
-                failures.Add($"{candidate.Source}: {ex.Message}");
-                _logger.LogWarning(
-                    ex,
-                    "Failed to restore Java add-on {AddonName} from {Provider} using {ResolutionSource}. Trying another candidate when available.",
-                    addon.Name,
-                    provider.Name,
-                    candidate.Source);
-
-                if (!string.IsNullOrWhiteSpace(destinationPath))
-                {
-                    TryDeleteFile(destinationPath);
-                    TryDeleteFile(destinationPath + ".partial");
-                }
-            }
-        }
-
-        throw new AddonUnavailableException(
-            addon.Name,
-            provider.Name,
-            addon.RelativePath,
-            BuildJavaAddonUnavailableMessage(addon, provider.Name, failures),
-            lastException);
-    }
-
-    private async Task RegisterJavaAddonInstallAsync(
-        InstanceImportStagingResult stagingResult,
-        JavaAddonManifest addon,
-        IAddonProvider provider,
-        MarketplaceVersion version,
-        string fileName,
-        HashSpec hash,
-        CancellationToken cancellationToken)
-    {
-        await _addonManifestUpdateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            await _addonManifestService.RegisterInstallAsync(
-                    stagingResult.ServerDirectory,
-                    provider.Name,
-                    FirstNonEmpty(version.ProjectId, addon.ProjectId),
-                    FirstNonEmpty(version.Id, addon.VersionId),
-                    fileName,
-                    version.ProjectTitle,
-                    version.IconUrl,
-                    FirstNonEmpty(version.ProjectTitle, addon.Name),
-                    version.ClientSide,
-                    version.ServerSide,
-                    hash.Hash,
-                    hash.HashType,
-                    stagingResult.Manifest.Software.MinecraftVersion,
-                    FirstNonEmpty(version.SelectedLoader, addon.Loader, stagingResult.Manifest.Software.Type))
-                .ConfigureAwait(false);
-        }
-        finally
-        {
-            _addonManifestUpdateLock.Release();
-        }
-    }
-
-    private async Task RegisterJavaAddonInstallDirectAsync(
-        InstanceImportStagingResult stagingResult,
-        JavaAddonManifest addon,
-        string fileName,
-        HashSpec hash,
-        CancellationToken cancellationToken)
-    {
-        await _addonManifestUpdateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            await _addonManifestService.RegisterInstallAsync(
-                    stagingResult.ServerDirectory,
-                    addon.Provider,
-                    addon.ProjectId ?? string.Empty,
-                    addon.VersionId ?? string.Empty,
-                    fileName,
-                    addon.Name,
-                    null,
-                    addon.Name,
-                    null,
-                    null,
-                    hash.Hash,
-                    hash.HashType,
-                    stagingResult.Manifest.Software.MinecraftVersion,
-                    addon.Loader,
-                    addon.DownloadUrl)
-                .ConfigureAwait(false);
-        }
-        finally
-        {
-            _addonManifestUpdateLock.Release();
-        }
-    }
-
-    private async Task<IReadOnlyList<JavaAddonDownloadCandidate>> ResolveJavaAddonDownloadCandidatesAsync(
-        IAddonProvider provider,
-        JavaAddonManifest addon,
-        InstanceExportManifest manifest,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var candidates = new List<JavaAddonDownloadCandidate>();
-        IReadOnlyList<string> loaderCandidates = BuildJavaLoaderCandidates(addon, manifest.Software);
-        HashSpec manifestHash = ResolveHash(null, null, addon.Hash);
-
-        if (provider is ModrinthService modrinthService &&
-            !string.IsNullOrWhiteSpace(manifestHash.Hash))
-        {
-            MarketplaceVersion? hashVersion = await modrinthService
-                .GetVersionByHashAsync(manifestHash.Hash, manifestHash.HashType, loaderCandidates)
-                .ConfigureAwait(false);
-            AddJavaAddonCandidate(candidates, hashVersion, "manifest file hash", preferManifestHash: true);
-        }
-
-        if (!string.IsNullOrWhiteSpace(addon.VersionId))
-        {
-            string providerVersionId = BuildProviderVersionId(provider.Name, addon);
-            MarketplaceVersion? exactVersion = await provider.GetVersionByIdAsync(providerVersionId)
-                .ConfigureAwait(false);
-            AddJavaAddonCandidate(candidates, exactVersion, "manifest version id", preferManifestHash: true);
-        }
-
-        if (!string.IsNullOrWhiteSpace(addon.ProjectId))
-        {
-            MarketplaceVersion? latestVersion = await provider
-                .GetLatestVersionAsync(addon.ProjectId, manifest.Software.MinecraftVersion, loaderCandidates)
-                .ConfigureAwait(false);
-            AddJavaAddonCandidate(candidates, latestVersion, "manifest project id");
-        }
-
-        if (provider is ModrinthService searchableModrinth)
-        {
-            foreach (string query in BuildJavaAddonSearchQueries(addon))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                MarketplaceVersion? searchVersion = await searchableModrinth
-                    .FindVersionBySearchAsync(query, addon.Type, manifest.Software.MinecraftVersion, loaderCandidates)
-                    .ConfigureAwait(false);
-                AddJavaAddonCandidate(candidates, searchVersion, $"Modrinth search '{query}'");
-            }
-        }
-
-        if (candidates.Count == 0)
-        {
-            throw new AddonUnavailableException(
-                addon.Name,
-                provider.Name,
-                addon.RelativePath,
-                BuildJavaAddonUnavailableMessage(addon, provider.Name, Array.Empty<string>()));
-        }
-
-        return candidates;
-    }
-
-    private async Task<string> DownloadBedrockAddonAsync(
-        InstanceImportStagingResult stagingResult,
-        BedrockAddonManifest addon,
-        Action<string, double> reportProgressAction,
-        CancellationToken cancellationToken)
-    {
-        string downloadsDirectory = GetDownloadsDirectory(stagingResult);
-        Directory.CreateDirectory(downloadsDirectory);
-
-        string downloadUrl = addon.DownloadUrl ?? string.Empty;
-        string fileName = RequireSafeAddonFileName(FirstNonEmpty(addon.FileName, $"{addon.Name}.mcpack"), ".mcpack", ".mcaddon", ".zip");
-        HashSpec hash = ResolveHash(null, null, addon.Hash);
-        string source = "Direct Download URL";
-
-        if (string.IsNullOrWhiteSpace(downloadUrl))
-        {
-            IAddonProvider provider = ResolveAddonProvider(addon.Provider, addon);
-            MarketplaceVersion version = await ResolveMarketplaceVersionAsync(provider, addon, stagingResult.Manifest, cancellationToken)
-                .ConfigureAwait(false);
-
-            downloadUrl = version.DownloadUrl;
-            fileName = RequireSafeAddonFileName(FirstNonEmpty(version.FileName, addon.FileName, $"{addon.Name}.mcpack"), ".mcpack", ".mcaddon", ".zip");
-            hash = ResolveHash(version.Hash, version.HashType, addon.Hash);
-            source = provider.Name;
-        }
-
-        if (string.IsNullOrWhiteSpace(downloadUrl))
-        {
-            throw new AddonUnavailableException(addon.Name, addon.Provider, addon.RelativePath, "No download URL was available for this Bedrock add-on.");
-        }
-
-        string archivePath = Path.Combine(downloadsDirectory, fileName);
-        try
-        {
-            var bedrockProgress = new Progress<DownloadProgress>(download =>
-            {
-                double localPercentage = download.TotalBytes > 0 ? download.Percentage : 0;
-                reportProgressAction(addon.Name, localPercentage);
-            });
-
-            await _marketplaceFileInstaller.InstallAsync(
-                    downloadUrl,
-                    archivePath,
-                    hash.Hash,
-                    hash.HashType,
-                    bedrockProgress,
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            await _bedrockAddonInstaller.InstallAsync(archivePath, stagingResult.ServerDirectory, cancellationToken)
-                .ConfigureAwait(false);
-
-            return source;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException and not AddonUnavailableException)
-        {
-            throw new AddonUnavailableException(addon.Name, addon.Provider, addon.RelativePath, "The Bedrock add-on could not be downloaded or installed.", ex);
-        }
-    }
-
-    private async Task<MarketplaceVersion> ResolveMarketplaceVersionAsync(
-        IAddonProvider provider,
-        JavaAddonManifest addon,
-        InstanceExportManifest manifest,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        MarketplaceVersion? version = null;
-        if (!string.IsNullOrWhiteSpace(addon.VersionId))
-        {
-            string versionId = provider.Name.Equals("CurseForge", StringComparison.OrdinalIgnoreCase) &&
-                               !string.IsNullOrWhiteSpace(addon.ProjectId)
-                ? $"{addon.ProjectId}:{addon.VersionId}"
-                : addon.VersionId;
-
-            version = await provider.GetVersionByIdAsync(versionId).ConfigureAwait(false);
-        }
-
-        if (version == null && !string.IsNullOrWhiteSpace(addon.ProjectId))
-        {
-            string loader = FirstNonEmpty(addon.Loader, manifest.Software.Type);
-            version = await provider.GetLatestVersionAsync(addon.ProjectId, manifest.Software.MinecraftVersion, loader)
-                .ConfigureAwait(false);
-        }
-
-        ValidateMarketplaceVersion(version, addon);
-        return version!;
-    }
-
-    private async Task<MarketplaceVersion> ResolveMarketplaceVersionAsync(
-        IAddonProvider provider,
-        BedrockAddonManifest addon,
-        InstanceExportManifest manifest,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        MarketplaceVersion? version = null;
-        string? versionId = addon.Version;
-        string? projectId = addon.Uuid;
-
-        if (!string.IsNullOrWhiteSpace(versionId))
-        {
-            string providerVersionId = provider.Name.Equals("CurseForge", StringComparison.OrdinalIgnoreCase) &&
-                                       !string.IsNullOrWhiteSpace(projectId)
-                ? $"{projectId}:{versionId}"
-                : versionId;
-
-            version = await provider.GetVersionByIdAsync(providerVersionId).ConfigureAwait(false);
-        }
-
-        if (version == null && !string.IsNullOrWhiteSpace(projectId))
-        {
-            version = await provider.GetLatestVersionAsync(projectId, manifest.Software.MinecraftVersion, "bedrock")
-                .ConfigureAwait(false);
-        }
-
-        ValidateMarketplaceVersion(version, addon);
-        return version!;
-    }
-
-    private static void ValidateMarketplaceVersion(MarketplaceVersion? version, InstanceAddonManifest addon)
-    {
-        if (version == null)
-        {
-            throw new AddonUnavailableException(addon.Name, addon.Provider, addon.RelativePath, "The provider did not return a matching version.");
-        }
-
-        if (string.IsNullOrWhiteSpace(version.DownloadUrl))
-        {
-            throw new AddonUnavailableException(addon.Name, addon.Provider, addon.RelativePath, "The provider returned a version without a download URL.");
-        }
-    }
-
-    private static IReadOnlyList<string> BuildJavaLoaderCandidates(
-        JavaAddonManifest addon,
-        ServerSoftwareManifest software)
-    {
-        var loaders = new List<string>();
-        AddLoaderCandidate(loaders, addon.Loader);
-        AddLoaderCandidate(loaders, software.Type);
-
-        string primaryLoader = loaders.FirstOrDefault() ?? NormalizeLoaderName(software.Type);
-        switch (primaryLoader)
-        {
-            case "paper":
-                AddLoaderCandidate(loaders, "spigot");
-                AddLoaderCandidate(loaders, "bukkit");
-                break;
-            case "purpur":
-                AddLoaderCandidate(loaders, "paper");
-                AddLoaderCandidate(loaders, "spigot");
-                AddLoaderCandidate(loaders, "bukkit");
-                break;
-            case "spigot":
-                AddLoaderCandidate(loaders, "bukkit");
-                break;
-            case "bukkit":
-                AddLoaderCandidate(loaders, "spigot");
-                AddLoaderCandidate(loaders, "paper");
-                break;
-            case "quilt":
-                AddLoaderCandidate(loaders, "fabric");
-                break;
-        }
-
-        if (addon.Type.Equals(InstanceAddonTypes.Plugin, StringComparison.OrdinalIgnoreCase) &&
-            !loaders.Any(IsKnownPluginLoader))
-        {
-            AddLoaderCandidate(loaders, "paper");
-            AddLoaderCandidate(loaders, "spigot");
-            AddLoaderCandidate(loaders, "bukkit");
-        }
-
-        if (loaders.Count == 0)
-        {
-            loaders.Add(string.Empty);
-        }
-
-        return loaders;
-    }
-
-    private static void AddLoaderCandidate(List<string> loaders, string? loader)
-    {
-        string normalized = NormalizeLoaderName(loader);
-        if (string.IsNullOrWhiteSpace(normalized) ||
-            normalized.Equals("vanilla", StringComparison.OrdinalIgnoreCase) ||
-            loaders.Contains(normalized, StringComparer.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        loaders.Add(normalized);
-    }
-
-    private static string NormalizeLoaderName(string? loader)
-    {
-        if (string.IsNullOrWhiteSpace(loader))
-        {
-            return string.Empty;
-        }
-
-        string normalized = loader.Trim().ToLowerInvariant();
-        return normalized switch
-        {
-            _ when normalized.StartsWith("paper", StringComparison.OrdinalIgnoreCase) => "paper",
-            _ when normalized.StartsWith("purpur", StringComparison.OrdinalIgnoreCase) => "purpur",
-            _ when normalized.StartsWith("spigot", StringComparison.OrdinalIgnoreCase) => "spigot",
-            _ when normalized.StartsWith("bukkit", StringComparison.OrdinalIgnoreCase) => "bukkit",
-            _ when normalized.StartsWith("fabric", StringComparison.OrdinalIgnoreCase) => "fabric",
-            _ when normalized.StartsWith("forge", StringComparison.OrdinalIgnoreCase) => "forge",
-            _ when normalized.StartsWith("neoforge", StringComparison.OrdinalIgnoreCase) => "neoforge",
-            _ when normalized.StartsWith("quilt", StringComparison.OrdinalIgnoreCase) => "quilt",
-            _ => normalized
-        };
-    }
-
-    private static bool IsKnownPluginLoader(string loader) =>
-        loader.Equals("paper", StringComparison.OrdinalIgnoreCase) ||
-        loader.Equals("spigot", StringComparison.OrdinalIgnoreCase) ||
-        loader.Equals("bukkit", StringComparison.OrdinalIgnoreCase) ||
-        loader.Equals("purpur", StringComparison.OrdinalIgnoreCase);
-
-    private static string BuildProviderVersionId(string providerName, JavaAddonManifest addon)
-    {
-        if (providerName.Equals("CurseForge", StringComparison.OrdinalIgnoreCase) &&
-            !string.IsNullOrWhiteSpace(addon.ProjectId) &&
-            !string.IsNullOrWhiteSpace(addon.VersionId) &&
-            !addon.VersionId.Contains(':', StringComparison.Ordinal))
-        {
-            return $"{addon.ProjectId}:{addon.VersionId}";
-        }
-
-        return addon.VersionId ?? string.Empty;
-    }
-
-    private static IEnumerable<string> BuildJavaAddonSearchQueries(JavaAddonManifest addon)
-    {
-        var queries = new List<string>();
-        AddSearchQuery(queries, addon.Name);
-
-        string? fileStem = string.IsNullOrWhiteSpace(addon.FileName)
-            ? null
-            : Path.GetFileNameWithoutExtension(addon.FileName);
-        AddSearchQuery(queries, fileStem);
-
-        string stem = FirstNonEmpty(fileStem, addon.Name);
-        foreach (string marker in new[] { "-fabric", "_fabric", "+fabric", "-forge", "_forge", "+forge", "-neoforge", "_neoforge", "+neoforge", "-quilt", "_quilt", "+quilt" })
-        {
-            int markerIndex = stem.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-            if (markerIndex > 0)
-            {
-                AddSearchQuery(queries, stem[..markerIndex]);
-            }
-        }
-
-        return queries;
-    }
-
-    private static void AddSearchQuery(List<string> queries, string? query)
-    {
-        if (string.IsNullOrWhiteSpace(query) ||
-            queries.Contains(query, StringComparer.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        queries.Add(query);
-    }
-
-    private static void AddJavaAddonCandidate(
-        List<JavaAddonDownloadCandidate> candidates,
-        MarketplaceVersion? version,
-        string source,
-        bool preferManifestHash = false)
-    {
-        if (version == null || string.IsNullOrWhiteSpace(version.DownloadUrl))
-        {
-            return;
-        }
-
-        if (candidates.Any(candidate => IsSameJavaAddonCandidate(candidate.Version, version)))
-        {
-            return;
-        }
-
-        candidates.Add(new JavaAddonDownloadCandidate(version, source, preferManifestHash));
-    }
-
-    private static HashSpec ResolveJavaCandidateHash(
-        JavaAddonDownloadCandidate candidate,
-        JavaAddonManifest addon)
-    {
-        if (candidate.PreferManifestHash)
-        {
-            HashSpec manifestHash = ResolveHash(null, null, addon.Hash);
-            if (!string.IsNullOrWhiteSpace(manifestHash.Hash))
-            {
-                return manifestHash;
-            }
-        }
-
-        return ResolveHash(candidate.Version.Hash, candidate.Version.HashType, addon.Hash);
-    }
-
-    private static bool IsSameJavaAddonCandidate(MarketplaceVersion left, MarketplaceVersion right)
-    {
-        if (!string.IsNullOrWhiteSpace(left.DownloadUrl) &&
-            left.DownloadUrl.Equals(right.DownloadUrl, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return !string.IsNullOrWhiteSpace(left.Id) &&
-               !string.IsNullOrWhiteSpace(right.Id) &&
-               left.Id.Equals(right.Id, StringComparison.OrdinalIgnoreCase) &&
-               left.FileName.Equals(right.FileName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string BuildJavaAddonUnavailableMessage(
-        JavaAddonManifest addon,
-        string provider,
-        IReadOnlyList<string> failures)
-    {
-        string baseMessage =
-            $"PocketMC could not restore add-on '{addon.Name}' from {provider}. It tried the manifest hash, exact version id, project id lookup, provider search, and alternate download URLs before rolling back.";
-
-        if (failures.Count == 0)
-        {
-            return baseMessage + " The provider did not return any compatible downloadable file.";
-        }
-
-        return baseMessage + Environment.NewLine + "Last attempts:" + Environment.NewLine + string.Join(Environment.NewLine, failures.TakeLast(4));
-    }
 
     private IServerSoftwareProvider ResolveSoftwareProvider(string serverType)
     {
@@ -1634,15 +913,7 @@ public sealed class InstanceImportService : IInstanceImportService
         return provider ?? throw new InvalidOperationException($"No {providerPrefix} server software provider is registered.");
     }
 
-    private IAddonProvider ResolveAddonProvider(string providerName, InstanceAddonManifest addon)
-    {
-        if (_addonProviders.TryGetValue(providerName, out IAddonProvider? provider))
-        {
-            return provider;
-        }
 
-        throw new AddonUnavailableException(addon.Name, providerName, addon.RelativePath, $"The add-on provider '{providerName}' is not registered.");
-    }
 
     private static string ResolveJavaAddonDirectory(string serverDirectory, string addonType)
     {
@@ -2145,10 +1416,7 @@ public sealed class InstanceImportService : IInstanceImportService
         });
     }
 
-    private sealed record JavaAddonDownloadCandidate(
-        MarketplaceVersion Version,
-        string Source,
-        bool PreferManifestHash);
+
 
     private sealed record HashSpec(string? Hash, string? HashType);
 }
