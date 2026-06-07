@@ -63,10 +63,57 @@ jobs:
             -o "Test Release/Portable"
 
       - name: Upload Test Release Portable Artifact
+        id: upload-test-portable
         uses: actions/upload-artifact@v4
         with:
           name: PocketMC-Test-Portable-${{ github.run_number }}
           path: Test Release/Portable/
+
+      - name: Send Beta Build Discord Notification
+        shell: pwsh
+        run: |
+          $webhookUrl = "${{ secrets.DISCORD_BETA_WEBHOOK }}"
+          if (-not $webhookUrl) {
+            Write-Warning "DISCORD_BETA_WEBHOOK secret is not set. Skipping notification."
+            exit 0
+          }
+          
+          $runId = "${{ github.run_id }}"
+          $artifactId = "${{ steps.upload-test-portable.outputs.artifact-id }}"
+          $repo = "${{ github.repository }}"
+          $commit = "${{ github.sha }}".Substring(0, 7)
+          $branch = "${{ github.ref_name }}"
+          
+          # The artifact link to download
+          $artifactUrl = "https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId"
+          
+          $payload = @{
+            embeds = @(
+              @{
+                title = "🛠️ New Beta Portable Build Available!"
+                description = "A new test build has been uploaded for testing."
+                color = 16753920  # Orange
+                fields = @(
+                  @{
+                    name = "⬇️ Download Portable Artifact"
+                    value = "[Click here to download]($artifactUrl)"
+                    inline = $false
+                  },
+                  @{
+                    name = "📝 Run Details"
+                    value = "Branch: `$branch` | Commit: `$commit` `n[View Action Run](https://github.com/$repo/actions/runs/$runId)"
+                    inline = $false
+                  }
+                )
+                footer = @{
+                  text = "PocketMC CI/CD System"
+                }
+              }
+            )
+          }
+          
+          $json = $payload | ConvertTo-Json -Depth 5
+          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $json -ContentType "application/json"
 
       # 🔽 KEEP THIS (for Velopack delta support, NOT version logic)
       - name: Download previous release assets
