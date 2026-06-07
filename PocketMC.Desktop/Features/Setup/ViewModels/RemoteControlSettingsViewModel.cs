@@ -8,6 +8,7 @@ using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Features.RemoteControl.Auth;
 
 namespace PocketMC.Desktop.Features.Setup.ViewModels;
 
@@ -29,17 +30,25 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private readonly SettingsManager _settingsManager;
     private readonly RemoteControlCoordinator _coordinator;
     private readonly IDialogService _dialogService;
+    private readonly RemoteAuthService _authService;
 
     public RemoteControlSettingsViewModel(
         ApplicationState applicationState,
         SettingsManager settingsManager,
         RemoteControlCoordinator coordinator,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        RemoteAuthService authService)
     {
         _applicationState = applicationState;
         _settingsManager = settingsManager;
         _coordinator = coordinator;
         _dialogService = dialogService;
+        _authService = authService;
+
+        _authService.DevicesChanged += (s, e) => 
+        {
+            Application.Current.Dispatcher.Invoke(LoadDevices);
+        };
 
         var remote = _applicationState.Settings.RemoteControl;
         _isEnabled = remote.Enabled;
@@ -153,7 +162,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         CanStartTunnel = false;
         try
         {
-            SaveSettings();
+            if (!SaveSettings()) return;
             if (AccessMode == RemoteAccessMode.LanOnly)
             {
                 AccessMode = RemoteAccessMode.CloudflaredQuickTunnel;
@@ -280,13 +289,13 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         }
     }
 
-    private void SaveSettings()
+    private bool SaveSettings()
     {
         var settings = _applicationState.Settings;
         if (Port <= 0 || Port > 65535)
         {
             SetStatus("Remote Control port must be between 1 and 65535.", true);
-            return;
+            return false;
         }
 
         settings.RemoteControl.Enabled = IsEnabled;
@@ -298,6 +307,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.CloudflaredPath = string.IsNullOrWhiteSpace(CloudflaredPath) ? null : CloudflaredPath.Trim();
 
         _settingsManager.Save(settings);
+        return true;
     }
 
     public static string MapRemoteAccessModeToProviderId(RemoteAccessMode accessMode) =>
@@ -308,9 +318,14 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             _ => "none"
         };
 
+    private bool _isRestarting;
+
     private async void SaveAndRestart()
     {
-        SaveSettings();
+        if (_isRestarting) return;
+        if (!SaveSettings()) return;
+
+        _isRestarting = true;
         try
         {
             if (IsEnabled)
@@ -331,6 +346,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         }
         finally
         {
+            _isRestarting = false;
             UpdateStatus();
         }
     }

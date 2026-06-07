@@ -65,6 +65,9 @@ public sealed class RemoteStatusService
         var oppedPlayersList = await _serverStateFileService.GetOppedPlayersAsync(metadata);
         var oppedPlayers = oppedPlayersList.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+        var bannedPlayersList = await _serverStateFileService.GetBannedPlayersAsync(metadata);
+        var bannedPlayersNames = bannedPlayersList.Select(b => b.Name).ToList();
+
         var onlinePlayers = onlinePlayerNames.Select(name => new RemotePlayerDto
         {
             Name = name,
@@ -114,6 +117,8 @@ public sealed class RemoteStatusService
             PlayerCount = process?.PlayerCount ?? metrics?.PlayerCount ?? 0,
             MaxPlayers = metadata.MaxPlayers,
             OnlinePlayers = onlinePlayers,
+            OppedPlayers = oppedPlayersList,
+            BannedPlayers = bannedPlayersNames,
             CpuUsage = metrics?.CpuUsage ?? 0,
             RamUsageMb = metrics?.RamUsageMb ?? 0,
             MaxRamMb = metadata.MaxRamMb,

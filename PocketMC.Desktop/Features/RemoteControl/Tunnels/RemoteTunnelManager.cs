@@ -74,11 +74,20 @@ public sealed class RemoteTunnelManager
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (_activeProvider != null)
+            var provider = _activeProvider;
+
+            if (provider == null)
             {
-                await _activeProvider.StopAsync(cancellationToken);
-                _activeProvider = null;
+                var providerId = _applicationState.Settings.RemoteControl.TunnelProviderId;
+                _providers.TryGetValue(providerId, out provider);
             }
+
+            if (provider != null)
+            {
+                await provider.StopAsync(cancellationToken);
+            }
+
+            _activeProvider = null;
         }
         finally
         {

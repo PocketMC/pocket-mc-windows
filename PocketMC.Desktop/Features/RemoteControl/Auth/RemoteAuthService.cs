@@ -22,6 +22,8 @@ public sealed class RemoteAuthService
     private readonly ConcurrentDictionary<string, RemoteWebSocketTicket> _wsTickets = new(StringComparer.Ordinal);
     private readonly object _settingsLock = new();
 
+    public event EventHandler? DevicesChanged;
+
     public RemoteAuthService(
         ApplicationState applicationState,
         SettingsManager settingsManager,
@@ -76,6 +78,8 @@ public sealed class RemoteAuthService
             settings.PairedDevices.Add(device);
             _settingsManager.Save(_applicationState.Settings);
         }
+
+        DevicesChanged?.Invoke(this, EventArgs.Empty);
 
         return RemoteExchangeResult.Successful(deviceToken, device.Id);
     }
@@ -145,8 +149,10 @@ public sealed class RemoteAuthService
 
             device.RevokedAtUtc ??= DateTimeOffset.UtcNow;
             _settingsManager.Save(_applicationState.Settings);
-            return true;
         }
+
+        DevicesChanged?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
     public IReadOnlyList<RemoteDeviceSession> GetActiveDevices()
@@ -172,6 +178,8 @@ public sealed class RemoteAuthService
 
             _settingsManager.Save(_applicationState.Settings);
         }
+
+        DevicesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private static RemoteControlSettings EnsureRemoteSettings(PocketMC.Desktop.Models.AppSettings settings)

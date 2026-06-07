@@ -27,6 +27,22 @@ public sealed class RemoteTunnelManagerTests
         Assert.Equal(1, other.StartCount);
     }
 
+    [Fact]
+    public async Task StopAsync_WhenActiveProviderIsNull_LooksUpProviderFromSettings()
+    {
+        var state = new ApplicationState();
+        state.Settings.RemoteControl.TunnelProviderId = "playit-https";
+        var playit = new FakeRemoteTunnelProvider("playit-https", "https://playit.example");
+        var manager = new RemoteTunnelManager(state, new IRemoteTunnelProvider[] { playit });
+
+        // Act
+        // _activeProvider is null since StartAsync was not called.
+        await manager.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(1, playit.StopCount);
+    }
+
     private sealed class FakeRemoteTunnelProvider : IRemoteTunnelProvider
     {
         private readonly string _publicUrl;

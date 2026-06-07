@@ -11,6 +11,8 @@ public sealed class RemoteInstanceStatusDto
     public int PlayerCount { get; set; }
     public int MaxPlayers { get; set; }
     public IReadOnlyList<RemotePlayerDto> OnlinePlayers { get; set; } = Array.Empty<RemotePlayerDto>();
+    public IReadOnlyList<string> OppedPlayers { get; set; } = Array.Empty<string>();
+    public IReadOnlyList<string> BannedPlayers { get; set; } = Array.Empty<string>();
     public double CpuUsage { get; set; }
     public double RamUsageMb { get; set; }
     public int MaxRamMb { get; set; }

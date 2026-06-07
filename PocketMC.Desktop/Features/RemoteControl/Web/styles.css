@@ -102,6 +102,7 @@ h3 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; }
   place-items: center;
 }
 .brand-mark svg { width: 24px; height: 24px; }
+.brand-mark-img { width: 24px; height: 24px; object-fit: contain; }
 .brand-copy p { font-size: 13px; color: var(--text-secondary); }
 
 .sidebar-nav {
@@ -146,6 +147,7 @@ h3 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; }
   text-align: left;
 }
 .sidebar-item svg { width: 18px; height: 18px; color: var(--text-muted); transition: var(--transition); flex-shrink: 0; }
+.sidebar-item-icon { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
 .sidebar-item:hover {
   background: var(--surface-raised);
   color: var(--text-primary);
@@ -231,6 +233,7 @@ h3 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; }
   flex-shrink: 0;
 }
 .server-icon svg { width: 28px; height: 28px; }
+.server-icon-img { width: 28px; height: 28px; object-fit: contain; }
 
 .status-pill {
   font-size: 13px;

@@ -15,7 +15,7 @@
     <header class="mobile-header">
       <div class="mobile-brand">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 7h16M7 4h10M6 7v13h12V7M9 11h6M9 15h6"/></svg>
+          <img src="/remote/icon.png" alt="" class="brand-mark-img" />
         </span>
         <h2>PocketMC</h2>
       </div>
@@ -30,7 +30,7 @@
     <aside class="sidebar" id="appSidebar">
       <div class="brand-block">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 7h16M7 4h10M6 7v13h12V7M9 11h6M9 15h6"/></svg>
+          <img src="/remote/icon.png" alt="" class="brand-mark-img" />
         </span>
         <div class="brand-copy">
           <h1>PocketMC</h1>
@@ -108,7 +108,7 @@
         <div class="server-heading">
           <div class="server-title">
             <span class="server-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M4 6h16v5H4zM4 13h16v5H4zM8 8h.01M8 15h.01M12 8h6M12 15h6"/></svg>
+              <img src="/remote/icon.png" alt="" class="server-icon-img" id="serverIconImage" />
             </span>
             <div>
               <p class="eyebrow">Instance</p>
@@ -291,11 +291,11 @@
       <p id="playerActionModalName" class="muted">Player name</p>
       
       <div class="modal-buttons" id="playerActionButtons">
-        <button class="secondary-button" data-action="op">Make OP</button>
-        <button class="secondary-button" data-action="deop">De-OP</button>
-        <button class="danger-button" data-action="kick">Kick</button>
-        <button class="danger-button" data-action="ban">Ban</button>
-        <button class="secondary-button" data-action="pardon">Unban</button>
+        <button class="secondary-button" data-action="op" id="btnMakeOp">Make OP</button>
+        <button class="secondary-button" data-action="deop" id="btnDeop">De-OP</button>
+        <button class="danger-button" data-action="kick" id="btnKick">Kick</button>
+        <button class="danger-button" data-action="ban" id="btnBan">Ban</button>
+        <button class="secondary-button" data-action="pardon" id="btnUnban">Unban</button>
       </div>
 
       <form id="reasonModalForm" class="modal-form" hidden>

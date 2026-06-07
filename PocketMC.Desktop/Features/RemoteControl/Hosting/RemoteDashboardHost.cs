@@ -34,6 +34,7 @@ public sealed class RemoteDashboardHost
     private readonly RemoteTunnelManager _tunnelManager;
     private readonly LocalNetworkAddressService _localNetworkAddressService;
     private readonly ILogger<RemoteDashboardHost> _logger;
+    private readonly SemaphoreSlim _startGate = new(1, 1);
     private WebApplication? _app;
 
     public RemoteDashboardHost(
@@ -68,35 +69,43 @@ public sealed class RemoteDashboardHost
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
-        if (_app != null || !_applicationState.Settings.RemoteControl.Enabled)
+        await _startGate.WaitAsync(cancellationToken);
+        try
         {
-            return;
+            if (_app != null || !_applicationState.Settings.RemoteControl.Enabled)
+            {
+                return;
+            }
+
+            RemoteControlSettings settings = _applicationState.Settings.RemoteControl;
+            string bindAddress = UsesLoopbackOnlyForRemoteTunnel(settings.AccessMode)
+                ? "127.0.0.1"
+                : "0.0.0.0";
+
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                ApplicationName = typeof(RemoteDashboardHost).Assembly.GetName().Name
+            });
+            builder.WebHost.UseUrls($"http://{bindAddress}:{settings.Port}");
+            builder.Logging.ClearProviders();
+            builder.Services.ConfigureHttpJsonOptions(options =>
+            {
+                options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            });
+
+            WebApplication app = builder.Build();
+            app.UseWebSockets();
+            MapStaticFiles(app);
+            MapEndpoints(app);
+
+            await app.StartAsync(cancellationToken);
+            _app = app;
+            _logger.LogInformation("Remote Control host started on {BindAddress}:{Port}.", bindAddress, settings.Port);
         }
-
-        RemoteControlSettings settings = _applicationState.Settings.RemoteControl;
-        string bindAddress = UsesLoopbackOnlyForRemoteTunnel(settings.AccessMode)
-            ? "127.0.0.1"
-            : "0.0.0.0";
-
-        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        finally
         {
-            ApplicationName = typeof(RemoteDashboardHost).Assembly.GetName().Name
-        });
-        builder.WebHost.UseUrls($"http://{bindAddress}:{settings.Port}");
-        builder.Logging.ClearProviders();
-        builder.Services.ConfigureHttpJsonOptions(options =>
-        {
-            options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        });
-
-        WebApplication app = builder.Build();
-        app.UseWebSockets();
-        MapStaticFiles(app);
-        MapEndpoints(app);
-
-        await app.StartAsync(cancellationToken);
-        _app = app;
-        _logger.LogInformation("Remote Control host started on {BindAddress}:{Port}.", bindAddress, settings.Port);
+            _startGate.Release();
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)

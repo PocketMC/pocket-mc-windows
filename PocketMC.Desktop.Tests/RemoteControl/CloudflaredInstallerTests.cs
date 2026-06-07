@@ -37,4 +37,14 @@ public sealed class CloudflaredInstallerTests
             DownloaderService.CloudflaredExpectedSha256 = "e1ce2bcf3d1137a9248f7cebb22976fd6b66f5dc2e852231003f1db13262dc86";
         }
     }
+
+    [Fact]
+    public async Task EnsureInstalledAsync_InvalidUserConfiguredPath_ThrowsFileNotFoundException()
+    {
+        var appState = new PocketMC.Desktop.Features.Shell.ApplicationState();
+        var downloader = new DownloaderService(null!, NullLogger<DownloaderService>.Instance);
+        var installer = new PocketMC.Desktop.Features.RemoteControl.Tunnels.CloudflaredInstaller(appState, downloader);
+
+        await Assert.ThrowsAsync<FileNotFoundException>(() => installer.EnsureInstalledAsync("invalid/path/that/does/not/exist.exe", CancellationToken.None));
+    }
 }

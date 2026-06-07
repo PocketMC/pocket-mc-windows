@@ -18,22 +18,13 @@ public sealed class CloudflaredInstaller : ICloudflaredInstaller
 
     public async Task<string> EnsureInstalledAsync(string? userConfiguredPath, CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(userConfiguredPath) && File.Exists(userConfiguredPath))
+        if (!string.IsNullOrWhiteSpace(userConfiguredPath))
         {
-            return userConfiguredPath;
-        }
-
-        string? pathEnv = Environment.GetEnvironmentVariable("PATH");
-        if (!string.IsNullOrWhiteSpace(pathEnv))
-        {
-            foreach (string pathPart in pathEnv.Split(Path.PathSeparator))
+            if (File.Exists(userConfiguredPath))
             {
-                string combined = Path.Combine(pathPart, "cloudflared.exe");
-                if (File.Exists(combined))
-                {
-                    return combined;
-                }
+                return userConfiguredPath;
             }
+            throw new FileNotFoundException("The user-configured Cloudflared path does not exist.");
         }
 
         if (!_applicationState.IsConfigured)
@@ -43,14 +34,22 @@ public sealed class CloudflaredInstaller : ICloudflaredInstaller
 
         string appRootPath = _applicationState.GetRequiredAppRootPath();
         string cloudflaredPath = GetManagedExecutablePath(appRootPath);
-        if (File.Exists(cloudflaredPath))
-        {
-            return cloudflaredPath;
-        }
 
         await _gate.WaitAsync(cancellationToken);
         try
         {
+            if (File.Exists(cloudflaredPath))
+            {
+                if (DownloaderService.CloudflaredExpectedSha256 != null)
+                {
+                    bool isValid = await VerifySha256Async(cloudflaredPath, DownloaderService.CloudflaredExpectedSha256, cancellationToken);
+                    if (!isValid)
+                    {
+                        File.Delete(cloudflaredPath);
+                    }
+                }
+            }
+
             if (!File.Exists(cloudflaredPath))
             {
                 await _downloaderService.EnsureCloudflaredDownloadedAsync(appRootPath, progress: null, cancellationToken);
@@ -62,6 +61,15 @@ public sealed class CloudflaredInstaller : ICloudflaredInstaller
         {
             _gate.Release();
         }
+    }
+
+    private static async Task<bool> VerifySha256Async(string filePath, string expectedHash, CancellationToken cancellationToken)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+        byte[] hashBytes = await sha256.ComputeHashAsync(stream, cancellationToken);
+        string actualHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+        return string.Equals(actualHash, expectedHash.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase);
     }
 
     public static string GetManagedExecutablePath(string appRootPath) =>

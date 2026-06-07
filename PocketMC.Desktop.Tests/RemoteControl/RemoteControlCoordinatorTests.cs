@@ -14,15 +14,34 @@ public sealed class RemoteControlCoordinatorTests
     public async Task StartHostAsync_FailureDoesNotPersistEnabledState()
     {
         var appState = new ApplicationState();
-        var settingsManagerMock = new Mock<SettingsManager>("dummy_path.json");
+        appState.Settings.RemoteControl.Enabled = false;
+        appState.Settings.RemoteControl.Port = -1; // Invalid port, will cause StartAsync to fail
         
-        // Use an unstarted Mock for RemoteDashboardHost if possible, or we may not be able to mock it since it's sealed.
-        // Wait, RemoteDashboardHost is a sealed class. I can't mock it easily if it doesn't have an interface.
-        // Since we changed the order in the coordinator:
-        // await _dashboardHost.StartAsync(cancellationToken);
-        // _applicationState.Settings.RemoteControl.Enabled = true;
-        // The test would just verify the ordering. If StartAsync throws, Enabled isn't set.
-        
-        Assert.False(appState.Settings.RemoteControl.Enabled);
+        string tempFile = Path.GetTempFileName();
+        try
+        {
+            var settingsManager = new SettingsManager(tempFile);
+            
+            var host = new RemoteDashboardHost(
+                appState, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, 
+                new Mock<Microsoft.Extensions.Logging.ILogger<RemoteDashboardHost>>().Object);
+                
+            var coordinator = new RemoteControlCoordinator(
+                appState, settingsManager, null!, host, null!, null!);
+                
+            await Assert.ThrowsAnyAsync<Exception>(() => coordinator.StartHostAsync());
+            
+            Assert.False(appState.Settings.RemoteControl.Enabled);
+            
+            var reloadedSettings = settingsManager.Load();
+            Assert.False(reloadedSettings.RemoteControl.Enabled);
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+            {
+                File.Delete(tempFile);
+            }
+        }
     }
 }

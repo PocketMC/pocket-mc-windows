@@ -54,9 +54,22 @@ public sealed class RemoteControlCoordinator
 
     public async Task StartHostAsync(CancellationToken cancellationToken = default)
     {
-        await _dashboardHost.StartAsync(cancellationToken);
-        _applicationState.Settings.RemoteControl.Enabled = true;
-        _settingsManager.Save(_applicationState.Settings);
+        var settings = _applicationState.Settings;
+        bool previousEnabled = settings.RemoteControl.Enabled;
+
+        settings.RemoteControl.Enabled = true;
+
+        try
+        {
+            await _dashboardHost.StartAsync(cancellationToken);
+            _settingsManager.Save(settings);
+        }
+        catch
+        {
+            settings.RemoteControl.Enabled = previousEnabled;
+            _settingsManager.Save(settings);
+            throw;
+        }
     }
 
     public async Task StopHostAsync(CancellationToken cancellationToken = default)

@@ -81,37 +81,38 @@ public sealed class RemoteConsoleWebSocketHandler
         string line,
         CancellationToken cancellationToken)
     {
-        if (socket.State != WebSocketState.Open)
-        {
-            return;
-        }
-
-        byte[] payload = JsonSerializer.SerializeToUtf8Bytes(
-            new
-            {
-                type,
-                line,
-                timestampUtc = DateTimeOffset.UtcNow
-            },
-            JsonOptions);
-
-        await sendLock.WaitAsync(cancellationToken);
         try
         {
-            if (socket.State == WebSocketState.Open)
+            if (socket.State != WebSocketState.Open)
             {
-                await socket.SendAsync(payload, WebSocketMessageType.Text, endOfMessage: true, cancellationToken);
+                return;
+            }
+
+            byte[] payload = JsonSerializer.SerializeToUtf8Bytes(
+                new
+                {
+                    type,
+                    line,
+                    timestampUtc = DateTimeOffset.UtcNow
+                },
+                JsonOptions);
+
+            await sendLock.WaitAsync(cancellationToken);
+            try
+            {
+                if (socket.State == WebSocketState.Open)
+                {
+                    await socket.SendAsync(payload, WebSocketMessageType.Text, endOfMessage: true, cancellationToken);
+                }
+            }
+            finally
+            {
+                sendLock.Release();
             }
         }
-        catch (WebSocketException)
+        catch
         {
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-        finally
-        {
-            sendLock.Release();
+            // Ignore any socket/task cancellation exceptions to prevent unobserved task failures
         }
     }
 }

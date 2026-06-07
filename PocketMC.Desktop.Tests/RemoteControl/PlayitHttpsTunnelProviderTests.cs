@@ -68,7 +68,7 @@ public sealed class PlayitHttpsTunnelProviderTests
                 return JsonResponse("""{"status":"success","data":{}}""");
             }
 
-            return JsonResponse(TunnelListJson(HttpsTunnel("saved-remote", "custom-name", 12345, "saved.playit.plus")));
+            return JsonResponse(TunnelListJson(HttpsTunnel("saved-remote", "pocketmc-remote-control", 12345, "saved.playit.plus")));
         });
         var provider = CreateProvider(workspace, apiClient);
 

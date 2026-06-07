@@ -261,7 +261,7 @@ public sealed class PlayitHttpsTunnelProvider : IRemoteTunnelProvider
         {
             TunnelData? byId = tunnelList.FirstOrDefault(tunnel =>
                 string.Equals(tunnel.Id, savedTunnelId, StringComparison.OrdinalIgnoreCase) &&
-                IsRemoteControlHttpsTunnel(tunnel, allowAnyName: true));
+                IsRemoteControlHttpsTunnel(tunnel, allowAnyName: false));
             if (byId != null)
             {
                 return byId;

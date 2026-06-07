@@ -28,6 +28,7 @@ const els = {
   
   serverName: document.querySelector("#serverName"),
   serverType: document.querySelector("#serverType"),
+  serverIconImage: document.querySelector("#serverIconImage"),
   statusPill: document.querySelector("#statusPill"),
   playerCount: document.querySelector("#playerCount"),
   ramUsage: document.querySelector("#ramUsage"),
@@ -63,6 +64,12 @@ const els = {
   reasonModalInput: document.querySelector("#reasonModalInput"),
   reasonModalCancel: document.querySelector("#reasonModalCancel"),
   playerActionModalClose: document.querySelector("#playerActionModalClose"),
+
+  btnMakeOp: document.querySelector("#btnMakeOp"),
+  btnDeop: document.querySelector("#btnDeop"),
+  btnKick: document.querySelector("#btnKick"),
+  btnBan: document.querySelector("#btnBan"),
+  btnUnban: document.querySelector("#btnUnban"),
   
   offlinePlayerInput: document.querySelector("#offlinePlayerInput"),
   btnOfflineManage: document.querySelector("#btnOfflineManage"),
@@ -152,7 +159,7 @@ function showPairPrompt() {
   els.connectionLabel.textContent = token ? "Ready to pair" : "Not paired";
   els.pairTitle.textContent = token ? "Pair this browser" : "Pairing link needed";
   els.pairMessage.textContent = token
-    ? "Open this link in Safari or your preferred browser before pairing. The link can pair more than one browser until it expires."
+    ? "Open this link before it expires. It can pair one browser only."
     : "Create a Pair Device link in PocketMC Desktop, then open it here.";
   els.pairButton.disabled = !token;
   els.copyPairLinkButton.disabled = !token;
@@ -259,6 +266,25 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
   await ensureConsoleConnection(instanceStatus);
 }
 
+function getStatusColor(status) {
+  switch (status.toLowerCase()) {
+    case "online": return "var(--success-strong)";
+    case "offline": return "var(--text-muted)";
+    default: return "var(--warning-strong)";
+  }
+}
+
+function getServerIcon(serverType) {
+  if (!serverType) return "/remote/icon.png";
+  const type = serverType.toLowerCase();
+  if (type.includes("fabric")) return "/remote/icons/fabric.png";
+  if (type.includes("forge")) return "/remote/icons/forge.png";
+  if (type.includes("paper") || type.includes("purpur")) return "/remote/icons/papermc.png";
+  if (type.includes("bedrock") || type.includes("bds")) return "/remote/icons/bds.png";
+  if (type.includes("pocketmine")) return "/remote/icons/pocketmine-mp.png";
+  return "/remote/icons/vanilla.png";
+}
+
 function renderSidebar(instances) {
   els.instanceListSidebar.innerHTML = "";
   for (const instance of instances) {
@@ -269,8 +295,9 @@ function renderSidebar(instances) {
         btn.classList.add("active");
     }
     
-    const icon = `<svg viewBox="0 0 24 24"><path d="M4 6h16v5H4zM4 13h16v5H4zM8 8h.01M8 15h.01M12 8h6M12 15h6"/></svg>`;
-    btn.innerHTML = `${icon}<span>${instance.name}</span>`;
+    const iconPath = getServerIcon(instance.serverType);
+    const icon = `<img src="${iconPath}" alt="" class="sidebar-item-icon" />`;
+    btn.innerHTML = `${icon}<span>${escapeHtml(instance.name)}</span>`;
     
     btn.addEventListener("click", () => {
         currentAppView = "instances";
@@ -335,6 +362,11 @@ async function renderDevices() {
 function renderStatus(remoteStatus, instanceStatus) {
   els.serverName.textContent = instanceStatus.name;
   els.serverType.textContent = instanceStatus.serverType;
+  
+  if (els.serverIconImage) {
+      els.serverIconImage.src = getServerIcon(instanceStatus.serverType);
+  }
+
   setStatusPill(instanceStatus);
   els.playerCount.textContent = `${instanceStatus.playerCount} / ${instanceStatus.maxPlayers}`;
   els.ramUsage.textContent = `${(instanceStatus.ramUsageMb / 1024).toFixed(1)} GB`;
@@ -588,10 +620,7 @@ function renderPlayers(players, allowActions) {
     
     item.innerHTML = `
       <div class="player-name">
-        <div class="player-avatar">
-            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
-        <span>${escapeHtml(player)}</span>
+        <span>${escapeHtml(player.name)}</span>
       </div>
     `;
 
@@ -599,7 +628,7 @@ function renderPlayers(players, allowActions) {
         const manageBtn = document.createElement("button");
         manageBtn.className = "secondary-button";
         manageBtn.innerHTML = `<span>Manage</span>`;
-        manageBtn.addEventListener("click", () => openPlayerModal(player));
+        manageBtn.addEventListener("click", () => openPlayerModal(player.name));
         item.appendChild(manageBtn);
     }
     
@@ -609,6 +638,29 @@ function renderPlayers(players, allowActions) {
 
 function openPlayerModal(playerName) {
     els.playerActionModalName.textContent = playerName;
+
+    let isOp = false;
+    let isBanned = false;
+    let isOnline = false;
+
+    if (lastInstanceStatus) {
+        if (lastInstanceStatus.oppedPlayers) {
+            isOp = lastInstanceStatus.oppedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
+        }
+        if (lastInstanceStatus.bannedPlayers) {
+            isBanned = lastInstanceStatus.bannedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
+        }
+        if (lastInstanceStatus.onlinePlayers) {
+            isOnline = lastInstanceStatus.onlinePlayers.some(p => p.name.toLowerCase() === playerName.toLowerCase());
+        }
+    }
+
+    els.btnMakeOp.hidden = isOp;
+    els.btnDeop.hidden = !isOp;
+    els.btnBan.hidden = isBanned;
+    els.btnUnban.hidden = !isBanned;
+    els.btnKick.hidden = !isOnline || isBanned;
+
     els.playerActionButtons.hidden = false;
     els.reasonModalForm.hidden = true;
     els.playerActionModal.hidden = false;
