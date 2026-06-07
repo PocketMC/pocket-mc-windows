@@ -116,7 +116,7 @@ jobs:
                   },
                   @{
                     name = "💬 Commit Message"
-                    value = "```text`n$commitMessage`n```"
+                    value = ('```text' + "`n$commitMessage`n" + '```')
                     inline = $false
                   }
                 )
