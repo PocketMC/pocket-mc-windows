@@ -85,6 +85,9 @@ jobs:
       - name: Test
         run: dotnet test PocketMC.Desktop.sln -c Debug --no-build --no-restore
 
+      - name: Restore (win-x64 RID, for publish)
+        run: dotnet restore PocketMC.Desktop/PocketMC.Desktop.csproj -r ${{ env.RUNTIME }}
+        
       # ── Portable publish: always runs (beta artifact), --no-restore ─────────
       # ── FIX 5: Removed the redundant "dotnet build -c Release" step ────────
       - name: Publish Portable
