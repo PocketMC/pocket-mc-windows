@@ -101,7 +101,7 @@ jobs:
                   },
                   @{
                     name = "📝 Run Details"
-                    value = "Branch: `$branch` | Commit: `$commit` `n[View Action Run](https://github.com/$repo/actions/runs/$runId)"
+                    value = "Branch: ``$branch`` | Commit: ``$commit`` `n[View Action Run](https://github.com/$repo/actions/runs/$runId)"
                     inline = $false
                   }
                 )
