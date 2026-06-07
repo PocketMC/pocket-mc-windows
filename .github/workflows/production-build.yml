@@ -71,6 +71,8 @@ jobs:
 
       - name: Send Beta Build Discord Notification
         shell: pwsh
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           $webhookUrl = "${{ secrets.DISCORD_BETA_WEBHOOK }}"
           if (-not $webhookUrl) {
@@ -83,6 +85,14 @@ jobs:
           $repo = "${{ github.repository }}"
           $commit = "${{ github.sha }}".Substring(0, 7)
           $branch = "${{ github.ref_name }}"
+          
+          # Clean up the commit message for the embed
+          $commitMessage = $env:COMMIT_MESSAGE
+          if ([string]::IsNullOrWhiteSpace($commitMessage)) {
+            $commitMessage = "No commit message provided."
+          } elseif ($commitMessage.Length -gt 1000) {
+            $commitMessage = $commitMessage.Substring(0, 1000) + "..."
+          }
           
           # The artifact link to download
           $artifactUrl = "https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId"
@@ -102,6 +112,11 @@ jobs:
                   @{
                     name = "📝 Run Details"
                     value = "Branch: ``$branch`` | Commit: ``$commit`` `n[View Action Run](https://github.com/$repo/actions/runs/$runId)"
+                    inline = $false
+                  },
+                  @{
+                    name = "💬 Commit Message"
+                    value = "```text`n$commitMessage`n```"
                     inline = $false
                   }
                 )
