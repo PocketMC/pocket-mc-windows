@@ -58,13 +58,11 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly IDiscordRpcService _discordRpcService;
         private readonly WindowsStartupService _windowsStartupService;
         private readonly ServerSleepPreventionCoordinator _sleepPreventionCoordinator;
-        private readonly RemoteControlCoordinator _remoteControlCoordinator;
         private bool _isInitializing = true;
         private readonly MouseWheelEventHandler _previewMouseWheelHandler;
         private bool _isForwardingMouseWheel;
         
         public CloudBackupSettingsViewModel CloudBackups { get; }
-        public ObservableCollection<RemoteDeviceSession> PairedDevices { get; } = new();
 
         public AppSettingsPage(
             ApplicationState applicationState, 
@@ -77,8 +75,7 @@ namespace PocketMC.Desktop.Features.Setup
             CloudBackupSettingsViewModel cloudBackups,
             WindowsStartupService windowsStartupService,
             IDiscordRpcService discordRpcService,
-            ServerSleepPreventionCoordinator sleepPreventionCoordinator,
-            RemoteControlCoordinator remoteControlCoordinator)
+            ServerSleepPreventionCoordinator sleepPreventionCoordinator)
         {
             InitializeComponent();
             _previewMouseWheelHandler = OnPagePreviewMouseWheel;
@@ -92,7 +89,6 @@ namespace PocketMC.Desktop.Features.Setup
             _windowsStartupService = windowsStartupService;
             _discordRpcService = discordRpcService;
             _sleepPreventionCoordinator = sleepPreventionCoordinator;
-            _remoteControlCoordinator = remoteControlCoordinator;
             CloudBackups = cloudBackups;
 
             Loaded += AppSettingsPage_Loaded;
@@ -147,7 +143,6 @@ namespace PocketMC.Desktop.Features.Setup
             ToggleStartMinimizedToTray.IsChecked = _applicationState.Settings.StartMinimizedToTray;
             ToggleMinimizeToTrayOnClose.IsChecked = _applicationState.Settings.MinimizeToTrayOnClose;
             ToggleKeepComputerAwakeWhileServersRunning.IsChecked = _applicationState.Settings.KeepComputerAwakeWhileServersRunning;
-            InitializeRemoteControlUi();
 
             // AI Settings
             AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
@@ -192,330 +187,7 @@ namespace PocketMC.Desktop.Features.Setup
             _healthMonitor.HealthChanged -= UpdateDependencyHealth;
         }
 
-        private void InitializeRemoteControlUi()
-        {
-            var remote = _applicationState.Settings.RemoteControl;
-            ToggleRemoteControlEnabled.IsChecked = remote.Enabled;
-            RemotePortInput.Text = remote.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            ToggleRemoteConsoleCommands.IsChecked = remote.AllowRemoteConsoleCommands;
-            ToggleRemotePlayerActions.IsChecked = remote.AllowRemotePlayerActions;
-
-            PairedDevices.Clear();
-            foreach (var device in remote.PairedDevices.Where(d => !d.RevokedAtUtc.HasValue).OrderByDescending(d => d.CreatedAtUtc))
-            {
-                PairedDevices.Add(device);
-            }
-
-            foreach (ComboBoxItem item in RemoteAccessModeCombo.Items)
-            {
-                if (Enum.TryParse(item.Tag?.ToString(), out RemoteAccessMode mode) && mode == remote.AccessMode)
-                {
-                    RemoteAccessModeCombo.SelectedItem = item;
-                    break;
-                }
-            }
-
-            if (RemoteAccessModeCombo.SelectedItem == null && RemoteAccessModeCombo.Items.Count > 0)
-            {
-                RemoteAccessModeCombo.SelectedIndex = 0;
-            }
-
-            UpdateRemoteControlStatusUi();
-        }
-
-        private async void ToggleRemoteControlEnabled_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
-
-            try
-            {
-                SaveRemoteSettingsFromUi(showMessage: false);
-                if (ToggleRemoteControlEnabled.IsChecked == true)
-                {
-                    await _remoteControlCoordinator.StartHostAsync();
-                    SetRemoteStatus("Remote Control is running.", isError: false);
-                }
-                else
-                {
-                    await _remoteControlCoordinator.StopHostAsync();
-                    SetRemoteStatus("Remote Control is stopped.", isError: false);
-                }
-            }
-            catch (Exception ex)
-            {
-                SetRemoteStatus(ex.Message, isError: true);
-                _dialogService.ShowMessage("Remote Control", ex.Message, DialogType.Error);
-            }
-            finally
-            {
-                UpdateRemoteControlStatusUi();
-            }
-        }
-
-        private async void RemoteAccessModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isInitializing) return;
-
-            try
-            {
-                SaveRemoteSettingsFromUi(showMessage: false);
-                await _remoteControlCoordinator.RestartHostAsync();
-                UpdateRemoteControlStatusUi();
-            }
-            catch (Exception ex)
-            {
-                SetRemoteStatus(ex.Message, isError: true);
-            }
-        }
-
-        private async void RemotePermissionToggle_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
-
-            try
-            {
-                SaveRemoteSettingsFromUi(showMessage: false);
-                await _remoteControlCoordinator.RestartHostAsync();
-                UpdateRemoteControlStatusUi();
-            }
-            catch (Exception ex)
-            {
-                SetRemoteStatus(ex.Message, isError: true);
-            }
-        }
-
-        private async void SaveRemoteSettings_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                SaveRemoteSettingsFromUi(showMessage: true);
-                await _remoteControlCoordinator.RestartHostAsync();
-                UpdateRemoteControlStatusUi();
-            }
-            catch (Exception ex)
-            {
-                SetRemoteStatus(ex.Message, isError: true);
-                _dialogService.ShowMessage("Remote Control", ex.Message, DialogType.Error);
-            }
-        }
-
-        private async void StartRemoteLink_Click(object sender, RoutedEventArgs e)
-        {
-            BtnStartRemoteLink.IsEnabled = false;
-            try
-            {
-                SaveRemoteSettingsFromUi(showMessage: false);
-                RemoteAccessMode mode = GetSelectedRemoteAccessMode();
-                if (mode == RemoteAccessMode.LanOnly)
-                {
-                    mode = RemoteAccessMode.CloudflaredQuickTunnel;
-                    SelectRemoteAccessMode(mode);
-                }
-
-                _applicationState.Settings.RemoteControl.AccessMode = mode;
-                _applicationState.Settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(mode);
-                _settingsManager.Save(_applicationState.Settings);
-                await _remoteControlCoordinator.RestartHostAsync();
-
-                var result = await _remoteControlCoordinator.StartTunnelAsync();
-                if (result.Success)
-                {
-                    Clipboard.SetText(result.PublicUrl ?? "");
-                    SetRemoteStatus($"{FormatRemoteProviderName(mode)} remote link started and copied.", isError: false);
-                }
-                else
-                {
-                    SetRemoteStatus(result.ErrorMessage ?? $"Could not start {FormatRemoteProviderName(mode)} remote link.", isError: true);
-                }
-            }
-            catch (Exception ex)
-            {
-                SetRemoteStatus(ex.Message, isError: true);
-            }
-            finally
-            {
-                BtnStartRemoteLink.IsEnabled = true;
-                UpdateRemoteControlStatusUi();
-            }
-        }
-
-        private async void StopRemoteLink_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                await _remoteControlCoordinator.StopTunnelAsync();
-                SetRemoteStatus("Remote link stopped.", isError: false);
-            }
-            catch (Exception ex)
-            {
-                SetRemoteStatus(ex.Message, isError: true);
-            }
-            finally
-            {
-                UpdateRemoteControlStatusUi();
-            }
-        }
-
-        private void CopyRemoteLink_Click(object sender, RoutedEventArgs e)
-        {
-            RemoteDashboardStatus status = _remoteControlCoordinator.GetStatus();
-            string? url = status.PublicUrl ?? status.LocalUrls.FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                SetRemoteStatus("No remote link is available yet.", isError: true);
-                return;
-            }
-
-            Clipboard.SetText(url);
-            SetRemoteStatus("Remote link copied.", isError: false);
-        }
-
-        private void PairRemoteDevice_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_applicationState.Settings.RemoteControl.Enabled)
-            {
-                SetRemoteStatus("Enable Remote Control before pairing a device.", isError: true);
-                return;
-            }
-
-            RemotePairingLink pairingLink = _remoteControlCoordinator.CreatePairingLink();
-            Clipboard.SetText(pairingLink.Url);
-            _dialogService.ShowMessage(
-                "Pair Device",
-                $"Open this link on your phone within 2 minutes:\n\n{pairingLink.Url}\n\nThe link was copied to your clipboard.");
-            UpdateRemoteControlStatusUi();
-        }
-
-        private async void RevokeRemoteDevices_Click(object sender, RoutedEventArgs e)
-        {
-            DialogResult result = await _dialogService.ShowDialogAsync(
-                "Revoke Remote Devices",
-                "Revoke all paired remote devices? They will need to pair again before controlling servers.",
-                DialogType.Warning,
-                showCancel: true,
-                primaryButtonText: "Revoke");
-
-            if (result != DialogResult.Ok && result != DialogResult.Yes)
-            {
-                return;
-            }
-
-            _remoteControlCoordinator.RevokeAllDevices();
-            SetRemoteStatus("All remote devices were revoked.", isError: false);
-            InitializeRemoteControlUi();
-            UpdateRemoteControlStatusUi();
-        }
-
-        private async void RevokeSpecificDevice_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is RemoteDeviceSession device)
-            {
-                DialogResult result = await _dialogService.ShowDialogAsync(
-                    "Revoke Device",
-                    $"Revoke access for {device.DisplayName}?",
-                    DialogType.Warning,
-                    showCancel: true,
-                    primaryButtonText: "Revoke");
-
-                if (result == DialogResult.Ok || result == DialogResult.Yes)
-                {
-                    _remoteControlCoordinator.RevokeDevice(device.Id);
-                    SetRemoteStatus($"Revoked {device.DisplayName}.", isError: false);
-                    InitializeRemoteControlUi();
-                    UpdateRemoteControlStatusUi();
-                }
-            }
-        }
-
-        private void SaveRemoteSettingsFromUi(bool showMessage)
-        {
-            var settings = _applicationState.Settings;
-            if (!int.TryParse(RemotePortInput.Text.Trim(), out int port) || port <= 0 || port > 65535)
-            {
-                throw new InvalidOperationException("Remote Control port must be between 1 and 65535.");
-            }
-
-            settings.RemoteControl.Enabled = ToggleRemoteControlEnabled.IsChecked == true;
-            settings.RemoteControl.Port = port;
-            settings.RemoteControl.AllowRemoteConsoleCommands = ToggleRemoteConsoleCommands.IsChecked == true;
-            settings.RemoteControl.AllowRemotePlayerActions = ToggleRemotePlayerActions.IsChecked == true;
-
-            if (RemoteAccessModeCombo.SelectedItem is ComboBoxItem item &&
-                Enum.TryParse(item.Tag?.ToString(), out RemoteAccessMode mode))
-            {
-                settings.RemoteControl.AccessMode = mode;
-                settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(mode);
-            }
-
-            _settingsManager.Save(settings);
-            if (showMessage)
-            {
-                SetRemoteStatus("Remote Control settings saved.", isError: false);
-            }
-        }
-
-        private void UpdateRemoteControlStatusUi()
-        {
-            RemoteDashboardStatus status = _remoteControlCoordinator.GetStatus();
-            RemoteLocalUrlText.Text = $"Local URL: {status.LocalUrls.FirstOrDefault() ?? "not available"}";
-            RemotePublicUrlText.Text = $"{FormatRemoteProviderName(status.AccessMode)} Public URL: {status.PublicUrl ?? "not started"}";
-            BtnStopRemoteLink.IsEnabled = status.TunnelRunning;
-            BtnCopyRemoteLink.IsEnabled = status.HostRunning || status.TunnelRunning;
-            BtnPairRemoteDevice.IsEnabled = status.Enabled;
-            BtnStartRemoteLink.IsEnabled = status.Enabled;
-
-            if (!string.IsNullOrWhiteSpace(status.TunnelError))
-            {
-                SetRemoteStatus(status.TunnelError, isError: true);
-            }
-        }
-
-        private RemoteAccessMode GetSelectedRemoteAccessMode()
-        {
-            if (RemoteAccessModeCombo.SelectedItem is ComboBoxItem item &&
-                Enum.TryParse(item.Tag?.ToString(), out RemoteAccessMode mode))
-            {
-                return mode;
-            }
-
-            return _applicationState.Settings.RemoteControl.AccessMode;
-        }
-
-        private static string MapRemoteAccessModeToProviderId(RemoteAccessMode mode) => mode switch
-        {
-            RemoteAccessMode.PlayitHttpTunnel => "playit-http",
-            _ => "cloudflared-quick"
-        };
-
-        private static string FormatRemoteProviderName(RemoteAccessMode mode) => mode switch
-        {
-            RemoteAccessMode.PlayitHttpTunnel => "PlayIt HTTPS",
-            RemoteAccessMode.CloudflaredQuickTunnel => "Cloudflare",
-            _ => "Remote"
-        };
-
-        private void SelectRemoteAccessMode(RemoteAccessMode mode)
-        {
-            bool wasInitializing = _isInitializing;
-            _isInitializing = true;
-            foreach (ComboBoxItem item in RemoteAccessModeCombo.Items)
-            {
-                if (Enum.TryParse(item.Tag?.ToString(), out RemoteAccessMode itemMode) && itemMode == mode)
-                {
-                    RemoteAccessModeCombo.SelectedItem = item;
-                    break;
-                }
-            }
-            _isInitializing = wasInitializing;
-        }
-
-        private void SetRemoteStatus(string message, bool isError)
-        {
-            RemoteStatusText.Text = message;
-            RemoteStatusText.Foreground = new SolidColorBrush(isError
-                ? Color.FromRgb(0xF3, 0x8B, 0xA8)
-                : Color.FromRgb(0xA6, 0xE3, 0xA1));
-        }
+        // Remote Control UI logic has been moved to RemoteControlSettingsViewModel.
 
         private void ToggleStartWithWindows_Changed(object sender, RoutedEventArgs e)
         {

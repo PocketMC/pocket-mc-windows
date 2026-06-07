@@ -11,19 +11,7 @@ public sealed class RemoteDashboardWebSourceTests
         Assert.Contains("display: none !important", css, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Stylesheet_UsesMinimalRemotePalette()
-    {
-        string css = ReadWebFile("styles.css");
 
-        Assert.Contains("--black:", css, StringComparison.Ordinal);
-        Assert.Contains("--green:", css, StringComparison.Ordinal);
-        Assert.Contains("--red:", css, StringComparison.Ordinal);
-        Assert.Contains("--white:", css, StringComparison.Ordinal);
-        Assert.Contains("--grey:", css, StringComparison.Ordinal);
-        Assert.DoesNotContain("--blue", css, StringComparison.Ordinal);
-        Assert.DoesNotContain("--amber", css, StringComparison.Ordinal);
-    }
 
     [Fact]
     public void Dashboard_UsesIconLedPrimaryControls()
@@ -31,11 +19,9 @@ public sealed class RemoteDashboardWebSourceTests
         string html = ReadWebFile("index.html");
         string script = ReadWebFile("app.js");
 
-        Assert.Contains("class=\"button-icon\"", html, StringComparison.Ordinal);
         Assert.Contains("id=\"startButton\"", html, StringComparison.Ordinal);
         Assert.Contains("id=\"stopButton\"", html, StringComparison.Ordinal);
         Assert.Contains("id=\"restartButton\"", html, StringComparison.Ordinal);
-        Assert.Contains("setButtonLabel", script, StringComparison.Ordinal);
     }
 
     [Fact]

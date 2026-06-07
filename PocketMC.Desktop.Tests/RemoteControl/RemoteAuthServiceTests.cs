@@ -9,7 +9,7 @@ public sealed class RemoteAuthServiceTests : IDisposable
     private readonly string _tempDirectory = Path.Combine(Path.GetTempPath(), "PocketMC.Tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void ExchangePairingToken_StoresOnlyHashesAndAllowsMultipleBrowsersDuringSession()
+    public void ExchangePairingToken_StoresOnlyHashesAndCannotBeReused()
     {
         var (service, manager, _) = CreateService();
         RemotePairingSession pairing = service.CreatePairingSession(TimeSpan.FromMinutes(2));
@@ -29,12 +29,11 @@ public sealed class RemoteAuthServiceTests : IDisposable
         Assert.True(service.ValidateDeviceToken(exchange.DeviceToken!).Success);
 
         RemoteExchangeResult second = service.ExchangePairingToken(pairing.Token, "Safari");
-        Assert.True(second.Success);
-        Assert.NotEqual(exchange.DeviceToken, second.DeviceToken);
+        Assert.False(second.Success);
+        Assert.Equal(RemoteAuthFailure.InvalidPairingToken, second.Failure);
 
         persisted = manager.Load();
-        Assert.Equal(2, persisted.RemoteControl.PairedDevices.Count);
-        Assert.True(service.ValidateDeviceToken(second.DeviceToken!).Success);
+        Assert.Single(persisted.RemoteControl.PairedDevices);
     }
 
     [Fact]

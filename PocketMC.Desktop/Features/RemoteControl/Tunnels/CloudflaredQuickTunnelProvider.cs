@@ -27,6 +27,8 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
     private DateTimeOffset? _startedAtUtc;
     private bool _disposed;
 
+    private readonly SemaphoreSlim _startLock = new(1, 1);
+
     public CloudflaredQuickTunnelProvider(
         ApplicationState applicationState,
         ICloudflaredInstaller installer,
@@ -66,32 +68,35 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        lock (_lock)
-        {
-            if (IsProcessRunning())
-            {
-                return new RemoteTunnelStartResult
-                {
-                    Success = true,
-                    PublicUrl = _publicUrl
-                };
-            }
-
-            _publicUrl = null;
-            _errorMessage = null;
-            _startedAtUtc = null;
-        }
-
-        string executablePath;
+        await _startLock.WaitAsync(cancellationToken);
         try
         {
-            executablePath = await ResolveExecutablePathAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "cloudflared could not be prepared.");
-            return SetError(ex.Message);
-        }
+            lock (_lock)
+            {
+                if (IsProcessRunning())
+                {
+                    return new RemoteTunnelStartResult
+                    {
+                        Success = true,
+                        PublicUrl = _publicUrl
+                    };
+                }
+
+                _publicUrl = null;
+                _errorMessage = null;
+                _startedAtUtc = null;
+            }
+
+            string executablePath;
+            try
+            {
+                executablePath = await ResolveExecutablePathAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "cloudflared could not be prepared.");
+                return SetError(ex.Message);
+            }
 
         var urlSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -179,15 +184,20 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
                 };
             }
         }
-        catch (OperationCanceledException)
-        {
-            await StopAsync(CancellationToken.None);
-            return SetError("Timed out waiting for cloudflared to publish a Quick Tunnel URL.");
+            catch (OperationCanceledException)
+            {
+                await StopAsync(CancellationToken.None);
+                return SetError("Timed out waiting for cloudflared to publish a Quick Tunnel URL.");
+            }
+            catch (Exception ex)
+            {
+                await StopAsync(CancellationToken.None);
+                return SetError(ex.Message);
+            }
         }
-        catch (Exception ex)
+        finally
         {
-            await StopAsync(CancellationToken.None);
-            return SetError(ex.Message);
+            _startLock.Release();
         }
     }
 
@@ -260,7 +270,7 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
 
     private async Task<string> ResolveExecutablePathAsync(CancellationToken cancellationToken)
     {
-        return await _installer.EnsureInstalledAsync(cancellationToken);
+        return await _installer.EnsureInstalledAsync(_applicationState.Settings.RemoteControl.CloudflaredPath, cancellationToken);
     }
 
     private bool IsProcessRunning() => _process != null && !_process.HasExited;

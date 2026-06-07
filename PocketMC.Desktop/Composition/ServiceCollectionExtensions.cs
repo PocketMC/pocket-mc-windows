@@ -194,7 +194,6 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<RemoteControlCoordinator>();
             services.AddSingleton<ICloudflaredInstaller, CloudflaredInstaller>();
             services.AddSingleton<IRemoteTunnelProvider, CloudflaredQuickTunnelProvider>();
-            services.AddSingleton<IRemoteTunnelProvider, PlayitHttpTunnelProvider>();
             services.AddSingleton<RemoteTunnelManager>();
             services.AddHostedService<RemoteControlHostedService>();
             return services;
@@ -267,6 +266,8 @@ namespace PocketMC.Desktop.Composition
             services.AddTransient<AboutPage>();
             services.AddTransient<AppSettingsPage>();
             services.AddTransient<RootDirectorySetupPage>();
+            services.AddTransient<PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage>();
+            services.AddTransient<PocketMC.Desktop.Features.Setup.ViewModels.RemoteControlSettingsViewModel>();
 
             services.AddTransient<DashboardInstanceListVM>();
             services.AddTransient<DashboardMetricsVM>();

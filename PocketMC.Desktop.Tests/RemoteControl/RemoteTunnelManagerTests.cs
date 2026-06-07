@@ -11,19 +11,20 @@ public sealed class RemoteTunnelManagerTests
     {
         var state = new ApplicationState();
         state.Settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
+        state.Settings.RemoteControl.AccessMode = RemoteAccessMode.CloudflaredQuickTunnel;
         var cloudflare = new FakeRemoteTunnelProvider("cloudflared-quick", "https://cloudflare.example");
-        var playit = new FakeRemoteTunnelProvider("playit-http", "https://playit.example");
-        var manager = new RemoteTunnelManager(state, new IRemoteTunnelProvider[] { cloudflare, playit });
+        var other = new FakeRemoteTunnelProvider("other-provider", "https://other.example");
+        var manager = new RemoteTunnelManager(state, new IRemoteTunnelProvider[] { cloudflare, other });
 
         RemoteTunnelStartResult first = await manager.StartAsync(CancellationToken.None);
-        state.Settings.RemoteControl.AccessMode = RemoteAccessMode.PlayitHttpTunnel;
-        state.Settings.RemoteControl.TunnelProviderId = "playit-http";
+        state.Settings.RemoteControl.AccessMode = RemoteAccessMode.LanOnly; // No provider needed, but we'll manually set provider to other-provider to test switching
+        state.Settings.RemoteControl.TunnelProviderId = "other-provider";
         RemoteTunnelStartResult second = await manager.StartAsync(CancellationToken.None);
 
         Assert.Equal("https://cloudflare.example", first.PublicUrl);
-        Assert.Equal("https://playit.example", second.PublicUrl);
+        Assert.Equal("https://other.example", second.PublicUrl);
         Assert.Equal(1, cloudflare.StopCount);
-        Assert.Equal(1, playit.StartCount);
+        Assert.Equal(1, other.StartCount);
     }
 
     private sealed class FakeRemoteTunnelProvider : IRemoteTunnelProvider

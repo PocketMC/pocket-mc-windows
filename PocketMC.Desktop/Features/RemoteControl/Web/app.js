@@ -1,23 +1,31 @@
 const tokenKey = "pocketmc.remote.deviceToken";
 const instanceKey = "pocketmc.remote.instanceId";
+const viewKey = "pocketmc.remote.currentView"; // "instances" or "devices"
 
 const els = {
   connectionLabel: document.querySelector("#connectionLabel"),
   refreshButton: document.querySelector("#refreshButton"),
   notice: document.querySelector("#notice"),
+  
   pairView: document.querySelector("#pairView"),
   pairTitle: document.querySelector("#pairTitle"),
   pairMessage: document.querySelector("#pairMessage"),
-  pairButton: document.querySelector("#pairButton"),
+  pairButton: document.querySelector("#pairBrowserButton"),
   copyPairLinkButton: document.querySelector("#copyPairLinkButton"),
+  
   appView: document.querySelector("#appView"),
+  devicesView: document.querySelector("#devicesView"),
   emptyView: document.querySelector("#emptyView"),
   emptyRefreshButton: document.querySelector("#emptyRefreshButton"),
   errorView: document.querySelector("#errorView"),
   errorMessage: document.querySelector("#errorMessage"),
   retryButton: document.querySelector("#retryButton"),
   clearTokenButton: document.querySelector("#clearTokenButton"),
-  instanceSelect: document.querySelector("#instanceSelect"),
+  
+  instanceListSidebar: document.querySelector("#instanceListSidebar"),
+  navDevices: document.querySelector("#navDevices"),
+  devicesListContainer: document.querySelector("#devicesListContainer"),
+  
   serverName: document.querySelector("#serverName"),
   serverType: document.querySelector("#serverType"),
   statusPill: document.querySelector("#statusPill"),
@@ -25,9 +33,11 @@ const els = {
   ramUsage: document.querySelector("#ramUsage"),
   cpuUsage: document.querySelector("#cpuUsage"),
   uptime: document.querySelector("#uptime"),
+  
   startButton: document.querySelector("#startButton"),
   stopButton: document.querySelector("#stopButton"),
   restartButton: document.querySelector("#restartButton"),
+  
   consoleState: document.querySelector("#consoleState"),
   consoleOutput: document.getElementById("consoleOutput"),
   filterInfo: document.getElementById("filterInfo"),
@@ -36,6 +46,7 @@ const els = {
   commandForm: document.getElementById("commandForm"),
   commandInput: document.querySelector("#commandInput"),
   commandDisabled: document.querySelector("#commandDisabled"),
+  
   playersState: document.querySelector("#playersState"),
   playerList: document.querySelector("#playerList"),
   
@@ -44,38 +55,44 @@ const els = {
   serverIpsContainer: document.querySelector("#serverIpsContainer"),
   serverIpsList: document.querySelector("#serverIpsList"),
   
-  reasonModal: document.querySelector("#reasonModal"),
-  reasonModalTitle: document.querySelector("#reasonModalTitle"),
+  playerActionModal: document.querySelector("#playerActionModal"),
+  playerActionModalTitle: document.querySelector("#playerActionModalTitle"),
+  playerActionModalName: document.querySelector("#playerActionModalName"),
+  playerActionButtons: document.querySelector("#playerActionButtons"),
   reasonModalForm: document.querySelector("#reasonModalForm"),
   reasonModalInput: document.querySelector("#reasonModalInput"),
   reasonModalCancel: document.querySelector("#reasonModalCancel"),
+  playerActionModalClose: document.querySelector("#playerActionModalClose"),
   
   offlinePlayerInput: document.querySelector("#offlinePlayerInput"),
-  btnOfflinePardon: document.querySelector("#btnOfflinePardon"),
-  btnOfflineDeop: document.querySelector("#btnOfflineDeop"),
-  btnOfflineBan: document.querySelector("#btnOfflineBan")
+  btnOfflineManage: document.querySelector("#btnOfflineManage"),
+  offlinePlayerForm: document.querySelector("#offlinePlayerForm")
 };
 
 let deviceToken = localStorage.getItem(tokenKey);
 let selectedInstanceId = localStorage.getItem(instanceKey);
+let currentAppView = localStorage.getItem(viewKey) || "instances"; // instances, devices
 let socket = null;
 let statusTimer = null;
 let historyLoadedForInstance = null;
 let lastInstanceStatus = null;
+let remoteStatusGlobal = null;
+
+// Modal state
+let modalActionTarget = null; // { name: string, action: string, requireReason: bool }
 
 function pairingTokenFromUrl() {
   return new URLSearchParams(window.location.search).get("token");
 }
 
 function setVisible(view) {
-  for (const item of [els.pairView, els.appView, els.emptyView, els.errorView]) {
-    item.hidden = item !== view;
+  for (const item of [els.pairView, els.appView, els.emptyView, els.errorView, els.devicesView]) {
+    if (item) item.hidden = item !== view;
   }
 }
 
-function showNotice(message, tone = "info") {
+function showNotice(message) {
   els.notice.textContent = message;
-  els.notice.dataset.tone = tone;
   els.notice.hidden = false;
   clearTimeout(showNotice.timer);
   showNotice.timer = setTimeout(() => {
@@ -93,15 +110,20 @@ async function api(path, options = {}) {
   }
 
   const response = await fetch(path, { ...options, headers });
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     localStorage.removeItem(tokenKey);
     deviceToken = null;
-    throw new Error("This browser is not paired or the device was revoked.");
+    throw new Error("Session expired, revoked, or permission denied. Please pair again.");
   }
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || `Request failed (${response.status})`);
+    let msg = `Request failed (${response.status})`;
+    try {
+        const json = JSON.parse(text);
+        if (json.error) msg = json.error;
+    } catch { msg = text || msg; }
+    throw new Error(msg);
   }
 
   const contentType = response.headers.get("Content-Type") || "";
@@ -116,7 +138,6 @@ async function start() {
     if (pairingTokenFromUrl()) {
       history.replaceState({}, "", "/remote/index.html");
     }
-
     await openDashboard();
     return;
   }
@@ -138,23 +159,6 @@ function showPairPrompt() {
   setVisible(els.pairView);
 }
 
-function setStateClass(element, state) {
-  element.classList.remove("live", "offline", "busy");
-  if (state) {
-    element.classList.add(state);
-  }
-}
-
-function setButtonLabel(button, text) {
-  const label = button.querySelector("span:last-child");
-  if (label) {
-    label.textContent = text;
-    return;
-  }
-
-  button.textContent = text;
-}
-
 async function pairDevice() {
   const pairingToken = pairingTokenFromUrl();
   if (!pairingToken) {
@@ -163,7 +167,7 @@ async function pairDevice() {
   }
 
   els.pairButton.disabled = true;
-  setButtonLabel(els.pairButton, "Pairing...");
+  els.pairButton.querySelector("span:last-child").textContent = "Pairing...";
   try {
     const response = await fetch("/api/pairing/exchange", {
       method: "POST",
@@ -188,8 +192,15 @@ async function pairDevice() {
     els.pairMessage.textContent = error.message;
   } finally {
     els.pairButton.disabled = false;
-    setButtonLabel(els.pairButton, "Pair Browser");
+    els.pairButton.querySelector("span:last-child").textContent = "Pair Browser";
   }
+}
+
+function showError(msg) {
+  els.errorMessage.textContent = msg;
+  setVisible(els.errorView);
+  els.connectionLabel.textContent = "Disconnected";
+  els.connectionLabel.className = "connection-pill offline";
 }
 
 async function openDashboard() {
@@ -207,58 +218,121 @@ async function openDashboard() {
 
 async function refreshEverything({ reconnectConsole = false } = {}) {
   const instances = await api("/api/instances");
-  renderInstances(instances);
+  remoteStatusGlobal = await api("/api/status");
+  
+  els.connectionLabel.textContent = remoteStatusGlobal.publicUrl || remoteStatusGlobal.localUrls?.[0] || "Connected";
+  els.connectionLabel.className = "connection-pill online";
+
+  renderSidebar(instances);
+
+  if (currentAppView === "devices") {
+      setVisible(els.devicesView);
+      await renderDevices();
+      return;
+  }
 
   if (instances.length === 0) {
     historyLoadedForInstance = null;
     lastInstanceStatus = null;
     closeSocket();
-    els.connectionLabel.textContent = "Connected";
     setVisible(els.emptyView);
     return;
   }
 
-  if (!selectedInstanceId || !instances.some((instance) => instance.id === selectedInstanceId)) {
+  if (!selectedInstanceId || !instances.some((i) => i.id === selectedInstanceId)) {
     selectedInstanceId = instances[0].id;
     localStorage.setItem(instanceKey, selectedInstanceId);
+    renderSidebar(instances); // re-render to update active
   }
 
-  els.instanceSelect.value = selectedInstanceId;
   setVisible(els.appView);
 
-  const [remoteStatus, instanceStatus] = await Promise.all([
-    api("/api/status"),
-    api(`/api/instances/${selectedInstanceId}/status`)
-  ]);
-
+  const instanceStatus = await api(`/api/instances/${selectedInstanceId}/status`);
   lastInstanceStatus = instanceStatus;
-  renderStatus(remoteStatus, instanceStatus);
+  
+  renderStatus(remoteStatusGlobal, instanceStatus);
 
   if (reconnectConsole) {
     historyLoadedForInstance = null;
     closeSocket();
   }
-
   await ensureConsoleConnection(instanceStatus);
 }
 
-function renderInstances(instances) {
-  const previousValue = els.instanceSelect.value;
-  els.instanceSelect.innerHTML = "";
+function renderSidebar(instances) {
+  els.instanceListSidebar.innerHTML = "";
   for (const instance of instances) {
-    const option = document.createElement("option");
-    option.value = instance.id;
-    option.textContent = instance.name;
-    els.instanceSelect.append(option);
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.className = "sidebar-item";
+    if (currentAppView === "instances" && instance.id === selectedInstanceId) {
+        btn.classList.add("active");
+    }
+    
+    const icon = `<svg viewBox="0 0 24 24"><path d="M4 6h16v5H4zM4 13h16v5H4zM8 8h.01M8 15h.01M12 8h6M12 15h6"/></svg>`;
+    btn.innerHTML = `${icon}<span>${instance.name}</span>`;
+    
+    btn.addEventListener("click", () => {
+        currentAppView = "instances";
+        localStorage.setItem(viewKey, "instances");
+        selectedInstanceId = instance.id;
+        localStorage.setItem(instanceKey, selectedInstanceId);
+        openDashboard();
+    });
+    li.appendChild(btn);
+    els.instanceListSidebar.appendChild(li);
   }
-
-  if (previousValue && instances.some((instance) => instance.id === previousValue)) {
-    els.instanceSelect.value = previousValue;
+  
+  if (currentAppView === "devices") {
+      els.navDevices.classList.add("active");
+  } else {
+      els.navDevices.classList.remove("active");
   }
 }
 
+async function renderDevices() {
+    try {
+        const result = await api("/api/devices");
+        els.devicesListContainer.innerHTML = "";
+        
+        for (const device of result.devices) {
+            const div = document.createElement("div");
+            div.className = "device-item";
+            
+            const info = document.createElement("div");
+            info.className = "device-info";
+            info.innerHTML = `<h3>${escapeHtml(device.name)} ${device.isCurrent ? '<span class="current-badge">Current</span>' : ''}</h3>
+                              <p class="muted">Last seen: ${new Date(device.lastSeenAtUtc).toLocaleString()}</p>`;
+                              
+            const actions = document.createElement("div");
+            if (!device.isCurrent) {
+                const revokeBtn = document.createElement("button");
+                revokeBtn.className = "danger-button";
+                revokeBtn.innerHTML = `<span>Revoke</span>`;
+                revokeBtn.addEventListener("click", async () => {
+                    try {
+                        revokeBtn.disabled = true;
+                        await api("/api/devices/revoke", { method: "POST", body: JSON.stringify({ deviceId: device.id }) });
+                        showNotice(`Revoked ${device.name}`);
+                        renderDevices();
+                    } catch(err) {
+                        showNotice(err.message);
+                        revokeBtn.disabled = false;
+                    }
+                });
+                actions.appendChild(revokeBtn);
+            }
+            
+            div.appendChild(info);
+            div.appendChild(actions);
+            els.devicesListContainer.appendChild(div);
+        }
+    } catch(err) {
+        els.devicesListContainer.innerHTML = `<p class="muted">Failed to load devices: ${err.message}</p>`;
+    }
+}
+
 function renderStatus(remoteStatus, instanceStatus) {
-  els.connectionLabel.textContent = remoteStatus.publicUrl || remoteStatus.localUrls?.[0] || "Connected";
   els.serverName.textContent = instanceStatus.name;
   els.serverType.textContent = instanceStatus.serverType;
   setStatusPill(instanceStatus);
@@ -266,41 +340,59 @@ function renderStatus(remoteStatus, instanceStatus) {
   els.ramUsage.textContent = `${(instanceStatus.ramUsageMb / 1024).toFixed(1)} GB`;
   els.cpuUsage.textContent = `${instanceStatus.cpuUsage.toFixed(0)}%`;
   els.uptime.textContent = formatUptime(instanceStatus.uptimeSeconds);
+  
   els.startButton.disabled = instanceStatus.isRunning;
   els.stopButton.disabled = !instanceStatus.isRunning;
   els.restartButton.disabled = !instanceStatus.isRunning;
+  
   const canSendCommands = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
   els.commandForm.hidden = !canSendCommands;
-  els.commandDisabled.hidden = remoteStatus.allowRemoteConsoleCommands || !instanceStatus.isRunning;
+  els.commandDisabled.hidden = remoteStatusGlobal.allowRemoteConsoleCommands && instanceStatus.isRunning;
+  
   renderPlayers(instanceStatus.onlinePlayers || [], remoteStatus.allowRemotePlayerActions);
 
   if (instanceStatus.serverIps && instanceStatus.serverIps.length > 0) {
     els.serverIpsContainer.hidden = false;
     els.serverIpsList.innerHTML = "";
-    for (const ip of instanceStatus.serverIps) {
+    
+    // Filter redundant LAN IPs: Prefer IPV4 over IPV6, keep only 1 for each port type if possible
+    let filteredIps = instanceStatus.serverIps.filter(ip => ip.label.toLowerCase().includes("tunnel"));
+    let lanIps = instanceStatus.serverIps.filter(ip => !ip.label.toLowerCase().includes("tunnel"));
+    
+    // Naive filter for LAN: group by port
+    let lanGroups = {};
+    for (const lip of lanIps) {
+        const parts = lip.address.split(":");
+        const port = parts[parts.length-1];
+        if (!lanGroups[port]) lanGroups[port] = [];
+        lanGroups[port].push(lip);
+    }
+    for (const port in lanGroups) {
+        // Pick IPv4 first
+        let best = lanGroups[port].find(x => x.address.includes(".")) || lanGroups[port][0];
+        filteredIps.push(best);
+    }
+
+    for (const ip of filteredIps) {
       const badge = document.createElement("div");
-      badge.className = "ip-badge";
-      
-      const labelEl = document.createElement("span");
-      labelEl.className = "ip-label";
-      labelEl.textContent = ip.label;
-      
-      const addrEl = document.createElement("span");
-      addrEl.className = "ip-address";
-      addrEl.textContent = ip.address;
+      badge.className = "ip-item";
+      badge.innerHTML = `
+        <div class="ip-info">
+          <span class="ip-label">${escapeHtml(ip.label)}</span>
+          <span class="ip-value">${escapeHtml(ip.address)}</span>
+        </div>
+      `;
       
       const copyBtn = document.createElement("button");
-      copyBtn.className = "icon-button small";
+      copyBtn.className = "icon-button copy-btn";
       copyBtn.type = "button";
       copyBtn.title = "Copy to clipboard";
       copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>`;
       copyBtn.addEventListener("click", () => {
         navigator.clipboard.writeText(ip.address);
-        copyBtn.classList.add("success");
-        setTimeout(() => copyBtn.classList.remove("success"), 2000);
+        showNotice("IP copied to clipboard!");
       });
-      
-      badge.append(labelEl, addrEl, copyBtn);
+      badge.appendChild(copyBtn);
       els.serverIpsList.append(badge);
     }
   } else {
@@ -309,24 +401,31 @@ function renderStatus(remoteStatus, instanceStatus) {
 }
 
 function setStatusPill(instanceStatus) {
-  const normalizedState = `${instanceStatus.state || ""}`.toLowerCase();
-  const isBusy = normalizedState.includes("start") ||
-    normalizedState.includes("stop") ||
-    normalizedState.includes("restart");
-
+  const state = (instanceStatus.state || "").toLowerCase();
+  const isBusy = state.includes("start") || state.includes("stop") || state.includes("restart");
   els.statusPill.textContent = instanceStatus.state || (instanceStatus.isRunning ? "Online" : "Offline");
-  els.statusPill.classList.remove("online", "offline", "busy");
+  els.statusPill.className = "status-pill";
   els.statusPill.classList.add(instanceStatus.isRunning ? "online" : (isBusy ? "busy" : "offline"));
 }
 
+function formatUptime(seconds) {
+  if (seconds < 0) return "0m";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+// ---------------------------------------------------------
+// Console
+// ---------------------------------------------------------
 async function ensureConsoleConnection(instanceStatus) {
   if (!instanceStatus.isRunning) {
     closeSocket();
     els.consoleState.textContent = "Offline";
-    setStateClass(els.consoleState, "offline");
+    els.consoleState.className = "state-label offline";
     if (!els.consoleOutput.hasChildNodes() || els.consoleOutput.textContent === "Server is offline.") {
-      els.consoleOutput.innerHTML = "";
-      els.consoleOutput.textContent = "Server is offline.";
+      els.consoleOutput.innerHTML = "Server is offline.";
     }
     return;
   }
@@ -353,100 +452,94 @@ async function loadConsoleHistory() {
     historyLoadedForInstance = selectedInstanceId;
     scrollConsole();
   } catch (err) {
-    els.consoleOutput.innerHTML = "";
-    els.consoleOutput.textContent = "Console history is not available yet.";
+    els.consoleOutput.innerHTML = "Console history is not available yet.";
   }
 }
 
-function openConsoleSocket() {
+async function openConsoleSocket() {
   if (!selectedInstanceId || !deviceToken) return;
-
   closeSocket();
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  socket = new WebSocket(`${protocol}//${window.location.host}/ws/instances/${selectedInstanceId}/console?token=${encodeURIComponent(deviceToken)}`);
-  const openedSocket = socket;
+  
   els.consoleState.textContent = "Connecting";
-  setStateClass(els.consoleState, "busy");
+  els.consoleState.className = "state-label busy";
+
+  let ticket = null;
+  try {
+    const response = await fetch(`/api/instances/${selectedInstanceId}/console/ticket`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${deviceToken}` }
+    });
+    if (!response.ok) throw new Error("Could not get WS ticket");
+    const data = await response.json();
+    ticket = data.ticket;
+  } catch (err) {
+    els.consoleState.textContent = "Offline";
+    return;
+  }
+
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  socket = new WebSocket(`${protocol}//${window.location.host}/ws/instances/${selectedInstanceId}/console?ticket=${encodeURIComponent(ticket)}`);
+  
+  els.consoleState.textContent = "Connecting";
+  els.consoleState.className = "state-label busy";
 
   socket.addEventListener("open", () => {
     els.consoleState.textContent = "Live";
-    setStateClass(els.consoleState, "live");
+    els.consoleState.className = "state-label live";
   });
 
   socket.addEventListener("message", (event) => {
     const payload = JSON.parse(event.data);
-    if (payload.type === "history" && historyLoadedForInstance === selectedInstanceId) {
-      return;
-    }
+    if (payload.type === "history" && historyLoadedForInstance === selectedInstanceId) return;
     appendConsole(payload.line);
   });
 
   socket.addEventListener("close", () => {
-    if (socket !== openedSocket) {
-      return;
-    }
-
     socket = null;
     if (lastInstanceStatus?.isRunning) {
       els.consoleState.textContent = "Reconnecting";
-      setStateClass(els.consoleState, "busy");
       setTimeout(() => ensureConsoleConnection(lastInstanceStatus), 1200);
     } else {
       els.consoleState.textContent = "Offline";
-      setStateClass(els.consoleState, "offline");
     }
   });
 }
 
 function closeSocket() {
   if (socket) {
-    const closingSocket = socket;
+    const s = socket;
     socket = null;
-    closingSocket.close();
+    s.close();
   }
 }
 
 function appendConsole(line) {
-  if (els.consoleOutput.textContent === "Waiting for console output..." ||
-      els.consoleOutput.textContent === "Server is offline." ||
-      els.consoleOutput.textContent === "Console history is not available yet.") {
+  if (["Waiting for console output...", "Server is offline.", "Console history is not available yet."].includes(els.consoleOutput.textContent)) {
     els.consoleOutput.innerHTML = "";
   }
 
-  const lineEl = document.createElement("div");
-  lineEl.className = "log-line";
+  const p = document.createElement("p");
   
   let level = "info";
   if (line.includes("WARN")) level = "warn";
   if (line.includes("ERROR") || line.includes("Exception") || line.includes("Failed")) level = "error";
-  lineEl.classList.add(`log-${level}`);
+  p.classList.add(`log-${level}`);
   
   let formatted = escapeHtml(line);
-  // Dim timestamp [XX:YY:ZZ]
+  // Colorize log pieces
   formatted = formatted.replace(/^(\[[0-9:]+\])\s*/, '<span class="log-time">$1</span> ');
-  // Dim thread info [Server thread/INFO]
-  formatted = formatted.replace(/(\[.*?\/.*?\])\s*:\s*/, '<span class="log-thread">$1:</span> ');
-  // Handle Bedrock [INFO]
+  formatted = formatted.replace(/(\[.*?\/.*?\])\s*:\s*/, '<span class="log-source">$1:</span> ');
   formatted = formatted.replace(/(\[INFO\]|\[WARN\]|\[ERROR\])\s*/, '<span class="log-level">$1</span> ');
 
-  lineEl.innerHTML = formatted;
-  els.consoleOutput.append(lineEl);
+  p.innerHTML = formatted;
+  els.consoleOutput.append(p);
 
   while (els.consoleOutput.childNodes.length > 500) {
     els.consoleOutput.firstChild.remove();
   }
   
-  applyConsoleFiltersToLine(lineEl);
+  applyConsoleFiltersToLine(p);
   scrollConsole();
-}
-
-function escapeHtml(unsafe) {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
 
 function applyConsoleFilters() {
@@ -455,11 +548,7 @@ function applyConsoleFilters() {
   const showError = els.filterError.checked;
   
   for (const lineEl of els.consoleOutput.children) {
-    let show = true;
-    if (lineEl.classList.contains("log-info") && !showInfo) show = false;
-    if (lineEl.classList.contains("log-warn") && !showWarn) show = false;
-    if (lineEl.classList.contains("log-error") && !showError) show = false;
-    lineEl.style.display = show ? "block" : "none";
+    applyConsoleFiltersToLine(lineEl);
   }
   scrollConsole();
 }
@@ -480,237 +569,219 @@ function scrollConsole() {
   els.consoleOutput.scrollTop = els.consoleOutput.scrollHeight;
 }
 
+// ---------------------------------------------------------
+// Players
+// ---------------------------------------------------------
 function renderPlayers(players, allowActions) {
   els.playersState.textContent = `${players.length} online`;
-  setStateClass(els.playersState, players.length > 0 ? "live" : "");
+  els.playersState.className = "state-label " + (players.length > 0 ? "online" : "");
   els.playerList.innerHTML = "";
 
   if (players.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "muted";
-    empty.textContent = "No players online.";
-    els.playerList.append(empty);
+    els.playerList.innerHTML = '<p class="muted">No players online.</p>';
     return;
   }
 
   for (const player of players) {
-    const row = document.createElement("div");
-    row.className = "player-row";
-
-    const avatar = document.createElement("img");
-    avatar.className = "player-avatar";
-    avatar.src = `https://api.mineatar.io/face/${player.name}?scale=8`;
-    avatar.alt = `${player.name}'s avatar`;
-    avatar.loading = "lazy";
+    const item = document.createElement("div");
+    item.className = "player-item";
     
-    const info = document.createElement("div");
-    info.className = "player-info";
+    item.innerHTML = `
+      <div class="player-name">
+        <div class="player-avatar">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <span>${escapeHtml(player)}</span>
+      </div>
+    `;
 
-    const name = document.createElement("span");
-    name.className = "player-name";
-    name.textContent = player.name;
-    
-    if (player.isOp) {
-      const opBadge = document.createElement("span");
-      opBadge.className = "player-badge op";
-      opBadge.textContent = "OP";
-      info.append(name, opBadge);
-    } else {
-      info.append(name);
+    if (allowActions) {
+        const manageBtn = document.createElement("button");
+        manageBtn.className = "secondary-button";
+        manageBtn.innerHTML = `<span>Manage</span>`;
+        manageBtn.addEventListener("click", () => openPlayerModal(player));
+        item.appendChild(manageBtn);
     }
     
-    row.append(avatar, info);
-
-    const actions = document.createElement("div");
-    actions.className = "player-actions";
-
-    const kickBtn = document.createElement("button");
-    kickBtn.className = "secondary-button";
-    kickBtn.type = "button";
-    kickBtn.textContent = "KICK";
-    kickBtn.disabled = !allowActions;
-    kickBtn.addEventListener("click", () => playerAction(player.name, "kick"));
-    
-    const banBtn = document.createElement("button");
-    banBtn.className = "danger-button";
-    banBtn.type = "button";
-    banBtn.textContent = "BAN";
-    banBtn.disabled = !allowActions;
-    banBtn.addEventListener("click", () => playerAction(player.name, "ban"));
-    
-    const opAction = player.isOp ? "deop" : "op";
-    const opBtn = document.createElement("button");
-    opBtn.className = player.isOp ? "danger-button" : "primary-button";
-    opBtn.type = "button";
-    opBtn.textContent = opAction.toUpperCase();
-    opBtn.disabled = !allowActions;
-    opBtn.addEventListener("click", () => playerAction(player.name, opAction));
-    
-    actions.append(kickBtn, banBtn, opBtn);
-    row.append(actions);
-
-    els.playerList.append(row);
+    els.playerList.append(item);
   }
 }
 
-async function promptForReason(title) {
-  return new Promise((resolve) => {
-    els.reasonModalTitle.textContent = title;
-    els.reasonModalInput.value = "";
-    els.reasonModal.hidden = false;
-    els.reasonModalInput.focus();
+function openPlayerModal(playerName) {
+    els.playerActionModalName.textContent = playerName;
+    els.playerActionButtons.hidden = false;
+    els.reasonModalForm.hidden = true;
+    els.playerActionModal.hidden = false;
+    modalActionTarget = { name: playerName, action: null };
+}
 
-    const cleanup = () => {
-      els.reasonModal.hidden = true;
-      els.reasonModalForm.removeEventListener("submit", onSubmit);
-      els.reasonModalCancel.removeEventListener("click", onCancel);
-    };
+async function performPlayerAction(action, reason = null) {
+    if (!modalActionTarget || !modalActionTarget.name) return;
+    try {
+        const body = reason ? JSON.stringify({ reason }) : "{}";
+        await api(`/api/instances/${selectedInstanceId}/players/${encodeURIComponent(modalActionTarget.name)}/${action}`, {
+            method: "POST",
+            body
+        });
+        showNotice(`Action '${action}' successful on ${modalActionTarget.name}`);
+        els.playerActionModal.hidden = true;
+        refreshEverything();
+    } catch(err) {
+        showNotice(err.message);
+    }
+}
 
-    const onSubmit = (e) => {
-      e.preventDefault();
-      cleanup();
-      resolve(els.reasonModalInput.value.trim() || undefined);
-    };
-
-    const onCancel = () => {
-      cleanup();
-      resolve(null);
-    };
-
-    els.reasonModalForm.addEventListener("submit", onSubmit);
-    els.reasonModalCancel.addEventListener("click", onCancel);
+// ---------------------------------------------------------
+// Events
+// ---------------------------------------------------------
+els.tabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    els.tabs.forEach(t => t.classList.remove("active"));
+    els.tabContents.forEach(c => { c.classList.remove("active"); c.hidden = true; });
+    tab.classList.add("active");
+    const content = document.getElementById(`tab-${tab.dataset.tab}`);
+    content.classList.add("active");
+    content.hidden = false;
+    if (tab.dataset.tab === "console") scrollConsole();
   });
-}
+});
 
-async function playerAction(player, action) {
-  let reason = undefined;
-  if (action === "kick" || action === "ban") {
-    reason = await promptForReason(`Reason for ${action}`);
-    if (reason === null) return;
-  }
-
-  try {
-    const payload = reason ? { reason } : {};
-    await api(`/api/instances/${selectedInstanceId}/players/${encodeURIComponent(player)}/${action}`, {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    showNotice(`${action.toUpperCase()} sent for ${player}.`);
-    await refreshEverything({ reconnectConsole: false });
-  } catch (error) {
-    showNotice(error.message, "error");
-  }
-}
-
-async function offlinePlayerAction(action) {
-  const player = els.offlinePlayerInput.value.trim();
-  if (!player) {
-    showNotice("Enter a player name first.", "error");
-    return;
-  }
-  await playerAction(player, action);
-  els.offlinePlayerInput.value = "";
-}
-
-async function instanceCommand(command) {
-  setActionButtonsDisabled(true);
-  try {
-    await api(`/api/instances/${selectedInstanceId}/${command}`, { method: "POST" });
-    showNotice(`${capitalize(command)} requested.`);
-    await refreshEverything({ reconnectConsole: true });
-  } catch (error) {
-    showNotice(error.message, "error");
-  } finally {
-    setActionButtonsDisabled(false);
-  }
-}
-
-function setActionButtonsDisabled(disabled) {
-  els.startButton.disabled = disabled || lastInstanceStatus?.isRunning === true;
-  els.stopButton.disabled = disabled || lastInstanceStatus?.isRunning !== true;
-  els.restartButton.disabled = disabled || lastInstanceStatus?.isRunning !== true;
-}
-
-function showError(message) {
-  closeSocket();
-  clearInterval(statusTimer);
-  els.connectionLabel.textContent = "Connection problem";
-  els.errorMessage.textContent = message;
-  setVisible(els.errorView);
-}
-
-function formatUptime(seconds) {
-  if (!seconds) return "0m";
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-}
-
-function capitalize(value) {
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
-}
+els.navDevices.addEventListener("click", () => {
+    currentAppView = "devices";
+    localStorage.setItem(viewKey, "devices");
+    openDashboard();
+});
 
 els.pairButton.addEventListener("click", pairDevice);
-els.copyPairLinkButton.addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(window.location.href);
-    showNotice("Pairing link copied.");
-  } catch {
-    showNotice("Copy is unavailable in this browser.", "error");
-  }
+els.copyPairLinkButton.addEventListener("click", () => {
+  navigator.clipboard.writeText(window.location.href);
+  showNotice("Pairing link copied");
 });
-els.refreshButton.addEventListener("click", () => refreshEverything({ reconnectConsole: true }).catch((error) => showError(error.message)));
-els.emptyRefreshButton.addEventListener("click", () => refreshEverything({ reconnectConsole: false }).catch((error) => showError(error.message)));
-els.retryButton.addEventListener("click", start);
+
+els.refreshButton.addEventListener("click", () => refreshEverything());
+els.emptyRefreshButton.addEventListener("click", () => refreshEverything());
+els.retryButton.addEventListener("click", () => refreshEverything());
+
 els.clearTokenButton.addEventListener("click", () => {
   localStorage.removeItem(tokenKey);
   deviceToken = null;
   history.replaceState({}, "", "/remote/index.html");
   showPairPrompt();
 });
-els.instanceSelect.addEventListener("change", async () => {
-  selectedInstanceId = els.instanceSelect.value;
-  localStorage.setItem(instanceKey, selectedInstanceId);
-  await refreshEverything({ reconnectConsole: true });
-});
-els.startButton.addEventListener("click", () => instanceCommand("start"));
-els.stopButton.addEventListener("click", () => instanceCommand("stop"));
-els.restartButton.addEventListener("click", () => instanceCommand("restart"));
-els.commandForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+
+const bindInstanceAction = (btn, action) => {
+  btn.addEventListener("click", async () => {
+    if (!selectedInstanceId) return;
+    try {
+      btn.disabled = true;
+      await api(`/api/instances/${selectedInstanceId}/${action}`, { method: "POST" });
+      refreshEverything();
+    } catch (error) {
+      showNotice(error.message);
+      btn.disabled = false;
+    }
+  });
+};
+bindInstanceAction(els.startButton, "start");
+bindInstanceAction(els.stopButton, "stop");
+bindInstanceAction(els.restartButton, "restart");
+
+[els.filterInfo, els.filterWarn, els.filterError].forEach(cb => cb.addEventListener("change", applyConsoleFilters));
+
+els.commandForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
   const command = els.commandInput.value.trim();
-  if (!command) return;
-  els.commandInput.value = "";
+  if (!command || !selectedInstanceId) return;
+  els.commandInput.disabled = true;
   try {
     await api(`/api/instances/${selectedInstanceId}/console/command`, {
       method: "POST",
       body: JSON.stringify({ command })
     });
+    els.commandInput.value = "";
   } catch (error) {
-    showNotice(error.message, "error");
+    showNotice(error.message);
+  } finally {
+    els.commandInput.disabled = false;
+    els.commandInput.focus();
   }
 });
 
-els.tabs.forEach(tab => {
-  tab.addEventListener("click", () => {
-    els.tabs.forEach(t => t.classList.remove("active"));
-    els.tabContents.forEach(c => {
-      c.classList.remove("active");
-      c.hidden = true;
-    });
-    tab.classList.add("active");
-    const activeContent = document.querySelector(`#tab-${tab.dataset.tab}`);
-    activeContent.classList.add("active");
-    activeContent.hidden = false;
-  });
+function escapeHtml(unsafe) {
+  return (unsafe||"").replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+// Modal events
+els.playerActionButtons.addEventListener("click", (e) => {
+    if (e.target.tagName === "BUTTON") {
+        const action = e.target.dataset.action;
+        modalActionTarget.action = action;
+        
+        if (action === "kick" || action === "ban") {
+            els.playerActionButtons.hidden = true;
+            els.reasonModalForm.hidden = false;
+            els.reasonModalInput.value = "";
+            els.reasonModalInput.focus();
+        } else {
+            performPlayerAction(action, null);
+        }
+    }
+});
+els.playerActionModalClose.addEventListener("click", () => {
+    els.playerActionModal.hidden = true;
+});
+els.reasonModalCancel.addEventListener("click", () => {
+    els.reasonModalForm.hidden = true;
+    els.playerActionButtons.hidden = false;
+});
+els.reasonModalForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    performPlayerAction(modalActionTarget.action, els.reasonModalInput.value.trim() || null);
+});
+els.offlinePlayerForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = els.offlinePlayerInput.value.trim();
+    if (!name) return;
+    openPlayerModal(name);
+    els.offlinePlayerInput.value = "";
 });
 
-els.btnOfflinePardon.addEventListener("click", () => offlinePlayerAction("pardon"));
-els.btnOfflineDeop.addEventListener("click", () => offlinePlayerAction("deop"));
-els.btnOfflineBan.addEventListener("click", () => offlinePlayerAction("ban"));
-
-els.filterInfo.addEventListener("change", applyConsoleFilters);
-els.filterWarn.addEventListener("change", applyConsoleFilters);
-els.filterError.addEventListener("change", applyConsoleFilters);
-
+// Init
 start();
+
+// Mobile menu toggle
+const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+const appSidebar = document.getElementById('appSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const hamburgerIcon = document.getElementById('hamburgerIcon');
+const closeIcon = document.getElementById('closeIcon');
+
+function toggleMobileMenu() {
+    const isOpen = appSidebar.classList.toggle('open');
+    sidebarOverlay.classList.toggle('open');
+    if (isOpen) {
+        hamburgerIcon.hidden = true;
+        closeIcon.hidden = false;
+    } else {
+        hamburgerIcon.hidden = false;
+        closeIcon.hidden = true;
+    }
+}
+
+if (mobileMenuToggle) {
+    mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+}
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', toggleMobileMenu);
+}
+
+// Close sidebar when clicking a navigation item on mobile
+document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && appSidebar.classList.contains('open')) {
+        if (e.target.closest('.sidebar-item') || e.target.closest('.instance-item')) {
+            toggleMobileMenu();
+        }
+    }
+});

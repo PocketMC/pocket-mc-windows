@@ -170,13 +170,28 @@ public sealed class RemoteDashboardHost
             }));
 
         app.MapPost("/api/instances/{instanceId:guid}/start", async (HttpContext context, Guid instanceId) =>
-            await WithAuthAsync(context, async auth => ToActionResult(await _instanceControlService.StartAsync(instanceId))));
+            await WithAuthAsync(context, async auth =>
+            {
+                var result = await _instanceControlService.StartAsync(instanceId);
+                _auditLogService.Log(auth.DeviceId, "instance.start", instanceId, null, result.Success, result.Success ? null : result.Message);
+                return ToActionResult(result);
+            }));
 
         app.MapPost("/api/instances/{instanceId:guid}/stop", async (HttpContext context, Guid instanceId) =>
-            await WithAuthAsync(context, async auth => ToActionResult(await _instanceControlService.StopAsync(instanceId))));
+            await WithAuthAsync(context, async auth =>
+            {
+                var result = await _instanceControlService.StopAsync(instanceId);
+                _auditLogService.Log(auth.DeviceId, "instance.stop", instanceId, null, result.Success, result.Success ? null : result.Message);
+                return ToActionResult(result);
+            }));
 
         app.MapPost("/api/instances/{instanceId:guid}/restart", async (HttpContext context, Guid instanceId) =>
-            await WithAuthAsync(context, async auth => ToActionResult(await _instanceControlService.RestartAsync(instanceId))));
+            await WithAuthAsync(context, async auth =>
+            {
+                var result = await _instanceControlService.RestartAsync(instanceId);
+                _auditLogService.Log(auth.DeviceId, "instance.restart", instanceId, null, result.Success, result.Success ? null : result.Message);
+                return ToActionResult(result);
+            }));
 
         app.MapGet("/api/instances/{instanceId:guid}/console/history", (HttpContext context, Guid instanceId) =>
             WithAuth(context, auth =>
@@ -192,7 +207,7 @@ public sealed class RemoteDashboardHost
             {
                 if (!_applicationState.Settings.RemoteControl.AllowRemoteConsoleCommands)
                 {
-                    return Results.Forbid();
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
                 }
 
                 if (!_requestLimiter.TryConsume($"console:{auth.DeviceId}", instanceId.ToString("D"), 30, TimeSpan.FromMinutes(1)))
@@ -217,6 +232,13 @@ public sealed class RemoteDashboardHost
                 return Results.Ok(new { sent = true });
             }));
 
+        app.MapPost("/api/instances/{instanceId:guid}/console/ticket", async (HttpContext context, Guid instanceId) =>
+            await WithAuthAsync(context, async auth =>
+            {
+                string ticket = _authService.CreateWebSocketTicket(auth.DeviceId!, instanceId);
+                return Results.Ok(new { ticket });
+            }));
+
         app.MapGet("/api/instances/{instanceId:guid}/players", (HttpContext context, Guid instanceId) =>
             WithAuth(context, auth =>
             {
@@ -228,6 +250,37 @@ public sealed class RemoteDashboardHost
                         players = process.OnlinePlayerNames,
                         playerCount = process.PlayerCount
                     });
+            }));
+
+        app.MapGet("/api/devices", (HttpContext context) =>
+            WithAuth(context, auth => Results.Ok(new
+            {
+                devices = _authService.GetActiveDevices().Select(d => new
+                {
+                    id = d.Id,
+                    name = d.DisplayName,
+                    lastSeenAtUtc = d.LastSeenAtUtc,
+                    createdAtUtc = d.CreatedAtUtc,
+                    isCurrent = d.Id == auth.DeviceId
+                })
+            })));
+
+        app.MapPost("/api/devices/revoke", async (HttpContext context) =>
+            await WithAuthAsync(context, async auth =>
+            {
+                RemoteDeviceRevokeRequest? request = await ReadJsonAsync<RemoteDeviceRevokeRequest>(context);
+                if (string.IsNullOrWhiteSpace(request?.DeviceId))
+                {
+                    return Results.BadRequest(new { error = "Device ID is required." });
+                }
+
+                bool revoked = _authService.RevokeDevice(request.DeviceId);
+                if (!revoked)
+                {
+                    return Results.NotFound(new { error = "Device not found." });
+                }
+
+                return Results.Ok(new { ok = true });
             }));
 
         foreach (string action in new[] { "kick", "ban", "pardon", "op", "deop" })
@@ -243,13 +296,15 @@ public sealed class RemoteDashboardHost
 
         app.Map("/ws/instances/{instanceId:guid}/console", async (HttpContext context, Guid instanceId) =>
         {
-            IResult? authFailure = TryAuthenticate(context, allowQueryToken: true, out _);
-            if (authFailure != null)
+            string? ticket = context.Request.Query["ticket"].FirstOrDefault();
+            if (!_authService.ValidateWebSocketTicket(ticket, instanceId, out string deviceId))
             {
-                await authFailure.ExecuteAsync(context);
+                await Results.Unauthorized().ExecuteAsync(context);
                 return;
             }
 
+            // Since we validated the ticket, we know the device is valid. We can inject it if needed,
+            // but the web socket handler just streams logs right now and doesn't take input directly.
             await _webSocketHandler.HandleAsync(context, instanceId);
         });
     }
@@ -320,7 +375,7 @@ public sealed class RemoteDashboardHost
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
     private static bool UsesLoopbackOnlyForRemoteTunnel(RemoteAccessMode accessMode) =>
-        accessMode is RemoteAccessMode.CloudflaredQuickTunnel or RemoteAccessMode.PlayitHttpTunnel;
+        accessMode is RemoteAccessMode.CloudflaredQuickTunnel;
 
     private RemoteDashboardStatus BuildDashboardStatus()
     {

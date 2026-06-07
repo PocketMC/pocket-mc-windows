@@ -1,0 +1,193 @@
+<Page x:Class="PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      mc:Ignorable="d" 
+      d:DesignHeight="600" d:DesignWidth="800"
+      Title="RemoteControlPage">
+
+    <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Remote Control"
+                   FontSize="28"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                   Margin="24,24,24,16" />
+
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="24,0,24,24">
+            <StackPanel>
+                <ui:Card>
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Enable Remote Control" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Starts a local web dashboard secured by paired device tokens."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemoteControlEnabled"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding IsEnabled}"/>
+                        </Grid>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="Port" FontSize="14" FontWeight="Medium"/>
+                                <ui:TextBox x:Name="RemotePortInput" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="25580" Margin="0,8,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                <TextBlock Text="Access Mode" FontSize="14" FontWeight="Medium"/>
+                                <ComboBox x:Name="RemoteAccessModeCombo" ItemsSource="{Binding AccessModes}" SelectedItem="{Binding AccessMode}" Margin="0,8,0,0" MaxWidth="300" HorizontalAlignment="Left">
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Cloudflare Quick Tunnel creates a temporary public URL. Anyone with the URL can reach the login/pairing page. Keep pairing disabled unless you are actively pairing a device."
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,12,0,0"/>
+
+                        <!-- Using a simple implicit converter for bool to visibility if we have one, but we can just use WPF-UI built in converter or use a style trigger -->
+                        <StackPanel Margin="0,16,0,0" x:Name="CloudflaredPathPanel">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCloudflaredMode}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="Custom Cloudflared Executable (Optional)" FontSize="14" FontWeight="Medium"/>
+                            <TextBlock Text="Leave blank to let PocketMC manage it automatically. Useful if you want to use a specific version." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBox x:Name="CloudflaredPathInput" Text="{Binding CloudflaredPath, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="C:\path\to\cloudflared.exe"/>
+                                <ui:Button Grid.Column="1" Content="Browse..." Margin="8,0,0,0" Command="{Binding BrowseCloudflaredPathCommand}"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock x:Name="RemoteLocalUrlText" Text="{Binding LocalUrlText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="RemotePublicUrlText" Text="{Binding PublicUrlText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock x:Name="RemoteStatusText" Text="{Binding StatusText}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#A6E3A1"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                                    <Setter Property="Foreground" Value="#F38BA8"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
+                                <ui:Button x:Name="BtnStartRemoteLink" Content="Start Remote Link" IsEnabled="{Binding CanStartTunnel}" Command="{Binding StartTunnelCommand}" Appearance="Primary" Margin="0,0,8,0"/>
+                                <ui:Button x:Name="BtnStopRemoteLink" Content="Stop Remote Link" IsEnabled="{Binding CanStopTunnel}" Command="{Binding StopTunnelCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+                                <ui:Button x:Name="BtnCopyRemoteLink" Content="Copy Link" Command="{Binding CopyTunnelUrlCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+                                <ui:Button x:Name="BtnPairRemoteDevice" Content="Pair Device" IsEnabled="{Binding CanPair}" Command="{Binding PairDeviceCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+                                <ui:Button x:Name="BtnRevokeRemoteDevices" Content="Revoke All Devices" Command="{Binding RevokeAllDevicesCommand}" Appearance="Danger"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+                        
+                        <TextBlock Text="Paired Devices" FontSize="14" FontWeight="Medium"/>
+                        <ItemsControl ItemsSource="{Binding PairedDevices}" Margin="0,8,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,4,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding CreatedAtUtc, StringFormat=Paired on {0:g}}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        </StackPanel>
+                                        <ui:Button Grid.Column="1" Content="Revoke" Command="{Binding DataContext.RevokeDeviceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Appearance="Secondary" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Allow remote console commands" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Remote console commands can fully control this Minecraft server. Only enable this for trusted paired devices."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemoteConsoleCommands"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding AllowRemoteConsoleCommands}"/>
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Allow remote player actions" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Allows paired devices to kick, ban, pardon, op, and de-op players from the remote dashboard."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemotePlayerActions"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding AllowRemotePlayerActions}"/>
+                        </Grid>
+                    </StackPanel>
+                </ui:Card>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

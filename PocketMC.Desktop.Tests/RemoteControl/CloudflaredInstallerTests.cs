@@ -21,12 +21,20 @@ public sealed class CloudflaredInstallerTests
             }))),
             NullLogger<DownloaderService>.Instance);
 
-        await downloader.EnsureCloudflaredDownloadedAsync(workspace.RootPath);
+        DownloaderService.CloudflaredExpectedSha256 = null;
+        try
+        {
+            await downloader.EnsureCloudflaredDownloadedAsync(workspace.RootPath);
 
-        string cloudflaredPath = Path.Combine(workspace.RootPath, "tunnel", "cloudflared.exe");
-        Assert.True(File.Exists(cloudflaredPath));
-        Assert.Contains(
-            requestedUris,
-            uri => uri.ToString().Contains("cloudflared-windows-amd64.exe", StringComparison.OrdinalIgnoreCase));
+            string cloudflaredPath = Path.Combine(workspace.RootPath, "tunnel", "cloudflared.exe");
+            Assert.True(File.Exists(cloudflaredPath));
+            Assert.Contains(
+                requestedUris,
+                uri => uri.ToString().Contains("cloudflared-windows-amd64.exe", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            DownloaderService.CloudflaredExpectedSha256 = "e1ce2bcf3d1137a9248f7cebb22976fd6b66f5dc2e852231003f1db13262dc86";
+        }
     }
 }

@@ -5,6 +5,12 @@ using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Auth;
 
+public sealed record RemoteWebSocketTicket(
+    string Ticket,
+    Guid InstanceId,
+    string DeviceId,
+    DateTimeOffset ExpiresAtUtc);
+
 public sealed class RemoteAuthService
 {
     private static readonly TimeSpan DefaultPairingLifetime = TimeSpan.FromMinutes(2);
@@ -13,6 +19,7 @@ public sealed class RemoteAuthService
     private readonly SettingsManager _settingsManager;
     private readonly RemoteTokenHasher _tokenHasher;
     private readonly ConcurrentDictionary<string, RemotePairingSession> _pairingSessions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, RemoteWebSocketTicket> _wsTickets = new(StringComparer.Ordinal);
     private readonly object _settingsLock = new();
 
     public RemoteAuthService(
@@ -39,7 +46,7 @@ public sealed class RemoteAuthService
     public RemoteExchangeResult ExchangePairingToken(string? pairingToken, string? deviceName)
     {
         if (string.IsNullOrWhiteSpace(pairingToken) ||
-            !_pairingSessions.TryGetValue(pairingToken, out RemotePairingSession? session))
+            !_pairingSessions.TryRemove(pairingToken, out RemotePairingSession? session))
         {
             return RemoteExchangeResult.Failed(RemoteAuthFailure.InvalidPairingToken);
         }
@@ -98,7 +105,20 @@ public sealed class RemoteAuthService
                 return RemoteValidationResult.Failed(RemoteAuthFailure.RevokedDeviceToken);
             }
 
-            device.LastSeenAtUtc = DateTimeOffset.UtcNow;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (!device.LastSeenAtUtc.HasValue || (now - device.LastSeenAtUtc.Value).TotalMinutes > 5)
+            {
+                device.LastSeenAtUtc = now;
+                lock (_settingsLock)
+                {
+                    _settingsManager.Save(_applicationState.Settings);
+                }
+            }
+            else
+            {
+                device.LastSeenAtUtc = now;
+            }
+
             return RemoteValidationResult.Successful(device.Id, device.DisplayName);
         }
 
@@ -126,6 +146,17 @@ public sealed class RemoteAuthService
             device.RevokedAtUtc ??= DateTimeOffset.UtcNow;
             _settingsManager.Save(_applicationState.Settings);
             return true;
+        }
+    }
+
+    public IReadOnlyList<RemoteDeviceSession> GetActiveDevices()
+    {
+        lock (_settingsLock)
+        {
+            return EnsureRemoteSettings(_applicationState.Settings)
+                .PairedDevices
+                .Where(x => !x.RevokedAtUtc.HasValue)
+                .ToList();
         }
     }
 
@@ -158,5 +189,33 @@ public sealed class RemoteAuthService
             : deviceName.Trim();
 
         return normalized.Length <= 80 ? normalized : normalized[..80];
+    }
+
+    public string CreateWebSocketTicket(string deviceId, Guid instanceId, TimeSpan? lifetime = null)
+    {
+        string ticket = _tokenHasher.GenerateToken();
+        _wsTickets[ticket] = new RemoteWebSocketTicket(
+            ticket,
+            instanceId,
+            deviceId,
+            DateTimeOffset.UtcNow.Add(lifetime ?? TimeSpan.FromSeconds(30)));
+        return ticket;
+    }
+
+    public bool ValidateWebSocketTicket(string? ticket, Guid instanceId, out string deviceId)
+    {
+        deviceId = string.Empty;
+        if (string.IsNullOrWhiteSpace(ticket) || !_wsTickets.TryRemove(ticket, out RemoteWebSocketTicket? wsTicket))
+        {
+            return false;
+        }
+
+        if (wsTicket.InstanceId != instanceId || wsTicket.ExpiresAtUtc <= DateTimeOffset.UtcNow)
+        {
+            return false;
+        }
+
+        deviceId = wsTicket.DeviceId;
+        return true;
     }
 }

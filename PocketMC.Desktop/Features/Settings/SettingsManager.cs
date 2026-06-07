@@ -140,9 +140,10 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
             }
-            else if (settings.RemoteControl.AccessMode == RemoteAccessMode.PlayitHttpTunnel)
+            else if (settings.RemoteControl.AccessMode == (RemoteAccessMode)2 /* PlayitHttpTunnel */)
             {
-                settings.RemoteControl.TunnelProviderId = "playit-http";
+                settings.RemoteControl.AccessMode = RemoteAccessMode.CloudflaredQuickTunnel;
+                settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
             }
             else if (settings.RemoteControl.AccessMode == RemoteAccessMode.CloudflaredQuickTunnel)
             {

@@ -8,5 +8,6 @@ public sealed class RemoteControlSettings
     public string TunnelProviderId { get; set; } = "cloudflared-quick";
     public bool AllowRemoteConsoleCommands { get; set; }
     public bool AllowRemotePlayerActions { get; set; } = true;
+    public string? CloudflaredPath { get; set; }
     public List<RemoteDeviceSession> PairedDevices { get; set; } = new();
 }

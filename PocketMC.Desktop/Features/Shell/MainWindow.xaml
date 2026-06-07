@@ -8,6 +8,7 @@
         xmlns:tunnel="clr-namespace:PocketMC.Desktop.Features.Tunnel"
         xmlns:setup="clr-namespace:PocketMC.Desktop.Features.Setup"
         xmlns:shell="clr-namespace:PocketMC.Desktop.Features.Shell"
+        xmlns:remote="clr-namespace:PocketMC.Desktop.Features.RemoteControl.UI"
         xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
         mc:Ignorable="d"
         Title="PocketMC Desktop"
@@ -196,6 +197,10 @@
                                            Content="Tunnel"
                                            Icon="{ui:SymbolIcon Globe24}"
                                            TargetPageType="{x:Type tunnel:TunnelPage}"/>
+                    <ui:NavigationViewItem x:Name="NavRemoteControl"
+                                           Content="Remote Control"
+                                           Icon="{ui:SymbolIcon PhoneDesktop24}"
+                                           TargetPageType="{x:Type remote:RemoteControlPage}"/>
                 </ui:NavigationView.MenuItems>
 
                 <!-- ─── Footer ─── -->

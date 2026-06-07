@@ -109,7 +109,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         pageType == typeof(TunnelPage) ||
         pageType == typeof(JavaSetupPage) ||
         pageType == typeof(AboutPage) ||
-        pageType == typeof(AppSettingsPage);
+        pageType == typeof(AppSettingsPage) ||
+        pageType == typeof(PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage);
 
     public bool ShowShellPage(Type pageType, object? parameter = null)
     {
@@ -215,6 +216,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         SetNavigationItemActiveState(NavJavaSetup, ReferenceEquals(targetItem, NavJavaSetup));
         SetNavigationItemActiveState(NavAbout, ReferenceEquals(targetItem, NavAbout));
         SetNavigationItemActiveState(NavSettings, ReferenceEquals(targetItem, NavSettings));
+        SetNavigationItemActiveState(NavRemoteControl, ReferenceEquals(targetItem, NavRemoteControl));
     }
 
     private NavigationViewItem? GetShellNavigationItem(Type? pageType)
@@ -224,6 +226,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         if (pageType == typeof(JavaSetupPage)) return NavJavaSetup;
         if (pageType == typeof(AboutPage)) return NavAbout;
         if (pageType == typeof(AppSettingsPage)) return NavSettings;
+        if (pageType == typeof(PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage)) return NavRemoteControl;
         return null;
     }
 
@@ -279,7 +282,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             _viewModel.IsPaneVisible = false;
             _viewModel.IsPaneToggleVisible = false;
             NavDashboard.IsEnabled = NavTunnel.IsEnabled = NavJavaSetup.IsEnabled =
-                NavAbout.IsEnabled = NavSettings.IsEnabled = false;
+                NavAbout.IsEnabled = NavSettings.IsEnabled = NavRemoteControl.IsEnabled = false;
             _uiStateService.UpdateBreadcrumb(null);
         }
         else
@@ -287,7 +290,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             _viewModel.IsPaneVisible = true;
             _viewModel.IsPaneToggleVisible = true;
             NavDashboard.IsEnabled = NavTunnel.IsEnabled = NavJavaSetup.IsEnabled =
-                NavAbout.IsEnabled = NavSettings.IsEnabled = true;
+                NavAbout.IsEnabled = NavSettings.IsEnabled = NavRemoteControl.IsEnabled = true;
         }
     }
 

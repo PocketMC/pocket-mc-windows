@@ -16,8 +16,26 @@ public sealed class CloudflaredInstaller : ICloudflaredInstaller
         _downloaderService = downloaderService;
     }
 
-    public async Task<string> EnsureInstalledAsync(CancellationToken cancellationToken)
+    public async Task<string> EnsureInstalledAsync(string? userConfiguredPath, CancellationToken cancellationToken)
     {
+        if (!string.IsNullOrWhiteSpace(userConfiguredPath) && File.Exists(userConfiguredPath))
+        {
+            return userConfiguredPath;
+        }
+
+        string? pathEnv = Environment.GetEnvironmentVariable("PATH");
+        if (!string.IsNullOrWhiteSpace(pathEnv))
+        {
+            foreach (string pathPart in pathEnv.Split(Path.PathSeparator))
+            {
+                string combined = Path.Combine(pathPart, "cloudflared.exe");
+                if (File.Exists(combined))
+                {
+                    return combined;
+                }
+            }
+        }
+
         if (!_applicationState.IsConfigured)
         {
             throw new InvalidOperationException("PocketMC must be configured before cloudflared can be downloaded.");

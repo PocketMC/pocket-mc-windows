@@ -5,6 +5,7 @@ using PocketMC.Desktop.Features.RemoteControl.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Helpers;
 using PocketMC.Desktop.Models;
+using System.Text.RegularExpressions;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Services;
 
@@ -43,6 +44,16 @@ public sealed class RemotePlayerActionService
         if (metadata == null)
         {
             return RemoteControlActionResult.Failed(RemoteControlActionFailure.NotFound, "Instance was not found.");
+        }
+
+        if (!IsValidPlayerName(playerName, metadata.ServerType))
+        {
+            return RemoteControlActionResult.Failed(RemoteControlActionFailure.Failed, "Invalid player name.");
+        }
+
+        if (request?.Reason != null && (request.Reason.Length > 255 || request.Reason.Any(c => char.IsControl(c) || c == '\r' || c == '\n')))
+        {
+            return RemoteControlActionResult.Failed(RemoteControlActionFailure.Failed, "Invalid reason format.");
         }
 
         var process = _lifecycleService.GetProcess(instanceId);
@@ -85,4 +96,24 @@ public sealed class RemotePlayerActionService
             "deop" => new[] { $"deop {formattedName}" },
             _ => Array.Empty<string>()
         };
+
+    private static bool IsValidPlayerName(string name, string? serverType)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        if (name.Length > 100) return false;
+        
+        if (name.Any(c => char.IsControl(c) || c == '\r' || c == '\n' || c == '\t' || c == '"' || c == '\''))
+        {
+            return false;
+        }
+
+        if (CommandFormatter.IsBedrock(serverType))
+        {
+            return true;
+        }
+        else
+        {
+            return Regex.IsMatch(name, @"^[A-Za-z0-9_]{1,16}$");
+        }
+    }
 }

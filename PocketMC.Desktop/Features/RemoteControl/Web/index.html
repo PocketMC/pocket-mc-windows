@@ -10,76 +10,113 @@
 </head>
 <body>
   <div class="background-effects"></div>
-  <main class="app-shell">
-    <header class="topbar">
+  
+  <main class="app-layout">
+    <header class="mobile-header">
+      <div class="mobile-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M7 4h10M6 7v13h12V7M9 11h6M9 15h6"/></svg>
+        </span>
+        <h2>PocketMC</h2>
+      </div>
+      <button id="mobileMenuToggle" class="icon-button" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24" id="hamburgerIcon"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg viewBox="0 0 24 24" id="closeIcon" hidden><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </header>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="appSidebar">
       <div class="brand-block">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M4 7h16M7 4h10M6 7v13h12V7M9 11h6M9 15h6"/></svg>
         </span>
         <div class="brand-copy">
-          <h1>PocketMC Remote</h1>
-          <p>Manage your server securely from your browser.</p>
+          <h1>PocketMC</h1>
+          <p>Remote Dashboard</p>
         </div>
       </div>
-      <div class="topbar-actions">
-        <span id="connectionLabel" class="connection-pill">Checking connection</span>
-        <button id="refreshButton" class="icon-button" type="button" aria-label="Refresh dashboard" title="Refresh">
+
+      <nav class="sidebar-nav">
+        <p class="sidebar-label">Instances</p>
+        <ul id="instanceListSidebar" class="sidebar-list">
+          <!-- Populated by JS -->
+        </ul>
+        
+        <p class="sidebar-label">Settings</p>
+        <ul class="sidebar-list">
+          <li>
+            <button id="navDevices" class="sidebar-item" type="button">
+              <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z M8 18v3 M16 18v3 M4 14h16"/></svg>
+              <span>Paired Devices</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <span id="connectionLabel" class="connection-pill">Checking...</span>
+        <button id="refreshButton" class="icon-button" type="button" title="Refresh">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
         </button>
       </div>
-    </header>
+    </aside>
 
-    <div id="notice" class="notice" hidden aria-live="polite"></div>
+    <div class="main-content">
+      <div id="notice" class="notice" hidden aria-live="polite"></div>
 
-    <section id="pairView" class="panel pair-panel" hidden>
-      <div class="panel-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3M6 11h12v10H6zM12 15v3"/></svg>
-      </div>
-      <div class="panel-copy">
-        <p class="eyebrow">Remote access</p>
-        <h2 id="pairTitle">Pair this browser</h2>
-        <p id="pairMessage">Open this link in the browser you want to use, then pair it here.</p>
-      </div>
-      <div class="pair-actions">
-        <button id="pairButton" class="primary-button" type="button">
-          <span class="button-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-          </span>
-          <span>Pair Browser</span>
-        </button>
-        <button id="copyPairLinkButton" class="secondary-button" type="button">
-          <span class="button-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M8 8h10v10H8zM6 14H4V4h10v2"/></svg>
-          </span>
-          <span>Copy Link</span>
-        </button>
-      </div>
-    </section>
+      <section id="pairView" class="panel pair-panel" hidden>
+        <div class="panel-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3M6 11h12v10H6zM12 15v3"/></svg>
+        </div>
+        <div class="panel-copy">
+          <p class="eyebrow">Remote access</p>
+          <h2 id="pairTitle">Pair this browser</h2>
+          <p id="pairMessage">This is a one-time link. Open it in the browser you want to use, then pair it here.</p>
+        </div>
+        <div class="pair-actions">
+          <button id="pairBrowserButton" class="primary-button" type="button">
+            <span class="button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            <span>Pair Browser</span>
+          </button>
+          <button id="copyPairLinkButton" class="secondary-button" type="button">
+            <span class="button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 8h10v10H8zM6 14H4V4h10v2"/></svg>
+            </span>
+            <span>Copy Link</span>
+          </button>
+        </div>
+      </section>
 
-    <section id="appView" hidden>
-      <section class="panel server-panel">
+      <section id="devicesView" class="panel devices-panel" hidden>
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Settings</p>
+            <h2>Paired Devices</h2>
+            <p class="muted">Manage browsers that have remote access to this host.</p>
+          </div>
+        </div>
+        <div class="devices-list" id="devicesListContainer">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <section id="appView" hidden>
         <div class="server-heading">
           <div class="server-title">
             <span class="server-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 6h16v5H4zM4 13h16v5H4zM8 8h.01M8 15h.01M12 8h6M12 15h6"/></svg>
             </span>
             <div>
-              <p class="eyebrow">Server</p>
+              <p class="eyebrow">Instance</p>
               <h2 id="serverName">Select a server</h2>
               <p id="serverType">PocketMC instance</p>
             </div>
           </div>
           <span id="statusPill" class="status-pill offline">Offline</span>
-        </div>
-
-        <label class="field-label" for="instanceSelect">
-          <span>Instance</span>
-          <select id="instanceSelect" aria-label="Server"></select>
-        </label>
-
-        <div class="server-ips" id="serverIpsContainer" hidden>
-          <p class="eyebrow">Server IPs</p>
-          <div id="serverIpsList" class="ips-list"></div>
         </div>
 
         <nav class="tabs-nav">
@@ -88,176 +125,194 @@
           <button class="tab-button" data-tab="players" type="button">Players</button>
         </nav>
 
-        <div id="tab-overview" class="tab-content active">
+        <div id="tab-overview" class="tab-content active panel">
+          <div class="server-ips" id="serverIpsContainer" hidden>
+            <p class="eyebrow">Connect</p>
+            <div id="serverIpsList" class="ips-list"></div>
+          </div>
+
           <div class="metrics-grid">
-          <div class="metric-tile">
-            <span class="metric-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-8 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 21v-2a3 3 0 0 0-2-2.8M18 4.4a4 4 0 0 1 0 7.2"/></svg>
-            </span>
-            <div>
-              <span>Players</span>
-              <strong id="playerCount">0 / 0</strong>
+            <div class="metric-tile">
+              <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-8 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 21v-2a3 3 0 0 0-2-2.8M18 4.4a4 4 0 0 1 0 7.2"/></svg>
+              </span>
+              <div>
+                <span>Players</span>
+                <strong id="playerCount">0 / 0</strong>
+              </div>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 14h4l2-8 4 16 2-8h4"/></svg>
+              </span>
+              <div>
+                <span>CPU</span>
+                <strong id="cpuUsage">0%</strong>
+              </div>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M6 19V5h12v14zM9 9h6M9 13h6M9 17h6"/></svg>
+              </span>
+              <div>
+                <span>RAM</span>
+                <strong id="ramUsage">0 GB</strong>
+              </div>
+            </div>
+            <div class="metric-tile">
+              <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 7v5l3 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20"/></svg>
+              </span>
+              <div>
+                <span>Uptime</span>
+                <strong id="uptime">0m</strong>
+              </div>
             </div>
           </div>
-          <div class="metric-tile">
-            <span class="metric-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M4 14h4l2-8 4 16 2-8h4"/></svg>
-            </span>
-            <div>
-              <span>CPU</span>
-              <strong id="cpuUsage">0%</strong>
-            </div>
-          </div>
-          <div class="metric-tile">
-            <span class="metric-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M6 19V5h12v14zM9 9h6M9 13h6M9 17h6"/></svg>
-            </span>
-            <div>
-              <span>RAM</span>
-              <strong id="ramUsage">0 GB</strong>
-            </div>
-          </div>
-          <div class="metric-tile">
-            <span class="metric-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 7v5l3 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20"/></svg>
-            </span>
-            <div>
-              <span>Uptime</span>
-              <strong id="uptime">0m</strong>
-            </div>
+
+          <div class="button-row">
+            <button id="startButton" class="primary-button" type="button">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg>
+              </span>
+              <span>Start</span>
+            </button>
+            <button id="stopButton" class="danger-button" type="button">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M7 7h10v10H7z"/></svg>
+              </span>
+              <span>Stop</span>
+            </button>
+            <button id="restartButton" class="secondary-button" type="button">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
+              </span>
+              <span>Restart</span>
+            </button>
           </div>
         </div>
 
-        <div class="button-row">
-          <button id="startButton" class="primary-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg>
-            </span>
-            <span>Start</span>
-          </button>
-          <button id="stopButton" class="danger-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M7 7h10v10H7z"/></svg>
-            </span>
-            <span>Stop</span>
-          </button>
-          <button id="restartButton" class="secondary-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
-            </span>
-            <span>Restart</span>
-          </button>
-        </div>
-        </div>
-      </section>
-
-      <section id="tab-players" class="panel players-panel tab-content" hidden>
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Online players</p>
-            <h2>Players</h2>
+        <div id="tab-players" class="tab-content panel players-panel" hidden>
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Online players</p>
+              <h2>Players</h2>
+            </div>
+            <span id="playersState" class="state-label">0 online</span>
           </div>
-          <span id="playersState" class="state-label">0 online</span>
-        </div>
-        <div id="playerList" class="player-list"></div>
+          <div id="playerList" class="player-list"></div>
 
-        <div class="offline-player-manage">
-          <p class="eyebrow">Manage Offline Player</p>
-          <form id="offlinePlayerForm" class="command-row">
-            <input id="offlinePlayerInput" type="text" autocomplete="off" placeholder="Player name">
-            <button class="secondary-button" type="button" id="btnOfflinePardon">Unban</button>
-            <button class="secondary-button" type="button" id="btnOfflineDeop">De-OP</button>
-            <button class="danger-button" type="button" id="btnOfflineBan">Ban</button>
+          <div class="offline-player-manage">
+            <p class="eyebrow">Manage Offline Player</p>
+            <form id="offlinePlayerForm" class="command-row">
+              <input id="offlinePlayerInput" type="text" autocomplete="off" placeholder="Player name">
+              <button class="secondary-button" type="submit" id="btnOfflineManage">Manage Player</button>
+            </form>
+          </div>
+        </div>
+
+        <div id="tab-console" class="tab-content panel console-panel" hidden>
+          <div class="section-head">
+            <div class="console-head-row">
+              <div>
+                <p class="eyebrow">Live console</p>
+                <h2>Console</h2>
+              </div>
+              <div class="console-filters">
+                <label class="filter-label"><input type="checkbox" id="filterInfo" checked> Info</label>
+                <label class="filter-label"><input type="checkbox" id="filterWarn" checked> Warn</label>
+                <label class="filter-label"><input type="checkbox" id="filterError" checked> Error</label>
+              </div>
+            </div>
+            <span id="consoleState" class="state-label">Idle</span>
+          </div>
+          <div id="consoleOutput" class="console-output"></div>
+          <form id="commandForm" class="command-row">
+            <input id="commandInput" type="text" autocomplete="off" placeholder="Type a console command">
+            <button class="primary-button" type="submit">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m5 12 14-8-4 16-3-7z"/></svg>
+              </span>
+              <span>Send</span>
+            </button>
           </form>
+          <p id="commandDisabled" class="muted" hidden>Console commands are disabled in PocketMC Desktop.</p>
         </div>
       </section>
 
-      <section id="tab-console" class="panel console-panel tab-content" hidden>
-        <div class="section-head">
-          <div class="console-head-row">
-            <div>
-              <p class="eyebrow">Live console</p>
-              <h2>Console</h2>
-            </div>
-            <div class="console-filters">
-              <label class="filter-label"><input type="checkbox" id="filterInfo" checked> Info</label>
-              <label class="filter-label"><input type="checkbox" id="filterWarn" checked> Warn</label>
-              <label class="filter-label"><input type="checkbox" id="filterError" checked> Error</label>
-            </div>
-          </div>
-          <span id="consoleState" class="state-label">Idle</span>
+      <section id="emptyView" class="panel empty-panel" hidden>
+        <div class="panel-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M7 4h10M6 7v14h12V7M9 11h6M9 15h6"/></svg>
         </div>
-        <div id="consoleOutput" class="console-output"></div>
-        <form id="commandForm" class="command-row">
-          <input id="commandInput" type="text" autocomplete="off" placeholder="Type a console command">
-          <button class="primary-button" type="submit">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="m5 12 14-8-4 16-3-7z"/></svg>
-            </span>
-            <span>Send</span>
-          </button>
-        </form>
-        <p id="commandDisabled" class="muted" hidden>Console commands are disabled in PocketMC Desktop.</p>
-      </section>
-    </section>
-
-    <!-- Reason Modal -->
-    <div id="reasonModal" class="modal-overlay" hidden>
-      <div class="modal-content">
-        <h3 id="reasonModalTitle">Reason Required</h3>
-        <p id="reasonModalMessage">Please provide a reason for this action.</p>
-        <form id="reasonModalForm" class="modal-form">
-          <input type="text" id="reasonModalInput" placeholder="Reason (optional)" autocomplete="off">
-          <div class="modal-actions">
-            <button type="button" id="reasonModalCancel" class="secondary-button">Cancel</button>
-            <button type="submit" id="reasonModalConfirm" class="danger-button">Confirm</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <section id="emptyView" class="panel empty-panel" hidden>
-      <div class="panel-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M4 7h16M7 4h10M6 7v14h12V7M9 11h6M9 15h6"/></svg>
-      </div>
-      <div class="panel-copy">
-        <p class="eyebrow">Dashboard ready</p>
-        <h2>No instances found</h2>
-        <p>Create or load a server in PocketMC Desktop, then refresh this dashboard.</p>
-      </div>
-      <button id="emptyRefreshButton" class="primary-button" type="button">
-        <span class="button-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
-        </span>
-        <span>Refresh</span>
-      </button>
-    </section>
-
-    <section id="errorView" class="panel error-panel" hidden>
-      <div class="panel-icon danger" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-      </div>
-      <div class="panel-copy">
-        <p class="eyebrow">Remote access</p>
-        <h2>Connection problem</h2>
-        <p id="errorMessage"></p>
-      </div>
-      <div class="pair-actions">
-        <button id="retryButton" class="primary-button" type="button">
+        <div class="panel-copy">
+          <p class="eyebrow">Dashboard ready</p>
+          <h2>No instances found</h2>
+          <p>Create or load a server in PocketMC Desktop, then refresh this dashboard.</p>
+        </div>
+        <button id="emptyRefreshButton" class="primary-button" type="button">
           <span class="button-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
           </span>
-          <span>Retry</span>
+          <span>Refresh</span>
         </button>
-        <button id="clearTokenButton" class="secondary-button" type="button">
-          <span class="button-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg>
-          </span>
-          <span>Forget</span>
-        </button>
-      </div>
-    </section>
+      </section>
+
+      <section id="errorView" class="panel error-panel" hidden>
+        <div class="panel-icon danger" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        </div>
+        <div class="panel-copy">
+          <p class="eyebrow">Remote access</p>
+          <h2>Connection problem</h2>
+          <p id="errorMessage"></p>
+        </div>
+        <div class="pair-actions">
+          <button id="retryButton" class="primary-button" type="button">
+            <span class="button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
+            </span>
+            <span>Retry</span>
+          </button>
+          <button id="clearTokenButton" class="secondary-button" type="button">
+            <span class="button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg>
+            </span>
+            <span>Forget</span>
+          </button>
+        </div>
+      </section>
+    </div>
   </main>
+
+  <!-- Player Action Modal -->
+  <div id="playerActionModal" class="modal-overlay" hidden>
+    <div class="modal-content">
+      <h3 id="playerActionModalTitle">Manage Player</h3>
+      <p id="playerActionModalName" class="muted">Player name</p>
+      
+      <div class="modal-buttons" id="playerActionButtons">
+        <button class="secondary-button" data-action="op">Make OP</button>
+        <button class="secondary-button" data-action="deop">De-OP</button>
+        <button class="danger-button" data-action="kick">Kick</button>
+        <button class="danger-button" data-action="ban">Ban</button>
+        <button class="secondary-button" data-action="pardon">Unban</button>
+      </div>
+
+      <form id="reasonModalForm" class="modal-form" hidden>
+        <p id="reasonModalLabel" class="muted">Reason (optional):</p>
+        <input type="text" id="reasonModalInput" placeholder="Enter reason" autocomplete="off">
+        <div class="modal-actions">
+          <button type="button" id="reasonModalCancel" class="secondary-button">Cancel</button>
+          <button type="submit" id="reasonModalConfirm" class="danger-button">Confirm</button>
+        </div>
+      </form>
+      
+      <div class="modal-actions" id="playerActionCloseRow">
+        <button type="button" id="playerActionModalClose" class="secondary-button">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/remote/app.js"></script>
 </body>
 </html>

@@ -16,7 +16,8 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         private const string PlayitAgentVersion = "0.17.1";
         private const string PlayitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
         private const string? PlayitExpectedSha256 = "9b00d6ff7d37d1052e5ae097e1348e11deae8617cd7a8ba39d1777f2006316a3";
-        private const string CloudflaredDownloadUrl = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe";
+        private const string CloudflaredDownloadUrl = "https://github.com/cloudflare/cloudflared/releases/download/2024.4.1/cloudflared-windows-amd64.exe";
+        internal static string? CloudflaredExpectedSha256 = "e1ce2bcf3d1137a9248f7cebb22976fd6b66f5dc2e852231003f1db13262dc86";
 
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<DownloaderService> _logger;
@@ -231,8 +232,8 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                 await DownloadFileAsync(
                     CloudflaredDownloadUrl,
                     stagedPath,
-                    expectedHash: null,
-                    expectedHashType: null,
+                    CloudflaredExpectedSha256,
+                    CloudflaredExpectedSha256 == null ? null : "SHA256",
                     progress,
                     cancellationToken);
 
