@@ -46,7 +46,7 @@ jobs:
           $payload = @{
             embeds = @(
               @{
-                title = "[$repo:$branch] 1 New Commit"
+                title = "[${repo}:${branch}] 1 New Commit"
                 url = $compareUrl
                 color = 7506394 # Discord Blurple / GitHub Blue
                 author = @{
