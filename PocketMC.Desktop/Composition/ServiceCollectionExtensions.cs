@@ -192,7 +192,9 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<RemoteConsoleWebSocketHandler>();
             services.AddSingleton<RemoteDashboardHost>();
             services.AddSingleton<RemoteControlCoordinator>();
+            services.AddSingleton<ICloudflaredInstaller, CloudflaredInstaller>();
             services.AddSingleton<IRemoteTunnelProvider, CloudflaredQuickTunnelProvider>();
+            services.AddSingleton<IRemoteTunnelProvider, PlayitHttpTunnelProvider>();
             services.AddSingleton<RemoteTunnelManager>();
             services.AddHostedService<RemoteControlHostedService>();
             return services;

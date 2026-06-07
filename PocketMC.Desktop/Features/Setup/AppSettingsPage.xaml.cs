@@ -299,21 +299,27 @@ namespace PocketMC.Desktop.Features.Setup
             try
             {
                 SaveRemoteSettingsFromUi(showMessage: false);
-                _applicationState.Settings.RemoteControl.AccessMode = RemoteAccessMode.CloudflaredQuickTunnel;
-                _applicationState.Settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
+                RemoteAccessMode mode = GetSelectedRemoteAccessMode();
+                if (mode == RemoteAccessMode.LanOnly)
+                {
+                    mode = RemoteAccessMode.CloudflaredQuickTunnel;
+                    SelectRemoteAccessMode(mode);
+                }
+
+                _applicationState.Settings.RemoteControl.AccessMode = mode;
+                _applicationState.Settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(mode);
                 _settingsManager.Save(_applicationState.Settings);
-                SelectRemoteAccessMode(RemoteAccessMode.CloudflaredQuickTunnel);
                 await _remoteControlCoordinator.RestartHostAsync();
 
                 var result = await _remoteControlCoordinator.StartTunnelAsync();
                 if (result.Success)
                 {
                     Clipboard.SetText(result.PublicUrl ?? "");
-                    SetRemoteStatus("Cloudflare remote link started and copied.", isError: false);
+                    SetRemoteStatus($"{FormatRemoteProviderName(mode)} remote link started and copied.", isError: false);
                 }
                 else
                 {
-                    SetRemoteStatus(result.ErrorMessage ?? "Could not start Cloudflare remote link.", isError: true);
+                    SetRemoteStatus(result.ErrorMessage ?? $"Could not start {FormatRemoteProviderName(mode)} remote link.", isError: true);
                 }
             }
             catch (Exception ex)
@@ -332,7 +338,7 @@ namespace PocketMC.Desktop.Features.Setup
             try
             {
                 await _remoteControlCoordinator.StopTunnelAsync();
-                SetRemoteStatus("Cloudflare remote link stopped.", isError: false);
+                SetRemoteStatus("Remote link stopped.", isError: false);
             }
             catch (Exception ex)
             {
@@ -413,9 +419,7 @@ namespace PocketMC.Desktop.Features.Setup
                 Enum.TryParse(item.Tag?.ToString(), out RemoteAccessMode mode))
             {
                 settings.RemoteControl.AccessMode = mode;
-                settings.RemoteControl.TunnelProviderId = mode == RemoteAccessMode.CloudflaredQuickTunnel
-                    ? "cloudflared-quick"
-                    : settings.RemoteControl.TunnelProviderId;
+                settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(mode);
             }
 
             _settingsManager.Save(settings);
@@ -429,7 +433,7 @@ namespace PocketMC.Desktop.Features.Setup
         {
             RemoteDashboardStatus status = _remoteControlCoordinator.GetStatus();
             RemoteLocalUrlText.Text = $"Local URL: {status.LocalUrls.FirstOrDefault() ?? "not available"}";
-            RemotePublicUrlText.Text = $"Cloudflare Public URL: {status.PublicUrl ?? "not started"}";
+            RemotePublicUrlText.Text = $"{FormatRemoteProviderName(status.AccessMode)} Public URL: {status.PublicUrl ?? "not started"}";
             BtnStopRemoteLink.IsEnabled = status.TunnelRunning;
             BtnCopyRemoteLink.IsEnabled = status.HostRunning || status.TunnelRunning;
             BtnPairRemoteDevice.IsEnabled = status.Enabled;
@@ -440,6 +444,30 @@ namespace PocketMC.Desktop.Features.Setup
                 SetRemoteStatus(status.TunnelError, isError: true);
             }
         }
+
+        private RemoteAccessMode GetSelectedRemoteAccessMode()
+        {
+            if (RemoteAccessModeCombo.SelectedItem is ComboBoxItem item &&
+                Enum.TryParse(item.Tag?.ToString(), out RemoteAccessMode mode))
+            {
+                return mode;
+            }
+
+            return _applicationState.Settings.RemoteControl.AccessMode;
+        }
+
+        private static string MapRemoteAccessModeToProviderId(RemoteAccessMode mode) => mode switch
+        {
+            RemoteAccessMode.PlayitHttpTunnel => "playit-http",
+            _ => "cloudflared-quick"
+        };
+
+        private static string FormatRemoteProviderName(RemoteAccessMode mode) => mode switch
+        {
+            RemoteAccessMode.PlayitHttpTunnel => "PlayIt HTTPS",
+            RemoteAccessMode.CloudflaredQuickTunnel => "Cloudflare",
+            _ => "Remote"
+        };
 
         private void SelectRemoteAccessMode(RemoteAccessMode mode)
         {

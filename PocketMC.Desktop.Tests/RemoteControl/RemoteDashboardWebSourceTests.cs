@@ -65,5 +65,5 @@ public sealed class RemoteDashboardWebSourceTests
             "Features",
             "RemoteControl",
             "Web",
-            fileName));
+            fileName)).Replace("\r", "");
 }

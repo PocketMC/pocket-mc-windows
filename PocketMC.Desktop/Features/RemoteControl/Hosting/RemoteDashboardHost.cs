@@ -74,7 +74,7 @@ public sealed class RemoteDashboardHost
         }
 
         RemoteControlSettings settings = _applicationState.Settings.RemoteControl;
-        string bindAddress = settings.AccessMode == RemoteAccessMode.CloudflaredQuickTunnel
+        string bindAddress = UsesLoopbackOnlyForRemoteTunnel(settings.AccessMode)
             ? "127.0.0.1"
             : "0.0.0.0";
 
@@ -318,6 +318,9 @@ public sealed class RemoteDashboardHost
 
     private static string GetClientKey(HttpContext context) =>
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    private static bool UsesLoopbackOnlyForRemoteTunnel(RemoteAccessMode accessMode) =>
+        accessMode is RemoteAccessMode.CloudflaredQuickTunnel or RemoteAccessMode.PlayitHttpTunnel;
 
     private RemoteDashboardStatus BuildDashboardStatus()
     {

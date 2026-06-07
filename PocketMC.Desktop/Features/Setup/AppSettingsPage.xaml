@@ -217,6 +217,7 @@
                                 <ComboBox x:Name="RemoteAccessModeCombo" Margin="0,8,0,0" SelectionChanged="RemoteAccessModeCombo_SelectionChanged">
                                     <ComboBoxItem Content="Local Wi-Fi" Tag="LanOnly"/>
                                     <ComboBoxItem Content="Cloudflare Quick Tunnel" Tag="CloudflaredQuickTunnel"/>
+                                    <ComboBoxItem Content="PlayIt HTTPS Tunnel (Premium)" Tag="PlayitHttpTunnel"/>
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
@@ -230,6 +231,11 @@
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,12,0,0"/>
+                        <TextBlock Text="PlayIt HTTPS tunnels require PlayIt Premium. PocketMC can reuse or create a matching HTTPS tunnel for the Remote Control port when your PlayIt account allows it."
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,6,0,0"/>
 
                         <Grid Margin="0,16,0,0">
                             <Grid.ColumnDefinitions>
@@ -238,7 +244,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock x:Name="RemoteLocalUrlText" Text="Local URL: not started" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
-                                <TextBlock x:Name="RemotePublicUrlText" Text="Cloudflare Public URL: not started" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock x:Name="RemotePublicUrlText" Text="Public URL: not started" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                 <TextBlock x:Name="RemoteStatusText" Text="" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">

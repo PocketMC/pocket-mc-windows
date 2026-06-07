@@ -17,6 +17,7 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
         TimeSpan.FromSeconds(1));
 
     private readonly ApplicationState _applicationState;
+    private readonly ICloudflaredInstaller _installer;
     private readonly JobObject _jobObject;
     private readonly ILogger<CloudflaredQuickTunnelProvider> _logger;
     private readonly object _lock = new();
@@ -28,10 +29,12 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
 
     public CloudflaredQuickTunnelProvider(
         ApplicationState applicationState,
+        ICloudflaredInstaller installer,
         JobObject jobObject,
         ILogger<CloudflaredQuickTunnelProvider> logger)
     {
         _applicationState = applicationState;
+        _installer = installer;
         _jobObject = jobObject;
         _logger = logger;
     }
@@ -79,7 +82,17 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
             _startedAtUtc = null;
         }
 
-        string executablePath = ResolveExecutablePath();
+        string executablePath;
+        try
+        {
+            executablePath = await ResolveExecutablePathAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "cloudflared could not be prepared.");
+            return SetError(ex.Message);
+        }
+
         var urlSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var process = new Process
@@ -119,7 +132,7 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
         catch (Win32Exception ex)
         {
             _logger.LogWarning(ex, "cloudflared executable could not be started.");
-            return SetError("cloudflared was not found. Install cloudflared or set a custom path in Remote Control settings.");
+            return SetError("cloudflared could not be started. PocketMC can download it automatically, or you can set a custom path in Remote Control settings.");
         }
         catch (Exception ex)
         {
@@ -245,15 +258,15 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
         }
     }
 
-    private string ResolveExecutablePath()
+    private async Task<string> ResolveExecutablePathAsync(CancellationToken cancellationToken)
     {
         string? configuredPath = _applicationState.Settings.RemoteControl.CloudflaredPath;
-        if (string.IsNullOrWhiteSpace(configuredPath))
+        if (!string.IsNullOrWhiteSpace(configuredPath))
         {
-            return "cloudflared";
+            return configuredPath.Trim();
         }
 
-        return configuredPath.Trim();
+        return await _installer.EnsureInstalledAsync(cancellationToken);
     }
 
     private bool IsProcessRunning() => _process != null && !_process.HasExited;

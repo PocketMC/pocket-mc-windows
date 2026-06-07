@@ -16,6 +16,7 @@ namespace PocketMC.Desktop.Features.Instances.Services;
         private const string PlayitAgentVersion = "0.17.1";
         private const string PlayitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
         private const string? PlayitExpectedSha256 = "9b00d6ff7d37d1052e5ae097e1348e11deae8617cd7a8ba39d1777f2006316a3";
+        private const string CloudflaredDownloadUrl = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe";
 
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<DownloaderService> _logger;
@@ -199,6 +200,48 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                 }
 
                 await PromoteCompletedDownloadAsync(stagedPath, playitPath, cancellationToken);
+            }
+            catch
+            {
+                TryDeleteFile(stagedPath);
+                TryDeleteFile(stagedPath + ".partial");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Downloads cloudflared.exe into &lt;appRoot&gt;/tunnel/cloudflared.exe if not already present.
+        /// The executable is staged before promotion so failed downloads do not replace a working binary.
+        /// </summary>
+        public async Task EnsureCloudflaredDownloadedAsync(string appRootPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+        {
+            string tunnelDir = Path.Combine(appRootPath, "tunnel");
+            string cloudflaredPath = Path.Combine(tunnelDir, "cloudflared.exe");
+
+            if (File.Exists(cloudflaredPath))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(tunnelDir);
+            string stagedPath = Path.Combine(tunnelDir, $"cloudflared-{Guid.NewGuid():N}.exe");
+
+            try
+            {
+                await DownloadFileAsync(
+                    CloudflaredDownloadUrl,
+                    stagedPath,
+                    expectedHash: null,
+                    expectedHashType: null,
+                    progress,
+                    cancellationToken);
+
+                if (!File.Exists(stagedPath) || new FileInfo(stagedPath).Length == 0)
+                {
+                    throw new InvalidOperationException("Downloaded cloudflared executable is empty.");
+                }
+
+                await PromoteCompletedDownloadAsync(stagedPath, cloudflaredPath, cancellationToken);
             }
             catch
             {

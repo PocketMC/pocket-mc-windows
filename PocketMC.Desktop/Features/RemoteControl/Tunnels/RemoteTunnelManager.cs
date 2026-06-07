@@ -25,7 +25,8 @@ public sealed class RemoteTunnelManager
         try
         {
             RemoteControlSettings settings = _applicationState.Settings.RemoteControl;
-            if (_activeProvider?.GetStatus().IsRunning == true)
+            if (_activeProvider?.GetStatus().IsRunning == true &&
+                string.Equals(_activeProvider.Id, settings.TunnelProviderId, StringComparison.OrdinalIgnoreCase))
             {
                 RemoteTunnelStatus status = _activeProvider.GetStatus();
                 return new RemoteTunnelStartResult
@@ -33,6 +34,12 @@ public sealed class RemoteTunnelManager
                     Success = true,
                     PublicUrl = status.PublicUrl
                 };
+            }
+
+            if (_activeProvider?.GetStatus().IsRunning == true)
+            {
+                await _activeProvider.StopAsync(cancellationToken);
+                _activeProvider = null;
             }
 
             if (!_providers.TryGetValue(settings.TunnelProviderId, out IRemoteTunnelProvider? provider))

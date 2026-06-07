@@ -140,6 +140,14 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
             }
+            else if (settings.RemoteControl.AccessMode == RemoteAccessMode.PlayitHttpTunnel)
+            {
+                settings.RemoteControl.TunnelProviderId = "playit-http";
+            }
+            else if (settings.RemoteControl.AccessMode == RemoteAccessMode.CloudflaredQuickTunnel)
+            {
+                settings.RemoteControl.TunnelProviderId = "cloudflared-quick";
+            }
 
             settings.PlayitConfigDirectory ??= Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

@@ -108,6 +108,9 @@ namespace PocketMC.Desktop.Features.Tunnel
         public bool IsTokenInvalid { get; set; }
         public bool RequiresClaim { get; set; }
 
+        public bool RequiresPlayitPremium =>
+            ErrorCode is "RequiresPlayitPremium" or "RegionRequiresPlayitPremium" or "PublicPortRequiresPlayitPremium";
+
         /// <summary>
         /// True when the API rejected the creation because the account's tunnel limit was reached.
         /// </summary>
@@ -428,6 +431,19 @@ namespace PocketMC.Desktop.Features.Tunnel
                 ?? candidates.FirstOrDefault();
         }
 
+        public static TunnelData? FindHttpTunnelForPort(IEnumerable<TunnelData> tunnels, int localPort)
+        {
+            return tunnels
+                .Where(tunnel =>
+                    tunnel.Port == localPort &&
+                    tunnel.IsEnabled &&
+                    !string.IsNullOrWhiteSpace(tunnel.PublicAddress) &&
+                    IsHttpTunnelType(tunnel.TunnelType))
+                .OrderByDescending(tunnel =>
+                    string.Equals(tunnel.TunnelType, "https", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault();
+        }
+
         public static SimpleVoiceChatTunnelMatch FindSimpleVoiceChatTunnelStatus(
             IEnumerable<TunnelData> tunnels,
             int localPort,
@@ -503,6 +519,11 @@ namespace PocketMC.Desktop.Features.Tunnel
             return await CreateTunnelAsync(tunnelName, tunnelType, localPort, "global", enabled: true);
         }
 
+        public async Task<TunnelCreateResult> CreateHttpTunnelAsync(string tunnelName, int localPort)
+        {
+            return await CreateTunnelAsync(tunnelName, "https", localPort, "global", enabled: true);
+        }
+
         /// <summary>
         /// Creates a PlayIt tunnel with the specified region and enabled state via v1/tunnels/create.
         /// </summary>
@@ -576,7 +597,12 @@ namespace PocketMC.Desktop.Features.Tunnel
                     string failMessage = failData.ValueKind == JsonValueKind.String
                         ? failData.GetString() ?? "Unknown error"
                         : failData.ToString();
-                    return new TunnelCreateResult { Success = false, ErrorMessage = failMessage, ErrorCode = failMessage };
+                    return new TunnelCreateResult
+                    {
+                        Success = false,
+                        ErrorMessage = TunnelCreateResult.MapCreateError(failMessage),
+                        ErrorCode = failMessage
+                    };
                 }
 
                 return new TunnelCreateResult { Success = false, ErrorMessage = $"Unexpected API response: {body}" };
@@ -872,6 +898,11 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return null;
             }
 
+            if (IsHttpTunnelType(tunnelType))
+            {
+                return PortProtocol.Tcp;
+            }
+
             if (tunnelType.Contains("bedrock", StringComparison.OrdinalIgnoreCase) ||
                 tunnelType.Contains("simple-voice-chat", StringComparison.OrdinalIgnoreCase) ||
                 tunnelType.Contains("udp", StringComparison.OrdinalIgnoreCase))
@@ -894,6 +925,11 @@ namespace PocketMC.Desktop.Features.Tunnel
                    right == PortProtocol.TcpAndUdp ||
                    left == right;
         }
+
+        private static bool IsHttpTunnelType(string? tunnelType) =>
+            string.Equals(tunnelType, "https", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(tunnelType, "http", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(tunnelType, "http-proxy", StringComparison.OrdinalIgnoreCase);
 
         // ─── Tunnel management actions ────────────────────────────────────
 

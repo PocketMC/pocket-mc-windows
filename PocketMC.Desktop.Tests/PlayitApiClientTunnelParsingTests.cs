@@ -122,6 +122,61 @@ public sealed class PlayitApiClientTunnelParsingTests
             new PortCheckRequest(25565, PortProtocol.Tcp, PortIpMode.IPv4)));
     }
 
+    [Fact]
+    public async Task FindHttpTunnelForPort_MatchesPlayitHttpsTunnelForRemoteDashboard()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(_ => JsonResponse(TunnelListJson(
+            """{ "data": { "config": { "fields": [{ "name": "local_port", "value": "25580" }] } } }""",
+            """[{ "type": "domain", "value": { "hostname": "remote.playit.plus" } }]""",
+            tunnelType: "https")));
+
+        TunnelListResult result = await apiClient.GetTunnelsAsync();
+
+        TunnelData? match = PlayitApiClient.FindHttpTunnelForPort(result.Tunnels, 25580);
+        Assert.NotNull(match);
+        Assert.Equal("remote.playit.plus", match.PublicAddress);
+    }
+
+    [Fact]
+    public async Task CreateHttpTunnelAsync_SendsHttpsTunnelTypeAndRemotePort()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        string? requestBody = null;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(request =>
+        {
+            using Stream stream = request.Content!.ReadAsStream();
+            using var reader = new StreamReader(stream);
+            requestBody = reader.ReadToEnd();
+            return JsonResponse("""{"status":"success","data":{"id":"remote-http"}}""");
+        });
+
+        TunnelCreateResult result = await apiClient.CreateHttpTunnelAsync("pocketmc-remote", 25580);
+
+        Assert.True(result.Success);
+        Assert.Equal("remote-http", result.TunnelId);
+        Assert.Contains("\"details\":\"https\"", requestBody);
+        Assert.Contains("\"local_port\"", requestBody);
+        Assert.Contains("\"25580\"", requestBody);
+    }
+
+    [Fact]
+    public async Task CreateHttpTunnelAsync_ReportsWhenPlayitPremiumIsRequired()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(_ =>
+            JsonResponse("""{"status":"fail","data":"RequiresPlayitPremium"}"""));
+
+        TunnelCreateResult result = await apiClient.CreateHttpTunnelAsync("pocketmc-remote", 25580);
+
+        Assert.False(result.Success);
+        Assert.True(result.RequiresPlayitPremium);
+        Assert.Contains("Premium", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static HttpResponseMessage JsonResponse(string body)
     {
         return new HttpResponseMessage(HttpStatusCode.OK)
