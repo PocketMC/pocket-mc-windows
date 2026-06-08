@@ -4,7 +4,8 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
-- `v1.9.0...master`: 0 unreleased commits.
+- `v1.9.1...master`: 0 unreleased commits.
+- `v1.9.0...v1.9.1`: 5 commits focused on Discord integration, single-instance enforcement, QR code generation, and clipboard reliability.
 - `v1.8.0...v1.9.0`: 36 commits focused on remote control dashboard, instance import/export, Phase 1 security hardening, and decoupled player management.
 - `v1.7.7...v1.8.0`: 24 commits focused on safe instance version updates, persistent console history, marketplace hardening, custom backup destinations, Windows startup/tray behavior, and Discord Rich Presence.
 - `v1.7.6...v1.7.7`: 10 commits focused on AI provider flexibility, Paper API v3 migration, creation wizard UX, console preprocessing, and dashboard polish.
@@ -19,7 +20,42 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ### Summary
 
-Current `master` is ahead of `v1.9.0`.
+Current `master` is ahead of `v1.9.1`.
+
+---
+
+## v1.9.1 - Discord Integration, QR Codes & Single-Instance Enforcement
+
+### Summary
+
+v1.9.1 improves the Remote Control experience by adding Discord bot integration for automated public tunnel DMs, QR code generation for quick mobile pairing, and structural desktop improvements like single-instance enforcement and deep-link routing.
+
+### Added
+
+- **Discord Integration & Deep Linking**
+  - Registered the `pocketmc://` custom URI protocol in the Windows registry to support external application deep links.
+  - Implemented automatic Discord account linking when clicking the connection link from the PocketMC Discord Welcome Bot.
+  - Added a **Discord Integration** section to the Remote Control page, tracking the linkage status and allowing users to toggle automated public tunnel Direct Messages.
+  - Automatically dispatches a webhook to the PocketMC Discord Bot when a public tunnel initializes, sending the remote control URL straight to the user's DMs.
+- **Remote Control QR Codes**
+  - Added QR code generation for both Local and Public remote control URLs, letting users effortlessly scan to open the dashboard on their mobile devices without typing out complex addresses.
+- **Desktop Architecture**
+  - **Single Instance Enforcement:** Launching the app multiple times now forces the existing running instance to the foreground instead of silently spawning a duplicate background process.
+  - Incoming custom URIs are now passed gracefully from the second process to the primary running process via Named Pipes.
+
+### Fixed
+
+- **Clipboard Reliability:** Refactored copy-to-clipboard actions (like copying URLs or ports) to use a new asynchronous `ClipboardHelper`. This includes built-in retries and COM exception swallowing, preventing crashes when other background apps temporarily lock the Windows clipboard (e.g., `CLIPBRD_E_CANT_OPEN`).
+- Replaced the plaintext Discord invite hyperlink with a properly styled Discord-branded "Join Discord Server" button.
+
+### Reasoning
+
+These additions directly attack friction. Typing long URLs on mobile keyboards is awful, which QR codes solve instantly. Finding the app when you've already launched it or accidentally opening multiple instances is annoying, which single-instance locking fixes. And finally, sending the public remote control URL straight to the user's Discord DMs via the Welcome Bot completely closes the loop on making PocketMC a hands-free, remote-first server environment.
+
+### Upgrade Impact
+
+- Upgrading will register the `pocketmc://` protocol handler in the Windows registry.
+- Users who attempt to run the app multiple times will now simply have their original window brought into focus.
 
 ---
 

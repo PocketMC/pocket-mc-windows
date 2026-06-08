@@ -10,6 +10,7 @@
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <BooleanToVisibilityConverter x:Key="InverseBoolToVis" /> <!-- Note: We actually need a custom converter here if we want inverse, or we can just bind to a new property IsDiscordNotLinked -->
     </Page.Resources>
 
     <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
@@ -243,6 +244,51 @@
                                              Grid.Column="1"
                                              VerticalAlignment="Center"
                                              IsChecked="{Binding AllowRemotePlayerActions}"/>
+                        </Grid>
+
+                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                        <Grid Margin="0,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Discord Integration" FontSize="14" FontWeight="Medium"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="Status: " Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                                    <TextBlock Text="Linked" Foreground="#A6E3A1" FontSize="12" Visibility="{Binding IsDiscordLinked, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="Not Linked" Foreground="{DynamicResource TextFillColorDisabledBrush}" FontSize="12" Visibility="{Binding IsDiscordNotLinked, Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
+                                
+                                <StackPanel Margin="0,8,24,0" Visibility="{Binding IsDiscordNotLinked, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="To link your account, join our Discord server and use the /link command. You'll receive a connect button via DM."
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               FontSize="12" />
+                                    <ui:Button Content="Join Discord Server" 
+                                               Margin="0,12,0,0" 
+                                               Padding="16,8"
+                                               Background="#5865F2" 
+                                               Foreground="White" 
+                                               BorderBrush="Transparent"
+                                               Icon="{ui:SymbolIcon Chat24}"
+                                               Command="{Binding JoinDiscordCommand}" 
+                                               HorizontalAlignment="Left" />
+                                </StackPanel>
+
+                                <TextBlock Text="Send an automatic Direct Message via your PocketMC Discord Bot when the remote control URL gets generated."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,8,24,0"
+                                           Visibility="{Binding IsDiscordLinked, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleDiscordNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsEnabled="{Binding IsDiscordLinked}"
+                                             IsChecked="{Binding EnableDiscordNotifications}"/>
                         </Grid>
                         </StackPanel>
                     </StackPanel>

@@ -18,6 +18,8 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly ILogger<SettingsManager>? _logger;
         private readonly object _settingsLock = new();
 
+        public event EventHandler<AppSettings>? SettingsSaved;
+
         public SettingsManager(ILogger<SettingsManager>? logger = null)
         {
             _logger = logger;
@@ -86,6 +88,8 @@ namespace PocketMC.Desktop.Features.Settings
                 var content = JsonSerializer.Serialize(normalizedSettings, SettingsJsonOptions);
                 FileUtils.AtomicWriteAllText(_settingsFilePath, content);
             }
+
+            SettingsSaved?.Invoke(this, CloneSettings(settings));
         }
 
         public string GetPlayitTomlPath(AppSettings? settings = null)

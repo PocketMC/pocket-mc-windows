@@ -65,5 +65,6 @@ namespace PocketMC.Desktop.Models
         public string? DiscordUserId { get; set; }
         public string? DiscordApiUrl { get; set; }
         public string? DiscordApiKey { get; set; }
+        public bool EnableDiscordNotifications { get; set; } = true;
     }
 }

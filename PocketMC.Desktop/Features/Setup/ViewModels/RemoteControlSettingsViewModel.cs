@@ -51,6 +51,11 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             ? RemoteAccessMode.CloudflaredQuickTunnel 
             : remote.AccessMode;
 
+        _isDiscordLinked = !string.IsNullOrEmpty(_applicationState.Settings.DiscordUserId);
+        _enableDiscordNotifications = _applicationState.Settings.EnableDiscordNotifications;
+
+        _settingsManager.SettingsSaved += OnSettingsSaved;
+
         UpdateStatus();
     }
 
@@ -65,6 +70,15 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _allowRemotePlayerActions;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDiscordNotLinked))]
+    private bool _isDiscordLinked;
+
+    public bool IsDiscordNotLinked => !IsDiscordLinked;
+
+    [ObservableProperty]
+    private bool _enableDiscordNotifications;
 
 
 
@@ -144,6 +158,31 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         SaveSettings();
     }
 
+    partial void OnEnableDiscordNotificationsChanged(bool value)
+    {
+        if (_isUpdatingFromSettings) return;
+        SaveSettings();
+    }
+
+    private bool _isUpdatingFromSettings;
+
+    private void OnSettingsSaved(object? sender, Models.AppSettings settings)
+    {
+        System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            _isUpdatingFromSettings = true;
+            try
+            {
+                IsDiscordLinked = !string.IsNullOrEmpty(settings.DiscordUserId);
+                EnableDiscordNotifications = settings.EnableDiscordNotifications;
+            }
+            finally
+            {
+                _isUpdatingFromSettings = false;
+            }
+        });
+    }
+
 
 
     partial void OnAccessModeChanged(RemoteAccessMode value)
@@ -170,6 +209,8 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.AllowRemotePlayerActions = AllowRemotePlayerActions;
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
+
+        settings.EnableDiscordNotifications = EnableDiscordNotifications;
 
         _settingsManager.Save(settings);
         return true;
@@ -271,6 +312,16 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private async Task CopyPublicUrl()
     {
         await Infrastructure.ClipboardHelper.TrySetTextAsync(PublicUrl!);
+    }
+
+    [RelayCommand]
+    private void JoinDiscord()
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "https://discord.gg/kTSUppTJ5C",
+            UseShellExecute = true
+        });
     }
 
     [RelayCommand]

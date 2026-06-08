@@ -109,7 +109,7 @@ public sealed class RemoteControlCoordinator
     private async Task NotifyDiscordOfRemoteControlUrlAsync(string publicUrl)
     {
         var settings = _applicationState.Settings;
-        if (string.IsNullOrEmpty(settings.DiscordUserId) || string.IsNullOrEmpty(settings.DiscordApiUrl) || string.IsNullOrEmpty(settings.DiscordApiKey))
+        if (!settings.EnableDiscordNotifications || string.IsNullOrEmpty(settings.DiscordUserId) || string.IsNullOrEmpty(settings.DiscordApiUrl) || string.IsNullOrEmpty(settings.DiscordApiKey))
         {
             return;
         }
