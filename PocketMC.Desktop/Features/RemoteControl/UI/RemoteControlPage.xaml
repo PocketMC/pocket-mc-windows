@@ -102,13 +102,17 @@
                                     Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
                                     HorizontalAlignment="Stretch">
                                 <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Desktop24">
+                                    <ui:SymbolIcon Grid.Row="0" Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Desktop24">
                                         <ui:SymbolIcon.Style>
                                             <Style TargetType="ui:SymbolIcon">
                                                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
@@ -124,7 +128,7 @@
                                         </ui:SymbolIcon.Style>
                                     </ui:SymbolIcon>
 
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                    <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
                                         <TextBlock Text="{Binding PublicUrlProviderName, StringFormat='{}{0} Public URL'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
                                         <Grid Margin="0,2,0,0">
                                             <TextBlock Text="{Binding PublicUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"/>
@@ -133,11 +137,22 @@
                                         </Grid>
                                     </StackPanel>
 
-                                    <Grid Grid.Column="2" VerticalAlignment="Center">
-                                        <ui:Button Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyPublicUrlCommand}" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"/>
+                                    <Grid Grid.Row="0" Grid.Column="2" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}">
+                                            <ui:Button Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyPublicUrlCommand}"/>
+                                            <ui:Button Appearance="Secondary" Content="QR Code" Icon="{ui:SymbolIcon QrCode24}" Command="{Binding TogglePublicQrCommand}" Margin="8,0,0,0"/>
+                                        </StackPanel>
                                         <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="12,0,12,0" Visibility="{Binding IsLoadingPublicUrl, Converter={StaticResource BoolToVis}}"/>
                                         <ui:SymbolIcon Symbol="ErrorCircle24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="12,0,12,0" Visibility="{Binding HasPublicUrlError, Converter={StaticResource BoolToVis}}"/>
                                     </Grid>
+
+                                    <!-- QR Code Area -->
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Visibility="{Binding IsPublicQrVisible, Converter={StaticResource BoolToVis}}" HorizontalAlignment="Center" Margin="0,12,0,4">
+                                        <Border Background="White" Padding="8" CornerRadius="4" BorderThickness="1" BorderBrush="#E0E0E0" HorizontalAlignment="Center">
+                                            <Image Source="{Binding PublicQrImage}" Width="150" Height="150" Stretch="Uniform"/>
+                                        </Border>
+                                        <TextBlock Text="Scan to access the remote dashboard" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
                             
@@ -146,17 +161,32 @@
                                     Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
                                     HorizontalAlignment="Stretch">
                                 <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                    <ui:SymbolIcon Grid.Row="0" Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
                                         <TextBlock Text="Local Network (LAN)" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
                                         <TextBlock Text="{Binding LocalUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="2" Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyLocalUrlCommand}" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:Button Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyLocalUrlCommand}"/>
+                                        <ui:Button Appearance="Secondary" Content="QR Code" Icon="{ui:SymbolIcon QrCode24}" Command="{Binding ToggleLocalQrCommand}" Margin="8,0,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- QR Code Area -->
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Visibility="{Binding IsLocalQrVisible, Converter={StaticResource BoolToVis}}" HorizontalAlignment="Center" Margin="0,12,0,4">
+                                        <Border Background="White" Padding="8" CornerRadius="4" BorderThickness="1" BorderBrush="#E0E0E0" HorizontalAlignment="Center">
+                                            <Image Source="{Binding LocalQrImage}" Width="150" Height="150" Stretch="Uniform"/>
+                                        </Border>
+                                        <TextBlock Text="Scan to access the local dashboard" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
 

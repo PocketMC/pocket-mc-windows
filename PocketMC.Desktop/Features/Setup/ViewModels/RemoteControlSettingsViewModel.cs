@@ -1,3 +1,5 @@
+using System.IO;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PocketMC.Desktop.Features.RemoteControl.Hosting;
@@ -109,6 +111,18 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isStatusError;
+
+    [ObservableProperty]
+    private BitmapImage? _localQrImage;
+
+    [ObservableProperty]
+    private BitmapImage? _publicQrImage;
+
+    [ObservableProperty]
+    private bool _isLocalQrVisible;
+
+    [ObservableProperty]
+    private bool _isPublicQrVisible;
 
     partial void OnIsEnabledChanged(bool value)
     {
@@ -225,6 +239,20 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         PublicUrlErrorText = status.TunnelError;
 
         IsLoadingPublicUrl = false;
+
+        // Generate QR Codes
+        LocalQrImage = GenerateQrCode(LocalUrl);
+        PublicQrImage = GenerateQrCode(PublicUrl);
+
+        // Hide QR panels if URLs are no longer active
+        if (string.IsNullOrEmpty(LocalUrl))
+        {
+            IsLocalQrVisible = false;
+        }
+        if (string.IsNullOrEmpty(PublicUrl))
+        {
+            IsPublicQrVisible = false;
+        }
     }
 
     private void SetStatus(string message, bool isError)
@@ -245,5 +273,43 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     {
         if (!string.IsNullOrEmpty(PublicUrl))
             System.Windows.Clipboard.SetText(PublicUrl);
+    }
+
+    [RelayCommand]
+    private void ToggleLocalQr()
+    {
+        IsLocalQrVisible = !IsLocalQrVisible;
+    }
+
+    [RelayCommand]
+    private void TogglePublicQr()
+    {
+        IsPublicQrVisible = !IsPublicQrVisible;
+    }
+
+    private static BitmapImage? GenerateQrCode(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        try
+        {
+            using var qrGenerator = new QRCoder.QRCodeGenerator();
+            using var qrCodeData = qrGenerator.CreateQrCode(text, QRCoder.QRCodeGenerator.ECCLevel.Q);
+            using var pngQrCode = new QRCoder.PngByteQRCode(qrCodeData);
+            byte[] qrCodeBytes = pngQrCode.GetGraphic(10);
+            
+            using var ms = new MemoryStream(qrCodeBytes);
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = ms;
+            image.EndInit();
+            image.Freeze(); // Crucial for multi-threaded/UI binding use
+            return image;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to generate QR code: {ex}");
+            return null;
+        }
     }
 }
