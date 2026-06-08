@@ -48,6 +48,9 @@ public sealed class RemoteTunnelManager
             }
 
             string localUrl = $"http://127.0.0.1:{settings.Port}";
+            
+            _activeProvider = provider;
+            
             RemoteTunnelStartResult result = await provider.StartAsync(
                 new RemoteTunnelStartRequest
                 {
@@ -55,11 +58,6 @@ public sealed class RemoteTunnelManager
                     LocalUrl = localUrl
                 },
                 cancellationToken);
-
-            if (result.Success)
-            {
-                _activeProvider = provider;
-            }
 
             return result;
         }

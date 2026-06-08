@@ -96,27 +96,8 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             
-                            <!-- Loading Skeleton Public Tunnel Card -->
-                            <Border Grid.Row="0" Visibility="{Binding IsLoadingPublicUrl, Converter={StaticResource BoolToVis}}"
-                                    Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
-                                    HorizontalAlignment="Stretch">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Desktop24" Foreground="{DynamicResource TextFillColorDisabledBrush}"/>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
-                                        <TextBlock Text="{Binding PublicUrlProviderName, StringFormat='{}{0} Public URL'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Starting tunnel..." FontSize="14" Foreground="{DynamicResource TextFillColorDisabledBrush}" Margin="0,2,0,0"/>
-                                    </StackPanel>
-                                    <ui:ProgressRing Grid.Column="2" IsIndeterminate="True" Width="16" Height="16" VerticalAlignment="Center" Margin="12,0,12,0"/>
-                                </Grid>
-                            </Border>
-
                             <!-- Public Tunnel IP Card -->
-                            <Border Grid.Row="0" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"
+                            <Border Grid.Row="0" Visibility="{Binding IsPublicUrlCardVisible, Converter={StaticResource BoolToVis}}"
                                     Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
                                     HorizontalAlignment="Stretch">
                                 <Grid>
@@ -125,12 +106,37 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Desktop24" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    
+                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Desktop24">
+                                        <ui:SymbolIcon.Style>
+                                            <Style TargetType="ui:SymbolIcon">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsLoadingPublicUrl}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorDisabledBrush}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding HasPublicUrlError}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ui:SymbolIcon.Style>
+                                    </ui:SymbolIcon>
+
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
                                         <TextBlock Text="{Binding PublicUrlProviderName, StringFormat='{}{0} Public URL'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding PublicUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                        <Grid Margin="0,2,0,0">
+                                            <TextBlock Text="{Binding PublicUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"/>
+                                            <TextBlock Text="Starting tunnel..." FontSize="14" Foreground="{DynamicResource TextFillColorDisabledBrush}" Visibility="{Binding IsLoadingPublicUrl, Converter={StaticResource BoolToVis}}"/>
+                                            <TextBlock Text="{Binding PublicUrlErrorText}" FontSize="14" Foreground="{DynamicResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" Visibility="{Binding HasPublicUrlError, Converter={StaticResource BoolToVis}}"/>
+                                        </Grid>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="2" Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyPublicUrlCommand}" VerticalAlignment="Center"/>
+
+                                    <Grid Grid.Column="2" VerticalAlignment="Center">
+                                        <ui:Button Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyPublicUrlCommand}" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"/>
+                                        <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="12,0,12,0" Visibility="{Binding IsLoadingPublicUrl, Converter={StaticResource BoolToVis}}"/>
+                                        <ui:SymbolIcon Symbol="ErrorCircle24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="12,0,12,0" Visibility="{Binding HasPublicUrlError, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
                                 </Grid>
                             </Border>
                             

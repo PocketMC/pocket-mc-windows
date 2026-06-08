@@ -85,6 +85,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPublicUrl))]
+    [NotifyPropertyChangedFor(nameof(IsPublicUrlCardVisible))]
     private string? _publicUrl;
 
     [ObservableProperty]
@@ -94,7 +95,17 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     public bool HasPublicUrl => !string.IsNullOrEmpty(PublicUrl);
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPublicUrlCardVisible))]
     private bool _isLoadingPublicUrl;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPublicUrlError))]
+    [NotifyPropertyChangedFor(nameof(IsPublicUrlCardVisible))]
+    private string? _publicUrlErrorText;
+
+    public bool HasPublicUrlError => !string.IsNullOrEmpty(PublicUrlErrorText);
+
+    public bool IsPublicUrlCardVisible => HasPublicUrl || IsLoadingPublicUrl || HasPublicUrlError;
 
     [ObservableProperty]
     private bool _isStatusError;
@@ -166,18 +177,25 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         if (!SaveSettings()) return;
 
         _isRestarting = true;
+        SetStatus("", false);
         try
         {
             if (IsEnabled)
             {
-                if (IsCloudflaredMode) IsLoadingPublicUrl = true;
+                IsLoadingPublicUrl = true;
+                PublicUrlErrorText = null;
+                PublicUrl = null;
+                PublicUrlProviderName = AccessMode switch
+                {
+                    RemoteAccessMode.CloudflaredQuickTunnel => "Cloudflare",
+                    RemoteAccessMode.PlayitHttpsTunnel => "PlayIt",
+                    _ => "Remote"
+                };
                 await _coordinator.RestartAllAsync();
-                SetStatus("Settings applied.", false);
             }
             else
             {
                 await _coordinator.StopAllAsync();
-                SetStatus("Remote Control stopped.", false);
             }
         }
         catch (Exception ex)
@@ -204,14 +222,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         };
         PublicUrl = status.PublicUrl;
 
-        if (!string.IsNullOrWhiteSpace(status.TunnelError))
-        {
-            SetStatus(status.TunnelError, true);
-        }
-        else
-        {
-            SetStatus("", false);
-        }
+        PublicUrlErrorText = status.TunnelError;
 
         IsLoadingPublicUrl = false;
     }
