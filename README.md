@@ -75,6 +75,7 @@ Current `master` includes the v1.8.0 operations work plus newer unreleased relia
 - **Whitelist/player management** across Java, Bedrock Dedicated Server, and PocketMine-style formats.
 - **Safer restore and marketplace paths** with checksum checks, staged extraction, path traversal protection, dependency failure handling, and stricter archive validation.
 - **Simple Voice Chat tunnel support** using Playit tunnel type `mc-simple-voice-chat` when the server needs it.
+- **Remote Control Web Dashboard** for managing instances, viewing live consoles, and moderating players remotely via a browser, with built-in Cloudflare and Playit HTTPS tunnels.
 - **Windows startup/tray behavior** including start with Windows, start minimized to tray, minimize-to-tray-on-close, and safer auto-start handling.
 
 ---
@@ -206,6 +207,18 @@ PocketMC resolves versions through upstream APIs/manifests where possible. Exact
 - Backup-aware planning with snapshots before risky changes.
 - Journals and locks for safer update application.
 - Rollback support when an update fails.
+
+</details>
+
+<details>
+<summary><b>Remote Control Dashboard</b></summary>
+
+- Built-in web dashboard for managing your servers remotely from any browser.
+- Start, stop, and restart server instances from any device.
+- View the live server console and send console commands (if enabled).
+- View online players and perform administrative actions like kick, ban, pardon, op, and de-op (if enabled).
+- Expose the dashboard securely to the internet using built-in Cloudflare Quick Tunnels or Playit.gg HTTPS tunnels, or keep it strictly on your local network (LAN).
+- Configurable host port and strict access controls for command/player actions to prevent unauthorized execution.
 
 </details>
 
