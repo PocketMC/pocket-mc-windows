@@ -18,9 +18,21 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     public static IReadOnlyList<RemoteAccessModeOption> RemoteAccessModeOptions { get; } =
     [
-        new(RemoteAccessMode.LanOnly, "LAN only"),
         new(RemoteAccessMode.CloudflaredQuickTunnel, "Cloudflare Quick Tunnel"),
         new(RemoteAccessMode.PlayitHttpsTunnel, "PlayIt Premium HTTPS")
+    ];
+
+    public sealed record PairingLifetimeOption(int Minutes, string Label);
+
+    public static IReadOnlyList<PairingLifetimeOption> PairingLifetimeOptions { get; } =
+    [
+        new(2, "2 minutes"),
+        new(5, "5 minutes"),
+        new(10, "10 minutes"),
+        new(30, "30 minutes"),
+        new(60, "1 hour"),
+        new(720, "12 hours"),
+        new(1440, "24 hours")
     ];
 
     public const string PlayitHttpsWarningText =
@@ -55,8 +67,11 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         _port = remote.Port;
         _allowRemoteConsoleCommands = remote.AllowRemoteConsoleCommands;
         _allowRemotePlayerActions = remote.AllowRemotePlayerActions;
-        _accessMode = remote.AccessMode;
+        _accessMode = remote.AccessMode == RemoteAccessMode.LanOnly 
+            ? RemoteAccessMode.CloudflaredQuickTunnel 
+            : remote.AccessMode;
         _cloudflaredPath = remote.CloudflaredPath ?? "";
+        _pairingTokenLifetimeMinutes = remote.PairingTokenLifetimeMinutes;
 
         LoadDevices();
         UpdateStatus();
@@ -75,6 +90,9 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private bool _allowRemotePlayerActions;
 
     [ObservableProperty]
+    private int _pairingTokenLifetimeMinutes;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCloudflaredMode))]
     [NotifyPropertyChangedFor(nameof(IsPlayitHttpsMode))]
     private RemoteAccessMode _accessMode;
@@ -88,6 +106,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     public ObservableCollection<RemoteDeviceSession> PairedDevices { get; } = new();
 
     public IReadOnlyList<RemoteAccessModeOption> AccessModes => RemoteAccessModeOptions;
+    public IReadOnlyList<PairingLifetimeOption> PairingLifetimes => PairingLifetimeOptions;
 
     [ObservableProperty]
     private string _statusText = "";
@@ -100,12 +119,6 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isStatusError;
-
-    [ObservableProperty]
-    private bool _canStartTunnel;
-
-    [ObservableProperty]
-    private bool _canStopTunnel;
 
     [ObservableProperty]
     private bool _canPair;
@@ -126,6 +139,11 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     }
 
     partial void OnAllowRemotePlayerActionsChanged(bool value)
+    {
+        SaveAndRestart();
+    }
+
+    partial void OnPairingTokenLifetimeMinutesChanged(int value)
     {
         SaveAndRestart();
     }
@@ -156,72 +174,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task StartTunnelAsync()
-    {
-        CanStartTunnel = false;
-        try
-        {
-            if (!SaveSettings()) return;
-            if (AccessMode == RemoteAccessMode.LanOnly)
-            {
-                AccessMode = RemoteAccessMode.CloudflaredQuickTunnel;
-            }
 
-            await _coordinator.RestartHostAsync();
-            var result = await _coordinator.StartTunnelAsync();
-            if (result.Success)
-            {
-                Clipboard.SetText(result.PublicUrl ?? "");
-                SetStatus($"Tunnel started and copied.", false);
-            }
-            else
-            {
-                SetStatus(result.ErrorMessage ?? $"Could not start tunnel.", true);
-            }
-        }
-        catch (Exception ex)
-        {
-            SetStatus(ex.Message, true);
-        }
-        finally
-        {
-            UpdateStatus();
-        }
-    }
-
-    [RelayCommand]
-    private async Task StopTunnelAsync()
-    {
-        try
-        {
-            await _coordinator.StopTunnelAsync();
-            SetStatus("Remote link stopped.", false);
-        }
-        catch (Exception ex)
-        {
-            SetStatus(ex.Message, true);
-        }
-        finally
-        {
-            UpdateStatus();
-        }
-    }
-
-    [RelayCommand]
-    private void CopyTunnelUrl()
-    {
-        RemoteDashboardStatus status = _coordinator.GetStatus();
-        string? url = status.PublicUrl ?? status.LocalUrls.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            SetStatus("No remote link is available yet.", true);
-            return;
-        }
-
-        Clipboard.SetText(url);
-        SetStatus("Remote link copied.", false);
-    }
 
     [RelayCommand]
     private void PairDevice()
@@ -305,6 +258,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
         settings.RemoteControl.CloudflaredPath = string.IsNullOrWhiteSpace(CloudflaredPath) ? null : CloudflaredPath.Trim();
+        settings.RemoteControl.PairingTokenLifetimeMinutes = PairingTokenLifetimeMinutes;
 
         _settingsManager.Save(settings);
         return true;
@@ -330,13 +284,12 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         {
             if (IsEnabled)
             {
-                await _coordinator.RestartHostAsync();
+                await _coordinator.RestartAllAsync();
                 SetStatus("Settings applied.", false);
             }
             else
             {
-                await _coordinator.StopHostAsync();
-                await _coordinator.StopTunnelAsync();
+                await _coordinator.StopAllAsync();
                 SetStatus("Remote Control stopped.", false);
             }
         }
@@ -364,9 +317,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         };
         PublicUrlText = $"{providerName} Public URL: {status.PublicUrl ?? "not started"}";
         
-        CanStopTunnel = status.TunnelRunning;
         CanPair = status.Enabled;
-        CanStartTunnel = status.Enabled;
 
         if (!string.IsNullOrWhiteSpace(status.TunnelError))
         {

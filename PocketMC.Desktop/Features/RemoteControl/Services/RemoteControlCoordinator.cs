@@ -80,15 +80,15 @@ public sealed class RemoteControlCoordinator
         await _dashboardHost.StopAsync(cancellationToken);
     }
 
-    public async Task RestartHostAsync(CancellationToken cancellationToken = default)
+    public async Task RestartAllAsync(CancellationToken cancellationToken = default)
     {
         if (!_applicationState.Settings.RemoteControl.Enabled)
         {
             return;
         }
 
-        await _dashboardHost.StopAsync(cancellationToken);
-        await _dashboardHost.StartAsync(cancellationToken);
+        await StopAllAsync(cancellationToken);
+        await StartTunnelAsync(cancellationToken);
     }
 
     public async Task<RemoteTunnelStartResult> StartTunnelAsync(CancellationToken cancellationToken = default)
@@ -107,7 +107,10 @@ public sealed class RemoteControlCoordinator
 
     public RemotePairingLink CreatePairingLink()
     {
-        RemotePairingSession session = _authService.CreatePairingSession();
+        int lifetimeMinutes = _applicationState.Settings.RemoteControl.PairingTokenLifetimeMinutes;
+        if (lifetimeMinutes <= 0) lifetimeMinutes = 2;
+
+        RemotePairingSession session = _authService.CreatePairingSession(TimeSpan.FromMinutes(lifetimeMinutes));
         string baseUrl = GetBestBaseUrl();
         string url = $"{baseUrl.TrimEnd('/')}/pair?token={Uri.EscapeDataString(session.Token)}";
         return new RemotePairingLink

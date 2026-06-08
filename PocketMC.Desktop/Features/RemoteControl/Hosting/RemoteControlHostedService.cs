@@ -31,7 +31,7 @@ public sealed class RemoteControlHostedService : IHostedService
         if (settings.RemoteControl.Enabled && !string.IsNullOrWhiteSpace(settings.AppRootPath))
         {
             _applicationState.ApplySettings(settings);
-            await _dashboardHost.StartAsync(cancellationToken);
+            await _coordinator.StartTunnelAsync(cancellationToken);
         }
     }
 

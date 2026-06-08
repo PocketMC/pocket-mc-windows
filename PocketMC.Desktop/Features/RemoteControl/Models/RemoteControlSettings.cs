@@ -4,11 +4,12 @@ public sealed class RemoteControlSettings
 {
     public bool Enabled { get; set; }
     public int Port { get; set; } = 25580;
-    public RemoteAccessMode AccessMode { get; set; } = RemoteAccessMode.LanOnly;
-    public string TunnelProviderId { get; set; } = "none";
+    public RemoteAccessMode AccessMode { get; set; } = RemoteAccessMode.CloudflaredQuickTunnel;
+    public string TunnelProviderId { get; set; } = "cloudflared-quick";
     public bool AllowRemoteConsoleCommands { get; set; }
     public bool AllowRemotePlayerActions { get; set; } = true;
     public string? CloudflaredPath { get; set; }
     public string? PlayitTunnelId { get; set; }
+    public int PairingTokenLifetimeMinutes { get; set; } = 2;
     public List<RemoteDeviceSession> PairedDevices { get; set; } = new();
 }

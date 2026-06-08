@@ -51,7 +51,8 @@
 
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="220"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Margin="0,0,12,0">
@@ -66,7 +67,19 @@
                                           SelectedValuePath="Mode"
                                           DisplayMemberPath="Label"
                                           Margin="0,8,0,0"
-                                          MaxWidth="300"
+                                          MaxWidth="200"
+                                          HorizontalAlignment="Left">
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Margin="0,0,12,0">
+                                <TextBlock Text="Pairing Link Expiry" FontSize="14" FontWeight="Medium"/>
+                                <ComboBox x:Name="PairingLifetimeCombo"
+                                          ItemsSource="{Binding PairingLifetimes}"
+                                          SelectedValue="{Binding PairingTokenLifetimeMinutes}"
+                                          SelectedValuePath="Minutes"
+                                          DisplayMemberPath="Label"
+                                          Margin="0,8,0,0"
+                                          MaxWidth="150"
                                           HorizontalAlignment="Left">
                                 </ComboBox>
                             </StackPanel>
@@ -129,10 +142,7 @@
                                 </TextBlock>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
-                                <ui:Button x:Name="BtnStartRemoteLink" Content="Start Remote Link" IsEnabled="{Binding CanStartTunnel}" Command="{Binding StartTunnelCommand}" Appearance="Primary" Margin="0,0,8,0"/>
-                                <ui:Button x:Name="BtnStopRemoteLink" Content="Stop Remote Link" IsEnabled="{Binding CanStopTunnel}" Command="{Binding StopTunnelCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
-                                <ui:Button x:Name="BtnCopyRemoteLink" Content="Copy Link" Command="{Binding CopyTunnelUrlCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
-                                <ui:Button x:Name="BtnPairRemoteDevice" Content="Pair Device" IsEnabled="{Binding CanPair}" Command="{Binding PairDeviceCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+                                <ui:Button x:Name="BtnPairRemoteDevice" Content="Pair Device" IsEnabled="{Binding CanPair}" Command="{Binding PairDeviceCommand}" Appearance="Primary" Margin="0,0,8,0"/>
                                 <ui:Button x:Name="BtnRevokeRemoteDevices" Content="Revoke All Devices" Command="{Binding RevokeAllDevicesCommand}" Appearance="Danger"/>
                             </StackPanel>
                         </Grid>

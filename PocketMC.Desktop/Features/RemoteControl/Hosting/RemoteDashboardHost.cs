@@ -78,9 +78,7 @@ public sealed class RemoteDashboardHost
             }
 
             RemoteControlSettings settings = _applicationState.Settings.RemoteControl;
-            string bindAddress = UsesLoopbackOnlyForRemoteTunnel(settings.AccessMode)
-                ? "127.0.0.1"
-                : "0.0.0.0";
+            string bindAddress = "0.0.0.0";
 
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -432,8 +430,6 @@ public sealed class RemoteDashboardHost
         return false;
     }
 
-    private static bool UsesLoopbackOnlyForRemoteTunnel(RemoteAccessMode accessMode) =>
-        accessMode is RemoteAccessMode.CloudflaredQuickTunnel or RemoteAccessMode.PlayitHttpsTunnel;
 
     private RemoteDashboardStatus BuildDashboardStatus()
     {
