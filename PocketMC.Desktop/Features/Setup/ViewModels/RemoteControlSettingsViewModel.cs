@@ -122,12 +122,12 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     partial void OnAllowRemoteConsoleCommandsChanged(bool value)
     {
-        SaveAndRestart();
+        SaveSettings();
     }
 
     partial void OnAllowRemotePlayerActionsChanged(bool value)
     {
-        SaveAndRestart();
+        SaveSettings();
     }
 
 

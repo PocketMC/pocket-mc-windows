@@ -39,6 +39,8 @@ const els = {
   
   playersState: document.querySelector("#playersState"),
   playerList: document.querySelector("#playerList"),
+  offlinePlayerManage: document.querySelector("#offlinePlayerManage"),
+  playersDisabled: document.querySelector("#playersDisabled"),
   
   tabs: document.querySelectorAll(".tab-button"),
   tabContents: document.querySelectorAll(".tab-content"),
@@ -239,7 +241,14 @@ function renderStatus(remoteStatus, instanceStatus) {
   
   const canSendCommands = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
   els.commandForm.hidden = !canSendCommands;
-  els.commandDisabled.hidden = remoteStatusGlobal.allowRemoteConsoleCommands && instanceStatus.isRunning;
+  els.commandDisabled.hidden = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
+  
+  if (els.offlinePlayerManage) {
+      els.offlinePlayerManage.hidden = !remoteStatus.allowRemotePlayerActions;
+  }
+  if (els.playersDisabled) {
+      els.playersDisabled.hidden = remoteStatus.allowRemotePlayerActions;
+  }
   
   renderPlayers(instanceStatus.onlinePlayers || [], remoteStatus.allowRemotePlayerActions);
 
