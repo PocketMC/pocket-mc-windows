@@ -4,7 +4,8 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
-- `v1.8.0...master`: 6 unreleased commits focused on add-on inventory/toggle/update workflows, whitelist support, runtime setting application, backup restore hardening, and add-on settings refactoring.
+- `v1.9.0...master`: 0 unreleased commits.
+- `v1.8.0...v1.9.0`: 36 commits focused on remote control dashboard, instance import/export, Phase 1 security hardening, and decoupled player management.
 - `v1.7.7...v1.8.0`: 24 commits focused on safe instance version updates, persistent console history, marketplace hardening, custom backup destinations, Windows startup/tray behavior, and Discord Rich Presence.
 - `v1.7.6...v1.7.7`: 10 commits focused on AI provider flexibility, Paper API v3 migration, creation wizard UX, console preprocessing, and dashboard polish.
 - `v1.7.5...v1.7.6`: 19 commits focused on security hardening, custom wallpaper backgrounds, markdown/summary rendering, path safety, atomic writes, DPAPI/process safety, and expanded tests.
@@ -18,27 +19,55 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ### Summary
 
-Current `master` is ahead of `v1.8.0`. The unreleased work appears to continue the v1.8 reliability direction by cleaning up add-on management internals, adding proper add-on enable/disable state handling, improving update checks, expanding player/whitelist controls, and adding tests around backup restore and add-on workflows.
+Current `master` is ahead of `v1.9.0`.
+
+---
+
+## v1.9.0 - Remote Control Web Dashboard, Instance Import/Export & Security Hardening
+
+### Summary
+
+v1.9.0 is a major feature and security release bringing a full Remote Control web dashboard, Instance Import/Export capabilities, decoupled player management, manual add-on updates, power management features, and Phase 1 security hardening.
 
 ### Changed
 
-- Added an add-on inventory model for classifying installed mods/plugins/packs by kind, state, filename policy, and update status.
-- Added add-on toggle support so installed add-ons can be enabled or disabled without users manually renaming or moving files.
-- Added add-on update-check models and services to separate update detection from UI code.
-- Refactored `SettingsAddonsVM`, reducing the chance that file scanning, UI presentation, and state mutation all fight inside the same view model like three raccoons in a trench coat.
-- Added whitelist support in player management.
-- Added a `ServerRuntimeSettingApplier` path for safer server configuration application.
-- Expanded tests for add-on management, backup restore, whitelist/player management XAML, add-on display behavior, and startup coordination.
+- **Remote Control & Dashboard**
+  - Comprehensive Remote Control web dashboard to manage server instances remotely via a mobile-friendly web UI.
+  - Integrated PlayIt HTTPS tunnel provider to securely expose the remote dashboard effortlessly.
+  - Remote control pairing authorization, token lifetime configuration, LAN bypass, and active session visibility options.
+- **Instance Management**
+  - Complete Instance Import and Export functionality with cancellation support and simplified add-on packaging.
+- **Player & Whitelist Management**
+  - Decoupled player management from the server process.
+  - Live server controls with enhanced internal whitelist and Bedrock allowlist support.
+- **Add-on & Mod Management**
+  - Added an add-on inventory model for classifying installed mods/plugins/packs by kind, state, and filename policy.
+  - Added add-on toggle support (enable/disable without deleting files manually).
+  - Added add-on update-check models and manual add-on update installation support.
+  - Polymorphic add-on metadata scanning across different Mod Loaders.
+  - Refactored `SettingsAddonsVM` to cleanly separate file scanning, UI presentation, and state mutation.
+- **Core App & Settings**
+  - Added power management sleep prevention to natively keep the system awake automatically when a server is running.
+  - Added a `ServerRuntimeSettingApplier` path for safer server configuration application.
+
+### Fixed
+
+- **Phase 1 Security Hardening:** Pinned Playit agent checksum, validated Bedrock world paths for backup restore, and applied atomic write safety to downloads and session locks.
+- **Google Drive Backups:** Properly escaped literal paths for Google Drive queries to prevent query parsing faults.
+- **Process Stability:** Made server process registration atomic and fixed issues where active session locks and log streams could be prematurely deleted.
+- **PlayIt Integration:** Refined the Simple Voice Chat proxy prompt message, added async stop support, and ensured predictable agent binary deletion behaviors.
+- **UI Adjustments:** Ensured clear state representation when remote control is disabled or when a tunnel is initializing. Modpack overrides correctly persist metadata.
 
 ### Reasoning
 
-This is maintenance-heavy work, not flashy marketing glitter. The reasoning is solid: add-on management was becoming a bundle of install, display, scan, update, and user-state concerns. Splitting inventory, state, toggle, and update checking creates cleaner ownership and makes future marketplace/update work less fragile.
+The introduction of the Remote Control Dashboard transitions the application from a localized manager to a fully accessible host environment, meaning administrators can finally control server instances on the go via a browser or mobile device securely. The Phase 1 hardening efforts drastically improve the application's ability to safely download unverified payloads (PlayIt agents, add-ons), prevent race conditions on session locks, and sanitize configuration updates. Finally, the add-on component refactor creates cleaner ownership and prepares for more robust updates down the line.
 
 ### Upgrade Impact
 
-- Treat this as unreleased until tagged.
-- Add-on state and toggle behavior should be tested against Fabric/Forge/NeoForge/Paper/PocketMine cases before release.
-- Backup restore paths now have more test coverage, but restore remains high-risk because it writes into live server data.
+- **Remote Control defaults to Off:** Users must explicitly start remote control sessions and configure access tokens if they wish to manage the application remotely.
+- **Add-On State Management:** Add-ons toggled off now retain local configurations but stay safely excluded from the server runtime.
+- **Power Management:** System will no longer sleep natively if a PocketMC instance is actively started, overriding standard Windows idle rules for the lifetime of the process.
+- **Backups & Security Checks:** Custom manual backup restorations heavily rely on improved Bedrock world path checks, rejecting invalid payload archives for live servers.
 
 ---
 
