@@ -20,7 +20,6 @@ using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Players;
 using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Features.RemoteControl.Auth;
 using PocketMC.Desktop.Features.RemoteControl.Hosting;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.RemoteControl.Tunnels;
@@ -181,8 +180,6 @@ namespace PocketMC.Desktop.Composition
 
         public static IServiceCollection AddRemoteControl(this IServiceCollection services)
         {
-            services.AddSingleton<RemoteTokenHasher>();
-            services.AddSingleton<RemoteAuthService>();
             services.AddSingleton<RemoteStatusService>();
             services.AddSingleton<RemoteInstanceControlService>();
             services.AddSingleton<RemotePlayerActionService>();

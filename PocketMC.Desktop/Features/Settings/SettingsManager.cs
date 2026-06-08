@@ -129,8 +129,6 @@ namespace PocketMC.Desktop.Features.Settings
             settings.UserRemovedJavaVersions ??= new System.Collections.Generic.HashSet<int>();
             settings.CloudBackups ??= new CloudBackupSettings();
             settings.RemoteControl ??= new RemoteControlSettings();
-            settings.RemoteControl.PairedDevices ??= new System.Collections.Generic.List<RemoteDeviceSession>();
-            settings.RemoteControl.PairedDevices.RemoveAll(static device => device == null);
             if (settings.RemoteControl.Port <= 0 || settings.RemoteControl.Port > 65535)
             {
                 settings.RemoteControl.Port = 25580;

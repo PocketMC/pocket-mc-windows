@@ -1,4 +1,3 @@
-using PocketMC.Desktop.Features.RemoteControl.Auth;
 using PocketMC.Desktop.Features.RemoteControl.Hosting;
 using PocketMC.Desktop.Features.RemoteControl.Models;
 using PocketMC.Desktop.Features.RemoteControl.Tunnels;
@@ -11,7 +10,6 @@ public sealed class RemoteControlCoordinator
 {
     private readonly ApplicationState _applicationState;
     private readonly SettingsManager _settingsManager;
-    private readonly RemoteAuthService _authService;
     private readonly RemoteDashboardHost _dashboardHost;
     private readonly RemoteTunnelManager _tunnelManager;
     private readonly LocalNetworkAddressService _localNetworkAddressService;
@@ -19,14 +17,12 @@ public sealed class RemoteControlCoordinator
     public RemoteControlCoordinator(
         ApplicationState applicationState,
         SettingsManager settingsManager,
-        RemoteAuthService authService,
         RemoteDashboardHost dashboardHost,
         RemoteTunnelManager tunnelManager,
         LocalNetworkAddressService localNetworkAddressService)
     {
         _applicationState = applicationState;
         _settingsManager = settingsManager;
-        _authService = authService;
         _dashboardHost = dashboardHost;
         _tunnelManager = tunnelManager;
         _localNetworkAddressService = localNetworkAddressService;
@@ -46,7 +42,6 @@ public sealed class RemoteControlCoordinator
             PublicUrl = tunnelStatus.PublicUrl,
             TunnelRunning = tunnelStatus.IsRunning,
             TunnelError = tunnelStatus.ErrorMessage,
-            ActiveDeviceCount = settings.PairedDevices.Count(device => !device.RevokedAtUtc.HasValue),
             AllowRemoteConsoleCommands = settings.AllowRemoteConsoleCommands,
             AllowRemotePlayerActions = settings.AllowRemotePlayerActions
         };
@@ -98,6 +93,7 @@ public sealed class RemoteControlCoordinator
             return RemoteTunnelStartResult.Failed("Remote Control is disabled.");
         }
 
+
         await _dashboardHost.StartAsync(cancellationToken);
         return await _tunnelManager.StartAsync(cancellationToken);
     }
@@ -105,39 +101,9 @@ public sealed class RemoteControlCoordinator
     public Task StopTunnelAsync(CancellationToken cancellationToken = default) =>
         _tunnelManager.StopAsync(cancellationToken);
 
-    public RemotePairingLink CreatePairingLink()
-    {
-        int lifetimeMinutes = _applicationState.Settings.RemoteControl.PairingTokenLifetimeMinutes;
-        if (lifetimeMinutes <= 0) lifetimeMinutes = 2;
-
-        RemotePairingSession session = _authService.CreatePairingSession(TimeSpan.FromMinutes(lifetimeMinutes));
-        string baseUrl = GetBestBaseUrl();
-        string url = $"{baseUrl.TrimEnd('/')}/pair?token={Uri.EscapeDataString(session.Token)}";
-        return new RemotePairingLink
-        {
-            Url = url,
-            ExpiresAtUtc = session.ExpiresAtUtc
-        };
-    }
-
-    public void RevokeAllDevices() => _authService.RevokeAllDevices();
-
-    public void RevokeDevice(string deviceId) => _authService.RevokeDevice(deviceId);
-
     public async Task StopAllAsync(CancellationToken cancellationToken = default)
     {
         await _tunnelManager.StopAsync(cancellationToken);
         await _dashboardHost.StopAsync(cancellationToken);
-    }
-
-    private string GetBestBaseUrl()
-    {
-        RemoteTunnelStatus tunnelStatus = _tunnelManager.GetStatus();
-        if (!string.IsNullOrWhiteSpace(tunnelStatus.PublicUrl))
-        {
-            return tunnelStatus.PublicUrl;
-        }
-
-        return _localNetworkAddressService.GetPreferredLocalUrl(_applicationState.Settings.RemoteControl.Port);
     }
 }

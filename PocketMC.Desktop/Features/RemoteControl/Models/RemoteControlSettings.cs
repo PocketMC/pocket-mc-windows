@@ -10,6 +10,4 @@ public sealed class RemoteControlSettings
     public bool AllowRemotePlayerActions { get; set; } = true;
     public string? CloudflaredPath { get; set; }
     public string? PlayitTunnelId { get; set; }
-    public int PairingTokenLifetimeMinutes { get; set; } = 2;
-    public List<RemoteDeviceSession> PairedDevices { get; set; } = new();
 }

@@ -1,30 +1,19 @@
-const tokenKey = "pocketmc.remote.deviceToken";
 const instanceKey = "pocketmc.remote.instanceId";
-const viewKey = "pocketmc.remote.currentView"; // "instances" or "devices"
+const viewKey = "pocketmc.remote.currentView"; // "instances"
 
 const els = {
   connectionLabel: document.querySelector("#connectionLabel"),
   refreshButton: document.querySelector("#refreshButton"),
   notice: document.querySelector("#notice"),
   
-  pairView: document.querySelector("#pairView"),
-  pairTitle: document.querySelector("#pairTitle"),
-  pairMessage: document.querySelector("#pairMessage"),
-  pairButton: document.querySelector("#pairBrowserButton"),
-  copyPairLinkButton: document.querySelector("#copyPairLinkButton"),
-  
   appView: document.querySelector("#appView"),
-  devicesView: document.querySelector("#devicesView"),
   emptyView: document.querySelector("#emptyView"),
   emptyRefreshButton: document.querySelector("#emptyRefreshButton"),
   errorView: document.querySelector("#errorView"),
   errorMessage: document.querySelector("#errorMessage"),
   retryButton: document.querySelector("#retryButton"),
-  clearTokenButton: document.querySelector("#clearTokenButton"),
   
   instanceListSidebar: document.querySelector("#instanceListSidebar"),
-  navDevices: document.querySelector("#navDevices"),
-  devicesListContainer: document.querySelector("#devicesListContainer"),
   
   serverName: document.querySelector("#serverName"),
   serverType: document.querySelector("#serverType"),
@@ -76,9 +65,8 @@ const els = {
   offlinePlayerForm: document.querySelector("#offlinePlayerForm")
 };
 
-let deviceToken = localStorage.getItem(tokenKey);
 let selectedInstanceId = localStorage.getItem(instanceKey);
-let currentAppView = localStorage.getItem(viewKey) || "instances"; // instances, devices
+let currentAppView = "instances";
 let socket = null;
 let statusTimer = null;
 let historyLoadedForInstance = null;
@@ -88,12 +76,8 @@ let remoteStatusGlobal = null;
 // Modal state
 let modalActionTarget = null; // { name: string, action: string, requireReason: bool }
 
-function pairingTokenFromUrl() {
-  return new URLSearchParams(window.location.search).get("token");
-}
-
 function setVisible(view) {
-  for (const item of [els.pairView, els.appView, els.emptyView, els.errorView, els.devicesView]) {
+  for (const item of [els.appView, els.emptyView, els.errorView]) {
     if (item) item.hidden = item !== view;
   }
 }
@@ -109,19 +93,11 @@ function showNotice(message) {
 
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
-  if (deviceToken) {
-    headers.set("Authorization", `Bearer ${deviceToken}`);
-  }
   if (options.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
   const response = await fetch(path, { ...options, headers });
-  if (response.status === 401 || response.status === 403) {
-    localStorage.removeItem(tokenKey);
-    deviceToken = null;
-    throw new Error("Session expired, revoked, or permission denied. Please pair again.");
-  }
 
   if (!response.ok) {
     const text = await response.text();
@@ -140,80 +116,10 @@ async function api(path, options = {}) {
 async function start() {
   clearInterval(statusTimer);
   closeSocket();
-
-  if (!deviceToken && pairingTokenFromUrl()) {
-    showPairPrompt();
-    return;
-  }
-
-  if (pairingTokenFromUrl()) {
-    history.replaceState({}, "", "/remote/index.html");
-  }
-
   await openDashboard();
 }
 
-function showPairPrompt() {
-  closeSocket();
-  clearInterval(statusTimer);
-  const token = pairingTokenFromUrl();
-  els.connectionLabel.textContent = token ? "Pairing..." : "Not paired";
-  els.pairTitle.textContent = token ? "Pairing Browser" : "Pairing link needed";
-  els.pairMessage.textContent = token
-    ? "Connecting to PocketMC Desktop..."
-    : "Create a Pair Device link in PocketMC Desktop, then open it here.";
-  
-  els.pairButton.style.display = token ? "none" : "";
-  els.copyPairLinkButton.style.display = token ? "none" : "";
 
-  setVisible(els.pairView);
-
-  if (token) {
-      pairDevice();
-  }
-}
-
-async function pairDevice() {
-  const pairingToken = pairingTokenFromUrl();
-  if (!pairingToken) {
-    showPairPrompt();
-    return;
-  }
-
-  els.pairButton.disabled = true;
-  els.pairButton.querySelector("span:last-child").textContent = "Pairing...";
-  try {
-    const response = await fetch("/api/pairing/exchange", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pairingToken,
-        deviceName: navigator.userAgentData?.platform || navigator.platform || "Browser"
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error("Pairing link expired. Create a new one in PocketMC Desktop.");
-    }
-
-    const payload = await response.json();
-    localStorage.setItem(tokenKey, payload.deviceToken);
-    deviceToken = payload.deviceToken;
-    history.replaceState({}, "", "/remote/index.html");
-    showNotice("This browser is paired.");
-    await openDashboard();
-  } catch (error) {
-    els.pairMessage.textContent = error.message;
-    els.pairTitle.textContent = "Pairing Failed";
-    els.connectionLabel.textContent = "Not paired";
-    
-    // Wipe token from URL so they don't get stuck in a reload loop
-    history.replaceState({}, "", "/remote/index.html");
-  } finally {
-    els.pairButton.disabled = false;
-    els.pairButton.querySelector("span:last-child").textContent = "Pair Browser";
-  }
-}
 
 function showError(msg) {
   els.errorMessage.textContent = msg;
@@ -227,11 +133,7 @@ async function openDashboard() {
     await refreshEverything({ reconnectConsole: true });
     statusTimer = setInterval(() => refreshEverything({ reconnectConsole: false }), 3000);
   } catch (error) {
-    if (!deviceToken) {
-      showPairPrompt();
-    } else {
-      showError(error.message);
-    }
+    showError(error.message);
   }
 }
 
@@ -243,12 +145,6 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
   els.connectionLabel.className = "connection-pill online";
 
   renderSidebar(instances);
-
-  if (currentAppView === "devices") {
-      setVisible(els.devicesView);
-      await renderDevices();
-      return;
-  }
 
   if (instances.length === 0) {
     historyLoadedForInstance = null;
@@ -303,7 +199,7 @@ function renderSidebar(instances) {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.className = "sidebar-item";
-    if (currentAppView === "instances" && instance.id === selectedInstanceId) {
+    if (instance.id === selectedInstanceId) {
         btn.classList.add("active");
     }
     
@@ -312,8 +208,6 @@ function renderSidebar(instances) {
     btn.innerHTML = `${icon}<span>${escapeHtml(instance.name)}</span>`;
     
     btn.addEventListener("click", () => {
-        currentAppView = "instances";
-        localStorage.setItem(viewKey, "instances");
         selectedInstanceId = instance.id;
         localStorage.setItem(instanceKey, selectedInstanceId);
         openDashboard();
@@ -321,55 +215,9 @@ function renderSidebar(instances) {
     li.appendChild(btn);
     els.instanceListSidebar.appendChild(li);
   }
-  
-  if (currentAppView === "devices") {
-      els.navDevices.classList.add("active");
-  } else {
-      els.navDevices.classList.remove("active");
-  }
 }
 
-async function renderDevices() {
-    try {
-        const result = await api("/api/devices");
-        els.devicesListContainer.innerHTML = "";
-        
-        for (const device of result.devices) {
-            const div = document.createElement("div");
-            div.className = "device-item";
-            
-            const info = document.createElement("div");
-            info.className = "device-info";
-            info.innerHTML = `<h3>${escapeHtml(device.name)} ${device.isCurrent ? '<span class="current-badge">Current</span>' : ''}</h3>
-                              <p class="muted">Last seen: ${new Date(device.lastSeenAtUtc).toLocaleString()}</p>`;
-                              
-            const actions = document.createElement("div");
-            if (!device.isCurrent) {
-                const revokeBtn = document.createElement("button");
-                revokeBtn.className = "danger-button";
-                revokeBtn.innerHTML = `<span>Revoke</span>`;
-                revokeBtn.addEventListener("click", async () => {
-                    try {
-                        revokeBtn.disabled = true;
-                        await api("/api/devices/revoke", { method: "POST", body: JSON.stringify({ deviceId: device.id }) });
-                        showNotice(`Revoked ${device.name}`);
-                        renderDevices();
-                    } catch(err) {
-                        showNotice(err.message);
-                        revokeBtn.disabled = false;
-                    }
-                });
-                actions.appendChild(revokeBtn);
-            }
-            
-            div.appendChild(info);
-            div.appendChild(actions);
-            els.devicesListContainer.appendChild(div);
-        }
-    } catch(err) {
-        els.devicesListContainer.innerHTML = `<p class="muted">Failed to load devices: ${err.message}</p>`;
-    }
-}
+
 
 function renderStatus(remoteStatus, instanceStatus) {
   els.serverName.textContent = instanceStatus.name;
@@ -501,28 +349,14 @@ async function loadConsoleHistory() {
 }
 
 async function openConsoleSocket() {
-  if (!selectedInstanceId || !deviceToken) return;
+  if (!selectedInstanceId) return;
   closeSocket();
   
   els.consoleState.textContent = "Connecting";
   els.consoleState.className = "state-label busy";
 
-  let ticket = null;
-  try {
-    const response = await fetch(`/api/instances/${selectedInstanceId}/console/ticket`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${deviceToken}` }
-    });
-    if (!response.ok) throw new Error("Could not get WS ticket");
-    const data = await response.json();
-    ticket = data.ticket;
-  } catch (err) {
-    els.consoleState.textContent = "Offline";
-    return;
-  }
-
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  socket = new WebSocket(`${protocol}//${window.location.host}/ws/instances/${selectedInstanceId}/console?ticket=${encodeURIComponent(ticket)}`);
+  socket = new WebSocket(`${protocol}//${window.location.host}/ws/instances/${selectedInstanceId}/console`);
   
   els.consoleState.textContent = "Connecting";
   els.consoleState.className = "state-label busy";
@@ -710,28 +544,11 @@ els.tabs.forEach(tab => {
   });
 });
 
-els.navDevices.addEventListener("click", () => {
-    currentAppView = "devices";
-    localStorage.setItem(viewKey, "devices");
-    openDashboard();
-});
-
-els.pairButton.addEventListener("click", pairDevice);
-els.copyPairLinkButton.addEventListener("click", () => {
-  navigator.clipboard.writeText(window.location.href);
-  showNotice("Pairing link copied");
-});
-
 els.refreshButton.addEventListener("click", () => refreshEverything());
 els.emptyRefreshButton.addEventListener("click", () => refreshEverything());
 els.retryButton.addEventListener("click", () => refreshEverything());
 
-els.clearTokenButton.addEventListener("click", () => {
-  localStorage.removeItem(tokenKey);
-  deviceToken = null;
-  history.replaceState({}, "", "/remote/index.html");
-  showPairPrompt();
-});
+
 
 const bindInstanceAction = (btn, action) => {
   btn.addEventListener("click", async () => {

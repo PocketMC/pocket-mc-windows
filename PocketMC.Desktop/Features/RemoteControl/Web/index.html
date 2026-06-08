@@ -43,16 +43,6 @@
         <ul id="instanceListSidebar" class="sidebar-list">
           <!-- Populated by JS -->
         </ul>
-        
-        <p class="sidebar-label">Settings</p>
-        <ul class="sidebar-list">
-          <li>
-            <button id="navDevices" class="sidebar-item" type="button">
-              <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z M8 18v3 M16 18v3 M4 14h16"/></svg>
-              <span>Paired Devices</span>
-            </button>
-          </li>
-        </ul>
       </nav>
       
       <div class="sidebar-footer">
@@ -66,43 +56,6 @@
     <div class="main-content">
       <div id="notice" class="notice" hidden aria-live="polite"></div>
 
-      <section id="pairView" class="panel pair-panel" hidden>
-        <div class="panel-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3M6 11h12v10H6zM12 15v3"/></svg>
-        </div>
-        <div class="panel-copy">
-          <p class="eyebrow">Remote access</p>
-          <h2 id="pairTitle">Pair this browser</h2>
-          <p id="pairMessage">This is a one-time link. Open it in the browser you want to use, then pair it here.</p>
-        </div>
-        <div class="pair-actions">
-          <button id="pairBrowserButton" class="primary-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-            </span>
-            <span>Pair Browser</span>
-          </button>
-          <button id="copyPairLinkButton" class="secondary-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M8 8h10v10H8zM6 14H4V4h10v2"/></svg>
-            </span>
-            <span>Copy Link</span>
-          </button>
-        </div>
-      </section>
-
-      <section id="devicesView" class="panel devices-panel" hidden>
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Settings</p>
-            <h2>Paired Devices</h2>
-            <p class="muted">Manage browsers that have remote access to this host.</p>
-          </div>
-        </div>
-        <div class="devices-list" id="devicesListContainer">
-          <!-- Populated by JS -->
-        </div>
-      </section>
 
       <section id="appView" hidden>
         <div class="server-heading">
@@ -272,12 +225,6 @@
               <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
             </span>
             <span>Retry</span>
-          </button>
-          <button id="clearTokenButton" class="secondary-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg>
-            </span>
-            <span>Forget</span>
           </button>
         </div>
       </section>

@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PocketMC.Desktop.Features.RemoteControl.Hosting;
@@ -8,7 +6,6 @@ using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.RemoteControl.Auth;
 
 namespace PocketMC.Desktop.Features.Setup.ViewModels;
 
@@ -22,18 +19,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         new(RemoteAccessMode.PlayitHttpsTunnel, "PlayIt Premium HTTPS")
     ];
 
-    public sealed record PairingLifetimeOption(int Minutes, string Label);
 
-    public static IReadOnlyList<PairingLifetimeOption> PairingLifetimeOptions { get; } =
-    [
-        new(2, "2 minutes"),
-        new(5, "5 minutes"),
-        new(10, "10 minutes"),
-        new(30, "30 minutes"),
-        new(60, "1 hour"),
-        new(720, "12 hours"),
-        new(1440, "24 hours")
-    ];
 
     public const string PlayitHttpsWarningText =
         "PlayIt HTTPS tunnels require PlayIt Premium. Stop Remote Link disables the dedicated PocketMC Remote Control tunnel.";
@@ -42,25 +28,17 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private readonly SettingsManager _settingsManager;
     private readonly RemoteControlCoordinator _coordinator;
     private readonly IDialogService _dialogService;
-    private readonly RemoteAuthService _authService;
 
     public RemoteControlSettingsViewModel(
         ApplicationState applicationState,
         SettingsManager settingsManager,
         RemoteControlCoordinator coordinator,
-        IDialogService dialogService,
-        RemoteAuthService authService)
+        IDialogService dialogService)
     {
         _applicationState = applicationState;
         _settingsManager = settingsManager;
         _coordinator = coordinator;
         _dialogService = dialogService;
-        _authService = authService;
-
-        _authService.DevicesChanged += (s, e) => 
-        {
-            Application.Current.Dispatcher.Invoke(LoadDevices);
-        };
 
         var remote = _applicationState.Settings.RemoteControl;
         _isEnabled = remote.Enabled;
@@ -71,9 +49,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             ? RemoteAccessMode.CloudflaredQuickTunnel 
             : remote.AccessMode;
         _cloudflaredPath = remote.CloudflaredPath ?? "";
-        _pairingTokenLifetimeMinutes = remote.PairingTokenLifetimeMinutes;
 
-        LoadDevices();
         UpdateStatus();
     }
 
@@ -89,8 +65,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _allowRemotePlayerActions;
 
-    [ObservableProperty]
-    private int _pairingTokenLifetimeMinutes;
+
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCloudflaredMode))]
@@ -103,25 +78,27 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _cloudflaredPath;
 
-    public ObservableCollection<RemoteDeviceSession> PairedDevices { get; } = new();
-
     public IReadOnlyList<RemoteAccessModeOption> AccessModes => RemoteAccessModeOptions;
-    public IReadOnlyList<PairingLifetimeOption> PairingLifetimes => PairingLifetimeOptions;
 
     [ObservableProperty]
     private string _statusText = "";
 
     [ObservableProperty]
-    private string _localUrlText = "";
+    [NotifyPropertyChangedFor(nameof(HasLocalUrl))]
+    private string? _localUrl;
 
     [ObservableProperty]
-    private string _publicUrlText = "";
+    [NotifyPropertyChangedFor(nameof(HasPublicUrl))]
+    private string? _publicUrl;
+
+    [ObservableProperty]
+    private string _publicUrlProviderName = "";
+
+    public bool HasLocalUrl => !string.IsNullOrEmpty(LocalUrl);
+    public bool HasPublicUrl => !string.IsNullOrEmpty(PublicUrl);
 
     [ObservableProperty]
     private bool _isStatusError;
-
-    [ObservableProperty]
-    private bool _canPair;
 
     partial void OnIsEnabledChanged(bool value)
     {
@@ -143,10 +120,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         SaveAndRestart();
     }
 
-    partial void OnPairingTokenLifetimeMinutesChanged(int value)
-    {
-        SaveAndRestart();
-    }
+
 
     partial void OnAccessModeChanged(RemoteAccessMode value)
     {
@@ -176,71 +150,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
 
 
-    [RelayCommand]
-    private void PairDevice()
-    {
-        if (!IsEnabled)
-        {
-            SetStatus("Enable Remote Control before pairing a device.", true);
-            return;
-        }
 
-        RemotePairingLink pairingLink = _coordinator.CreatePairingLink();
-        Clipboard.SetText(pairingLink.Url);
-        _dialogService.ShowMessage(
-            "Pair Device",
-            $"Open this link on your phone within 2 minutes:\n\n{pairingLink.Url}\n\nThe link was copied to your clipboard.");
-        UpdateStatus();
-    }
-
-    [RelayCommand]
-    private async Task RevokeAllDevicesAsync()
-    {
-        var result = await _dialogService.ShowDialogAsync(
-            "Revoke Remote Devices",
-            "Revoke all paired remote devices? They will need to pair again before controlling servers.",
-            DialogType.Warning,
-            showCancel: true,
-            primaryButtonText: "Revoke");
-
-        if (result == DialogResult.Ok || result == DialogResult.Yes)
-        {
-            _coordinator.RevokeAllDevices();
-            SetStatus("All remote devices were revoked.", false);
-            LoadDevices();
-            UpdateStatus();
-        }
-    }
-
-    [RelayCommand]
-    private async Task RevokeDeviceAsync(RemoteDeviceSession device)
-    {
-        var result = await _dialogService.ShowDialogAsync(
-            "Revoke Device",
-            $"Revoke access for {device.DisplayName}?",
-            DialogType.Warning,
-            showCancel: true,
-            primaryButtonText: "Revoke");
-
-        if (result == DialogResult.Ok || result == DialogResult.Yes)
-        {
-            _coordinator.RevokeDevice(device.Id);
-            SetStatus($"Revoked {device.DisplayName}.", false);
-            LoadDevices();
-            UpdateStatus();
-        }
-    }
-
-    private void LoadDevices()
-    {
-        PairedDevices.Clear();
-        foreach (var device in _applicationState.Settings.RemoteControl.PairedDevices
-                     .Where(d => !d.RevokedAtUtc.HasValue)
-                     .OrderByDescending(d => d.CreatedAtUtc))
-        {
-            PairedDevices.Add(device);
-        }
-    }
 
     private bool SaveSettings()
     {
@@ -258,7 +168,6 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
         settings.RemoteControl.CloudflaredPath = string.IsNullOrWhiteSpace(CloudflaredPath) ? null : CloudflaredPath.Trim();
-        settings.RemoteControl.PairingTokenLifetimeMinutes = PairingTokenLifetimeMinutes;
 
         _settingsManager.Save(settings);
         return true;
@@ -307,17 +216,15 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private void UpdateStatus()
     {
         RemoteDashboardStatus status = _coordinator.GetStatus();
-        LocalUrlText = $"Local URL: {status.LocalUrls.FirstOrDefault() ?? "not available"}";
+        LocalUrl = status.LocalUrls.FirstOrDefault();
         
-        string providerName = AccessMode switch
+        PublicUrlProviderName = AccessMode switch
         {
             RemoteAccessMode.CloudflaredQuickTunnel => "Cloudflare",
             RemoteAccessMode.PlayitHttpsTunnel => "PlayIt",
             _ => "Remote"
         };
-        PublicUrlText = $"{providerName} Public URL: {status.PublicUrl ?? "not started"}";
-        
-        CanPair = status.Enabled;
+        PublicUrl = status.PublicUrl;
 
         if (!string.IsNullOrWhiteSpace(status.TunnelError))
         {
@@ -329,5 +236,19 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     {
         StatusText = message;
         IsStatusError = isError;
+    }
+
+    [RelayCommand]
+    private void CopyLocalUrl()
+    {
+        if (!string.IsNullOrEmpty(LocalUrl))
+            System.Windows.Clipboard.SetText(LocalUrl);
+    }
+
+    [RelayCommand]
+    private void CopyPublicUrl()
+    {
+        if (!string.IsNullOrEmpty(PublicUrl))
+            System.Windows.Clipboard.SetText(PublicUrl);
     }
 }

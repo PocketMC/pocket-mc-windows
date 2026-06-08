@@ -1,8 +1,6 @@
 using Moq;
-using PocketMC.Desktop.Features.RemoteControl.Auth;
 using PocketMC.Desktop.Features.RemoteControl.Hosting;
 using PocketMC.Desktop.Features.RemoteControl.Services;
-using PocketMC.Desktop.Features.RemoteControl.Tunnels;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 
@@ -23,11 +21,11 @@ public sealed class RemoteControlCoordinatorTests
             var settingsManager = new SettingsManager(tempFile);
             
             var host = new RemoteDashboardHost(
-                appState, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!, 
+                appState, null!, null!, null!, null!, null!, null!, null!, null!, null!, 
                 new Mock<Microsoft.Extensions.Logging.ILogger<RemoteDashboardHost>>().Object);
                 
             var coordinator = new RemoteControlCoordinator(
-                appState, settingsManager, null!, host, null!, null!);
+                appState, settingsManager, host, null!, null!);
                 
             await Assert.ThrowsAnyAsync<Exception>(() => coordinator.StartHostAsync());
             

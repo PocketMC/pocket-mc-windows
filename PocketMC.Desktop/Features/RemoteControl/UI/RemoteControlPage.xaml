@@ -8,6 +8,10 @@
       d:DesignHeight="600" d:DesignWidth="800"
       Title="RemoteControlPage">
 
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Page.Resources>
+
     <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -52,7 +56,6 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="220"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Margin="0,0,12,0">
@@ -67,19 +70,7 @@
                                           SelectedValuePath="Mode"
                                           DisplayMemberPath="Label"
                                           Margin="0,8,0,0"
-                                          MaxWidth="200"
-                                          HorizontalAlignment="Left">
-                                </ComboBox>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2" Margin="0,0,12,0">
-                                <TextBlock Text="Pairing Link Expiry" FontSize="14" FontWeight="Medium"/>
-                                <ComboBox x:Name="PairingLifetimeCombo"
-                                          ItemsSource="{Binding PairingLifetimes}"
-                                          SelectedValue="{Binding PairingTokenLifetimeMinutes}"
-                                          SelectedValuePath="Minutes"
-                                          DisplayMemberPath="Label"
-                                          Margin="0,8,0,0"
-                                          MaxWidth="150"
+                                          MaxWidth="300"
                                           HorizontalAlignment="Left">
                                 </ComboBox>
                             </StackPanel>
@@ -121,52 +112,64 @@
                         </StackPanel>
 
                         <Grid Margin="0,16,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock x:Name="RemoteLocalUrlText" Text="{Binding LocalUrlText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
-                                <TextBlock x:Name="RemotePublicUrlText" Text="{Binding PublicUrlText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                <TextBlock x:Name="RemoteStatusText" Text="{Binding StatusText}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="#A6E3A1"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsStatusError}" Value="True">
-                                                    <Setter Property="Foreground" Value="#F38BA8"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
-                                <ui:Button x:Name="BtnPairRemoteDevice" Content="Pair Device" IsEnabled="{Binding CanPair}" Command="{Binding PairDeviceCommand}" Appearance="Primary" Margin="0,0,8,0"/>
-                                <ui:Button x:Name="BtnRevokeRemoteDevices" Content="Revoke All Devices" Command="{Binding RevokeAllDevicesCommand}" Appearance="Danger"/>
-                            </StackPanel>
-                        </Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Local Network (LAN) IP Card -->
+                            <Border Grid.Row="0" Visibility="{Binding HasLocalUrl, Converter={StaticResource BoolToVis}}"
+                                    Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
+                                    MaxWidth="600" HorizontalAlignment="Left">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                        <TextBlock Text="Local Network (LAN)" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding LocalUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="2" Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyLocalUrlCommand}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
 
-                        <Separator Margin="0,16" Opacity="0.15"/>
-                        
-                        <TextBlock Text="Paired Devices" FontSize="14" FontWeight="Medium"/>
-                        <ItemsControl ItemsSource="{Binding PairedDevices}" Margin="0,8,0,0">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,4,0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding CreatedAtUtc, StringFormat=Paired on {0:g}}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                        </StackPanel>
-                                        <ui:Button Grid.Column="1" Content="Revoke" Command="{Binding DataContext.RevokeDeviceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Appearance="Secondary" VerticalAlignment="Center"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            <!-- Public Tunnel IP Card -->
+                            <Border Grid.Row="1" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"
+                                    Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,10" Margin="0,0,0,8"
+                                    MaxWidth="600" HorizontalAlignment="Left">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Desktop24" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                        <TextBlock Text="{Binding PublicUrlProviderName, StringFormat='{}{0} Public URL'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding PublicUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="2" Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyPublicUrlCommand}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Status Text -->
+                            <TextBlock Grid.Row="2" x:Name="RemoteStatusText" Text="{Binding StatusText}" FontSize="12" Margin="0,0,0,0" TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#A6E3A1"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                                <Setter Property="Foreground" Value="#F38BA8"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
 
                         <Separator Margin="0,16" Opacity="0.15"/>
 
