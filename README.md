@@ -16,7 +16,6 @@
       <a href="https://github.com/PocketMC/pocket-mc-windows/releases"><img src="https://img.shields.io/github/v/release/PocketMC/pocket-mc-windows?style=flat-square" alt="Release" /></a>
       <a href="https://discord.gg/h27uNCaxPH"><img src="https://img.shields.io/badge/Discord-Join-%235865F2?style=flat-square&logo=discord" alt="Discord" /></a>
       <a href="https://www.buymeacoffee.com/sahaj33"><img src="https://img.shields.io/badge/Donate-BMC-%23FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" /></a>
-      <a href="https://deepwiki.com/PocketMC/pocket-mc-windows"><img src="https://deepwiki.com/badge.svg" alt="DeepWiki" /></a>
     </td>
   </tr>
 </table>
@@ -396,5 +395,6 @@ MIT © 2024 PocketMC Contributors — see [LICENSE](LICENSE).
 <a href="https://www.buymeacoffee.com/sahaj33" target="_blank">
   <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" height="41" />
 </a>
-
+<br>
+<a href="https://deepwiki.com/PocketMC/pocket-mc-windows"><img src="https://deepwiki.com/badge.svg" alt="DeepWiki" /></a>
 </div>
