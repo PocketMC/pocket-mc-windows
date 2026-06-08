@@ -208,13 +208,17 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         {
             SetStatus(status.TunnelError, true);
         }
+        else
+        {
+            SetStatus("", false);
+        }
 
         IsLoadingPublicUrl = false;
     }
 
     private void SetStatus(string message, bool isError)
     {
-        StatusText = message;
+        StatusText = isError ? message : "";
         IsStatusError = isError;
     }
 
