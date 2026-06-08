@@ -21,8 +21,8 @@ public sealed class RemoteSettingsTests : IDisposable
         Assert.NotNull(settings.RemoteControl);
         Assert.False(settings.RemoteControl.Enabled);
         Assert.Equal(25580, settings.RemoteControl.Port);
-        Assert.Equal(RemoteAccessMode.LanOnly, settings.RemoteControl.AccessMode);
-        Assert.Equal("none", settings.RemoteControl.TunnelProviderId);
+        Assert.Equal(RemoteAccessMode.CloudflaredQuickTunnel, settings.RemoteControl.AccessMode);
+        Assert.Equal("cloudflared-quick", settings.RemoteControl.TunnelProviderId);
         Assert.False(settings.RemoteControl.AllowRemoteConsoleCommands);
         Assert.True(settings.RemoteControl.AllowRemotePlayerActions);
         Assert.Null(settings.RemoteControl.PlayitTunnelId);

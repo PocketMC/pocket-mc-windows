@@ -17,7 +17,6 @@ public sealed class AppSettingsPageRemoteControlSourceTests
         Assert.Contains("PlayIt HTTPS tunnels require PlayIt Premium. Stop Remote Link disables the dedicated PocketMC Remote Control tunnel.", xaml, StringComparison.Ordinal);
         Assert.Contains("Remote console commands can fully control this Minecraft server.", xaml, StringComparison.Ordinal);
         Assert.Contains("ToggleRemoteControlEnabled", xaml, StringComparison.Ordinal);
-        Assert.Contains("BtnPairRemoteDevice", xaml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -31,9 +30,8 @@ public sealed class AppSettingsPageRemoteControlSourceTests
             "RemoteControlSettingsViewModel.cs"));
 
         Assert.Contains("RemoteControlCoordinator", viewModel, StringComparison.Ordinal);
-        Assert.Contains("StartTunnelAsync", viewModel, StringComparison.Ordinal);
-        Assert.Contains("StopTunnelAsync", viewModel, StringComparison.Ordinal);
-        Assert.Contains("PairDevice", viewModel, StringComparison.Ordinal);
+        Assert.Contains("RestartAllAsync", viewModel, StringComparison.Ordinal);
+        Assert.Contains("StopAllAsync", viewModel, StringComparison.Ordinal);
         Assert.Contains("MapRemoteAccessModeToProviderId", viewModel, StringComparison.Ordinal);
         Assert.DoesNotContain("cloudflared tunnel --url", viewModel, StringComparison.OrdinalIgnoreCase);
     }

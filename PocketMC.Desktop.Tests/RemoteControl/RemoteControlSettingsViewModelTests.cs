@@ -23,11 +23,6 @@ public sealed class RemoteControlSettingsViewModelTests
             options,
             option =>
             {
-                Assert.Equal(RemoteAccessMode.LanOnly, option.Mode);
-                Assert.Equal("LAN only", option.Label);
-            },
-            option =>
-            {
                 Assert.Equal(RemoteAccessMode.CloudflaredQuickTunnel, option.Mode);
                 Assert.Equal("Cloudflare Quick Tunnel", option.Label);
             },
