@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -20,11 +21,13 @@ namespace PocketMC.Desktop.Features.Dashboard
 
         private void DashboardPage_Loaded(object sender, RoutedEventArgs e)
         {
+            ScrollViewerHelper.EnableMouseWheelScrolling(this, DashboardScrollViewer);
             ViewModel.Activate();
         }
 
         private void DashboardPage_Unloaded(object sender, RoutedEventArgs e)
         {
+            ScrollViewerHelper.DisableMouseWheelScrolling(this);
             ViewModel.Deactivate();
         }
 
@@ -141,14 +144,5 @@ namespace PocketMC.Desktop.Features.Dashboard
                 }
             }
         }
-        private void DashScroller_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
-        {
-            if (sender is ScrollViewer scv)
-            {
-                scv.ScrollToVerticalOffset(scv.VerticalOffset - e.Delta);
-                e.Handled = true;
-            }
-        }
-
     }
 }

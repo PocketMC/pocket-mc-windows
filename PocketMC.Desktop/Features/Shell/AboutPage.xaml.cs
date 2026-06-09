@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Shell
 {
@@ -19,6 +20,19 @@ namespace PocketMC.Desktop.Features.Shell
 
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             TxtVersion.Text = $"Version {version?.Major}.{version?.Minor}.{version?.Build}";
+
+            Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            ScrollViewerHelper.EnableMouseWheelScrolling(this, AboutScrollViewer);
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            ScrollViewerHelper.DisableMouseWheelScrolling(this);
         }
 
         private void OpenDiscord_Click(object sender, RoutedEventArgs e)

@@ -232,9 +232,12 @@
                            TextWrapping="Wrap"/>
 
                 <!-- Tunnel cards with management controls -->
-                <ScrollViewer Grid.Row="2"
+                <ScrollViewer x:Name="TunnelListScrollViewer"
+                              Grid.Row="2"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
+                              CanContentScroll="False"
+                              PanningMode="VerticalOnly"
                               Padding="0,0,12,0"
                               Margin="0,0,-12,0">
                     <ItemsControl x:Name="TunnelList"

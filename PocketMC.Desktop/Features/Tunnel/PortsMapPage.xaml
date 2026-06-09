@@ -82,7 +82,12 @@
                 </StackPanel>
 
                 <!-- Active Map Scroll -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,12,0">
+                <ScrollViewer x:Name="PortsMapScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              CanContentScroll="False"
+                              PanningMode="VerticalOnly"
+                              Padding="0,0,12,0">
                     <ItemsControl x:Name="RoutesList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

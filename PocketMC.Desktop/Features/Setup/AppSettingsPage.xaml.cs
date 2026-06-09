@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using System.Windows.Media;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
@@ -59,8 +57,6 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly WindowsStartupService _windowsStartupService;
         private readonly ServerSleepPreventionCoordinator _sleepPreventionCoordinator;
         private bool _isInitializing = true;
-        private readonly MouseWheelEventHandler _previewMouseWheelHandler;
-        private bool _isForwardingMouseWheel;
         
         public CloudBackupSettingsViewModel CloudBackups { get; }
 
@@ -78,7 +74,6 @@ namespace PocketMC.Desktop.Features.Setup
             ServerSleepPreventionCoordinator sleepPreventionCoordinator)
         {
             InitializeComponent();
-            _previewMouseWheelHandler = OnPagePreviewMouseWheel;
             _applicationState = applicationState;
             _settingsManager = settingsManager;
             _dialogService = dialogService;
@@ -97,12 +92,8 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void AppSettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
-            // Register mouse wheel handler with handledEventsToo=true
-            // This catches wheel events even when internal WPF-UI controls consume them
-            AddHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler, true);
-            
-            // CRITICAL: Disable the NavigationView's internal ScrollViewer so our page gets a finite height
-            DisableParentScrollViewer(this);
+            ScrollViewerHelper.EnableMouseWheelScrolling(this, MainScrollViewer);
+            ScrollViewerHelper.DisableAncestorScrollViewers(this);
 
             _isInitializing = true;
             CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
@@ -189,7 +180,7 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void AppSettingsPage_Unloaded(object sender, RoutedEventArgs e)
         {
-            RemoveHandler(UIElement.PreviewMouseWheelEvent, _previewMouseWheelHandler);
+            ScrollViewerHelper.DisableMouseWheelScrolling(this);
             _healthMonitor.HealthChanged -= UpdateDependencyHealth;
         }
 
@@ -920,79 +911,5 @@ namespace PocketMC.Desktop.Features.Setup
             }
         }
 
-        private void DisableParentScrollViewer(DependencyObject obj)
-        {
-            var parent = VisualTreeHelper.GetParent(obj);
-            while (parent != null)
-            {
-                if (parent is ScrollViewer sv)
-                {
-                    sv.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
-                    sv.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-                }
-                parent = VisualTreeHelper.GetParent(parent);
-            }
-        }
-
-        // ── Aggressive Mouse Wheel Scrolling ──────────────────────────────
-        // Follows the proven pattern from ServerSettingsPage:
-        // page-level AddHandler with handledEventsToo=true intercepts wheel
-        // events regardless of which child control consumed them.
-
-        private void OnPagePreviewMouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            if (_isForwardingMouseWheel || e.OriginalSource is not DependencyObject source)
-                return;
-
-            // 1. Never intercept if a ScrollBar thumb is being dragged
-            if (FindAncestor<ScrollBar>(source) != null)
-                return;
-
-            // 2. Skip if inside an OPEN ComboBox dropdown (let it scroll its own list)
-            var comboBox = FindAncestor<ComboBox>(source);
-            if (comboBox?.IsDropDownOpen == true)
-                return;
-
-            // 3. Skip if inside a Popup (ComboBox dropdown popup, tooltip, etc.)
-            if (FindAncestor<Popup>(source) != null)
-                return;
-
-            // 4. Forward the scroll to MainScrollViewer
-            if (MainScrollViewer == null || MainScrollViewer.ScrollableHeight <= 0)
-                return;
-
-            e.Handled = true;
-
-            try
-            {
-                _isForwardingMouseWheel = true;
-                // Scroll by 3 lines per notch for responsive feel (matches ServerSettingsPage)
-                int steps = Math.Max(1, Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine) * 3;
-                for (int i = 0; i < steps; i++)
-                {
-                    if (e.Delta > 0)
-                        MainScrollViewer.LineUp();
-                    else
-                        MainScrollViewer.LineDown();
-                }
-            }
-            finally
-            {
-                _isForwardingMouseWheel = false;
-            }
-        }
-
-        private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
-        {
-            while (current != null)
-            {
-                if (current is T match)
-                    return match;
-                DependencyObject? visualParent = null;
-                try { visualParent = VisualTreeHelper.GetParent(current); } catch { }
-                current = visualParent ?? LogicalTreeHelper.GetParent(current);
-            }
-            return null;
-        }
     }
 }

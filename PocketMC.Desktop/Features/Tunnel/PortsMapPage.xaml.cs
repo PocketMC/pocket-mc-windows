@@ -84,11 +84,18 @@ namespace PocketMC.Desktop.Features.Tunnel
             CancelPortCommand = new RelayCommand(ExecuteCancelPort);
 
             Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
+            ScrollViewerHelper.EnableMouseWheelScrolling(this, PortsMapScrollViewer);
             await RefreshMapAsync();
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            ScrollViewerHelper.DisableMouseWheelScrolling(this);
         }
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)

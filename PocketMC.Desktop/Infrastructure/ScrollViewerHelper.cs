@@ -13,6 +13,13 @@ namespace PocketMC.Desktop.Infrastructure;
 /// </summary>
 public static class ScrollViewerHelper
 {
+    private static readonly DependencyProperty MouseWheelHandlerProperty =
+        DependencyProperty.RegisterAttached(
+            "MouseWheelHandler",
+            typeof(MouseWheelEventHandler),
+            typeof(ScrollViewerHelper),
+            new PropertyMetadata(null));
+
     /// <summary>
     /// Attaches mouse wheel scrolling support to a Page or UserControl.
     /// This method registers a handler that intercepts mouse wheel events and forwards them
@@ -25,19 +32,41 @@ public static class ScrollViewerHelper
         if (page == null || scrollViewer == null)
             return;
 
-        // Register handler with handledEventsToo=true to catch events even if already handled by child controls
-        page.AddHandler(UIElement.MouseWheelEvent, new MouseWheelEventHandler((s, e) =>
+        DisableMouseWheelScrolling(page);
+
+        bool isForwarding = false;
+        MouseWheelEventHandler handler = (s, e) =>
         {
-            // Check if the mouse is over a ComboBox dropdown - if so, let it handle the wheel
-            if (IsMouseOverComboBoxDropdown(e.OriginalSource))
+            if (isForwarding || e.OriginalSource is not DependencyObject source)
             {
                 return;
             }
 
-            // Always handle the wheel event and scroll the ScrollViewer
+            if (ShouldSkipWheelForwarding(source, scrollViewer, e.Delta))
+            {
+                return;
+            }
+
+            if (scrollViewer.ScrollableHeight <= 0 || !CanScroll(scrollViewer, e.Delta))
+            {
+                return;
+            }
+
             e.Handled = true;
-            scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
-        }), true);
+
+            try
+            {
+                isForwarding = true;
+                ScrollByWheelDelta(scrollViewer, e.Delta);
+            }
+            finally
+            {
+                isForwarding = false;
+            }
+        };
+
+        page.SetValue(MouseWheelHandlerProperty, handler);
+        page.AddHandler(UIElement.PreviewMouseWheelEvent, handler, true);
     }
 
     /// <summary>
@@ -49,35 +78,30 @@ public static class ScrollViewerHelper
         if (page == null)
             return;
 
-        // Remove all handlers - this is a simple approach that removes all MouseWheel handlers
-        // In a more sophisticated implementation, you'd store the handler reference
-        page.RemoveHandler(UIElement.MouseWheelEvent, new MouseWheelEventHandler((s, e) => { }));
+        if (page.GetValue(MouseWheelHandlerProperty) is MouseWheelEventHandler handler)
+        {
+            page.RemoveHandler(UIElement.PreviewMouseWheelEvent, handler);
+            page.ClearValue(MouseWheelHandlerProperty);
+        }
     }
 
     /// <summary>
-    /// Checks if the mouse is currently over a ComboBox dropdown (Popup).
-    /// This ensures ComboBox dropdown scrolling works normally.
+    /// Disables shell or navigation host ScrollViewer ancestors so pages with their own
+    /// ScrollViewer receive a finite height and can scroll independently.
     /// </summary>
-    /// <param name="originalSource">The original source of the mouse wheel event.</param>
-    /// <returns>True if the mouse is over a ComboBox dropdown, false otherwise.</returns>
-    private static bool IsMouseOverComboBoxDropdown(object originalSource)
+    public static void DisableAncestorScrollViewers(DependencyObject element)
     {
-        // Walk up the visual tree to check if we're inside a ComboBox dropdown
-        DependencyObject? current = originalSource as DependencyObject;
+        DependencyObject? current = GetParent(element);
         while (current != null)
         {
-            if (current is ComboBox comboBox && comboBox.IsDropDownOpen)
+            if (current is ScrollViewer scrollViewer)
             {
-                return true;
+                scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+                scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
             }
-            // Also check for Popup (ComboBox dropdowns are Popups)
-            if (current is Popup)
-            {
-                return true;
-            }
-            current = VisualTreeHelper.GetParent(current);
+
+            current = GetParent(current);
         }
-        return false;
     }
 
     /// <summary>
@@ -90,17 +114,94 @@ public static class ScrollViewerHelper
         if (scrollViewer == null)
             return;
 
-        scrollViewer.PreviewMouseWheel += (s, e) =>
-        {
-            // Check if the mouse is over a ComboBox dropdown
-            if (IsMouseOverComboBoxDropdown(e.OriginalSource))
-            {
-                return;
-            }
+        EnableMouseWheelScrolling(scrollViewer, scrollViewer);
+    }
 
-            // Handle the wheel event
-            e.Handled = true;
-            scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
-        };
+    private static bool ShouldSkipWheelForwarding(DependencyObject source, ScrollViewer targetScrollViewer, int delta)
+    {
+        if (FindAncestor<ScrollBar>(source) != null)
+            return true;
+
+        if (FindAncestor<Popup>(source) != null)
+            return true;
+
+        if (FindAncestor<ComboBox>(source) is { IsDropDownOpen: true })
+            return true;
+
+        if (FindAncestor<TextBox>(source) is { AcceptsReturn: true } textBox &&
+            textBox.VerticalScrollBarVisibility is ScrollBarVisibility.Auto or ScrollBarVisibility.Visible)
+            return true;
+
+        ScrollViewer? nearestScrollViewer = FindAncestor<ScrollViewer>(source);
+        return nearestScrollViewer != null &&
+               !ReferenceEquals(nearestScrollViewer, targetScrollViewer) &&
+               CanScroll(nearestScrollViewer, delta);
+    }
+
+    private static bool CanScroll(ScrollViewer scrollViewer, int delta)
+    {
+        if (delta > 0)
+            return scrollViewer.VerticalOffset > 0;
+
+        if (delta < 0)
+            return scrollViewer.VerticalOffset < scrollViewer.ScrollableHeight;
+
+        return false;
+    }
+
+    private static void ScrollByWheelDelta(ScrollViewer scrollViewer, int delta)
+    {
+        int wheelScrollLines = SystemParameters.WheelScrollLines;
+        if (wheelScrollLines == 0 || delta == 0)
+            return;
+
+        int notches = Math.Max(1, (int)Math.Ceiling(Math.Abs(delta) / (double)Mouse.MouseWheelDeltaForOneLine));
+
+        if (wheelScrollLines < 0)
+        {
+            if (delta > 0)
+                scrollViewer.PageUp();
+            else
+                scrollViewer.PageDown();
+
+            return;
+        }
+
+        int steps = notches * wheelScrollLines;
+        for (int i = 0; i < steps; i++)
+        {
+            if (delta > 0)
+                scrollViewer.LineUp();
+            else
+                scrollViewer.LineDown();
+        }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+    {
+        while (current != null)
+        {
+            if (current is T match)
+                return match;
+
+            current = GetParent(current);
+        }
+
+        return null;
+    }
+
+    private static DependencyObject? GetParent(DependencyObject current)
+    {
+        DependencyObject? visualParent = null;
+        try
+        {
+            visualParent = VisualTreeHelper.GetParent(current);
+        }
+        catch
+        {
+            // Some content elements are not in the visual tree.
+        }
+
+        return visualParent ?? LogicalTreeHelper.GetParent(current);
     }
 }

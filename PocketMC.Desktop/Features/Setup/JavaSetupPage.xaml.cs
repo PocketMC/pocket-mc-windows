@@ -17,6 +17,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Java;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Setup
 {
@@ -235,6 +236,7 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            ScrollViewerHelper.EnableMouseWheelScrolling(this, RuntimeScrollViewer);
             SubscribeToProvisioning();
             ScanRuntimes();
             ApplyProvisioningStatuses();
@@ -243,6 +245,7 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
+            ScrollViewerHelper.DisableMouseWheelScrolling(this);
             UnsubscribeFromProvisioning();
         }
 

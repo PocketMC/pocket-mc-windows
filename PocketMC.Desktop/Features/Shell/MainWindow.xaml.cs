@@ -13,6 +13,7 @@ using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.ImportExport;
+using PocketMC.Desktop.Features.RemoteControl.UI;
 using PocketMC.Desktop.Infrastructure;
 using Wpf.Ui.Controls;
 
@@ -31,6 +32,16 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private ITitleBarContextSource? _titleBarContextSource;
     private readonly Dictionary<Type, Page> _shellPageCache = new();
     private bool _explicitExitRequested;
+    private static readonly HashSet<Type> ShellOwnedScrollPageTypes = new()
+    {
+        typeof(DashboardPage),
+        typeof(TunnelPage),
+        typeof(PortsMapPage),
+        typeof(RemoteControlPage),
+        typeof(JavaSetupPage),
+        typeof(AboutPage),
+        typeof(AppSettingsPage)
+    };
 
     public MainWindow(
         IServiceProvider serviceProvider,
@@ -95,6 +106,9 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void OnNavigated(NavigationView sender, NavigatedEventArgs args)
     {
+        if (args.Page is Page navigatedPage)
+            DisableShellOwnedScrollHost(navigatedPage);
+
         var pageType = args.Page?.GetType();
         if (IsShellPageType(pageType))
         {
@@ -110,7 +124,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         pageType == typeof(JavaSetupPage) ||
         pageType == typeof(AboutPage) ||
         pageType == typeof(AppSettingsPage) ||
-        pageType == typeof(PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage);
+        pageType == typeof(RemoteControlPage);
 
     public bool ShowShellPage(Type pageType, object? parameter = null)
     {
@@ -121,6 +135,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         if (replaced)
         {
             _lastShellPageType = pageType;
+            DisableShellOwnedScrollHost(shellPage);
             DetachTitleBarContextSource();
             SyncNavigationSelection(pageType);
         }
@@ -133,7 +148,10 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
         bool replaced = RootNavigation.ReplaceContent(page, null);
         if (replaced)
+        {
+            DisableShellOwnedScrollHost(page);
             AttachTitleBarContextSource(page as ITitleBarContextSource);
+        }
         return replaced;
     }
 
@@ -226,8 +244,18 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         if (pageType == typeof(JavaSetupPage)) return NavJavaSetup;
         if (pageType == typeof(AboutPage)) return NavAbout;
         if (pageType == typeof(AppSettingsPage)) return NavSettings;
-        if (pageType == typeof(PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage)) return NavRemoteControl;
+        if (pageType == typeof(RemoteControlPage)) return NavRemoteControl;
         return null;
+    }
+
+    private void DisableShellOwnedScrollHost(Page page)
+    {
+        if (!ShellOwnedScrollPageTypes.Contains(page.GetType()))
+            return;
+
+        Dispatcher.BeginInvoke(
+            new Action(() => ScrollViewerHelper.DisableAncestorScrollViewers(page)),
+            System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     private Page GetOrCreateShellPage(Type pageType)

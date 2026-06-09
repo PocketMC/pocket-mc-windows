@@ -41,7 +41,12 @@
         </StackPanel>
 
         <!-- ─── Runtime Cards ─── -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer x:Name="RuntimeScrollViewer"
+                      Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="False"
+                      PanningMode="VerticalOnly">
             <ItemsControl x:Name="RuntimeList">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>

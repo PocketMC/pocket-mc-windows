@@ -15,7 +15,13 @@
             <TextBlock x:Name="TxtVersion" Text="Version 1.0.0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
         </StackPanel>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,16,0">
+        <ScrollViewer x:Name="AboutScrollViewer"
+                      Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="False"
+                      PanningMode="VerticalOnly"
+                      Padding="0,0,16,0">
             <StackPanel>
                 <ui:Card Padding="24" VerticalAlignment="Top" Margin="0,0,0,12">
                 <Grid>
