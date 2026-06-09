@@ -4,7 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
-- `v1.9.1...master`: 0 unreleased commits.
+- `v1.9.1...v1.9.2`: 12 commits focused on desktop notifications, Discord linking polish, Remote Control permissions, Playit setup simplification, scroll reliability, export completeness, and release workflow stability.
 - `v1.9.0...v1.9.1`: 5 commits focused on Discord integration, single-instance enforcement, QR code generation, and clipboard reliability.
 - `v1.8.0...v1.9.0`: 36 commits focused on remote control dashboard, instance import/export, Phase 1 security hardening, and decoupled player management.
 - `v1.7.7...v1.8.0`: 24 commits focused on safe instance version updates, persistent console history, marketplace hardening, custom backup destinations, Windows startup/tray behavior, and Discord Rich Presence.
@@ -16,11 +16,61 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ---
 
-## Unreleased
+## v1.9.2 - Notifications, Discord Linking, Playit Setup & Scroll Reliability
 
 ### Summary
 
-Current `master` is ahead of `v1.9.1`.
+v1.9.2 is a focused polish and reliability release. It adds configurable desktop notifications, completes more of the Discord linking loop, simplifies Playit setup, improves Remote Control settings organization, fixes Java instance exports, and centralizes page scrolling so affected pages no longer need App Settings to be visited first.
+
+### Diff Basis
+
+The `v1.9.1...v1.9.2` diff contains 12 commits touching 36 files. The largest changes are in App Settings notification controls, Windows toast activation, Remote Control settings, Playit setup wizard flow, shared WPF scroll handling, instance export contents, and release notification CI.
+
+### Added
+
+- **Configurable Desktop Notifications**
+  - Added App Settings toggles for server online notifications, Playit agent connection notifications, Remote Control availability notifications, and AI summary notifications.
+  - Shows a Windows toast when a server reaches the online state, including the server name, loader type, and Minecraft version.
+  - Shows a Remote Control toast when the web panel is started and a public tunnel URL is available, with duplicate notifications suppressed for the same tunnel URL.
+  - Added AI summary completion toasts with a **View** action.
+- **AI Summary Toast Navigation**
+  - Clicking an AI summary toast now opens PocketMC, restores the main window if needed, navigates to the relevant server settings page, selects the summaries tab, and opens the latest summary automatically.
+- **Discord Linking**
+  - After a successful `pocketmc://` Discord link activation, PocketMC now calls the configured Discord API `assign-role` endpoint so linked users can receive their Discord role automatically.
+- **Remote Control Settings**
+  - Split Remote Control permissions and Discord Direct Message notification settings into their own expandable sections for easier scanning.
+  - Added a clearer Discord notification section with linked/not-linked state, join server action, and DM notification toggle.
+
+### Changed
+
+- **Playit Setup Wizard**
+  - Simplified Playit setup from four steps to two steps: get the setup code, then paste and connect.
+  - Consolidated the browser-side Playit instructions into a single checklist so users do not have to click through multiple internal steps.
+- **Navigation & Settings Organization**
+  - Reordered the footer navigation so Settings appears before Java Setup.
+  - Reordered App Settings so behavior, updates, appearance, notifications, Discord, cloud backups, API configuration, AI, and diagnostics are grouped more naturally.
+- **Scroll Handling**
+  - Centralized mouse-wheel forwarding in `ScrollViewerHelper` with detachable preview handlers and better child-control handling.
+  - Applied the shared scroll behavior to Dashboard, Tunnel list, Ports Map, Remote Control, Java Setup, App Settings, and About.
+  - The app now disables the shell-owned navigation scroll host for affected pages directly instead of relying on App Settings to initialize that state incidentally.
+
+### Fixed
+
+- **Java Instance Export Completeness:** Java exports now include `eula.txt` alongside server properties, whitelist, ops, bans, and other root files.
+- **AI Provider Settings:** Switching AI providers no longer saves the previous provider's endpoint URL under the newly selected provider.
+- **Toast Activation:** Windows toast arguments are parsed more safely for summary navigation.
+- **Release CI:** Discord release notifications now pass generated release notes through an environment variable, avoiding PowerShell parsing issues with multiline or special-character changelog text.
+
+### Reasoning
+
+This release removes several small but sharp bits of friction. Users get clearer feedback when servers, tunnels, and summaries are ready; Discord linking now completes the role assignment handoff; Playit setup has fewer steps; and page scrolling is initialized at the shell/page level instead of depending on a side effect from App Settings. The export fix also matters for portability because `eula.txt` is part of a complete Java server instance.
+
+### Upgrade Impact
+
+- Notification settings default to enabled, so users may see new desktop toasts after upgrading. They can disable each category from App Settings.
+- Discord-linked users may now trigger an `assign-role` call against the configured Discord API.
+- Java instance exports now carry `eula.txt`; restored or shared exports should more closely match the original instance.
+- No server data migration is required.
 
 ---
 
