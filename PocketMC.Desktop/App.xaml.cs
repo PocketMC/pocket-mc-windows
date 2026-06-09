@@ -166,6 +166,25 @@ public partial class App : Application
                         settingsManager.Save(applicationState.Settings);
 
                         Infrastructure.AppDialog.ShowInfo("Discord Linked", "PocketMC has been successfully linked to your Discord account!");
+
+                        Task.Run(async () =>
+                        {
+                            try
+                            {
+                                using var client = new HttpClient();
+                                if (!string.IsNullOrEmpty(apiKey))
+                                {
+                                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+                                }
+                                var jsonPayload = $"{{\"user_id\": {userId}}}";
+                                var content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json");
+                                await client.PostAsync($"{apiUrl.TrimEnd('/')}/assign-role", content);
+                            }
+                            catch (Exception ex)
+                            {
+                                Services.GetRequiredService<ILogger<App>>().LogError(ex, "Failed to call assign-role endpoint.");
+                            }
+                        });
                     }
                 }
             }
