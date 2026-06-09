@@ -384,6 +384,11 @@ internal sealed class RecordingNotificationService : INotificationService
     {
         Messages.Add((title, message));
     }
+
+    public void ShowServerOnline(string serverName, string version, string loaderType)
+    {
+        Messages.Add(("Server Online", $"{serverName} ({loaderType} {version}) is now online."));
+    }
 }
 
 internal sealed class TestHttpClientFactory : IHttpClientFactory

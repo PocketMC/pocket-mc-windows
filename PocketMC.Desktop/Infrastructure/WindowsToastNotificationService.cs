@@ -42,6 +42,11 @@ public sealed class WindowsToastNotificationService : INotificationService
         ShowToast(title, message);
     }
 
+    public void ShowServerOnline(string serverName, string version, string loaderType)
+    {
+        ShowToast("Server Online", $"{serverName} ({loaderType} {version}) is now online.");
+    }
+
     private void ShowToast(string title, string body)
     {
         try

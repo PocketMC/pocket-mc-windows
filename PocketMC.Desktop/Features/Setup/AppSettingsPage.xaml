@@ -473,6 +473,42 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Alert24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Manage desktop notifications." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Server Online Notification" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show a notification when a server finishes starting up and becomes online."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleServerOnlineNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleServerOnlineNotifications_Changed"
+                                             Unchecked="ToggleServerOnlineNotifications_Changed"/>
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Stethoscope24}">
                     <ui:CardExpander.Header>
                         <Grid>

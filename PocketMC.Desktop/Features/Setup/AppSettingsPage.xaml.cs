@@ -178,6 +178,9 @@ namespace PocketMC.Desktop.Features.Setup
             // Discord RPC
             ToggleDiscordRpc.IsChecked = _applicationState.Settings.EnableDiscordRpc;
 
+            // Notifications
+            ToggleServerOnlineNotifications.IsChecked = _applicationState.Settings.EnableServerOnlineNotifications;
+
             _isInitializing = false;
         }
 
@@ -701,6 +704,15 @@ namespace PocketMC.Desktop.Features.Setup
                 _discordRpcService.Initialize();
             else
                 _discordRpcService.Shutdown();
+        }
+
+        private void ToggleServerOnlineNotifications_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            settings.EnableServerOnlineNotifications = ToggleServerOnlineNotifications.IsChecked == true;
+            _settingsManager.Save(settings);
         }
 
         private void CopyDiscordInvite_Click(object sender, RoutedEventArgs e)

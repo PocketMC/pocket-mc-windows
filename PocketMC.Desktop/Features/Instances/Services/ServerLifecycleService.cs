@@ -323,6 +323,15 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
             CleanupInstanceNetworking(instanceId);
         }
 
+        if (state == ServerState.Online)
+        {
+            var meta = _registry.GetById(instanceId);
+            if (meta != null && _appState.Settings.EnableServerOnlineNotifications)
+            {
+                _notificationService.ShowServerOnline(meta.Name, meta.MinecraftVersion, meta.ServerType);
+            }
+        }
+
         OnInstanceStateChanged?.Invoke(instanceId, state);
     }
 
