@@ -37,8 +37,8 @@ namespace PocketMC.Desktop.Features.Tunnel
             _partnerProvisioningClient = partnerProvisioningClient;
             _logger = logger;
 
-            _stepDots = new[] { StepDot1, StepDot2, StepDot3, StepDot4 };
-            _stepPanels = new[] { Step1Panel, Step2Panel, Step3Panel, Step4Panel };
+            _stepDots = new[] { StepDot1, StepDot2 };
+            _stepPanels = new[] { Step1Panel, Step2Panel };
 
             _playitAgentService.OnStateChanged += OnAgentStateChanged;
 
@@ -66,7 +66,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private void GoToStep(int step)
         {
-            _currentStep = Math.Clamp(step, 1, 4);
+            _currentStep = Math.Clamp(step, 1, 2);
             UpdateStepVisuals();
         }
 
@@ -97,21 +97,19 @@ namespace PocketMC.Desktop.Features.Tunnel
             // Update title
             TxtStepTitle.Text = _currentStep switch
             {
-                1 => "Open the Playit Setup Page",
-                2 => "Click Next in Playit",
-                3 => "Copy the Setup Code",
-                4 => "Paste Code & Connect",
+                1 => "Get your Setup Code",
+                2 => "Paste Code & Connect",
                 _ => "Setup"
             };
 
             // Show/hide nav buttons
             BtnPrevStep.Visibility = _currentStep > 1 ? Visibility.Visible : Visibility.Collapsed;
-            BtnNextStep.Visibility = _currentStep < 4 ? Visibility.Visible : Visibility.Collapsed;
+            BtnNextStep.Visibility = _currentStep < 2 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void BtnNextStep_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentStep < 4)
+            if (_currentStep < 2)
             {
                 GoToStep(_currentStep + 1);
             }
@@ -149,7 +147,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             GoToStep(2);
         }
 
-        // --- Step 4: Connect ---
+        // --- Step 2: Connect ---
 
         private async void BtnWizardConnect_Click(object sender, RoutedEventArgs e)
         {

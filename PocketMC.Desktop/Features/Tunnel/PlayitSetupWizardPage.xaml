@@ -46,27 +46,15 @@
                     </Border>
                     <Border Width="28" Height="2" Background="#30FFFFFF" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <Border x:Name="StepDot2" Width="32" Height="32" CornerRadius="16"
-                            Background="#30FFFFFF" Margin="0,0,6,0">
-                        <TextBlock Text="2" Foreground="#80FFFFFF" FontWeight="Bold" FontSize="14"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <Border Width="28" Height="2" Background="#30FFFFFF" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <Border x:Name="StepDot3" Width="32" Height="32" CornerRadius="16"
-                            Background="#30FFFFFF" Margin="0,0,6,0">
-                        <TextBlock Text="3" Foreground="#80FFFFFF" FontWeight="Bold" FontSize="14"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <Border Width="28" Height="2" Background="#30FFFFFF" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <Border x:Name="StepDot4" Width="32" Height="32" CornerRadius="16"
                             Background="#30FFFFFF">
-                        <TextBlock Text="4" Foreground="#80FFFFFF" FontWeight="Bold" FontSize="14"
+                        <TextBlock Text="2" Foreground="#80FFFFFF" FontWeight="Bold" FontSize="14"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </StackPanel>
 
                 <!-- Step Title -->
                 <TextBlock x:Name="TxtStepTitle" Grid.Row="1"
-                           Text="Open the Playit Setup Page"
+                           Text="Get your Setup Code"
                            FontSize="18" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                            Margin="0,0,0,16"/>
@@ -79,12 +67,31 @@
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                             <Run Text="Click the button below to open the Playit.gg setup page in your browser."/>
                         </TextBlock>
-                        <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,16"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <Run Text="When it opens, select the dropdown menu and choose"/>
-                            <Run Text=" &quot;Other&quot;" FontWeight="Bold" Foreground="#F9E2AF"/>
-                            <Run Text="."/>
-                        </TextBlock>
+                        
+                        <Border Background="#0AFFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,8"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                    <Run Text="1. In the browser, select the dropdown menu and choose"/>
+                                    <Run Text=" &quot;Other&quot;" FontWeight="Bold" Foreground="#F9E2AF"/>
+                                    <Run Text="."/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,8"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                    <Run Text="2. Click"/>
+                                    <Run Text=" &quot;Next&quot;" FontWeight="Bold" Foreground="#F9E2AF"/>
+                                    <Run Text=" in the Playit dashboard."/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,4"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                    <Run Text="3. Playit will show you a"/>
+                                    <Run Text=" setup code" FontWeight="Bold" Foreground="#F9E2AF"/>
+                                    <Run Text=" (e.g. gentle-horse-123)."/>
+                                    <Run Text=" Copy that code!" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
                         <ui:Button Content="Open Setup Page"
                                    Icon="{ui:SymbolIcon Globe24}"
                                    Appearance="Primary"
@@ -92,36 +99,8 @@
                                    Click="BtnOpenSetupPage_Click"/>
                     </StackPanel>
 
-                    <!-- Step 2: Click Next in Playit dashboard -->
+                    <!-- Step 2: Paste setup code and connect -->
                     <StackPanel x:Name="Step2Panel" Visibility="Collapsed">
-                        <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,14"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <Run Text="In the Playit dashboard, you should now see the setup wizard."/>
-                        </TextBlock>
-                        <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,4"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <Run Text="Click"/>
-                            <Run Text=" &quot;Next&quot;" FontWeight="Bold" Foreground="#F9E2AF"/>
-                            <Run Text=" in the Playit dashboard to proceed."/>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <!-- Step 3: Copy the setup code -->
-                    <StackPanel x:Name="Step3Panel" Visibility="Collapsed">
-                        <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,14"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <Run Text="Playit will show you a"/>
-                            <Run Text=" setup code" FontWeight="Bold" Foreground="#F9E2AF"/>
-                            <Run Text=". Copy that code — you'll need it in the next step."/>
-                        </TextBlock>
-                        <TextBlock TextWrapping="Wrap" FontSize="13" Margin="0,0,0,4"
-                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                   FontStyle="Italic"
-                                   Text="The code looks something like: gentle-horse-123"/>
-                    </StackPanel>
-
-                    <!-- Step 4: Paste setup code and connect -->
-                    <StackPanel x:Name="Step4Panel" Visibility="Collapsed">
                         <TextBlock TextWrapping="Wrap" FontSize="14" Margin="0,0,0,14"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    Text="Paste the setup code you copied from Playit and click Connect."/>
