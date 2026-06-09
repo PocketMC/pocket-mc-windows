@@ -490,6 +490,13 @@ namespace PocketMC.Desktop.Features.Setup
         {
             if (_isInitializing) return;
 
+            // Suppress cascading saves while we update all UI fields atomically.
+            // Without this, SetSelectedModel triggers AiModelCombo_SelectionChanged → SaveAiSettings()
+            // before the endpoint URL text is updated, writing the OLD provider's endpoint under
+            // the NEW provider's key (e.g. Gemini's Google URL saved as Mistral's endpoint).
+            bool wasInitializing = _isInitializing;
+            _isInitializing = true;
+
             var settings = _applicationState.Settings;
             var providerType = GetSelectedProvider();
             var providerStr = providerType.ToString();
@@ -505,12 +512,16 @@ namespace PocketMC.Desktop.Features.Setup
             PopulateModelsForProvider(providerType);
 
             var (defaultModel, defaultEndpoint) = AiApiClient.GetProviderDefaults(providerType);
-            SetSelectedModel(!string.IsNullOrWhiteSpace(model) ? model : defaultModel);
+            // Update endpoint BEFORE model to prevent stale endpoint being saved by cascading handlers
             AiEndpointUrlInput.Text = !string.IsNullOrWhiteSpace(endpoint) ? endpoint : defaultEndpoint;
+            SetSelectedModel(!string.IsNullOrWhiteSpace(model) ? model : defaultModel);
             
             EndpointUrlPanel.Visibility = providerType == AiProviderType.Ollama ? Visibility.Visible : Visibility.Collapsed;
 
-            _settingsManager.Save(settings);
+            _isInitializing = wasInitializing;
+
+            // Single atomic save with all fields correctly set
+            SaveAiSettings();
         }
 
         private void AiModelCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

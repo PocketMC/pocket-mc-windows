@@ -27,7 +27,8 @@ public sealed class WindowsToastNotificationService : INotificationService
         {
             try
             {
-                var query = System.Web.HttpUtility.ParseQueryString(toastArgs.Argument ?? string.Empty);
+                var argString = (toastArgs.Argument ?? string.Empty).Replace(";", "&");
+                var query = System.Web.HttpUtility.ParseQueryString(argString);
                 if (query["action"] == "openSummary")
                 {
                     var instanceIdStr = query["instanceId"];
@@ -80,6 +81,10 @@ public sealed class WindowsToastNotificationService : INotificationService
                 .AddArgument("instanceId", instanceId)
                 .AddText("AI Summary Complete")
                 .AddText($"Session summary saved for '{serverName}'.")
+                .AddButton(new ToastButton()
+                    .SetContent("View")
+                    .AddArgument("action", "openSummary")
+                    .AddArgument("instanceId", instanceId))
                 .Show();
         }
         catch (Exception ex)
