@@ -22,10 +22,9 @@
 
 
 <br>
-
-<img src="docs/assets/PocketMC.gif" alt="PocketMC Demo" width="880" style="border-radius:12px" />
-
+<video src="https://github.com/user-attachments/assets/0518dd2b-6d07-422f-b383-cd5e0d2ae75b" width="880" style="border-radius:12px"></video>
 <br>
+
 <br>
 
 </div>
