@@ -205,9 +205,24 @@
                                 </TextBlock.Style>
                             </TextBlock>
                         </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </ui:Card>
 
-                        <Separator Margin="0,16" Opacity="0.15"/>
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Shield24}" Margin="0,12,0,0" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVis}}">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Remote Control Permissions" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Configure what actions paired devices are allowed to execute." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
 
+                    <StackPanel Margin="16,8,16,16">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -245,16 +260,30 @@
                                              VerticalAlignment="Center"
                                              IsChecked="{Binding AllowRemotePlayerActions}"/>
                         </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
 
-                        <Separator Margin="0,16" Opacity="0.15"/>
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Chat24}" Margin="0,12,0,0" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVis}}">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Discord Notifications" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Link your Discord account to receive generated URLs via Direct Message." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
 
-                        <Grid Margin="0,0,0,0">
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Discord Integration" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Direct Message Notifications" FontSize="14" FontWeight="Medium"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                     <TextBlock Text="Status: " Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
                                     <TextBlock Text="Linked" Foreground="#A6E3A1" FontSize="12" Visibility="{Binding IsDiscordLinked, Converter={StaticResource BoolToVis}}"/>
@@ -268,10 +297,7 @@
                                                FontSize="12" />
                                     <ui:Button Content="Join Discord Server" 
                                                Margin="0,12,0,0" 
-                                               Padding="16,8"
-                                               Background="#5865F2" 
-                                               Foreground="White" 
-                                               BorderBrush="Transparent"
+                                               Appearance="Secondary"
                                                Icon="{ui:SymbolIcon Chat24}"
                                                Command="{Binding JoinDiscordCommand}" 
                                                HorizontalAlignment="Left" />
@@ -290,9 +316,8 @@
                                              IsEnabled="{Binding IsDiscordLinked}"
                                              IsChecked="{Binding EnableDiscordNotifications}"/>
                         </Grid>
-                        </StackPanel>
                     </StackPanel>
-                </ui:Card>
+                </ui:CardExpander>
             </StackPanel>
         </ScrollViewer>
     </Grid>

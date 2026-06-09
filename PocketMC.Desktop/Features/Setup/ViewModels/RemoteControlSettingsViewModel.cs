@@ -324,6 +324,8 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         });
     }
 
+
+
     [RelayCommand]
     private void ToggleLocalQr()
     {
