@@ -506,6 +506,63 @@
                                              Checked="ToggleServerOnlineNotifications_Changed"
                                              Unchecked="ToggleServerOnlineNotifications_Changed"/>
                         </Grid>
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Agent Connect Notification" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show a notification when the Playit agent successfully connects."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleAgentConnectNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleAgentConnectNotifications_Changed"
+                                             Unchecked="ToggleAgentConnectNotifications_Changed"/>
+                        </Grid>
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Remote Control Online Notification" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show a notification when the remote control service is online and a tunnel is found."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemoteControlNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleRemoteControlNotifications_Changed"
+                                             Unchecked="ToggleRemoteControlNotifications_Changed"/>
+                        </Grid>
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="AI Summary Notification" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show a notification when AI session summarization starts and completes."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleAiSummaryNotifications"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleAiSummaryNotifications_Changed"
+                                             Unchecked="ToggleAiSummaryNotifications_Changed"/>
+                        </Grid>
                     </StackPanel>
                 </ui:CardExpander>
 

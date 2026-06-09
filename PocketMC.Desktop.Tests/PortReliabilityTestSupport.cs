@@ -389,6 +389,11 @@ internal sealed class RecordingNotificationService : INotificationService
     {
         Messages.Add(("Server Online", $"{serverName} ({loaderType} {version}) is now online."));
     }
+
+    public void ShowSummaryComplete(string instanceId, string serverName)
+    {
+        Messages.Add(("AI Summary Complete", $"Session summary saved for '{serverName}'."));
+    }
 }
 
 internal sealed class TestHttpClientFactory : IHttpClientFactory

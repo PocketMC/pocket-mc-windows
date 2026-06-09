@@ -34,6 +34,7 @@ namespace PocketMC.Desktop;
 public partial class App : Application
 {
     private IHost? _host;
+    private Guid? _pendingSummaryInstanceId;
 
     public IServiceProvider Services =>
         _host?.Services ?? throw new InvalidOperationException("Application host has not been initialized.");
@@ -91,6 +92,13 @@ public partial class App : Application
         if (!string.IsNullOrEmpty(startupOptions.ActivatedUri))
         {
             HandleUriActivation(startupOptions.ActivatedUri);
+        }
+
+        if (_pendingSummaryInstanceId.HasValue)
+        {
+            var instanceId = _pendingSummaryInstanceId.Value;
+            _pendingSummaryInstanceId = null;
+            HandleSummaryNotificationClick(instanceId);
         }
     }
 
@@ -166,6 +174,58 @@ public partial class App : Application
         {
             Services.GetRequiredService<ILogger<App>>().LogError(ex, "Failed to handle URI activation.");
         }
+    }
+
+    public void HandleSummaryNotificationClick(Guid instanceId)
+    {
+        if (_host == null)
+        {
+            _pendingSummaryInstanceId = instanceId;
+            return;
+        }
+
+        Dispatcher.InvokeAsync(() =>
+        {
+            try
+            {
+                if (Services.GetService<IAppNavigationService>() is IAppNavigationService navigationService &&
+                    Services.GetService<InstanceRegistry>() is InstanceRegistry registry)
+                {
+                    var metadata = registry.GetById(instanceId);
+                    if (metadata != null)
+                    {
+                        var settingsViewModel = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsViewModel>(Services, metadata);
+                        settingsViewModel.InitialTabIndex = 8;
+                        settingsViewModel.Summaries.AutoViewLatestOnLoad = true;
+                        settingsViewModel.Summaries.Load(!string.IsNullOrWhiteSpace(Services.GetRequiredService<ApplicationState>().Settings.GetCurrentAiKey()));
+
+                        var settingsPage = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsPage>(Services, settingsViewModel);
+                        
+                        navigationService.NavigateToDetailPage(
+                            settingsPage, 
+                            $"Settings: {metadata.Name}", 
+                            DetailRouteKind.ServerSettings, 
+                            DetailBackNavigation.Dashboard, 
+                            true);
+                            
+                        if (MainWindow != null)
+                        {
+                            if (MainWindow.WindowState == WindowState.Minimized)
+                            {
+                                MainWindow.WindowState = WindowState.Normal;
+                            }
+                            MainWindow.Show();
+                            MainWindow.Activate();
+                            MainWindow.Focus();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Services.GetRequiredService<ILogger<App>>().LogError(ex, "Failed to handle summary notification click.");
+            }
+        });
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

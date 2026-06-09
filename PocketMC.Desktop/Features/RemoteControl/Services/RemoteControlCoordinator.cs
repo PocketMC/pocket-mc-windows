@@ -13,19 +13,23 @@ public sealed class RemoteControlCoordinator
     private readonly RemoteDashboardHost _dashboardHost;
     private readonly RemoteTunnelManager _tunnelManager;
     private readonly LocalNetworkAddressService _localNetworkAddressService;
+    private readonly Infrastructure.WindowsToastNotificationService? _toastNotificationService;
+    private string? _lastNotifiedTunnelUrl;
 
     public RemoteControlCoordinator(
         ApplicationState applicationState,
         SettingsManager settingsManager,
         RemoteDashboardHost dashboardHost,
         RemoteTunnelManager tunnelManager,
-        LocalNetworkAddressService localNetworkAddressService)
+        LocalNetworkAddressService localNetworkAddressService,
+        Infrastructure.WindowsToastNotificationService? toastNotificationService = null)
     {
         _applicationState = applicationState;
         _settingsManager = settingsManager;
         _dashboardHost = dashboardHost;
         _tunnelManager = tunnelManager;
         _localNetworkAddressService = localNetworkAddressService;
+        _toastNotificationService = toastNotificationService;
     }
 
     public RemoteDashboardStatus GetStatus()
@@ -69,6 +73,7 @@ public sealed class RemoteControlCoordinator
 
     public async Task StopHostAsync(CancellationToken cancellationToken = default)
     {
+        _lastNotifiedTunnelUrl = null;
         _applicationState.Settings.RemoteControl.Enabled = false;
         _settingsManager.Save(_applicationState.Settings);
         await _tunnelManager.StopAsync(cancellationToken);
@@ -99,6 +104,14 @@ public sealed class RemoteControlCoordinator
         if (result.Success && !string.IsNullOrEmpty(result.PublicUrl))
         {
             _ = NotifyDiscordOfRemoteControlUrlAsync(result.PublicUrl);
+
+            if (_applicationState.Settings.EnableRemoteControlNotifications && 
+                _lastNotifiedTunnelUrl != result.PublicUrl && 
+                _toastNotificationService != null)
+            {
+                _lastNotifiedTunnelUrl = result.PublicUrl;
+                _toastNotificationService.ShowRemoteControlStarted();
+            }
         }
         
         return result;
@@ -144,11 +157,15 @@ public sealed class RemoteControlCoordinator
         }
     }
 
-    public Task StopTunnelAsync(CancellationToken cancellationToken = default) =>
-        _tunnelManager.StopAsync(cancellationToken);
+    public Task StopTunnelAsync(CancellationToken cancellationToken = default)
+    {
+        _lastNotifiedTunnelUrl = null;
+        return _tunnelManager.StopAsync(cancellationToken);
+    }
 
     public async Task StopAllAsync(CancellationToken cancellationToken = default)
     {
+        _lastNotifiedTunnelUrl = null;
         await _tunnelManager.StopAsync(cancellationToken);
         await _dashboardHost.StopAsync(cancellationToken);
     }

@@ -56,6 +56,8 @@ namespace PocketMC.Desktop.Features.Settings
         public SettingsSummariesVM Summaries { get; }
         public ServerCloudBackupViewModel CloudBackups { get; }
 
+        public int InitialTabIndex { get; set; } = 0;
+
         private bool _isAiSummarizationAvailable;
         public bool IsAiSummarizationAvailable { get => _isAiSummarizationAvailable; set => SetProperty(ref _isAiSummarizationAvailable, value); }
 

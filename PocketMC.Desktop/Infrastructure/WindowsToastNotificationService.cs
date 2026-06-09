@@ -23,7 +23,31 @@ public sealed class WindowsToastNotificationService : INotificationService
         if (_isRegistered) return;
 
         SetCurrentProcessExplicitAppUserModelID(AppUserModelId);
-        ToastNotificationManagerCompat.OnActivated += _ => { };
+        ToastNotificationManagerCompat.OnActivated += toastArgs =>
+        {
+            try
+            {
+                var query = System.Web.HttpUtility.ParseQueryString(toastArgs.Argument ?? string.Empty);
+                if (query["action"] == "openSummary")
+                {
+                    var instanceIdStr = query["instanceId"];
+                    if (Guid.TryParse(instanceIdStr, out var instanceId))
+                    {
+                        System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            if (System.Windows.Application.Current is App app)
+                            {
+                                app.HandleSummaryNotificationClick(instanceId);
+                            }
+                        });
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore activation errors
+            }
+        };
         _isRegistered = true;
     }
 
@@ -45,6 +69,28 @@ public sealed class WindowsToastNotificationService : INotificationService
     public void ShowServerOnline(string serverName, string version, string loaderType)
     {
         ShowToast("Server Online", $"{serverName} ({loaderType} {version}) is now online.");
+    }
+
+    public void ShowSummaryComplete(string instanceId, string serverName)
+    {
+        try
+        {
+            new ToastContentBuilder()
+                .AddArgument("action", "openSummary")
+                .AddArgument("instanceId", instanceId)
+                .AddText("AI Summary Complete")
+                .AddText($"Session summary saved for '{serverName}'.")
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to show Windows toast notification for AI summary.");
+        }
+    }
+
+    public void ShowRemoteControlStarted()
+    {
+        ShowToast("Remote Control", "Your remote control web panel is started.");
     }
 
     private void ShowToast(string title, string body)

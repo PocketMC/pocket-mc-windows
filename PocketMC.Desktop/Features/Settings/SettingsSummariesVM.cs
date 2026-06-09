@@ -46,6 +46,8 @@ public class SettingsSummariesVM : ViewModelBase
     private bool _isViewingSummary;
     public bool IsViewingSummary { get => _isViewingSummary; set => SetProperty(ref _isViewingSummary, value); }
 
+    public bool AutoViewLatestOnLoad { get; set; }
+
     public ICommand ViewSummaryCommand { get; }
     public ICommand DeleteSummaryCommand { get; }
     public ICommand CloseSummaryCommand { get; }
@@ -93,6 +95,12 @@ public class SettingsSummariesVM : ViewModelBase
         }
 
         OnPropertyChanged(nameof(HasSummaries));
+
+        if (AutoViewLatestOnLoad && Summaries.Count > 0)
+        {
+            AutoViewLatestOnLoad = false;
+            ViewSummary(Summaries[0]);
+        }
     }
 
     private void ViewSummary(object? param)

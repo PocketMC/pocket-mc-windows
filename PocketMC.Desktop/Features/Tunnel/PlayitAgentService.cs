@@ -255,7 +255,10 @@ namespace PocketMC.Desktop.Features.Tunnel
                 _tunnelRunningAlreadyFired = true;
                 LastErrorMessage = null;
                 _stateMachine.TransitionTo(PlayitAgentState.Connected);
-                _toastNotificationService.ShowAgentConnected();
+                if (_applicationState.Settings.EnableAgentConnectNotifications)
+                {
+                    _toastNotificationService.ShowAgentConnected();
+                }
                 OnTunnelRunning?.Invoke(this, EventArgs.Empty);
             }
         }

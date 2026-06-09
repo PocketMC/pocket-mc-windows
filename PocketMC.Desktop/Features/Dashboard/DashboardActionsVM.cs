@@ -198,14 +198,20 @@ namespace PocketMC.Desktop.Features.Dashboard
                 var sessionEnd = DateTime.UtcNow;
 
                 var notificationService = (INotificationService)_serviceProvider.GetService(typeof(INotificationService))!;
-                notificationService.ShowInformation("AI Summary", $"Generating summary for '{vm.Name}'...");
+                if (settings.EnableAiSummaryNotifications)
+                {
+                    notificationService.ShowInformation("AI Summary", $"Generating summary for '{vm.Name}'...");
+                }
 
                 var result = await summarizationService.SummarizeAsync(
                     serverDir, vm.Name, provider, settings.GetCurrentAiKey()!, settings.GetCurrentAiModel(), settings.GetCurrentAiEndpoint(), sessionStart, sessionEnd);
 
                 if (result.Success)
                 {
-                    notificationService.ShowInformation("AI Summary Complete", $"Session summary saved for '{vm.Name}'.");
+                    if (settings.EnableAiSummaryNotifications)
+                    {
+                        notificationService.ShowSummaryComplete(vm.Id.ToString(), vm.Name);
+                    }
                 }
                 else
                 {

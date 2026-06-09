@@ -25,7 +25,7 @@ public sealed class RemoteControlCoordinatorTests
                 new Mock<Microsoft.Extensions.Logging.ILogger<RemoteDashboardHost>>().Object);
                 
             var coordinator = new RemoteControlCoordinator(
-                appState, settingsManager, host, null!, null!);
+                appState, settingsManager, host, null!, null!, null!);
                 
             await Assert.ThrowsAnyAsync<Exception>(() => coordinator.StartHostAsync());
             

@@ -67,5 +67,8 @@ namespace PocketMC.Desktop.Models
         public string? DiscordApiKey { get; set; }
         public bool EnableDiscordNotifications { get; set; } = true;
         public bool EnableServerOnlineNotifications { get; set; } = true;
+        public bool EnableAgentConnectNotifications { get; set; } = true;
+        public bool EnableRemoteControlNotifications { get; set; } = true;
+        public bool EnableAiSummaryNotifications { get; set; } = true;
     }
 }

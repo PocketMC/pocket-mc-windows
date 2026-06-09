@@ -180,6 +180,9 @@ namespace PocketMC.Desktop.Features.Setup
 
             // Notifications
             ToggleServerOnlineNotifications.IsChecked = _applicationState.Settings.EnableServerOnlineNotifications;
+            ToggleAgentConnectNotifications.IsChecked = _applicationState.Settings.EnableAgentConnectNotifications;
+            ToggleRemoteControlNotifications.IsChecked = _applicationState.Settings.EnableRemoteControlNotifications;
+            ToggleAiSummaryNotifications.IsChecked = _applicationState.Settings.EnableAiSummaryNotifications;
 
             _isInitializing = false;
         }
@@ -712,6 +715,33 @@ namespace PocketMC.Desktop.Features.Setup
 
             var settings = _applicationState.Settings;
             settings.EnableServerOnlineNotifications = ToggleServerOnlineNotifications.IsChecked == true;
+            _settingsManager.Save(settings);
+        }
+
+        private void ToggleAgentConnectNotifications_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            settings.EnableAgentConnectNotifications = ToggleAgentConnectNotifications.IsChecked == true;
+            _settingsManager.Save(settings);
+        }
+
+        private void ToggleRemoteControlNotifications_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            settings.EnableRemoteControlNotifications = ToggleRemoteControlNotifications.IsChecked == true;
+            _settingsManager.Save(settings);
+        }
+
+        private void ToggleAiSummaryNotifications_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            settings.EnableAiSummaryNotifications = ToggleAiSummaryNotifications.IsChecked == true;
             _settingsManager.Save(settings);
         }
 

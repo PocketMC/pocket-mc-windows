@@ -4,5 +4,6 @@ namespace PocketMC.Desktop.Core.Interfaces
     {
         void ShowInformation(string title, string message);
         void ShowServerOnline(string serverName, string version, string loaderType);
+        void ShowSummaryComplete(string instanceId, string serverName);
     }
 }

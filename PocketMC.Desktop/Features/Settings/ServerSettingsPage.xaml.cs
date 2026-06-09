@@ -38,7 +38,20 @@ namespace PocketMC.Desktop.Features.Settings
             if (_isFirstLoad)
             {
                 _isFirstLoad = false;
-                if (SidebarList.MenuItems.Count > 0 && SidebarList.MenuItems[0] is Wpf.Ui.Controls.NavigationViewItem firstItem)
+                int targetIndex = ViewModel.InitialTabIndex;
+                if (targetIndex >= 0 && targetIndex < SidebarList.MenuItems.Count)
+                {
+                    for (int i = 0; i < SidebarList.MenuItems.Count; i++)
+                    {
+                        if (SidebarList.MenuItems[i] is Wpf.Ui.Controls.NavigationViewItem item)
+                        {
+                            item.IsActive = (i == targetIndex);
+                        }
+                    }
+                    MainTabControl.SelectedIndex = targetIndex;
+                    ViewModel.SetActiveSettingsTab(targetIndex);
+                }
+                else if (SidebarList.MenuItems.Count > 0 && SidebarList.MenuItems[0] is Wpf.Ui.Controls.NavigationViewItem firstItem)
                 {
                     firstItem.IsActive = true;
                     MainTabControl.SelectedIndex = 0;
