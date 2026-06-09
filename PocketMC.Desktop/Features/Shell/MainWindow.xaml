@@ -205,14 +205,14 @@
 
                 <!-- ─── Footer ─── -->
                 <ui:NavigationView.FooterMenuItems>
-                    <ui:NavigationViewItem x:Name="NavJavaSetup"
-                                           Content="Java Setup"
-                                           Icon="{ui:SymbolIcon ArrowDownload24}"
-                                           TargetPageType="{x:Type setup:JavaSetupPage}"/>
                     <ui:NavigationViewItem x:Name="NavSettings"
                                            Content="Settings"
                                            Icon="{ui:SymbolIcon Settings24}"
                                            TargetPageType="{x:Type setup:AppSettingsPage}"/>
+                    <ui:NavigationViewItem x:Name="NavJavaSetup"
+                                           Content="Java Setup"
+                                           Icon="{ui:SymbolIcon ArrowDownload24}"
+                                           TargetPageType="{x:Type setup:JavaSetupPage}"/>
                     <ui:NavigationViewItem x:Name="NavAbout"
                                            Content="About"
                                            Icon="{ui:SymbolIcon Info24}"
