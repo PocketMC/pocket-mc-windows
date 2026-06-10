@@ -236,6 +236,38 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
     <td><img src="docs/assets/mod-marketplace.png" width="420" /></td>
     <td><img src="docs/assets/tunnels.png" width="420" /></td>
   </tr>
+  <tr>
+    <td align="center"><b>Interactive Ports Map</b></td>
+    <td align="center"><b>Java Runtimes</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/ports-map.png" width="420" /></td>
+    <td><img src="docs/assets/java-runtimes.png" width="420" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Remote Control</b></td>
+    <td align="center"><b>App Settings</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/remote-control.png" width="420" /></td>
+    <td><img src="docs/assets/app-settings.png" width="420" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Web Dashboard - Home</b></td>
+    <td align="center"><b>Web Dashboard - Console</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/assets/mobile-home.png" width="280" /></td>
+    <td align="center"><img src="docs/assets/mobile-console.png" width="280" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Web Dashboard - Players</b></td>
+    <td align="center"><b></b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/assets/mobile-players.png" width="280" /></td>
+    <td></td>
+  </tr>
 </table>
 
 <br>
