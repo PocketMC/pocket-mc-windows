@@ -211,64 +211,21 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 
 ## Screenshots
 
-<table>
-  <tr>
-    <td align="center"><b>Dashboard</b></td>
-    <td align="center"><b>Console</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/assets/screenshot-dashboard.png" width="420" /></td>
-    <td><img src="docs/assets/screenshot-console.png" width="420" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Server Settings</b></td>
-    <td align="center"><b>Backups</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/assets/server-settings.png" width="420" /></td>
-    <td><img src="docs/assets/screenshot-backups.png" width="420" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Mod Marketplace</b></td>
-    <td align="center"><b>Public Tunnels</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/assets/mod-marketplace.png" width="420" /></td>
-    <td><img src="docs/assets/tunnels.png" width="420" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Interactive Ports Map</b></td>
-    <td align="center"><b>Java Runtimes</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/assets/ports-map.png" width="420" /></td>
-    <td><img src="docs/assets/java-runtimes.png" width="420" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Remote Control</b></td>
-    <td align="center"><b>App Settings</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/assets/remote-control.png" width="420" /></td>
-    <td><img src="docs/assets/app-settings.png" width="420" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Web Dashboard - Home</b></td>
-    <td align="center"><b>Web Dashboard - Console</b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/assets/mobile-home.png" width="280" /></td>
-    <td align="center"><img src="docs/assets/mobile-console.png" width="280" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Web Dashboard - Players</b></td>
-    <td align="center"><b></b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/assets/mobile-players.png" width="280" /></td>
-    <td></td>
-  </tr>
-</table>
+### Desktop App
+
+| | |
+| :---: | :---: |
+| **Dashboard**<br><img src="docs/assets/screenshot-dashboard.png" width="420" alt="Dashboard" /> | **Console**<br><img src="docs/assets/screenshot-console.png" width="420" alt="Console" /> |
+| **Server Settings**<br><img src="docs/assets/server-settings.png" width="420" alt="Server Settings" /> | **Backups**<br><img src="docs/assets/screenshot-backups.png" width="420" alt="Backups" /> |
+| **Mod Marketplace**<br><img src="docs/assets/mod-marketplace.png" width="420" alt="Mod Marketplace" /> | **Public Tunnels**<br><img src="docs/assets/tunnels.png" width="420" alt="Public Tunnels" /> |
+| **Interactive Ports Map**<br><img src="docs/assets/ports-map.png" width="420" alt="Interactive Ports Map" /> | **Java Runtimes**<br><img src="docs/assets/java-runtimes.png" width="420" alt="Java Runtimes" /> |
+| **Remote Control**<br><img src="docs/assets/remote-control.png" width="420" alt="Remote Control" /> | **App Settings**<br><img src="docs/assets/app-settings.png" width="420" alt="App Settings" /> |
+
+### Remote Web Dashboard for your friend
+
+| Home | Console | Players |
+| :---: | :---: | :---: |
+| <img src="docs/assets/mobile-home.png" width="280" alt="Web Dashboard - Home" /> | <img src="docs/assets/mobile-console.png" width="280" alt="Web Dashboard - Console" /> | <img src="docs/assets/mobile-players.png" width="280" alt="Web Dashboard - Players" /> |
 
 <br>
 
