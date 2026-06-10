@@ -15,6 +15,8 @@
       <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22C55E?style=flat-square" alt="MIT License" /></a>
       <a href="https://github.com/PocketMC/pocket-mc-windows/releases"><img src="https://img.shields.io/github/v/release/PocketMC/pocket-mc-windows?style=flat-square" alt="Release" /></a>
       <a href="https://discord.gg/h27uNCaxPH"><img src="https://img.shields.io/badge/Discord-Join-%235865F2?style=flat-square&logo=discord" alt="Discord" /></a>
+      <a href="https://www.reddit.com/r/PocketMC/"><img src="https://img.shields.io/badge/Reddit-r%2FPocketMC-%23FF4500?style=flat-square&logo=reddit" alt="Reddit" /></a>
+      <a href="https://www.youtube.com/@OfficialPocketMC"><img src="https://img.shields.io/badge/YouTube-Watch-%23FF0000?style=flat-square&logo=youtube" alt="YouTube" /></a>
       <a href="https://www.buymeacoffee.com/sahaj33"><img src="https://img.shields.io/badge/Donate-BMC-%23FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" /></a>
     </td>
   </tr>
@@ -334,6 +336,8 @@ For substantial changes touching process lifecycle, runtime provisioning, tunnel
 ## Community & License
 
 **Discord** — [discord.gg/h27uNCaxPH](https://discord.gg/h27uNCaxPH)  
+**Reddit** — [r/PocketMC](https://www.reddit.com/r/PocketMC/)  
+**YouTube** — [Watch Tutorials](https://www.youtube.com/@OfficialPocketMC)  
 **MIT** © 2026 PocketMC Contributors — see [LICENSE](LICENSE)
 
 <br>
