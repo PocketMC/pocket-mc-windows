@@ -21,6 +21,7 @@ jobs:
         with:
           filters: |
             app:
+              - '.github/**'
               - '**'
               - '!**/*.md'
               - '!docs/**'
