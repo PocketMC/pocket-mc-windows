@@ -4,16 +4,30 @@ on:
   push:
     branches:
       - master
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
   pull_request:
-    
+
 permissions:
   contents: write
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - '**'
+              - '!**/*.md'
+              - '!docs/**'
+
   build:
+    needs: check-changes
+    if: needs.check-changes.outputs.should-run == 'true'
     runs-on: windows-latest
 
     env:
@@ -29,14 +43,12 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # ── FIX 1: Cache NuGet packages (biggest win, ~90s saved on warm cache) ──
       - uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props') }}
           restore-keys: nuget-${{ runner.os }}-
 
-      # ── FIX 2: Cache dotnet global tools so vpk isn't re-downloaded (~30s) ──
       - uses: actions/cache@v4
         id: tools-cache
         with:
@@ -51,11 +63,9 @@ jobs:
         if: steps.tools-cache.outputs.cache-hit != 'true'
         run: dotnet tool install -g vpk
 
-      # ── FIX 3: Single explicit restore; all subsequent steps use --no-restore ──
       - name: Restore
         run: dotnet restore PocketMC.Desktop.sln
 
-      # ── FIX 4: Version check moved BEFORE any build work ──────────────────
       - name: Get latest release version
         id: latest
         shell: pwsh
@@ -81,7 +91,6 @@ jobs:
           $skip = ($latest -ne "none") -and ($current -eq $latest)
           echo "skip=$($skip.ToString().ToLower())" >> $env:GITHUB_OUTPUT
 
-      # ── Debug build only — tests need this, release publish does its own build ──
       - name: Build (Debug)
         run: dotnet build PocketMC.Desktop.sln -c Debug --no-restore
 
@@ -91,8 +100,6 @@ jobs:
       - name: Restore (win-x64 RID, for publish)
         run: dotnet restore PocketMC.Desktop/PocketMC.Desktop.csproj -r ${{ env.RUNTIME }}
         
-      # ── Portable publish: always runs (beta artifact), --no-restore ─────────
-      # ── FIX 5: Removed the redundant "dotnet build -c Release" step ────────
       - name: Publish Portable
         run: |
           dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
@@ -133,21 +140,19 @@ jobs:
 
           $payload = @{
             embeds = @(@{
-              title       = "🛠️ New Beta Portable Build Available!"
+              title       = "ðŸ› ï¸ New Beta Portable Build Available!"
               description = "A new test build has been uploaded."
               color       = 16753920
               fields      = @(
-                @{ name = "⬇️ Download"; value = "[Click to download](https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId)"; inline = $false },
-                @{ name = "📝 Run"; value = "Branch: ``$branch`` | Commit: ``$commit`` `n[View Run](https://github.com/$repo/actions/runs/$runId)"; inline = $false },
-                @{ name = "💬 Commit"; value = ('```text' + "`n$commitMessage`n" + '```'); inline = $false }
+                @{ name = "â¬‡ï¸ Download"; value = "[Click to download](https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId)"; inline = $false },
+                @{ name = "ðŸ“ Run"; value = "Branch: ``$branch`` | Commit: ``$commit`` `n[View Run](https://github.com/$repo/actions/runs/$runId)"; inline = $false },
+                @{ name = "ðŸ’¬ Commit"; value = ('```text' + "`n$commitMessage`n" + '```'); inline = $false }
               )
               footer      = @{ text = "PocketMC CI/CD" }
             })
           }
           Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
 
-      # ── Everything below is gated on version change ────────────────────────
-      # ── FIX 6: Multi-DLL publish moved behind the gate (was always running) ─
       - name: Download previous release assets
         if: steps.compare.outputs.skip == 'false'
         uses: robinraju/release-downloader@v1
@@ -242,12 +247,12 @@ jobs:
 
           $payload = @{
             embeds = @(@{
-              title       = "🚀 New PocketMC Release: v${{ env.VERSION }}!"
+              title       = "ðŸš€ New PocketMC Release: v${{ env.VERSION }}!"
               description = "Version **${{ env.VERSION }}** is now live!"
               color       = 3066993
               fields      = @(
-                @{ name = "📦 Release Notes"; value = $body; inline = $false },
-                @{ name = "⬇️ Downloads"; value = "[GitHub Releases](https://github.com/PocketMC/pocket-mc-windows/releases/tag/v${{ env.VERSION }})"; inline = $false }
+                @{ name = "ðŸ“¦ Release Notes"; value = $body; inline = $false },
+                @{ name = "â¬‡ï¸ Downloads"; value = "[GitHub Releases](https://github.com/PocketMC/pocket-mc-windows/releases/tag/v${{ env.VERSION }})"; inline = $false }
               )
               footer      = @{ text = "PocketMC Build System" }
             })
