@@ -83,4 +83,3 @@ If you are compiling your own builds of PocketMC and want to configure your own 
 2. Choose **Accounts in any organizational directory and personal Microsoft accounts** (Multi-tenant & Personal).
 3. Under **Authentication**, add a **Mobile and desktop applications** platform redirect URI: `http://localhost`.
 4. Ensure the API permissions include standard Delegated permissions for `Files.ReadWrite.AppFolder` (or `Files.ReadWrite` if using full access).
-
