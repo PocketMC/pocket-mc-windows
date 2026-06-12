@@ -124,9 +124,9 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         BackCommand = new RelayCommand(_ => NavigateBack());
         RefreshCommand = new AsyncRelayCommand(_ => RefreshAllPlayerDataAsync());
-        ToggleWhitelistCommand = new AsyncRelayCommand(_ => ToggleWhitelistAsync());
-        AddToWhitelistCommand = new AsyncRelayCommand(_ => AddToWhitelistAsync(), _ => !string.IsNullOrWhiteSpace(WhitelistAddUsername));
-        RemoveFromWhitelistCommand = new AsyncRelayCommand(param => RemoveFromWhitelistAsync(param as string));
+        ToggleWhitelistCommand = new AsyncRelayCommand(_ => ToggleWhitelistAsync(), _ => IsServerOnline);
+        AddToWhitelistCommand = new AsyncRelayCommand(_ => AddToWhitelistAsync(), _ => IsServerOnline && !string.IsNullOrWhiteSpace(WhitelistAddUsername));
+        RemoveFromWhitelistCommand = new AsyncRelayCommand(param => RemoveFromWhitelistAsync(param as string), _ => IsServerOnline);
         ReloadWhitelistCommand = new AsyncRelayCommand(_ => ReloadWhitelistAsync(), _ => IsServerOnline);
 
         if (_serverProcess != null)
@@ -929,6 +929,11 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
     private async Task DispatchCommandAsync(string command)
     {
+        if (!IsServerOnline)
+        {
+            return;
+        }
+
         try
         {
             await _serverProcess!.WriteInputAsync(command);
@@ -1068,6 +1073,8 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             {
                 bannedPlayer.IsServerOnline = IsServerOnline;
             }
+
+            System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         });
     }
 

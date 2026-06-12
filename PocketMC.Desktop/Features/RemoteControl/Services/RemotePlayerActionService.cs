@@ -57,9 +57,9 @@ public sealed class RemotePlayerActionService
         }
 
         var process = _lifecycleService.GetProcess(instanceId);
-        if (process == null || !_lifecycleService.IsRunning(instanceId))
+        if (process == null || process.State != ServerState.Online)
         {
-            return RemoteControlActionResult.Failed(RemoteControlActionFailure.NotRunning, "Instance is not running.");
+            return RemoteControlActionResult.Failed(RemoteControlActionFailure.NotRunning, "Instance is not fully online.");
         }
 
         string formattedName = CommandFormatter.FormatPlayerName(playerName, metadata.ServerType);

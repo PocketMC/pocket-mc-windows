@@ -127,7 +127,7 @@ namespace PocketMC.Desktop.Features.Console
         public bool IsRegexEnabled { get => _isRegexEnabled; set { if (SetProperty(ref _isRegexEnabled, value)) ApplyFilters(); } }
 
         public bool CanStopServer => _serverProcess?.State == ServerState.Online || _serverProcess?.State == ServerState.Starting || _serverProcess?.State == ServerState.Installing;
-        public bool CanUseLiveServerControls => IsLiveProcess;
+        public bool CanUseLiveServerControls => IsLiveProcess && _serverProcess?.State == ServerState.Online;
         public bool IsReadOnlySessionLog => !IsLiveProcess;
         public string PlayerStatus => $"{(_serverProcess?.PlayerCount ?? 0)} / {_metadata.MaxPlayers}";
         public event Action? TitleBarContextChanged;
