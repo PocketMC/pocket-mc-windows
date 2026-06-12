@@ -586,6 +586,94 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Keyboard24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Keyboard Shortcuts" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="View the keyboard shortcuts available in PocketMC." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Navigate Back / Cancel" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Escape" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="or" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Alt" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="Left Arrow" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="New Instance" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="N" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Refresh Lists / Content" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="F5" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="or" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="R" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Confirm Default Action" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="Enter" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Stethoscope24}">
                     <ui:CardExpander.Header>
                         <Grid>
