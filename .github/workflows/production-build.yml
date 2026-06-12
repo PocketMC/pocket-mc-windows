@@ -43,14 +43,12 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # â”€â”€ FIX 1: Cache NuGet packages (biggest win, ~90s saved on warm cache) â”€â”€
       - uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props') }}
           restore-keys: nuget-${{ runner.os }}-
 
-      # â”€â”€ FIX 2: Cache dotnet global tools so vpk isn't re-downloaded (~30s) â”€â”€
       - uses: actions/cache@v4
         id: tools-cache
         with:
@@ -65,11 +63,9 @@ jobs:
         if: steps.tools-cache.outputs.cache-hit != 'true'
         run: dotnet tool install -g vpk
 
-      # â”€â”€ FIX 3: Single explicit restore; all subsequent steps use --no-restore â”€â”€
       - name: Restore
         run: dotnet restore PocketMC.Desktop.sln
 
-      # â”€â”€ FIX 4: Version check moved BEFORE any build work â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       - name: Get latest release version
         id: latest
         shell: pwsh
@@ -95,7 +91,6 @@ jobs:
           $skip = ($latest -ne "none") -and ($current -eq $latest)
           echo "skip=$($skip.ToString().ToLower())" >> $env:GITHUB_OUTPUT
 
-      # â”€â”€ Debug build only â€” tests need this, release publish does its own build â”€â”€
       - name: Build (Debug)
         run: dotnet build PocketMC.Desktop.sln -c Debug --no-restore
 
@@ -105,8 +100,6 @@ jobs:
       - name: Restore (win-x64 RID, for publish)
         run: dotnet restore PocketMC.Desktop/PocketMC.Desktop.csproj -r ${{ env.RUNTIME }}
         
-      # â”€â”€ Portable publish: always runs (beta artifact), --no-restore â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      # â”€â”€ FIX 5: Removed the redundant "dotnet build -c Release" step â”€â”€â”€â”€â”€â”€â”€â”€
       - name: Publish Portable
         run: |
           dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
@@ -160,8 +153,6 @@ jobs:
           }
           Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
 
-      # â”€â”€ Everything below is gated on version change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      # â”€â”€ FIX 6: Multi-DLL publish moved behind the gate (was always running) â”€
       - name: Download previous release assets
         if: steps.compare.outputs.skip == 'false'
         uses: robinraju/release-downloader@v1
