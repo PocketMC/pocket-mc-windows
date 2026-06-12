@@ -54,17 +54,26 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 
 ## Supported server software
 
-| Family | Coverage |
-|--------|----------|
-| **Vanilla Java** | Official Mojang JARs — Minecraft 1.8.8 and up |
-| **Paper** | PaperMC builds via the modern Paper API |
-| **Fabric** | Server JARs from 1.14+, with loader version selection |
-| **Forge** | Installer-based setup *(beta)* |
-| **NeoForge** | Maven-resolved installer flow *(beta)* |
-| **Bedrock Dedicated Server** | Windows BDS ZIP extraction including preview builds |
-| **PocketMine-MP** | `.phar` releases with managed PHP 8.2 runtime |
-| **Cross-play** | Geyser + Floodgate provisioning for supported Java types |
-| **Simple Voice Chat** | Detection and dedicated `mc-simple-voice-chat` Playit tunnel |
+<table border="0" align="center" cellpadding="8">
+  <tr align="center">
+    <td><img src="docs/assets/vanilla.png" alt="Vanilla Java" height="60" /></td>
+    <td><img src="docs/assets/papermc.png" alt="Paper" height="60" /></td>
+    <td><img src="docs/assets/fabric.png" alt="Fabric" height="60" /></td>
+    <td><img src="docs/assets/forge.png" alt="Forge" height="60" /></td>
+    <td><img src="docs/assets/neoforge.png" alt="NeoForge" height="60" /></td>
+    <td><img src="docs/assets/bds.png" alt="Bedrock Dedicated Server" height="60" /></td>
+    <td><img src="docs/assets/pocketmine-mp.png" alt="PocketMine-MP" height="60" /></td>
+  </tr>
+  <tr align="center" valign="top">
+    <td><sub><b>Vanilla Java</b></sub></td>
+    <td><sub><b>Paper</b></sub></td>
+    <td><sub><b>Fabric</b></sub></td>
+    <td><sub><b>Forge</b></sub></td>
+    <td><sub><b>NeoForge</b></sub></td>
+    <td><sub><b>Bedrock (BDS)</b></sub></td>
+    <td><sub><b>PocketMine-MP</b></sub></td>
+  </tr>
+</table>
 
 <br>
 
