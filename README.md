@@ -33,9 +33,9 @@
 
 ---
 
-PocketMC is a **native WPF/.NET 8 desktop app** that handles everything local Minecraft server hosting throws at you — software downloads, isolated instances, app-managed Java/PHP runtimes, startup/shutdown, live metrics, logs, players, backups, cloud replication, add-ons, and Playit.gg tunnels — from one polished Windows UI.
+PocketMC is a native WPF/.NET 8 desktop app for local Minecraft server hosting; software downloads, isolated instances, app-managed Java/PHP runtimes, startup/shutdown, live metrics, logs, players, backups, cloud replication, add-ons, and Playit.gg tunnels, all in one polished Windows UI.
 
-Your servers live on your machine, in the app root you choose. PocketMC is not a cloud host, not a Minecraft client launcher, and not a Linux web panel pretending to wear a Windows costume.
+Your servers live on your machine, in the app root you choose. PocketMC is not a cloud host, not a Minecraft client launcher, and not a Linux web panel in a Windows costume.
 
 <br>
 
