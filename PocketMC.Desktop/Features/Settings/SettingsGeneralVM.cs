@@ -31,9 +31,6 @@ namespace PocketMC.Desktop.Features.Settings
         private bool _autoStartWithApp;
         public bool AutoStartWithApp { get => _autoStartWithApp; set { if (SetProperty(ref _autoStartWithApp, value)) _markDirty(); } }
 
-        private bool _autoUpdateAddons;
-        public bool AutoUpdateAddons { get => _autoUpdateAddons; set { if (SetProperty(ref _autoUpdateAddons, value)) _markDirty(); } }
-
         private string _serverPort = "25565";
         public string ServerPort { get => _serverPort; set { if (SetProperty(ref _serverPort, value)) _markDirty(); } }
 

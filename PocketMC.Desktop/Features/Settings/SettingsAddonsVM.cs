@@ -93,6 +93,9 @@ namespace PocketMC.Desktop.Features.Settings
         public bool ShowServerRunningAddonMessage => IsServerRunning && (_allMods.Count > 0 || _allPlugins.Count > 0);
         public string ServerRunningAddonMessage => "Stop the server before enabling or disabling mods/plugins.";
 
+        private bool _autoUpdateAddons;
+        public bool AutoUpdateAddons { get => _autoUpdateAddons; set { if (SetProperty(ref _autoUpdateAddons, value)) _onAddonChanged(); } }
+
         // ── Engine predicates ────────────────────────────────────────────
         public bool ShowVanillaWarning   => _metadata.ServerType?.StartsWith("Vanilla",    StringComparison.OrdinalIgnoreCase) == true;
         public bool IsBedrockDedicated  => _metadata.Compatibility.Family == EngineFamily.Bedrock;

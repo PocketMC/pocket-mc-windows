@@ -188,7 +188,7 @@ namespace PocketMC.Desktop.Features.Settings
             General.ServerIp = cfg.ServerIp;
             General.GeyserBedrockPort = Metadata.GeyserBedrockPort?.ToString() ?? "19132";
             General.AutoStartWithApp = Metadata.AutoStartWithApp;
-            General.AutoUpdateAddons = Metadata.AutoUpdateAddons;
+            Addons.AutoUpdateAddons = Metadata.AutoUpdateAddons;
             General.LoadIcon();
             Bedrock.ServerPortV6 = cfg.ServerPortV6;
             Bedrock.AllowCheats = cfg.AllowCheats;
@@ -509,7 +509,7 @@ namespace PocketMC.Desktop.Features.Settings
             Metadata.Name = General.InstanceName;
             Metadata.Description = General.InstanceDescription;
             Metadata.AutoStartWithApp = General.AutoStartWithApp;
-            Metadata.AutoUpdateAddons = General.AutoUpdateAddons;
+            Metadata.AutoUpdateAddons = Addons.AutoUpdateAddons;
             Metadata.CustomBackupDirectory = Backups.CustomBackupDirectory;
 
             _serverConfigurationService.Save(Metadata, currentServerDir, cfg);

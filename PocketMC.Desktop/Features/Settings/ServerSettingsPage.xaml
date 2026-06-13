@@ -193,13 +193,6 @@
                                             <TextBlock Text="Automatically start this specific server instance when PocketMC starts." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
                                             <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" Content="Auto-start server at PocketMC startup" Margin="0,0,0,20"/>
 
-                                            <!-- Auto-Update Addons on Start -->
-                                            <StackPanel Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}">
-                                                <TextBlock Text="Auto-Update Addons" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                                <TextBlock Text="Automatically check for and install addon updates when this server starts. Updates will be shown in a dialog during the setup phase." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                                <ui:ToggleSwitch IsChecked="{Binding General.AutoUpdateAddons, Mode=TwoWay}" Content="Auto-update addons on server start" Margin="0,0,0,20"/>
-                                            </StackPanel>
-
                                             <Separator Margin="0,0,0,20" Opacity="0.15"/>
 
                                             <!-- Interactive Dummy Server Card -->
@@ -715,6 +708,12 @@
                         <TabItem Header="Addons">
                             <ScrollViewer x:Name="AddonsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
+                                    <!-- Auto-Update Addons on Start -->
+                                    <StackPanel Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}" Margin="4,8,4,16">
+                                        <TextBlock Text="Auto-Update Addons" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="Automatically check for and install addon updates when this server starts. Updates will be shown in a dialog during the setup phase." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                        <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" Content="Auto-update addons on server start" />
+                                    </StackPanel>
                                     <!-- Search and Sort Control Bar -->
                                     <Grid Margin="4,0,4,16" Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource InvertedVisibilityConverter}}">
                                         <Grid.ColumnDefinitions>
