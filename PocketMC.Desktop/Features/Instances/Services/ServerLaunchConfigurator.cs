@@ -320,25 +320,41 @@ namespace PocketMC.Desktop.Features.Instances.Services;
                         // that can overwhelm the WPF UI. Only forward sampled/important lines.
                         var outputTask = Task.Run(() => {
                             int lineCount = 0;
+                            int downloadCount = 0;
                             long lastReportTicks = Stopwatch.GetTimestamp();
+                            
+                            onLog?.Invoke($"[PocketMC] {meta.ServerType} installer is running. This may take several minutes...");
+
                             while (!proc.StandardOutput.EndOfStream)
                             {
                                 var line = proc.StandardOutput.ReadLine();
-                                if (line == null) continue;
+                                if (string.IsNullOrWhiteSpace(line)) continue;
                                 lineCount++;
 
-                                bool isImportant = line.Contains("ERROR", StringComparison.OrdinalIgnoreCase)
+                                bool isError = line.Contains("ERROR", StringComparison.OrdinalIgnoreCase)
                                     || line.Contains("FAILED", StringComparison.OrdinalIgnoreCase)
                                     || line.Contains("Exception", StringComparison.OrdinalIgnoreCase);
-                                var elapsed = Stopwatch.GetElapsedTime(lastReportTicks);
 
-                                if (isImportant || lineCount % 50 == 0 || elapsed.TotalMilliseconds >= 500)
+                                if (isError)
                                 {
-                                    onLog?.Invoke(line);
+                                    onLog?.Invoke($"[Installer Error] {line}");
+                                    continue;
+                                }
+
+                                if (line.Contains("Downloading", StringComparison.OrdinalIgnoreCase) || 
+                                    line.Contains("Unpacking", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    downloadCount++;
+                                }
+
+                                var elapsed = Stopwatch.GetElapsedTime(lastReportTicks);
+                                if (elapsed.TotalSeconds >= 3)
+                                {
+                                    onLog?.Invoke($"[PocketMC] Still installing {meta.ServerType}... (Processed {downloadCount} libraries / {lineCount} total operations)");
                                     lastReportTicks = Stopwatch.GetTimestamp();
                                 }
                             }
-                            onLog?.Invoke($"[PocketMC] Installer completed ({lineCount} lines processed).");
+                            onLog?.Invoke($"[PocketMC] Installer output stream completed ({lineCount} lines processed).");
                         });
 
                         var errorTask = Task.Run(() => {
