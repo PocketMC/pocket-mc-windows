@@ -239,6 +239,20 @@ namespace PocketMC.Desktop.Features.Settings
             LoadAddonsInternal(false);
         }
 
+        private bool IsLoaderCompatible(string loaderType)
+        {
+            if (string.IsNullOrEmpty(loaderType) || loaderType == "Unknown")
+                return true; 
+
+            if (loaderType.Equals("Plugin", StringComparison.OrdinalIgnoreCase))
+            {
+                return _metadata.Compatibility.SupportsPlugins;
+            }
+
+            return _metadata.Compatibility.CompatibleLoaderNames
+                .Any(l => l.Equals(loaderType, StringComparison.OrdinalIgnoreCase));
+        }
+
         internal void LoadAddonsSync()
         {
             LoadAddonsInternal(true);
@@ -431,6 +445,21 @@ namespace PocketMC.Desktop.Features.Settings
             var files = await _dialogService.OpenFilesDialogAsync("Select Plugin(s)", filter);
             foreach (var f in files)
             {
+                if (!IsPocketmine)
+                {
+                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    if (!IsLoaderCompatible(metadata.LoaderType))
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Incompatible Plugin Warning", 
+                            $"The file '{System.IO.Path.GetFileName(f)}' is made for {metadata.LoaderType}, but this server is running {_metadata.ServerType}.\n" +
+                            "Installing incompatible plugins can cause the server to crash or fail to start.\n\n" +
+                            "Do you want to skip this plugin?", 
+                            DialogType.Question);
+
+                        if (res == DialogResult.Yes) continue;
+                    }
+                }
+
                 var dir = System.IO.Path.Combine(_serverDir, "plugins");
                 Directory.CreateDirectory(dir);
                 await FileUtils.CopyFileAsync(f, System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f)), true);
@@ -456,6 +485,12 @@ namespace PocketMC.Desktop.Features.Settings
         private PluginItemViewModel CreatePluginViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
+            var warnings = new List<string>(item.Warnings);
+            if (!IsLoaderCompatible(item.LoaderType))
+            {
+                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
+            }
+
             return new PluginItemViewModel
             {
                 Name = item.DisplayName,
@@ -474,8 +509,8 @@ namespace PocketMC.Desktop.Features.Settings
                 SideSupport = item.SideSupport,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, "Plugin", item.IconBytes),
-                HasWarnings = item.Warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, item.Warnings),
+                HasWarnings = warnings.Count > 0,
+                WarningText = string.Join(Environment.NewLine, warnings),
                 IsDisabled = item.State == AddonState.Disabled,
                 State = item.State,
                 Kind = item.Kind,
@@ -490,6 +525,12 @@ namespace PocketMC.Desktop.Features.Settings
         private ModItemViewModel CreateModViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
+            var warnings = new List<string>(item.Warnings);
+            if (!IsLoaderCompatible(item.LoaderType))
+            {
+                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
+            }
+
             return new ModItemViewModel
             {
                 Name = item.DisplayName,
@@ -504,8 +545,8 @@ namespace PocketMC.Desktop.Features.Settings
                 LoaderType = item.LoaderType,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, item.LoaderType, item.IconBytes),
-                HasWarnings = item.Warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, item.Warnings),
+                HasWarnings = warnings.Count > 0,
+                WarningText = string.Join(Environment.NewLine, warnings),
                 SideSupport = item.SideSupport,
                 SideLabel = item.SideLabel,
                 IsClientOnly = item.SideSupport == ModSideSupport.ClientOnly,
@@ -546,6 +587,21 @@ namespace PocketMC.Desktop.Features.Settings
                         DialogType.Question);
 
                     if (res == DialogResult.Yes) continue;
+                }
+
+                if (!IsBedrockDedicated && !IsPocketmine)
+                {
+                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    if (!IsLoaderCompatible(metadata.LoaderType))
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Incompatible Mod Warning", 
+                            $"The mod '{System.IO.Path.GetFileName(f)}' is made for {metadata.LoaderType}, but this server is running {_metadata.ServerType}.\n" +
+                            "Installing incompatible mods can cause the server to crash or fail to start.\n\n" +
+                            "Do you want to skip this mod?", 
+                            DialogType.Question);
+
+                        if (res == DialogResult.Yes) continue;
+                    }
                 }
 
                 var dir = System.IO.Path.Combine(_serverDir, "mods");
