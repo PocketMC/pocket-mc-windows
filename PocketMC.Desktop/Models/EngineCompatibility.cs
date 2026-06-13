@@ -79,7 +79,7 @@ namespace PocketMC.Desktop.Models
                 Family = EngineFamily.Forge;
                 SupportsMods = true;
                 SupportsModpacks = false;
-                SupportsModrinth = false;
+                SupportsModrinth = true;
                 SupportsCurseForge = false;
                 PrimaryAddonSubDir = "mods";
                 LoaderName = "forge";

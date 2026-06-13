@@ -210,7 +210,9 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         {
             if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) || 
                 serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) ||
-                serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase))
+                serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) ||
+                serverType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase) ||
+                serverType.StartsWith("NeoForge", StringComparison.OrdinalIgnoreCase))
             {
                 AddonPanel.Visibility = Visibility.Collapsed;
                 ChkEnableGeyser.IsChecked = false;
