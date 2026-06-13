@@ -573,14 +573,3 @@ public static class SimpleVoiceChatConfigService
         string Suffix);
 }
 
-public static class SimpleVoiceChatProperties
-{
-    public const int DefaultPort = SimpleVoiceChatConfigService.DefaultPort;
-    public const string DefaultBindAddress = SimpleVoiceChatConfigService.DefaultBindAddress;
-
-    public static bool TryLoad(string? serverDir, out SimpleVoiceChatSettings settings)
-        => SimpleVoiceChatConfigService.TryLoad(serverDir, out settings);
-
-    public static bool TryPatchVoiceHost(string? serverDirOrConfigPath, string publicAddress)
-        => SimpleVoiceChatConfigService.TryPatchVoiceHost(serverDirOrConfigPath, publicAddress);
-}
