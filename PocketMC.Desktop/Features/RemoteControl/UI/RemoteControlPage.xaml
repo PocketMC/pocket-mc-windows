@@ -259,7 +259,7 @@
                             
                             <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding IsPasswordSet, Converter={StaticResource BoolToVis}}">
                                 <ui:SymbolIcon Symbol="CheckmarkCircle24" Foreground="{DynamicResource SystemFillColorSuccessBrush}" Margin="0,0,6,0"/>
-                                <TextBlock Text="Password is currently configured and saved." Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" FontSize="12"/>
+                                <TextBlock Text="Password configured. Browsers stay logged in for 24h." Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" FontSize="12"/>
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding IsPasswordNotSet, Converter={StaticResource BoolToVis}}">
