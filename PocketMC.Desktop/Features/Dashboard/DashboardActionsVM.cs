@@ -123,12 +123,17 @@ namespace PocketMC.Desktop.Features.Dashboard
                         var instancePath = _registry.GetPath(vm.Id);
                         if (instancePath != null)
                         {
+                            vm.StateTextOverride = "⚙ Checking mods/plugins Updates...";
                             await autoUpdateService.CheckAndPromptUpdatesAsync(vm.Metadata, instancePath);
                         }
                     }
                     catch (Exception ex)
                     {
                         _logger.LogWarning(ex, "Failed to run addon auto-updater for {ServerName}.", vm.Name);
+                    }
+                    finally
+                    {
+                        vm.StateTextOverride = null;
                     }
                 }
 

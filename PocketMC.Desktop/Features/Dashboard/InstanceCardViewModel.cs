@@ -227,7 +227,18 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         }
     }
 
-    public string StatusText => _countdownText ?? _state switch
+    private string? _stateTextOverride;
+    public string? StateTextOverride
+    {
+        get => _stateTextOverride;
+        set
+        {
+            _stateTextOverride = value;
+            OnPropertyChanged(nameof(StatusText));
+        }
+    }
+
+    public string StatusText => _stateTextOverride ?? _countdownText ?? _state switch
     {
         ServerState.Stopped => "● Stopped",
         ServerState.Installing => "⚙ Installing...",
@@ -375,6 +386,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     {
         if (_state != newState)
         {
+            _stateTextOverride = null;
+
             if (newState == ServerState.SettingUp || newState == ServerState.Starting)
             {
                 TunnelAddress = null;
