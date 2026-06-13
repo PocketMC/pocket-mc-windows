@@ -9,4 +9,6 @@ public sealed class RemoteControlSettings
     public bool AllowRemoteConsoleCommands { get; set; }
     public bool AllowRemotePlayerActions { get; set; } = true;
     public string? PlayitTunnelId { get; set; }
+    public string? PasswordHash { get; set; }
+    public bool RequireAuthentication { get; set; } = true;
 }

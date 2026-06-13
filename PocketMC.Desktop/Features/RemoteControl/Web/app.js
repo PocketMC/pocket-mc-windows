@@ -13,6 +13,12 @@ const els = {
   errorMessage: document.querySelector("#errorMessage"),
   retryButton: document.querySelector("#retryButton"),
   
+  loginView: document.querySelector("#loginView"),
+  loginForm: document.querySelector("#loginForm"),
+  loginPasswordInput: document.querySelector("#loginPasswordInput"),
+  loginSubmitButton: document.querySelector("#loginSubmitButton"),
+  loginError: document.querySelector("#loginError"),
+  
   instanceListSidebar: document.querySelector("#instanceListSidebar"),
   
   serverName: document.querySelector("#serverName"),
@@ -93,7 +99,7 @@ let remoteStatusGlobal = null;
 let modalActionTarget = null; // { name: string, action: string, requireReason: bool }
 
 function setVisible(view) {
-  for (const item of [els.appView, els.emptyView, els.errorView, els.instanceSelectionView]) {
+  for (const item of [els.appView, els.emptyView, els.errorView, els.instanceSelectionView, els.loginView]) {
     if (item) item.hidden = item !== view;
   }
 }
@@ -116,6 +122,13 @@ async function api(path, options = {}) {
   const response = await fetch(path, { ...options, headers });
 
   if (!response.ok) {
+    if (response.status === 401 && path !== "/api/login") {
+      closeSocket();
+      clearInterval(statusTimer);
+      setVisible(els.loginView);
+      throw new Error("Unauthorized");
+    }
+    
     const text = await response.text();
     let msg = `Request failed (${response.status})`;
     try {
@@ -156,6 +169,7 @@ async function start() {
 
 
 function showError(msg) {
+  if (msg === "Unauthorized") return;
   els.errorMessage.textContent = msg;
   setVisible(els.errorView);
   els.connectionLabel.textContent = "Disconnected";
@@ -165,7 +179,9 @@ function showError(msg) {
 async function openDashboard() {
   try {
     await refreshEverything({ reconnectConsole: true });
-    statusTimer = setInterval(() => refreshEverything({ reconnectConsole: false }), 3000);
+    statusTimer = setInterval(() => refreshEverything({ reconnectConsole: false }).catch(e => {
+      if (e.message === "Unauthorized") clearInterval(statusTimer);
+    }), 3000);
   } catch (error) {
     showError(error.message);
   }
@@ -178,7 +194,7 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
     remoteStatusGlobal = await api("/api/status");
   } catch (error) {
     showError(error.message);
-    return;
+    throw error;
   }
   
   cachedInstances = instances;
@@ -838,6 +854,43 @@ els.offlinePlayerForm.addEventListener("submit", (e) => {
     openPlayerModal(name);
     els.offlinePlayerInput.value = "";
 });
+
+if (els.loginForm) {
+  els.loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const password = els.loginPasswordInput.value;
+    els.loginError.hidden = true;
+    
+    const btn = els.loginSubmitButton;
+    const spinner = btn.querySelector(".btn-spinner");
+    const icon = btn.querySelector(".button-icon");
+    if (spinner) spinner.hidden = false;
+    if (icon) icon.hidden = true;
+    btn.disabled = true;
+
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      
+      if (res.ok) {
+        els.loginPasswordInput.value = "";
+        await openDashboard();
+      } else {
+        els.loginError.hidden = false;
+      }
+    } catch (err) {
+      els.loginError.textContent = err.message || "Failed to login.";
+      els.loginError.hidden = false;
+    } finally {
+      if (spinner) spinner.hidden = true;
+      if (icon) icon.hidden = false;
+      btn.disabled = false;
+    }
+  });
+}
 
 // Init
 start();

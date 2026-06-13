@@ -30,23 +30,27 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private readonly SettingsManager _settingsManager;
     private readonly RemoteControlCoordinator _coordinator;
     private readonly IDialogService _dialogService;
+    private readonly RemoteAuthenticationService _authenticationService;
 
     public RemoteControlSettingsViewModel(
         ApplicationState applicationState,
         SettingsManager settingsManager,
         RemoteControlCoordinator coordinator,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        RemoteAuthenticationService authenticationService)
     {
         _applicationState = applicationState;
         _settingsManager = settingsManager;
         _coordinator = coordinator;
         _dialogService = dialogService;
+        _authenticationService = authenticationService;
 
         var remote = _applicationState.Settings.RemoteControl;
         _isEnabled = remote.Enabled;
         _port = remote.Port;
         _allowRemoteConsoleCommands = remote.AllowRemoteConsoleCommands;
         _allowRemotePlayerActions = remote.AllowRemotePlayerActions;
+        _requireAuthentication = remote.RequireAuthentication;
         _accessMode = remote.AccessMode == RemoteAccessMode.LanOnly 
             ? RemoteAccessMode.CloudflaredQuickTunnel 
             : remote.AccessMode;
@@ -70,6 +74,12 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _allowRemotePlayerActions;
+
+    [ObservableProperty]
+    private bool _requireAuthentication;
+
+    [ObservableProperty]
+    private string _password = "";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDiscordNotLinked))]
@@ -158,6 +168,20 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         SaveSettings();
     }
 
+    partial void OnRequireAuthenticationChanged(bool value)
+    {
+        SaveAndRestart();
+    }
+
+    partial void OnPasswordChanged(string value)
+    {
+        // Don't auto-save while typing, handled by the save command or blur in UI,
+        // but if bound to property changed, we can save it.
+        // Usually better to save when they finish typing. We will save it.
+        if (string.IsNullOrEmpty(value)) return;
+        SaveAndRestart();
+    }
+
     partial void OnEnableDiscordNotificationsChanged(bool value)
     {
         if (_isUpdatingFromSettings) return;
@@ -209,6 +233,12 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.AllowRemotePlayerActions = AllowRemotePlayerActions;
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
+        settings.RemoteControl.RequireAuthentication = RequireAuthentication;
+
+        if (!string.IsNullOrEmpty(Password))
+        {
+            settings.RemoteControl.PasswordHash = _authenticationService.HashPassword(Password);
+        }
 
         settings.EnableDiscordNotifications = EnableDiscordNotifications;
 

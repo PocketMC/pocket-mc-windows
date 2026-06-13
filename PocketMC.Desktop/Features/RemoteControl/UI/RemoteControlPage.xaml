@@ -219,6 +219,50 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
+                                <TextBlock Text="Security &amp; Authentication" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Require a password to access the remote dashboard." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Require password authentication" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="When enabled, anyone accessing the remote dashboard must enter the password."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRequireAuthentication"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding RequireAuthentication}"/>
+                        </Grid>
+                        
+                        <Grid Margin="0,16,0,0" Visibility="{Binding RequireAuthentication, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Set Password" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
+                            <ui:PasswordBox Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter new password (autosaves)" />
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Shield24}" Margin="0,12,0,0" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVis}}">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
                                 <TextBlock Text="Remote Control Permissions" FontSize="16" FontWeight="SemiBold"/>
                                 <TextBlock Text="Configure what actions paired devices are allowed to execute." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>

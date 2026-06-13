@@ -182,6 +182,7 @@ namespace PocketMC.Desktop.Composition
 
         public static IServiceCollection AddRemoteControl(this IServiceCollection services)
         {
+            services.AddSingleton<RemoteAuthenticationService>();
             services.AddSingleton<RemoteStatusService>();
             services.AddSingleton<RemoteInstanceControlService>();
             services.AddSingleton<RemotePlayerActionService>();

@@ -43,6 +43,7 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         
         var tunnelManager = new RemoteTunnelManager(_state, Array.Empty<IRemoteTunnelProvider>());
         var localNetworkAddressService = new LocalNetworkAddressService();
+        var authService = new RemoteAuthenticationService();
 
         _host = new RemoteDashboardHost(
             _state,
@@ -55,6 +56,7 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
             _lifecycleMock.Object,
             tunnelManager,
             localNetworkAddressService,
+            authService,
             NullLogger<RemoteDashboardHost>.Instance);
 
         _client = new HttpClient

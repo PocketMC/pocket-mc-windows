@@ -1,5 +1,7 @@
 using System.IO;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -13,6 +15,7 @@ using PocketMC.Desktop.Features.RemoteControl.Models;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.RemoteControl.Tunnels;
 using PocketMC.Desktop.Features.Shell;
+using System.Security.Claims;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Hosting;
 
@@ -30,6 +33,7 @@ public sealed class RemoteDashboardHost
     private readonly IServerLifecycleService _lifecycleService;
     private readonly RemoteTunnelManager _tunnelManager;
     private readonly LocalNetworkAddressService _localNetworkAddressService;
+    private readonly RemoteAuthenticationService _authenticationService;
     private readonly ILogger<RemoteDashboardHost> _logger;
     private readonly SemaphoreSlim _startGate = new(1, 1);
     private WebApplication? _app;
@@ -45,6 +49,7 @@ public sealed class RemoteDashboardHost
         IServerLifecycleService lifecycleService,
         RemoteTunnelManager tunnelManager,
         LocalNetworkAddressService localNetworkAddressService,
+        RemoteAuthenticationService authenticationService,
         ILogger<RemoteDashboardHost> logger)
     {
         _applicationState = applicationState;
@@ -57,6 +62,7 @@ public sealed class RemoteDashboardHost
         _lifecycleService = lifecycleService;
         _tunnelManager = tunnelManager;
         _localNetworkAddressService = localNetworkAddressService;
+        _authenticationService = authenticationService;
         _logger = logger;
     }
 
@@ -86,8 +92,40 @@ public sealed class RemoteDashboardHost
                 options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
             });
 
+            builder.Services.AddAuthentication("RemoteCookies")
+                .AddCookie("RemoteCookies", options =>
+                {
+                    options.Cookie.Name = "PocketMCRemoteAuth";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SameSite = SameSiteMode.Strict;
+                    options.ExpireTimeSpan = TimeSpan.FromHours(24);
+                    options.Events.OnRedirectToLogin = context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return Task.CompletedTask;
+                    };
+                });
+            builder.Services.AddAuthorization();
+
             WebApplication app = builder.Build();
             app.UseWebSockets();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
+            app.Use(async (context, next) =>
+            {
+                // Simple middleware to protect WebSockets
+                if (context.Request.Path.StartsWithSegments("/ws") && _applicationState.Settings.RemoteControl.RequireAuthentication)
+                {
+                    if (!context.User.Identity?.IsAuthenticated ?? true)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return;
+                    }
+                }
+                await next(context);
+            });
+
             MapStaticFiles(app);
             MapEndpoints(app);
 
@@ -134,39 +172,82 @@ public sealed class RemoteDashboardHost
 
     private void MapEndpoints(WebApplication app)
     {
+        var api = app.MapGroup("/api").AddEndpointFilter(async (context, next) =>
+        {
+            var path = context.HttpContext.Request.Path.Value;
+            if (path == "/api/login" || path == "/api/status")
+            {
+                return await next(context);
+            }
 
-        app.MapGet("/api/status", () => Results.Ok(BuildDashboardStatus()));
+            if (_applicationState.Settings.RemoteControl.RequireAuthentication)
+            {
+                if (!context.HttpContext.User.Identity?.IsAuthenticated ?? true)
+                {
+                    return Results.Unauthorized();
+                }
+            }
+            return await next(context);
+        });
 
-        app.MapGet("/api/instances", () => Results.Ok(_statusService.GetInstances()));
+        api.MapPost("/login", async (HttpContext context) =>
+        {
+            var request = await ReadJsonAsync<RemoteLoginRequest>(context);
+            if (request == null || string.IsNullOrWhiteSpace(request.Password))
+            {
+                return Results.BadRequest(new { error = "Password is required" });
+            }
 
-        app.MapGet("/api/instances/{instanceId:guid}/status", async (Guid instanceId) =>
+            var settings = _applicationState.Settings.RemoteControl;
+            if (!settings.RequireAuthentication || _authenticationService.VerifyPassword(request.Password, settings.PasswordHash))
+            {
+                var claims = new List<Claim> { new Claim(ClaimTypes.Name, "Admin") };
+                var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
+                };
+
+                await context.SignInAsync("RemoteCookies", new ClaimsPrincipal(claimsIdentity), authProperties);
+                return Results.Ok(new { success = true });
+            }
+
+            return Results.Unauthorized();
+        });
+
+        api.MapGet("/status", () => Results.Ok(BuildDashboardStatus()));
+
+        api.MapGet("/instances", () => Results.Ok(_statusService.GetInstances()));
+
+        api.MapGet("/instances/{instanceId:guid}/status", async (Guid instanceId) =>
         {
             RemoteInstanceStatusDto? status = await _statusService.GetInstanceStatusAsync(instanceId);
             return status == null ? Results.NotFound() : Results.Ok(status);
         });
 
-        app.MapPost("/api/instances/{instanceId:guid}/start", async (Guid instanceId) =>
+        api.MapPost("/instances/{instanceId:guid}/start", async (Guid instanceId) =>
         {
             var result = await _instanceControlService.StartAsync(instanceId);
             _auditLogService.Log("remote", "instance.start", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
-        app.MapPost("/api/instances/{instanceId:guid}/stop", async (Guid instanceId) =>
+        api.MapPost("/instances/{instanceId:guid}/stop", async (Guid instanceId) =>
         {
             var result = await _instanceControlService.StopAsync(instanceId);
             _auditLogService.Log("remote", "instance.stop", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
-        app.MapPost("/api/instances/{instanceId:guid}/restart", async (Guid instanceId) =>
+        api.MapPost("/instances/{instanceId:guid}/restart", async (Guid instanceId) =>
         {
             var result = await _instanceControlService.RestartAsync(instanceId);
             _auditLogService.Log("remote", "instance.restart", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
-        app.MapGet("/api/instances/{instanceId:guid}/console/history", (Guid instanceId) =>
+        api.MapGet("/instances/{instanceId:guid}/console/history", (Guid instanceId) =>
         {
             var process = _lifecycleService.GetProcess(instanceId);
             return process == null
@@ -174,7 +255,7 @@ public sealed class RemoteDashboardHost
                 : Results.Ok(process.OutputBuffer.ToArray());
         });
 
-        app.MapPost("/api/instances/{instanceId:guid}/console/command", async (HttpContext context, Guid instanceId) =>
+        api.MapPost("/instances/{instanceId:guid}/console/command", async (HttpContext context, Guid instanceId) =>
         {
             if (!_applicationState.Settings.RemoteControl.AllowRemoteConsoleCommands)
             {
@@ -204,7 +285,7 @@ public sealed class RemoteDashboardHost
         });
 
 
-        app.MapGet("/api/instances/{instanceId:guid}/players", (Guid instanceId) =>
+        api.MapGet("/instances/{instanceId:guid}/players", (Guid instanceId) =>
         {
             var process = _lifecycleService.GetProcess(instanceId);
             return process == null
@@ -219,7 +300,7 @@ public sealed class RemoteDashboardHost
 
         foreach (string action in new[] { "kick", "ban", "pardon", "op", "deop" })
         {
-            app.MapPost($"/api/instances/{{instanceId:guid}}/players/{{name}}/{action}", async (HttpContext context, Guid instanceId, string name) =>
+            api.MapPost($"/instances/{{instanceId:guid}}/players/{{name}}/{action}", async (HttpContext context, Guid instanceId, string name) =>
             {
                 RemotePlayerActionRequest? request = await ReadJsonAsync<RemotePlayerActionRequest>(context);
                 RemoteControlActionResult result = await _playerActionService.ExecuteAsync(instanceId, name, action, request, "remote");
