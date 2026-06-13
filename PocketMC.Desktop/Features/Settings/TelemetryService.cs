@@ -70,6 +70,18 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     {
         _logger.LogInformation("Shutting down TelemetryService...");
         _processManager.OnInstanceStateChanged -= OnInstanceStateChanged;
+        
+        // Send a final heartbeat to tell the backend the app is closed
+        try
+        {
+            var settings = _settingsManager.Load();
+            if (settings.EnableTelemetry)
+            {
+                Task.Run(() => SendHeartbeatAsync(settings, isAppClosed: true)).Wait(TimeSpan.FromSeconds(2));
+            }
+        }
+        catch { }
+
         try
         {
             _cts.Cancel();
@@ -174,11 +186,11 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         }
     }
 
-    private async Task SendHeartbeatAsync(AppSettings settings)
+    private async Task SendHeartbeatAsync(AppSettings settings, bool isAppClosed = false)
     {
         try
         {
-            var activeProcesses = _processManager.ActiveProcesses.Values
+            var activeProcesses = isAppClosed ? new System.Collections.Generic.List<ServerProcess>() : _processManager.ActiveProcesses.Values
                 .Where(p => p.State == ServerState.Online ||
                             p.State == ServerState.Starting ||
                             p.State == ServerState.Stopping)
@@ -191,13 +203,16 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
                 .Distinct()
                 .ToList();
 
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "Unknown";
+
             var payload = new
             {
                 clientId = settings.TelemetryClientId.ToString(),
+                isAppOpen = !isAppClosed,
                 isServerRunning = activeProcesses.Count > 0,
                 activeServerCount = activeProcesses.Count,
                 activeServerTypes = activeServerTypes,
-                appVersion = "1.0.0"
+                appVersion = version
             };
 
             using var client = _httpClientFactory.CreateClient();

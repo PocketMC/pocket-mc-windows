@@ -66,6 +66,7 @@ public partial class App : Application
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         SingleInstanceService.ShowApplicationRequested += OnShowApplicationRequested;
@@ -107,16 +108,34 @@ public partial class App : Application
     {
         DispatcherUnhandledException -= OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
+        AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
         TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
         SingleInstanceService.ShowApplicationRequested -= OnShowApplicationRequested;
 
         if (_host is not null)
         {
+            try
+            {
+                var coordinator = Services.GetService<PocketMC.Desktop.Features.Shell.ShellStartupCoordinator>();
+                coordinator?.Shutdown();
+            }
+            catch { }
+
             await _host.StopAsync();
             _host.Dispose();
         }
 
         base.OnExit(e);
+    }
+
+    private void OnProcessExit(object? sender, EventArgs e)
+    {
+        try
+        {
+            var coordinator = Services.GetService<PocketMC.Desktop.Features.Shell.ShellStartupCoordinator>();
+            coordinator?.Shutdown();
+        }
+        catch { }
     }
 
     private void OnShowApplicationRequested(string? uri)

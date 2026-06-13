@@ -30,6 +30,7 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         _state.Settings.RemoteControl.AccessMode = RemoteAccessMode.LanOnly;
         _state.Settings.RemoteControl.AllowRemoteConsoleCommands = true;
         _state.Settings.RemoteControl.AllowRemotePlayerActions = true;
+        _state.Settings.RemoteControl.RequireAuthentication = false;
 
         _lifecycleMock = new Mock<IServerLifecycleService>();
         _lifecycleMock.Setup(x => x.IsRunning(It.IsAny<Guid>())).Returns(true);
