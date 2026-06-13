@@ -485,6 +485,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         RootNavigation.Navigated -= OnNavigated;
         DetachTitleBarContextSource();
         _startupCoordinator.Shutdown();
+        Application.Current?.Shutdown();
     }
 
     private void AppTrayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e) =>
