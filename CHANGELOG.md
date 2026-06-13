@@ -4,6 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
+- `v1.9.2...v1.9.3`: 58 commits focused on Forge and NeoForge server support, Remote Control web dashboard implementation, automated add-on updates, server update rollback safety, telemetry, and desktop shell polish.
 - `v1.9.1...v1.9.2`: 12 commits focused on desktop notifications, Discord linking polish, Remote Control permissions, Playit setup simplification, scroll reliability, export completeness, and release workflow stability.
 - `v1.9.0...v1.9.1`: 5 commits focused on Discord integration, single-instance enforcement, QR code generation, and clipboard reliability.
 - `v1.8.0...v1.9.0`: 36 commits focused on remote control dashboard, instance import/export, Phase 1 security hardening, and decoupled player management.
@@ -13,6 +14,66 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
+
+---
+
+## v1.9.3 - Forge & NeoForge Support, Remote Dashboard & Add-on Auto-Updates
+
+### Summary
+
+v1.9.3 introduces first-class support for Forge and NeoForge servers, automatic add-on updates on server start, and significant resilience improvements for server updates through a new temporary directory rollback system. It also strengthens the existing Remote Control dashboard by adding password authentication and encrypted credentials, alongside new telemetry features and desktop shell polish.
+
+### Diff Basis
+
+The `v1.9.2...v1.9.3` diff contains 58 commits. The largest additions involve the new `AddonAutoUpdateService`, `InstanceRollbackService` for update safety, Forge/NeoForge mod compatibility scanning, and the new `RemoteAuthenticationService` for the web dashboard. Several documentation and README assets were also reorganized or updated.
+
+### Added
+
+- **Forge & NeoForge Support**
+  - Added Forge and NeoForge as Beta server types during instance creation.
+  - Implemented engine compatibility checks for mods based on loader type (Forge vs. NeoForge vs. Fabric).
+  - Enhanced mod compatibility visibility in the UI so users know which mods match their server type.
+- **Remote Control Authentication**
+  - Added password authentication to the existing Remote Control web dashboard.
+  - Added secure encrypted password storage for remote control settings.
+- **Add-on Auto-Updates**
+  - Added an `AddonAutoUpdateService` to optionally update installed add-ons automatically when the server starts.
+  - Added state text overrides and compatibility checks to prevent updating incompatible plugins or mods.
+- **Desktop & Shell Polish**
+  - Added configuration options for startup behavior, power management, and telemetry settings.
+  - Added `WindowsCornerService` to bring Windows 11-style rounded corners to Windows 10.
+  - Enhanced keyboard navigation and shortcuts across the application.
+  - Implemented a telemetry service (with final heartbeat on shutdown) for app diagnostics.
+
+### Changed
+
+- **Server Updates & Rollbacks**
+  - Improved the instance rollback process to use a temporary directory, making server restoration much safer and fixing directory lock issues during updates.
+  - Enhanced installer logging and progress reporting during the server setup process.
+- **Add-on Management**
+  - Integrated auto-update add-ons functionality directly into the Dashboard and UI.
+  - Removed the legacy Poggit service.
+  - Implemented Geyser detection natively into the codebase and refactored related references.
+- **Documentation & UI**
+  - Reorganized `docs/assets/` into structured `branding/`, `icons/`, and `screenshots/` directories.
+  - Updated README with visual server software icons, gifs, and additional feature screenshots.
+
+### Fixed
+
+- Unwanted mod type badges no longer appear for Paper plugins.
+- Guaranteed application shutdown when the main window closes.
+- Restrict whitelist commands to only execute when the server is fully online.
+- Console and dashboard agent connection checks now correctly include the 'Connecting' state.
+
+### Reasoning
+
+This release focuses on automation and reliability. Forge and NeoForge support opens up a major segment of modded Minecraft. Adding update rollbacks and add-on auto-updates means server operators spend less time doing manual file management and are protected if a major version upgrade fails mid-installation. Finally, adding password authentication to the Remote Dashboard ensures secure access when exposed via public tunnels.
+
+### Upgrade Impact
+
+- **Remote Control:** Users can now set up passwords to secure their remote control web dashboard access.
+- **Add-ons:** Servers configured for auto-updates will safely scan and update their add-ons on launch.
+- **Telemetry:** A new telemetry service is active but controllable via the App Settings page.
 
 ---
 

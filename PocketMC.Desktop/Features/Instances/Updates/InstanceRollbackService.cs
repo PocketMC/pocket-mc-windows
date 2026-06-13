@@ -49,7 +49,7 @@ public sealed class InstanceRollbackService
         string rollbackDirectory = GetRollbackDirectory(serverDir);
         if (!Directory.Exists(rollbackDirectory))
         {
-            throw new InvalidOperationException("No rollback backup found for this server.");
+            return;
         }
 
         string serverRoot = Path.GetFullPath(serverDir);
@@ -61,17 +61,15 @@ public sealed class InstanceRollbackService
             
             Directory.Move(rollbackDirectory, serverRoot);
 
-            _ = Task.Run(async () =>
+            try
             {
-                try
-                {
-                    await FileUtils.CleanDirectoryAsync(tempDeleteDir, CancellationToken.None);
-                }
-                catch
-                {
-                    // Ignore background cleanup errors
-                }
-            });
+                await FileUtils.CleanDirectoryAsync(tempDeleteDir, cancellationToken);
+                Directory.Delete(tempDeleteDir, recursive: true);
+            }
+            catch
+            {
+                // Ignore background cleanup errors
+            }
         }
         else
         {
