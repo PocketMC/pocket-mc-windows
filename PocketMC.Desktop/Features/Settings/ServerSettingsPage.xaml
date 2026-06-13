@@ -896,10 +896,12 @@
                                                                 <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                                                     <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                                 </Border>
-                                                                <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2">
-                                                                    <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                                </Border>
+                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding ShowSideBadge, Converter={StaticResource VisibleIfTrue}}">
+                                                                    <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                    <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2">
+                                                                        <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                    </Border>
+                                                                </StackPanel>
                                                             </WrapPanel>
                                                             
                                                             <!-- Warning message if any -->

@@ -119,7 +119,7 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand DeleteBedrockAddonCommand { get; }
 
         // PocketMine-specific
-        public ICommand BrowsePoggitCommand { get; }
+
 
         // Update commands
         public ICommand UpdatePluginCommand { get; }
@@ -185,7 +185,7 @@ namespace PocketMC.Desktop.Features.Settings
                 async p => await DeletePluginAsync(p as string),
                 _ => !_isRunningCheck() && _metadata.Compatibility.SupportsPlugins);
             BrowseModrinthPluginsCommand = new RelayCommand(
-                _ => { if (IsPocketmine) BrowsePoggit(); else BrowseModrinth("project_type:plugin"); },
+                _ => { BrowseModrinth("project_type:plugin"); },
                 _ => _metadata.Compatibility.SupportsPlugins && (_metadata.Compatibility.SupportsModrinth || IsPocketmine));
 
             // ── Mod commands — routed by engine ──────────────────────────────────────
@@ -208,7 +208,7 @@ namespace PocketMC.Desktop.Features.Settings
             DeleteBedrockAddonCommand   = new RelayCommand(async p => await DeleteBedrockAddonAsync(p as string), _ => IsBedrockDedicated && !_isRunningCheck());
 
             // ── PocketMine-specific commands ──────────────────────────────
-            BrowsePoggitCommand         = new RelayCommand(_ => BrowsePoggit(), _ => IsPocketmine);
+
 
             // ── Update commands ──────────────────────────────────────────────
             UpdatePluginCommand = new RelayCommand(
@@ -419,11 +419,7 @@ namespace PocketMC.Desktop.Features.Settings
             return result;
         }
 
-        private void BrowsePoggit()
-        {
-            // Open the browser page locked to Poggit as the sole source.
-            BrowseModrinthInternal("project_type:plugin", lockToPoggit: true);
-        }
+
 
         // ── Java plugin / mod management ──────────────────────────────────
 
@@ -473,6 +469,7 @@ namespace PocketMC.Desktop.Features.Settings
                 Version = item.Version,
                 LoaderType = item.LoaderType,
                 SideLabel = item.SideLabel,
+                SideSupport = item.SideSupport,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, "Plugin", item.IconBytes),
                 HasWarnings = item.Warnings.Count > 0,
@@ -573,9 +570,9 @@ namespace PocketMC.Desktop.Features.Settings
 
         // ── Modrinth / browser navigation ─────────────────────────────────
 
-        private void BrowseModrinth(string projectType) => BrowseModrinthInternal(projectType, lockToPoggit: false);
+        private void BrowseModrinth(string projectType) => BrowseModrinthInternal(projectType);
 
-        private void BrowseModrinthInternal(string projectType, bool lockToPoggit)
+        private void BrowseModrinthInternal(string projectType)
         {
             // For BDS, we never show the web browser — use local import instead.
             if (IsBedrockDedicated)
@@ -1339,6 +1336,8 @@ namespace PocketMC.Desktop.Features.Settings
         public string? Version { get; set; }
         public string LoaderType { get; set; } = "Plugin";
         public string SideLabel { get; set; } = "Server-only";
+        public ModSideSupport SideSupport { get; set; }
+        public bool ShowSideBadge => SideSupport == ModSideSupport.ClientOnly;
         public string SourceLabel { get; set; } = "Manual";
         public ImageSource? Icon { get; set; }
         public bool HasWarnings { get; set; }
