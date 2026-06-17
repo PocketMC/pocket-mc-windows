@@ -31,7 +31,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private Task? _backgroundTask;
     private bool _disposed;
     
-    private const string ProxyBaseUrl = "http://localhost:5000/";
+    private const string ProxyBaseUrl = "https://pocket-mc-proxy.onrender.com/";
 
     public TelemetryService(
         SettingsManager settingsManager,
