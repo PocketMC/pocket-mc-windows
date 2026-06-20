@@ -106,4 +106,23 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         string content = await response.Content.ReadAsStringAsync();
         Assert.True(response.StatusCode == HttpStatusCode.Forbidden, $"Expected Forbidden, got {response.StatusCode}. Content: {content}");
     }
+
+    [Fact]
+    public async Task Login_RateLimiting_Returns429AfterFiveAttempts()
+    {
+        _state.Settings.RemoteControl.RequireAuthentication = true;
+        _state.Settings.RemoteControl.PasswordHash = "some_hash";
+
+        // Try to log in 5 times (should return 401 Unauthorized for incorrect passwords)
+        for (int i = 0; i < 5; i++)
+        {
+            var loginRequest = new RemoteLoginRequest { Password = "wrong_password" };
+            var response = await _client.PostAsJsonAsync("/api/login", loginRequest);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        // The 6th attempt should be rate limited and return 429 Too Many Requests
+        var rateLimitedResponse = await _client.PostAsJsonAsync("/api/login", new RemoteLoginRequest { Password = "wrong_password" });
+        Assert.Equal(HttpStatusCode.TooManyRequests, rateLimitedResponse.StatusCode);
+    }
 }

@@ -68,11 +68,11 @@ public class AiApiClient
         [AiProviderType.OpenAI] = new ProviderConfig
         {
             DisplayName = "OpenAI",
-            DefaultModel = "gpt-5.4-mini",
+            DefaultModel = "gpt-4o-mini",
             DefaultEndpoint = "https://api.openai.com/v1/chat/completions",
             BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var m = string.IsNullOrWhiteSpace(model) ? "gpt-5.4-mini" : model;
+                var m = string.IsNullOrWhiteSpace(model) ? "gpt-4o-mini" : model;
                 var url = string.IsNullOrWhiteSpace(endpoint) ? "https://api.openai.com/v1/chat/completions" : endpoint;
                 var body = new
                 {
@@ -100,11 +100,11 @@ public class AiApiClient
         [AiProviderType.Claude] = new ProviderConfig
         {
             DisplayName = "Anthropic Claude",
-            DefaultModel = "claude-4-5-haiku-202605",
+            DefaultModel = "claude-3-5-haiku-latest",
             DefaultEndpoint = "https://api.anthropic.com/v1/messages",
             BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var m = string.IsNullOrWhiteSpace(model) ? "claude-4-5-haiku-202605" : model;
+                var m = string.IsNullOrWhiteSpace(model) ? "claude-3-5-haiku-latest" : model;
                 var url = string.IsNullOrWhiteSpace(endpoint) ? "https://api.anthropic.com/v1/messages" : endpoint;
                 var body = new
                 {
@@ -130,11 +130,11 @@ public class AiApiClient
         [AiProviderType.Mistral] = new ProviderConfig
         {
             DisplayName = "Mistral AI",
-            DefaultModel = "mistral-medium-3-5",
+            DefaultModel = "mistral-large-latest",
             DefaultEndpoint = "https://api.mistral.ai/v1/chat/completions",
             BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var m = string.IsNullOrWhiteSpace(model) ? "mistral-medium-3-5" : model;
+                var m = string.IsNullOrWhiteSpace(model) ? "mistral-large-latest" : model;
                 var url = string.IsNullOrWhiteSpace(endpoint) ? "https://api.mistral.ai/v1/chat/completions" : endpoint;
                 var body = new
                 {
@@ -194,11 +194,11 @@ public class AiApiClient
         [AiProviderType.Ollama] = new ProviderConfig
         {
             DisplayName = "Ollama",
-            DefaultModel = "ministral-3:3b-cloud",
+            DefaultModel = "llama3.2",
             DefaultEndpoint = "http://localhost:11434/api/chat",
             BuildRequest = (apiKey, model, endpoint, systemPrompt, userContent) =>
             {
-                var m = string.IsNullOrWhiteSpace(model) ? "ministral-3:3b-cloud" : model;
+                var m = string.IsNullOrWhiteSpace(model) ? "llama3.2" : model;
                 var url = string.IsNullOrWhiteSpace(endpoint) ? "http://localhost:11434/api/chat" : endpoint;
                 var body = new
                 {

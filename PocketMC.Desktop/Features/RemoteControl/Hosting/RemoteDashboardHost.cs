@@ -175,9 +175,17 @@ public sealed class RemoteDashboardHost
                 ContentTypeProvider = new FileExtensionContentTypeProvider(),
                 OnPrepareResponse = ctx =>
                 {
-                    ctx.Context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
-                    ctx.Context.Response.Headers["Pragma"] = "no-cache";
-                    ctx.Context.Response.Headers["Expires"] = "0";
+                    var path = ctx.Context.Request.Path.Value ?? "";
+                    if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase) || path.EndsWith("/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Require revalidation for HTML entry points so changes are picked up immediately
+                        ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
+                    }
+                    else
+                    {
+                        // Cache other static assets (JS, CSS, images) for up to 1 day, easily bypassed via browser force-reload
+                        ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+                    }
                 }
             });
         }
@@ -208,6 +216,12 @@ public sealed class RemoteDashboardHost
 
         api.MapPost("/login", async (HttpContext context) =>
         {
+            var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            if (!_requestLimiter.TryConsume("login:remote", clientIp, 5, TimeSpan.FromMinutes(1)))
+            {
+                return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+            }
+
             var request = await ReadJsonAsync<RemoteLoginRequest>(context);
             if (request == null || string.IsNullOrWhiteSpace(request.Password))
             {

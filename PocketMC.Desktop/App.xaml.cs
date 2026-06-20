@@ -166,6 +166,12 @@ public partial class App : Application
     {
         try
         {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(() => HandleUriActivation(uri));
+                return;
+            }
+
             if (Uri.TryCreate(uri, UriKind.Absolute, out var parsedUri) && parsedUri.Scheme == "pocketmc")
             {
                 if (parsedUri.Host == "associate-discord")
@@ -178,6 +184,34 @@ public partial class App : Application
                     if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(apiUrl))
                     {
                         var applicationState = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.ApplicationState>();
+                        var currentApiUrl = applicationState.Settings.DiscordApiUrl;
+                        bool isSameUrl = string.Equals(currentApiUrl?.TrimEnd('/'), apiUrl?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+                        if (!isSameUrl)
+                        {
+                            if (MainWindow != null)
+                            {
+                                if (MainWindow.WindowState == WindowState.Minimized)
+                                {
+                                    MainWindow.WindowState = WindowState.Normal;
+                                }
+                                MainWindow.Show();
+                                MainWindow.Activate();
+                                MainWindow.Focus();
+                            }
+
+                            var message = $"A request to link PocketMC with a Discord bot was initiated.\n\n" +
+                                          $"User ID: {userId}\n" +
+                                          $"API URL: {apiUrl}\n\n" +
+                                          $"Do you want to authorize this connection? Warning: Only link with bots you trust.";
+
+                            if (!AppDialog.Confirm("Link Discord Bot", message))
+                            {
+                                Services.GetRequiredService<ILogger<App>>().LogInformation("Discord association rejected by user.");
+                                return;
+                            }
+                        }
+
                         var settingsManager = Services.GetRequiredService<PocketMC.Desktop.Features.Settings.SettingsManager>();
                         
                         applicationState.Settings.DiscordUserId = userId;
@@ -185,7 +219,7 @@ public partial class App : Application
                         applicationState.Settings.DiscordApiKey = apiKey;
                         settingsManager.Save(applicationState.Settings);
 
-                        Infrastructure.AppDialog.ShowInfo("Discord Linked", "PocketMC has been successfully linked to your Discord account!");
+                        AppDialog.ShowInfo("Discord Linked", "PocketMC has been successfully linked to your Discord account!");
 
                         Task.Run(async () =>
                         {
@@ -198,7 +232,7 @@ public partial class App : Application
                                 }
                                 var jsonPayload = $"{{\"user_id\": {userId}}}";
                                 var content = new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json");
-                                await client.PostAsync($"{apiUrl.TrimEnd('/')}/assign-role", content);
+                                await client.PostAsync($"{apiUrl!.TrimEnd('/')}/assign-role", content);
                             }
                             catch (Exception ex)
                             {

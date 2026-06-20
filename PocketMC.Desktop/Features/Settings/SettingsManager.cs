@@ -174,6 +174,11 @@ namespace PocketMC.Desktop.Features.Settings
                     DataProtector.Protect(settings.PlayitPartnerConnection.AgentSecretKey);
             }
 
+            if (!string.IsNullOrEmpty(settings.DiscordApiKey))
+            {
+                settings.DiscordApiKey = DataProtector.Protect(settings.DiscordApiKey);
+            }
+
             foreach (var key in new System.Collections.Generic.List<string>(settings.AiApiKeys.Keys))
             {
                 string value = settings.AiApiKeys[key];
@@ -207,6 +212,7 @@ namespace PocketMC.Desktop.Features.Settings
         private void UnprotectSecrets(AppSettings settings)
         {
             settings.CurseForgeApiKey = TryUnprotectSetting(settings.CurseForgeApiKey, nameof(settings.CurseForgeApiKey));
+            settings.DiscordApiKey = TryUnprotectSetting(settings.DiscordApiKey, nameof(settings.DiscordApiKey));
 
             if (settings.PlayitPartnerConnection != null)
             {
