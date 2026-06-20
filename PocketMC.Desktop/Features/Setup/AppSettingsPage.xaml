@@ -268,6 +268,71 @@
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
+
+                        <!-- Accent Color Section -->
+                        <Separator Margin="0,16,0,12" Opacity="0.15"/>
+                        <TextBlock Text="Accent Color" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="Choose the accent color used for interactive controls, highlights, and selections."
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,4,0,12"
+                                   TextWrapping="Wrap"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Border x:Name="AccentPreviewSwatch"
+                                    Width="20"
+                                    Height="20"
+                                    CornerRadius="10"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center"/>
+                            <TextBlock x:Name="AccentModeLabel"
+                                       Text="Using Windows accent color"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <RadioButton x:Name="AccentAutoRadio"
+                                     Content="Automatic (Windows Accent Color)"
+                                     GroupName="AccentMode"
+                                     IsChecked="True"
+                                     Checked="AccentModeChanged"
+                                     Margin="0,0,0,6"/>
+                        <RadioButton x:Name="AccentCustomRadio"
+                                     Content="Custom Accent Color"
+                                     GroupName="AccentMode"
+                                     Checked="AccentModeChanged"
+                                     Margin="0,0,0,12"/>
+
+                        <StackPanel x:Name="CustomAccentPanel" Visibility="Collapsed" Margin="12,0,0,0">
+                            <TextBlock Text="Preset Colors"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,6"/>
+                            <WrapPanel x:Name="ColorSwatchPanel" Margin="0,0,0,12"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <TextBlock Text="Custom Hex:"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Margin="0,0,8,0"/>
+                                <ui:TextBox x:Name="HexColorInput"
+                                            Width="120"
+                                            PlaceholderText="#0078D4"
+                                            MaxLength="7"
+                                            KeyDown="HexColorInput_KeyDown"/>
+                                <ui:Button x:Name="BtnApplyHex"
+                                           Content="Apply"
+                                           Appearance="Primary"
+                                           Margin="8,0,0,0"
+                                           Click="ApplyHexColor_Click"/>
+                            </StackPanel>
+
+                            <ui:Button Content="Reset to Windows Accent"
+                                       Icon="{ui:SymbolIcon ArrowReset24}"
+                                       Appearance="Secondary"
+                                       Click="ResetAccentColor_Click"/>
+                        </StackPanel>
                     </StackPanel>
                 </ui:CardExpander>
 

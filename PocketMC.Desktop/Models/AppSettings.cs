@@ -25,6 +25,8 @@ namespace PocketMC.Desktop.Models
         public bool MinimizeToTrayOnClose { get; set; }
         public bool KeepComputerAwakeWhileServersRunning { get; set; } = true;
         public string WindowBackdrop { get; set; } = "Acrylic";
+        public string AccentColorMode { get; set; } = "Automatic";
+        public string? CustomAccentColor { get; set; }
         public string? CustomBackgroundImagePath { get; set; }
         public string? CurseForgeApiKey { get; set; }
 

@@ -253,6 +253,7 @@ namespace PocketMC.Desktop.Composition
         public static IServiceCollection AddPresentation(this IServiceCollection services)
         {
             services.AddSingleton<IShellUIStateService, ShellUIStateService>();
+            services.AddSingleton<AccentColorService>();
             services.AddSingleton<IShellVisualService, ShellVisualService>();
             services.AddSingleton<ShellStartupCoordinator>();
             services.AddSingleton<ShellViewModel>();

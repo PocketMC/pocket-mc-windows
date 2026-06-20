@@ -22,16 +22,21 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly ApplicationState _applicationState;
         private readonly WindowsCornerService _windowsCornerService;
         private readonly WallpaperMicaService _wallpaperMicaService;
+        private readonly AccentColorService _accentColorService;
         private FluentWindow? _boundWindow;
         private bool _isWindowActive = true;
 
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
-        public ShellVisualService(ApplicationState applicationState, WindowsCornerService windowsCornerService)
+        public ShellVisualService(
+            ApplicationState applicationState,
+            WindowsCornerService windowsCornerService,
+            AccentColorService accentColorService)
         {
             _applicationState = applicationState;
             _windowsCornerService = windowsCornerService;
+            _accentColorService = accentColorService;
             _wallpaperMicaService = new WallpaperMicaService();
         }
 
@@ -128,30 +133,27 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
-        public void ApplyTheme(string theme = "Dark")
+        public void ApplyTheme()
         {
             var window = _boundWindow;
             if (window == null) return;
 
             if (!window.Dispatcher.CheckAccess())
             {
-                window.Dispatcher.Invoke(() => ApplyTheme(theme));
+                window.Dispatcher.Invoke(ApplyTheme);
                 return;
             }
 
             try
             {
-                if (window.IsLoaded)
-                {
-                    Wpf.Ui.Appearance.SystemThemeWatcher.UnWatch(window);
-                }
-
                 string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
                 bool explicitLightMode = backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase);
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(
                     explicitLightMode
                         ? Wpf.Ui.Appearance.ApplicationTheme.Light
                         : Wpf.Ui.Appearance.ApplicationTheme.Dark);
+
+                _accentColorService.ApplyCurrentAccent();
             }
             catch
             {
