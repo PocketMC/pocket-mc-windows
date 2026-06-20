@@ -172,7 +172,13 @@ public sealed class RemoteDashboardHost
             {
                 FileProvider = new PhysicalFileProvider(webRoot),
                 RequestPath = "/remote",
-                ContentTypeProvider = new FileExtensionContentTypeProvider()
+                ContentTypeProvider = new FileExtensionContentTypeProvider(),
+                OnPrepareResponse = ctx =>
+                {
+                    ctx.Context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                    ctx.Context.Response.Headers["Pragma"] = "no-cache";
+                    ctx.Context.Response.Headers["Expires"] = "0";
+                }
             });
         }
 
