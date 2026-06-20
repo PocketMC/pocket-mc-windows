@@ -1,413 +1,857 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PocketMC Remote</title>
-  <link rel="icon" type="image/png" href="https://uploads.onecompiler.io/44d62jskr/44q9cr98j/icon.png">
-  <link rel="stylesheet" href="/remote/styles.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-</head>
-<body>
-  <div class="background-effects"></div>
-  
-  <main class="app-layout">
-    <header class="mobile-header">
-      <div class="mobile-brand">
-        <span class="brand-mark" aria-hidden="true">
-          <img src="/remote/icon.png" alt="" class="brand-mark-img" />
-        </span>
-        <h2>PocketMC</h2>
-      </div>
-      <button id="mobileMenuToggle" class="icon-button" aria-label="Toggle menu">
-        <svg viewBox="0 0 24 24" id="hamburgerIcon"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-        <svg viewBox="0 0 24 24" id="closeIcon" hidden><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </header>
-    
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>PocketMC Remote</title>
+        <link
+            rel="icon"
+            type="image/png"
+            href="https://raw.githubusercontent.com/PocketMC/pocket-mc-windows/refs/heads/master/docs/assets/branding/logo.png"
+        />
+        <link rel="stylesheet" href="/remote/styles.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    </head>
+    <body>
+        <div class="background-effects"></div>
 
-    <aside class="sidebar" id="appSidebar">
-      <div class="brand-block">
-        <span class="brand-mark" aria-hidden="true">
-          <img src="/remote/icon.png" alt="" class="brand-mark-img" />
-        </span>
-        <div class="brand-copy">
-          <h1>PocketMC</h1>
-          <p>Remote Dashboard</p>
-        </div>
-      </div>
+        <main class="app-layout">
+            <header class="mobile-header">
+                <div class="mobile-brand">
+                    <span class="brand-mark" aria-hidden="true">
+                        <img
+                            src="/remote/icon.png"
+                            alt=""
+                            class="brand-mark-img"
+                        />
+                    </span>
+                    <h2>PocketMC</h2>
+                </div>
+                <button
+                    id="mobileMenuToggle"
+                    class="icon-button"
+                    aria-label="Toggle menu"
+                >
+                    <svg viewBox="0 0 24 24" id="hamburgerIcon">
+                        <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <svg viewBox="0 0 24 24" id="closeIcon" hidden>
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </header>
 
-      <nav class="sidebar-nav">
-        <p class="sidebar-label">Instances</p>
-        <ul id="instanceListSidebar" class="sidebar-list">
-          <!-- Populated by JS -->
-        </ul>
-      </nav>
-      
-      <div class="sidebar-footer">
-        <span id="connectionLabel" class="connection-pill">Checking...</span>
-        <button id="refreshButton" class="icon-button" type="button" title="Refresh">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
-        </button>
-      </div>
-    </aside>
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <div class="main-content">
-      <div class="top-bar">
-        <div class="brand">
-          <img src="/remote/icon.png" alt="" class="brand-img" />
-          <span class="brand-name">PocketMC</span>
-        </div>
-        <button id="themeToggle" class="theme-toggle-btn" aria-label="Toggle theme">
-          <svg viewBox="0 0 24 24" class="sun-icon" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-          <svg viewBox="0 0 24 24" class="moon-icon" aria-hidden="true" hidden><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-        </button>
-      </div>
-      <div id="notice" class="notice" hidden aria-live="polite"></div>
+            <aside class="sidebar" id="appSidebar">
+                <div class="brand-block">
+                    <span class="brand-mark" aria-hidden="true">
+                        <img
+                            src="/remote/icon.png"
+                            alt=""
+                            class="brand-mark-img"
+                        />
+                    </span>
+                    <div class="brand-copy">
+                        <h1>PocketMC</h1>
+                        <p>Remote Dashboard</p>
+                    </div>
+                </div>
 
+                <nav class="sidebar-nav">
+                    <p class="sidebar-label">Instances</p>
+                    <ul id="instanceListSidebar" class="sidebar-list">
+                        <!-- Populated by JS -->
+                    </ul>
+                </nav>
 
-      <!-- Instance Selection Dashboard -->
-      <section id="instanceSelectionView" class="panel instance-selection-panel" hidden>
-        <div class="selection-container">
-          <header class="selection-header">
-            <h1>Select Instance</h1>
-          </header>
+                <div class="sidebar-footer">
+                    <span id="connectionLabel" class="connection-pill"
+                        >Checking...</span
+                    >
+                    <button
+                        id="refreshButton"
+                        class="icon-button"
+                        type="button"
+                        title="Refresh"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"
+                            />
+                        </svg>
+                    </button>
+                </div>
+            </aside>
 
-          <div class="search-container">
-            <span class="search-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </span>
-            <input type="text" id="instanceSearchInput" placeholder="Search instances..." autocomplete="off" />
-          </div>
+            <div class="main-content">
+                <div class="top-bar">
+                    <div class="brand">
+                        <img src="/remote/icon.png" alt="" class="brand-img" />
+                        <span class="brand-name">PocketMC</span>
+                    </div>
+                    <button
+                        id="themeToggle"
+                        class="theme-toggle-btn"
+                        aria-label="Toggle theme"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            class="sun-icon"
+                            aria-hidden="true"
+                        >
+                            <circle cx="12" cy="12" r="4" />
+                            <path
+                                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+                            />
+                        </svg>
+                        <svg
+                            viewBox="0 0 24 24"
+                            class="moon-icon"
+                            aria-hidden="true"
+                            hidden
+                        >
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="notice" class="notice" hidden aria-live="polite"></div>
 
-          <div id="instancesGrid" class="instances-grid">
-            <!-- Dynamically populated by JS -->
-          </div>
-        </div>
-      </section>
+                <!-- Instance Selection Dashboard -->
+                <section
+                    id="instanceSelectionView"
+                    class="panel instance-selection-panel"
+                    hidden
+                >
+                    <div class="selection-container">
+                        <header class="selection-header">
+                            <h1>Select Instance</h1>
+                        </header>
 
-      <section id="appView" hidden>
-        <div class="server-heading">
-          <div class="server-title-row">
-            <button id="backToSelectorButton" class="icon-button back-btn" title="Back to Select Instance">
-              <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            </button>
-            <h1>Server Dashboard</h1>
-          </div>
-        </div>
+                        <div class="search-container">
+                            <span class="search-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.3-4.3" />
+                                </svg>
+                            </span>
+                            <input
+                                type="text"
+                                id="instanceSearchInput"
+                                placeholder="Search instances..."
+                                autocomplete="off"
+                            />
+                        </div>
 
-        <div class="server-info-card">
-          <div class="server-title-row-detail">
-            <h2 id="serverName">Select a server</h2>
-            <div class="server-badges-row">
-              <span id="statusPill" class="status-pill offline">Offline</span>
-              <span id="serverVersionBadge" class="meta-badge">v1.20.1</span>
-              <span id="serverType" class="meta-badge">Paper</span>
+                        <div id="instancesGrid" class="instances-grid">
+                            <!-- Dynamically populated by JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <section id="appView" hidden>
+                    <div class="server-heading">
+                        <div class="server-title-row">
+                            <button
+                                id="backToSelectorButton"
+                                class="icon-button back-btn"
+                                title="Back to Select Instance"
+                            >
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <h1>Server Dashboard</h1>
+                        </div>
+                    </div>
+
+                    <div class="server-info-card">
+                        <div class="server-title-row-detail">
+                            <h2 id="serverName">Select a server</h2>
+                            <div class="server-badges-row">
+                                <span
+                                    id="statusPill"
+                                    class="status-pill offline"
+                                    >Offline</span
+                                >
+                                <span id="serverVersionBadge" class="meta-badge"
+                                    >v1.20.1</span
+                                >
+                                <span id="serverType" class="meta-badge"
+                                    >Paper</span
+                                >
+                            </div>
+                        </div>
+                        <p id="serverIpAddress" class="server-ip-label">
+                            IP: N/A
+                        </p>
+                    </div>
+
+                    <nav class="tabs-nav">
+                        <button
+                            class="tab-button active"
+                            data-tab="overview"
+                            type="button"
+                        >
+                            <svg viewBox="0 0 24 24" class="tab-icon">
+                                <rect
+                                    x="3"
+                                    y="3"
+                                    width="7"
+                                    height="9"
+                                    rx="1"
+                                ></rect>
+                                <rect
+                                    x="14"
+                                    y="3"
+                                    width="7"
+                                    height="5"
+                                    rx="1"
+                                ></rect>
+                                <rect
+                                    x="14"
+                                    y="12"
+                                    width="7"
+                                    height="9"
+                                    rx="1"
+                                ></rect>
+                                <rect
+                                    x="3"
+                                    y="16"
+                                    width="7"
+                                    height="5"
+                                    rx="1"
+                                ></rect>
+                            </svg>
+                            <span class="tab-text">Overview</span>
+                        </button>
+                        <button
+                            class="tab-button"
+                            data-tab="console"
+                            type="button"
+                        >
+                            <svg viewBox="0 0 24 24" class="tab-icon">
+                                <polyline points="4 17 10 11 4 5"></polyline>
+                                <line x1="12" y1="19" x2="20" y2="19"></line>
+                            </svg>
+                            <span class="tab-text">Console</span>
+                        </button>
+                        <button
+                            class="tab-button"
+                            data-tab="players"
+                            type="button"
+                        >
+                            <svg viewBox="0 0 24 24" class="tab-icon">
+                                <path
+                                    d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                                />
+                            </svg>
+                            <span class="tab-text">Players</span>
+                        </button>
+                    </nav>
+
+                    <div
+                        id="tab-overview"
+                        class="tab-content active panel overview-panel"
+                    >
+                        <div class="server-ips" id="serverIpsContainer" hidden>
+                            <p class="eyebrow">Connect</p>
+                            <div id="serverIpsList" class="ips-list"></div>
+                        </div>
+
+                        <div class="button-row">
+                            <button
+                                id="startButton"
+                                class="primary-button action-btn start-btn"
+                                type="button"
+                            >
+                                <span class="button-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M5 3l14 9-14 9V3z" />
+                                    </svg>
+                                </span>
+                                <span class="btn-spinner" hidden></span>
+                                <span class="btn-text">Start</span>
+                            </button>
+                            <button
+                                id="stopButton"
+                                class="danger-button action-btn stop-btn"
+                                type="button"
+                            >
+                                <span class="button-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <rect
+                                            x="4"
+                                            y="4"
+                                            width="16"
+                                            height="16"
+                                            rx="2"
+                                        />
+                                    </svg>
+                                </span>
+                                <span class="btn-spinner" hidden></span>
+                                <span class="btn-text">Stop</span>
+                            </button>
+                            <button
+                                id="restartButton"
+                                class="secondary-button action-btn restart-btn"
+                                type="button"
+                            >
+                                <span class="button-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path
+                                            d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"
+                                        />
+                                    </svg>
+                                </span>
+                                <span class="btn-spinner" hidden></span>
+                                <span class="btn-text">Restart</span>
+                            </button>
+                        </div>
+
+                        <!-- Single Consolidated Resources Card -->
+                        <div class="metric-summary-card">
+                            <div class="summary-grid">
+                                <!-- CPU Quadrant -->
+                                <div class="summary-item cpu-summary">
+                                    <div class="summary-item-header">
+                                        <span class="summary-item-label"
+                                            >CPU USAGE</span
+                                        >
+                                        <span class="summary-item-icon">
+                                            <svg viewBox="0 0 24 24">
+                                                <rect
+                                                    x="4"
+                                                    y="4"
+                                                    width="16"
+                                                    height="16"
+                                                    rx="2"
+                                                ></rect>
+                                                <rect
+                                                    x="9"
+                                                    y="9"
+                                                    width="6"
+                                                    height="6"
+                                                ></rect>
+                                                <path
+                                                    d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"
+                                                />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="summary-item-value">
+                                        <span id="cpuUsage">0</span
+                                        ><span class="metric-tile-unit">%</span>
+                                    </div>
+                                    <div class="metric-progress-container">
+                                        <div
+                                            id="cpuProgressBar"
+                                            class="metric-progress-bar cpu-bar"
+                                            style="width: 0%"
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <!-- RAM Quadrant -->
+                                <div class="summary-item ram-summary">
+                                    <div class="summary-item-header">
+                                        <span class="summary-item-label"
+                                            >RAM ALLOCATION</span
+                                        >
+                                        <span class="summary-item-icon">
+                                            <svg viewBox="0 0 24 24">
+                                                <path
+                                                    d="M6 19V5h12v14zM9 9h6M9 13h6M9 17h6"
+                                                />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="summary-item-value">
+                                        <span id="ramUsage">0 GB</span>
+                                    </div>
+                                    <div class="metric-progress-container">
+                                        <div
+                                            id="ramProgressBar"
+                                            class="metric-progress-bar ram-bar"
+                                            style="width: 0%"
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <!-- Players Quadrant -->
+                                <div class="summary-item players-summary">
+                                    <div class="summary-item-header">
+                                        <span class="summary-item-label"
+                                            >PLAYERS ONLINE</span
+                                        >
+                                        <span class="summary-item-icon">
+                                            <svg viewBox="0 0 24 24">
+                                                <path
+                                                    d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"
+                                                />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="summary-item-value">
+                                        <span id="playerCount">0 / 0</span>
+                                    </div>
+                                    <div
+                                        id="playersAvatarList"
+                                        class="players-avatar-list"
+                                    >
+                                        <!-- Dynamically filled with player initial circles -->
+                                    </div>
+                                </div>
+
+                                <!-- Uptime Quadrant -->
+                                <div class="summary-item uptime-summary">
+                                    <div class="summary-item-header">
+                                        <span class="summary-item-label"
+                                            >UPTIME</span
+                                        >
+                                        <span class="summary-item-icon">
+                                            <svg viewBox="0 0 24 24">
+                                                <circle
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                ></circle>
+                                                <polyline
+                                                    points="12 6 12 12 16 14"
+                                                ></polyline>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="summary-item-value">
+                                        <span id="uptime">0m</span>
+                                    </div>
+                                    <div class="metric-tile-footer-text">
+                                        Since last restart
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        id="tab-players"
+                        class="tab-content panel players-panel"
+                        hidden
+                    >
+                        <div class="section-head">
+                            <div class="title-area">
+                                <p class="eyebrow">Online players</p>
+                                <div class="title-row">
+                                    <h2>Players</h2>
+                                    <span id="playersState" class="state-label"
+                                        >0 online</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        <div id="playerList" class="player-list"></div>
+
+                        <div
+                            id="offlinePlayerManage"
+                            class="offline-player-manage"
+                        >
+                            <p class="eyebrow">Manage Offline Player</p>
+                            <form id="offlinePlayerForm" class="command-row">
+                                <input
+                                    id="offlinePlayerInput"
+                                    type="text"
+                                    autocomplete="off"
+                                    placeholder="Player name"
+                                />
+                                <button
+                                    class="secondary-button icon-btn"
+                                    type="submit"
+                                    id="btnOfflineManage"
+                                >
+                                    <svg
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2.5"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <polyline points="9 10 4 15 9 20" />
+                                        <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                        <p id="playersDisabled" class="muted" hidden>
+                            Remote player actions are disabled in PocketMC
+                            Desktop.
+                        </p>
+                    </div>
+
+                    <div
+                        id="tab-console"
+                        class="tab-content panel console-panel"
+                        hidden
+                    >
+                        <div class="section-head console-section-head">
+                            <div class="title-area">
+                                <p class="eyebrow">Live console</p>
+                                <div class="title-row">
+                                    <h2>Console</h2>
+                                    <span id="consoleState" class="state-label"
+                                        >Idle</span
+                                    >
+                                </div>
+                            </div>
+                            <div class="console-filters">
+                                <label class="filter-label"
+                                    ><input
+                                        type="checkbox"
+                                        id="filterInfo"
+                                        checked
+                                    />
+                                    Info</label
+                                >
+                                <label class="filter-label"
+                                    ><input
+                                        type="checkbox"
+                                        id="filterWarn"
+                                        checked
+                                    />
+                                    Warn</label
+                                >
+                                <label class="filter-label"
+                                    ><input
+                                        type="checkbox"
+                                        id="filterError"
+                                        checked
+                                    />
+                                    Error</label
+                                >
+                            </div>
+                        </div>
+                        <div id="consoleOutput" class="console-output"></div>
+                        <form id="commandForm" class="command-row">
+                            <input
+                                id="commandInput"
+                                type="text"
+                                autocomplete="off"
+                                placeholder="Type a console command"
+                            />
+                            <button class="primary-button" type="submit">
+                                <span class="button-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="m5 12 14-8-4 16-3-7z" />
+                                    </svg>
+                                </span>
+                                <span>Send</span>
+                            </button>
+                        </form>
+                        <p id="commandDisabled" class="muted" hidden>
+                            Console commands are disabled in PocketMC Desktop.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="emptyView" class="panel empty-panel" hidden>
+                    <div class="panel-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M4 7h16M7 4h10M6 7v14h12V7M9 11h6M9 15h6"
+                            />
+                        </svg>
+                    </div>
+                    <div class="panel-copy">
+                        <p class="eyebrow">Dashboard ready</p>
+                        <h2>No instances found</h2>
+                        <p>
+                            Create or load a server in PocketMC Desktop, then
+                            refresh this dashboard.
+                        </p>
+                    </div>
+                    <button
+                        id="emptyRefreshButton"
+                        class="primary-button"
+                        type="button"
+                    >
+                        <span class="button-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"
+                                />
+                            </svg>
+                        </span>
+                        <span>Refresh</span>
+                    </button>
+                </section>
+
+                <section id="errorView" class="panel error-panel" hidden>
+                    <div class="panel-icon danger" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M12 9v4M12 17h.01M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"
+                            />
+                        </svg>
+                    </div>
+                    <div class="panel-copy">
+                        <p class="eyebrow">Remote access</p>
+                        <h2>Connection problem</h2>
+                        <p id="errorMessage"></p>
+                    </div>
+                    <div class="pair-actions">
+                        <button
+                            id="retryButton"
+                            class="primary-button"
+                            type="button"
+                        >
+                            <span class="button-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"
+                                    />
+                                </svg>
+                            </span>
+                            <span>Retry</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Login View -->
+                <section id="loginView" class="panel login-panel" hidden>
+                    <div class="panel-icon" aria-hidden="true">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"
+                            />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                    </div>
+                    <div class="panel-copy">
+                        <p class="eyebrow">Security</p>
+                        <h2>Authentication Required</h2>
+                        <p>
+                            Please enter the remote dashboard password to
+                            continue.
+                        </p>
+                    </div>
+                    <form id="loginForm" class="login-form">
+                        <input
+                            type="password"
+                            id="loginPasswordInput"
+                            class="text-input login-input"
+                            placeholder="Password"
+                            autocomplete="current-password"
+                            required
+                        />
+                        <p
+                            class="login-help-text"
+                            style="
+                                font-size: 0.85rem;
+                                color: var(--text-muted);
+                                margin-bottom: 1rem;
+                                text-align: center;
+                            "
+                        >
+                            Logins remain valid for 24 hours on this browser.
+                        </p>
+                        <button
+                            id="loginSubmitButton"
+                            class="primary-button"
+                            type="submit"
+                        >
+                            <span class="button-icon" aria-hidden="true">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <path
+                                        d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"
+                                    />
+                                </svg>
+                            </span>
+                            <span class="btn-spinner" hidden></span>
+                            <span class="btn-text">Login</span>
+                        </button>
+                        <p id="loginError" class="login-error-text" hidden>
+                            Invalid password. Please try again.
+                        </p>
+                    </form>
+                </section>
             </div>
-          </div>
-          <p id="serverIpAddress" class="server-ip-label">IP: N/A</p>
-        </div>
+        </main>
 
-        <nav class="tabs-nav">
-          <button class="tab-button active" data-tab="overview" type="button">
-            <svg viewBox="0 0 24 24" class="tab-icon"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
-            <span class="tab-text">Overview</span>
-          </button>
-          <button class="tab-button" data-tab="console" type="button">
-            <svg viewBox="0 0 24 24" class="tab-icon"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-            <span class="tab-text">Console</span>
-          </button>
-          <button class="tab-button" data-tab="players" type="button">
-            <svg viewBox="0 0 24 24" class="tab-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span class="tab-text">Players</span>
-          </button>
-        </nav>
+        <!-- Player Action Modal -->
+        <div id="playerActionModal" class="modal-overlay" hidden>
+            <div class="modal-content">
+                <h3 id="playerActionModalTitle">Manage Player</h3>
+                <p id="playerActionModalName" class="muted">Player name</p>
 
-        <div id="tab-overview" class="tab-content active panel overview-panel">
-          <div class="server-ips" id="serverIpsContainer" hidden>
-            <p class="eyebrow">Connect</p>
-            <div id="serverIpsList" class="ips-list"></div>
-          </div>
+                <div class="modal-buttons" id="playerActionButtons">
+                    <button
+                        class="secondary-button"
+                        data-action="op"
+                        id="btnMakeOp"
+                    >
+                        Make OP
+                    </button>
+                    <button
+                        class="secondary-button"
+                        data-action="deop"
+                        id="btnDeop"
+                    >
+                        De-OP
+                    </button>
+                    <button
+                        class="danger-button"
+                        data-action="kick"
+                        id="btnKick"
+                    >
+                        Kick
+                    </button>
+                    <button class="danger-button" data-action="ban" id="btnBan">
+                        Ban
+                    </button>
+                    <button
+                        class="secondary-button"
+                        data-action="pardon"
+                        id="btnUnban"
+                    >
+                        Unban
+                    </button>
+                </div>
 
-          <div class="button-row">
-            <button id="startButton" class="primary-button action-btn start-btn" type="button">
-              <span class="button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
-              </span>
-              <span class="btn-spinner" hidden></span>
-              <span class="btn-text">Start</span>
-            </button>
-            <button id="stopButton" class="danger-button action-btn stop-btn" type="button">
-              <span class="button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-              </span>
-              <span class="btn-spinner" hidden></span>
-              <span class="btn-text">Stop</span>
-            </button>
-            <button id="restartButton" class="secondary-button action-btn restart-btn" type="button">
-              <span class="button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-              </span>
-              <span class="btn-spinner" hidden></span>
-              <span class="btn-text">Restart</span>
-            </button>
-          </div>
+                <form id="reasonModalForm" class="modal-form" hidden>
+                    <p id="reasonModalLabel" class="muted">
+                        Reason (optional):
+                    </p>
+                    <input
+                        type="text"
+                        id="reasonModalInput"
+                        placeholder="Enter reason"
+                        autocomplete="off"
+                    />
+                    <div class="modal-actions">
+                        <button
+                            type="button"
+                            id="reasonModalCancel"
+                            class="secondary-button"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            id="reasonModalConfirm"
+                            class="danger-button"
+                        >
+                            Confirm
+                        </button>
+                    </div>
+                </form>
 
-          <!-- Single Consolidated Resources Card -->
-          <div class="metric-summary-card">
-            <div class="summary-grid">
-              
-              <!-- CPU Quadrant -->
-              <div class="summary-item cpu-summary">
-                <div class="summary-item-header">
-                  <span class="summary-item-label">CPU USAGE</span>
-                  <span class="summary-item-icon">
-                    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/></svg>
-                  </span>
+                <div class="modal-actions" id="playerActionCloseRow">
+                    <button
+                        type="button"
+                        id="playerActionModalClose"
+                        class="secondary-button"
+                    >
+                        Close
+                    </button>
                 </div>
-                <div class="summary-item-value">
-                  <span id="cpuUsage">0</span><span class="metric-tile-unit">%</span>
-                </div>
-                <div class="metric-progress-container">
-                  <div id="cpuProgressBar" class="metric-progress-bar cpu-bar" style="width: 0%"></div>
-                </div>
-              </div>
-
-              <!-- RAM Quadrant -->
-              <div class="summary-item ram-summary">
-                <div class="summary-item-header">
-                  <span class="summary-item-label">RAM ALLOCATION</span>
-                  <span class="summary-item-icon">
-                    <svg viewBox="0 0 24 24"><path d="M6 19V5h12v14zM9 9h6M9 13h6M9 17h6"/></svg>
-                  </span>
-                </div>
-                <div class="summary-item-value">
-                  <span id="ramUsage">0 GB</span>
-                </div>
-                <div class="metric-progress-container">
-                  <div id="ramProgressBar" class="metric-progress-bar ram-bar" style="width: 0%"></div>
-                </div>
-              </div>
-
-              <!-- Players Quadrant -->
-              <div class="summary-item players-summary">
-                <div class="summary-item-header">
-                  <span class="summary-item-label">PLAYERS ONLINE</span>
-                  <span class="summary-item-icon">
-                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg>
-                  </span>
-                </div>
-                <div class="summary-item-value">
-                  <span id="playerCount">0 / 0</span>
-                </div>
-                <div id="playersAvatarList" class="players-avatar-list">
-                  <!-- Dynamically filled with player initial circles -->
-                </div>
-              </div>
-
-              <!-- Uptime Quadrant -->
-              <div class="summary-item uptime-summary">
-                <div class="summary-item-header">
-                  <span class="summary-item-label">UPTIME</span>
-                  <span class="summary-item-icon">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                  </span>
-                </div>
-                <div class="summary-item-value">
-                  <span id="uptime">0m</span>
-                </div>
-                <div class="metric-tile-footer-text">
-                  Since last restart
-                </div>
-              </div>
-
             </div>
-          </div>
         </div>
 
-        <div id="tab-players" class="tab-content panel players-panel" hidden>
-          <div class="section-head">
-            <div class="title-area">
-              <p class="eyebrow">Online players</p>
-              <div class="title-row">
-                <h2>Players</h2>
-                <span id="playersState" class="state-label">0 online</span>
-              </div>
+        <!-- Welcome Screen Overlay -->
+        <div id="welcomeScreen" class="welcome-overlay" hidden>
+            <div class="welcome-content">
+                <div class="welcome-logo-box">
+                    <img
+                        src="/remote/icon.png"
+                        alt="PocketMC Logo"
+                        class="welcome-logo-img"
+                    />
+                </div>
+
+                <h1 class="welcome-title">
+                    Welcome to<br /><span class="brand-name"
+                        >PocketMC Remote</span
+                    >
+                </h1>
+                <p class="welcome-subtitle">
+                    Your Minecraft server, anywhere. Monitor performance, manage
+                    players, and run commands from the palm of your hand.
+                </p>
+
+                <div class="welcome-features">
+                    <div class="welcome-feature-item">
+                        <div class="welcome-feature-icon-wrapper perf-theme">
+                            <svg
+                                viewBox="0 0 24 24"
+                                class="welcome-feature-svg"
+                            >
+                                <path
+                                    d="M3 3v18h18M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"
+                                />
+                            </svg>
+                        </div>
+                        <span class="welcome-feature-text"
+                            >Live Performance Tracking</span
+                        >
+                    </div>
+                    <div class="welcome-feature-item">
+                        <div class="welcome-feature-icon-wrapper console-theme">
+                            <svg
+                                viewBox="0 0 24 24"
+                                class="welcome-feature-svg"
+                            >
+                                <path
+                                    d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM8 9l3 3-3 3M13 15h3"
+                                />
+                            </svg>
+                        </div>
+                        <span class="welcome-feature-text"
+                            >Mobile Console Access</span
+                        >
+                    </div>
+                    <div class="welcome-feature-item">
+                        <div class="welcome-feature-icon-wrapper players-theme">
+                            <svg
+                                viewBox="0 0 24 24"
+                                class="welcome-feature-svg"
+                            >
+                                <path
+                                    d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                                />
+                            </svg>
+                        </div>
+                        <span class="welcome-feature-text"
+                            >Player Management Tools</span
+                        >
+                    </div>
+                </div>
+
+                <button id="getStartedButton" class="welcome-btn" type="button">
+                    <span>Get Started</span>
+                    <svg viewBox="0 0 24 24" class="welcome-btn-arrow">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </button>
             </div>
-          </div>
-          <div id="playerList" class="player-list"></div>
-
-          <div id="offlinePlayerManage" class="offline-player-manage">
-            <p class="eyebrow">Manage Offline Player</p>
-            <form id="offlinePlayerForm" class="command-row">
-              <input id="offlinePlayerInput" type="text" autocomplete="off" placeholder="Player name">
-              <button class="secondary-button icon-btn" type="submit" id="btnOfflineManage"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></button>
-            </form>
-          </div>
-          <p id="playersDisabled" class="muted" hidden>Remote player actions are disabled in PocketMC Desktop.</p>
         </div>
 
-        <div id="tab-console" class="tab-content panel console-panel" hidden>
-          <div class="section-head console-section-head">
-            <div class="title-area">
-              <p class="eyebrow">Live console</p>
-              <div class="title-row">
-                <h2>Console</h2>
-                <span id="consoleState" class="state-label">Idle</span>
-              </div>
-            </div>
-            <div class="console-filters">
-              <label class="filter-label"><input type="checkbox" id="filterInfo" checked> Info</label>
-              <label class="filter-label"><input type="checkbox" id="filterWarn" checked> Warn</label>
-              <label class="filter-label"><input type="checkbox" id="filterError" checked> Error</label>
-            </div>
-          </div>
-          <div id="consoleOutput" class="console-output"></div>
-          <form id="commandForm" class="command-row">
-            <input id="commandInput" type="text" autocomplete="off" placeholder="Type a console command">
-            <button class="primary-button" type="submit">
-              <span class="button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="m5 12 14-8-4 16-3-7z"/></svg>
-              </span>
-              <span>Send</span>
-            </button>
-          </form>
-          <p id="commandDisabled" class="muted" hidden>Console commands are disabled in PocketMC Desktop.</p>
-        </div>
-      </section>
-
-      <section id="emptyView" class="panel empty-panel" hidden>
-        <div class="panel-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 7h16M7 4h10M6 7v14h12V7M9 11h6M9 15h6"/></svg>
-        </div>
-        <div class="panel-copy">
-          <p class="eyebrow">Dashboard ready</p>
-          <h2>No instances found</h2>
-          <p>Create or load a server in PocketMC Desktop, then refresh this dashboard.</p>
-        </div>
-        <button id="emptyRefreshButton" class="primary-button" type="button">
-          <span class="button-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
-          </span>
-          <span>Refresh</span>
-        </button>
-      </section>
-
-      <section id="errorView" class="panel error-panel" hidden>
-        <div class="panel-icon danger" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-        </div>
-        <div class="panel-copy">
-          <p class="eyebrow">Remote access</p>
-          <h2>Connection problem</h2>
-          <p id="errorMessage"></p>
-        </div>
-        <div class="pair-actions">
-          <button id="retryButton" class="primary-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
-            </span>
-            <span>Retry</span>
-          </button>
-        </div>
-      </section>
-
-      <!-- Login View -->
-      <section id="loginView" class="panel login-panel" hidden>
-        <div class="panel-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </div>
-        <div class="panel-copy">
-          <p class="eyebrow">Security</p>
-          <h2>Authentication Required</h2>
-          <p>Please enter the remote dashboard password to continue.</p>
-        </div>
-        <form id="loginForm" class="login-form">
-          <input type="password" id="loginPasswordInput" class="text-input login-input" placeholder="Password" autocomplete="current-password" required />
-          <p class="login-help-text" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; text-align: center;">Logins remain valid for 24 hours on this browser.</p>
-          <button id="loginSubmitButton" class="primary-button" type="submit">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-            </span>
-            <span class="btn-spinner" hidden></span>
-            <span class="btn-text">Login</span>
-          </button>
-          <p id="loginError" class="login-error-text" hidden>Invalid password. Please try again.</p>
-        </form>
-      </section>
-    </div>
-  </main>
-
-  <!-- Player Action Modal -->
-  <div id="playerActionModal" class="modal-overlay" hidden>
-    <div class="modal-content">
-      <h3 id="playerActionModalTitle">Manage Player</h3>
-      <p id="playerActionModalName" class="muted">Player name</p>
-      
-      <div class="modal-buttons" id="playerActionButtons">
-        <button class="secondary-button" data-action="op" id="btnMakeOp">Make OP</button>
-        <button class="secondary-button" data-action="deop" id="btnDeop">De-OP</button>
-        <button class="danger-button" data-action="kick" id="btnKick">Kick</button>
-        <button class="danger-button" data-action="ban" id="btnBan">Ban</button>
-        <button class="secondary-button" data-action="pardon" id="btnUnban">Unban</button>
-      </div>
-
-      <form id="reasonModalForm" class="modal-form" hidden>
-        <p id="reasonModalLabel" class="muted">Reason (optional):</p>
-        <input type="text" id="reasonModalInput" placeholder="Enter reason" autocomplete="off">
-        <div class="modal-actions">
-          <button type="button" id="reasonModalCancel" class="secondary-button">Cancel</button>
-          <button type="submit" id="reasonModalConfirm" class="danger-button">Confirm</button>
-        </div>
-      </form>
-      
-      <div class="modal-actions" id="playerActionCloseRow">
-        <button type="button" id="playerActionModalClose" class="secondary-button">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Welcome Screen Overlay -->
-  <div id="welcomeScreen" class="welcome-overlay" hidden>
-    <div class="welcome-content">
-      <div class="welcome-logo-box">
-        <img src="/remote/icon.png" alt="PocketMC Logo" class="welcome-logo-img" />
-      </div>
-      
-      <h1 class="welcome-title">Welcome to<br><span class="brand-name">PocketMC Remote</span></h1>
-      <p class="welcome-subtitle">Your Minecraft server, anywhere. Monitor performance, manage players, and run commands from the palm of your hand.</p>
-      
-      <div class="welcome-features">
-        <div class="welcome-feature-item">
-          <div class="welcome-feature-icon-wrapper perf-theme">
-            <svg viewBox="0 0 24 24" class="welcome-feature-svg"><path d="M3 3v18h18M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
-          </div>
-          <span class="welcome-feature-text">Live Performance Tracking</span>
-        </div>
-        <div class="welcome-feature-item">
-          <div class="welcome-feature-icon-wrapper console-theme">
-            <svg viewBox="0 0 24 24" class="welcome-feature-svg"><path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM8 9l3 3-3 3M13 15h3"/></svg>
-          </div>
-          <span class="welcome-feature-text">Mobile Console Access</span>
-        </div>
-        <div class="welcome-feature-item">
-          <div class="welcome-feature-icon-wrapper players-theme">
-            <svg viewBox="0 0 24 24" class="welcome-feature-svg"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <span class="welcome-feature-text">Player Management Tools</span>
-        </div>
-      </div>
-      
-      <button id="getStartedButton" class="welcome-btn" type="button">
-        <span>Get Started</span>
-        <svg viewBox="0 0 24 24" class="welcome-btn-arrow"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
-    </div>
-  </div>
-
-  <script src="/remote/app.js"></script>
-</body>
+        <script src="/remote/app.js"></script>
+    </body>
 </html>
-
