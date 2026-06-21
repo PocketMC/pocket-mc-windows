@@ -14,6 +14,23 @@ namespace PocketMC.Desktop.Infrastructure
         public AppDialogWindow()
         {
             InitializeComponent();
+
+            // FluentWindow initialization can reset accent resources.
+            // Re-assert the current accent to prevent the dialog from
+            // reverting the entire application to the system accent.
+            try
+            {
+                if (System.Windows.Application.Current is App app)
+                {
+                    var accentService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+                        .GetService<PocketMC.Desktop.Features.Shell.AccentColorService>(app.Services);
+                    accentService?.ReassertAccent();
+                }
+            }
+            catch
+            {
+                // Non-critical — dialog will still work with whatever accent is current.
+            }
         }
 
         /// <summary>
@@ -35,24 +52,24 @@ namespace PocketMC.Desktop.Infrastructure
             switch (type)
             {
                 case AppDialogType.Warning:
-                    TxtIcon.Text = "⚠";
-                    TxtIcon.Foreground = new System.Windows.Media.SolidColorBrush(
+                    DialogIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.Warning24;
+                    DialogIcon.Foreground = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(0xF9, 0xE2, 0xAF)); // yellow
                     TxtTitle.Foreground = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(0xF9, 0xE2, 0xAF));
                     break;
 
                 case AppDialogType.Error:
-                    TxtIcon.Text = "✕";
-                    TxtIcon.Foreground = new System.Windows.Media.SolidColorBrush(
+                    DialogIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.ErrorCircle24;
+                    DialogIcon.Foreground = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8)); // red
                     TxtTitle.Foreground = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
                     break;
 
                 case AppDialogType.Confirm:
-                    TxtIcon.Text = "?";
-                    TxtIcon.Foreground = new System.Windows.Media.SolidColorBrush(
+                    DialogIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.QuestionCircle24;
+                    DialogIcon.Foreground = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA)); // blue
                     TxtTitle.Foreground = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
@@ -60,8 +77,8 @@ namespace PocketMC.Desktop.Infrastructure
 
                 case AppDialogType.Info:
                 default:
-                    TxtIcon.Text = "ℹ";
-                    TxtIcon.Foreground = new System.Windows.Media.SolidColorBrush(
+                    DialogIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.Info24;
+                    DialogIcon.Foreground = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(0x89, 0xDC, 0xEB)); // teal
                     TxtTitle.Foreground = new System.Windows.Media.SolidColorBrush(
                         System.Windows.Media.Color.FromRgb(0x89, 0xDC, 0xEB));

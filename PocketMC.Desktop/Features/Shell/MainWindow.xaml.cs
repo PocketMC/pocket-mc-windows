@@ -95,8 +95,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        _visualService.ApplyTheme();
-        _visualService.SetWindowActive(IsActive);
         _visualService.RequestMicaUpdate();
         
         _startupCoordinator.Start();

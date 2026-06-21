@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
@@ -56,7 +57,27 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly IDiscordRpcService _discordRpcService;
         private readonly WindowsStartupService _windowsStartupService;
         private readonly ServerSleepPreventionCoordinator _sleepPreventionCoordinator;
+        private readonly AccentColorService _accentColorService;
         private bool _isInitializing = true;
+        private static readonly (string Name, string Hex)[] AccentColorPresets =
+        {
+            ("Blue", "#0078D4"),
+            ("Dark Blue", "#003E92"),
+            ("Teal", "#008272"),
+            ("Cyan", "#0099BC"),
+            ("Green", "#107C10"),
+            ("Emerald", "#10893E"),
+            ("Yellow", "#986F0B"),
+            ("Orange", "#CA5010"),
+            ("Red", "#D13438"),
+            ("Rose", "#E3008C"),
+            ("Purple", "#744DA9"),
+            ("Violet", "#B146C2"),
+            ("Slate", "#647687"),
+            ("Steel", "#525E7D"),
+            ("Gold", "#C19C00"),
+            ("Coral", "#E74856")
+        };
         
         public CloudBackupSettingsViewModel CloudBackups { get; }
 
@@ -71,7 +92,8 @@ namespace PocketMC.Desktop.Features.Setup
             CloudBackupSettingsViewModel cloudBackups,
             WindowsStartupService windowsStartupService,
             IDiscordRpcService discordRpcService,
-            ServerSleepPreventionCoordinator sleepPreventionCoordinator)
+            ServerSleepPreventionCoordinator sleepPreventionCoordinator,
+            AccentColorService accentColorService)
         {
             InitializeComponent();
             _applicationState = applicationState;
@@ -84,6 +106,7 @@ namespace PocketMC.Desktop.Features.Setup
             _windowsStartupService = windowsStartupService;
             _discordRpcService = discordRpcService;
             _sleepPreventionCoordinator = sleepPreventionCoordinator;
+            _accentColorService = accentColorService;
             CloudBackups = cloudBackups;
 
             Loaded += AppSettingsPage_Loaded;
@@ -127,6 +150,7 @@ namespace PocketMC.Desktop.Features.Setup
             // Initialize custom background panel state
             UpdateCustomBackgroundPanelVisibility();
             UpdateCustomBackgroundUI();
+            InitializeAccentColorSection();
 
             // Set initial state
             ExternalBackupPathInput.Text = _applicationState.Settings.ExternalBackupDirectory ?? "";
@@ -383,6 +407,220 @@ namespace PocketMC.Desktop.Features.Setup
                     mainWin.RequestMicaUpdate(); // This will apply the backdrop
                 }
             }
+        }
+
+        private void InitializeAccentColorSection()
+        {
+            if (ColorSwatchPanel == null) return;
+
+            bool wasInitializing = _isInitializing;
+            _isInitializing = true;
+
+            ColorSwatchPanel.Children.Clear();
+            foreach (var preset in AccentColorPresets)
+            {
+                if (!AccentColorService.TryParseHexColor(preset.Hex, out Color presetColor, out string normalizedHex))
+                {
+                    continue;
+                }
+
+                var swatch = new Border
+                {
+                    Width = 28,
+                    Height = 28,
+                    CornerRadius = new CornerRadius(14),
+                    Background = CreateAccentBrush(presetColor),
+                    BorderThickness = new Thickness(1),
+                    BorderBrush = CreateAccentBrush(Color.FromArgb(0x50, 0xFF, 0xFF, 0xFF)),
+                    Margin = new Thickness(0, 0, 8, 8),
+                    Cursor = Cursors.Hand,
+                    Tag = normalizedHex,
+                    ToolTip = $"{preset.Name} ({normalizedHex})"
+                };
+                swatch.MouseLeftButtonDown += ColorSwatch_Click;
+                ColorSwatchPanel.Children.Add(swatch);
+            }
+
+            var settings = _applicationState.Settings;
+            bool useCustom = AccentColorService.IsCustomMode(settings.AccentColorMode);
+            AccentAutoRadio.IsChecked = !useCustom;
+            AccentCustomRadio.IsChecked = useCustom;
+
+            string selectedHex = GetCurrentCustomAccentHex();
+            HexColorInput.Text = selectedHex;
+            UpdateCustomAccentPanelVisibility();
+            UpdateAccentPreview(_accentColorService.GetCurrentAccentColor());
+            UpdateAccentSelection(useCustom ? selectedHex : null);
+
+            _isInitializing = wasInitializing;
+        }
+
+        private void AccentModeChanged(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            if (AccentCustomRadio.IsChecked == true)
+            {
+                string hex = GetCurrentCustomAccentHex();
+                if (!AccentColorService.TryParseHexColor(hex, out Color color, out string normalizedHex))
+                {
+                    normalizedHex = AccentColorService.DefaultCustomAccentColor;
+                    AccentColorService.TryParseHexColor(normalizedHex, out color, out _);
+                }
+
+                settings.AccentColorMode = AccentColorService.CustomMode;
+                settings.CustomAccentColor = normalizedHex;
+                HexColorInput.Text = normalizedHex;
+                _settingsManager.Save(settings);
+
+                _accentColorService.ApplyCustomAccent(color);
+                UpdateAccentPreview(color);
+                UpdateAccentSelection(normalizedHex);
+
+                _dialogService.ShowMessage(
+                    "Accent Color Applied",
+                    $"Successfully applied custom accent color {normalizedHex}.",
+                    DialogType.Information);
+            }
+            else
+            {
+                settings.AccentColorMode = AccentColorService.AutomaticMode;
+                _settingsManager.Save(settings);
+
+                _accentColorService.ApplySystemAccent();
+                UpdateAccentPreview(_accentColorService.GetCurrentAccentColor());
+                UpdateAccentSelection(null);
+
+                _dialogService.ShowMessage(
+                    "Accent Color Applied",
+                    "Successfully applied Windows system accent color.",
+                    DialogType.Information);
+            }
+
+            UpdateCustomAccentPanelVisibility();
+        }
+
+        private void ColorSwatch_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Border { Tag: string hex } &&
+                AccentColorService.TryParseHexColor(hex, out Color color, out string normalizedHex))
+            {
+                SaveAndApplyCustomAccent(color, normalizedHex);
+            }
+        }
+
+        private void ApplyHexColor_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyHexColorFromInput();
+        }
+
+        private void HexColorInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter) return;
+
+            ApplyHexColorFromInput();
+            e.Handled = true;
+        }
+
+        private void ResetAccentColor_Click(object sender, RoutedEventArgs e)
+        {
+            AccentAutoRadio.IsChecked = true;
+        }
+
+        private void ApplyHexColorFromInput()
+        {
+            string input = HexColorInput.Text.Trim();
+            if (!AccentColorService.TryParseHexColor(input, out Color color, out string normalizedHex))
+            {
+                _dialogService.ShowMessage(
+                    "Invalid Accent Color",
+                    "Enter a 6-digit hex color, for example #0078D4.",
+                    DialogType.Warning);
+                return;
+            }
+
+            SaveAndApplyCustomAccent(color, normalizedHex);
+        }
+
+        private void SaveAndApplyCustomAccent(Color color, string normalizedHex)
+        {
+            var settings = _applicationState.Settings;
+            settings.AccentColorMode = AccentColorService.CustomMode;
+            settings.CustomAccentColor = normalizedHex;
+            _settingsManager.Save(settings);
+
+            bool wasInitializing = _isInitializing;
+            _isInitializing = true;
+            AccentCustomRadio.IsChecked = true;
+            HexColorInput.Text = normalizedHex;
+            _isInitializing = wasInitializing;
+
+            _accentColorService.ApplyCustomAccent(color);
+            UpdateCustomAccentPanelVisibility();
+            UpdateAccentPreview(color);
+            UpdateAccentSelection(normalizedHex);
+
+            _dialogService.ShowMessage(
+                "Accent Color Applied",
+                $"Successfully applied custom accent color {normalizedHex}.",
+                DialogType.Information);
+        }
+
+        private string GetCurrentCustomAccentHex()
+        {
+            if (AccentColorService.TryParseHexColor(
+                    _applicationState.Settings.CustomAccentColor,
+                    out _,
+                    out string normalizedHex))
+            {
+                return normalizedHex;
+            }
+
+            return AccentColorService.DefaultCustomAccentColor;
+        }
+
+        private void UpdateCustomAccentPanelVisibility()
+        {
+            if (CustomAccentPanel == null) return;
+
+            bool useCustom = AccentCustomRadio.IsChecked == true;
+            CustomAccentPanel.Visibility = useCustom ? Visibility.Visible : Visibility.Collapsed;
+            AccentModeLabel.Text = useCustom
+                ? $"Using custom accent {GetCurrentCustomAccentHex()}"
+                : "Using Windows accent color";
+        }
+
+        private void UpdateAccentPreview(Color color)
+        {
+            if (AccentPreviewSwatch != null)
+            {
+                AccentPreviewSwatch.Background = CreateAccentBrush(color);
+            }
+        }
+
+        private void UpdateAccentSelection(string? selectedHex)
+        {
+            if (ColorSwatchPanel == null) return;
+
+            foreach (UIElement child in ColorSwatchPanel.Children)
+            {
+                if (child is not Border swatch) continue;
+
+                bool isSelected = selectedHex != null &&
+                                  string.Equals(swatch.Tag as string, selectedHex, StringComparison.OrdinalIgnoreCase);
+                swatch.BorderThickness = isSelected ? new Thickness(2) : new Thickness(1);
+                swatch.BorderBrush = isSelected
+                    ? CreateAccentBrush(Colors.White)
+                    : CreateAccentBrush(Color.FromArgb(0x50, 0xFF, 0xFF, 0xFF));
+            }
+        }
+
+        private static SolidColorBrush CreateAccentBrush(Color color)
+        {
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
         }
 
         // ── Custom Background Image Handlers ────────────────────────────────

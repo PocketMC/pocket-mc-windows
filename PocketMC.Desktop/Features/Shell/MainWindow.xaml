@@ -63,7 +63,7 @@
             <!-- ─── Update Banner ─────────────────────────────────────────────── -->
             <Border Grid.Row="0"
                     Visibility="{Binding IsUpdateBannerVisible, Converter={StaticResource BoolToVis}}"
-                    Background="#2563EB"
+                    Background="{DynamicResource SystemAccentColorPrimaryBrush}"
                     Padding="12,8">
                 <Grid>
                     <Grid.ColumnDefinitions>

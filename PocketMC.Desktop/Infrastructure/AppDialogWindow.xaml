@@ -14,26 +14,34 @@
         WindowBackdropType="None"
         Background="{DynamicResource ApplicationBackgroundBrush}">
 
-    <Grid Margin="20" MaxWidth="480">
+    <Grid MaxWidth="480">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Header: icon + title -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock x:Name="TxtIcon"
-                       FontSize="18"
-                       VerticalAlignment="Center"
-                       Margin="0,0,8,0"/>
-            <TextBlock x:Name="TxtTitle"
-                       FontSize="16" FontWeight="Bold"
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                       VerticalAlignment="Center"
-                       TextWrapping="Wrap"
-                       TextTrimming="CharacterEllipsis"/>
-        </StackPanel>
+        <ui:TitleBar Grid.Row="0" Title="Message" ShowMaximize="False" ShowMinimize="False" />
+
+        <Grid Grid.Row="1" Margin="24,8,24,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header: icon + title -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                <ui:SymbolIcon x:Name="DialogIcon"
+                               FontSize="24"
+                               VerticalAlignment="Center"
+                               Margin="0,0,12,0"/>
+                <TextBlock x:Name="TxtTitle"
+                           FontSize="18" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
 
         <!-- Message body -->
         <ScrollViewer Grid.Row="1"
@@ -68,5 +76,6 @@
                        IsDefault="True"/>
         </WrapPanel>
 
+    </Grid>
     </Grid>
 </ui:FluentWindow>

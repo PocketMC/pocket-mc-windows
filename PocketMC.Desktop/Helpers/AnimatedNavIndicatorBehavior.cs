@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using PocketMC.Desktop.Features.Shell;
 using Wpf.Ui.Controls;
 
 namespace PocketMC.Desktop.Helpers;
@@ -27,6 +28,13 @@ public static class AnimatedNavIndicatorBehavior
             typeof(AnimatedNavIndicatorBehavior),
             new PropertyMetadata(null));
 
+    private static readonly DependencyProperty AccentChangedHandlerProperty =
+        DependencyProperty.RegisterAttached(
+            "AccentChangedHandler",
+            typeof(Action<Color>),
+            typeof(AnimatedNavIndicatorBehavior),
+            new PropertyMetadata(null));
+
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is NavigationView navView)
@@ -35,11 +43,13 @@ public static class AnimatedNavIndicatorBehavior
             {
                 navView.Loaded += NavView_Loaded;
                 navView.LayoutUpdated += NavView_LayoutUpdated;
+                AttachAccentChangedHandler(navView);
             }
             else
             {
                 navView.Loaded -= NavView_Loaded;
                 navView.LayoutUpdated -= NavView_LayoutUpdated;
+                DetachAccentChangedHandler(navView);
                 if (navView.GetValue(IndicatorBorderProperty) is Border border && border.Parent is Panel panel)
                 {
                     panel.Children.Remove(border);
@@ -97,9 +107,6 @@ public static class AnimatedNavIndicatorBehavior
             paneGrid = rootGrid;
         }
 
-        Brush? brush = Application.Current.TryFindResource("NavigationViewSelectionIndicatorForeground") as Brush;
-        if (brush == null) brush = Brushes.DodgerBlue;
-
         var indicator = new Border
         {
             Width = 3,
@@ -107,7 +114,7 @@ public static class AnimatedNavIndicatorBehavior
             HorizontalAlignment = HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Top,
             CornerRadius = new CornerRadius(2),
-            Background = brush,
+            Background = ResolveIndicatorBrush(),
             IsHitTestVisible = false,
             RenderTransformOrigin = new Point(0.5, 0.5),
             Opacity = 0 // Hidden initially
@@ -127,6 +134,50 @@ public static class AnimatedNavIndicatorBehavior
         }
 
         navView.SetValue(IndicatorBorderProperty, indicator);
+    }
+
+    private static void AttachAccentChangedHandler(NavigationView navView)
+    {
+        if (navView.GetValue(AccentChangedHandlerProperty) is Action<Color>) return;
+
+        void Handler(Color _)
+        {
+            if (!navView.Dispatcher.CheckAccess())
+            {
+                navView.Dispatcher.BeginInvoke(new Action(() => UpdateIndicatorBrush(navView)));
+                return;
+            }
+
+            UpdateIndicatorBrush(navView);
+        }
+
+        Action<Color> handler = Handler;
+        AccentColorService.GlobalAccentChanged += handler;
+        navView.SetValue(AccentChangedHandlerProperty, handler);
+    }
+
+    private static void DetachAccentChangedHandler(NavigationView navView)
+    {
+        if (navView.GetValue(AccentChangedHandlerProperty) is Action<Color> handler)
+        {
+            AccentColorService.GlobalAccentChanged -= handler;
+        }
+
+        navView.ClearValue(AccentChangedHandlerProperty);
+    }
+
+    private static void UpdateIndicatorBrush(NavigationView navView)
+    {
+        if (navView.GetValue(IndicatorBorderProperty) is Border indicator)
+        {
+            indicator.Background = ResolveIndicatorBrush();
+        }
+    }
+
+    private static Brush ResolveIndicatorBrush()
+    {
+        Brush? brush = Application.Current?.TryFindResource("NavigationViewSelectionIndicatorForeground") as Brush;
+        return brush ?? Brushes.DodgerBlue;
     }
 
     public static void AnimateToActiveItem(NavigationView navView, bool animate = true)
