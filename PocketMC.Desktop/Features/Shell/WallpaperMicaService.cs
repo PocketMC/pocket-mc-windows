@@ -93,10 +93,22 @@ namespace PocketMC.Desktop.Features.Shell
         /// Applies a user-selected custom image with the same blur+freeze pipeline.
         /// Returns true if the custom image was applied successfully.
         /// </summary>
-        public bool ApplyCustomImage(Window window, Image wallpaperImageElement, Border tintOverlay, string customImagePath)
+        public bool ApplyCustomImage(Window window, Image wallpaperImageElement, Border tintOverlay, string? customImagePath)
         {
             if (window == null || wallpaperImageElement == null) return false;
-            if (string.IsNullOrWhiteSpace(customImagePath) || !File.Exists(customImagePath)) return false;
+
+            // If the wallpaper file is missing or inaccessible, automatically fall back to the Pocket MC default wallpaper.
+            if (!string.IsNullOrWhiteSpace(customImagePath) && !File.Exists(customImagePath))
+            {
+                customImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
+            }
+
+            if (string.IsNullOrWhiteSpace(customImagePath) || !File.Exists(customImagePath))
+            {
+                // Unset custom image -> hide the layer
+                wallpaperImageElement.Visibility = Visibility.Collapsed;
+                return false;
+            }
 
             try
             {

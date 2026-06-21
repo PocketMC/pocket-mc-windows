@@ -156,6 +156,21 @@ namespace PocketMC.Desktop.Features.Settings
                 settings.HasMigratedToGreenWallpaperBlurTheme = true;
             }
 
+            if (!settings.HasMigratedToDefaultImageWallpaper)
+            {
+                if (settings.HasCompletedFirstLaunch)
+                {
+                    // Apply the new Pocket MC default wallpaper to existing users on this update
+                    settings.WindowBackdrop = "FakeMica";
+                    settings.AccentColorMode = "Custom";
+                    settings.CustomAccentColor = "#008B00";
+                }
+                // For new users, defaults are already provided via AppSettings.cs initializers,
+                // but we must set the dynamic image path here.
+                settings.CustomBackgroundImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
+                settings.HasMigratedToDefaultImageWallpaper = true;
+            }
+
             settings.AiApiKeys ??= new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             settings.CloudTokens ??= new System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet>(StringComparer.OrdinalIgnoreCase);
             foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))

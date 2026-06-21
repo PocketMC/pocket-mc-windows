@@ -693,6 +693,22 @@ namespace PocketMC.Desktop.Features.Setup
             }
         }
 
+        private void RestoreDefaultBackground_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = _applicationState.Settings;
+            settings.CustomBackgroundImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
+            _settingsManager.Save(settings);
+
+            UpdateCustomBackgroundUI();
+
+            // Apply immediately
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                mainWin.ApplyTheme();
+                mainWin.RequestMicaUpdate();
+            }
+        }
+
         private void UpdateCustomBackgroundPanelVisibility()
         {
             if (CustomBackgroundPanel == null) return;
@@ -713,10 +729,14 @@ namespace PocketMC.Desktop.Features.Setup
             string? customPath = _applicationState.Settings.CustomBackgroundImagePath;
             bool hasCustomImage = !string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath);
 
+            string defaultWallpaper = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
+            bool isUsingDefault = hasCustomImage && string.Equals(customPath, defaultWallpaper, StringComparison.OrdinalIgnoreCase);
+
             if (hasCustomImage)
             {
                 CustomBgPathLabel.Text = Path.GetFileName(customPath);
                 BtnClearCustomBg.Visibility = Visibility.Visible;
+                BtnRestoreDefaultBg.Visibility = isUsingDefault ? Visibility.Collapsed : Visibility.Visible;
                 CustomBgPlaceholderIcon.Visibility = Visibility.Collapsed;
 
                 // Load thumbnail preview
@@ -743,6 +763,7 @@ namespace PocketMC.Desktop.Features.Setup
             {
                 CustomBgPathLabel.Text = "No custom image selected";
                 BtnClearCustomBg.Visibility = Visibility.Collapsed;
+                BtnRestoreDefaultBg.Visibility = Visibility.Visible;
                 CustomBgPreviewImage.Source = null;
                 CustomBgPreviewImage.Visibility = Visibility.Collapsed;
                 CustomBgPlaceholderIcon.Visibility = Visibility.Visible;

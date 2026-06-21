@@ -28,6 +28,7 @@ namespace PocketMC.Desktop.Models
         public string AccentColorMode { get; set; } = "Custom";
         public string? CustomAccentColor { get; set; } = "#008B00";
         public bool HasMigratedToGreenWallpaperBlurTheme { get; set; }
+        public bool HasMigratedToDefaultImageWallpaper { get; set; }
         public string? CustomBackgroundImagePath { get; set; }
         public string? CurseForgeApiKey { get; set; }
 

@@ -258,6 +258,13 @@
                                                    Appearance="Secondary"
                                                    Click="BrowseCustomBackground_Click"
                                                    Margin="0,0,8,0"/>
+                                        <ui:Button x:Name="BtnRestoreDefaultBg"
+                                                   Content="Restore Official"
+                                                   Icon="{ui:SymbolIcon ImageArrowBack24}"
+                                                   Appearance="Secondary"
+                                                   Click="RestoreDefaultBackground_Click"
+                                                   Margin="0,0,8,0"
+                                                   Visibility="Collapsed"/>
                                         <ui:Button x:Name="BtnClearCustomBg"
                                                    Content="Use Wallpaper"
                                                    Icon="{ui:SymbolIcon Dismiss24}"

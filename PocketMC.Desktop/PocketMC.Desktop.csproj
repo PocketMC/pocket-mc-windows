@@ -19,6 +19,7 @@
     <Resource Include="Assets\dark_dirt.png" />
     <Resource Include="Assets\logo.png" />
     <Resource Include="Assets\logo_highres.png" />
+    <Content Include="Assets\default_wallpaper.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Features\RemoteControl\Web\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
