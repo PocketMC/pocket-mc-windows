@@ -725,12 +725,7 @@
                         <TabItem Header="Addons">
                             <ScrollViewer x:Name="AddonsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
-                                    <!-- Auto-Update Addons on Start -->
-                                    <StackPanel Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}" Margin="4,8,4,16">
-                                        <TextBlock Text="Auto-Update Addons" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                        <TextBlock Text="Automatically check for and install addon updates when this server starts. Updates will be shown in a dialog during the setup phase." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                        <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" Content="Auto-update addons on server start" />
-                                    </StackPanel>
+                                    <!-- Auto-Update Addons moved to minimal toggle near Update All -->
                                     <!-- Search and Sort Control Bar -->
                                     <Grid Margin="4,0,4,16" Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource InvertedVisibilityConverter}}">
                                         <Grid.ColumnDefinitions>
@@ -812,6 +807,10 @@
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                                             Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}">
+                                                    <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
+                                                                     Content="Auto-Update" Margin="0,0,12,0" 
+                                                                     ToolTip="Automatically update on server start"
+                                                                     Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                     <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
                                                         <ui:ProgressRing.Style>
                                                             <Style TargetType="ui:ProgressRing">
@@ -998,6 +997,10 @@
                                                                Visibility="{Binding Addons.SupportsModpacks, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
+                                                                     Content="Auto-Update" Margin="0,0,12,0" 
+                                                                     ToolTip="Automatically update on server start"
+                                                                     Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                     <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
                                                         <ui:ProgressRing.Style>
                                                             <Style TargetType="ui:ProgressRing">
