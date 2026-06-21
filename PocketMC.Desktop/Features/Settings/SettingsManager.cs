@@ -61,7 +61,27 @@ namespace PocketMC.Desktop.Features.Settings
                     return CreateDefaultSettings();
                 }
 
+                var originalJson = JsonSerializer.Serialize(settings, SettingsJsonOptions);
                 settings = Normalize(settings);
+                var normalizedJson = JsonSerializer.Serialize(settings, SettingsJsonOptions);
+
+                if (originalJson != normalizedJson)
+                {
+                    try
+                    {
+                        var directory = Path.GetDirectoryName(_settingsFilePath);
+                        if (!Directory.Exists(directory) && directory != null)
+                        {
+                            Directory.CreateDirectory(directory);
+                        }
+                        FileUtils.AtomicWriteAllText(_settingsFilePath, normalizedJson);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "Failed to persist normalized settings to {SettingsFilePath}.", _settingsFilePath);
+                    }
+                }
+
                 UnprotectSecrets(settings);
                 return settings;
             }
@@ -121,6 +141,21 @@ namespace PocketMC.Desktop.Features.Settings
         private AppSettings Normalize(AppSettings? settings)
         {
             settings ??= new AppSettings();
+
+            if (!settings.HasMigratedToGreenWallpaperBlurTheme)
+            {
+                // Only overwrite settings if this is an existing installation being migrated.
+                // For new installations (!HasCompletedFirstLaunch), the defaults are already correct
+                // because of the property initializers in AppSettings.cs.
+                if (settings.HasCompletedFirstLaunch)
+                {
+                    settings.WindowBackdrop = "FakeMica";
+                    settings.AccentColorMode = "Custom";
+                    settings.CustomAccentColor = "#008B00";
+                }
+                settings.HasMigratedToGreenWallpaperBlurTheme = true;
+            }
+
             settings.AiApiKeys ??= new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             settings.CloudTokens ??= new System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet>(StringComparer.OrdinalIgnoreCase);
             foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))

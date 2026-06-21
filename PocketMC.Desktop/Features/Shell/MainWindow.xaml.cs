@@ -333,7 +333,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     }
 
     public void RequestMicaUpdate() => _visualService.RequestMicaUpdate();
-
+    public void ApplyTheme() => _visualService.ApplyTheme();
     public void ShowRootDirectorySetup()
     {
         SetNavigationLocked(true);

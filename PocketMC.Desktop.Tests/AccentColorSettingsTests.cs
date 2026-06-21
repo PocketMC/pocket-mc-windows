@@ -11,12 +11,12 @@ public sealed class AccentColorSettingsTests : IDisposable
     private readonly string _tempDirectory = Path.Combine(Path.GetTempPath(), "PocketMC.Tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void NewSettings_DefaultToWindowsAccent()
+    public void NewSettings_DefaultToCustomGreenAccent()
     {
         var settings = new AppSettings();
 
-        Assert.Equal(AccentColorService.AutomaticMode, settings.AccentColorMode);
-        Assert.Null(settings.CustomAccentColor);
+        Assert.Equal(AccentColorService.CustomMode, settings.AccentColorMode);
+        Assert.Equal("#008B00", settings.CustomAccentColor);
     }
 
     [Theory]
@@ -69,13 +69,13 @@ public sealed class AccentColorSettingsTests : IDisposable
     }
 
     [Fact]
-    public void DeserializedLegacySettings_DefaultToAutomaticAccent()
+    public void DeserializedLegacySettings_DefaultToCustomGreenAccent()
     {
         var settings = JsonSerializer.Deserialize<AppSettings>("{}");
 
         Assert.NotNull(settings);
-        Assert.Equal(AccentColorService.AutomaticMode, settings!.AccentColorMode);
-        Assert.Null(settings.CustomAccentColor);
+        Assert.Equal(AccentColorService.CustomMode, settings!.AccentColorMode);
+        Assert.Equal("#008B00", settings.CustomAccentColor);
     }
 
     public void Dispose()

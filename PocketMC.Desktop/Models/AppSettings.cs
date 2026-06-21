@@ -24,9 +24,10 @@ namespace PocketMC.Desktop.Models
         public bool StartMinimizedToTray { get; set; }
         public bool MinimizeToTrayOnClose { get; set; }
         public bool KeepComputerAwakeWhileServersRunning { get; set; } = true;
-        public string WindowBackdrop { get; set; } = "Acrylic";
-        public string AccentColorMode { get; set; } = "Automatic";
-        public string? CustomAccentColor { get; set; }
+        public string WindowBackdrop { get; set; } = "FakeMica";
+        public string AccentColorMode { get; set; } = "Custom";
+        public string? CustomAccentColor { get; set; } = "#008B00";
+        public bool HasMigratedToGreenWallpaperBlurTheme { get; set; }
         public string? CustomBackgroundImagePath { get; set; }
         public string? CurseForgeApiKey { get; set; }
 

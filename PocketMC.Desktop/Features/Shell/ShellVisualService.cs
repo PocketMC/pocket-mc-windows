@@ -44,7 +44,7 @@ namespace PocketMC.Desktop.Features.Shell
         {
             _boundWindow = window;
             ApplyTheme();
-            RequestMicaUpdate();
+            // Do not call RequestMicaUpdate() here. Wait until the window handle is created (e.g., Loaded/Activated).
         }
 
         public void RequestMicaUpdate()
@@ -60,11 +60,38 @@ namespace PocketMC.Desktop.Features.Shell
 
             try
             {
-                ApplyTheme();
                 ApplyDwmDarkMode(window);
 
                 string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 
+                // Native Mica/Acrylic handled by DWM (includes native inactive dimming)
+                if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
+                    _windowsCornerService.IsWindows11())
+                {
+                    HideFakeMicaLayer(window);
+                    window.Background = Brushes.Transparent;
+                    if (window.WindowBackdropType == WindowBackdropType.Mica)
+                        window.WindowBackdropType = WindowBackdropType.None;
+                    window.WindowBackdropType = WindowBackdropType.Mica;
+                    
+                    SetTintLayer(window, MicaActiveTint);
+                    return;
+                }
+
+                if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase) &&
+                    _windowsCornerService.IsWindows11())
+                {
+                    HideFakeMicaLayer(window);
+                    window.Background = Brushes.Transparent;
+                    if (window.WindowBackdropType == WindowBackdropType.Acrylic)
+                        window.WindowBackdropType = WindowBackdropType.None;
+                    window.WindowBackdropType = WindowBackdropType.Acrylic;
+                    
+                    SetTintLayer(window, AcrylicActiveTint);
+                    return;
+                }
+
+                // Manual inactive state handling for non-native backdrops (FakeMica, Light, Dark)
                 if (!_isWindowActive)
                 {
                     HideFakeMicaLayer(window);
@@ -83,45 +110,16 @@ namespace PocketMC.Desktop.Features.Shell
 
                 if (backdrop.Equals("FakeMica", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Fake Mica: use custom image or wallpaper-blur background
                     window.WindowBackdropType = WindowBackdropType.None;
                     window.Background = CreateBrush("#FF1A1A1A");
                     SetTintLayer(window, TransparentTint);
 
                     string? customImagePath = _applicationState.Settings.CustomBackgroundImagePath;
-                    if (!string.IsNullOrWhiteSpace(customImagePath))
+                    if (!string.IsNullOrWhiteSpace(customImagePath) && ApplyFakeMicaLayerWithCustomImage(window, customImagePath))
                     {
-                        // Try custom image first; fall back to wallpaper if it fails
-                        if (!ApplyFakeMicaLayerWithCustomImage(window, customImagePath))
-                        {
-                            ApplyFakeMicaLayer(window);
-                        }
+                        return;
                     }
-                    else
-                    {
-                        ApplyFakeMicaLayer(window);
-                    }
-                    return;
-                }
-
-                // For native Mica/Acrylic, hide the fake mica layer
-                HideFakeMicaLayer(window);
-
-                if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
-                    _windowsCornerService.IsWindows11())
-                {
-                    window.WindowBackdropType = WindowBackdropType.Mica;
-                    window.Background = Brushes.Transparent;
-                    SetTintLayer(window, MicaActiveTint);
-                    return;
-                }
-
-                if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase) &&
-                    _windowsCornerService.IsWindows11())
-                {
-                    window.WindowBackdropType = WindowBackdropType.Acrylic;
-                    window.Background = Brushes.Transparent;
-                    SetTintLayer(window, AcrylicActiveTint);
+                    ApplyFakeMicaLayer(window);
                     return;
                 }
 
@@ -148,13 +146,24 @@ namespace PocketMC.Desktop.Features.Shell
             {
                 string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
                 bool explicitLightMode = backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase);
+                
+                var wpfUiBackdrop = Wpf.Ui.Controls.WindowBackdropType.None;
+                if (_windowsCornerService.IsWindows11())
+                {
+                    if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase))
+                        wpfUiBackdrop = Wpf.Ui.Controls.WindowBackdropType.Mica;
+                    else if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase))
+                        wpfUiBackdrop = Wpf.Ui.Controls.WindowBackdropType.Acrylic;
+                }
+
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(
                     explicitLightMode
                         ? Wpf.Ui.Appearance.ApplicationTheme.Light
                         : Wpf.Ui.Appearance.ApplicationTheme.Dark,
-                    Wpf.Ui.Controls.WindowBackdropType.None,
+                    wpfUiBackdrop,
                     updateAccent: false);
 
+                // Synchronously re-apply the accent color so it overrides the default theme brushes immediately
                 _accentColorService.ApplyCurrentAccent();
             }
             catch

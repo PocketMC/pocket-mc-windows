@@ -4,6 +4,7 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
     {
         void ShowRootDirectorySetup();
         void CompleteRootDirectorySetup();
+        void ApplyTheme();
         void RequestMicaUpdate();
         bool NavigateToDashboard();
         bool NavigateToTunnel();

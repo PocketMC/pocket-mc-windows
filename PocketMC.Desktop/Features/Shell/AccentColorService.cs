@@ -13,7 +13,7 @@ public sealed class AccentColorService : IDisposable
 {
     public const string AutomaticMode = "Automatic";
     public const string CustomMode = "Custom";
-    public const string DefaultCustomAccentColor = "#0078D4";
+    public const string DefaultCustomAccentColor = "#008B00";
 
     private static readonly Color FallbackSystemAccent = Color.FromRgb(0x00, 0x78, 0xD4);
     private readonly ApplicationState _applicationState;

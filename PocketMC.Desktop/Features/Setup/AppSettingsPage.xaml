@@ -318,7 +318,7 @@
                                            Margin="0,0,8,0"/>
                                 <ui:TextBox x:Name="HexColorInput"
                                             Width="120"
-                                            PlaceholderText="#0078D4"
+                                            PlaceholderText="#008B00"
                                             MaxLength="7"
                                             KeyDown="HexColorInput_KeyDown"/>
                                 <ui:Button x:Name="BtnApplyHex"

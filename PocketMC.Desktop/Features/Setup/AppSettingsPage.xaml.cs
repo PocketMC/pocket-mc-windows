@@ -65,7 +65,7 @@ namespace PocketMC.Desktop.Features.Setup
             ("Dark Blue", "#003E92"),
             ("Teal", "#008272"),
             ("Cyan", "#0099BC"),
-            ("Green", "#107C10"),
+            ("Pocket MC Green", "#008B00"),
             ("Emerald", "#10893E"),
             ("Yellow", "#986F0B"),
             ("Orange", "#CA5010"),
@@ -404,7 +404,8 @@ namespace PocketMC.Desktop.Features.Setup
 
                 if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
                 {
-                    mainWin.RequestMicaUpdate(); // This will apply the backdrop
+                    mainWin.ApplyTheme(); // Apply global resources
+                    mainWin.RequestMicaUpdate(); // Apply backdrop layer
                 }
             }
         }
@@ -446,7 +447,10 @@ namespace PocketMC.Desktop.Features.Setup
             AccentAutoRadio.IsChecked = !useCustom;
             AccentCustomRadio.IsChecked = useCustom;
 
-            string selectedHex = GetCurrentCustomAccentHex();
+            string selectedHex = useCustom && !string.IsNullOrWhiteSpace(settings.CustomAccentColor)
+                ? settings.CustomAccentColor
+                : AccentColorService.DefaultCustomAccentColor;
+
             HexColorInput.Text = selectedHex;
             UpdateCustomAccentPanelVisibility();
             UpdateAccentPreview(_accentColorService.GetCurrentAccentColor());
@@ -475,6 +479,11 @@ namespace PocketMC.Desktop.Features.Setup
                 _settingsManager.Save(settings);
 
                 _accentColorService.ApplyCustomAccent(color);
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.ApplyTheme();
+                }
+
                 UpdateAccentPreview(color);
                 UpdateAccentSelection(normalizedHex);
 
@@ -489,6 +498,11 @@ namespace PocketMC.Desktop.Features.Setup
                 _settingsManager.Save(settings);
 
                 _accentColorService.ApplySystemAccent();
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.ApplyTheme();
+                }
+
                 UpdateAccentPreview(_accentColorService.GetCurrentAccentColor());
                 UpdateAccentSelection(null);
 
@@ -557,6 +571,11 @@ namespace PocketMC.Desktop.Features.Setup
             _isInitializing = wasInitializing;
 
             _accentColorService.ApplyCustomAccent(color);
+            if (Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.ApplyTheme();
+            }
+
             UpdateCustomAccentPanelVisibility();
             UpdateAccentPreview(color);
             UpdateAccentSelection(normalizedHex);
@@ -652,6 +671,7 @@ namespace PocketMC.Desktop.Features.Setup
                 // Apply immediately
                 if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
                 {
+                    mainWin.ApplyTheme();
                     mainWin.RequestMicaUpdate();
                 }
             }
@@ -668,6 +688,7 @@ namespace PocketMC.Desktop.Features.Setup
             // Revert to wallpaper immediately
             if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
             {
+                mainWin.ApplyTheme();
                 mainWin.RequestMicaUpdate();
             }
         }

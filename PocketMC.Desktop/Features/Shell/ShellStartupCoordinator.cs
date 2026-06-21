@@ -141,6 +141,7 @@ namespace PocketMC.Desktop.Features.Shell
         {
             _host!.CompleteRootDirectorySetup();
             _applicationState.ApplySettings(settings);
+            _host.ApplyTheme();
             _host.RequestMicaUpdate();
 
             if (!_startupServicesStarted)
