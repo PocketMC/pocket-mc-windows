@@ -17,7 +17,7 @@
     <Grid MaxWidth="480">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <ui:TitleBar Grid.Row="0" Title="Message" ShowMaximize="False" ShowMinimize="False" />
