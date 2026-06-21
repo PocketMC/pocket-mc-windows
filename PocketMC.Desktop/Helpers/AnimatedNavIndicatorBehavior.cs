@@ -21,9 +21,16 @@ public static class AnimatedNavIndicatorBehavior
     public static bool GetIsEnabled(DependencyObject obj) => (bool)obj.GetValue(IsEnabledProperty);
     public static void SetIsEnabled(DependencyObject obj, bool value) => obj.SetValue(IsEnabledProperty, value);
 
-    private static readonly DependencyProperty IndicatorBorderProperty =
+    private static readonly DependencyProperty MenuIndicatorBorderProperty =
         DependencyProperty.RegisterAttached(
-            "IndicatorBorder",
+            "MenuIndicatorBorder",
+            typeof(Border),
+            typeof(AnimatedNavIndicatorBehavior),
+            new PropertyMetadata(null));
+
+    private static readonly DependencyProperty FooterIndicatorBorderProperty =
+        DependencyProperty.RegisterAttached(
+            "FooterIndicatorBorder",
             typeof(Border),
             typeof(AnimatedNavIndicatorBehavior),
             new PropertyMetadata(null));
@@ -35,6 +42,13 @@ public static class AnimatedNavIndicatorBehavior
             typeof(AnimatedNavIndicatorBehavior),
             new PropertyMetadata(null));
 
+    private static readonly DependencyProperty TargetVisibilityProperty =
+        DependencyProperty.RegisterAttached(
+            "TargetVisibility",
+            typeof(bool),
+            typeof(AnimatedNavIndicatorBehavior),
+            new PropertyMetadata(false));
+
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is NavigationView navView)
@@ -42,19 +56,24 @@ public static class AnimatedNavIndicatorBehavior
             if ((bool)e.NewValue)
             {
                 navView.Loaded += NavView_Loaded;
-                navView.LayoutUpdated += NavView_LayoutUpdated;
+                navView.SizeChanged += NavView_SizeChanged;
                 AttachAccentChangedHandler(navView);
             }
             else
             {
                 navView.Loaded -= NavView_Loaded;
-                navView.LayoutUpdated -= NavView_LayoutUpdated;
+                navView.SizeChanged -= NavView_SizeChanged;
                 DetachAccentChangedHandler(navView);
-                if (navView.GetValue(IndicatorBorderProperty) is Border border && border.Parent is Panel panel)
+                if (navView.GetValue(MenuIndicatorBorderProperty) is Border menuBorder && menuBorder.Parent is Panel menuPanel)
                 {
-                    panel.Children.Remove(border);
+                    menuPanel.Children.Remove(menuBorder);
                 }
-                navView.ClearValue(IndicatorBorderProperty);
+                if (navView.GetValue(FooterIndicatorBorderProperty) is Border footerBorder && footerBorder.Parent is Panel footerPanel)
+                {
+                    footerPanel.Children.Remove(footerBorder);
+                }
+                navView.ClearValue(MenuIndicatorBorderProperty);
+                navView.ClearValue(FooterIndicatorBorderProperty);
             }
         }
     }
@@ -63,32 +82,39 @@ public static class AnimatedNavIndicatorBehavior
     {
         if (sender is NavigationView navView)
         {
-            EnsureIndicator(navView);
+            EnsureIndicators(navView);
             HideDefaultIndicators(navView);
             AnimateToActiveItem(navView, false); // Snap on load
         }
     }
 
-    private static void NavView_LayoutUpdated(object? sender, EventArgs e)
+    private static void NavView_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (sender is NavigationView navView)
         {
-            HideDefaultIndicators(navView);
-            
-            // If the layout changed (e.g., resizing the window or toggling pane),
-            // we should snap the indicator to its proper place without animation 
-            // if it's already visible, to prevent it from detaching from the item.
-            var indicator = navView.GetValue(IndicatorBorderProperty) as Border;
-            if (indicator != null && indicator.Opacity > 0)
+            // Defer the snap to ensure the visual tree has fully arranged all items after a resize
+            navView.Dispatcher.BeginInvoke(new Action(() => 
             {
-                AnimateToActiveItem(navView, false);
-            }
+                HideDefaultIndicators(navView);
+                
+                var menuIndicator = navView.GetValue(MenuIndicatorBorderProperty) as Border;
+                var footerIndicator = navView.GetValue(FooterIndicatorBorderProperty) as Border;
+                
+                bool isMenuVisible = menuIndicator != null && (bool)menuIndicator.GetValue(TargetVisibilityProperty);
+                bool isFooterVisible = footerIndicator != null && (bool)footerIndicator.GetValue(TargetVisibilityProperty);
+                
+                if (isMenuVisible || isFooterVisible)
+                {
+                    AnimateToActiveItem(navView, false);
+                }
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
         }
     }
 
-    private static void EnsureIndicator(NavigationView navView)
+    private static void EnsureIndicators(NavigationView navView)
     {
-        if (navView.GetValue(IndicatorBorderProperty) is Border) return;
+        if (navView.GetValue(MenuIndicatorBorderProperty) is Border &&
+            navView.GetValue(FooterIndicatorBorderProperty) is Border) return;
 
         // Find the root visual child
         var rootGrid = FindVisualChild<Grid>(navView);
@@ -107,6 +133,31 @@ public static class AnimatedNavIndicatorBehavior
             paneGrid = rootGrid;
         }
 
+        if (navView.GetValue(MenuIndicatorBorderProperty) is not Border)
+        {
+            var menuIndicator = CreateIndicatorBorder();
+            paneGrid.Children.Add(menuIndicator);
+            if (paneGrid.RowDefinitions.Count > 0)
+            {
+                Grid.SetRowSpan(menuIndicator, paneGrid.RowDefinitions.Count);
+            }
+            navView.SetValue(MenuIndicatorBorderProperty, menuIndicator);
+        }
+
+        if (navView.GetValue(FooterIndicatorBorderProperty) is not Border)
+        {
+            var footerIndicator = CreateIndicatorBorder();
+            paneGrid.Children.Add(footerIndicator);
+            if (paneGrid.RowDefinitions.Count > 0)
+            {
+                Grid.SetRowSpan(footerIndicator, paneGrid.RowDefinitions.Count);
+            }
+            navView.SetValue(FooterIndicatorBorderProperty, footerIndicator);
+        }
+    }
+
+    private static Border CreateIndicatorBorder()
+    {
         var indicator = new Border
         {
             Width = 3,
@@ -125,15 +176,7 @@ public static class AnimatedNavIndicatorBehavior
         group.Children.Add(new TranslateTransform { X = 0, Y = -100 });
         indicator.RenderTransform = group;
 
-        // Add to the grid
-        paneGrid.Children.Add(indicator);
-        
-        if (paneGrid.RowDefinitions.Count > 0)
-        {
-            Grid.SetRowSpan(indicator, paneGrid.RowDefinitions.Count);
-        }
-
-        navView.SetValue(IndicatorBorderProperty, indicator);
+        return indicator;
     }
 
     private static void AttachAccentChangedHandler(NavigationView navView)
@@ -168,9 +211,13 @@ public static class AnimatedNavIndicatorBehavior
 
     private static void UpdateIndicatorBrush(NavigationView navView)
     {
-        if (navView.GetValue(IndicatorBorderProperty) is Border indicator)
+        if (navView.GetValue(MenuIndicatorBorderProperty) is Border menuIndicator)
         {
-            indicator.Background = ResolveIndicatorBrush();
+            menuIndicator.Background = ResolveIndicatorBrush();
+        }
+        if (navView.GetValue(FooterIndicatorBorderProperty) is Border footerIndicator)
+        {
+            footerIndicator.Background = ResolveIndicatorBrush();
         }
     }
 
@@ -182,27 +229,34 @@ public static class AnimatedNavIndicatorBehavior
 
     public static void AnimateToActiveItem(NavigationView navView, bool animate = true)
     {
-        var indicator = navView.GetValue(IndicatorBorderProperty) as Border;
-        if (indicator == null)
-        {
-            EnsureIndicator(navView);
-            indicator = navView.GetValue(IndicatorBorderProperty) as Border;
-            if (indicator == null) return;
-        }
+        EnsureIndicators(navView);
+
+        var menuIndicator = navView.GetValue(MenuIndicatorBorderProperty) as Border;
+        var footerIndicator = navView.GetValue(FooterIndicatorBorderProperty) as Border;
+        if (menuIndicator == null || footerIndicator == null) return;
 
         // Find the active item
         var activeItem = FindActiveItem(navView);
         if (activeItem == null)
         {
-            indicator.Opacity = 0;
+            FadeOutIndicator(menuIndicator, animate);
+            FadeOutIndicator(footerIndicator, animate);
             return;
         }
 
         // Hide default indicator inside this item specifically
         HideDefaultIndicator(activeItem);
 
-        // Calculate position relative to the container of the indicator
-        var container = VisualTreeHelper.GetParent(indicator) as UIElement;
+        // Determine which indicator is active and which is inactive
+        bool isFooter = IsFooterItem(navView, activeItem);
+        var activeIndicator = isFooter ? footerIndicator : menuIndicator;
+        var inactiveIndicator = isFooter ? menuIndicator : footerIndicator;
+
+        // Fade out the inactive indicator
+        FadeOutIndicator(inactiveIndicator, animate);
+
+        // Position and animate/fade in the active indicator
+        var container = VisualTreeHelper.GetParent(activeIndicator) as UIElement;
         if (container == null) return;
 
         try
@@ -210,36 +264,33 @@ public static class AnimatedNavIndicatorBehavior
             var transform = activeItem.TransformToAncestor(container);
             var activeItemRect = transform.TransformBounds(new Rect(0, 0, activeItem.ActualWidth, activeItem.ActualHeight));
 
-            double targetY = activeItemRect.Top + (activeItemRect.Height / 2) - (indicator.Height / 2);
+            double targetY = activeItemRect.Top + (activeItemRect.Height / 2) - (activeIndicator.Height / 2);
 
-            var group = indicator.RenderTransform as TransformGroup;
+            var group = activeIndicator.RenderTransform as TransformGroup;
             if (group == null)
             {
                 group = new TransformGroup();
                 group.Children.Add(new ScaleTransform { ScaleX = 1, ScaleY = 1 });
                 group.Children.Add(new TranslateTransform { X = 0, Y = 0 });
-                indicator.RenderTransformOrigin = new Point(0.5, 0.5);
-                indicator.RenderTransform = group;
+                activeIndicator.RenderTransformOrigin = new Point(0.5, 0.5);
+                activeIndicator.RenderTransform = group;
             }
 
             var scale = (ScaleTransform)group.Children[0];
             var translate = (TranslateTransform)group.Children[1];
 
-            if (indicator.Opacity == 0)
+            bool isNewlyVisible = !(bool)activeIndicator.GetValue(TargetVisibilityProperty);
+
+            // Ensure the active indicator fades in
+            FadeInIndicator(activeIndicator, animate);
+
+            if (isNewlyVisible || !animate)
             {
+                // Snap to target immediately without sliding animation
+                translate.BeginAnimation(TranslateTransform.YProperty, null);
+                scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
                 translate.Y = targetY;
                 scale.ScaleY = 1;
-                indicator.Opacity = 1;
-                return;
-            }
-
-            if (!animate)
-            {
-                // Only snap if we aren't currently animating
-                if (!translate.HasAnimatedProperties)
-                {
-                    translate.Y = targetY;
-                }
                 return;
             }
 
@@ -269,6 +320,8 @@ public static class AnimatedNavIndicatorBehavior
             stretchAnim.KeyFrames.Add(new EasingDoubleKeyFrame(stretchFactor, KeyTime.FromPercent(0.5)) { EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut } });
             stretchAnim.KeyFrames.Add(new EasingDoubleKeyFrame(1, KeyTime.FromPercent(1)) { EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut } });
 
+            // Set the base value so next distance calculation is somewhat grounded
+            translate.Y = targetY;
             translate.BeginAnimation(TranslateTransform.YProperty, moveAnim);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, stretchAnim);
         }
@@ -278,12 +331,84 @@ public static class AnimatedNavIndicatorBehavior
         }
     }
 
+    private static void FadeInIndicator(Border indicator, bool animate)
+    {
+        bool isTargetVisible = (bool)indicator.GetValue(TargetVisibilityProperty);
+        if (isTargetVisible && indicator.HasAnimatedProperties) return;
+
+        indicator.SetValue(TargetVisibilityProperty, true);
+
+        if (animate)
+        {
+            var fadeIn = new DoubleAnimation
+            {
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(200)
+            };
+            indicator.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+        else
+        {
+            indicator.BeginAnimation(UIElement.OpacityProperty, null);
+            indicator.Opacity = 1;
+        }
+    }
+
+    private static void FadeOutIndicator(Border indicator, bool animate)
+    {
+        bool isTargetVisible = (bool)indicator.GetValue(TargetVisibilityProperty);
+        if (!isTargetVisible && indicator.HasAnimatedProperties) return;
+
+        indicator.SetValue(TargetVisibilityProperty, false);
+
+        if (animate)
+        {
+            var fadeOut = new DoubleAnimation
+            {
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(200)
+            };
+            indicator.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        }
+        else
+        {
+            indicator.BeginAnimation(UIElement.OpacityProperty, null);
+            indicator.Opacity = 0;
+        }
+    }
+
+    private static bool IsFooterItem(NavigationView navView, NavigationViewItem item)
+    {
+        if (navView.FooterMenuItems != null)
+        {
+            foreach (var footerObj in navView.FooterMenuItems)
+            {
+                if (ReferenceEquals(footerObj, item)) return true;
+                if (footerObj is NavigationViewItem footerItem && IsChildOf(footerItem, item)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IsChildOf(NavigationViewItem parent, NavigationViewItem child)
+    {
+        if (parent.MenuItems != null)
+        {
+            foreach (var subObj in parent.MenuItems)
+            {
+                if (ReferenceEquals(subObj, child)) return true;
+                if (subObj is NavigationViewItem subItem && IsChildOf(subItem, child)) return true;
+            }
+        }
+        return false;
+    }
+
     private static NavigationViewItem? FindActiveItem(DependencyObject parent)
     {
         for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
         {
             var child = VisualTreeHelper.GetChild(parent, i);
-            if (child is NavigationViewItem item && item.IsActive)
+            if (child is NavigationViewItem item && item.IsActive && item.IsVisible)
             {
                 return item;
             }
