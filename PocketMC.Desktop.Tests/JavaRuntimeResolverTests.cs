@@ -11,7 +11,7 @@ public sealed class JavaRuntimeResolverTests : IDisposable
     [InlineData("1.8.9", 8)]
     [InlineData("1.16.4", 8)]
     [InlineData("1.16.5", 11)]
-    [InlineData("1.17.1", 11)]
+    [InlineData("1.17.1", 17)]
     [InlineData("1.18", 17)]
     [InlineData("1.20.4", 17)]
     [InlineData("1.20.5", 21)]

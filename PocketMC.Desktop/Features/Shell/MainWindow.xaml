@@ -63,7 +63,9 @@
             <!-- ─── Update Banner ─────────────────────────────────────────────── -->
             <Border Grid.Row="0"
                     Visibility="{Binding IsUpdateBannerVisible, Converter={StaticResource BoolToVis}}"
-                    Background="{DynamicResource SystemAccentColorPrimaryBrush}"
+                    Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,0,0,1"
                     Padding="12,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -89,7 +91,7 @@
                         <!-- Message -->
                         <TextBlock VerticalAlignment="Center"
                                    Text="{Binding UpdateStatusMessage}"
-                                   Foreground="White"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                    FontSize="13"
                                    FontWeight="Medium"/>
                     </StackPanel>
@@ -97,7 +99,7 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <!-- "Restart now" button — only shown when update is fully downloaded -->
                         <ui:Button Content="Restart to update"
-                                   Appearance="Secondary"
+                                   Appearance="Primary"
                                    Margin="12,0,8,0"
                                    Padding="10,4"
                                    Command="{Binding RestartAndApplyUpdateCommand}"

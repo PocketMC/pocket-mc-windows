@@ -29,7 +29,7 @@ public class ForgeProvider : IServerSoftwareProvider
 
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
-        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.minecraftforge/";
+        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.minecraftforge/index.json";
         var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
         var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();

@@ -119,7 +119,7 @@ public sealed class AccentColorSourceTests
     }
 
     [Fact]
-    public void MainWindowUpdateBanner_UsesAccentResourceInsteadOfFixedBlue()
+    public void MainWindowUpdateBanner_UsesThemeBackgroundInsteadOfFixedBlue()
     {
         string xaml = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",
@@ -128,7 +128,7 @@ public sealed class AccentColorSourceTests
             "MainWindow.xaml"));
 
         Assert.DoesNotContain("Background=\"#2563EB\"", xaml);
-        Assert.Contains("Background=\"{DynamicResource SystemAccentColorPrimaryBrush}\"", xaml);
+        Assert.Contains("Background=\"{DynamicResource CardBackgroundFillColorSecondaryBrush}\"", xaml);
     }
 
     [Fact]

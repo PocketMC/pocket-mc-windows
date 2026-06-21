@@ -15,21 +15,25 @@ namespace PocketMC.Desktop.Tests.Providers;
 
 public class NeoForgeProviderTests
 {
-    private const string MockMetadata = @"
-<metadata>
-  <groupId>net.neoforged</groupId>
-  <artifactId>neoforge</artifactId>
-  <versioning>
-    <latest>21.1.65</latest>
-    <release>21.1.65</release>
-    <versions>
-      <version>20.2.86-beta</version>
-      <version>20.4.127</version>
-      <version>21.1.65</version>
-    </versions>
-    <lastUpdated>20241021123456</lastUpdated>
-  </versioning>
-</metadata>";
+    private const string MockMetadata = @"{
+  ""versions"": [
+    {
+      ""version"": ""21.1.65"",
+      ""recommended"": true,
+      ""requires"": [ { ""equals"": ""1.21.1"", ""uid"": ""net.minecraft"" } ]
+    },
+    {
+      ""version"": ""20.4.127"",
+      ""recommended"": false,
+      ""requires"": [ { ""equals"": ""1.20.4"", ""uid"": ""net.minecraft"" } ]
+    },
+    {
+      ""version"": ""20.2.86-beta"",
+      ""recommended"": false,
+      ""requires"": [ { ""equals"": ""1.20.2"", ""uid"": ""net.minecraft"" } ]
+    }
+  ]
+}";
 
     [Fact]
     public async Task GetAvailableVersionsAsync_MapsCorrectlyToMinecraft()

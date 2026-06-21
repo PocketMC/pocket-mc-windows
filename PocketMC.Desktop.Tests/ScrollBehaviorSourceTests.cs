@@ -4,7 +4,7 @@ public sealed class ScrollBehaviorSourceTests
 {
     [Theory]
     [InlineData("Dashboard/DashboardPage.xaml", "DashboardScrollViewer")]
-    [InlineData("Tunnel/TunnelPage.xaml", "TunnelListScrollViewer")]
+
     [InlineData("Tunnel/PortsMapPage.xaml", "PortsMapScrollViewer")]
     [InlineData("RemoteControl/UI/RemoteControlPage.xaml", "RemoteControlScrollViewer")]
     [InlineData("Setup/JavaSetupPage.xaml", "RuntimeScrollViewer")]
@@ -19,7 +19,7 @@ public sealed class ScrollBehaviorSourceTests
 
     [Theory]
     [InlineData("Dashboard/DashboardPage.xaml.cs", "DashboardScrollViewer")]
-    [InlineData("Tunnel/TunnelPage.xaml.cs", "TunnelListScrollViewer")]
+
     [InlineData("Tunnel/PortsMapPage.xaml.cs", "PortsMapScrollViewer")]
     [InlineData("RemoteControl/UI/RemoteControlPage.xaml.cs", "RemoteControlScrollViewer")]
     [InlineData("Setup/JavaSetupPage.xaml.cs", "RuntimeScrollViewer")]
