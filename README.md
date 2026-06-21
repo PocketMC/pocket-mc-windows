@@ -80,7 +80,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 ## Features
 
 <details open>
-<summary><b>🖥️ &nbsp;Instance lifecycle</b></summary>
+<summary><b> &nbsp;Instance lifecycle</b></summary>
 <br>
 
 - Create isolated instances from the UI: server type, version, loader, seed, world type, gamemode, difficulty, player limit, EULA, custom world import.
