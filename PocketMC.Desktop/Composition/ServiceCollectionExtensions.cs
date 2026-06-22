@@ -79,6 +79,7 @@ namespace PocketMC.Desktop.Composition
             // callers and cannot be started twice by accident.
             services.AddSingleton<UpdateService>();
             services.AddSingleton<IApplicationLifecycleService, ApplicationLifecycleService>();
+            services.AddSingleton<PocketMC.Desktop.Features.WhatsNew.WhatsNewService>();
 
             return services;
         }

@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Features.WhatsNew;
 using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Shell
@@ -12,11 +13,13 @@ namespace PocketMC.Desktop.Features.Shell
     public partial class AboutPage : Page
     {
         private readonly IDialogService _dialogService;
+        private readonly WhatsNewService _whatsNewService;
 
-        public AboutPage(IDialogService dialogService)
+        public AboutPage(IDialogService dialogService, WhatsNewService whatsNewService)
         {
             InitializeComponent();
             _dialogService = dialogService;
+            _whatsNewService = whatsNewService;
 
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             TxtVersion.Text = $"Version {version?.Major}.{version?.Minor}.{version?.Build}";
@@ -125,6 +128,33 @@ namespace PocketMC.Desktop.Features.Shell
             catch (Exception ex)
             {
                 _dialogService.ShowMessage("Unable to open link", ex.Message);
+            }
+        }
+
+        private void WhatsNew_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string version = _whatsNewService.GetCurrentVersion();
+                ChangelogEntry? changelog = _whatsNewService.LoadChangelog();
+
+                var window = new WhatsNewWindow(changelog, version);
+                try
+                {
+                    var mainWindow = System.Windows.Application.Current?.MainWindow;
+                    if (mainWindow != null && mainWindow.IsLoaded && mainWindow.IsVisible)
+                    {
+                        window.Owner = mainWindow;
+                    }
+                }
+                catch { }
+
+                // Manual access does NOT call MarkAsSeen
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Error", $"Could not load changelog: {ex.Message}");
             }
         }
 

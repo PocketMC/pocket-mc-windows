@@ -1,0 +1,130 @@
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.WhatsNew.WhatsNewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="What's New"
+        Width="460"
+        SizeToContent="Height"
+        MinWidth="400" MaxWidth="520"
+        MinHeight="0"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowCornerPreference="Round"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="None"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <Grid MaxWidth="500">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="What's New" ShowMaximize="False" ShowMinimize="False" />
+
+        <Grid Grid.Row="1" Margin="28,4,28,28">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <ui:SymbolIcon Symbol="Rocket24"
+                                   FontSize="28"
+                                   Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+                    <TextBlock x:Name="TxtHeader"
+                               Text="What's New"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock x:Name="TxtSubheader"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           FontSize="13"
+                           Margin="0,2,0,0"/>
+            </StackPanel>
+
+            <!-- Changelog Sections -->
+            <ScrollViewer Grid.Row="1"
+                          MaxHeight="380"
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="0,0,8,0">
+                <ItemsControl x:Name="SectionsPanel">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,16">
+                                <!-- Section divider -->
+                                <Border Height="1"
+                                        Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                        Margin="0,0,0,12"
+                                        Opacity="0.4"/>
+
+                                <!-- Section header -->
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
+                                           Margin="0,0,0,8"/>
+
+                                <!-- Section items -->
+                                <ItemsControl ItemsSource="{Binding Items}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="8,3,0,3">
+                                                <TextBlock Text="✓"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
+                                                           Margin="0,0,10,0"
+                                                           VerticalAlignment="Top"/>
+                                                <TextBlock Text="{Binding}"
+                                                           FontSize="13"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                           TextWrapping="Wrap"
+                                                           LineHeight="20"
+                                                           VerticalAlignment="Top"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Fallback message (shown when no changelog file exists) -->
+            <StackPanel x:Name="FallbackPanel"
+                        Grid.Row="1"
+                        Visibility="Collapsed"
+                        Margin="0,8,0,16">
+                <TextBlock x:Name="TxtFallback"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           TextWrapping="Wrap"
+                           LineHeight="22"/>
+            </StackPanel>
+
+            <!-- Action buttons -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                <ui:Button x:Name="BtnFullChangelog"
+                           Content="View Full Changelog"
+                           Appearance="Secondary"
+                           Margin="0,0,8,0"
+                           Click="ViewFullChangelog_Click"
+                           Icon="{ui:SymbolIcon Open20}"/>
+                <ui:Button Content="Got It"
+                           Appearance="Primary"
+                           MinWidth="90"
+                           Click="GotIt_Click"
+                           IsDefault="True"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

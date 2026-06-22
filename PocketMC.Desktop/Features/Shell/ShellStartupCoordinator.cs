@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
+using PocketMC.Desktop.Features.WhatsNew;
 using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
@@ -29,6 +30,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly InstanceRegistry _registry;
         private readonly IDiscordRpcService _discordRpcService;
         private readonly ITelemetryService _telemetryService;
+        private readonly WhatsNewService _whatsNewService;
         private readonly AppStartupOptions _startupOptions;
         private readonly ILogger<ShellStartupCoordinator> _logger;
         private IStartupShellHost? _host;
@@ -48,6 +50,7 @@ namespace PocketMC.Desktop.Features.Shell
             InstanceRegistry registry,
             IDiscordRpcService discordRpcService,
             ITelemetryService telemetryService,
+            WhatsNewService whatsNewService,
             AppStartupOptions startupOptions,
             ILogger<ShellStartupCoordinator> logger)
         {
@@ -62,6 +65,7 @@ namespace PocketMC.Desktop.Features.Shell
             _registry = registry;
             _discordRpcService = discordRpcService;
             _telemetryService = telemetryService;
+            _whatsNewService = whatsNewService;
             _startupOptions = startupOptions;
             _logger = logger;
         }
@@ -167,6 +171,7 @@ namespace PocketMC.Desktop.Features.Shell
             else
             {
                 _host.NavigateToDashboard();
+                ShowWhatsNewIfNeeded();
                 TriggerServerAutoStarts();
             }
 
@@ -192,6 +197,26 @@ namespace PocketMC.Desktop.Features.Shell
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Playit auto-connect failed during app startup. The user can retry from the Tunnel page.");
+            }
+        }
+
+        private void ShowWhatsNewIfNeeded()
+        {
+            try
+            {
+                if (!_whatsNewService.ShouldShow())
+                {
+                    return;
+                }
+
+                string currentVersion = _whatsNewService.GetCurrentVersion();
+                ChangelogEntry? changelog = _whatsNewService.LoadChangelog();
+                _host!.ShowWhatsNewDialog(changelog, currentVersion);
+                _whatsNewService.MarkAsSeen();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to show What's New dialog. Continuing normal startup.");
             }
         }
 

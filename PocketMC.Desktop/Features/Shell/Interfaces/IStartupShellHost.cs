@@ -11,6 +11,7 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
         bool NavigateToPlayitSetup();
         void ShowError(string title, string message);
         void ShutdownApplication();
+        void ShowWhatsNewDialog(PocketMC.Desktop.Features.WhatsNew.ChangelogEntry? changelog, string version);
     }
 }
 

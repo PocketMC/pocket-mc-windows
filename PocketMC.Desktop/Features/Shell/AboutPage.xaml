@@ -87,6 +87,27 @@
                 </StackPanel>
             </ui:CardExpander>
 
+            <!-- WHAT'S NEW SECTION -->
+            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Rocket24}" Margin="0,12,0,0">
+                <ui:CardExpander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="What's New" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="See what's changed in the latest version of PocketMC." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </ui:CardExpander.Header>
+
+                <StackPanel Margin="16,8,16,16">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <ui:Button Content="View What's New" Appearance="Primary" Click="WhatsNew_Click" Icon="{ui:SymbolIcon Megaphone24}"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:CardExpander>
+
             <!-- FEEDBACK SECTION -->
             <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Bug24}" Margin="0,12,0,0">
                 <ui:CardExpander.Header>

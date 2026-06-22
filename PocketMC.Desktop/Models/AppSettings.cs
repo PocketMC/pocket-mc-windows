@@ -79,5 +79,8 @@ namespace PocketMC.Desktop.Models
         public bool EnableAgentConnectNotifications { get; set; } = true;
         public bool EnableRemoteControlNotifications { get; set; } = true;
         public bool EnableAiSummaryNotifications { get; set; } = true;
+
+        // What's New
+        public string? LastSeenChangelogVersion { get; set; }
     }
 }

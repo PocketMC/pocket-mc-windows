@@ -370,6 +370,30 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     public void ShowError(string title, string message) =>
         Infrastructure.AppDialog.ShowError(title, message);
 
+    public void ShowWhatsNewDialog(Features.WhatsNew.ChangelogEntry? changelog, string version)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => ShowWhatsNewDialog(changelog, version));
+            return;
+        }
+
+        var window = new Features.WhatsNew.WhatsNewWindow(changelog, version);
+        try
+        {
+            if (IsLoaded && IsVisible)
+            {
+                window.Owner = this;
+            }
+        }
+        catch
+        {
+            // Owner assignment can fail during startup — continue without it.
+        }
+
+        window.ShowDialog();
+    }
+
     public void ShowMinimizedToTray()
     {
         ShowInTaskbar = false;

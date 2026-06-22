@@ -34,6 +34,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private bool _hasFetchedCountry = false;
     
     private const string ProxyBaseUrl = "https://pocket-mc-proxy.onrender.com/";
+    private const string FallbackProxyBaseUrl = "https://pocket-mc-proxy-n2qx.onrender.com/";
 
     public TelemetryService(
         SettingsManager settingsManager,
@@ -192,7 +193,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(15);
             
-            var response = await client.PostAsJsonAsync($"{ProxyBaseUrl.TrimEnd('/')}/api/telemetry/install", payload, _cts.Token);
+            var response = await PostTelemetryAsJsonAsync(client, "/api/telemetry/install", payload, _cts.Token);
             if (response.IsSuccessStatusCode)
             {
                 settings.HasReportedInstall = true;
@@ -243,7 +244,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(15);
 
-            var response = await client.PostAsJsonAsync($"{ProxyBaseUrl.TrimEnd('/')}/api/telemetry/report", payload, _cts.Token);
+            var response = await PostTelemetryAsJsonAsync(client, "/api/telemetry/report", payload, _cts.Token);
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogDebug("Failed to post telemetry heartbeat. Status code: {StatusCode}", response.StatusCode);
@@ -271,7 +272,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(15);
 
-            var response = await client.PostAsJsonAsync($"{ProxyBaseUrl.TrimEnd('/')}/api/telemetry/server-action", payload, _cts.Token);
+            var response = await PostTelemetryAsJsonAsync(client, "/api/telemetry/server-action", payload, _cts.Token);
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogDebug("Failed to post telemetry server action. Status code: {StatusCode}", response.StatusCode);
@@ -289,5 +290,31 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         _disposed = true;
         Shutdown();
         _cts.Dispose();
+    }
+
+    private async Task<HttpResponseMessage> PostTelemetryAsJsonAsync<TValue>(HttpClient client, string path, TValue payload, CancellationToken ct = default)
+    {
+        HttpResponseMessage? response = null;
+        try
+        {
+            response = await client.PostAsJsonAsync($"{ProxyBaseUrl.TrimEnd('/')}{path}", payload, ct);
+            if (response.IsSuccessStatusCode) return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Primary proxy failed for {Path}. Trying fallback.", path);
+        }
+
+        try
+        {
+            var fallbackResponse = await client.PostAsJsonAsync($"{FallbackProxyBaseUrl.TrimEnd('/')}{path}", payload, ct);
+            if (response != null) response.Dispose();
+            return fallbackResponse;
+        }
+        catch
+        {
+            if (response != null) return response;
+            throw;
+        }
     }
 }

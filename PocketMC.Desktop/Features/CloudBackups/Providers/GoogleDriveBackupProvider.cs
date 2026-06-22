@@ -47,10 +47,8 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
 
             try
             {
-                var proxyUrl = _settingsManager.GetPlayitPartnerBackendUrl(settings);
                 var refreshRequest = new { refreshToken = tokens.RefreshToken };
-                
-                var response = await _httpClient.PostAsJsonAsync($"{proxyUrl.TrimEnd('/')}/api/google/oauth/refresh", refreshRequest, ct);
+                var response = await PostToProxyAsync("/api/google/oauth/refresh", refreshRequest, ct, settings);
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync(ct);
@@ -155,7 +153,6 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         if (!string.IsNullOrEmpty(error)) throw new Exception($"Google Auth Error: {error}");
         if (string.IsNullOrEmpty(code)) throw new Exception("No code returned.");
 
-        var proxyUrl = _settingsManager.GetPlayitPartnerBackendUrl();
         var exchangeRequest = new
         {
             code = code,
@@ -163,7 +160,7 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
             codeVerifier = codeVerifier
         };
 
-        var response = await _httpClient.PostAsJsonAsync($"{proxyUrl.TrimEnd('/')}/api/google/oauth/token", exchangeRequest, ct);
+        var response = await PostToProxyAsync("/api/google/oauth/token", exchangeRequest, ct);
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(ct);
@@ -384,5 +381,35 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
         var request = service.Files.Get(providerFileId);
         await request.DownloadAsync(stream, ct);
+    }
+
+    private async Task<HttpResponseMessage> PostToProxyAsync<T>(string path, T payload, CancellationToken ct, AppSettings? settings = null)
+    {
+        var proxyUrl = _settingsManager.GetPlayitPartnerBackendUrl(settings);
+        var fallbackUrl = _settingsManager.GetFallbackPlayitPartnerBackendUrl(settings);
+
+        HttpResponseMessage? primaryResponse = null;
+        try
+        {
+            primaryResponse = await _httpClient.PostAsJsonAsync($"{proxyUrl.TrimEnd('/')}{path}", payload, ct);
+            if (primaryResponse.IsSuccessStatusCode)
+                return primaryResponse;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Primary proxy failed for {Path}. Trying fallback.", path);
+        }
+
+        try
+        {
+            var fallbackResponse = await _httpClient.PostAsJsonAsync($"{fallbackUrl.TrimEnd('/')}{path}", payload, ct);
+            if (primaryResponse != null) primaryResponse.Dispose();
+            return fallbackResponse;
+        }
+        catch
+        {
+            if (primaryResponse != null) return primaryResponse;
+            throw;
+        }
     }
 }

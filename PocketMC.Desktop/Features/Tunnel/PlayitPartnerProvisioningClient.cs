@@ -117,8 +117,7 @@ public sealed class PlayitPartnerProvisioningClient
 
         try
         {
-            var endpoint = new Uri(new Uri(backendBaseUrl.TrimEnd('/') + "/"), "api/playit/partner/create-agent");
-            using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+            using HttpResponseMessage response = await PostWithFallbackAsync("api/playit/partner/create-agent", request, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 string body = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -156,6 +155,38 @@ public sealed class PlayitPartnerProvisioningClient
                 Success = false,
                 ErrorMessage = ex.Message
             };
+        }
+    }
+
+    private async Task<HttpResponseMessage> PostWithFallbackAsync(string path, object payload, CancellationToken ct)
+    {
+        string? primaryUrl = _settingsManager.GetPlayitPartnerBackendUrl(_applicationState.Settings);
+        string? fallbackUrl = _settingsManager.GetFallbackPlayitPartnerBackendUrl(_applicationState.Settings);
+
+        HttpResponseMessage? primaryResponse = null;
+        try
+        {
+            var endpoint = new Uri(new Uri(primaryUrl!.TrimEnd('/') + "/"), path);
+            primaryResponse = await _httpClient.PostAsJsonAsync(endpoint, payload, ct);
+            if (primaryResponse.IsSuccessStatusCode)
+                return primaryResponse;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Primary proxy request threw exception. Trying fallback.");
+        }
+
+        try
+        {
+            var fallbackEndpoint = new Uri(new Uri(fallbackUrl!.TrimEnd('/') + "/"), path);
+            var fallbackResponse = await _httpClient.PostAsJsonAsync(fallbackEndpoint, payload, ct);
+            if (primaryResponse != null) primaryResponse.Dispose();
+            return fallbackResponse;
+        }
+        catch
+        {
+            if (primaryResponse != null) return primaryResponse;
+            throw;
         }
     }
 }
