@@ -101,37 +101,7 @@ public class ControlledNavigationStackTests
         Assert.Empty(stack.Entries);
     }
 
-    [Fact]
-    public void PlayitSetupWizardBackRoutesToDashboard()
-    {
-        var stack = new ControlledNavigationStack();
-        stack.Push(
-            NavigationRouteKind.PlayitSetupWizard,
-            NavigationBackTarget.ShellRoute(NavigationRouteKind.Dashboard),
-            clearExistingStack: true);
 
-        ControlledBackNavigationResult result = stack.NavigateBack();
-
-        Assert.True(result.Success);
-        Assert.True(result.TargetsShellRoute);
-        Assert.Equal(NavigationRouteKind.Dashboard, result.TargetRoute);
-    }
-
-    [Fact]
-    public void PlayitSetupWizardBackRoutesToTunnel()
-    {
-        var stack = new ControlledNavigationStack();
-        stack.Push(
-            NavigationRouteKind.PlayitSetupWizard,
-            NavigationBackTarget.ShellRoute(NavigationRouteKind.Tunnel),
-            clearExistingStack: true);
-
-        ControlledBackNavigationResult result = stack.NavigateBack();
-
-        Assert.True(result.Success);
-        Assert.True(result.TargetsShellRoute);
-        Assert.Equal(NavigationRouteKind.Tunnel, result.TargetRoute);
-    }
 
     [Fact]
     public void OpeningMarketplaceWithoutParentThrows()

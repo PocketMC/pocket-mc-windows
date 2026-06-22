@@ -272,7 +272,6 @@ namespace PocketMC.Desktop.Infrastructure
             DetailRouteKind.PluginBrowser => NavigationRouteKind.PluginBrowser,
             DetailRouteKind.ServerConsole => NavigationRouteKind.ServerConsole,
             DetailRouteKind.PlayerManagement => NavigationRouteKind.PlayerManagement,
-            DetailRouteKind.PlayitSetupWizard => NavigationRouteKind.PlayitSetupWizard,
             DetailRouteKind.ImageCrop => NavigationRouteKind.ImageCrop,
             DetailRouteKind.PortsMap => NavigationRouteKind.PortsMap,
             DetailRouteKind.InstanceImport => NavigationRouteKind.InstanceImport,

@@ -166,7 +166,7 @@ namespace PocketMC.Desktop.Features.Shell
 
             if (!settings.HasCompletedFirstLaunch)
             {
-                _host.NavigateToPlayitSetup();
+                _host.ShowPlayitSetupDialog();
             }
             else
             {

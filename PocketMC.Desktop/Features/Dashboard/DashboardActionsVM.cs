@@ -40,6 +40,8 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly IServiceProvider _serviceProvider;
         private readonly AgentProvisioningService _agentProvisioning;
         private readonly ILogger<DashboardActionsVM> _logger;
+        private readonly ServerConfigurationService _configService;
+        private readonly PortProbeService _probeService;
 
         public DashboardActionsVM(
             ApplicationState applicationState,
@@ -52,7 +54,9 @@ namespace PocketMC.Desktop.Features.Dashboard
             IAppNavigationService navigationService,
             IServiceProvider serviceProvider,
             AgentProvisioningService agentProvisioning,
-            ILogger<DashboardActionsVM> logger)
+            ILogger<DashboardActionsVM> logger,
+            ServerConfigurationService configService,
+            PortProbeService probeService)
         {
             _applicationState = applicationState;
             _instanceManager = instanceManager;
@@ -65,6 +69,8 @@ namespace PocketMC.Desktop.Features.Dashboard
             _serviceProvider = serviceProvider;
             _agentProvisioning = agentProvisioning;
             _logger = logger;
+            _configService = configService;
+            _probeService = probeService;
         }
 
         public async void StartServer(InstanceCardViewModel vm, Action<InstanceCardViewModel> onStarted)
@@ -146,7 +152,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
             catch (PortReliabilityException ex)
             {
-                HandlePortReliabilityFailure(vm, ex, "startup", onStarted);
+                await HandlePortReliabilityFailureAsync(vm, ex, "startup", onStarted);
             }
             catch (Exception ex)
             {
@@ -286,7 +292,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
             catch (PortReliabilityException ex)
             {
-                HandlePortReliabilityFailure(vm, ex, "restart", onStarted);
+                await HandlePortReliabilityFailureAsync(vm, ex, "restart", onStarted);
             }
             catch (Exception ex)
             {
@@ -415,7 +421,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             _navigationService.NavigateToDetailPage(page, $"Players: {vm.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.Dashboard, true);
         }
 
-        private void HandlePortReliabilityFailure(
+        private async Task HandlePortReliabilityFailureAsync(
             InstanceCardViewModel vm,
             PortReliabilityException ex,
             string operation,
@@ -439,7 +445,73 @@ namespace PocketMC.Desktop.Features.Dashboard
                 primary.Request.Protocol,
                 primary.Request.IpMode);
 
-            _dialogService.ShowMessage(displayInfo.Title, displayInfo.Message, DialogType.Warning);
+            bool isPortChangeable = primary.FailureCode is 
+                PortFailureCode.InUseByPocketMcInstance or 
+                PortFailureCode.InUseByExternalProcess or 
+                PortFailureCode.TcpConflict or 
+                PortFailureCode.UdpConflict or 
+                PortFailureCode.AccessDenied or 
+                PortFailureCode.IPv4BindFailure or 
+                PortFailureCode.IPv6BindFailure;
+
+            if (isPortChangeable)
+            {
+                var dialog = new PortConflictWindow(displayInfo.Title, displayInfo.Message, primary.Request.Port, _probeService)
+                {
+                    Owner = System.Windows.Application.Current.MainWindow
+                };
+                
+                dialog.ShowDialog();
+
+                if (dialog.UserConfirmed && dialog.NewPort.HasValue)
+                {
+                    int newPort = dialog.NewPort.Value;
+                    string? serverDir = _registry.GetPath(vm.Id);
+                    
+                    if (serverDir != null)
+                    {
+                        // Update configuration
+                        var portUpdater = _serviceProvider.GetRequiredService<PocketMC.Desktop.Features.Networking.InstancePortUpdateService>();
+                        await portUpdater.UpdatePortAsync(vm.Metadata, serverDir, primary.Request.BindingRole, newPort);
+
+                        // Retry start
+                        vm.ClearPortIssue();
+                        
+                        try
+                        {
+                            vm.UpdateState(ServerState.SettingUp);
+                            onStateChanged(vm);
+                            
+                            if (operation == "restart")
+                            {
+                                await _lifecycleService.RestartAsync(vm.Id);
+                            }
+                            else
+                            {
+                                await _lifecycleService.StartAsync(vm.Metadata);
+                            }
+                            
+                            onStateChanged(vm);
+                            _ = _tunnelOrchestrator.EnsureTunnelFlowAsync(vm);
+                        }
+                        catch (PortReliabilityException retryEx)
+                        {
+                            await HandlePortReliabilityFailureAsync(vm, retryEx, operation, onStateChanged);
+                        }
+                        catch (Exception retryEx)
+                        {
+                            vm.UpdateState(ServerState.Stopped);
+                            onStateChanged(vm);
+                            _logger.LogError(retryEx, "Failed to start server {ServerName} after port change.", vm.Name);
+                            _dialogService.ShowMessage("Start Failed", $"PocketMC could not start '{vm.Name}'.\n\n{retryEx.Message}", DialogType.Error);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                _dialogService.ShowMessage(displayInfo.Title, displayInfo.Message, DialogType.Warning);
+            }
         }
     }
 }

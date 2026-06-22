@@ -803,15 +803,16 @@ namespace PocketMC.Desktop.Features.Tunnel
         /// <summary>
         /// Opens the Setup Agent wizard as a detail page.
         /// </summary>
-        private void BtnSetupAgent_Click(object sender, RoutedEventArgs e)
+        private async void BtnSetupAgent_Click(object sender, RoutedEventArgs e)
         {
-            var wizardPage = ActivatorUtilities.CreateInstance<PlayitSetupWizardPage>(_serviceProvider);
-            _navigationService.NavigateToDetailPage(
-                wizardPage,
-                "Playit Agent Setup",
-                DetailRouteKind.PlayitSetupWizard,
-                DetailBackNavigation.Tunnel,
-                clearDetailStack: true);
+            var dialog = ActivatorUtilities.CreateInstance<PlayitSetupWizardDialog>(_serviceProvider);
+            dialog.Owner = Window.GetWindow(this);
+            dialog.ShowDialog();
+
+            if (dialog.SetupCompleted)
+            {
+                await RefreshStatusAsync();
+            }
         }
 
         /// <summary>

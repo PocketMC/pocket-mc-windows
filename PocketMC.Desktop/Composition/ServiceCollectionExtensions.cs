@@ -112,6 +112,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<PortLeaseRegistry>();
             services.AddSingleton<PortRecoveryService>();
             services.AddSingleton<PortFailureMessageService>();
+            services.AddSingleton<InstancePortUpdateService>();
 
             services.AddSingleton<IResourceMonitorService, ResourceMonitorService>();
             services.AddSingleton<BackupService>();

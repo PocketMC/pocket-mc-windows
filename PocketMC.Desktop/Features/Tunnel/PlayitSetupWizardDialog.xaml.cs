@@ -7,16 +7,16 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Shell;
+using Wpf.Ui.Controls;
+using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {
-    public partial class PlayitSetupWizardPage : Page
+    public partial class PlayitSetupWizardDialog : FluentWindow
     {
-        private readonly IAppNavigationService _navigationService;
         private readonly PlayitAgentService _playitAgentService;
         private readonly PlayitPartnerProvisioningClient _partnerProvisioningClient;
-        private readonly ILogger<PlayitSetupWizardPage> _logger;
+        private readonly ILogger<PlayitSetupWizardDialog> _logger;
 
         private int _currentStep = 1;
         private int _closeRequested;
@@ -25,14 +25,14 @@ namespace PocketMC.Desktop.Features.Tunnel
         private readonly Border[] _stepDots;
         private readonly StackPanel[] _stepPanels;
 
-        public PlayitSetupWizardPage(
-            IAppNavigationService navigationService,
+        public bool SetupCompleted { get; private set; }
+
+        public PlayitSetupWizardDialog(
             PlayitAgentService playitAgentService,
             PlayitPartnerProvisioningClient partnerProvisioningClient,
-            ILogger<PlayitSetupWizardPage> logger)
+            ILogger<PlayitSetupWizardDialog> logger)
         {
             InitializeComponent();
-            _navigationService = navigationService;
             _playitAgentService = playitAgentService;
             _partnerProvisioningClient = partnerProvisioningClient;
             _logger = logger;
@@ -121,6 +121,11 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 GoToStep(_currentStep - 1);
             }
+        }
+
+        private void BtnCancel_Click(object sender, RoutedEventArgs e)
+        {
+            RequestClose();
         }
 
         // --- Step 1: Open Setup Page ---
@@ -212,6 +217,9 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private void ShowConnectSuccess()
         {
+            if (SetupCompleted) return; // Prevent multiple triggers
+            SetupCompleted = true;
+
             ConnectingPanel.Visibility = Visibility.Collapsed;
             TxtConnectStatus.Text = "✓ Agent connected successfully!";
             TxtConnectStatus.Foreground = Brushes.LimeGreen;
@@ -230,21 +238,11 @@ namespace PocketMC.Desktop.Features.Tunnel
             timer.Start();
         }
 
-        // --- Navigation ---
-
-        private void BtnBack_Click(object sender, RoutedEventArgs e)
-        {
-            RequestClose();
-        }
-
         private void RequestClose()
         {
             if (Interlocked.Exchange(ref _closeRequested, 1) != 0) return;
-
-            if (!_navigationService.NavigateBack())
-            {
-                _navigationService.NavigateToTunnel();
-            }
+            DialogResult = true;
+            Close();
         }
     }
 }

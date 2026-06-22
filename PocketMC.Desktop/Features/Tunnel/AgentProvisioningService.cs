@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
@@ -83,14 +84,16 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         public Task ConnectAsync()
         {
-            var wizardPage = ActivatorUtilities.CreateInstance<PlayitSetupWizardPage>(_serviceProvider);
-            _navigationService.NavigateToDetailPage(
-                wizardPage,
-                "Playit Agent Setup",
-                DetailRouteKind.PlayitSetupWizard,
-                DetailBackNavigation.Tunnel,
-                clearDetailStack: true);
-                
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var dialog = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<PlayitSetupWizardDialog>(_serviceProvider);
+                if (Application.Current.MainWindow != null)
+                {
+                    dialog.Owner = Application.Current.MainWindow;
+                }
+                dialog.ShowDialog();
+            });
+
             return Task.CompletedTask;
         }
 

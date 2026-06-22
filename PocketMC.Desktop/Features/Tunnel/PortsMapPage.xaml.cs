@@ -226,29 +226,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                     var serverDir = _instanceRegistry.GetPath(route.ServerId);
                     if (server != null && !string.IsNullOrEmpty(serverDir))
                     {
-                        if (route.PortType == "Main")
-                        {
-                            var cfg = _serverConfigurationService.Load(server, serverDir);
-                            cfg.ServerPort = newPort.ToString();
-                            _serverConfigurationService.Save(server, serverDir, cfg);
-                        }
-                        else if (route.PortType == "Geyser")
-                        {
-                            server.GeyserBedrockPort = newPort;
-                            _instanceManager.SaveMetadata(server, serverDir);
-                        }
-                        else if (route.PortType == "Voice")
-                        {
-                            server.SimpleVoiceChatPort = newPort;
-                            _instanceManager.SaveMetadata(server, serverDir);
-                            
-                            // Patch voicechat properties file robustly
-                            string configPath = SimpleVoiceChatConfigService.DetectConfigPath(serverDir);
-                            if (File.Exists(configPath))
-                            {
-                                SimpleVoiceChatConfigService.PatchPortIfNeeded(configPath, newPort);
-                            }
-                        }
+                        var portUpdater = _serviceProvider.GetRequiredService<PocketMC.Desktop.Features.Networking.InstancePortUpdateService>();
+                        await portUpdater.UpdatePortFromMapTypeAsync(server, serverDir, route.PortType, newPort);
 
                         route.Port = newPort;
                         route.LocalPortLabel = $"{newPort} / {route.Protocol}";

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Velopack;
 using Velopack.Sources;
+using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Infrastructure
 {
@@ -45,9 +46,12 @@ namespace PocketMC.Desktop.Infrastructure
         public bool HasPendingUpdate => _pendingUpdate != null;
         public string? PendingVersion => _pendingUpdate?.TargetFullRelease?.Version?.ToString();
 
-        public UpdateService(ILogger<UpdateService> logger)
+        private readonly ApplicationState _appState;
+
+        public UpdateService(ILogger<UpdateService> logger, ApplicationState appState)
         {
             _logger = logger;
+            _appState = appState;
         }
 
         public async Task CheckAndDownloadAsync(CancellationToken ct = default)
@@ -149,6 +153,12 @@ namespace PocketMC.Desktop.Infrastructure
             _pendingUpdate = info;
             _logger.LogInformation("Velopack update {Version} downloaded and staged for restart.", newVersion);
             Broadcast(UpdateStatus.From(UpdateStage.ReadyToRestart, newVersion, 100));
+
+            if (_appState.Settings.AutomaticallyInstallUpdates)
+            {
+                _logger.LogInformation("Automatic updates are enabled. Applying update now.");
+                ApplyUpdateAndRestart();
+            }
         }
 
         private static UpdateManager CreateManager()

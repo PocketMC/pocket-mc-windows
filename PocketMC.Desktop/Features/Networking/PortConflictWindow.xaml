@@ -1,0 +1,115 @@
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Networking.PortConflictWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Port Conflict"
+        Width="460"
+        SizeToContent="Height"
+        MinWidth="400" MaxWidth="520"
+        MinHeight="0"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowCornerPreference="Round"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="None"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <Grid MaxWidth="500">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Port Conflict" ShowMaximize="False" ShowMinimize="False" />
+
+        <Grid Grid.Row="1" Margin="28,4,28,28">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header: icon + title -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,14">
+                <ui:SymbolIcon Symbol="Warning24"
+                               FontSize="24"
+                               Foreground="{DynamicResource PaletteRedBrush}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,12,0"/>
+                <TextBlock x:Name="TxtTitle"
+                           FontSize="18" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <!-- Error message -->
+            <ScrollViewer Grid.Row="1"
+                          MaxHeight="140"
+                          VerticalScrollBarVisibility="Auto"
+                          Margin="0,0,0,18">
+                <TextBlock x:Name="TxtMessage"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           LineHeight="20"/>
+            </ScrollViewer>
+
+            <!-- Separator -->
+            <Border Grid.Row="2"
+                    Height="1"
+                    Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    Opacity="0.4"
+                    Margin="0,0,0,18"/>
+
+            <!-- Port input section -->
+            <StackPanel Grid.Row="3" Margin="0,0,0,6">
+                <TextBlock Text="Enter a new port:"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           Margin="0,0,0,8"/>
+
+                <ui:TextBox x:Name="TxtPortInput"
+                            PlaceholderText="e.g. 25566"
+                            FontSize="14"
+                            MaxLength="5"
+                            TextChanged="TxtPortInput_TextChanged"/>
+
+                <!-- Validation message -->
+                <TextBlock x:Name="TxtValidation"
+                           FontSize="12"
+                           Foreground="{DynamicResource PaletteRedBrush}"
+                           Margin="0,6,0,0"
+                           TextWrapping="Wrap"
+                           Visibility="Collapsed"/>
+
+                <!-- Success message -->
+                <TextBlock x:Name="TxtSuccess"
+                           FontSize="12"
+                           Foreground="{DynamicResource PaletteGreenBrush}"
+                           Margin="0,6,0,0"
+                           TextWrapping="Wrap"
+                           Visibility="Collapsed"/>
+            </StackPanel>
+
+            <!-- Action buttons -->
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <ui:Button Content="Cancel"
+                           Appearance="Secondary"
+                           MinWidth="80"
+                           Margin="0,0,8,0"
+                           Click="Cancel_Click"
+                           IsCancel="True"/>
+                <ui:Button x:Name="BtnConfirm"
+                           Content="Change Port &amp; Start"
+                           Appearance="Primary"
+                           MinWidth="140"
+                           Click="Confirm_Click"
+                           IsEnabled="False"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

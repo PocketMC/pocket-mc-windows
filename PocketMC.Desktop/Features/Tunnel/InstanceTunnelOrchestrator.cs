@@ -625,6 +625,40 @@ namespace PocketMC.Desktop.Features.Tunnel
             _instanceManager.SaveMetadata(metadata, request.InstancePath);
         }
 
+        public async Task UpdateSimpleVoiceChatPortAsync(InstanceMetadata metadata, string instancePath, int newPort)
+        {
+            // 1. Update metadata and detect current state
+            metadata.SimpleVoiceChatPort = newPort;
+            _instanceManager.SaveMetadata(metadata, instancePath);
+
+            // 2. Patch local port robustly
+            string configPath = SimpleVoiceChatConfigService.DetectConfigPath(instancePath);
+            if (File.Exists(configPath))
+            {
+                SimpleVoiceChatConfigService.PatchPortIfNeeded(configPath, newPort);
+            }
+
+            // 3. Centralized tunnel creation
+            if (!_applicationState.IsConfigured || !File.Exists(_applicationState.GetPlayitExecutablePath()))
+            {
+                return;
+            }
+
+            EnsurePlayitAgentRunning();
+
+            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(instancePath);
+            PortCheckRequest request = BuildSimpleVoiceChatRequest(metadata, instancePath, detection);
+
+            TunnelResolutionResult resolution = await ResolveTunnelWithWarmupAsync(request, allowAutoCreate: true);
+
+            // 4. Apply tunnel address if resolved/created successfully
+            if (resolution.Status == TunnelResolutionResult.TunnelStatus.Found ||
+                resolution.Status == TunnelResolutionResult.TunnelStatus.AutoCreated)
+            {
+                ApplySimpleVoiceChatTunnel(metadata, request, resolution, isBeforeStart: false);
+            }
+        }
+
         private void HandleResolutionError(string instanceName, PortCheckRequest request, TunnelResolutionResult resolution)
         {
             if (resolution.RequiresClaim)
