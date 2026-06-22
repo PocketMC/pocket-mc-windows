@@ -33,7 +33,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private string _cachedCountry = "Unknown";
     private bool _hasFetchedCountry = false;
     
-    private const string ProxyBaseUrl = "https://pocket-mc-proxy.onrender.com/";
+    private const string ProxyBaseUrl = "https://pocket-mc-proxy-3fqm.onrender.com/";
 
     public TelemetryService(
         SettingsManager settingsManager,
