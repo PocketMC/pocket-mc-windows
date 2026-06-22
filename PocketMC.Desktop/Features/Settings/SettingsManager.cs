@@ -118,7 +118,7 @@ namespace PocketMC.Desktop.Features.Settings
             return Path.Combine(effectiveSettings.PlayitConfigDirectory!, "playit.toml");
         }
 
-        private const string PlayitPartnerBackendUrl = "https://pocket-mc-proxy.onrender.com";
+        private const string PlayitPartnerBackendUrl = "https://pocket-mc-proxy-20d5.onrender.com";
         private const string FallbackPlayitPartnerBackendUrl = "https://pocket-mc-proxy-n2qx.onrender.com";
 
         public string GetPlayitPartnerBackendUrl(AppSettings? settings = null)

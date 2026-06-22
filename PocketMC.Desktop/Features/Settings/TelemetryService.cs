@@ -34,7 +34,6 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private bool _hasFetchedCountry = false;
     
     private const string ProxyBaseUrl = "https://pocket-mc-proxy.onrender.com/";
-    private const string FallbackProxyBaseUrl = "https://pocket-mc-proxy-n2qx.onrender.com/";
 
     public TelemetryService(
         SettingsManager settingsManager,
@@ -294,27 +293,6 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
 
     private async Task<HttpResponseMessage> PostTelemetryAsJsonAsync<TValue>(HttpClient client, string path, TValue payload, CancellationToken ct = default)
     {
-        HttpResponseMessage? response = null;
-        try
-        {
-            response = await client.PostAsJsonAsync($"{ProxyBaseUrl.TrimEnd('/')}{path}", payload, ct);
-            if (response.IsSuccessStatusCode) return response;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Primary proxy failed for {Path}. Trying fallback.", path);
-        }
-
-        try
-        {
-            var fallbackResponse = await client.PostAsJsonAsync($"{FallbackProxyBaseUrl.TrimEnd('/')}{path}", payload, ct);
-            if (response != null) response.Dispose();
-            return fallbackResponse;
-        }
-        catch
-        {
-            if (response != null) return response;
-            throw;
-        }
+        return await client.PostAsJsonAsync($"{ProxyBaseUrl.TrimEnd('/')}{path}", payload, ct);
     }
 }
