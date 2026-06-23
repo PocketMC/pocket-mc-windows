@@ -141,7 +141,7 @@ jobs:
 
           $payload = @{
             embeds = @(@{
-              title       = "🛠️ New Beta Portable Build Available!"
+              title       = "New Beta Portable Build Available!"
               description = "A new test build has been uploaded."
               color       = 16753920
               fields      = @(
