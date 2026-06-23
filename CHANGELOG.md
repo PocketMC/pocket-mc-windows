@@ -4,6 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
+- `v1.9.4...v1.9.5`: 4 commits focused on Google Drive backup proxy reliability, telemetry proxy endpoint simplification, service registration, deprecated Playit setup cleanup, and dynamic instance port updates.
 - `v1.9.3...v1.9.4`: 27 commits focused on custom accent colors, animated navigation, remote dashboard dark mode, Forge/NeoForge stabilization, and UI polish.
 - `v1.9.2...v1.9.3`: 58 commits focused on Forge and NeoForge server support, Remote Control web dashboard implementation, automated add-on updates, server update rollback safety, telemetry, and desktop shell polish.
 - `v1.9.1...v1.9.2`: 12 commits focused on desktop notifications, Discord linking polish, Remote Control permissions, Playit setup simplification, scroll reliability, export completeness, and release workflow stability.
@@ -15,6 +16,52 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
+
+---
+
+## v1.9.5 - Backup Reliability, Telemetry Proxy Cleanup & Dynamic Port Updates
+
+### Summary
+
+v1.9.5 is a focused infrastructure and reliability release. It improves Google Drive backup resilience with a secondary proxy path, simplifies telemetry posting around the current production proxy endpoint, registers new application services, and removes the deprecated Playit setup wizard route while preparing server startup retries for more flexible port management.
+
+### Diff Basis
+
+The `v1.9.4...v1.9.5` diff contains 4 commits. The changes are concentrated in backup proxy handling, telemetry proxy configuration, dependency injection registration, navigation cleanup, and dashboard startup retry behavior.
+
+### Added
+
+- **Cloud Backup Reliability**
+  - Added a fallback proxy URL for Google Drive backup operations so backup requests can retry through a secondary endpoint if the primary proxy path fails.
+  - Introduced a shared proxy-posting helper for backup requests to keep retry behavior consistent across Google Drive backup operations.
+- **Application Services**
+  - Registered the new `WhatsNewService` in the dependency injection container.
+  - Registered `InstancePortUpdateService` so server startup retry flows can update instance ports dynamically.
+
+### Changed
+
+- **Telemetry Proxy Configuration**
+  - Updated telemetry to use the latest production proxy base URL.
+  - Simplified telemetry posting so telemetry events post directly to the primary proxy endpoint without fallback handling.
+- **Server Startup & Port Management**
+  - Integrated `InstancePortUpdateService` into dashboard startup retry handling to support dynamic port updates when a server needs to retry startup on a different port.
+
+### Removed
+
+- **Deprecated Playit Setup Flow**
+  - Removed the obsolete `PlayitSetupWizard` navigation route.
+  - Removed unit tests tied to the deprecated wizard route.
+
+### Reasoning
+
+This release separates reliability needs by service area. Google Drive backups benefit from fallback proxy behavior because failed backup operations are user-visible and can interrupt data protection. Telemetry, meanwhile, now targets the current proxy deployment directly and no longer carries fallback complexity that is not needed. Removing the old Playit setup wizard route keeps navigation cleaner, while the new instance port update service lays groundwork for smoother automatic recovery when ports need to change during server startup retries.
+
+### Upgrade Impact
+
+- **Backups:** Google Drive backup operations should be more resilient when the primary proxy endpoint is unavailable.
+- **Telemetry:** Telemetry uses the updated production proxy endpoint with simpler request behavior.
+- **Playit Setup:** The deprecated wizard navigation path is no longer available. Existing server and tunnel configuration data is not expected to require migration.
+- **Server Startup:** Startup retries can now participate in dynamic port updates through the newly registered service.
 
 ---
 
