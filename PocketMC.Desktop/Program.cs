@@ -2,7 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using Velopack;
-using Velopack.Windows;
 
 namespace PocketMC.Desktop;
 
@@ -14,6 +13,13 @@ public static class Program
     private const uint SHCNE_ASSOCCHANGED = 0x08000000;
     private const uint SHCNF_IDLIST = 0;
 
+    private static void RefreshShellIconCache()
+    {
+        // Tell the Windows Shell that associations changed so Explorer refreshes
+        // cached shortcut/executable icons without creating replacement shortcuts.
+        SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
+    }
+
     [STAThread]
     public static void Main(string[] args)
     {
@@ -21,30 +27,8 @@ public static class Program
         // This handles squirrel-style install/uninstall hooks and
         // delta-patch application on startup.
         VelopackApp.Build()
-            .OnAfterInstallFastCallback((v) => 
-            {
-                // Re-create shortcuts to point to the new icon
-                try 
-                {
-                    new Shortcuts().CreateShortcutForThisExe(ShortcutLocation.Desktop | ShortcutLocation.StartMenu);
-                } 
-                catch { /* Ignore errors */ }
-
-                // Tell the Windows Shell to flush and reload its icon caches
-                SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
-            })
-            .OnAfterUpdateFastCallback((v) => 
-            {
-                // Re-create shortcuts to point to the new icon
-                try 
-                {
-                    new Shortcuts().CreateShortcutForThisExe(ShortcutLocation.Desktop | ShortcutLocation.StartMenu);
-                } 
-                catch { /* Ignore errors */ }
-
-                // Tell the Windows Shell to flush and reload its icon caches
-                SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
-            })
+            .OnAfterInstallFastCallback((v) => RefreshShellIconCache())
+            .OnAfterUpdateFastCallback((v) => RefreshShellIconCache())
             .Run();
 
         // Enforce single instance rule before starting WPF
