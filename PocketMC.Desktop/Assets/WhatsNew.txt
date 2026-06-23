@@ -1,10 +1,11 @@
-VERSION=1.9.4
+VERSION=1.9.5
 
 [FEATURES]
-
+- Added Software Auto Update
+- Added Port Change Window
+- Added What's New Window
 
 [FIXES]
 
-
 [IMPROVEMENTS]
-
+- Improved The Playit Agent Setup Flow
