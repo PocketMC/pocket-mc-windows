@@ -19,5 +19,6 @@ namespace PocketMC.Desktop.Core.Interfaces
         Task<string?> OpenFolderDialogAsync(string title);
         Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*");
         Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*");
+        Task<string?> PromptPasswordAsync(string title, string message);
     }
 }

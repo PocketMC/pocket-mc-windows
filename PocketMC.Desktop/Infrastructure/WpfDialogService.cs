@@ -72,5 +72,26 @@ namespace PocketMC.Desktop.Infrastructure
             var dialog = new OpenFileDialog { Title = title, Filter = filter, Multiselect = true };
             return Task.FromResult(dialog.ShowDialog() == true ? dialog.FileNames : System.Array.Empty<string>());
         }
+
+        public Task<string?> PromptPasswordAsync(string title, string message)
+        {
+            var tcs = new TaskCompletionSource<string?>();
+            System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                var dialog = new PasswordPromptDialogWindow(title, message)
+                {
+                    Owner = System.Windows.Application.Current.MainWindow
+                };
+                if (dialog.ShowDialog() == true)
+                {
+                    tcs.SetResult(dialog.Password);
+                }
+                else
+                {
+                    tcs.SetResult(null);
+                }
+            });
+            return tcs.Task;
+        }
     }
 }

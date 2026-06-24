@@ -166,7 +166,32 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     partial void OnIsEnabledChanged(bool value)
     {
-        SaveAndRestart();
+        if (value && RequireAuthentication && IsPasswordNotSet && !_isUpdatingFromSettings)
+        {
+            _ = HandleEnableWithPasswordPromptAsync();
+        }
+        else
+        {
+            SaveAndRestart();
+        }
+    }
+
+    private async Task HandleEnableWithPasswordPromptAsync()
+    {
+        var result = await _dialogService.PromptPasswordAsync(
+            "Setup Remote Password",
+            "Remote Control requires a password to be secure. Please set up a password, or turn off password authentication to continue without one.");
+
+        if (!string.IsNullOrEmpty(result))
+        {
+            Password = result;
+            SaveAndRestart();
+        }
+        else
+        {
+            RequireAuthentication = false;
+            SaveAndRestart();
+        }
     }
 
     partial void OnPortChanged(int value)
