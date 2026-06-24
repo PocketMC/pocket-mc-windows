@@ -127,8 +127,11 @@ namespace PocketMC.Desktop.Features.Shell
                 : System.Windows.Media.Brushes.White;
         }
 
+        private bool _isSilentCheck;
+
         public async Task CheckForUpdatesAsync()
         {
+            _isSilentCheck = false;
             await _updateService.CheckAndDownloadAsync();
         }
 
@@ -136,6 +139,7 @@ namespace PocketMC.Desktop.Features.Shell
         {
             if (!_appState.Settings.AutomaticallyInstallUpdates)
             {
+                _isSilentCheck = true;
                 Task.Run(() => _updateService.CheckAndDownloadAsync());
             }
         }
@@ -164,18 +168,24 @@ namespace PocketMC.Desktop.Features.Shell
             switch (status.Stage)
             {
                 case UpdateStage.Checking:
-                    IsUpdateBannerVisible = true;
-                    IsUpdateDownloading = false;
-                    UpdateStatusMessage = "Checking for updates...";
-                    UpdateErrorMessage = null;
+                    if (!_isSilentCheck)
+                    {
+                        IsUpdateBannerVisible = true;
+                        IsUpdateDownloading = false;
+                        UpdateStatusMessage = "Checking for updates...";
+                        UpdateErrorMessage = null;
+                    }
                     break;
 
                 case UpdateStage.Downloading:
-                    IsUpdateBannerVisible = true;
-                    IsUpdateDownloading = true;
-                    UpdateStatusMessage = $"Downloading update {status.NewVersion}...";
-                    UpdateDownloadPercent = status.DownloadPercent;
-                    UpdateErrorMessage = null;
+                    if (!_isSilentCheck)
+                    {
+                        IsUpdateBannerVisible = true;
+                        IsUpdateDownloading = true;
+                        UpdateStatusMessage = $"Downloading update {status.NewVersion}...";
+                        UpdateDownloadPercent = status.DownloadPercent;
+                        UpdateErrorMessage = null;
+                    }
                     break;
 
                 case UpdateStage.ReadyToRestart:

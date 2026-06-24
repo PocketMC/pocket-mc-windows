@@ -152,7 +152,11 @@ jobs:
               footer      = @{ text = "PocketMC CI/CD" }
             })
           }
-          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
+          try {
+            Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
+          } catch {
+            Write-Warning "Failed to send Discord notification: $_"
+          }
 
       - name: Download previous release assets
         if: steps.compare.outputs.skip == 'false'
@@ -259,4 +263,8 @@ jobs:
               footer      = @{ text = "PocketMC Build System" }
             })
           }
-          Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
+          try {
+            Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
+          } catch {
+            Write-Warning "Failed to send Discord notification: $_"
+          }
