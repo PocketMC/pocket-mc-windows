@@ -19,20 +19,25 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ---
 
-## v1.9.5 - Automatic Updates, Proxy Support & Bedrock Enhancements
+## v1.9.5 - Automatic Updates, Clean Architecture & UX Improvements
 
 ### Summary
 
-v1.9.5 is a focused infrastructure and feature release. It introduces an automatic update startup flow, adds native detection for Geyser and SimpleVoiceChat, improves Google Drive backup resilience with a secondary proxy path, simplifies telemetry posting around the current production proxy endpoint, registers new application services, and removes the deprecated Playit setup wizard route while preparing server startup retries for more flexible port management.
+v1.9.5 brings significant architectural improvements by restructuring the application into Clean Architecture with `PocketMC.Domain`, `PocketMC.Application`, and `PocketMC.Infrastructure`. It introduces an automatic update startup flow, adds native detection for Geyser and SimpleVoiceChat, and improves user security by introducing a mandatory password setup prompt when enabling Remote Control. Additionally, the Playit Agent setup has been delayed to not block the initial dashboard experience.
 
 ### Diff Basis
 
-The `v1.9.4...v1.9.5` diff contains several commits focused on automatic updates, Bedrock/proxy port detection, image processing refactoring, backup proxy handling, telemetry proxy configuration, dependency injection registration, and navigation cleanup.
+The `v1.9.4...v1.9.5` diff focuses on major architectural refactoring (moving to Clean Architecture), automatic updates, Remote Control security enhancements, Bedrock/proxy port detection, image processing refactoring, and Playit setup flow optimizations.
 
 ### Added
 
+- **Clean Architecture Restructuring**
+  - Restructured the project to follow Clean Architecture principles, separating core business logic into `PocketMC.Domain` and external integrations into `PocketMC.Infrastructure`.
+  - Moved AI providers (Gemini, etc.) to the Infrastructure layer.
 - **Automatic Updates**
-  - Added a lightweight `StartupUpdateWindow` to handle checking and downloading updates synchronously before opening the main application window.
+  - Added a lightweight `StartupUpdateWindow` to handle checking and downloading updates synchronously before opening the main application window (if enabled in settings).
+- **Remote Control Security**
+  - Added a password prompt when toggling Remote Control "ON" for the first time, ensuring users either set a password or explicitly opt-out, preventing accidental insecure tunnel exposure.
 - **Bedrock & Voice Chat Support**
   - Integrated `GeyserDetector` and `SimpleVoiceChatDetector` to seamlessly identify Bedrock bridge proxies and voice chat add-ons, automatically configuring their required ports in the Preflight Service and Dashboard.
 - **Cloud Backup Reliability**
@@ -44,6 +49,8 @@ The `v1.9.4...v1.9.5` diff contains several commits focused on automatic updates
 
 ### Changed
 
+- **Playit Setup Flow**
+  - Delayed the Playit setup wizard so it no longer blocks the dashboard on fresh launch. Users can now complete the setup from the Tunnel page when they are ready.
 - **Image Processing**
   - Extracted image cropping logic into a dedicated `ImageProcessingService` for reusability and cleaner architecture.
 - **Telemetry Proxy Configuration**
@@ -51,22 +58,27 @@ The `v1.9.4...v1.9.5` diff contains several commits focused on automatic updates
   - Simplified telemetry posting so telemetry events post directly to the primary proxy endpoint without fallback handling.
 - **Server Startup & Port Management**
   - Integrated `InstancePortUpdateService` into dashboard startup retry handling to support dynamic port updates when a server needs to retry startup on a different port.
+- **Updates Configuration**
+  - Removed the "automatically install updates" feature; it now strictly performs update checks based on user preferences.
 
 ### Removed
 
 - **Deprecated Playit Setup Flow**
-  - Removed the obsolete `PlayitSetupWizard` navigation route.
+  - Removed the obsolete `PlayitSetupWizard` navigation route and wizard pages.
   - Removed unit tests tied to the deprecated wizard route.
+- **Discord Commit Notifications**
+  - Removed the Discord commit notification workflow.
 
 ### Reasoning
 
-This release separates reliability needs by service area. Google Drive backups benefit from fallback proxy behavior because failed backup operations are user-visible and can interrupt data protection. Telemetry, meanwhile, now targets the current proxy deployment directly and no longer carries fallback complexity that is not needed. Removing the old Playit setup wizard route keeps navigation cleaner, while the new instance port update service lays groundwork for smoother automatic recovery when ports need to change during server startup retries.
+This release separates reliability needs by service area and greatly improves the maintainability of the codebase through Clean Architecture. Delaying the Playit setup and adding a password prompt for Remote Control directly address user friction and security. Removing the old Playit setup wizard route keeps navigation cleaner, while the new instance port update service lays groundwork for smoother automatic recovery when ports need to change during server startup retries.
 
 ### Upgrade Impact
 
 - **Backups:** Google Drive backup operations should be more resilient when the primary proxy endpoint is unavailable.
 - **Telemetry:** Telemetry uses the updated production proxy endpoint with simpler request behavior.
-- **Playit Setup:** The deprecated wizard navigation path is no longer available. Existing server and tunnel configuration data is not expected to require migration.
+- **Remote Control:** Users enabling Remote Control for the first time will be prompted to set a password.
+- **Playit Setup:** The setup is no longer forced on first launch.
 - **Server Startup:** Startup retries can now participate in dynamic port updates through the newly registered service.
 
 ---

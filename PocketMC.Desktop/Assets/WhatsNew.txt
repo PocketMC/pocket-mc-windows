@@ -2,13 +2,13 @@ VERSION=1.9.5
 
 [FEATURES]
 Added Software Auto Update
-Added Port Change Window
+Added Conflict Port Change Window
 Added What's New Window
-Added Geyser detection support
-Added SimpleVoiceChat detection support
+Added Remote Control Password Setup Prompt
 
 [FIXES]
 
 [IMPROVEMENTS]
 Improved The Playit Agent Setup Flow
 Extracted image processing into a dedicated service
+Restructured project architecture (Clean Architecture)
