@@ -104,7 +104,6 @@ namespace PocketMC.Desktop.Features.Shell
             _resourceMonitorService.GlobalMetricsUpdated += OnMetricsUpdated;
             OnMetricsUpdated(null, EventArgs.Empty);
             _updateService.OnStatusChanged += OnUpdateStatusChanged;
-            InitializeUpdateCheck();
         }
 
         private void OnMetricsUpdated(object? sender, EventArgs e)
@@ -133,17 +132,6 @@ namespace PocketMC.Desktop.Features.Shell
         {
             _isSilentCheck = false;
             await _updateService.CheckAndDownloadAsync();
-        }
-
-        public void InitializeUpdateCheck()
-        {
-            // Only perform a background check if automatic updates are enabled.
-            // (If the user disabled them, we should not fetch or download anything automatically).
-            if (_appState.Settings.AutomaticallyInstallUpdates)
-            {
-                _isSilentCheck = true;
-                Task.Run(() => _updateService.CheckAndDownloadAsync());
-            }
         }
 
         private async Task ExecuteRestartAndApplyUpdateAsync()

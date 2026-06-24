@@ -159,7 +159,6 @@ namespace PocketMC.Desktop.Features.Setup
             ToggleMinimizeToTrayOnClose.IsChecked = _applicationState.Settings.MinimizeToTrayOnClose;
             ToggleKeepComputerAwakeWhileServersRunning.IsChecked = _applicationState.Settings.KeepComputerAwakeWhileServersRunning;
             ToggleTelemetry.IsChecked = _applicationState.Settings.EnableTelemetry;
-            ToggleAutoUpdate.IsChecked = _applicationState.Settings.AutomaticallyInstallUpdates;
 
             // AI Settings
             AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
@@ -246,29 +245,6 @@ namespace PocketMC.Desktop.Features.Setup
                 _dialogService.ShowMessage(
                     "Settings Error",
                     $"Could not update app behavior settings:\n{ex.Message}",
-                    DialogType.Error);
-            }
-        }
-
-        private void ToggleAutoUpdate_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
-
-            var settings = _applicationState.Settings;
-            settings.AutomaticallyInstallUpdates = ToggleAutoUpdate.IsChecked ?? true;
-
-            try
-            {
-                _settingsManager.Save(settings);
-            }
-            catch (Exception ex)
-            {
-                // Revert UI on failure
-                settings.AutomaticallyInstallUpdates = !settings.AutomaticallyInstallUpdates;
-                ToggleAutoUpdate.IsChecked = settings.AutomaticallyInstallUpdates;
-                _dialogService.ShowMessage(
-                    "Settings Error",
-                    $"Could not update auto-update setting:\n{ex.Message}",
                     DialogType.Error);
             }
         }

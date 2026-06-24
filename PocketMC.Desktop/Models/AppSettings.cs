@@ -31,7 +31,6 @@ namespace PocketMC.Desktop.Models
         public bool HasMigratedToDefaultImageWallpaper { get; set; }
         public string? CustomBackgroundImagePath { get; set; }
         public string? CurseForgeApiKey { get; set; }
-        public bool AutomaticallyInstallUpdates { get; set; } = true;
 
         // Telemetry
         public bool EnableTelemetry { get; set; } = true;

@@ -184,27 +184,7 @@
                         <ui:Button x:Name="BtnCheckUpdates" Content="Check for Updates" Icon="{ui:SymbolIcon ArrowSync24}" Appearance="Secondary" Click="CheckUpdates_Click"/>
                         <TextBlock x:Name="UpdateStatusText" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
 
-                        <Separator Margin="0,16,0,16" Opacity="0.15"/>
-                        
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Automatically Install Updates" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Automatically restart and install new updates after they are downloaded."
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           FontSize="12"
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleAutoUpdate"
-                                             Grid.Column="1"
-                                             VerticalAlignment="Center"
-                                             Checked="ToggleAutoUpdate_Changed"
-                                             Unchecked="ToggleAutoUpdate_Changed"/>
-                        </Grid>
+
                     </StackPanel>
                 </ui:CardExpander>
 

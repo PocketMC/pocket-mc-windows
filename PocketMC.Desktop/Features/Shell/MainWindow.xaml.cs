@@ -98,7 +98,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         _visualService.RequestMicaUpdate();
         
         _startupCoordinator.Start();
-        _viewModel.InitializeUpdateCheck();
     }
 
     private void Window_Activated(object? sender, EventArgs e) =>

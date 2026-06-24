@@ -156,11 +156,8 @@ namespace PocketMC.Desktop.Infrastructure
             _logger.LogInformation("Velopack update {Version} downloaded and staged for restart.", newVersion);
             Broadcast(UpdateStatus.From(UpdateStage.ReadyToRestart, newVersion, 100, info.TargetFullRelease?.Size));
 
-            if (_appState.Settings.AutomaticallyInstallUpdates)
-            {
-                _logger.LogInformation("Automatic updates are enabled. Applying update now.");
-                ApplyUpdateAndRestart();
-            }
+            _logger.LogInformation("Applying update now.");
+            ApplyUpdateAndRestart();
         }
 
         private static UpdateManager CreateManager()

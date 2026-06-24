@@ -78,7 +78,7 @@ public partial class App : Application
         var appState = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.ApplicationState>();
         var updateService = Services.GetRequiredService<PocketMC.Desktop.Infrastructure.UpdateService>();
 
-        if (appState.Settings.AutomaticallyInstallUpdates && !System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
+        if (!System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
