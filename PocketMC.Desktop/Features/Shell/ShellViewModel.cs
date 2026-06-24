@@ -137,7 +137,9 @@ namespace PocketMC.Desktop.Features.Shell
 
         public void InitializeUpdateCheck()
         {
-            if (!_appState.Settings.AutomaticallyInstallUpdates)
+            // Only perform a background check if automatic updates are enabled.
+            // (If the user disabled them, we should not fetch or download anything automatically).
+            if (_appState.Settings.AutomaticallyInstallUpdates)
             {
                 _isSilentCheck = true;
                 Task.Run(() => _updateService.CheckAndDownloadAsync());
