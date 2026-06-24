@@ -80,14 +80,19 @@ public partial class App : Application
 
         if (appState.Settings.AutomaticallyInstallUpdates && !System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
         {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
             var updateWindow = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.StartupUpdateWindow>();
             updateWindow.StartUpdateCheck();
             updateWindow.ShowDialog();
 
             if (!updateWindow.ShouldContinueToApp)
             {
+                Shutdown(0);
                 return;
             }
+
+            ShutdownMode = ShutdownMode.OnLastWindowClose;
         }
 
         var mainWindow = Services.GetRequiredService<MainWindow>();
