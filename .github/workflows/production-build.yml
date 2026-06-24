@@ -35,7 +35,7 @@ jobs:
       DOTNET_VERSION: "8.0.x"
       RUNTIME: win-x64
       APP_ID: PocketMC
-      VERSION: 1.9.4
+      VERSION: 1.9.5
 
     steps:
       - uses: actions/checkout@v4
