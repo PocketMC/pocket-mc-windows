@@ -6,8 +6,8 @@
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     
-    <Version>1.9.4</Version>
-    <AssemblyVersion>1.9.4</AssemblyVersion>
-    <FileVersion>1.9.4</FileVersion>
+    <Version>1.9.5</Version>
+    <AssemblyVersion>1.9.5</AssemblyVersion>
+    <FileVersion>1.9.5</FileVersion>
   </PropertyGroup>
 </Project>
