@@ -365,6 +365,7 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
 
         public Task<string?> OpenFolderDialogAsync(string title) => Task.FromResult<string?>(null);
         public Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult<string?>(null);
+        public Task<string?> PromptPasswordAsync(string title, string message) => Task.FromResult<string?>(null);
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(Array.Empty<string>());
     }
 }
