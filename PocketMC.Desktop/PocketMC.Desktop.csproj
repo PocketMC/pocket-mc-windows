@@ -9,9 +9,9 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <StartupObject>PocketMC.Desktop.Program</StartupObject>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
-    <Version>1.9.5</Version>
-    <AssemblyVersion>1.9.5</AssemblyVersion>
-    <FileVersion>1.9.5</FileVersion>
+    <Version>1.9.6</Version>
+    <AssemblyVersion>1.9.6</AssemblyVersion>
+    <FileVersion>1.9.6</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
