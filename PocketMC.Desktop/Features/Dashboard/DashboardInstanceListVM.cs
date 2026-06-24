@@ -17,6 +17,8 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly ServerProcessManager _serverProcessManager;
         private readonly IServerLifecycleService _lifecycleService;
         private readonly ApplicationState _applicationState;
+        private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
+        private readonly PocketMC.Desktop.Features.Networking.ISimpleVoiceChatDetector _voiceChatDetector;
 
         public ObservableCollection<InstanceCardViewModel> Instances { get; } = new();
 
@@ -24,12 +26,16 @@ namespace PocketMC.Desktop.Features.Dashboard
             InstanceRegistry registry,
             ServerProcessManager serverProcessManager,
             IServerLifecycleService lifecycleService,
-            ApplicationState applicationState)
+            ApplicationState applicationState,
+            PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector,
+            PocketMC.Desktop.Features.Networking.ISimpleVoiceChatDetector voiceChatDetector)
         {
             _registry = registry;
             _serverProcessManager = serverProcessManager;
             _lifecycleService = lifecycleService;
             _applicationState = applicationState;
+            _geyserDetector = geyserDetector;
+            _voiceChatDetector = voiceChatDetector;
         }
 
         public void LoadInstances()
@@ -63,7 +69,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 }
                 else
                 {
-                    var newVm = new InstanceCardViewModel(meta, _serverProcessManager, _lifecycleService, _applicationState, _registry);
+                    var newVm = new InstanceCardViewModel(meta, _serverProcessManager, _lifecycleService, _applicationState, _registry, _geyserDetector, _voiceChatDetector);
                     Instances.Add(newVm);
                 }
             }

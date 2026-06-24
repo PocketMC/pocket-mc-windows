@@ -25,6 +25,7 @@ public sealed class DiscordRpcService : IDiscordRpcService
     private readonly ApplicationState _applicationState;
     private readonly InstanceRegistry _instanceRegistry;
     private readonly ServerProcessManager _processManager;
+    private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
     private readonly ILogger<DiscordRpcService> _logger;
 
     private DiscordRpcClient? _client;
@@ -37,6 +38,7 @@ public sealed class DiscordRpcService : IDiscordRpcService
         ApplicationState applicationState,
         InstanceRegistry instanceRegistry,
         ServerProcessManager processManager,
+        PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector,
         ILogger<DiscordRpcService> logger)
     {
         _lifecycleService = lifecycleService;
@@ -44,6 +46,7 @@ public sealed class DiscordRpcService : IDiscordRpcService
         _applicationState = applicationState;
         _instanceRegistry = instanceRegistry;
         _processManager = processManager;
+        _geyserDetector = geyserDetector;
         _logger = logger;
     }
 
@@ -312,7 +315,7 @@ public sealed class DiscordRpcService : IDiscordRpcService
             return $"{prefix} • Bedrock BDS";
         }
 
-        if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(metadata.Id)))
+        if (_geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(metadata.Id)))
         {
             // Java with Geyser: show Java address AND Bedrock/Geyser address
             string? javaAddr = _applicationState.GetTunnelAddress(metadata.Id);

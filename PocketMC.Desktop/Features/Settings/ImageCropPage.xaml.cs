@@ -15,6 +15,7 @@ namespace PocketMC.Desktop.Features.Settings
     {
         private readonly IAppNavigationService _navigationService;
         private readonly Action<BitmapImage> _onCropComplete;
+        private readonly PocketMC.Desktop.Infrastructure.IImageProcessingService _imageProcessingService;
         private BitmapImage _originalImage = null!;
         private double _imageScale = 1.0;
         private Rect _cropRect;
@@ -28,14 +29,17 @@ namespace PocketMC.Desktop.Features.Settings
         /// <param name="inputImagePath">Absolute path to the source image file.</param>
         /// <param name="navigationService">App navigation service for back navigation.</param>
         /// <param name="onCropComplete">Callback invoked with the cropped 64x64 BitmapImage on save.</param>
+        /// <param name="imageProcessingService">Service to handle image cropping and resizing.</param>
         public ImageCropPage(
             string inputImagePath,
             IAppNavigationService navigationService,
-            Action<BitmapImage> onCropComplete)
+            Action<BitmapImage> onCropComplete,
+            PocketMC.Desktop.Infrastructure.IImageProcessingService imageProcessingService)
         {
             InitializeComponent();
             _navigationService = navigationService;
             _onCropComplete = onCropComplete;
+            _imageProcessingService = imageProcessingService;
             LoadImage(inputImagePath);
         }
 
@@ -219,17 +223,10 @@ namespace PocketMC.Desktop.Features.Settings
                 if (pxY + pxSize > _originalImage.PixelHeight) pxSize = Math.Min(pxSize, _originalImage.PixelHeight - pxY);
                 if (pxSize <= 0) { PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Invalid Crop", "Invalid crop region."); return; }
 
-                // 1. Crop
-                var cropped = new CroppedBitmap(_originalImage, new Int32Rect(pxX, pxY, pxSize, pxSize));
+                // 1. Crop, Resize to 64x64, and Encode to PNG in memory
+                BitmapImage result = _imageProcessingService.CropAndResizeImage(_originalImage, pxX, pxY, pxSize, 64);
 
-                // 2. Resize to exactly 64x64 with high quality interpolation
-                double scaleFactor = 64.0 / pxSize;
-                var resized = new TransformedBitmap(cropped, new ScaleTransform(scaleFactor, scaleFactor));
-
-                // 3. Encode to PNG in memory
-                BitmapImage result = BitmapImageFromSource(resized);
-
-                // 4. Callback with result, then navigate back
+                // 2. Callback with result, then navigate back
                 _onCropComplete(result);
                 _navigationService.NavigateBack();
             }
@@ -237,23 +234,6 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Failed to crop image: " + ex.Message);
             }
-        }
-
-        private static BitmapImage BitmapImageFromSource(BitmapSource source)
-        {
-            using var ms = new MemoryStream();
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(source));
-            encoder.Save(ms);
-            ms.Position = 0;
-
-            var result = new BitmapImage();
-            result.BeginInit();
-            result.CacheOption = BitmapCacheOption.OnLoad;
-            result.StreamSource = ms;
-            result.EndInit();
-            result.Freeze();
-            return result;
         }
 
         #endregion

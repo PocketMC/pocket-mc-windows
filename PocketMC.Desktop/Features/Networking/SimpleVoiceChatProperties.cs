@@ -32,7 +32,7 @@ public sealed record SimpleVoiceChatDetection(
     string? ConfigPath,
     bool IsConfigPending);
 
-public static class SimpleVoiceChatDetector
+public class SimpleVoiceChatDetector : ISimpleVoiceChatDetector
 {
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
@@ -41,7 +41,7 @@ public static class SimpleVoiceChatDetector
         RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant,
         RegexTimeout);
 
-    public static SimpleVoiceChatDetection Detect(string? serverDir)
+    public SimpleVoiceChatDetection Detect(string? serverDir)
     {
         if (string.IsNullOrWhiteSpace(serverDir) || !Directory.Exists(serverDir))
         {

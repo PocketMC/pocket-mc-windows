@@ -72,7 +72,7 @@ public sealed class RestoreBackupTests : IDisposable
         }
 
         var metadata = new InstanceMetadata { ServerType = "Java" };
-        var service = new BackupService(null!, new ServerConfigurationService(null!), null!, null!, NullLogger<BackupService>.Instance);
+        var service = new BackupService(null!, new ServerConfigurationService(null!, new PocketMC.Desktop.Helpers.GeyserDetector()), null!, null!, NullLogger<BackupService>.Instance);
 
         // Act
         await service.RestoreBackupAsync(metadata, zipPath, serverDir);
@@ -106,7 +106,7 @@ public sealed class RestoreBackupTests : IDisposable
         File.WriteAllText(zipPath, "corrupt file contents - not a zip");
 
         var metadata = new InstanceMetadata { ServerType = "Java" };
-        var service = new BackupService(null!, new ServerConfigurationService(null!), null!, null!, NullLogger<BackupService>.Instance);
+        var service = new BackupService(null!, new ServerConfigurationService(null!, new PocketMC.Desktop.Helpers.GeyserDetector()), null!, null!, NullLogger<BackupService>.Instance);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidDataException>(() =>
@@ -143,7 +143,7 @@ public sealed class RestoreBackupTests : IDisposable
         }
 
         var metadata = new InstanceMetadata { ServerType = "Java" };
-        var service = new BackupService(null!, new ServerConfigurationService(null!), null!, null!, NullLogger<BackupService>.Instance);
+        var service = new BackupService(null!, new ServerConfigurationService(null!, new PocketMC.Desktop.Helpers.GeyserDetector()), null!, null!, NullLogger<BackupService>.Instance);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidDataException>(() =>
@@ -180,7 +180,7 @@ public sealed class RestoreBackupTests : IDisposable
         }
 
         var metadata = new InstanceMetadata { ServerType = "Java" };
-        var service = new BackupService(null!, new ServerConfigurationService(null!), null!, null!, NullLogger<BackupService>.Instance);
+        var service = new BackupService(null!, new ServerConfigurationService(null!, new PocketMC.Desktop.Helpers.GeyserDetector()), null!, null!, NullLogger<BackupService>.Instance);
 
         FileStream? lockedStream = null;
         Action<string> onProgress = (msg) =>

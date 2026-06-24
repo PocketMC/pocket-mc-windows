@@ -75,6 +75,21 @@ public partial class App : Application
         Services.GetRequiredService<WindowsCornerService>().RegisterGlobalWindowHook();
         Services.GetRequiredService<ServerSleepPreventionCoordinator>().Refresh();
 
+        var appState = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.ApplicationState>();
+        var updateService = Services.GetRequiredService<PocketMC.Desktop.Infrastructure.UpdateService>();
+
+        if (appState.Settings.AutomaticallyInstallUpdates && !System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
+        {
+            var updateWindow = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.StartupUpdateWindow>();
+            updateWindow.StartUpdateCheck();
+            updateWindow.ShowDialog();
+
+            if (!updateWindow.ShouldContinueToApp)
+            {
+                return;
+            }
+        }
+
         var mainWindow = Services.GetRequiredService<MainWindow>();
         if (Services.GetService<IAppNavigationService>() is IAppNavigationService appNavigationService)
         {

@@ -23,11 +23,12 @@ namespace PocketMC.Desktop.Infrastructure
         public UpdateStage Stage { get; init; }
         public string? NewVersion { get; init; }
         public double DownloadPercent { get; init; }
+        public long? DownloadSize { get; init; }
         public string? ErrorMessage { get; init; }
 
         public static UpdateStatus From(UpdateStage stage, string? version = null,
-            double percent = 0, string? error = null)
-            => new() { Stage = stage, NewVersion = version, DownloadPercent = percent, ErrorMessage = error };
+            double percent = 0, long? size = null, string? error = null)
+            => new() { Stage = stage, NewVersion = version, DownloadPercent = percent, DownloadSize = size, ErrorMessage = error };
     }
 
     public sealed class UpdateService : IDisposable
@@ -45,6 +46,7 @@ namespace PocketMC.Desktop.Infrastructure
         public UpdateStage CurrentStage { get; private set; } = UpdateStage.Idle;
         public bool HasPendingUpdate => _pendingUpdate != null;
         public string? PendingVersion => _pendingUpdate?.TargetFullRelease?.Version?.ToString();
+        public bool IsInstalled => CreateManager().IsInstalled;
 
         private readonly ApplicationState _appState;
 
@@ -128,13 +130,13 @@ namespace PocketMC.Desktop.Infrastructure
 
             try
             {
-                Broadcast(UpdateStatus.From(UpdateStage.Downloading, newVersion, 0));
+                Broadcast(UpdateStatus.From(UpdateStage.Downloading, newVersion, 0, info.TargetFullRelease?.Size));
 
                 // Fixed: DownloadUpdatesAsync now expects Action<int> instead of IProgress<int>
                 await mgr.DownloadUpdatesAsync(info, pct =>
                 {
                     if (!ct.IsCancellationRequested)
-                        Broadcast(UpdateStatus.From(UpdateStage.Downloading, newVersion, pct));
+                        Broadcast(UpdateStatus.From(UpdateStage.Downloading, newVersion, pct, info.TargetFullRelease?.Size));
                 }, ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
@@ -152,7 +154,7 @@ namespace PocketMC.Desktop.Infrastructure
 
             _pendingUpdate = info;
             _logger.LogInformation("Velopack update {Version} downloaded and staged for restart.", newVersion);
-            Broadcast(UpdateStatus.From(UpdateStage.ReadyToRestart, newVersion, 100));
+            Broadcast(UpdateStatus.From(UpdateStage.ReadyToRestart, newVersion, 100, info.TargetFullRelease?.Size));
 
             if (_appState.Settings.AutomaticallyInstallUpdates)
             {

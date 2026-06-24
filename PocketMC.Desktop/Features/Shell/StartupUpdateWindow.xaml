@@ -1,0 +1,82 @@
+<Window x:Class="PocketMC.Desktop.Features.Shell.StartupUpdateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Pocket MC Update" Height="300" Width="400"
+        WindowStyle="None" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+        BorderThickness="1"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
+    
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
+            <TextBlock Text="Pocket MC" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <TextBlock Text=" Update" FontSize="24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+        </StackPanel>
+
+        <!-- Body -->
+        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+            <!-- Versions -->
+            <Grid Margin="0,0,0,16" Visibility="{Binding IsUpdateInfoVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                    <TextBlock Text="Current" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentVersion}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <ui:SymbolIcon Grid.Column="1" Symbol="ArrowRight24" FontSize="20" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="16,0"/>
+
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                    <TextBlock Text="Latest" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding LatestVersion}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Size -->
+            <TextBlock Text="{Binding DownloadSizeText}" 
+                       Visibility="{Binding IsUpdateInfoVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                       HorizontalAlignment="Center" Margin="0,0,0,8"/>
+
+            <!-- Progress -->
+            <ui:ProgressRing IsIndeterminate="True" 
+                             Visibility="{Binding IsChecking, Converter={StaticResource BooleanToVisibilityConverter}}"
+                             HorizontalAlignment="Center" Margin="0,16"/>
+
+            <ProgressBar Value="{Binding DownloadPercent}" 
+                         Visibility="{Binding IsDownloading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                         Height="4" Margin="0,16"/>
+
+            <!-- Status Text -->
+            <TextBlock Text="{Binding StatusMessage}" 
+                       FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Footer / Error handling -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0"
+                    Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ui:Button Content="Continue to App" Click="ContinueButton_Click" Appearance="Primary" />
+        </StackPanel>
+    </Grid>
+</Window>

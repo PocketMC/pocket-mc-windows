@@ -24,7 +24,7 @@ public sealed class InstanceCardViewModelTests
         var recoveryService = workspace.CreatePortRecoveryService(probeService, leaseRegistry);
         var lifecycleService = workspace.CreateServerLifecycleService(processManager, workspace.CreatePortPreflightService(processManager), probeService, leaseRegistry, recoveryService);
 
-        var vm = new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry);
+        var vm = new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry, new PocketMC.Desktop.Helpers.GeyserDetector(), new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector());
 
         Assert.Equal(19145, vm.BedrockLocalPort);
         Assert.Contains("19145", vm.BedrockIpDisplayText);
@@ -200,6 +200,6 @@ public sealed class InstanceCardViewModelTests
             leaseRegistry,
             recoveryService);
 
-        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry);
+        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry, new PocketMC.Desktop.Helpers.GeyserDetector(), new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector());
     }
 }

@@ -14,7 +14,8 @@ public sealed class SimpleVoiceChatDetectorTests
         var metadata = workspace.CreateInstance("Voice Jar", serverType: "Fabric");
         workspace.WriteFile(metadata.Id, Path.Combine("mods", jarName), "jar");
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+        var detector = new SimpleVoiceChatDetector();
+        SimpleVoiceChatDetection detection = detector.Detect(workspace.GetInstancePath(metadata.Id));
 
         Assert.True(detection.IsDetected);
         Assert.Equal(SimpleVoiceChatDetectionSource.ModJar, detection.Source);
@@ -29,7 +30,8 @@ public sealed class SimpleVoiceChatDetectorTests
         var metadata = workspace.CreateInstance("Voice Addon", serverType: "Fabric");
         workspace.WriteFile(metadata.Id, Path.Combine("mods", "my-server-voicechat-addon.jar"), "jar");
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+        var detector = new SimpleVoiceChatDetector();
+        SimpleVoiceChatDetection detection = detector.Detect(workspace.GetInstancePath(metadata.Id));
 
         Assert.False(detection.IsDetected);
     }
@@ -41,7 +43,8 @@ public sealed class SimpleVoiceChatDetectorTests
         var metadata = workspace.CreateInstance("Voice Plugin Jar", serverType: "Paper");
         workspace.WriteFile(metadata.Id, Path.Combine("plugins", "voicechat-bukkit.jar"), "jar");
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+        var detector = new SimpleVoiceChatDetector();
+        SimpleVoiceChatDetection detection = detector.Detect(workspace.GetInstancePath(metadata.Id));
 
         Assert.True(detection.IsDetected);
         Assert.Equal(SimpleVoiceChatDetectionSource.PluginJar, detection.Source);
@@ -56,7 +59,8 @@ public sealed class SimpleVoiceChatDetectorTests
         string relativePath = Path.Combine("config", "simplevoicechat", "voicechat-server.properties");
         workspace.WriteFile(metadata.Id, relativePath, "port=25000");
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+        var detector = new SimpleVoiceChatDetector();
+        SimpleVoiceChatDetection detection = detector.Detect(workspace.GetInstancePath(metadata.Id));
 
         Assert.True(detection.IsDetected);
         Assert.Equal(SimpleVoiceChatDetectionSource.ModJar, detection.Source);
@@ -75,7 +79,8 @@ public sealed class SimpleVoiceChatDetectorTests
             Path.Combine("logs", "latest.log"),
             "[12:00:00] [Server thread/INFO]: [voicechat] Voice chat server started at port 24460");
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+        var detector = new SimpleVoiceChatDetector();
+        SimpleVoiceChatDetection detection = detector.Detect(workspace.GetInstancePath(metadata.Id));
 
         Assert.True(detection.IsDetected);
         Assert.Equal(SimpleVoiceChatDetectionSource.Log, detection.Source);
@@ -94,7 +99,8 @@ public sealed class SimpleVoiceChatDetectorTests
 
         using var lockedLog = new FileStream(logPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+        var detector = new SimpleVoiceChatDetector();
+        SimpleVoiceChatDetection detection = detector.Detect(workspace.GetInstancePath(metadata.Id));
 
         // Since the log is locked, it fails to read log, falling back to Pending(ModJar) which is IsDetected == true
         Assert.True(detection.IsDetected);
@@ -109,7 +115,8 @@ public sealed class SimpleVoiceChatDetectorTests
         string relativePath = Path.Combine("config", "simplevoicechat", "voicechat-server.properties");
         workspace.WriteFile(metadata.Id, relativePath, "port=25000");
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+        var detector = new SimpleVoiceChatDetector();
+        SimpleVoiceChatDetection detection = detector.Detect(workspace.GetInstancePath(metadata.Id));
 
         Assert.False(detection.IsDetected);
     }
@@ -123,7 +130,8 @@ public sealed class SimpleVoiceChatDetectorTests
         var metadata = workspace.CreateInstance("Audio Mod", serverType: "Fabric");
         workspace.WriteFile(metadata.Id, Path.Combine("mods", jarName), "jar");
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(workspace.GetInstancePath(metadata.Id));
+        var detector = new SimpleVoiceChatDetector();
+        SimpleVoiceChatDetection detection = detector.Detect(workspace.GetInstancePath(metadata.Id));
 
         Assert.False(detection.IsDetected);
     }

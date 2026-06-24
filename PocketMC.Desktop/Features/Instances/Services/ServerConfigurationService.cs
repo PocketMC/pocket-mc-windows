@@ -54,16 +54,18 @@ public sealed class ServerConfigurationService
     };
 
     private readonly InstanceManager _instanceManager;
+    private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
 
-    public ServerConfigurationService(InstanceManager instanceManager)
+    public ServerConfigurationService(InstanceManager instanceManager, PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector)
     {
         _instanceManager = instanceManager;
+        _geyserDetector = geyserDetector;
     }
 
     public ServerConfiguration Load(InstanceMetadata metadata, string serverDir)
     {
         var props = ServerPropertiesParser.Read(GetPropertiesPath(serverDir));
-        var profile = ServerSettingsProfile.FromMetadata(metadata, serverDir);
+        var profile = ServerSettingsProfile.FromMetadata(metadata, serverDir, _geyserDetector);
 
         // Sync metadata if needed (NET-15)
         if (TryGetDisplayName(props, profile, out var pMotd)) metadata.Motd = pMotd;
@@ -124,7 +126,7 @@ public sealed class ServerConfigurationService
 
     public void Save(InstanceMetadata metadata, string serverDir, ServerConfiguration configuration)
     {
-        var profile = ServerSettingsProfile.FromMetadata(metadata, serverDir);
+        var profile = ServerSettingsProfile.FromMetadata(metadata, serverDir, _geyserDetector);
 
         metadata.MinRamMb = configuration.MinRamMb;
         metadata.MaxRamMb = configuration.MaxRamMb;

@@ -3,9 +3,9 @@ using System.Linq;
 
 namespace PocketMC.Desktop.Helpers;
 
-public static class GeyserDetector
+public class GeyserDetector : IGeyserDetector
 {
-    public static bool IsGeyserInstalled(string? instancePath)
+    public bool IsGeyserInstalled(string? instancePath)
     {
         if (string.IsNullOrWhiteSpace(instancePath) || !Directory.Exists(instancePath))
         {

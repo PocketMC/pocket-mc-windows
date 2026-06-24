@@ -26,6 +26,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
     private readonly ILogger<ServerLifecycleService> _logger;
     private readonly PocketMC.Desktop.Features.Shell.ApplicationState _appState;
     private readonly GeyserProvisioningService _geyserProvisioningService;
+    private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
     private string _appRootPath => _appState.GetRequiredAppRootPath();
 
     private readonly ConcurrentDictionary<Guid, int> _consecutiveRestarts = new();
@@ -47,7 +48,8 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         INotificationService notificationService,
         ILogger<ServerLifecycleService> logger,
         PocketMC.Desktop.Features.Shell.ApplicationState appState,
-        GeyserProvisioningService geyserProvisioningService)
+        GeyserProvisioningService geyserProvisioningService,
+        PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector)
     {
         _processManager = processManager;
         _registry = registry;
@@ -59,6 +61,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         _logger = logger;
         _appState = appState;
         _geyserProvisioningService = geyserProvisioningService;
+        _geyserDetector = geyserDetector;
 
         _processManager.OnInstanceStateChanged += HandleInstanceStateChanged;
         _processManager.OnServerCrashed += HandleProcessManagerServerCrashed;
@@ -81,7 +84,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
             string instancePath = _registry.GetPath(meta.Id)
                 ?? throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
 
-            if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(instancePath))
+            if (_geyserDetector.IsGeyserInstalled(instancePath))
             {
                 _geyserProvisioningService.PatchGeyserConfigPort(instancePath, meta.GeyserBedrockPort ?? 19132);
             }

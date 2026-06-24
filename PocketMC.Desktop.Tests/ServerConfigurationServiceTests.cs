@@ -17,7 +17,7 @@ public sealed class ServerConfigurationServiceTests : IDisposable
     public void Load_SeparatesCoreAndAdvancedServerProperties()
     {
         var manager = CreateManager(out var registry, out _);
-        var service = new ServerConfigurationService(manager);
+        var service = new ServerConfigurationService(manager, new PocketMC.Desktop.Helpers.GeyserDetector());
         var metadata = manager.CreateInstance("Settings Test", "");
         string serverDir = registry.GetPath(metadata.Id)!;
         File.WriteAllLines(
@@ -42,7 +42,7 @@ public sealed class ServerConfigurationServiceTests : IDisposable
     public void Save_UpdatesMetadataAndServerProperties()
     {
         var manager = CreateManager(out var registry, out _);
-        var service = new ServerConfigurationService(manager);
+        var service = new ServerConfigurationService(manager, new PocketMC.Desktop.Helpers.GeyserDetector());
         var metadata = manager.CreateInstance("Settings Save Test", "");
         string serverDir = registry.GetPath(metadata.Id)!;
         File.WriteAllText(Path.Combine(serverDir, "server.properties"), "motd=Old" + Environment.NewLine, new UTF8Encoding(false));
@@ -82,7 +82,7 @@ public sealed class ServerConfigurationServiceTests : IDisposable
     public void Load_BedrockUsesServerNameAndBedrockDefaults()
     {
         var manager = CreateManager(out var registry, out _);
-        var service = new ServerConfigurationService(manager);
+        var service = new ServerConfigurationService(manager, new PocketMC.Desktop.Helpers.GeyserDetector());
         var metadata = manager.CreateInstance("Bedrock Settings Test", "", "Bedrock Dedicated Server");
         string serverDir = registry.GetPath(metadata.Id)!;
         File.WriteAllLines(
@@ -114,7 +114,7 @@ public sealed class ServerConfigurationServiceTests : IDisposable
     public void Save_BedrockWritesBedrockPropertiesAndSkipsJavaOnlyKeys()
     {
         var manager = CreateManager(out var registry, out _);
-        var service = new ServerConfigurationService(manager);
+        var service = new ServerConfigurationService(manager, new PocketMC.Desktop.Helpers.GeyserDetector());
         var metadata = manager.CreateInstance("Bedrock Save Test", "", "Bedrock Dedicated Server");
         string serverDir = registry.GetPath(metadata.Id)!;
         File.WriteAllText(Path.Combine(serverDir, "server.properties"), "level-type=minecraft:normal" + Environment.NewLine, new UTF8Encoding(false));
@@ -155,7 +155,7 @@ public sealed class ServerConfigurationServiceTests : IDisposable
     public void Save_JavaWritesJavaPropertiesAndSkipsBedrockOnlyKeys()
     {
         var manager = CreateManager(out var registry, out _);
-        var service = new ServerConfigurationService(manager);
+        var service = new ServerConfigurationService(manager, new PocketMC.Desktop.Helpers.GeyserDetector());
         var metadata = manager.CreateInstance("Java Save Test", "", "Paper");
         string serverDir = registry.GetPath(metadata.Id)!;
         File.WriteAllText(Path.Combine(serverDir, "server.properties"), "server-name=Old Bedrock Name" + Environment.NewLine, new UTF8Encoding(false));

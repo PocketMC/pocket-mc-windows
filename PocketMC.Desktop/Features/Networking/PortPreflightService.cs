@@ -24,6 +24,8 @@ public sealed class PortPreflightService
     private readonly ServerConfigurationService _configurationService;
     private readonly ServerProcessManager _serverProcessManager;
     private readonly PocketMC.Desktop.Features.Shell.ApplicationState _applicationState;
+    private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
+    private readonly ISimpleVoiceChatDetector _voiceChatDetector;
     private readonly ILogger<PortPreflightService> _logger;
 
     /// <summary>
@@ -34,12 +36,16 @@ public sealed class PortPreflightService
         ServerConfigurationService configurationService,
         ServerProcessManager serverProcessManager,
         PocketMC.Desktop.Features.Shell.ApplicationState applicationState,
+        PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector,
+        ISimpleVoiceChatDetector voiceChatDetector,
         ILogger<PortPreflightService> logger)
     {
         _registry = registry;
         _configurationService = configurationService;
         _serverProcessManager = serverProcessManager;
         _applicationState = applicationState;
+        _geyserDetector = geyserDetector;
+        _voiceChatDetector = voiceChatDetector;
         _logger = logger;
     }
 
@@ -294,7 +300,7 @@ public sealed class PortPreflightService
                 PortBindingRole.JavaServer,
                 PortEngine.Java));
 
-        if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(serverDir))
+        if (_geyserDetector.IsGeyserInstalled(serverDir))
         {
             GeyserNetworkSettings geyserSettings = LoadGeyserNetworkSettings(serverDir);
             int geyserPort = metadata.GeyserBedrockPort ?? DefaultBedrockPort;
@@ -317,12 +323,12 @@ public sealed class PortPreflightService
         return targets;
     }
 
-    private static void AppendSimpleVoiceChatTarget(List<PreflightTarget> targets, string? serverDir)
+    private void AppendSimpleVoiceChatTarget(List<PreflightTarget> targets, string? serverDir)
     {
         SimpleVoiceChatDetection detection;
         try
         {
-            detection = SimpleVoiceChatDetector.Detect(serverDir);
+            detection = _voiceChatDetector.Detect(serverDir);
         }
         catch (IOException)
         {

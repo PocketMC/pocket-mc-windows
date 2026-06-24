@@ -27,6 +27,8 @@ public sealed class PortDiagnosticsSnapshotBuilder
     private readonly PlayitApiClient _playitApiClient;
     private readonly DependencyHealthMonitor _dependencyHealthMonitor;
     private readonly ILogger<PortDiagnosticsSnapshotBuilder> _logger;
+    private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
+    private readonly ISimpleVoiceChatDetector _voiceChatDetector;
 
     public PortDiagnosticsSnapshotBuilder(
         ApplicationState appState,
@@ -37,7 +39,9 @@ public sealed class PortDiagnosticsSnapshotBuilder
         PlayitAgentService playitAgentService,
         PlayitApiClient playitApiClient,
         DependencyHealthMonitor dependencyHealthMonitor,
-        ILogger<PortDiagnosticsSnapshotBuilder> logger)
+        ILogger<PortDiagnosticsSnapshotBuilder> logger,
+        PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector,
+        ISimpleVoiceChatDetector voiceChatDetector)
     {
         _appState = appState;
         _instanceRegistry = instanceRegistry;
@@ -48,6 +52,8 @@ public sealed class PortDiagnosticsSnapshotBuilder
         _playitApiClient = playitApiClient;
         _dependencyHealthMonitor = dependencyHealthMonitor;
         _logger = logger;
+        _geyserDetector = geyserDetector;
+        _voiceChatDetector = voiceChatDetector;
     }
 
     /// <summary>
@@ -94,7 +100,7 @@ public sealed class PortDiagnosticsSnapshotBuilder
             InstanceId = metadata.Id,
             InstanceName = metadata.Name,
             ServerType = metadata.ServerType,
-            HasGeyser = PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(instancePath),
+            HasGeyser = _geyserDetector.IsGeyserInstalled(instancePath),
             InstancePathPresent = !string.IsNullOrWhiteSpace(instancePath) && Directory.Exists(instancePath),
             CurrentPreflightSuccessful = preflightResult?.IsSuccessful ?? false,
             CurrentPreflightFailureCode = preflightResult?.FailureCode ?? PortFailureCode.UnknownPortFailure,
@@ -224,7 +230,7 @@ public sealed class PortDiagnosticsSnapshotBuilder
         };
     }
 
-    private static List<string> BuildVoiceChatDiagnostics(
+    private List<string> BuildVoiceChatDiagnostics(
         IReadOnlyList<PortCheckRequest> requests,
         string? instancePath,
         string? javaTunnelAddress,
@@ -242,7 +248,7 @@ public sealed class PortDiagnosticsSnapshotBuilder
             diagnostics.Add("Simple Voice Chat UDP tunnel missing");
         }
 
-        SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(instancePath);
+        SimpleVoiceChatDetection detection = _voiceChatDetector.Detect(instancePath);
         if (detection.IsConfigPending)
         {
             diagnostics.Add("Simple Voice Chat config pending until first run");

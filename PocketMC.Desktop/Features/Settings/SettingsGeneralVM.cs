@@ -16,6 +16,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly IDialogService _dialogService;
         private readonly IAppNavigationService _navigationService;
         private readonly Action _markDirty;
+        private readonly IImageProcessingService _imageProcessingService;
 
         public void UpdateServerDir(string newDir) => _serverDir = newDir;
 
@@ -51,13 +52,15 @@ namespace PocketMC.Desktop.Features.Settings
             UpdateService updateService,
             IDialogService dialogService,
             IAppNavigationService navigationService,
-            Action markDirty)
+            Action markDirty,
+            IImageProcessingService imageProcessingService)
         {
             _serverDir = serverDir;
             _updateService = updateService;
             _dialogService = dialogService;
             _navigationService = navigationService;
             _markDirty = markDirty;
+            _imageProcessingService = imageProcessingService;
 
             BrowseIconCommand = new RelayCommand(async _ => await BrowseIconAsync());
             CheckForUpdatesCommand = new RelayCommand(
@@ -99,7 +102,7 @@ namespace PocketMC.Desktop.Features.Settings
                 try
                 {
                     // Navigate to the in-app crop page as a detail page
-                    var cropPage = new ImageCropPage(file, _navigationService, OnCropComplete);
+                    var cropPage = new ImageCropPage(file, _navigationService, OnCropComplete, _imageProcessingService);
                     _navigationService.NavigateToDetailPage(
                         cropPage,
                         "Crop Server Icon",

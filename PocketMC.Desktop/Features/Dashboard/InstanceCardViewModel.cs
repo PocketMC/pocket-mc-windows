@@ -41,14 +41,18 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private bool _isTunnelResolving;
 
     private readonly InstanceRegistry _registry;
+    private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
+    private readonly ISimpleVoiceChatDetector _voiceChatDetector;
 
-    public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager, IServerLifecycleService lifecycleService, PocketMC.Desktop.Features.Shell.ApplicationState appState, InstanceRegistry registry)
+    public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager, IServerLifecycleService lifecycleService, PocketMC.Desktop.Features.Shell.ApplicationState appState, InstanceRegistry registry, PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector, ISimpleVoiceChatDetector voiceChatDetector)
     {
         _metadata = metadata;
         _serverProcessManager = serverProcessManager;
         _lifecycleService = lifecycleService;
         _appState = appState;
         _registry = registry;
+        _geyserDetector = geyserDetector;
+        _voiceChatDetector = voiceChatDetector;
         _bedrockLocalPort = metadata.GeyserBedrockPort ?? 19132;
 
         _tunnelAddress = appState.GetTunnelAddress(metadata.Id);
@@ -103,7 +107,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             {
                 string? path = _registry.GetPath(Id);
                 if (string.IsNullOrEmpty(path) || !Directory.Exists(path)) return false;
-                var detection = SimpleVoiceChatDetector.Detect(path);
+                var detection = _voiceChatDetector.Detect(path);
                 return detection.IsDetected;
             }
             catch
@@ -179,7 +183,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             try
             {
                 string? path = _registry.GetPath(Id);
-                return PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(path);
+                return _geyserDetector.IsGeyserInstalled(path);
             }
             catch
             {

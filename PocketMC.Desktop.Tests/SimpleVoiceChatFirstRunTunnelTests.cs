@@ -252,7 +252,14 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
             workspace.CreatePortProbeService(),
             workspace.CreatePortLeaseRegistry(),
             workspace.CreatePortRecoveryService());
-        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry);
+        return new InstanceCardViewModel(
+            metadata,
+            processManager,
+            lifecycleService,
+            workspace.AppState,
+            workspace.Registry,
+            new PocketMC.Desktop.Helpers.GeyserDetector(),
+            new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector());
     }
 
     private static InstanceTunnelOrchestrator CreateOrchestrator(
@@ -283,7 +290,8 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
             workspace.InstanceManager,
             dialogService,
             new ImmediateDispatcher(),
-            NullLogger<InstanceTunnelOrchestrator>.Instance);
+            NullLogger<InstanceTunnelOrchestrator>.Instance,
+            new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector());
     }
 
     private static HttpResponseMessage JsonResponse(string body)

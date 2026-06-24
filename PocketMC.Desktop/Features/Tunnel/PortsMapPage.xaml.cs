@@ -33,6 +33,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         private readonly InstanceManager _instanceManager;
         private readonly ServerConfigurationService _serverConfigurationService;
         private readonly ILogger<PortsMapPage> _logger;
+        private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
 
         private static readonly SolidColorBrush ActiveGreenBrush = CreateFrozenBrush(Color.FromRgb(0x00, 0xE6, 0x76));
         private static readonly SolidColorBrush WarningYellowBrush = CreateFrozenBrush(Color.FromRgb(0xFF, 0xB3, 0x00));
@@ -61,7 +62,8 @@ namespace PocketMC.Desktop.Features.Tunnel
             IServiceProvider serviceProvider,
             InstanceManager instanceManager,
             ServerConfigurationService serverConfigurationService,
-            ILogger<PortsMapPage> logger)
+            ILogger<PortsMapPage> logger,
+            PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector)
         {
             InitializeComponent();
             _instanceRegistry = instanceRegistry;
@@ -74,6 +76,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             _instanceManager = instanceManager;
             _serverConfigurationService = serverConfigurationService;
             _logger = logger;
+            _geyserDetector = geyserDetector;
 
             DataContext = this;
 
@@ -208,7 +211,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                         AppDialog.ShowError("Port Collision", $"Port {newPort} is already in use as the main port for server '{s.Name}'.");
                         return;
                     }
-                    if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(s.Id)) && s.GeyserBedrockPort == newPort && (s.Id != route.ServerId || route.PortType != "Geyser"))
+                    if (_geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(s.Id)) && s.GeyserBedrockPort == newPort && (s.Id != route.ServerId || route.PortType != "Geyser"))
                     {
                         AppDialog.ShowError("Port Collision", $"Port {newPort} is already in use as the Geyser bedrock bridge port for server '{s.Name}'.");
                         return;
@@ -343,7 +346,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                             {
                                 portName = isBedrock ? "Bedrock/UDP" : "Java/TCP";
                             }
-                            else if (lease.Port == server.GeyserBedrockPort && PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
+                            else if (lease.Port == server.GeyserBedrockPort && _geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
                             {
                                 portName = "Geyser/UDP";
                             }
@@ -359,7 +362,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                         int mainPort = server.ServerPort ?? (isBedrock ? 19132 : 25565);
                         ports.Add((mainPort, isBedrock ? PortProtocol.Udp : PortProtocol.Tcp, isBedrock ? "Bedrock/UDP" : "Java/TCP"));
 
-                        if (PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
+                        if (_geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
                         {
                             ports.Add((server.GeyserBedrockPort ?? 19132, PortProtocol.Udp, "Geyser/UDP"));
                         }
@@ -395,7 +398,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                             roleDetail = isBedrock ? "Native game server entrypoint" : "Standard Java server endpoint";
                             portType = "Main";
                         }
-                        else if (p.Port == server.GeyserBedrockPort && PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
+                        else if (p.Port == server.GeyserBedrockPort && _geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(server.Id)))
                         {
                             roleName = "Geyser Bedrock Bridge";
                             roleDetail = "Allows Bedrock players to join Java";

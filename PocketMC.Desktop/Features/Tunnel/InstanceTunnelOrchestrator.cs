@@ -33,6 +33,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         private readonly IDialogService _dialogService;
         private readonly IAppDispatcher _dispatcher;
         private readonly ILogger<InstanceTunnelOrchestrator> _logger;
+        private readonly ISimpleVoiceChatDetector _voiceChatDetector;
 
         private readonly HashSet<Guid> _resolutionsInFlight = new();
         private readonly object _lock = new();
@@ -48,7 +49,8 @@ namespace PocketMC.Desktop.Features.Tunnel
             InstanceManager instanceManager,
             IDialogService dialogService,
             IAppDispatcher dispatcher,
-            ILogger<InstanceTunnelOrchestrator> logger)
+            ILogger<InstanceTunnelOrchestrator> logger,
+            ISimpleVoiceChatDetector voiceChatDetector)
         {
             _tunnelService = tunnelService;
             _playitAgentService = playitAgentService;
@@ -61,6 +63,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             _dialogService = dialogService;
             _dispatcher = dispatcher;
             _logger = logger;
+            _voiceChatDetector = voiceChatDetector;
         }
 
         public async Task EnsureTunnelFlowAsync(InstanceCardViewModel vm)
@@ -194,7 +197,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return true;
             }
 
-            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(instancePath);
+            SimpleVoiceChatDetection detection = _voiceChatDetector.Detect(instancePath);
             if (!detection.IsDetected)
             {
                 return true;
@@ -268,7 +271,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return true;
             }
 
-            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(instancePath);
+            SimpleVoiceChatDetection detection = _voiceChatDetector.Detect(instancePath);
             if (!detection.IsDetected)
             {
                 return true;
@@ -503,7 +506,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return;
             }
 
-            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(instancePath);
+            SimpleVoiceChatDetection detection = _voiceChatDetector.Detect(instancePath);
             metadata.SimpleVoiceChatDetected = detection.IsDetected;
             metadata.SimpleVoiceChatPort = request?.Port ?? detection.Port;
             metadata.SimpleVoiceChatConfigPath = detection.ConfigPath;
@@ -541,7 +544,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return;
             }
 
-            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(request.InstancePath);
+            SimpleVoiceChatDetection detection = _voiceChatDetector.Detect(request.InstancePath);
             string configPath = detection.IsConfigPending || string.IsNullOrWhiteSpace(detection.ConfigPath)
                 ? SimpleVoiceChatConfigService.CreateInitialConfig(request.InstancePath, request.Port, resolution.PublicAddress, detection.Source)
                 : detection.ConfigPath!;
@@ -594,7 +597,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 return;
             }
 
-            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(request.InstancePath);
+            SimpleVoiceChatDetection detection = _voiceChatDetector.Detect(request.InstancePath);
             string configPath = detection.IsConfigPending || string.IsNullOrWhiteSpace(detection.ConfigPath)
                 ? SimpleVoiceChatConfigService.CreateInitialConfig(request.InstancePath, request.Port, resolution.PublicAddress, detection.Source)
                 : detection.ConfigPath!;
@@ -646,7 +649,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
             EnsurePlayitAgentRunning();
 
-            SimpleVoiceChatDetection detection = SimpleVoiceChatDetector.Detect(instancePath);
+            SimpleVoiceChatDetection detection = _voiceChatDetector.Detect(instancePath);
             PortCheckRequest request = BuildSimpleVoiceChatRequest(metadata, instancePath, detection);
 
             TunnelResolutionResult resolution = await ResolveTunnelWithWarmupAsync(request, allowAutoCreate: true);

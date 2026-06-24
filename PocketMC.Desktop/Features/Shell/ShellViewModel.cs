@@ -59,6 +59,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly UpdateService _updateService;
         private readonly IApplicationLifecycleService _applicationLifecycle;
         private readonly IResourceMonitorService _resourceMonitorService;
+        private readonly ApplicationState _appState;
         private readonly ILogger<ShellViewModel> _logger;
 
         private bool _isNavigationLocked;
@@ -73,12 +74,14 @@ namespace PocketMC.Desktop.Features.Shell
             UpdateService updateService,
             IApplicationLifecycleService applicationLifecycle,
             IResourceMonitorService resourceMonitorService,
+            ApplicationState appState,
             ILogger<ShellViewModel> logger)
         {
             _uiStateService = uiStateService;
             _updateService = updateService;
             _applicationLifecycle = applicationLifecycle;
             _resourceMonitorService = resourceMonitorService;
+            _appState = appState;
             _logger = logger;
 
             RestartAndApplyUpdateCommand = new RelayCommand(async _ => await ExecuteRestartAndApplyUpdateAsync());
@@ -131,7 +134,10 @@ namespace PocketMC.Desktop.Features.Shell
 
         public void InitializeUpdateCheck()
         {
-            Task.Run(() => _updateService.CheckAndDownloadAsync());
+            if (!_appState.Settings.AutomaticallyInstallUpdates)
+            {
+                Task.Run(() => _updateService.CheckAndDownloadAsync());
+            }
         }
 
         private async Task ExecuteRestartAndApplyUpdateAsync()

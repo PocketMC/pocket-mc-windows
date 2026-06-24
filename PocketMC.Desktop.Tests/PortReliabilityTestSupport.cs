@@ -41,7 +41,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
         PathService = new InstancePathService(AppState);
         Registry = new InstanceRegistry(PathService, NullLogger<InstanceRegistry>.Instance);
         InstanceManager = new InstanceManager(Registry, PathService, AppState, new EmptyAssetProvider(), NullLogger<InstanceManager>.Instance, new EmptyServiceProvider());
-        ConfigurationService = new ServerConfigurationService(InstanceManager);
+        ConfigurationService = new ServerConfigurationService(InstanceManager, new PocketMC.Desktop.Helpers.GeyserDetector());
         SettingsManager = new SettingsManager();
     }
 
@@ -154,6 +154,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             ConfigurationService,
             processManager ?? CreateServerProcessManager(),
             AppState,
+            new PocketMC.Desktop.Helpers.GeyserDetector(),
+            new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector(),
             NullLogger<PortPreflightService>.Instance);
     }
 
@@ -249,7 +251,9 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             playitAgentService,
             playitApiClient,
             dependencyHealthMonitor,
-            NullLogger<PortDiagnosticsSnapshotBuilder>.Instance);
+            NullLogger<PortDiagnosticsSnapshotBuilder>.Instance,
+            new PocketMC.Desktop.Helpers.GeyserDetector(),
+            new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector());
     }
 
     public ServerLifecycleService CreateServerLifecycleService(
@@ -270,7 +274,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             notificationService ?? new RecordingNotificationService(),
             NullLogger<ServerLifecycleService>.Instance,
             AppState,
-            new PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService>.Instance));
+            new PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService>.Instance),
+            new PocketMC.Desktop.Helpers.GeyserDetector());
     }
 
     public int GetAvailableTcpPort()

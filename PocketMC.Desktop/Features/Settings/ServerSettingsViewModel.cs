@@ -39,6 +39,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly Action<Guid, ServerState> _instanceStateChangedHandler;
         private readonly string _appRootPath;
         private readonly ApplicationState _applicationState;
+        private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
 
         public InstanceMetadata Metadata { get; }
         public ServerSettingsProfile Profile { get; }
@@ -85,7 +86,7 @@ namespace PocketMC.Desktop.Features.Settings
         private string _playitBedrockAddress = "Resolving Bedrock tunnel...";
         public string PlayitBedrockAddress { get => _playitBedrockAddress; set => SetProperty(ref _playitBedrockAddress, value); }
 
-        public bool HasGeyser => PocketMC.Desktop.Helpers.GeyserDetector.IsGeyserInstalled(ServerDir);
+        public bool HasGeyser => _geyserDetector.IsGeyserInstalled(ServerDir);
         public bool IsJavaSettings => Profile.IsJava;
         public bool IsBedrockSettings => Profile.SupportsBedrockRules;
         public bool SupportsJavaRuntimeSettings => Profile.SupportsJavaRuntimeSettings;
@@ -114,7 +115,8 @@ namespace PocketMC.Desktop.Features.Settings
             IDialogService dialogService,
             IAppNavigationService navigationService,
             IAppDispatcher dispatcher,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector)
         {
             Metadata = metadata;
             _instanceManager = instanceManager;
@@ -127,14 +129,16 @@ namespace PocketMC.Desktop.Features.Settings
             _navigationService = navigationService;
             _applicationState = (ApplicationState)serviceProvider.GetService(typeof(ApplicationState))!;
             _appRootPath = _applicationState.GetRequiredAppRootPath();
+            _geyserDetector = geyserDetector;
             ServerDir = _registry.GetPath(metadata.Id) ?? throw new InvalidOperationException();
-            Profile = ServerSettingsProfile.FromMetadata(metadata, ServerDir);
+            Profile = ServerSettingsProfile.FromMetadata(metadata, ServerDir, _geyserDetector);
 
             _instanceStateChangedHandler = (id, state) => { if (id == Metadata.Id) dispatcher.Invoke(UpdateRunningState); };
             _lifecycleService.OnInstanceStateChanged += _instanceStateChangedHandler;
 
             var updateService = (UpdateService)serviceProvider.GetService(typeof(UpdateService))!;
-            General = new SettingsGeneralVM(ServerDir, updateService, dialogService, navigationService, MarkChanged)
+            var imageProcessingService = (PocketMC.Desktop.Infrastructure.IImageProcessingService)serviceProvider.GetService(typeof(PocketMC.Desktop.Infrastructure.IImageProcessingService))!;
+            General = new SettingsGeneralVM(ServerDir, updateService, dialogService, navigationService, MarkChanged, imageProcessingService)
             {
                 InstanceName = metadata.Name,
                 InstanceDescription = metadata.Description

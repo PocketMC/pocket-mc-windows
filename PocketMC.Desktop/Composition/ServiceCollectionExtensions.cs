@@ -142,6 +142,10 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService>();
             services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor>();
             
+            services.AddSingleton<PocketMC.Desktop.Helpers.IGeyserDetector, PocketMC.Desktop.Helpers.GeyserDetector>();
+            services.AddSingleton<PocketMC.Desktop.Features.Networking.ISimpleVoiceChatDetector, PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector>();
+            services.AddSingleton<PocketMC.Desktop.Infrastructure.IImageProcessingService, PocketMC.Desktop.Infrastructure.ImageProcessingService>();
+            
             services.AddSingleton<PhpProvisioningService>();
             services.AddSingleton<GeyserProvisioningService>();
 
@@ -262,6 +266,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<TrayIconViewModel>();
 
             services.AddTransient<MainWindow>();
+            services.AddTransient<StartupUpdateWindow>();
             services.AddTransient<JavaSetupPage>();
             services.AddTransient<TunnelPage>();
             services.AddTransient<PortsMapPage>();
