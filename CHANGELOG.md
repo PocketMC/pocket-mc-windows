@@ -19,18 +19,22 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ---
 
-## v1.9.5 - Backup Reliability, Telemetry Proxy Cleanup & Dynamic Port Updates
+## v1.9.5 - Automatic Updates, Proxy Support & Bedrock Enhancements
 
 ### Summary
 
-v1.9.5 is a focused infrastructure and reliability release. It improves Google Drive backup resilience with a secondary proxy path, simplifies telemetry posting around the current production proxy endpoint, registers new application services, and removes the deprecated Playit setup wizard route while preparing server startup retries for more flexible port management.
+v1.9.5 is a focused infrastructure and feature release. It introduces an automatic update startup flow, adds native detection for Geyser and SimpleVoiceChat, improves Google Drive backup resilience with a secondary proxy path, simplifies telemetry posting around the current production proxy endpoint, registers new application services, and removes the deprecated Playit setup wizard route while preparing server startup retries for more flexible port management.
 
 ### Diff Basis
 
-The `v1.9.4...v1.9.5` diff contains 4 commits. The changes are concentrated in backup proxy handling, telemetry proxy configuration, dependency injection registration, navigation cleanup, and dashboard startup retry behavior.
+The `v1.9.4...v1.9.5` diff contains several commits focused on automatic updates, Bedrock/proxy port detection, image processing refactoring, backup proxy handling, telemetry proxy configuration, dependency injection registration, and navigation cleanup.
 
 ### Added
 
+- **Automatic Updates**
+  - Added a lightweight `StartupUpdateWindow` to handle checking and downloading updates synchronously before opening the main application window.
+- **Bedrock & Voice Chat Support**
+  - Integrated `GeyserDetector` and `SimpleVoiceChatDetector` to seamlessly identify Bedrock bridge proxies and voice chat add-ons, automatically configuring their required ports in the Preflight Service and Dashboard.
 - **Cloud Backup Reliability**
   - Added a fallback proxy URL for Google Drive backup operations so backup requests can retry through a secondary endpoint if the primary proxy path fails.
   - Introduced a shared proxy-posting helper for backup requests to keep retry behavior consistent across Google Drive backup operations.
@@ -40,6 +44,8 @@ The `v1.9.4...v1.9.5` diff contains 4 commits. The changes are concentrated in b
 
 ### Changed
 
+- **Image Processing**
+  - Extracted image cropping logic into a dedicated `ImageProcessingService` for reusability and cleaner architecture.
 - **Telemetry Proxy Configuration**
   - Updated telemetry to use the latest production proxy base URL.
   - Simplified telemetry posting so telemetry events post directly to the primary proxy endpoint without fallback handling.
