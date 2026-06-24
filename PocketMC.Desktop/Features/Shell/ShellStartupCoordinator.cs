@@ -164,13 +164,19 @@ namespace PocketMC.Desktop.Features.Shell
                 _startupServicesStarted = true;
             }
 
+            _host.NavigateToDashboard();
+
             if (!settings.HasCompletedFirstLaunch)
             {
                 _host.ShowPlayitSetupDialog();
+                
+                settings = _settingsManager.Load();
+                settings.HasCompletedFirstLaunch = true;
+                _settingsManager.Save(settings);
+                _applicationState.ApplySettings(settings);
             }
             else
             {
-                _host.NavigateToDashboard();
                 ShowWhatsNewIfNeeded();
                 TriggerServerAutoStarts();
             }
