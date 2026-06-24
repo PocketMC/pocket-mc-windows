@@ -1,6 +1,6 @@
 using System.IO;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
 
 namespace PocketMC.Desktop.Features.Marketplace;
@@ -135,3 +135,4 @@ public sealed class MarketplaceFileInstaller
         }
     }
 }
+

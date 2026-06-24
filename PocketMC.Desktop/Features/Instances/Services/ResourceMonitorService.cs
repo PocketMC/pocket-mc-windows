@@ -1,3 +1,7 @@
+using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Mods;
 using System;
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -6,10 +10,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Infrastructure.Process;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Core.Interfaces;
 
@@ -88,7 +90,7 @@ namespace PocketMC.Desktop.Features.Instances.Services
                     Metrics.Clear();
                     double idleUsedMb = (double)MemoryHelper.GetTotalPhysicalMemoryMb() - (double)MemoryHelper.GetAvailablePhysicalMemoryMb();
                     Volatile.Write(ref _currentSummary, new GlobalResourceSummary(idleUsedMb, _totalPhysicalRamMb));
-                    
+
                     NotifyGlobalMetricsUpdated();
                     return;
                 }
@@ -110,7 +112,7 @@ namespace PocketMC.Desktop.Features.Instances.Services
 
                     try
                     {
-                        proc.Refresh(); 
+                        proc.Refresh();
                         metric.RamUsageMb = proc.WorkingSet64 / (1024.0 * 1024.0);
 
                         TimeSpan cpuTime = proc.TotalProcessorTime;
@@ -187,3 +189,4 @@ namespace PocketMC.Desktop.Features.Instances.Services
         }
     }
 }
+

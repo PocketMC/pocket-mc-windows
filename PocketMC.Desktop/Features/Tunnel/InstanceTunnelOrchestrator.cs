@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Instances.Services;
@@ -410,9 +410,9 @@ namespace PocketMC.Desktop.Features.Tunnel
             for (int attempt = 0; attempt < 6; attempt++)
             {
                 lastResult = await _tunnelService.ResolveTunnelAsync(request, allowAutoCreate);
-                
-                bool missingNumeric = isUdp && 
-                                      (lastResult.Status == TunnelResolutionResult.TunnelStatus.Found || 
+
+                bool missingNumeric = isUdp &&
+                                      (lastResult.Status == TunnelResolutionResult.TunnelStatus.Found ||
                                        lastResult.Status == TunnelResolutionResult.TunnelStatus.AutoCreated) &&
                                       string.IsNullOrWhiteSpace(lastResult.NumericAddress);
 

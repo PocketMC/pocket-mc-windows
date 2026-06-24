@@ -1,10 +1,10 @@
+using PocketMC.Desktop.Features.Console;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Helpers;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Settings;
 
@@ -136,3 +136,4 @@ public sealed class ServerRuntimeSettingApplier
         }
     }
 }
+

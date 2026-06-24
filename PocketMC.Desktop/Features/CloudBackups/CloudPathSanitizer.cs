@@ -11,7 +11,7 @@ public static class CloudPathSanitizer
         @"[<>:""/\\|?*]",
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         RegexTimeout);
-    
+
     public static string SanitizeFolderName(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return "Unknown";

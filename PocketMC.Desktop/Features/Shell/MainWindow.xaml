@@ -10,7 +10,7 @@
         xmlns:shell="clr-namespace:PocketMC.Desktop.Features.Shell"
         xmlns:remote="clr-namespace:PocketMC.Desktop.Features.RemoteControl.UI"
         xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
-        xmlns:helpers="clr-namespace:PocketMC.Desktop.Helpers"
+        xmlns:helpers="clr-namespace:PocketMC.Desktop.Views.Behaviors"
         mc:Ignorable="d"
         Title="PocketMC Desktop"
         WindowBackdropType="None"

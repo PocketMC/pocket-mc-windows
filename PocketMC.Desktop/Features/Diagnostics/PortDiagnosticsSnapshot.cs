@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Features.Diagnostics;
 

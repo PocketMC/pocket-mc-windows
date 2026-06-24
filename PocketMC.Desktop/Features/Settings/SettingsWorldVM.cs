@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -8,9 +9,8 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Settings
 {

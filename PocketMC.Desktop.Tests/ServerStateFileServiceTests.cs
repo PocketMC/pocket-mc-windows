@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -41,3 +41,5 @@ public sealed class ServerStateFileServiceTests
         Assert.Equal("LegacyPlayer", ban.Name);
     }
 }
+
+

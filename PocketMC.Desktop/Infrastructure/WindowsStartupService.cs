@@ -1,6 +1,6 @@
 using System;
 using Microsoft.Win32;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Infrastructure;
 

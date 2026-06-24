@@ -6,11 +6,11 @@ using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.Instances.ImportExport;
@@ -209,12 +209,12 @@ public sealed class InstanceImportService : IInstanceImportService
                 .ConfigureAwait(false);
 
             Report(progress, "Preparing imported instance...", 90);
-            
+
             InstanceMetadata metadata = await ReadImportedMetadataAsync(stagingResult.MetadataPath, linkedToken)
                 .ConfigureAwait(false);
-            
+
             string finalPath = ResolveUniqueInstancePath(FirstNonEmpty(request.RequestedName, stagingResult.Manifest.ServerMeta.Name, metadata.Name, "Imported Server"));
-            
+
             await PrepareStagedServerForPromotionAsync(metadata, stagingResult, request, finalPath, linkedToken)
                 .ConfigureAwait(false);
 
@@ -1375,3 +1375,4 @@ public sealed class InstanceImportService : IInstanceImportService
 
 
 }
+

@@ -6,7 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
+using PocketMC.Application.Interfaces.AI;
 
 namespace PocketMC.Desktop.Features.Intelligence;
 
@@ -16,7 +17,7 @@ namespace PocketMC.Desktop.Features.Intelligence;
 /// </summary>
 public class SessionSummarizationService
 {
-    private readonly AiApiClient _aiClient;
+    private readonly ILlmProviderFactory _providerFactory;
     private readonly SummaryStorageService _storageService;
     private readonly ConsoleLogHistoryService _logHistoryService;
     private readonly ILogger<SessionSummarizationService> _logger;
@@ -36,12 +37,12 @@ Keep the structure clean and easy to skim.
 If the logs include sensitive data (IPs, emails), DO NOT include them in the summary.";
 
     public SessionSummarizationService(
-        AiApiClient aiClient,
+        ILlmProviderFactory providerFactory,
         SummaryStorageService storageService,
         ConsoleLogHistoryService logHistoryService,
         ILogger<SessionSummarizationService> logger)
     {
-        _aiClient = aiClient;
+        _providerFactory = providerFactory;
         _storageService = storageService;
         _logHistoryService = logHistoryService;
         _logger = logger;
@@ -89,7 +90,8 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
             if (chunks.Count == 1)
             {
                 // Single chunk — direct summarization
-                var result = await _aiClient.SendAsync(provider, apiKey, modelName ?? "", endpointUrl ?? "", SystemPrompt, chunks[0], ct);
+                var providerImpl = _providerFactory.GetProvider(provider);
+                var result = await providerImpl.GenerateCompletionAsync(apiKey, modelName ?? "", endpointUrl ?? "", SystemPrompt, chunks[0], ct);
                 if (!result.Success)
                     return SummarizationResult.Fail($"AI API error: {result.Error}");
                 finalContent = result.Content;
@@ -103,7 +105,8 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
                 for (int i = 0; i < chunks.Count; i++)
                 {
                     var chunkPrompt = $"This is part {i + 1} of {chunks.Count} of the server logs. Summarize this section:";
-                    var result = await _aiClient.SendAsync(provider, apiKey, modelName ?? "", endpointUrl ?? "", chunkPrompt, chunks[i], ct);
+                    var providerImpl = _providerFactory.GetProvider(provider);
+                    var result = await providerImpl.GenerateCompletionAsync(apiKey, modelName ?? "", endpointUrl ?? "", chunkPrompt, chunks[i], ct);
                     if (!result.Success)
                         return SummarizationResult.Fail($"AI API error on chunk {i + 1}: {result.Error}");
 
@@ -113,7 +116,8 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
                 }
 
                 // Meta-summarize
-                var metaResult = await _aiClient.SendAsync(provider, apiKey, modelName ?? "", endpointUrl ?? "",
+                var providerImplMeta = _providerFactory.GetProvider(provider);
+                var metaResult = await providerImplMeta.GenerateCompletionAsync(apiKey, modelName ?? "", endpointUrl ?? "",
                     SystemPrompt + "\n\nYou are given partial summaries of a long session. Combine them into a single cohesive summary.",
                     partialSummaries.ToString(), ct);
 
@@ -133,7 +137,7 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
                 SessionEnd = sessionEnd,
                 Duration = sessionEnd - sessionStart,
                 Content = finalContent,
-                AiProvider = AiApiClient.GetDisplayName(provider),
+                AiProvider = _providerFactory.GetDisplayName(provider),
                 GeneratedAt = DateTime.UtcNow
             };
 
@@ -168,3 +172,4 @@ public class SummarizationResult
     public static SummarizationResult Ok(SessionSummary summary) => new() { Success = true, Summary = summary };
     public static SummarizationResult Fail(string error) => new() { Success = false, Error = error };
 }
+

@@ -1,7 +1,7 @@
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Updates;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -69,3 +69,5 @@ public sealed class InstanceVersionTargetServiceTests
         }
     }
 }
+
+

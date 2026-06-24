@@ -1,4 +1,6 @@
-using PocketMC.Desktop.Helpers;
+using PocketMC.Desktop.Features.Console;
+using PocketMC.Desktop.Views.Behaviors;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -36,3 +38,5 @@ public sealed class CommandFormatterTests
         Assert.Equal("\"Sahaj \\\"The Builder\\\"\"", formatted);
     }
 }
+
+

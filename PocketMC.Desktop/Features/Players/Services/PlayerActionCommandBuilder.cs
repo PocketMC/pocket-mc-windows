@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Features.Console;
 using System;
 using System.Collections.Generic;
 using PocketMC.Desktop.Helpers;

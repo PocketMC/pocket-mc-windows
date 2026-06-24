@@ -1,9 +1,10 @@
+using PocketMC.Desktop.Features.Marketplace.Models;
 using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Controls;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Domain.Models;
 using Wpf.Ui.Controls;
 
 namespace PocketMC.Desktop.Features.Marketplace
@@ -46,3 +47,4 @@ namespace PocketMC.Desktop.Features.Marketplace
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
 }
+

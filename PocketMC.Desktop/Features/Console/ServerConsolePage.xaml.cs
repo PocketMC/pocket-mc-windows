@@ -14,11 +14,13 @@ using Microsoft.Extensions.Logging;
 using Wpf.Ui.Controls;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Intelligence;
+using PocketMC.Application.Interfaces.AI;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Settings;
+using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
 using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Features.Shell;
@@ -66,7 +68,7 @@ namespace PocketMC.Desktop.Features.Console
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<ServerConsolePage> _logger;
         private readonly SessionSummarizationService _summarizationService;
-        private readonly AiApiClient _aiClient;
+        private readonly ILlmProviderFactory _providerFactory;
         private readonly IResourceMonitorService _resourceMonitor;
         private readonly ConsoleLogHistoryService _logHistoryService;
         private readonly ConcurrentQueue<LogLine> _pendingLines = new();
@@ -142,7 +144,7 @@ namespace PocketMC.Desktop.Features.Console
             ApplicationState applicationState,
             IServiceProvider serviceProvider,
             SessionSummarizationService summarizationService,
-            AiApiClient aiClient,
+            ILlmProviderFactory providerFactory,
             IResourceMonitorService resourceMonitor,
             ConsoleLogHistoryService logHistoryService,
             ILogger<ServerConsolePage> logger)
@@ -157,7 +159,7 @@ namespace PocketMC.Desktop.Features.Console
                 applicationState,
                 serviceProvider,
                 summarizationService,
-                aiClient,
+                providerFactory,
                 resourceMonitor,
                 logHistoryService,
                 logger)
@@ -175,7 +177,7 @@ namespace PocketMC.Desktop.Features.Console
             ApplicationState applicationState,
             IServiceProvider serviceProvider,
             SessionSummarizationService summarizationService,
-            AiApiClient aiClient,
+            ILlmProviderFactory providerFactory,
             IResourceMonitorService resourceMonitor,
             ConsoleLogHistoryService logHistoryService,
             ILogger<ServerConsolePage> logger)
@@ -190,7 +192,7 @@ namespace PocketMC.Desktop.Features.Console
             _applicationState = applicationState;
             _serviceProvider = serviceProvider;
             _summarizationService = summarizationService;
-            _aiClient = aiClient;
+            _providerFactory = providerFactory;
             _resourceMonitor = resourceMonitor;
             _logHistoryService = logHistoryService;
             _logger = logger;
@@ -731,7 +733,7 @@ namespace PocketMC.Desktop.Features.Console
             var viewModel = _serverProcess != null
                 ? ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, _metadata, _serverProcess)
                 : ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, _metadata);
-                
+
             var page = ActivatorUtilities.CreateInstance<PlayerManagementPage>(_serviceProvider, viewModel);
             _navigationService.NavigateToDetailPage(page, $"Players: {_metadata.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.PreviousDetail);
         }
@@ -923,7 +925,7 @@ namespace PocketMC.Desktop.Features.Console
                     return;
                 }
 
-                var provider = AiApiClient.ParseProvider(_applicationState.Settings.AiProvider);
+                var provider = _providerFactory.ParseProvider(_applicationState.Settings.AiProvider);
 
                 // Gather context: 5 lines before, 25 lines after
                 int targetIdx = Logs.IndexOf(line);
@@ -944,8 +946,7 @@ namespace PocketMC.Desktop.Features.Console
 Logs:
 ";
 
-                var result = await _aiClient
-                    .SendAsync(provider, apiKey, _applicationState.Settings.GetCurrentAiModel() ?? "", _applicationState.Settings.GetCurrentAiEndpoint() ?? "", prompt, contextBuilder.ToString());
+                var result = await _providerFactory.GetProvider(provider).GenerateCompletionAsync(apiKey, _applicationState.Settings.GetCurrentAiModel() ?? "", _applicationState.Settings.GetCurrentAiEndpoint() ?? "", prompt, contextBuilder.ToString());
 
                 if (result.Success)
                     TxtAiResponse.Markdown = result.Content;
@@ -976,7 +977,7 @@ Logs:
                     bool continueAi = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
                         "Long Session Detected",
                         "Your server session is very long. Summarizing it using AI will require a large number of tokens and may increase your AI usage costs.\n\nDo you want to continue?");
-                    
+
                     if (!continueAi)
                     {
                         return; // exit silently
@@ -999,7 +1000,7 @@ Logs:
                     return;
                 }
 
-                var provider = AiApiClient.ParseProvider(_applicationState.Settings.AiProvider);
+                var provider = _providerFactory.ParseProvider(_applicationState.Settings.AiProvider);
 
                 var result = await _summarizationService.SummarizeAsync(
                     _instancePath,
@@ -1134,3 +1135,10 @@ Logs:
         }
     }
 }
+
+
+
+
+
+
+

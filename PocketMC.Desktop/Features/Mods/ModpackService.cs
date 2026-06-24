@@ -8,10 +8,9 @@ using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Presentation;
@@ -199,3 +198,4 @@ namespace PocketMC.Desktop.Features.Mods
         }
     }
 }
+

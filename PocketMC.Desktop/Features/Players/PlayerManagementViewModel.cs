@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Features.Console;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,13 +13,12 @@ using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Players.Services;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Helpers;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Players;
 
@@ -1197,8 +1197,8 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         if (!IsValidUsernameForCommand(username))
         {
-            _dialogService.ShowMessage("Invalid Username", 
-                "The username contains invalid characters. Java usernames must be 3-16 alphanumeric characters. Bedrock usernames can contain spaces but no control characters, quotes, or backslashes.", 
+            _dialogService.ShowMessage("Invalid Username",
+                "The username contains invalid characters. Java usernames must be 3-16 alphanumeric characters. Bedrock usernames can contain spaces but no control characters, quotes, or backslashes.",
                 DialogType.Error);
             return;
         }
@@ -1217,8 +1217,8 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         if (result == WhitelistAddResult.AddedWithOfflineUuidFallback)
         {
-            _dialogService.ShowMessage("Warning", 
-                $"Failed to resolve Mojang UUID for '{username}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.", 
+            _dialogService.ShowMessage("Warning",
+                $"Failed to resolve Mojang UUID for '{username}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.",
                 DialogType.Warning);
         }
     }
@@ -1319,3 +1319,4 @@ public sealed class WhitelistPlayerViewModel : ViewModelBase
     public bool IsServerOnline { get; set; }
     public ICommand? RemoveCommand { get; set; }
 }
+

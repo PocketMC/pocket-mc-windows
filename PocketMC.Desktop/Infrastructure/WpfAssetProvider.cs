@@ -20,7 +20,7 @@ namespace PocketMC.Desktop.Infrastructure
             try
             {
                 var uri = new Uri($"pack://application:,,,/Assets/{assetName}");
-                var resourceStream = Application.GetResourceStream(uri);
+                var resourceStream = System.Windows.Application.GetResourceStream(uri);
                 return resourceStream?.Stream;
             }
             catch (Exception ex)
@@ -31,3 +31,4 @@ namespace PocketMC.Desktop.Infrastructure
         }
     }
 }
+

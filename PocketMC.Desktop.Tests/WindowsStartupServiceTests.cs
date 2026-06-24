@@ -1,5 +1,5 @@
 using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 

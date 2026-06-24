@@ -1,3 +1,7 @@
+using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Mods;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +11,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Providers;
 
@@ -218,3 +221,4 @@ public class BedrockBdsProvider : IServerSoftwareProvider
         }
     }
 }
+

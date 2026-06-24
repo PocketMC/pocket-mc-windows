@@ -5,7 +5,7 @@ using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Infrastructure.Process;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Presentation;
@@ -30,3 +30,6 @@ public sealed class RootDirectorySetupHelperTests
         Assert.Throws<ArgumentException>(() => RootDirectorySetupHelper.ResolveRootPath(" "));
     }
 }
+
+
+

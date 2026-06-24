@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -8,29 +7,21 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.InstanceCreation;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Instances.ImportExport;
-using PocketMC.Desktop.Features.Instances.Providers;
-using PocketMC.Desktop.Features.Instances.Updates;
 using PocketMC.Desktop.Features.Java;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Players;
 using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Features.RemoteControl.Hosting;
-using PocketMC.Desktop.Features.RemoteControl.Services;
-using PocketMC.Desktop.Features.RemoteControl.Tunnels;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure.Http;
 using PocketMC.Desktop.Infrastructure.Power;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Composition
 {
@@ -43,6 +34,8 @@ namespace PocketMC.Desktop.Composition
 
         public static IServiceCollection AddCoreInfrastructure(this IServiceCollection services)
         {
+            services.AddTransient<PocketMC.Infrastructure.Http.LoggingHttpMessageHandler>();
+
             services.AddSingleton<Action<Exception>>(provider => ex =>
             {
                 provider.GetRequiredService<ILogger<App>>().LogError(ex, "AsyncCommand failed");
@@ -66,13 +59,27 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IExecutionStateApi, Kernel32ExecutionStateApi>();
             services.AddSingleton<SleepPreventionService>();
             services.AddSingleton<ServerSleepPreventionCoordinator>();
+            services.AddHttpClient<PocketMC.Infrastructure.AI.Providers.GeminiProvider>(c => { c.Timeout = TimeSpan.FromMinutes(3); });
+            services.AddTransient<PocketMC.Application.Interfaces.AI.ILlmProvider>(sp => sp.GetRequiredService<PocketMC.Infrastructure.AI.Providers.GeminiProvider>());
+            
+            services.AddHttpClient<PocketMC.Infrastructure.AI.Providers.OpenAiProvider>(c => { c.Timeout = TimeSpan.FromMinutes(3); });
+            services.AddTransient<PocketMC.Application.Interfaces.AI.ILlmProvider>(sp => sp.GetRequiredService<PocketMC.Infrastructure.AI.Providers.OpenAiProvider>());
+            
+            services.AddHttpClient<PocketMC.Infrastructure.AI.Providers.ClaudeProvider>(c => { c.Timeout = TimeSpan.FromMinutes(3); });
+            services.AddTransient<PocketMC.Application.Interfaces.AI.ILlmProvider>(sp => sp.GetRequiredService<PocketMC.Infrastructure.AI.Providers.ClaudeProvider>());
+            
+            services.AddHttpClient<PocketMC.Infrastructure.AI.Providers.MistralProvider>(c => { c.Timeout = TimeSpan.FromMinutes(3); });
+            services.AddTransient<PocketMC.Application.Interfaces.AI.ILlmProvider>(sp => sp.GetRequiredService<PocketMC.Infrastructure.AI.Providers.MistralProvider>());
+            
+            services.AddHttpClient<PocketMC.Infrastructure.AI.Providers.GroqProvider>(c => { c.Timeout = TimeSpan.FromMinutes(3); });
+            services.AddTransient<PocketMC.Application.Interfaces.AI.ILlmProvider>(sp => sp.GetRequiredService<PocketMC.Infrastructure.AI.Providers.GroqProvider>());
+            
+            services.AddHttpClient<PocketMC.Infrastructure.AI.Providers.OllamaProvider>(c => { c.Timeout = TimeSpan.FromMinutes(3); });
+            services.AddTransient<PocketMC.Application.Interfaces.AI.ILlmProvider>(sp => sp.GetRequiredService<PocketMC.Infrastructure.AI.Providers.OllamaProvider>());
+            
+            services.AddSingleton<PocketMC.Application.Interfaces.AI.ILlmProviderFactory, PocketMC.Infrastructure.AI.LlmProviderFactory>();
 
-            services.AddHttpClient<PocketMC.Desktop.Features.Intelligence.AiApiClient>(client =>
-            {
-                client.Timeout = TimeSpan.FromMinutes(3);
-                SetDefaultUserAgent(client);
-            });
-            services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageService>();
+services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageService>();
             services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SessionSummarizationService>();
 
             // Singleton so that the same download pipeline is shared across all
@@ -80,178 +87,6 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<UpdateService>();
             services.AddSingleton<IApplicationLifecycleService, ApplicationLifecycleService>();
             services.AddSingleton<PocketMC.Desktop.Features.WhatsNew.WhatsNewService>();
-
-            return services;
-        }
-
-        public static IServiceCollection AddInstanceManagement(this IServiceCollection services)
-        {
-            services.AddHttpClient("PocketMC.Downloads", client =>
-            {
-                SetDefaultUserAgent(client);
-                client.Timeout = TimeSpan.FromMinutes(20);
-            });
-
-            services.AddSingleton<DownloaderService>();
-            services.AddSingleton<JavaAdoptiumClient>();
-            services.AddSingleton<JavaRuntimeValidator>();
-            services.AddSingleton<JavaProvisioningService>();
-
-            services.AddSingleton<ServerProcessManager>();
-            services.AddSingleton<PlayerListParser>();
-            services.AddSingleton<ConsoleLogHistoryService>();
-            services.AddSingleton<ServerStateFileService>();
-            services.AddSingleton<BanSidecarService>();
-            services.AddSingleton<WhitelistService>();
-            services.AddSingleton<ServerLifecycleService>();
-            services.AddSingleton<IServerLifecycleService>(
-                provider => provider.GetRequiredService<ServerLifecycleService>());
-            services.AddSingleton<ServerLaunchConfigurator>();
-            services.AddSingleton<PortPreflightService>();
-            services.AddSingleton<PortProbeService>();
-            services.AddSingleton<PortLeaseRegistry>();
-            services.AddSingleton<PortRecoveryService>();
-            services.AddSingleton<PortFailureMessageService>();
-            services.AddSingleton<InstancePortUpdateService>();
-
-            services.AddSingleton<IResourceMonitorService, ResourceMonitorService>();
-            services.AddSingleton<BackupService>();
-            services.AddSingleton<BackupSchedulerService>();
-            services.AddSingleton<IInstanceExportService, InstanceExportService>();
-            services.AddSingleton<IInstanceImportService, InstanceImportService>();
-            services.AddSingleton<IDiscordRpcService, DiscordRpcService>();
-
-            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.CloudBackupUploadHistoryStore>();
-            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.CloudBackupService>();
-            services.AddHttpClient("OneDrive");
-            services.AddHttpClient("GoogleDriveProxy", client =>
-            {
-                SetDefaultUserAgent(client);
-            });
-            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.ICloudBackupProvider, PocketMC.Desktop.Features.CloudBackups.Providers.OneDriveBackupProvider>();
-            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.ICloudBackupProvider, PocketMC.Desktop.Features.CloudBackups.Providers.DropboxBackupProvider>();
-            services.AddSingleton<PocketMC.Desktop.Features.CloudBackups.ICloudBackupProvider, PocketMC.Desktop.Features.CloudBackups.Providers.GoogleDriveBackupProvider>();
-
-            services.AddSingleton<InstancePathService>();
-            services.AddSingleton<InstanceRegistry>();
-            services.AddSingleton<InstanceManager>();
-            services.AddSingleton<ServerConfigurationService>();
-            services.AddSingleton<ServerRuntimeSettingApplier>();
-            services.AddSingleton<WorldManager>();
-            services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.PortDiagnosticsSnapshotBuilder>();
-            services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService>();
-            services.AddSingleton<PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor>();
-            
-            services.AddSingleton<PocketMC.Desktop.Helpers.IGeyserDetector, PocketMC.Desktop.Helpers.GeyserDetector>();
-            services.AddSingleton<PocketMC.Desktop.Features.Networking.ISimpleVoiceChatDetector, PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector>();
-            services.AddSingleton<PocketMC.Desktop.Infrastructure.IImageProcessingService, PocketMC.Desktop.Infrastructure.ImageProcessingService>();
-            
-            services.AddSingleton<PhpProvisioningService>();
-            services.AddSingleton<GeyserProvisioningService>();
-
-            // Addon management — engine-specific IAddonManager implementations
-            services.AddSingleton<BedrockAddonInstaller>();
-
-
-            services.AddHttpClient<VanillaProvider>(SetDefaultUserAgent);
-            services.AddHttpClient<FabricProvider>(SetDefaultUserAgent);
-            services.AddHttpClient<ForgeProvider>(SetDefaultUserAgent);
-            services.AddHttpClient<NeoForgeProvider>(SetDefaultUserAgent);
-            services.AddHttpClient<PaperProvider>(SetDefaultUserAgent);
-            services.AddHttpClient<PocketmineProvider>(SetDefaultUserAgent);
-            services.AddHttpClient<BedrockBdsProvider>(SetDefaultUserAgent);
-            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<VanillaProvider>());
-            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<FabricProvider>());
-            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<ForgeProvider>());
-            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<NeoForgeProvider>());
-            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<PaperProvider>());
-            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<PocketmineProvider>());
-            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<BedrockBdsProvider>());
-
-            return services;
-        }
-
-        public static IServiceCollection AddTunneling(this IServiceCollection services)
-        {
-            services.AddHttpClient<PlayitPartnerProvisioningClient>(SetDefaultUserAgent);
-            services.AddSingleton<PlayitAgentProcessManager>();
-            services.AddSingleton<PlayitAgentStateMachine>();
-            services.AddSingleton<PlayitApiClient>();
-            services.AddSingleton<PlayitAgentService>();
-            services.AddSingleton<AgentProvisioningService>();
-            services.AddSingleton<InstanceTunnelOrchestrator>();
-            // Tunnel resolution is orchestrated from singleton services and keeps no
-            // per-request state, so it should share the same app-wide lifetime.
-            services.AddSingleton<TunnelService>();
-            return services;
-        }
-
-        public static IServiceCollection AddRemoteControl(this IServiceCollection services)
-        {
-            services.AddSingleton<RemoteAuthenticationService>();
-            services.AddSingleton<RemoteStatusService>();
-            services.AddSingleton<RemoteInstanceControlService>();
-            services.AddSingleton<RemotePlayerActionService>();
-            services.AddSingleton<RemoteAuditLogService>();
-            services.AddSingleton<LocalNetworkAddressService>();
-            services.AddSingleton<RemoteRequestLimiter>();
-            services.AddSingleton<RemoteConsoleWebSocketHandler>();
-            services.AddSingleton<RemoteDashboardHost>();
-            services.AddSingleton<RemoteControlCoordinator>();
-            services.AddSingleton<ICloudflaredInstaller, CloudflaredInstaller>();
-            services.AddSingleton<IRemoteTunnelProvider, CloudflaredQuickTunnelProvider>();
-            services.AddSingleton<IRemoteTunnelProvider, PlayitHttpsTunnelProvider>();
-            services.AddSingleton<RemoteTunnelManager>();
-            services.AddHostedService<RemoteControlHostedService>();
-            return services;
-        }
-
-        public static IServiceCollection AddMarketplace(this IServiceCollection services)
-        {
-            services.AddSingleton<ModpackParser>();
-            services.AddSingleton<ModpackService>();
-
-            services.AddHttpClient<ModrinthService>(SetDefaultUserAgent);
-            services.AddHttpClient<CurseForgeService>(client =>
-            {
-                client.DefaultRequestHeaders.Add(
-                    "User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-                client.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
-                client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
-            })
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-            {
-                AutomaticDecompression =
-                    DecompressionMethods.GZip | DecompressionMethods.Deflate
-            });
-
-            services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
-                provider => provider.GetRequiredService<ModrinthService>());
-            services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
-                provider => provider.GetRequiredService<CurseForgeService>());
-            services.AddSingleton<AddonManifestService>();
-            services.AddSingleton<MarketplaceFileInstaller>();
-            services.AddSingleton<AddonUpdateService>();
-            services.AddSingleton<DependencyResolverService>();
-            services.AddSingleton<AddonStateStore>();
-            services.AddSingleton<AddonInventoryService>();
-            services.AddSingleton<AddonToggleService>();
-            services.AddSingleton<AddonUpdateCheckService>();
-            services.AddSingleton<AddonAutoUpdateService>();
-
-            services.AddSingleton<AddonMigrationPlanner>();
-            services.AddSingleton<AddonMigrationStager>();
-            services.AddSingleton<AddonMigrationApplier>();
-            services.AddSingleton<InstanceUpdatePlanner>();
-            services.AddSingleton<InstanceVersionTargetService>();
-            services.AddSingleton<InstanceArtifactStager>();
-            services.AddSingleton<InstanceRollbackService>();
-            services.AddSingleton<InstanceUpdateJournalStore>();
-            services.AddSingleton<InstanceUpdateLockService>();
-            services.AddSingleton<InstanceUpdateApplier>();
-            services.AddSingleton<InstanceUpdateService>();
 
             return services;
         }
@@ -276,14 +111,14 @@ namespace PocketMC.Desktop.Composition
             services.AddTransient<PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage>();
             services.AddTransient<PocketMC.Desktop.Features.Setup.ViewModels.RemoteControlSettingsViewModel>();
 
-            services.AddTransient<DashboardInstanceListVM>();
-            services.AddTransient<DashboardMetricsVM>();
-            services.AddTransient<DashboardActionsVM>();
+            services.AddTransient<DashboardInstanceListViewModel>();
+            services.AddTransient<DashboardMetricsViewModel>();
+            services.AddTransient<DashboardActionsViewModel>();
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<ServerSettingsViewModel>();
             services.AddTransient<CloudBackupSettingsViewModel>();
-            services.AddTransient<InstanceImportViewModel>();
-            services.AddTransient<InstanceImportPage>();
+            services.AddTransient<PocketMC.Desktop.Features.Instances.ImportExport.InstanceImportViewModel>();
+            services.AddTransient<PocketMC.Desktop.Features.Instances.ImportExport.InstanceImportPage>();
 
             services.AddTransient<DashboardPage>();
             services.AddTransient<NewInstancePage>();
@@ -295,3 +130,7 @@ namespace PocketMC.Desktop.Composition
         }
     }
 }
+
+
+
+

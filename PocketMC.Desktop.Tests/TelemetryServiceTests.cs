@@ -2,7 +2,7 @@ using Xunit;
 using Moq;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
@@ -24,7 +24,7 @@ public sealed class TelemetryServiceTests : IDisposable
     {
         string settingsPath = Path.Combine(_tempDirectory, "settings.json");
         var settingsManager = new SettingsManager(settingsPath);
-        
+
         var processManager = new ServerProcessManager(
             null!, null!, null!, null!, null!, null!, null!, null!);
         var instanceRegistry = new InstanceRegistry(null!, null!);
@@ -60,3 +60,5 @@ public sealed class TelemetryServiceTests : IDisposable
         }
     }
 }
+
+

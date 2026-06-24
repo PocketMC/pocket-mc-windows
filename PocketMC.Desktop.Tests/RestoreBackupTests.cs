@@ -5,10 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Infrastructure.FileSystem;
-using PocketMC.Desktop.Models;
 using Xunit;
 
 namespace PocketMC.Desktop.Tests;
@@ -190,7 +189,7 @@ public sealed class RestoreBackupTests : IDisposable
                 // Find stageDir
                 var stageDir = Directory.GetDirectories(serverDir)
                     .FirstOrDefault(d => Path.GetFileName(d).StartsWith(".restore-stage-"));
-                
+
                 if (stageDir != null)
                 {
                     var fileToLock = Path.Combine(stageDir, "level.dat");
@@ -218,3 +217,6 @@ public sealed class RestoreBackupTests : IDisposable
         Assert.True(File.Exists(Path.Combine(worldDir, "original_file.txt")));
     }
 }
+
+
+

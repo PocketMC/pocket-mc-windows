@@ -98,92 +98,92 @@ public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDis
                 return SetError(ex.Message);
             }
 
-        var urlSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var urlSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
+            var process = new Process
             {
-                FileName = executablePath,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
-            },
-            EnableRaisingEvents = true
-        };
-
-        process.StartInfo.ArgumentList.Add("tunnel");
-        process.StartInfo.ArgumentList.Add("--url");
-        process.StartInfo.ArgumentList.Add(request.LocalUrl);
-
-        process.Exited += (_, _) =>
-        {
-            if (!urlSource.Task.IsCompleted)
-            {
-                urlSource.TrySetException(new InvalidOperationException("cloudflared exited before publishing a Quick Tunnel URL."));
-            }
-        };
-
-        try
-        {
-            if (!process.Start())
-            {
-                return SetError("Could not start cloudflared.");
-            }
-        }
-        catch (Win32Exception ex)
-        {
-            _logger.LogWarning(ex, "cloudflared executable could not be started.");
-            return SetError("cloudflared could not be started. Check if PocketMC has permission to run executables.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "cloudflared failed to start.");
-            return SetError($"cloudflared failed to start: {ex.Message}");
-        }
-
-        lock (_lock)
-        {
-            _process = process;
-            _startedAtUtc = DateTimeOffset.UtcNow;
-        }
-
-        try
-        {
-            _jobObject.AddProcess(process.Handle);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to assign cloudflared to the app job object.");
-        }
-
-        _ = Task.Run(() => ReadStreamAsync(process.StandardOutput, urlSource), CancellationToken.None);
-        _ = Task.Run(() => ReadStreamAsync(process.StandardError, urlSource), CancellationToken.None);
-
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(TimeSpan.FromSeconds(20));
-
-        try
-        {
-            using (timeoutCts.Token.Register(() => urlSource.TrySetCanceled(timeoutCts.Token)))
-            {
-                string publicUrl = await urlSource.Task;
-                lock (_lock)
+                StartInfo = new ProcessStartInfo
                 {
-                    _publicUrl = publicUrl;
-                    _errorMessage = null;
+                    FileName = executablePath,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
+                },
+                EnableRaisingEvents = true
+            };
+
+            process.StartInfo.ArgumentList.Add("tunnel");
+            process.StartInfo.ArgumentList.Add("--url");
+            process.StartInfo.ArgumentList.Add(request.LocalUrl);
+
+            process.Exited += (_, _) =>
+            {
+                if (!urlSource.Task.IsCompleted)
+                {
+                    urlSource.TrySetException(new InvalidOperationException("cloudflared exited before publishing a Quick Tunnel URL."));
                 }
+            };
 
-                return new RemoteTunnelStartResult
+            try
+            {
+                if (!process.Start())
                 {
-                    Success = true,
-                    PublicUrl = publicUrl
-                };
+                    return SetError("Could not start cloudflared.");
+                }
             }
-        }
+            catch (Win32Exception ex)
+            {
+                _logger.LogWarning(ex, "cloudflared executable could not be started.");
+                return SetError("cloudflared could not be started. Check if PocketMC has permission to run executables.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "cloudflared failed to start.");
+                return SetError($"cloudflared failed to start: {ex.Message}");
+            }
+
+            lock (_lock)
+            {
+                _process = process;
+                _startedAtUtc = DateTimeOffset.UtcNow;
+            }
+
+            try
+            {
+                _jobObject.AddProcess(process.Handle);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to assign cloudflared to the app job object.");
+            }
+
+            _ = Task.Run(() => ReadStreamAsync(process.StandardOutput, urlSource), CancellationToken.None);
+            _ = Task.Run(() => ReadStreamAsync(process.StandardError, urlSource), CancellationToken.None);
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(20));
+
+            try
+            {
+                using (timeoutCts.Token.Register(() => urlSource.TrySetCanceled(timeoutCts.Token)))
+                {
+                    string publicUrl = await urlSource.Task;
+                    lock (_lock)
+                    {
+                        _publicUrl = publicUrl;
+                        _errorMessage = null;
+                    }
+
+                    return new RemoteTunnelStartResult
+                    {
+                        Success = true,
+                        PublicUrl = publicUrl
+                    };
+                }
+            }
             catch (OperationCanceledException)
             {
                 await StopAsync(CancellationToken.None);

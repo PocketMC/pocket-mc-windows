@@ -5,10 +5,9 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.WhatsNew;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Java;
@@ -168,8 +167,6 @@ namespace PocketMC.Desktop.Features.Shell
 
             if (!settings.HasCompletedFirstLaunch)
             {
-                _host.ShowPlayitSetupDialog();
-                
                 settings = _settingsManager.Load();
                 settings.HasCompletedFirstLaunch = true;
                 _settingsManager.Save(settings);
@@ -294,3 +291,4 @@ namespace PocketMC.Desktop.Features.Shell
         }
     }
 }
+

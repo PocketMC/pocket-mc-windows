@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Text.RegularExpressions;
 using System.IO;
@@ -62,7 +63,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             if (string.IsNullOrWhiteSpace(loader)) return true;
 
             var normalizedLoader = loader.ToLowerInvariant();
-            
+
             // Gather all game version names from metadata
             var allVersions = new List<string>();
             var gameVersions = fileNode["gameVersions"]?.AsArray();
@@ -86,7 +87,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             // Check if the requested loader is directly supported in metadata
-            bool metaMatches = allVersions.Any(v => 
+            bool metaMatches = allVersions.Any(v =>
                 v.Equals(normalizedLoader, StringComparison.OrdinalIgnoreCase) ||
                 v.Contains($"-{normalizedLoader}", StringComparison.OrdinalIgnoreCase) ||
                 v.Contains($"{normalizedLoader}-", StringComparison.OrdinalIgnoreCase)
@@ -149,7 +150,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     "project_type:modpack" => "4471",
                     "project_type:plugin" => "5",
                     "project_type:world" => "17",
-                    "6945" => "6945", 
+                    "6945" => "6945",
                     _ => "6"
                 };
 

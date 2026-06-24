@@ -8,7 +8,7 @@ using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Infrastructure.Process;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Presentation;
@@ -34,3 +34,4 @@ namespace PocketMC.Desktop.Infrastructure
         public string CombinePath(params string[] paths) => Path.Combine(paths);
     }
 }
+

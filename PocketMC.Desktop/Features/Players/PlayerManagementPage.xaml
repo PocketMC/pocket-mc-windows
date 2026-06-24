@@ -3,7 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"
-      xmlns:helpers="clr-namespace:PocketMC.Desktop.Helpers"
+      xmlns:helpers="clr-namespace:PocketMC.Desktop.Views.Behaviors"
       Title="Player Management"
       Background="Transparent">
 

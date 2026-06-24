@@ -11,9 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Networking;
-using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Settings;
@@ -384,8 +383,8 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                     foreach (var p in uniquePorts)
                     {
-                        var tunnel = activeTunnels.FirstOrDefault(t => 
-                            t.Port == p.Port && 
+                        var tunnel = activeTunnels.FirstOrDefault(t =>
+                            t.Port == p.Port &&
                             (!t.Protocol.HasValue || t.Protocol == p.Protocol || t.Protocol == PortProtocol.TcpAndUdp));
 
                         string roleName;
@@ -419,8 +418,8 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                         var route = new RouteViewModel
                         {
-                            PublicAddressLabel = tunnel != null && !string.IsNullOrEmpty(tunnel.PublicAddress) 
-                                ? tunnel.PublicAddress 
+                            PublicAddressLabel = tunnel != null && !string.IsNullOrEmpty(tunnel.PublicAddress)
+                                ? tunnel.PublicAddress
                                 : (tunnel != null ? "Allocating Address..." : "No active Playit tunnel"),
                             PublicAddress = tunnel?.PublicAddress ?? string.Empty,
                             ProtocolLabel = tunnel?.TunnelTypeDisplay ?? p.Name,
@@ -548,3 +547,4 @@ namespace PocketMC.Desktop.Features.Tunnel
         }
     }
 }
+

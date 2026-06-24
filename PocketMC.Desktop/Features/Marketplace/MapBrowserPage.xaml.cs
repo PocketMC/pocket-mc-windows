@@ -11,6 +11,7 @@ using System.Windows.Input;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using System.Collections.ObjectModel;
 
 namespace PocketMC.Desktop.Features.Marketplace

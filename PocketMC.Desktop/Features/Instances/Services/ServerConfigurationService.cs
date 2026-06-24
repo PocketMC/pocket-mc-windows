@@ -1,10 +1,9 @@
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Settings;
 
@@ -324,3 +323,4 @@ public sealed class ServerConfigurationService
         props.Remove("emit-server-telemetry");
     }
 }
+

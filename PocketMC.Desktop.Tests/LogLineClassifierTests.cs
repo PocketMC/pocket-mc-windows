@@ -22,3 +22,5 @@ public sealed class LogLineClassifierTests
         Assert.Equal(LogLevel.Warn, LogLineClassifier.Classify("Caused by: warning context", LogLevel.Warn));
     }
 }
+
+

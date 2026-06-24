@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Models;
+
 using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Setup;
@@ -17,7 +18,7 @@ using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Infrastructure.Process;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Presentation;
@@ -97,9 +98,9 @@ namespace PocketMC.Desktop.Features.Settings
         public bool AutoUpdateAddons { get => _autoUpdateAddons; set { if (SetProperty(ref _autoUpdateAddons, value)) _onAddonChanged(); } }
 
         // ── Engine predicates ────────────────────────────────────────────
-        public bool ShowVanillaWarning   => _metadata.ServerType?.StartsWith("Vanilla",    StringComparison.OrdinalIgnoreCase) == true;
-        public bool IsBedrockDedicated  => _metadata.Compatibility.Family == EngineFamily.Bedrock;
-        public bool IsPocketmine        => _metadata.Compatibility.Family == EngineFamily.Pocketmine;
+        public bool ShowVanillaWarning => _metadata.ServerType?.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) == true;
+        public bool IsBedrockDedicated => _metadata.Compatibility.Family == EngineFamily.Bedrock;
+        public bool IsPocketmine => _metadata.Compatibility.Family == EngineFamily.Pocketmine;
         public bool IsBedrockOrPocketmine => IsBedrockDedicated || IsPocketmine;
         /// <summary>True for Java-based engines (Vanilla, Paper, Fabric, Forge, NeoForge).</summary>
         public bool IsJavaEngine => _metadata.Compatibility.IsJavaEngine;
@@ -112,14 +113,14 @@ namespace PocketMC.Desktop.Features.Settings
 
         // ── Commands ─────────────────────────────────────────────────────
         // Shared / Java
-        public ICommand AddPluginCommand          { get; }
-        public ICommand DeletePluginCommand       { get; }
+        public ICommand AddPluginCommand { get; }
+        public ICommand DeletePluginCommand { get; }
         public ICommand BrowseModrinthPluginsCommand { get; }
-        public ICommand AddModCommand             { get; }
-        public ICommand DeleteModCommand          { get; }
+        public ICommand AddModCommand { get; }
+        public ICommand DeleteModCommand { get; }
         public ICommand BrowseModrinthModsCommand { get; }
-        public ICommand ImportModpackCommand      { get; }
-        public ICommand BrowseModpacksCommand     { get; }
+        public ICommand ImportModpackCommand { get; }
+        public ICommand BrowseModpacksCommand { get; }
 
         // Bedrock-specific
         public ICommand ImportBedrockAddonCommand { get; }
@@ -164,19 +165,19 @@ namespace PocketMC.Desktop.Features.Settings
             Func<bool> isRunningCheck,
             Action onAddonChanged)
         {
-            _metadata          = metadata;
-            _serverDir         = serverDir;
-            _modpackService    = modpackService;
-            _dialogService     = dialogService;
+            _metadata = metadata;
+            _serverDir = serverDir;
+            _modpackService = modpackService;
+            _dialogService = dialogService;
             _navigationService = navigationService;
-            _serviceProvider   = serviceProvider;
-            _isRunningCheck    = isRunningCheck;
-            _onAddonChanged    = onAddonChanged;
-            _manifestService   = serviceProvider.GetRequiredService<AddonManifestService>();
-            _inventoryService  = serviceProvider.GetRequiredService<AddonInventoryService>();
-            _toggleService     = serviceProvider.GetRequiredService<AddonToggleService>();
+            _serviceProvider = serviceProvider;
+            _isRunningCheck = isRunningCheck;
+            _onAddonChanged = onAddonChanged;
+            _manifestService = serviceProvider.GetRequiredService<AddonManifestService>();
+            _inventoryService = serviceProvider.GetRequiredService<AddonInventoryService>();
+            _toggleService = serviceProvider.GetRequiredService<AddonToggleService>();
             _updateCheckService = serviceProvider.GetRequiredService<AddonUpdateCheckService>();
-            _updateService      = serviceProvider.GetRequiredService<AddonUpdateService>();
+            _updateService = serviceProvider.GetRequiredService<AddonUpdateService>();
 
             // Resolve the Bedrock installer from DI (if not Bedrock this is a no-op).
             _bedrockInstaller = serviceProvider.GetRequiredService<BedrockAddonInstaller>();
@@ -185,10 +186,10 @@ namespace PocketMC.Desktop.Features.Settings
             // BDS: no plugins concept (addons handled via Mods section below)
             // PocketMine: .phar files via Poggit browser
             // Java: JAR files via local picker
-            AddPluginCommand            = new RelayCommand(
+            AddPluginCommand = new RelayCommand(
                 async _ => await AddPluginAsync(),
                 _ => !_isRunningCheck() && !ShowVanillaWarning && _metadata.Compatibility.SupportsPlugins);
-            DeletePluginCommand         = new RelayCommand(
+            DeletePluginCommand = new RelayCommand(
                 async p => await DeletePluginAsync(p as string),
                 _ => !_isRunningCheck() && _metadata.Compatibility.SupportsPlugins);
             BrowseModrinthPluginsCommand = new RelayCommand(
@@ -198,21 +199,21 @@ namespace PocketMC.Desktop.Features.Settings
             // ── Mod commands — routed by engine ──────────────────────────────────────
             // BDS: "Add Mod" triggers local .mcpack/.mcaddon import
             // Java: JAR picker
-            AddModCommand               = new RelayCommand(
+            AddModCommand = new RelayCommand(
                 async _ => { if (IsBedrockDedicated) await ImportBedrockAddonAsync(); else await AddModAsync(); },
                 _ => !_isRunningCheck() && !ShowVanillaWarning && (_metadata.Compatibility.SupportsMods || _metadata.Compatibility.SupportsBedrockAddons));
-            DeleteModCommand            = new RelayCommand(
+            DeleteModCommand = new RelayCommand(
                 async p => { if (IsBedrockDedicated) await DeleteBedrockAddonAsync(p as string); else await DeleteModAsync(p as string); },
                 _ => !_isRunningCheck());
-            BrowseModrinthModsCommand   = new RelayCommand(
+            BrowseModrinthModsCommand = new RelayCommand(
                 _ => { if (IsBedrockDedicated) ImportBedrockAddonCommand?.Execute(null); else BrowseModrinth("project_type:mod"); },
                 _ => _metadata.Compatibility.SupportsMods && _metadata.Compatibility.SupportsModrinth);
-            ImportModpackCommand        = new RelayCommand(async _ => await ImportModpackAsync(), _ => _metadata.Compatibility.SupportsModpacks);
-            BrowseModpacksCommand       = new RelayCommand(_ => BrowseModrinth("project_type:modpack"), _ => _metadata.Compatibility.SupportsModpacks);
+            ImportModpackCommand = new RelayCommand(async _ => await ImportModpackAsync(), _ => _metadata.Compatibility.SupportsModpacks);
+            BrowseModpacksCommand = new RelayCommand(_ => BrowseModrinth("project_type:modpack"), _ => _metadata.Compatibility.SupportsModpacks);
 
             // ── Bedrock-specific commands (also reachable via unified commands above) ─
-            ImportBedrockAddonCommand   = new RelayCommand(async _ => await ImportBedrockAddonAsync(), _ => IsBedrockDedicated && !_isRunningCheck());
-            DeleteBedrockAddonCommand   = new RelayCommand(async p => await DeleteBedrockAddonAsync(p as string), _ => IsBedrockDedicated && !_isRunningCheck());
+            ImportBedrockAddonCommand = new RelayCommand(async _ => await ImportBedrockAddonAsync(), _ => IsBedrockDedicated && !_isRunningCheck());
+            DeleteBedrockAddonCommand = new RelayCommand(async p => await DeleteBedrockAddonAsync(p as string), _ => IsBedrockDedicated && !_isRunningCheck());
 
             // ── PocketMine-specific commands ──────────────────────────────
 
@@ -244,7 +245,7 @@ namespace PocketMC.Desktop.Features.Settings
         private bool IsLoaderCompatible(string loaderType)
         {
             if (string.IsNullOrEmpty(loaderType) || loaderType == "Unknown")
-                return true; 
+                return true;
 
             if (loaderType.Equals("Plugin", StringComparison.OrdinalIgnoreCase))
             {
@@ -346,15 +347,15 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 result.Add(new ModItemViewModel
                 {
-                    Name         = addon.Name,
-                    DisplayName  = addon.Name,
-                    FileName     = Path.GetFileName(addon.FilePath),
-                    Path         = addon.FilePath,
-                    SizeKb       = addon.SizeKb,
+                    Name = addon.Name,
+                    DisplayName = addon.Name,
+                    FileName = Path.GetFileName(addon.FilePath),
+                    Path = addon.FilePath,
+                    SizeKb = addon.SizeKb,
                     LastModified = addon.LastModified,
-                    AddonType    = addon.AddonType,
-                    SourceLabel  = "Manual",
-                    Icon         = AddonIconService.BedrockFallback
+                    AddonType = addon.AddonType,
+                    SourceLabel = "Manual",
+                    Icon = AddonIconService.BedrockFallback
                 });
             }
             return result;
@@ -422,16 +423,16 @@ namespace PocketMC.Desktop.Features.Settings
 
                 result.Add(new PluginItemViewModel
                 {
-                    Name         = entry?.DisplayName ?? entry?.ProjectTitle ?? fi.Name,
-                    FileName     = fi.Name,
-                    Path         = file,
-                    ApiVersion   = "PocketMine",
-                    SizeKb       = fi.Length / 1024.0,
-                    IsMismatch   = false,
+                    Name = entry?.DisplayName ?? entry?.ProjectTitle ?? fi.Name,
+                    FileName = fi.Name,
+                    Path = file,
+                    ApiVersion = "PocketMine",
+                    SizeKb = fi.Length / 1024.0,
+                    IsMismatch = false,
                     LastModified = fi.LastWriteTime,
                     ManifestEntry = entry,
-                    SourceLabel  = sourceLabel,
-                    Icon         = AddonIconService.PluginFallback
+                    SourceLabel = sourceLabel,
+                    Icon = AddonIconService.PluginFallback
                 });
             }
             return result;
@@ -452,10 +453,10 @@ namespace PocketMC.Desktop.Features.Settings
                     var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
                     if (!IsLoaderCompatible(metadata.LoaderType))
                     {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Plugin Warning", 
+                        var res = await _dialogService.ShowDialogAsync("Incompatible Plugin Warning",
                             $"The file '{System.IO.Path.GetFileName(f)}' is made for {metadata.LoaderType}, but this server is running {_metadata.ServerType}.\n" +
                             "Installing incompatible plugins can cause the server to crash or fail to start.\n\n" +
-                            "Do you want to skip this plugin?", 
+                            "Do you want to skip this plugin?",
                             DialogType.Question);
 
                         if (res == DialogResult.Yes) continue;
@@ -473,12 +474,12 @@ namespace PocketMC.Desktop.Features.Settings
         {
             if (path != null && await _dialogService.ShowDialogAsync("Confirm", $"Delete {System.IO.Path.GetFileName(path)}?", DialogType.Question) == DialogResult.Yes)
             {
-                try 
-                { 
-                    await FileUtils.DeleteFileAsync(path); 
+                try
+                {
+                    await FileUtils.DeleteFileAsync(path);
                     await _manifestService.UnregisterByFileNameAsync(_serverDir, Path.GetFileName(path));
-                    LoadAddons(); 
-                    _onAddonChanged(); 
+                    LoadAddons();
+                    _onAddonChanged();
                 }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             }
@@ -578,14 +579,14 @@ namespace PocketMC.Desktop.Features.Settings
             foreach (var f in files)
             {
                 var fileName = System.IO.Path.GetFileName(f).ToLowerInvariant();
-                
+
                 // Audit for common client-side only mods that crash servers
                 if (fileName.Contains("sodium") || fileName.Contains("iris") || fileName.Contains("canvas") || fileName.Contains("optifine"))
                 {
-                    var res = await _dialogService.ShowDialogAsync("Client-Side Mod Warning", 
+                    var res = await _dialogService.ShowDialogAsync("Client-Side Mod Warning",
                         $"The mod '{System.IO.Path.GetFileName(f)}' appears to be a client-side rendering mod. " +
                         "Installing this on a server will almost certainly cause a crash.\n\n" +
-                        "Do you want to skip this mod?", 
+                        "Do you want to skip this mod?",
                         DialogType.Question);
 
                     if (res == DialogResult.Yes) continue;
@@ -596,10 +597,10 @@ namespace PocketMC.Desktop.Features.Settings
                     var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
                     if (!IsLoaderCompatible(metadata.LoaderType))
                     {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Mod Warning", 
+                        var res = await _dialogService.ShowDialogAsync("Incompatible Mod Warning",
                             $"The mod '{System.IO.Path.GetFileName(f)}' is made for {metadata.LoaderType}, but this server is running {_metadata.ServerType}.\n" +
                             "Installing incompatible mods can cause the server to crash or fail to start.\n\n" +
-                            "Do you want to skip this mod?", 
+                            "Do you want to skip this mod?",
                             DialogType.Question);
 
                         if (res == DialogResult.Yes) continue;
@@ -617,12 +618,12 @@ namespace PocketMC.Desktop.Features.Settings
         {
             if (path != null && await _dialogService.ShowDialogAsync("Confirm", $"Delete {System.IO.Path.GetFileName(path)}?", DialogType.Question) == DialogResult.Yes)
             {
-                try 
-                { 
-                    await FileUtils.DeleteFileAsync(path); 
+                try
+                {
+                    await FileUtils.DeleteFileAsync(path);
                     await _manifestService.UnregisterByFileNameAsync(_serverDir, Path.GetFileName(path));
-                    LoadAddons(); 
-                    _onAddonChanged(); 
+                    LoadAddons();
+                    _onAddonChanged();
                 }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             }
@@ -1339,11 +1340,11 @@ namespace PocketMC.Desktop.Features.Settings
         private bool _isUpdating;
         private string _updateStatusText = "";
 
-        public string Name        { get; set; } = "";
-        public string Path        { get; set; } = "";
-        public string ApiVersion  { get; set; } = "";
-        public double SizeKb      { get; set; }
-        public bool   IsMismatch  { get; set; }
+        public string Name { get; set; } = "";
+        public string Path { get; set; } = "";
+        public string ApiVersion { get; set; } = "";
+        public double SizeKb { get; set; }
+        public bool IsMismatch { get; set; }
         public DateTime LastModified { get; set; }
 
         /// <summary>Reference to the manifest entry for provider/project lookups.</summary>
@@ -1405,12 +1406,12 @@ namespace PocketMC.Desktop.Features.Settings
         private bool _isUpdating;
         private string _updateStatusText = "";
 
-        public string Name        { get; set; } = "";
-        public string Path        { get; set; } = "";
-        public double SizeKb      { get; set; }
+        public string Name { get; set; } = "";
+        public string Path { get; set; } = "";
+        public double SizeKb { get; set; }
         public DateTime LastModified { get; set; }
         /// <summary>"behavior" | "resource" for BDS; empty for Java mods.</summary>
-        public string AddonType   { get; set; } = "";
+        public string AddonType { get; set; } = "";
 
         /// <summary>Reference to the manifest entry for provider/project lookups.</summary>
         public AddonManifestEntry? ManifestEntry { get; set; }
@@ -1495,3 +1496,5 @@ namespace PocketMC.Desktop.Features.Settings
     }
 
 }
+
+

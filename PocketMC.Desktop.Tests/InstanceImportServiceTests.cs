@@ -1,16 +1,17 @@
+using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Domain.Models;
 using System.IO.Compression;
 using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.ImportExport;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -390,16 +391,16 @@ public sealed class InstanceImportServiceTests : IDisposable
         string versionId,
         string fileName,
         string downloadUrl) => new()
-    {
-        Id = versionId,
-        ProjectId = projectId,
-        ProjectTitle = "Essentials",
-        FileName = fileName,
-        DownloadUrl = downloadUrl,
-        Hash = null,
-        HashType = null,
-        SelectedLoader = "paper"
-    };
+        {
+            Id = versionId,
+            ProjectId = projectId,
+            ProjectTitle = "Essentials",
+            FileName = fileName,
+            DownloadUrl = downloadUrl,
+            Hash = null,
+            HashType = null,
+            SelectedLoader = "paper"
+        };
 
     private sealed class FakeSoftwareProvider : IServerSoftwareProvider
     {
@@ -501,3 +502,6 @@ public sealed class InstanceImportServiceTests : IDisposable
         }
     }
 }
+
+
+

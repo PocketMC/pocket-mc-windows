@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using System;
 using System.IO;
 using System.Linq;
@@ -143,3 +143,4 @@ public class WorldManager
         return null;
     }
 }
+

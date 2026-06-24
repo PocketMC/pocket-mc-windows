@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Services;
 
@@ -37,3 +37,4 @@ public sealed class RemoteAuthenticationService
         }
     }
 }
+

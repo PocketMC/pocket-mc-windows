@@ -56,7 +56,7 @@ namespace PocketMC.Desktop.Features.Console
 
             string cleaned = StripAnsi(line);
             cleaned = SanitizeControlCharacters(cleaned);
-            
+
             cleaned = Ipv4Regex.Replace(cleaned, "[REDACTED_IP]");
             cleaned = RedactIpv6Tokens(cleaned);
             cleaned = EmailRegex.Replace(cleaned, "[REDACTED_EMAIL]");

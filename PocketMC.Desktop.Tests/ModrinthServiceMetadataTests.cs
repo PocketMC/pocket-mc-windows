@@ -1,9 +1,11 @@
+using PocketMC.Desktop.Features.Marketplace.Models;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -398,3 +400,6 @@ public sealed class ModrinthServiceMetadataTests
         return new ModrinthService(new HttpClient(new MarketplaceDelegateHttpMessageHandler(responder)));
     }
 }
+
+
+

@@ -3,10 +3,9 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Infrastructure.FileSystem;
-using PocketMC.Desktop.Features.RemoteControl.Models;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -357,3 +356,4 @@ namespace PocketMC.Desktop.Features.Settings
         }
     }
 }
+

@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,10 +10,10 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Models;
+
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Infrastructure;
@@ -166,9 +167,9 @@ namespace PocketMC.Desktop.Features.Settings
             var cloudProviders = serviceProvider.GetService(typeof(IEnumerable<ICloudBackupProvider>)) as IEnumerable<ICloudBackupProvider>;
             var settingsManager = (SettingsManager)serviceProvider.GetService(typeof(SettingsManager))!;
             CloudBackups = new ServerCloudBackupViewModel(
-                settingsManager, 
-                cloudProviders ?? Array.Empty<ICloudBackupProvider>(), 
-                dialogService, 
+                settingsManager,
+                cloudProviders ?? Array.Empty<ICloudBackupProvider>(),
+                dialogService,
                 metadata,
                 backupService,
                 () => ServerDir,
@@ -186,10 +187,10 @@ namespace PocketMC.Desktop.Features.Settings
             _registry.Refresh();
             var updatedMetadata = _registry.GetById(Metadata.Id);
             if (updatedMetadata == null) return;
-            
+
             var settingsViewModel = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsViewModel>(serviceProvider, updatedMetadata);
             settingsViewModel.InitialTabIndex = 6;
-            
+
             var settingsPage = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsPage>(serviceProvider, settingsViewModel);
             _navigationService.NavigateToDetailPage(settingsPage, $"Settings: {updatedMetadata.Name}", DetailRouteKind.ServerSettings, DetailBackNavigation.Dashboard, true);
         }
@@ -430,9 +431,9 @@ namespace PocketMC.Desktop.Features.Settings
         public void UpdateServerDir(string newDir)
         {
             if (ServerDir == newDir) return;
-            
+
             ServerDir = newDir;
-            
+
             General.UpdateServerDir(newDir);
             World.UpdateServerDir(newDir);
             Backups.UpdateServerDir(newDir);
@@ -450,7 +451,7 @@ namespace PocketMC.Desktop.Features.Settings
         private void SaveConfigurations()
         {
             bool nameChanged = !string.Equals(Metadata.Name, General.InstanceName, StringComparison.Ordinal);
-            
+
             if (nameChanged && IsRunning)
             {
                 _dialogService.ShowMessage("Cannot Rename", "Cannot rename a running server. Please stop the server first.", DialogType.Warning);

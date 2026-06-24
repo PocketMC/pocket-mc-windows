@@ -4,7 +4,6 @@ using System.Windows.Input;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.Intelligence;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Settings;
 

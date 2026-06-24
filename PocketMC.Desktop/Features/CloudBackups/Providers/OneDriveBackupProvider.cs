@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
-using PocketMC.Desktop.Models;
+
 using PocketMC.Desktop.Features.Settings;
 
 namespace PocketMC.Desktop.Features.CloudBackups.Providers;
@@ -41,7 +42,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
             _pca = PublicClientApplicationBuilder.Create(ClientId)
                 .WithRedirectUri("http://localhost")
                 .Build();
-            
+
             _pca.UserTokenCache.SetBeforeAccess(args =>
             {
                 var settings = _settingsManager.Load();
@@ -59,7 +60,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
                     var settings = _settingsManager.Load();
                     if (!settings.CloudTokens.ContainsKey("OneDrive"))
                         settings.CloudTokens["OneDrive"] = new CloudOAuthTokenSet { Provider = CloudBackupProviderType.OneDrive };
-                    
+
                     settings.CloudTokens["OneDrive"].RefreshToken = Convert.ToBase64String(cacheBytes);
                     _settingsManager.Save(settings);
                 }
@@ -125,7 +126,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
         var settings = _settingsManager.Load();
         if (!settings.CloudTokens.ContainsKey("OneDrive"))
             settings.CloudTokens["OneDrive"] = new CloudOAuthTokenSet { Provider = ProviderType };
-        
+
         settings.CloudTokens["OneDrive"].AccessToken = result.AccessToken;
         settings.CloudTokens["OneDrive"].AccountId = result.Account.HomeAccountId.Identifier;
         settings.CloudTokens["OneDrive"].ExpiresAtUtc = result.ExpiresOn;
@@ -150,7 +151,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
 
     public async Task<CloudBackupUploadResult> UploadBackupAsync(CloudBackupUploadRequest request)
     {
-        return await ResilientUploadPolicy.ExecuteAsync(async (cancellationToken) => 
+        return await ResilientUploadPolicy.ExecuteAsync(async (cancellationToken) =>
         {
             string? token = await GetValidAccessTokenAsync(cancellationToken);
             if (token == null) throw new UnauthorizedAccessException("OneDrive token expired or missing.");
@@ -160,7 +161,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
             string remotePath = $"/{sanitizedInstance}-{request.InstanceId}/{safeName}";
 
             var createSessionUrl = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:{remotePath}:/createUploadSession";
-            
+
             var requestMsg = new HttpRequestMessage(HttpMethod.Post, createSessionUrl);
             requestMsg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             requestMsg.Content = new StringContent("{\"item\": {\"@microsoft.graph.conflictBehavior\": \"replace\"}}", Encoding.UTF8, "application/json");
@@ -174,9 +175,9 @@ public class OneDriveBackupProvider : ICloudBackupProvider
 
             var fileInfo = new FileInfo(request.LocalZipPath);
             long totalBytes = fileInfo.Length;
-            
-            int chunkSize = 320 * 1024 * 10; 
-            
+
+            int chunkSize = 320 * 1024 * 10;
+
             using var fileStream = File.OpenRead(request.LocalZipPath);
             byte[] buffer = new byte[chunkSize];
             long bytesUploaded = 0;
@@ -189,7 +190,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
                 long endRange = bytesUploaded + bytesRead - 1;
                 var chunkContent = new ByteArrayContent(buffer, 0, bytesRead);
                 chunkContent.Headers.ContentRange = new ContentRangeHeaderValue(bytesUploaded, endRange, totalBytes);
-                
+
                 var chunkMsg = new HttpRequestMessage(HttpMethod.Put, uploadUrl);
                 chunkMsg.Content = chunkContent;
 
@@ -234,14 +235,14 @@ public class OneDriveBackupProvider : ICloudBackupProvider
 
         var requestMsg = new HttpRequestMessage(HttpMethod.Get, url);
         requestMsg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var response = await _httpClient.SendAsync(requestMsg, ct);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return Array.Empty<CloudRemoteBackupItem>();
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync(ct);
         using var doc = JsonDocument.Parse(json);
-        
+
         var list = new List<CloudRemoteBackupItem>();
         if (doc.RootElement.TryGetProperty("value", out var items))
         {
@@ -269,7 +270,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
         var url = $"https://graph.microsoft.com/v1.0/me/drive/items/{providerFileId}";
         var requestMsg = new HttpRequestMessage(HttpMethod.Delete, url);
         requestMsg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        
+
         var response = await _httpClient.SendAsync(requestMsg, ct);
         response.EnsureSuccessStatusCode();
     }

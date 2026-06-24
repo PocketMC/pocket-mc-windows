@@ -1,6 +1,6 @@
 using PocketMC.Desktop.Features.CloudBackups;
 using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -124,3 +124,5 @@ public sealed class SettingsManagerSecurityTests : IDisposable
         }
     }
 }
+
+

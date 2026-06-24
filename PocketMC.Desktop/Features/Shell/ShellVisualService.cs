@@ -73,7 +73,7 @@ namespace PocketMC.Desktop.Features.Shell
                     if (window.WindowBackdropType == WindowBackdropType.Mica)
                         window.WindowBackdropType = WindowBackdropType.None;
                     window.WindowBackdropType = WindowBackdropType.Mica;
-                    
+
                     SetTintLayer(window, MicaActiveTint);
                     return;
                 }
@@ -86,7 +86,7 @@ namespace PocketMC.Desktop.Features.Shell
                     if (window.WindowBackdropType == WindowBackdropType.Acrylic)
                         window.WindowBackdropType = WindowBackdropType.None;
                     window.WindowBackdropType = WindowBackdropType.Acrylic;
-                    
+
                     SetTintLayer(window, AcrylicActiveTint);
                     return;
                 }
@@ -146,7 +146,7 @@ namespace PocketMC.Desktop.Features.Shell
             {
                 string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
                 bool explicitLightMode = backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase);
-                
+
                 var wpfUiBackdrop = Wpf.Ui.Controls.WindowBackdropType.None;
                 if (_windowsCornerService.IsWindows11())
                 {

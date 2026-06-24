@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Features.Networking
@@ -52,7 +52,7 @@ namespace PocketMC.Desktop.Features.Networking
                 var cfg = _configurationService.Load(server, serverDir);
                 cfg.ServerPort = newPort.ToString();
                 _configurationService.Save(server, serverDir, cfg);
-                
+
                 // Keep the metadata in sync
                 server.ServerPort = newPort;
                 _instanceManager.SaveMetadata(server, serverDir);
@@ -75,3 +75,4 @@ namespace PocketMC.Desktop.Features.Networking
         }
     }
 }
+

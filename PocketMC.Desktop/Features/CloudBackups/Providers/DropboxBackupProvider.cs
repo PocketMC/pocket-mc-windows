@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +11,7 @@ using Dropbox.Api;
 using Dropbox.Api.Files;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.CloudBackups.OAuth;
-using PocketMC.Desktop.Models;
+
 using PocketMC.Desktop.Features.Settings;
 
 namespace PocketMC.Desktop.Features.CloudBackups.Providers;
@@ -52,16 +53,16 @@ public class DropboxBackupProvider : ICloudBackupProvider
                     new KeyValuePair<string, string>("refresh_token", tokens.RefreshToken!),
                     new KeyValuePair<string, string>("client_id", ClientId)
                 });
-                
+
                 var response = await config.HttpClient.PostAsync("https://api.dropbox.com/oauth2/token", content, ct);
                 response.EnsureSuccessStatusCode();
                 var json = await response.Content.ReadAsStringAsync(ct);
                 using var doc = JsonDocument.Parse(json);
-                
+
                 tokens.AccessToken = doc.RootElement.GetProperty("access_token").GetString();
                 int expiresIn = doc.RootElement.GetProperty("expires_in").GetInt32();
                 tokens.ExpiresAtUtc = DateTimeOffset.UtcNow.AddSeconds(expiresIn);
-                
+
                 settings.CloudTokens["Dropbox"] = tokens;
                 _settingsManager.Save(settings);
             }
@@ -116,7 +117,7 @@ public class DropboxBackupProvider : ICloudBackupProvider
     {
         var (codeVerifier, codeChallenge) = PkceHelper.Generate();
         var state = Guid.NewGuid().ToString("N");
-        
+
         string uri = $"https://www.dropbox.com/oauth2/authorize?client_id={ClientId}&response_type=code&redirect_uri={Uri.EscapeDataString(RedirectUri)}&state={state}&token_access_type=offline&code_challenge={codeChallenge}&code_challenge_method=S256";
 
         var psi = new System.Diagnostics.ProcessStartInfo { FileName = uri, UseShellExecute = true };
@@ -137,17 +138,17 @@ public class DropboxBackupProvider : ICloudBackupProvider
             new KeyValuePair<string, string>("redirect_uri", RedirectUri),
             new KeyValuePair<string, string>("code_verifier", codeVerifier)
         });
-        
+
         var tokenRes = await client.PostAsync("https://api.dropbox.com/oauth2/token", content, ct);
         tokenRes.EnsureSuccessStatusCode();
         var json = await tokenRes.Content.ReadAsStringAsync(ct);
         using var doc = JsonDocument.Parse(json);
-        
+
         string accessToken = doc.RootElement.GetProperty("access_token").GetString()!;
         string refreshToken = doc.RootElement.TryGetProperty("refresh_token", out var rt) ? rt.GetString()! : "";
         int expiresIn = doc.RootElement.TryGetProperty("expires_in", out var ei) ? ei.GetInt32() : 0;
         string accountId = doc.RootElement.GetProperty("account_id").GetString()!;
-        
+
         var settings = _settingsManager.Load();
         settings.CloudTokens["Dropbox"] = new CloudOAuthTokenSet
         {
@@ -177,14 +178,14 @@ public class DropboxBackupProvider : ICloudBackupProvider
 
     public async Task<CloudBackupUploadResult> UploadBackupAsync(CloudBackupUploadRequest request)
     {
-        return await ResilientUploadPolicy.ExecuteAsync(async (cancellationToken) => 
+        return await ResilientUploadPolicy.ExecuteAsync(async (cancellationToken) =>
         {
             var client = await GetClientAsync(cancellationToken);
             if (client == null) throw new UnauthorizedAccessException("Dropbox token expired or missing.");
 
             string sanitizedInstance = CloudPathSanitizer.SanitizeFolderName(request.InstanceName);
             string safeName = CloudPathSanitizer.SanitizeFolderName(request.BackupFileName);
-            
+
             string remotePath = $"/{sanitizedInstance}-{request.InstanceId}/{safeName}";
 
             var fileInfo = new FileInfo(request.LocalZipPath);
@@ -192,21 +193,21 @@ public class DropboxBackupProvider : ICloudBackupProvider
             int chunkSize = 8 * 1024 * 1024; // 8 MB
 
             using var fileStream = File.OpenRead(request.LocalZipPath);
-            
+
             if (totalBytes <= chunkSize)
             {
                 var uploaded = await client.Files.UploadAsync(
                     remotePath,
                     WriteMode.Add.Instance,
                     body: fileStream);
-                
+
                 request.Progress?.Report(new CloudBackupProgress { Provider = ProviderType, Stage = "Done", BytesUploaded = totalBytes, TotalBytes = totalBytes, Percent = 100, Message = "Finished" });
                 return new CloudBackupUploadResult { Success = true, Provider = ProviderType, ProviderFileId = uploaded.Id, RemotePath = uploaded.PathDisplay, BytesUploaded = totalBytes, Recoverable = false };
             }
 
             byte[] buffer = new byte[chunkSize];
             int bytesRead = await fileStream.ReadAsync(buffer, 0, chunkSize, cancellationToken);
-            
+
             var sessionStart = await client.Files.UploadSessionStartAsync(body: new MemoryStream(buffer, 0, bytesRead));
             string sessionId = sessionStart.SessionId;
             long bytesUploaded = bytesRead;
@@ -219,15 +220,15 @@ public class DropboxBackupProvider : ICloudBackupProvider
                 if (bytesRead == 0) break;
 
                 var cursor = new UploadSessionCursor(sessionId, (ulong)bytesUploaded);
-                
+
                 if (bytesUploaded + bytesRead == totalBytes)
                 {
                     var commit = new CommitInfo(remotePath, WriteMode.Add.Instance);
                     var finish = await client.Files.UploadSessionFinishAsync(cursor, commit, body: new MemoryStream(buffer, 0, bytesRead));
-                    
+
                     bytesUploaded += bytesRead;
                     request.Progress?.Report(new CloudBackupProgress { Provider = ProviderType, Stage = "Done", BytesUploaded = bytesUploaded, TotalBytes = totalBytes, Percent = 100, Message = "Finished" });
-                    
+
                     return new CloudBackupUploadResult { Success = true, Provider = ProviderType, ProviderFileId = finish.Id, RemotePath = finish.PathDisplay, BytesUploaded = bytesUploaded, Recoverable = false };
                 }
                 else

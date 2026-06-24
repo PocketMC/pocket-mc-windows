@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +14,7 @@ using Google.Apis.Services;
 using Google.Apis.Upload;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.CloudBackups.OAuth;
-using PocketMC.Desktop.Models;
+
 using PocketMC.Desktop.Features.Settings;
 
 namespace PocketMC.Desktop.Features.CloudBackups.Providers;
@@ -54,14 +55,14 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
                     var errorContent = await response.Content.ReadAsStringAsync(ct);
                     throw new HttpRequestException($"Google proxy refresh failed (HTTP {response.StatusCode}): {errorContent}");
                 }
-                
+
                 var json = await response.Content.ReadAsStringAsync(ct);
                 using var doc = JsonDocument.Parse(json);
-                
+
                 tokens.AccessToken = doc.RootElement.GetProperty("access_token").GetString();
                 int expiresIn = doc.RootElement.GetProperty("expires_in").GetInt32();
                 tokens.ExpiresAtUtc = DateTimeOffset.UtcNow.AddSeconds(expiresIn);
-                
+
                 if (doc.RootElement.TryGetProperty("refresh_token", out var rtElement))
                 {
                     tokens.RefreshToken = rtElement.GetString() ?? tokens.RefreshToken;
@@ -85,7 +86,7 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         string? token = await GetValidAccessTokenAsync(ct);
         if (token == null) return null;
 
-        var initializer = new GoogleProxyTokenInitializer(async () => 
+        var initializer = new GoogleProxyTokenInitializer(async () =>
         {
             string? latestToken = await GetValidAccessTokenAsync(ct);
             return latestToken ?? throw new UnauthorizedAccessException("Google Drive token is expired or missing.");
@@ -141,7 +142,7 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
     {
         var (codeVerifier, codeChallenge) = PkceHelper.Generate();
         var state = Guid.NewGuid().ToString("N");
-        
+
         string authUrl = $"https://accounts.google.com/o/oauth2/v2/auth?client_id={ClientId}&redirect_uri={Uri.EscapeDataString(RedirectUri)}&response_type=code&scope={Uri.EscapeDataString(DriveService.Scope.DriveFile)}&access_type=offline&prompt=consent&state={state}&code_challenge={codeChallenge}&code_challenge_method=S256";
 
         var psi = new System.Diagnostics.ProcessStartInfo { FileName = authUrl, UseShellExecute = true };
@@ -267,7 +268,7 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
 
     public async Task<CloudBackupUploadResult> UploadBackupAsync(CloudBackupUploadRequest request)
     {
-        return await ResilientUploadPolicy.ExecuteAsync(async (cancellationToken) => 
+        return await ResilientUploadPolicy.ExecuteAsync(async (cancellationToken) =>
         {
             var service = await GetServiceAsync(cancellationToken);
             if (service == null) throw new UnauthorizedAccessException("Google Drive token expired or missing.");
@@ -286,8 +287,8 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
             using var stream = new FileStream(request.LocalZipPath, FileMode.Open, FileAccess.Read);
 
             var createRequest = service.Files.Create(fileMetadata, stream, "application/zip");
-            createRequest.ChunkSize = ResumableUpload.MinimumChunkSize * 4; 
-            
+            createRequest.ChunkSize = ResumableUpload.MinimumChunkSize * 4;
+
             long totalBytes = fileInfo.Length;
 
             createRequest.ProgressChanged += (progress) =>
@@ -331,21 +332,21 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         if (service == null) return Array.Empty<CloudRemoteBackupItem>();
 
         string instanceFolderName = $"{CloudPathSanitizer.SanitizeFolderName(instanceName)}-{instanceId}";
-        
+
         var folderReq = service.Files.List();
         folderReq.Q = FolderNameEqualsQuery(instanceFolderName);
         var folderRes = await folderReq.ExecuteAsync(ct);
-        
+
         if (folderRes.Files == null || folderRes.Files.Count == 0) return Array.Empty<CloudRemoteBackupItem>();
-        
+
         string folderId = folderRes.Files[0].Id;
 
         var listReq = service.Files.List();
         listReq.Q = $"'{EscapeDriveQueryStringLiteral(folderId)}' in parents and trashed=false";
         listReq.Fields = "files(id, name, size, createdTime)";
-        
+
         var listRes = await listReq.ExecuteAsync(ct);
-        
+
         var results = new List<CloudRemoteBackupItem>();
         if (listRes.Files != null)
         {

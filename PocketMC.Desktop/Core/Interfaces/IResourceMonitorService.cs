@@ -1,6 +1,9 @@
+using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Mods;
 using System;
 using System.Collections.Concurrent;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Core.Interfaces
 {
@@ -10,7 +13,7 @@ namespace PocketMC.Desktop.Core.Interfaces
         GlobalResourceSummary? CurrentSummary { get; }
         event EventHandler<InstanceMetricsUpdatedEventArgs>? InstanceMetricsUpdated;
         event EventHandler? GlobalMetricsUpdated;
-        
+
         double GetTotalCommittedRamMb();
     }
 
@@ -26,3 +29,4 @@ namespace PocketMC.Desktop.Core.Interfaces
         }
     }
 }
+

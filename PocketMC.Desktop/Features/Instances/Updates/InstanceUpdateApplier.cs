@@ -1,3 +1,7 @@
+using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Mods;
 using System.IO;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -5,7 +9,6 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Updates;
 
@@ -303,3 +306,4 @@ public sealed class InstanceUpdateApplier
         }
     }
 }
+

@@ -3,8 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances;
 
 namespace PocketMC.Desktop.Tests;
@@ -222,3 +221,6 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         }
     }
 }
+
+
+

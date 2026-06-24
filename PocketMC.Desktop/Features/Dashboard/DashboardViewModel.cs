@@ -6,13 +6,13 @@ using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
 using System.Threading.Tasks;
 
@@ -20,9 +20,9 @@ namespace PocketMC.Desktop.Features.Dashboard
 {
     public class DashboardViewModel : ViewModelBase
     {
-        private readonly DashboardInstanceListVM _listVm;
-        private readonly DashboardMetricsVM _metricsVm;
-        private readonly DashboardActionsVM _actionsVm;
+        private readonly DashboardInstanceListViewModel _listVm;
+        private readonly DashboardMetricsViewModel _metricsVm;
+        private readonly DashboardActionsViewModel _actionsVm;
         private readonly InstanceTunnelOrchestrator _tunnelOrchestrator;
 
         private readonly InstanceRegistry _registry;
@@ -50,9 +50,9 @@ namespace PocketMC.Desktop.Features.Dashboard
         public ICommand OpenConsoleCommand { get; }
         public ICommand OpenPlayersCommand { get; }
         public DashboardViewModel(
-            DashboardInstanceListVM listVm,
-            DashboardMetricsVM metricsVm,
-            DashboardActionsVM actionsVm,
+            DashboardInstanceListViewModel listVm,
+            DashboardMetricsViewModel metricsVm,
+            DashboardActionsViewModel actionsVm,
             InstanceTunnelOrchestrator tunnelOrchestrator,
             InstanceRegistry registry,
             IServerLifecycleService lifecycleService,
@@ -275,3 +275,4 @@ namespace PocketMC.Desktop.Features.Dashboard
         }
     }
 }
+

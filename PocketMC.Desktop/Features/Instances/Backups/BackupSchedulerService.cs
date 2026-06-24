@@ -2,10 +2,9 @@ using System;
 using System.Threading;
 using System.Timers;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 
 namespace PocketMC.Desktop.Features.Instances.Backups;
@@ -94,3 +93,4 @@ public class BackupSchedulerService : IDisposable
         _timer.Dispose();
     }
 }
+

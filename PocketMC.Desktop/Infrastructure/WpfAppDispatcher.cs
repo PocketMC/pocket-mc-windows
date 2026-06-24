@@ -10,9 +10,9 @@ namespace PocketMC.Desktop.Infrastructure
     {
         public void Invoke(Action action)
         {
-            if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+            if (System.Windows.Application.Current != null && !System.Windows.Application.Current.Dispatcher.CheckAccess())
             {
-                Application.Current.Dispatcher.Invoke(action);
+                System.Windows.Application.Current.Dispatcher.Invoke(action);
             }
             else
             {
@@ -22,9 +22,9 @@ namespace PocketMC.Desktop.Infrastructure
 
         public async Task InvokeAsync(Func<Task> action)
         {
-            if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+            if (System.Windows.Application.Current != null && !System.Windows.Application.Current.Dispatcher.CheckAccess())
             {
-                await Application.Current.Dispatcher.InvokeAsync(action);
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(action);
             }
             else
             {
@@ -34,9 +34,9 @@ namespace PocketMC.Desktop.Infrastructure
 
         public async Task InvokeAsync(Action action)
         {
-            if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+            if (System.Windows.Application.Current != null && !System.Windows.Application.Current.Dispatcher.CheckAccess())
             {
-                await Application.Current.Dispatcher.InvokeAsync(action);
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(action);
             }
             else
             {
@@ -45,3 +45,4 @@ namespace PocketMC.Desktop.Infrastructure
         }
     }
 }
+

@@ -149,3 +149,5 @@ public sealed class PlayerListParserTests
         Assert.False(_parser.TryParseContinuationLine("Steve - not a list item", out _));
     }
 }
+
+

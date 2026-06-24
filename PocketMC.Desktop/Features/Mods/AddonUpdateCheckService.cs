@@ -2,7 +2,8 @@ using System.IO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Mods;
 

@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace.Models;
-using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 using Xunit;
 
 namespace PocketMC.Desktop.Tests
@@ -31,13 +31,13 @@ namespace PocketMC.Desktop.Tests
             // Arrange
             var service = new AddonManifestService();
             var manifest = new AddonManifest();
-            manifest.Entries.Add(new AddonManifestEntry 
-            { 
-                ProjectId = "mod-a", 
-                FileName = "mod-a.jar", 
-                Provider = "Modrinth" 
+            manifest.Entries.Add(new AddonManifestEntry
+            {
+                ProjectId = "mod-a",
+                FileName = "mod-a.jar",
+                Provider = "Modrinth"
             });
-            
+
             // Save manifest but don't create the file
             string manifestPath = Path.Combine(_tempDir, "addon_manifest.json");
             File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest));
@@ -56,16 +56,16 @@ namespace PocketMC.Desktop.Tests
             // Arrange
             var service = new AddonManifestService();
             var manifest = new AddonManifest();
-            manifest.Entries.Add(new AddonManifestEntry 
-            { 
-                ProjectId = "mod-a", 
-                FileName = "mod-a.jar", 
-                Provider = "Modrinth" 
+            manifest.Entries.Add(new AddonManifestEntry
+            {
+                ProjectId = "mod-a",
+                FileName = "mod-a.jar",
+                Provider = "Modrinth"
             });
-            
+
             Directory.CreateDirectory(Path.Combine(_tempDir, "mods"));
             File.WriteAllText(Path.Combine(_tempDir, "mods", "mod-a.jar"), "dummy");
-            
+
             string manifestPath = Path.Combine(_tempDir, "addon_manifest.json");
             File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(manifest));
 
@@ -164,3 +164,6 @@ namespace PocketMC.Desktop.Tests
         }
     }
 }
+
+
+

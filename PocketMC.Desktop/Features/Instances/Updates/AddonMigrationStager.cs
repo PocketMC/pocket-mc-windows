@@ -3,6 +3,7 @@ using System.Net.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Infrastructure.Security;
 
 namespace PocketMC.Desktop.Features.Instances.Updates;

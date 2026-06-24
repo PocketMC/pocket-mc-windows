@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.IO;
 using PocketMC.Desktop.Features.Java;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Updates;
 

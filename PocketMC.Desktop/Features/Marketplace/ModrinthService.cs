@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -159,7 +160,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 if (string.IsNullOrEmpty(f.FileName)) continue;
                 var fn = f.FileName.ToLowerInvariant();
-                
+
                 // If we want a plugin loader (paper/spigot/bukkit), but the file mentions fabric/forge/neoforge/quilt, exclude it
                 if (IsPluginLoader(normalizedLoader))
                 {
@@ -217,7 +218,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         public async Task<List<ModrinthHit>> SearchAsync(string type, string mcVersion, IReadOnlyList<string> loaders, string sort = "relevance", string query = "", int offset = 0)
         {
             var mcCandidates = BuildMinecraftVersionCandidates(mcVersion);
-            
+
             foreach (var mcCand in mcCandidates)
             {
                 var hits = await SearchInternalAsync(type, mcCand, loaders, sort, query, offset);
@@ -451,7 +452,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             ModrinthFile? preferredFile = null)
         {
             var primaryFile = preferredFile ?? v.Files.FirstOrDefault(f => f.IsPrimary) ?? v.Files.FirstOrDefault() ?? new ModrinthFile();
-            
+
             var result = new MarketplaceVersion
             {
                 Id = v.Id,

@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Views.Behaviors;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -96,7 +97,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         _visualService.RequestMicaUpdate();
-        
+
         _startupCoordinator.Start();
     }
 
@@ -180,7 +181,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             return;
         }
 
-        if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen && 
+        if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen &&
             PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.IsDownloadInProgress)
         {
             args.Cancel = true;
@@ -243,7 +244,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         SetNavigationItemActiveState(NavSettings, ReferenceEquals(targetItem, NavSettings));
         SetNavigationItemActiveState(NavRemoteControl, ReferenceEquals(targetItem, NavRemoteControl));
 
-        PocketMC.Desktop.Helpers.AnimatedNavIndicatorBehavior.AnimateToActiveItem(RootNavigation);
+        PocketMC.Desktop.Views.Behaviors.AnimatedNavIndicatorBehavior.AnimateToActiveItem(RootNavigation);
     }
 
     private NavigationViewItem? GetShellNavigationItem(Type? pageType)
@@ -403,7 +404,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void RequestApplicationShutdown()
     {
         _explicitExitRequested = true;
-        Application.Current.Shutdown();
+        System.Windows.Application.Current.Shutdown();
     }
 
     private void HideToTray()
@@ -461,13 +462,13 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         }
 
         bool downloadExitConfirmed = false;
-        if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen && 
+        if (PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.InstanceCreatePageIsOpen &&
             PocketMC.Desktop.Features.InstanceCreation.NewInstancePage.IsDownloadInProgress)
         {
             var result = Infrastructure.AppDialog.Confirm(
                 "Cancel Download?",
                 "A download is in progress. Are you sure you want to exit? The download will be cancelled.");
-                
+
             if (!result)
             {
                 e.Cancel = true;
@@ -479,7 +480,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
         var processManager = _serviceProvider.GetRequiredService<ServerProcessManager>();
         bool hasRunningServers = processManager.ActiveProcesses.Count > 0;
-        bool appShutdownStarted = Application.Current?.Dispatcher.HasShutdownStarted == true;
+        bool appShutdownStarted = System.Windows.Application.Current?.Dispatcher.HasShutdownStarted == true;
         bool explicitExitRequested = _explicitExitRequested ||
                                      appShutdownStarted ||
                                      (downloadExitConfirmed && !hasRunningServers);
@@ -504,7 +505,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         RootNavigation.Navigated -= OnNavigated;
         DetachTitleBarContextSource();
         _startupCoordinator.Shutdown();
-        Application.Current?.Shutdown();
+        System.Windows.Application.Current?.Shutdown();
     }
 
     private void AppTrayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e) =>
@@ -532,7 +533,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         if (e.Key == Key.Escape)
         {
             var focused = FocusManager.GetFocusedElement(this);
-            if (focused is not System.Windows.Controls.Primitives.TextBoxBase && 
+            if (focused is not System.Windows.Controls.Primitives.TextBoxBase &&
                 focused is not System.Windows.Controls.PasswordBox)
             {
                 if (_currentPage is ISupportsKeyboardBackNavigation support)
@@ -639,6 +640,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         _explicitExitRequested = true;
         var lifecycle = _serviceProvider.GetRequiredService<IApplicationLifecycleService>();
         await lifecycle.GracefulShutdownAsync();
-        Application.Current.Shutdown();
+        System.Windows.Application.Current.Shutdown();
     }
 }
+

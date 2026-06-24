@@ -29,12 +29,12 @@ namespace PocketMC.Desktop.Features.Mods;
 /// </summary>
 public sealed class BedrockAddonInstaller : IAddonManager
 {
-    private const string BehaviorPacksDir    = "behavior_packs";
-    private const string ResourcePacksDir    = "resource_packs";
-    private const string WorldsDir           = "worlds";
-    private const string DefaultWorldName    = "Bedrock level";
-    private const string WorldBehaviorJson   = "world_behavior_packs.json";
-    private const string WorldResourceJson   = "world_resource_packs.json";
+    private const string BehaviorPacksDir = "behavior_packs";
+    private const string ResourcePacksDir = "resource_packs";
+    private const string WorldsDir = "worlds";
+    private const string DefaultWorldName = "Bedrock level";
+    private const string WorldBehaviorJson = "world_behavior_packs.json";
+    private const string WorldResourceJson = "world_resource_packs.json";
 
     private readonly ILogger<BedrockAddonInstaller> _logger;
 
@@ -127,7 +127,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
             if (Directory.Exists(candidate))
             {
-                packDir  = candidate;
+                packDir = candidate;
                 packType = subDir == BehaviorPacksDir ? "data" : "resources";
                 // Try to read UUID from the manifest so we can scrub the world JSON.
                 var mPath = Path.Combine(candidate, "manifest.json");
@@ -190,7 +190,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         await Task.Run(() => CopyDirectory(packSourceDir, packDestDir), ct);
 
         // Register in the active world json.
-        string worldDir  = ResolveWorldDirectory(serverDir);
+        string worldDir = ResolveWorldDirectory(serverDir);
         string worldJson = isBehavior
             ? Path.Combine(worldDir, WorldBehaviorJson)
             : Path.Combine(worldDir, WorldResourceJson);
@@ -226,7 +226,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
 
         // Determine pack type from the modules array
         var moduleType = doc["modules"]?[0]?["type"]?.GetValue<string>() ?? "";
-        var packType   = moduleType.Equals("resources", StringComparison.OrdinalIgnoreCase)
+        var packType = moduleType.Equals("resources", StringComparison.OrdinalIgnoreCase)
             ? PackType.Resources
             : PackType.Data;  // "data", "script", "world_template" → behavior packs
 
@@ -301,7 +301,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         var newEntry = new JsonObject
         {
             ["pack_id"] = uuid,
-            ["version"]  = new JsonArray(verParts[0], verParts[1], verParts[2])
+            ["version"] = new JsonArray(verParts[0], verParts[1], verParts[2])
         };
         entries.Add(newEntry);
 
@@ -405,7 +405,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
             {
                 try
                 {
-                    var doc  = JsonNode.Parse(File.ReadAllText(manifestPath));
+                    var doc = JsonNode.Parse(File.ReadAllText(manifestPath));
                     name = doc?["header"]?["name"]?.GetValue<string>() ?? name;
                 }
                 catch { /* use directory name */ }
@@ -414,10 +414,10 @@ public sealed class BedrockAddonInstaller : IAddonManager
             long size = GetDirectorySizeBytes(packDir);
             output.Add(new AddonInfo
             {
-                Name         = name,
-                FilePath     = packDir,
-                AddonType    = addonType,
-                SizeKb       = size / 1024.0,
+                Name = name,
+                FilePath = packDir,
+                AddonType = addonType,
+                SizeKb = size / 1024.0,
                 LastModified = Directory.GetLastWriteTime(packDir)
             });
         }

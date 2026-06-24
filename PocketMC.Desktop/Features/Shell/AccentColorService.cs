@@ -156,7 +156,7 @@ public sealed class AccentColorService : IDisposable
             return;
         }
 
-        var dispatcher = Application.Current?.Dispatcher;
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher?.CheckAccess() == false)
         {
             dispatcher.BeginInvoke(ApplyCurrentAccent);
@@ -184,3 +184,4 @@ public sealed class AccentColorService : IDisposable
         _disposed = true;
     }
 }
+

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Intelligence;
 

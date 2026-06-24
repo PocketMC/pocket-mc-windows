@@ -116,3 +116,5 @@ public sealed class WindowsToastNotificationService : INotificationService
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
 }
+
+

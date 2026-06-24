@@ -132,22 +132,22 @@ public sealed class MarkdownRenderingTests
                 break;
             case List list:
                 foreach (ListItem item in list.ListItems)
-                foreach (Block child in item.Blocks)
-                foreach (Run run in EnumerateRuns(child))
-                    yield return run;
+                    foreach (Block child in item.Blocks)
+                        foreach (Run run in EnumerateRuns(child))
+                            yield return run;
                 break;
             case Section section:
                 foreach (Block child in section.Blocks)
-                foreach (Run run in EnumerateRuns(child))
-                    yield return run;
+                    foreach (Run run in EnumerateRuns(child))
+                        yield return run;
                 break;
             case Table table:
                 foreach (TableRowGroup group in table.RowGroups)
-                foreach (TableRow row in group.Rows)
-                foreach (TableCell cell in row.Cells)
-                foreach (Block child in cell.Blocks)
-                foreach (Run run in EnumerateRuns(child))
-                    yield return run;
+                    foreach (TableRow row in group.Rows)
+                        foreach (TableCell cell in row.Cells)
+                            foreach (Block child in cell.Blocks)
+                                foreach (Run run in EnumerateRuns(child))
+                                    yield return run;
                 break;
         }
     }
@@ -189,22 +189,22 @@ public sealed class MarkdownRenderingTests
                 break;
             case List list:
                 foreach (ListItem item in list.ListItems)
-                foreach (Block child in item.Blocks)
-                foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
-                    yield return textBlock;
+                    foreach (Block child in item.Blocks)
+                        foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
+                            yield return textBlock;
                 break;
             case Section section:
                 foreach (Block child in section.Blocks)
-                foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
-                    yield return textBlock;
+                    foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
+                        yield return textBlock;
                 break;
             case Table table:
                 foreach (TableRowGroup group in table.RowGroups)
-                foreach (TableRow row in group.Rows)
-                foreach (TableCell cell in row.Cells)
-                foreach (Block child in cell.Blocks)
-                foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
-                    yield return textBlock;
+                    foreach (TableRow row in group.Rows)
+                        foreach (TableCell cell in row.Cells)
+                            foreach (Block child in cell.Blocks)
+                                foreach (Emoji.Wpf.TextBlock textBlock in EnumerateEmojiTextBlocks(child))
+                                    yield return textBlock;
                 break;
         }
     }
@@ -236,22 +236,22 @@ public sealed class MarkdownRenderingTests
                 break;
             case List list:
                 foreach (ListItem item in list.ListItems)
-                foreach (Block child in item.Blocks)
-                foreach (string text in EnumerateInlineText(child))
-                    yield return text;
+                    foreach (Block child in item.Blocks)
+                        foreach (string text in EnumerateInlineText(child))
+                            yield return text;
                 break;
             case Section section:
                 foreach (Block child in section.Blocks)
-                foreach (string text in EnumerateInlineText(child))
-                    yield return text;
+                    foreach (string text in EnumerateInlineText(child))
+                        yield return text;
                 break;
             case Table table:
                 foreach (TableRowGroup group in table.RowGroups)
-                foreach (TableRow row in group.Rows)
-                foreach (TableCell cell in row.Cells)
-                foreach (Block child in cell.Blocks)
-                foreach (string text in EnumerateInlineText(child))
-                    yield return text;
+                    foreach (TableRow row in group.Rows)
+                        foreach (TableCell cell in row.Cells)
+                            foreach (Block child in cell.Blocks)
+                                foreach (string text in EnumerateInlineText(child))
+                                    yield return text;
                 break;
         }
     }

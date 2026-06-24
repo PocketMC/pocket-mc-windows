@@ -7,7 +7,8 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Diagnostics;
 

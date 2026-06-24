@@ -6,8 +6,9 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.Instances.ImportExport;
@@ -79,7 +80,7 @@ public sealed class InstanceExportService : IInstanceExportService
     private CancellationTokenSource? _activeCts;
 
     public InstanceExportService(
-        AddonManifestService addonManifestService, 
+        AddonManifestService addonManifestService,
         ApplicationState applicationState,
         ILogger<InstanceExportService> logger)
     {
@@ -691,7 +692,7 @@ public sealed class InstanceExportService : IInstanceExportService
         snapshot.Id = Guid.Empty;
         snapshot.LastPlayedAt = null;
         snapshot.LastBackupTime = null;
-        
+
         string appRoot = string.Empty;
         if (applicationState.IsConfigured)
         {

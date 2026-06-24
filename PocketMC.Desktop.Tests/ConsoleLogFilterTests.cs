@@ -29,3 +29,5 @@ public sealed class ConsoleLogFilterTests
         Assert.True(ConsoleLogFilter.MatchesSearch("anything", "   ", useRegex: false));
     }
 }
+
+

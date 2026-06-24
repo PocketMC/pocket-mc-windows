@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
@@ -526,3 +525,4 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
 
 
 }
+

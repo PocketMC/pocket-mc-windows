@@ -1,6 +1,6 @@
 using System.Text.Json;
 using PocketMC.Desktop.Features.Intelligence;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -78,3 +78,5 @@ public sealed class SummaryStorageServiceTests : IDisposable
         };
     }
 }
+
+

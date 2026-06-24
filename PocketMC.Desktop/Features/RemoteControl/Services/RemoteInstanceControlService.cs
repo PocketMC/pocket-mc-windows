@@ -1,6 +1,6 @@
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Services;
 

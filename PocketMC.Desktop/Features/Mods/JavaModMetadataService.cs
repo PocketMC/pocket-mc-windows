@@ -121,7 +121,7 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     metadata.LoaderType = "Plugin";
                     ParsePluginMetadata(archive, pluginEntry, metadata);
-                    
+
                     bool isInModsFolder = fi.FullName.Replace('\\', '/').Split('/').Contains("mods");
                     if (isInModsFolder)
                     {
@@ -632,12 +632,12 @@ namespace PocketMC.Desktop.Features.Mods
             var pattern = $@"^\s*{Regex.Escape(key)}\s*=\s*true\s*$";
             foreach (var (line, section) in EnumerateActiveTomlLines(toml))
             {
-                if (section.StartsWith("[dependencies", StringComparison.OrdinalIgnoreCase) || 
+                if (section.StartsWith("[dependencies", StringComparison.OrdinalIgnoreCase) ||
                     section.StartsWith("[[dependencies", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
-                
+
                 if (Regex.IsMatch(line, pattern, RegexOptions.IgnoreCase, regexTimeout))
                 {
                     return true;
@@ -657,7 +657,7 @@ namespace PocketMC.Desktop.Features.Mods
             var pattern = $@"^\s*{Regex.Escape(key)}\s*=";
             foreach (var (line, section) in EnumerateActiveTomlLines(toml))
             {
-                if (section.StartsWith("[dependencies", StringComparison.OrdinalIgnoreCase) || 
+                if (section.StartsWith("[dependencies", StringComparison.OrdinalIgnoreCase) ||
                     section.StartsWith("[[dependencies", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;

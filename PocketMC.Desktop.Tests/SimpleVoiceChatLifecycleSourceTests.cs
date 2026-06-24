@@ -7,7 +7,7 @@ public sealed class SimpleVoiceChatLifecycleSourceTests
     [Fact]
     public void StopServer_DoesNotRunSimpleVoiceChatPreStartFlow()
     {
-        string source = ReadDesktopSource("Features", "Dashboard", "DashboardActionsVM.cs");
+        string source = ReadDesktopSource("Features", "Dashboard", "DashboardActionsViewModel.cs");
         string stopBody = ExtractMethodBody(source, "StopServer");
 
         Assert.DoesNotContain("EnsureSimpleVoiceChatBeforeStartAsync", stopBody);
@@ -16,7 +16,7 @@ public sealed class SimpleVoiceChatLifecycleSourceTests
     [Fact]
     public void DashboardRestart_RunsSimpleVoiceChatPreStartFlowBeforeRestartAsync()
     {
-        string source = ReadDesktopSource("Features", "Dashboard", "DashboardActionsVM.cs");
+        string source = ReadDesktopSource("Features", "Dashboard", "DashboardActionsViewModel.cs");
         string restartBody = ExtractMethodBody(source, "RestartServer");
 
         AssertOrder(restartBody, "EnsureSimpleVoiceChatBeforeStartAsync", "RestartAsync");

@@ -219,7 +219,7 @@ public partial class InstanceExportPage : Page, ISupportsKeyboardBackNavigation
     public bool HandleBackNavigation()
     {
         var focused = FocusManager.GetFocusedElement(Window.GetWindow(this));
-        if (focused is System.Windows.Controls.Primitives.TextBoxBase || 
+        if (focused is System.Windows.Controls.Primitives.TextBoxBase ||
             focused is System.Windows.Controls.PasswordBox)
         {
             return false;

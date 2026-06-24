@@ -1,8 +1,7 @@
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Models;
 using System.Text.Json;
 
 namespace PocketMC.Desktop.Tests;
@@ -76,10 +75,13 @@ public class ServerProcessManagerTests
             if (process != null)
             {
                 var internalProc = process.GetInternalProcess();
-                try { processManager.KillProcess(metadata.Id); } catch {}
-                try { internalProc?.WaitForExit(5000); } catch {}
+                try { processManager.KillProcess(metadata.Id); } catch { }
+                try { internalProc?.WaitForExit(5000); } catch { }
             }
             processManager.ReleaseInstance(metadata.Id);
         }
     }
 }
+
+
+

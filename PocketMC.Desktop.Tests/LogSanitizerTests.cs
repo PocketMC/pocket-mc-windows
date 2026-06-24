@@ -83,3 +83,5 @@ public sealed class LogSanitizerTests
         Assert.DoesNotContain("super-secret", sanitized);
     }
 }
+
+

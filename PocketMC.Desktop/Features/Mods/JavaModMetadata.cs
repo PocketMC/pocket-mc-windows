@@ -23,7 +23,7 @@ namespace PocketMC.Desktop.Features.Mods
         public string LoaderType { get; set; } = "Unknown"; // Fabric, Quilt, Forge, NeoForge, Plugin, Unknown
         public string? IconEntryPath { get; set; }
         public byte[]? IconBytes { get; set; }
-        
+
         public ModSideSupport SideSupport { get; set; } = ModSideSupport.Unknown;
         public string SideLabel { get; set; } = "Unknown";
 

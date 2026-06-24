@@ -13,13 +13,13 @@ using System.Windows.Navigation;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 
 using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
 using Microsoft.Extensions.DependencyInjection;
@@ -198,7 +198,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
         private void UpdateAddonPanelVisibility(string serverType)
         {
-            if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) || 
+            if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) ||
                 serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) ||
                 serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) ||
                 serverType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase))
@@ -610,7 +610,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             {
                 await CleanupFailedInstanceAsync(createdFolderName, createdInstancePath);
                 SetCreationState(false);
-                
+
                 if (ex is OperationCanceledException)
                 {
                     _logger.LogInformation("Instance creation cancelled by user.");
@@ -842,7 +842,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         public bool HandleBackNavigation()
         {
             var focused = FocusManager.GetFocusedElement(Window.GetWindow(this));
-            if (focused is System.Windows.Controls.Primitives.TextBoxBase || 
+            if (focused is System.Windows.Controls.Primitives.TextBoxBase ||
                 focused is System.Windows.Controls.PasswordBox)
             {
                 return false;
@@ -880,3 +880,4 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         }
     }
 }
+

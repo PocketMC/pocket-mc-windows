@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using PocketMC.Desktop.Core.Interfaces;
@@ -5,7 +6,6 @@ using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Instances.Updates;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Settings;
 
@@ -398,7 +398,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
             IsUpdateProgressIndeterminate = false;
             UpdateProgressValue = rolledBack ? 100 : 0;
             await RefreshRollbackAvailabilityAsync();
-            
+
             if (rolledBack)
             {
                 _dialogService.ShowMessage("Rollback Successful", "The server has been rolled back. The settings page will now reload to reflect the restored configuration.", DialogType.Information);
@@ -424,7 +424,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
             "Delete Rollback Backup",
             "Are you sure you want to permanently delete the rollback backup to free disk space? This cannot be undone.",
             DialogType.Warning);
-        
+
         if (confirm != DialogResult.Yes)
         {
             return;
@@ -456,7 +456,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         RollbackAvailabilityText = HasRollbackBackup
             ? "Rollback backup is available."
             : "No rollback backup exists.";
-            
+
         CommandManager.InvalidateRequerySuggested();
         await Task.CompletedTask;
     }

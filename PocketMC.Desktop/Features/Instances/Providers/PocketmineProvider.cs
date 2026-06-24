@@ -1,3 +1,7 @@
+using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Mods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +10,6 @@ using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.Instances.Providers;
@@ -45,7 +48,7 @@ public class PocketmineProvider : IServerSoftwareProvider
                     {
                         var tag = releaseObj["tag_name"]?.ToString() ?? "";
                         var isPreRelease = (bool)(releaseObj["prerelease"] ?? false);
-                        
+
                         // Check if it has the PocketMine-MP.phar asset
                         var assets = releaseObj["assets"] as JsonArray;
                         if (assets != null && assets.Any(a => a is JsonObject aObj && aObj["name"]?.ToString() == "PocketMine-MP.phar"))
@@ -71,10 +74,10 @@ public class PocketmineProvider : IServerSoftwareProvider
     public async Task DownloadSoftwareAsync(string versionId, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Resolving download URL for Pocketmine {Version}", versionId);
-        
+
         var response = await _httpClient.GetFromJsonAsync<JsonArray>("https://api.github.com/repos/pmmp/PocketMine-MP/releases");
         string? downloadUrl = null;
-        
+
         if (response != null)
         {
             var release = response.FirstOrDefault(n => n is JsonObject r && r["tag_name"]?.ToString() == versionId) as JsonObject;
@@ -97,3 +100,4 @@ public class PocketmineProvider : IServerSoftwareProvider
         await _downloader.DownloadFileAsync(downloadUrl, destinationPath, null, progress, cancellationToken);
     }
 }
+

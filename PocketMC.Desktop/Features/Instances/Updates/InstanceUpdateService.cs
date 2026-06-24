@@ -1,5 +1,8 @@
+using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Mods;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Updates;
 
@@ -106,3 +109,4 @@ public sealed class InstanceUpdateService
         return true;
     }
 }
+

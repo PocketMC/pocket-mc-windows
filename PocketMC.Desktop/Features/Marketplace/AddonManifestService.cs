@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -189,7 +189,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             // Verify file still exists on disk
             string? filePath = ResolveAddonFilePath(serverDir, compat.PrimaryAddonSubDir, entry.FileName);
-            
+
             if (filePath == null || !File.Exists(filePath))
             {
                 // Auto-cleanup stale manifest entry
@@ -210,9 +210,9 @@ namespace PocketMC.Desktop.Features.Marketplace
             foreach (var entry in manifest.Entries)
             {
                 // Better dynamic path detection based on suffix
-                string subDir = (entry.FileName.EndsWith(".phar") || entry.FileName.EndsWith(".php")) ? "plugins" : 
+                string subDir = (entry.FileName.EndsWith(".phar") || entry.FileName.EndsWith(".php")) ? "plugins" :
                                 (entry.FileName.EndsWith(".mcpack") || entry.FileName.EndsWith(".mcaddon")) ? "behavior_packs" : "mods";
-                
+
                 string? filePath = ResolveAddonFilePath(serverDir, subDir, entry.FileName);
                 if (filePath == null || !File.Exists(filePath))
                 {
@@ -239,7 +239,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 };
 
                 var files = new List<string>();
-                foreach(var ext in extensions)
+                foreach (var ext in extensions)
                 {
                     files.AddRange(Directory.GetFiles(targetDir, ext));
                 }
@@ -251,7 +251,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     var hashToLocalPath = new Dictionary<string, string>();
                     foreach (var file in untrackedFiles)
                     {
-                        try 
+                        try
                         {
                             string hash = await CalculateSha1Async(file);
                             hashToLocalPath[hash] = file;
@@ -269,8 +269,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                             if (hashToLocalPath.TryGetValue(hash, out string? localPath))
                             {
                                 var projectInfo = await modrinth.GetProjectInfoAsync(version.ProjectId).ConfigureAwait(false);
-                                var file = version.Files.FirstOrDefault(f => f.Hashes.ContainsValue(hash)) ?? 
-                                           version.Files.FirstOrDefault(f => f.IsPrimary) ?? 
+                                var file = version.Files.FirstOrDefault(f => f.Hashes.ContainsValue(hash)) ??
+                                           version.Files.FirstOrDefault(f => f.IsPrimary) ??
                                            version.Files.FirstOrDefault();
                                 string? fileHash = null;
                                 string? fileHashType = null;

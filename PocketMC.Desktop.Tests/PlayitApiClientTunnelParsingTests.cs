@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -207,3 +208,5 @@ public sealed class PlayitApiClientTunnelParsingTests
         """;
     }
 }
+
+

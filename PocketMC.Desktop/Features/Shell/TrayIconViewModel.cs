@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Linq;
 using System.Windows;
@@ -13,7 +14,7 @@ namespace PocketMC.Desktop.Features.Shell
         public TrayIconViewModel(ServerProcessManager processManager)
         {
             _processManager = processManager;
-            _processManager.OnInstanceStateChanged += (id, state) => Application.Current.Dispatcher.Invoke(UpdateTooltip);
+            _processManager.OnInstanceStateChanged += (id, state) => System.Windows.Application.Current.Dispatcher.Invoke(UpdateTooltip);
             UpdateTooltip();
         }
 
@@ -45,8 +46,8 @@ namespace PocketMC.Desktop.Features.Shell
         public void UpdateTooltip()
         {
             int runningCount = _processManager.ActiveProcesses.Count(p =>
-                p.Value.State == PocketMC.Desktop.Models.ServerState.Online ||
-                p.Value.State == PocketMC.Desktop.Models.ServerState.Starting);
+                p.Value.State == PocketMC.Domain.Models.ServerState.Online ||
+                p.Value.State == PocketMC.Domain.Models.ServerState.Starting);
 
             if (runningCount > 0)
                 TooltipText = $"PocketMC Desktop - {runningCount} server{(runningCount == 1 ? "" : "s")} running";
@@ -55,3 +56,4 @@ namespace PocketMC.Desktop.Features.Shell
         }
     }
 }
+

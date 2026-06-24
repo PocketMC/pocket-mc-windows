@@ -24,7 +24,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         public DependencyConfirmationViewModel(IEnumerable<ResolvedDependency> dependencies)
         {
             Dependencies = new ObservableCollection<ResolvedDependency>(dependencies);
-            
+
             foreach (var dep in Dependencies)
             {
                 dep.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(ResolvedDependency.IsSelected)) OnPropertyChanged(nameof(CanInstall)); };

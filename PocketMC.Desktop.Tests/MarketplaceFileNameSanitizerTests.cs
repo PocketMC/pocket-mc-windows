@@ -1,4 +1,5 @@
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -31,3 +32,5 @@ public sealed class MarketplaceFileNameSanitizerTests
         Assert.Throws<InvalidOperationException>(() => MarketplaceFileNameSanitizer.RequireSafeFileName(input));
     }
 }
+
+

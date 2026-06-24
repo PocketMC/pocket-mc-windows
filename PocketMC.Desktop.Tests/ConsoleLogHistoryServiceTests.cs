@@ -103,3 +103,5 @@ public sealed class ConsoleLogHistoryServiceTests
         }
     }
 }
+
+

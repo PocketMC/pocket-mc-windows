@@ -2,10 +2,10 @@ using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -243,7 +243,7 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
         Assert.Equal("Restart required for Simple Voice Chat tunnel changes to apply.", vm.SimpleVoiceChatWarning);
     }
 
-    private static InstanceCardViewModel CreateCard(PortReliabilityTestWorkspace workspace, PocketMC.Desktop.Models.InstanceMetadata metadata)
+    private static InstanceCardViewModel CreateCard(PortReliabilityTestWorkspace workspace, PocketMC.Domain.Models.InstanceMetadata metadata)
     {
         var processManager = workspace.CreateServerProcessManager();
         var lifecycleService = workspace.CreateServerLifecycleService(
@@ -368,3 +368,6 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(Array.Empty<string>());
     }
 }
+
+
+

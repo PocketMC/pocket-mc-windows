@@ -1,8 +1,9 @@
+using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Services;
 
@@ -92,7 +93,7 @@ public sealed class RemoteStatusService
         string? tunnelIp = _applicationState.GetTunnelAddress(instanceId);
         if (!string.IsNullOrWhiteSpace(tunnelIp))
         {
-            serverIps.Add(new ServerIpDto { Label = PocketMC.Desktop.Helpers.CommandFormatter.IsBedrock(metadata.ServerType) ? "Primary (Playit)" : "Java (Playit)", Address = tunnelIp });
+            serverIps.Add(new ServerIpDto { Label = PocketMC.Desktop.Features.Console.CommandFormatter.IsBedrock(metadata.ServerType) ? "Primary (Playit)" : "Java (Playit)", Address = tunnelIp });
         }
 
         string? bedrockTunnelIp = _applicationState.GetBedrockTunnelAddress(instanceId);
@@ -116,7 +117,7 @@ public sealed class RemoteStatusService
         string? localIp = _localNetworkAddressService.GetLocalIpAddresses().FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(localIp))
         {
-            serverIps.Add(new ServerIpDto { Label = PocketMC.Desktop.Helpers.CommandFormatter.IsBedrock(metadata.ServerType) ? "LAN" : "Java (LAN)", Address = $"{localIp}:{serverPort}" });
+            serverIps.Add(new ServerIpDto { Label = PocketMC.Desktop.Features.Console.CommandFormatter.IsBedrock(metadata.ServerType) ? "LAN" : "Java (LAN)", Address = $"{localIp}:{serverPort}" });
 
             if (_geyserDetector.IsGeyserInstalled(_registry.GetPath(metadata.Id)) && metadata.GeyserBedrockPort.HasValue)
             {
@@ -161,3 +162,4 @@ public sealed class RemoteStatusService
         return _lifecycleService.IsRunning(instanceId) ? "Online" : "Offline";
     }
 }
+

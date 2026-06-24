@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Instances.ImportExport;
 

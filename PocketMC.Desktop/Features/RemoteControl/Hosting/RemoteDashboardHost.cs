@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Features.RemoteControl.Models;
 using System.IO;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
@@ -11,7 +12,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.RemoteControl.Tunnels;
 using PocketMC.Desktop.Features.Shell;
@@ -121,7 +122,7 @@ public sealed class RemoteDashboardHost
             app.UseWebSockets();
             app.UseAuthentication();
             app.UseAuthorization();
-            
+
             app.Use(async (context, next) =>
             {
                 // Simple middleware to protect WebSockets
@@ -231,8 +232,8 @@ public sealed class RemoteDashboardHost
             var settings = _applicationState.Settings.RemoteControl;
             if (!settings.RequireAuthentication || _authenticationService.VerifyPassword(request.Password, settings.PasswordHash))
             {
-                var claims = new List<Claim> 
-                { 
+                var claims = new List<Claim>
+                {
                     new Claim(ClaimTypes.Name, "Admin"),
                     new Claim("SecurityStamp", settings.SecurityStamp)
                 };
@@ -395,3 +396,4 @@ public sealed class RemoteDashboardHost
         return await JsonSerializer.DeserializeAsync<T>(context.Request.Body, JsonOptions);
     }
 }
+

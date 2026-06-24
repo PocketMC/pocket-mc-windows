@@ -39,11 +39,11 @@ public static class ResilientUploadPolicy
     private static bool IsRecoverable(Exception ex)
     {
         if (ex is OperationCanceledException) return false;
-        
+
         if (ex is HttpRequestException httpEx)
         {
             if (!httpEx.StatusCode.HasValue) return true; // DNS/Connection failures
-            
+
             var code = (int)httpEx.StatusCode.Value;
             // 408 Request Timeout, 429 Too Many Requests, 5xx Server Errors
             return code == 408 || code == 429 || (code >= 500 && code <= 599);

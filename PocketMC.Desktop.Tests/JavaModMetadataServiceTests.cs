@@ -423,7 +423,8 @@ description: A plugin description
         {
             // client environment
             string jsonClient = @"{ ""id"": ""c"", ""environment"": ""client"" }";
-            string jarClient = CreateTempJar("fabric-env-client.jar", a => {
+            string jarClient = CreateTempJar("fabric-env-client.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open());
                 w.Write(jsonClient);
             });
@@ -434,7 +435,8 @@ description: A plugin description
 
             // server environment
             string jsonServer = @"{ ""id"": ""s"", ""environment"": ""server"" }";
-            string jarServer = CreateTempJar("fabric-env-server.jar", a => {
+            string jarServer = CreateTempJar("fabric-env-server.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open());
                 w.Write(jsonServer);
             });
@@ -444,7 +446,8 @@ description: A plugin description
 
             // '*' environment
             string jsonStar = @"{ ""id"": ""star"", ""environment"": ""*"" }";
-            string jarStar = CreateTempJar("fabric-env-star.jar", a => {
+            string jarStar = CreateTempJar("fabric-env-star.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open());
                 w.Write(jsonStar);
             });
@@ -453,7 +456,8 @@ description: A plugin description
 
             // missing environment
             string jsonMissing = @"{ ""id"": ""m"" }";
-            string jarMissing = CreateTempJar("fabric-env-missing.jar", a => {
+            string jarMissing = CreateTempJar("fabric-env-missing.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open());
                 w.Write(jsonMissing);
             });
@@ -466,7 +470,8 @@ description: A plugin description
         {
             // Quilt client environment
             string jsonClient = @"{ ""quilt_loader"": { ""id"": ""qc"", ""environment"": ""client"", ""metadata"": { ""name"": ""QClient"" } } }";
-            string jarClient = CreateTempJar("quilt-env-client.jar", a => {
+            string jarClient = CreateTempJar("quilt-env-client.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("quilt.mod.json").Open());
                 w.Write(jsonClient);
             });
@@ -476,7 +481,8 @@ description: A plugin description
 
             // Quilt server environment
             string jsonServer = @"{ ""quilt_loader"": { ""id"": ""qs"", ""environment"": ""server"", ""metadata"": { ""name"": ""QServer"" } } }";
-            string jarServer = CreateTempJar("quilt-env-server.jar", a => {
+            string jarServer = CreateTempJar("quilt-env-server.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("quilt.mod.json").Open());
                 w.Write(jsonServer);
             });
@@ -486,7 +492,8 @@ description: A plugin description
 
             // Quilt missing environment
             string jsonMissing = @"{ ""quilt_loader"": { ""id"": ""qm"", ""metadata"": { ""name"": ""QMissing"" } } }";
-            string jarMissing = CreateTempJar("quilt-env-missing.jar", a => {
+            string jarMissing = CreateTempJar("quilt-env-missing.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("quilt.mod.json").Open());
                 w.Write(jsonMissing);
             });
@@ -501,7 +508,8 @@ description: A plugin description
             string toml1 = @"[[mods]]
 modId=""test1""
 displayTest=""IGNORE_SERVER_VERSION""";
-            string jar1 = CreateTempJar("forge-display-test-1.jar", a => {
+            string jar1 = CreateTempJar("forge-display-test-1.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
                 w.Write(toml1);
             });
@@ -513,7 +521,8 @@ displayTest=""IGNORE_SERVER_VERSION""";
             string toml2 = @"[[mods]]
 modId=""test2""
 displayTest=""NONE""";
-            string jar2 = CreateTempJar("forge-display-test-2.jar", a => {
+            string jar2 = CreateTempJar("forge-display-test-2.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
                 w.Write(toml2);
             });
@@ -525,7 +534,8 @@ displayTest=""NONE""";
             string toml3 = @"[[mods]]
 modId=""test3""
 clientSideOnly=true";
-            string jar3 = CreateTempJar("forge-clientsideonly.jar", a => {
+            string jar3 = CreateTempJar("forge-clientsideonly.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
                 w.Write(toml3);
             });
@@ -536,7 +546,8 @@ clientSideOnly=true";
             // No side info
             string toml4 = @"[[mods]]
 modId=""test4""";
-            string jar4 = CreateTempJar("forge-noside.jar", a => {
+            string jar4 = CreateTempJar("forge-noside.jar", a =>
+            {
                 using var w = new StreamWriter(a.CreateEntry("META-INF/mods.toml").Open());
                 w.Write(toml4);
             });
@@ -658,3 +669,5 @@ someOtherKey=""value"" # clientSideOnly=true was removed in v2
         }
     }
 }
+
+

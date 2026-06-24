@@ -55,7 +55,7 @@ public static class SingleInstanceService
     {
         _cancellationTokenSource?.Cancel();
         _cancellationTokenSource?.Dispose();
-        
+
         if (_mutex != null)
         {
             try
@@ -134,7 +134,7 @@ public static class SingleInstanceService
             pipeClient.Connect(1000);
 
             using var writer = new StreamWriter(pipeClient) { AutoFlush = true };
-            
+
             var uriArg = System.Linq.Enumerable.FirstOrDefault(args, a => a.StartsWith("pocketmc://", StringComparison.OrdinalIgnoreCase));
             if (uriArg != null)
             {

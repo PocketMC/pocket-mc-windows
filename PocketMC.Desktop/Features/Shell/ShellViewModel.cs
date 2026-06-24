@@ -109,9 +109,10 @@ namespace PocketMC.Desktop.Features.Shell
         private void OnMetricsUpdated(object? sender, EventArgs e)
         {
             var summary = _resourceMonitorService.CurrentSummary;
-            if (Application.Current?.Dispatcher?.CheckAccess() == false)
+            if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
             {
-                Application.Current.Dispatcher.BeginInvoke(() => {
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                {
                     _uiStateService.GlobalHealthStatusText = summary?.DisplayText ?? "Idle";
                     _uiStateService.GlobalHealthStatusBrush = (summary?.IsHighUsage == true)
                         ? System.Windows.Media.Brushes.Red
@@ -140,7 +141,7 @@ namespace PocketMC.Desktop.Features.Shell
 
             UpdateStatusMessage = "Shutting down active servers...";
             IsUpdateDownloading = true; // Use this as a general "busy" state for the banner
-            
+
             await _applicationLifecycle.GracefulShutdownAsync();
 
             UpdateStatusMessage = "Ready to update...";
@@ -149,9 +150,9 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OnUpdateStatusChanged(UpdateStatus status)
         {
-            if (Application.Current?.Dispatcher?.CheckAccess() == false)
+            if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
             {
-                Application.Current.Dispatcher.BeginInvoke(() => OnUpdateStatusChanged(status));
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(() => OnUpdateStatusChanged(status));
                 return;
             }
 
@@ -210,7 +211,7 @@ namespace PocketMC.Desktop.Features.Shell
                     // Let's keep it for a few seconds then hide or let user dismiss.
                     break;
             }
-            
+
             OnPropertyChanged(nameof(UpdateBannerVisibility));
         }
 
@@ -249,3 +250,4 @@ namespace PocketMC.Desktop.Features.Shell
         public Visibility NavigationVisibility => IsPaneVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 }
+

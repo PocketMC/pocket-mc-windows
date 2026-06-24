@@ -2,7 +2,7 @@ using Microsoft.Extensions.Hosting;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Hosting;
 

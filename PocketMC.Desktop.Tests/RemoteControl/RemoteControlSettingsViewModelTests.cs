@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Setup.ViewModels;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
@@ -33,3 +33,4 @@ public sealed class RemoteControlSettingsViewModelTests
             });
     }
 }
+

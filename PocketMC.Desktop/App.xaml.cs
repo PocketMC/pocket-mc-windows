@@ -12,12 +12,15 @@ using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.RemoteControl;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Java;
@@ -31,7 +34,7 @@ using System.IO;
 
 namespace PocketMC.Desktop;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private IHost? _host;
     private Guid? _pendingSummaryInstanceId;
@@ -233,7 +236,7 @@ public partial class App : Application
                         }
 
                         var settingsManager = Services.GetRequiredService<PocketMC.Desktop.Features.Settings.SettingsManager>();
-                        
+
                         applicationState.Settings.DiscordUserId = userId;
                         applicationState.Settings.DiscordApiUrl = apiUrl;
                         applicationState.Settings.DiscordApiKey = apiKey;
@@ -293,14 +296,14 @@ public partial class App : Application
                         settingsViewModel.Summaries.Load(!string.IsNullOrWhiteSpace(Services.GetRequiredService<ApplicationState>().Settings.GetCurrentAiKey()));
 
                         var settingsPage = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsPage>(Services, settingsViewModel);
-                        
+
                         navigationService.NavigateToDetailPage(
-                            settingsPage, 
-                            $"Settings: {metadata.Name}", 
-                            DetailRouteKind.ServerSettings, 
-                            DetailBackNavigation.Dashboard, 
+                            settingsPage,
+                            $"Settings: {metadata.Name}",
+                            DetailRouteKind.ServerSettings,
+                            DetailBackNavigation.Dashboard,
                             true);
-                            
+
                         if (MainWindow != null)
                         {
                             if (MainWindow.WindowState == WindowState.Minimized)
@@ -354,6 +357,24 @@ public partial class App : Application
             // Logging should never block crash reporting.
         }
 
+        if (exception is PocketMC.Domain.Exceptions.PocketMCException pmcException)
+        {
+            if (showDialog)
+            {
+                try
+                {
+                    Infrastructure.AppDialog.ShowError(
+                        "PocketMC Error",
+                        $"{pmcException.Message}\n\nError Code: {pmcException.ErrorCode}");
+                }
+                catch
+                {
+                    // Ignore UI errors during crash
+                }
+            }
+            return; // Expected application error, do not crash the app entirely
+        }
+
         string crashReportPath = WriteCrashReport(exception, source);
         if (!showDialog)
         {
@@ -401,3 +422,5 @@ public partial class App : Application
         client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0");
     }
 }
+
+

@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,8 +11,6 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.CloudBackups;
 using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Settings;
 
@@ -135,8 +134,8 @@ public class ServerCloudBackupViewModel : ViewModelBase
     public Task Initialization { get; }
 
     public ServerCloudBackupViewModel(
-        SettingsManager settingsManager, 
-        IEnumerable<ICloudBackupProvider> providers, 
+        SettingsManager settingsManager,
+        IEnumerable<ICloudBackupProvider> providers,
         IDialogService dialogService,
         InstanceMetadata metadata,
         BackupService backupService,
@@ -303,7 +302,7 @@ public class ServerCloudBackupViewModel : ViewModelBase
     private async Task DeleteRemoteBackupAsync(RemoteBackupItemViewModel? vm)
     {
         if (vm == null) return;
-        
+
         if (await _dialogService.ShowDialogAsync("Confirm", $"Delete {vm.FileName} from {vm.Provider}?", DialogType.Question) == DialogResult.Yes)
         {
             IsLoading = true;
@@ -347,7 +346,7 @@ public class ServerCloudBackupViewModel : ViewModelBase
                 }
 
                 string tempZipPath = Path.Combine(backupsDir, "temp_cloud_restore.zip");
-                
+
                 // 1. Download from cloud
                 await provider.DownloadBackupAsync(vm.ProviderFileId, tempZipPath, CancellationToken.None);
 

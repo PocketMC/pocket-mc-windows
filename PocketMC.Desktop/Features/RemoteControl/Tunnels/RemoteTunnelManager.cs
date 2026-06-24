@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Tunnels;
@@ -48,9 +48,9 @@ public sealed class RemoteTunnelManager
             }
 
             string localUrl = $"http://127.0.0.1:{settings.Port}";
-            
+
             _activeProvider = provider;
-            
+
             RemoteTunnelStartResult result = await provider.StartAsync(
                 new RemoteTunnelStartRequest
                 {
@@ -93,3 +93,4 @@ public sealed class RemoteTunnelManager
         }
     }
 }
+

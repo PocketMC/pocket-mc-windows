@@ -1,16 +1,16 @@
 namespace PocketMC.Desktop.Features.Instances.Services;
 
-    public struct DownloadProgress
-    {
-        public long BytesRead { get; set; }
-        public long TotalBytes { get; set; }
+public struct DownloadProgress
+{
+    public long BytesRead { get; set; }
+    public long TotalBytes { get; set; }
 
-        public double Percentage
+    public double Percentage
+    {
+        get
         {
-            get
-            {
-                if (TotalBytes <= 0) return 0;
-                return (double)BytesRead / TotalBytes * 100;
-            }
+            if (TotalBytes <= 0) return 0;
+            return (double)BytesRead / TotalBytes * 100;
         }
     }
+}

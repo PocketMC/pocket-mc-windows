@@ -13,9 +13,9 @@ public static class PkceHelper
         {
             rng.GetBytes(buffer);
         }
-        
+
         string codeVerifier = Base64UrlEncode(buffer);
-        
+
         using (var sha256 = SHA256.Create())
         {
             byte[] challengeBytes = sha256.ComputeHash(Encoding.ASCII.GetBytes(codeVerifier));

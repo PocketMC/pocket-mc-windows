@@ -3,9 +3,10 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -456,3 +457,5 @@ public sealed class InstanceExportServiceTests : IDisposable
         }
     }
 }
+
+

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -595,3 +596,5 @@ public sealed class TunnelServiceTests
         """;
     }
 }
+
+

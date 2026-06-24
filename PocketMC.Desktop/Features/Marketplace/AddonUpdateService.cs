@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Features.Marketplace.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,9 +7,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -244,3 +244,4 @@ namespace PocketMC.Desktop.Features.Marketplace
         }
     }
 }
+

@@ -32,8 +32,8 @@ namespace PocketMC.Desktop.Features.Instances
         public bool IsComplete
         {
             get => _isComplete;
-            private set 
-            { 
+            private set
+            {
                 if (SetProperty(ref _isComplete, value) && value)
                 {
                     OnComplete?.Invoke();

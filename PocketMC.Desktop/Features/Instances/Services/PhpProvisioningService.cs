@@ -59,7 +59,7 @@ public class PhpProvisioningService
         try
         {
             _logger.LogInformation("Resolving official PocketMine PHP binaries...");
-            
+
             // Get the specific tag recommended for PM5
             var response = await _httpClient.GetFromJsonAsync<JsonObject>("https://api.github.com/repos/pmmp/PHP-Binaries/releases/tags/pm5-php-8.2-latest", cancellationToken);
             var assets = response?["assets"] as JsonArray;
@@ -67,11 +67,11 @@ public class PhpProvisioningService
             string? downloadUrl = null;
             if (assets != null)
             {
-                var windowsAsset = assets.FirstOrDefault(a => 
-                    a is JsonObject aObj && 
+                var windowsAsset = assets.FirstOrDefault(a =>
+                    a is JsonObject aObj &&
                     aObj["name"]?.ToString().Contains("Windows-x64-PM5") == true &&
                     aObj["name"]?.ToString().EndsWith(".zip") == true) as JsonObject;
-                
+
                 downloadUrl = windowsAsset?["browser_download_url"]?.ToString();
             }
 
@@ -88,7 +88,7 @@ public class PhpProvisioningService
             {
                 Directory.Delete(phpDir, true);
             }
-            
+
             await _downloader.ExtractZipAsync(tempZipPath, phpDir, progress);
         }
         catch (Exception ex)

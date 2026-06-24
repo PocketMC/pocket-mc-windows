@@ -1,43 +1,44 @@
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using System;
 using System.Text.RegularExpressions;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
-    public static class SlugHelper
+public static class SlugHelper
+{
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
+    private static readonly Regex InvalidSlugCharacterRegex = new(
+        @"[^a-z0-9\-_]",
+        RegexOptions.Compiled,
+        RegexTimeout);
+
+    private static readonly Regex RepeatedDashRegex = new(
+        @"-+",
+        RegexOptions.Compiled,
+        RegexTimeout);
+
+    public static string GenerateSlug(string input)
     {
-        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+        if (string.IsNullOrWhiteSpace(input))
+            return "unnamed-server";
 
-        private static readonly Regex InvalidSlugCharacterRegex = new(
-            @"[^a-z0-9\-_]",
-            RegexOptions.Compiled,
-            RegexTimeout);
+        // Convert to lowercase
+        string slug = input.ToLowerInvariant();
 
-        private static readonly Regex RepeatedDashRegex = new(
-            @"-+",
-            RegexOptions.Compiled,
-            RegexTimeout);
+        // Replace spaces and invalid filename characters with hyphens
+        slug = InvalidSlugCharacterRegex.Replace(slug, "-");
 
-        public static string GenerateSlug(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input))
-                return "unnamed-server";
+        // Remove multiple consecutive hyphens
+        slug = RepeatedDashRegex.Replace(slug, "-");
 
-            // Convert to lowercase
-            string slug = input.ToLowerInvariant();
+        // Trim hyphens from start and end
+        slug = slug.Trim('-');
 
-            // Replace spaces and invalid filename characters with hyphens
-            slug = InvalidSlugCharacterRegex.Replace(slug, "-");
+        if (string.IsNullOrEmpty(slug))
+            return "unnamed-server";
 
-            // Remove multiple consecutive hyphens
-            slug = RepeatedDashRegex.Replace(slug, "-");
-
-            // Trim hyphens from start and end
-            slug = slug.Trim('-');
-
-            if (string.IsNullOrEmpty(slug))
-                return "unnamed-server";
-
-            return slug;
-        }
+        return slug;
     }
+}
+

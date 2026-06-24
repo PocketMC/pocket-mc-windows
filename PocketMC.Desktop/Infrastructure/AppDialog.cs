@@ -53,7 +53,7 @@ namespace PocketMC.Desktop.Infrastructure
             // Try to set owner to the main window for proper modality
             try
             {
-                var mainWindow = Application.Current?.MainWindow;
+                var mainWindow = System.Windows.Application.Current?.MainWindow;
                 if (mainWindow != null && mainWindow.IsLoaded && mainWindow.IsVisible)
                 {
                     dialog.Owner = mainWindow;
@@ -69,3 +69,4 @@ namespace PocketMC.Desktop.Infrastructure
         }
     }
 }
+

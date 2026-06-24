@@ -1,5 +1,5 @@
 using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -49,3 +49,5 @@ public sealed class ServerSettingsProfileTests
         Assert.True(profile.SupportsBedrockRules);
     }
 }
+
+

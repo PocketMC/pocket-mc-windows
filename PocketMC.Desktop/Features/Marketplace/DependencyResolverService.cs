@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using PocketMC.Desktop.Features.Marketplace.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PocketMC.Desktop.Features.Marketplace.Models;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -121,10 +118,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             bool isRoot = false)
         {
             string normalizedId = projectId.ToLowerInvariant().Trim();
-            
+
             // Phase 1: Check cycle/visited
-            var existing = results.FirstOrDefault(r => 
-                r.ProjectId.Equals(normalizedId, StringComparison.OrdinalIgnoreCase) || 
+            var existing = results.FirstOrDefault(r =>
+                r.ProjectId.Equals(normalizedId, StringComparison.OrdinalIgnoreCase) ||
                 (r.IdAlias != null && r.IdAlias.Equals(normalizedId, StringComparison.OrdinalIgnoreCase)));
 
             if (existing != null)
@@ -141,7 +138,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             visited.Add(normalizedId);
 
             bool alreadyInstalled = await _manifestService.IsInstalledAsync(serverDir, provider.Name, projectId, compat);
-            
+
             MarketplaceVersion? version = null;
 
             // Try resolving by exact versionId first
@@ -200,12 +197,12 @@ namespace PocketMC.Desktop.Features.Marketplace
             // Phase 2: Canonical ID Check
             string canonicalId = version.ProjectId.ToLowerInvariant();
             var canonicalExisting = results.FirstOrDefault(r => r.ProjectId.Equals(canonicalId, StringComparison.OrdinalIgnoreCase));
-            
+
             if (canonicalExisting != null)
             {
                 // Map the requested alias to the existing canonical result for future cycle detection
-                canonicalExisting.IdAlias = normalizedId; 
-                
+                canonicalExisting.IdAlias = normalizedId;
+
                 if (depType == DependencyType.Required && canonicalExisting.Type == DependencyType.Optional)
                 {
                     canonicalExisting.Type = DependencyType.Required;
@@ -213,7 +210,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
                 return results;
             }
-            
+
             if (canonicalId != normalizedId)
             {
                 if (visited.Contains(canonicalId)) return results;
@@ -271,7 +268,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 foreach (var dep in version.Dependencies)
                 {
                     if (dep.Type == DependencyType.Incompatible) continue;
-                    if (dep.Type == DependencyType.Embedded) continue; 
+                    if (dep.Type == DependencyType.Embedded) continue;
 
                     await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, dep.VersionId, mcVersion, loader, results, visited, dep.Type, compat, false);
                 }
@@ -281,3 +278,4 @@ namespace PocketMC.Desktop.Features.Marketplace
         }
     }
 }
+

@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Windows.Media;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -86,3 +86,5 @@ public sealed class AccentColorSettingsTests : IDisposable
         }
     }
 }
+
+

@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Infrastructure;
 
@@ -554,7 +554,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 {
                     _currentTunnels.Remove(toRemove);
                 }
-                
+
                 if (_currentTunnels.Count == 0)
                 {
                     ShowNoTunnels("All tunnels deleted. Create or start a server tunnel to see entries here.");
@@ -987,3 +987,4 @@ namespace PocketMC.Desktop.Features.Tunnel
         }
     }
 }
+

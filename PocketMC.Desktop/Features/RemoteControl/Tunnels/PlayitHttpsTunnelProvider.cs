@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Tunnels;
@@ -374,3 +375,4 @@ public sealed class PlayitHttpsTunnelProvider : IRemoteTunnelProvider
 
     private sealed record ReadyTunnelResult(TunnelData? Tunnel, string? ErrorMessage);
 }
+

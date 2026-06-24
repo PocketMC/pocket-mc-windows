@@ -5,6 +5,7 @@ using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Tests;
 

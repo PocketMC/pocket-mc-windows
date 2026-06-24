@@ -2,11 +2,11 @@ using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -211,3 +211,6 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(Array.Empty<string>());
     }
 }
+
+
+

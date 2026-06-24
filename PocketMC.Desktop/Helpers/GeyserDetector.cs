@@ -17,10 +17,10 @@ public class GeyserDetector : IGeyserDetector
             string pluginsDir = Path.Combine(instancePath, "plugins");
             string modsDir = Path.Combine(instancePath, "mods");
 
-            bool geyserInPlugins = Directory.Exists(pluginsDir) && 
+            bool geyserInPlugins = Directory.Exists(pluginsDir) &&
                                    Directory.EnumerateFiles(pluginsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
 
-            bool geyserInMods = Directory.Exists(modsDir) && 
+            bool geyserInMods = Directory.Exists(modsDir) &&
                                  Directory.EnumerateFiles(modsDir, "Geyser*.jar", SearchOption.TopDirectoryOnly).Any();
 
             return geyserInPlugins || geyserInMods;

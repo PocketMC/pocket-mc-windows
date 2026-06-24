@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Console;
 using System;
 using System.Collections.Concurrent;
@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Players.Services;
 
@@ -153,3 +152,4 @@ public class ServerProcessManager
         _activeProcesses.Clear();
     }
 }
+

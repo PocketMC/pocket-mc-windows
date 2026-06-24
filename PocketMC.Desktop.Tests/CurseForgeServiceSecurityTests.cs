@@ -1,9 +1,10 @@
+using PocketMC.Desktop.Features.Marketplace.Models;
 using System.Net;
 using System.Net.Http;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -244,3 +245,6 @@ public sealed class CurseForgeServiceSecurityTests
         return new CurseForgeService(appState, client);
     }
 }
+
+
+

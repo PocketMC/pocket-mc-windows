@@ -3,8 +3,9 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -140,3 +141,5 @@ public sealed class BedrockAddonInstallerManifestTests : IDisposable
         return version.Select(node => node!.GetValue<int>()).ToArray();
     }
 }
+
+

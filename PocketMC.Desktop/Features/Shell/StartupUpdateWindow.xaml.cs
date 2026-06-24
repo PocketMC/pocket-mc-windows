@@ -113,9 +113,9 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OnUpdateStatusChanged(UpdateStatus status)
         {
-            if (Application.Current?.Dispatcher?.CheckAccess() == false)
+            if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
             {
-                Application.Current.Dispatcher.BeginInvoke(() => OnUpdateStatusChanged(status));
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(() => OnUpdateStatusChanged(status));
                 return;
             }
 
@@ -202,3 +202,4 @@ namespace PocketMC.Desktop.Features.Shell
         }
     }
 }
+

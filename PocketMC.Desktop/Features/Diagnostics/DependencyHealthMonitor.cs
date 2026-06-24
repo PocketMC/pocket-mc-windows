@@ -48,8 +48,8 @@ public class DependencyHealthMonitor : IDisposable
 
     public DependencyHealth GetHealth(string name)
     {
-        return _healthCache.TryGetValue(name, out var health) 
-            ? health 
+        return _healthCache.TryGetValue(name, out var health)
+            ? health
             : new DependencyHealth { Name = name, Status = DependencyHealthStatus.Unknown };
     }
 
@@ -72,7 +72,7 @@ public class DependencyHealthMonitor : IDisposable
                     CheckEndpointAsync("Adoptium API", "https://api.adoptium.net/v3/info/release_names?page=0&size=1", token),
                     CheckEndpointAsync("Modrinth API", "https://api.modrinth.com/", token)
                 );
-                
+
                 HealthChanged?.Invoke();
             }
             catch (Exception ex)
@@ -92,7 +92,7 @@ public class DependencyHealthMonitor : IDisposable
         {
             var client = _httpClientFactory.CreateClient("HealthCheck");
             client.Timeout = TimeSpan.FromSeconds(12);
-            
+
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Add("User-Agent", "PocketMC-Desktop/1.0 (HealthCheck)");
 

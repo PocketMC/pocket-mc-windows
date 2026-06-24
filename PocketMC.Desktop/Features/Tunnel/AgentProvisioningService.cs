@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {
@@ -84,12 +84,12 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         public Task ConnectAsync()
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 var dialog = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<PlayitSetupWizardDialog>(_serviceProvider);
-                if (Application.Current.MainWindow != null)
+                if (System.Windows.Application.Current.MainWindow != null)
                 {
-                    dialog.Owner = Application.Current.MainWindow;
+                    dialog.Owner = System.Windows.Application.Current.MainWindow;
                 }
                 dialog.ShowDialog();
             });
@@ -103,3 +103,4 @@ namespace PocketMC.Desktop.Features.Tunnel
         }
     }
 }
+

@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Settings;
 
@@ -214,3 +215,5 @@ public sealed class AddonAutoUpdateService
         public string ProjectId { get; init; } = "";
     }
 }
+
+

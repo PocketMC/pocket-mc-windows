@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Infrastructure.Power;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -140,3 +140,5 @@ public sealed class ServerSleepPreventionCoordinatorTests
         }
     }
 }
+
+

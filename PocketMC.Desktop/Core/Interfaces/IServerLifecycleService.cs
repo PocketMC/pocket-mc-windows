@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 
 
 
@@ -28,3 +27,4 @@ namespace PocketMC.Desktop.Core.Interfaces
         Task ReleaseInstanceAsync(Guid instanceId);
     }
 }
+

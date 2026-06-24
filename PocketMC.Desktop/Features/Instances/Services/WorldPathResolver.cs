@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
@@ -32,9 +32,9 @@ public static class WorldPathResolver
     {
         return metadata.Compatibility.Family switch
         {
-            EngineFamily.Bedrock   => ResolveBedrockWorldPath(serverDir, configService),
+            EngineFamily.Bedrock => ResolveBedrockWorldPath(serverDir, configService),
             EngineFamily.Pocketmine => Path.Combine(serverDir, "worlds"),
-            _                      => Path.Combine(serverDir, "world")
+            _ => Path.Combine(serverDir, "world")
         };
     }
 
@@ -48,9 +48,9 @@ public static class WorldPathResolver
     {
         return metadata.Compatibility.Family switch
         {
-            EngineFamily.Bedrock   => Path.Combine("worlds", GetBedrockLevelName(serverDir, configService)),
+            EngineFamily.Bedrock => Path.Combine("worlds", GetBedrockLevelName(serverDir, configService)),
             EngineFamily.Pocketmine => "worlds",
-            _                      => "world"
+            _ => "world"
         };
     }
 

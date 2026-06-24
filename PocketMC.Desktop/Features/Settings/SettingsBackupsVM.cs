@@ -1,3 +1,4 @@
+using PocketMC.Domain.Models;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -7,7 +8,7 @@ using System.Windows.Input;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Models;
+
 using PocketMC.Desktop.Features.Instances.Backups;
 
 namespace PocketMC.Desktop.Features.Settings
@@ -31,17 +32,17 @@ namespace PocketMC.Desktop.Features.Settings
         public int MaxBackupsToKeep { get => _maxBackupsToKeep; set { if (SetProperty(ref _maxBackupsToKeep, value)) _markDirty(); } }
 
         private string? _customBackupDirectory;
-        public string? CustomBackupDirectory 
-        { 
-            get => _customBackupDirectory; 
-            set 
-            { 
-                if (SetProperty(ref _customBackupDirectory, value)) 
-                { 
-                    _markDirty(); 
-                    LoadBackups(); 
-                } 
-            } 
+        public string? CustomBackupDirectory
+        {
+            get => _customBackupDirectory;
+            set
+            {
+                if (SetProperty(ref _customBackupDirectory, value))
+                {
+                    _markDirty();
+                    LoadBackups();
+                }
+            }
         }
 
         public ObservableCollection<BackupItemViewModel> BackupList { get; } = new();
@@ -105,7 +106,7 @@ namespace PocketMC.Desktop.Features.Settings
             _backupIntervalHours = metadata.BackupIntervalHours;
             _maxBackupsToKeep = metadata.MaxBackupsToKeep;
             _customBackupDirectory = metadata.CustomBackupDirectory;
- 
+
             CreateBackupCommand = new RelayCommand(async _ => await CreateBackupAsync());
             RestoreBackupCommand = new RelayCommand(async p => await RestoreBackupAsync(p as string), _ => !_isRunningCheck());
             DeleteBackupCommand = new RelayCommand(async p => await DeleteBackupAsync(p as string));
@@ -134,7 +135,7 @@ namespace PocketMC.Desktop.Features.Settings
         public void LoadBackups()
         {
             BackupList.Clear();
-            
+
             var defaultDir = Path.Combine(_serverDir, "backups");
             var customDir = CustomBackupDirectory;
 
@@ -220,8 +221,8 @@ namespace PocketMC.Desktop.Features.Settings
             if (manifest.LastFailedBackupUtc.HasValue)
             {
                 var ago = DateTime.UtcNow - manifest.LastFailedBackupUtc.Value;
-                string timeAgo = ago.TotalHours < 1 ? $"{(int)ago.TotalMinutes}m ago" 
-                    : ago.TotalDays < 1 ? $"{(int)ago.TotalHours}h ago" 
+                string timeAgo = ago.TotalHours < 1 ? $"{(int)ago.TotalMinutes}m ago"
+                    : ago.TotalDays < 1 ? $"{(int)ago.TotalHours}h ago"
                     : $"{(int)ago.TotalDays}d ago";
                 warnings.Add($"Last backup failed ({timeAgo}): {manifest.LastFailureReason ?? "Unknown error"}");
                 critical = true;
@@ -257,8 +258,8 @@ namespace PocketMC.Desktop.Features.Settings
                 if (DateTime.UtcNow > nextDue.AddHours(1)) // 1 hour grace period
                 {
                     var overdue = DateTime.UtcNow - nextDue;
-                    string overdueText = overdue.TotalHours < 1 ? $"{(int)overdue.TotalMinutes}m" 
-                        : overdue.TotalDays < 1 ? $"{(int)overdue.TotalHours}h" 
+                    string overdueText = overdue.TotalHours < 1 ? $"{(int)overdue.TotalMinutes}m"
+                        : overdue.TotalDays < 1 ? $"{(int)overdue.TotalHours}h"
                         : $"{(int)overdue.TotalDays}d";
                     warnings.Add($"Scheduled backup is overdue by {overdueText}.");
                 }
@@ -302,11 +303,11 @@ namespace PocketMC.Desktop.Features.Settings
         private async Task CreateBackupAsync()
         {
             IsBackingUp = true;
-            try 
-            { 
+            try
+            {
                 _metadata.CustomBackupDirectory = CustomBackupDirectory;
-                await _backupService.RunBackupAsync(_metadata, _serverDir); 
-                LoadBackups(); 
+                await _backupService.RunBackupAsync(_metadata, _serverDir);
+                LoadBackups();
             }
             catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             finally { IsBackingUp = false; }
@@ -327,8 +328,8 @@ namespace PocketMC.Desktop.Features.Settings
         {
             if (path != null && await _dialogService.ShowDialogAsync("Confirm", "Delete this backup permanently?", DialogType.Question) == DialogResult.Yes)
             {
-                try 
-                { 
+                try
+                {
                     var fileName = Path.GetFileName(path);
                     File.Delete(path);
 
@@ -338,7 +339,7 @@ namespace PocketMC.Desktop.Features.Settings
                         string.Equals(e.FileName, fileName, StringComparison.OrdinalIgnoreCase));
                     manifest.Save(_serverDir);
 
-                    LoadBackups(); 
+                    LoadBackups();
                 }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             }
@@ -390,8 +391,8 @@ namespace PocketMC.Desktop.Features.Settings
                 {
                     item.IntegrityStatusText = "✗ CORRUPT — checksum mismatch!";
                     item.IntegrityVerified = false;
-                    _dialogService.ShowMessage("Integrity Check Failed", 
-                        $"Backup \"{item.Name}\" may be corrupted. The SHA-256 checksum does not match the original. This backup may not restore correctly.", 
+                    _dialogService.ShowMessage("Integrity Check Failed",
+                        $"Backup \"{item.Name}\" may be corrupted. The SHA-256 checksum does not match the original. This backup may not restore correctly.",
                         DialogType.Warning);
                 }
             }

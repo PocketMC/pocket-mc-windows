@@ -1,10 +1,11 @@
+using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Helpers;
-using PocketMC.Desktop.Models;
 using System.Text.RegularExpressions;
 
 namespace PocketMC.Desktop.Features.RemoteControl.Services;
@@ -101,7 +102,7 @@ public sealed class RemotePlayerActionService
     {
         if (string.IsNullOrWhiteSpace(name)) return false;
         if (name.Length > 100) return false;
-        
+
         if (name.Any(c => char.IsControl(c) || c == '\r' || c == '\n' || c == '\t' || c == '"' || c == '\''))
         {
             return false;
@@ -117,3 +118,4 @@ public sealed class RemotePlayerActionService
         }
     }
 }
+

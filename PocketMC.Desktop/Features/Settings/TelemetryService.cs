@@ -7,8 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Settings;
 
@@ -32,7 +31,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private bool _disposed;
     private string _cachedCountry = "Unknown";
     private bool _hasFetchedCountry = false;
-    
+
     private const string ProxyBaseUrl = "https://pocket-mc-proxy-3fqm.onrender.com/";
     private const string FallbackProxyBaseUrl = "https://pocket-mc-proxy.onrender.com/";
 
@@ -54,7 +53,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     {
         _logger.LogInformation("Initializing TelemetryService...");
         var settings = _settingsManager.Load();
-        
+
         // Ensure Client ID exists
         if (settings.TelemetryClientId == null || settings.TelemetryClientId == Guid.Empty)
         {
@@ -74,7 +73,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     {
         _logger.LogInformation("Shutting down TelemetryService...");
         _processManager.OnInstanceStateChanged -= OnInstanceStateChanged;
-        
+
         // Send a final heartbeat to tell the backend the app is closed
         try
         {
@@ -167,7 +166,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         try
         {
             _logger.LogInformation("Reporting installation/upgrade to telemetry backend...");
-            
+
             // Check if there are pre-existing configurations or servers in the app root to detect upgrade
             bool isUpgrade = false;
             try
@@ -192,7 +191,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
 
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(15);
-            
+
             var response = await PostTelemetryAsJsonAsync(client, "/api/telemetry/install", payload, _cts.Token);
             if (response.IsSuccessStatusCode)
             {
@@ -311,3 +310,4 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         }
     }
 }
+

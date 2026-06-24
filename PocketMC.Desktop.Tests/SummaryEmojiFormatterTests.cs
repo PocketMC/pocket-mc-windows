@@ -1,7 +1,8 @@
+using PocketMC.Desktop.Features.Settings.ViewModels;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -66,7 +67,7 @@ public sealed class SummaryEmojiFormatterTests
             };
             storage.Save(serverDir, summary);
 
-            var viewModel = new SettingsSummariesVM(serverDir, storage, new SilentDialogService());
+            var viewModel = new SettingsSummariesViewModel(serverDir, storage, new SilentDialogService());
             viewModel.Load(hasApiKey: true);
             viewModel.ViewSummaryCommand.Execute(viewModel.Summaries.Single());
 
@@ -104,3 +105,5 @@ public sealed class SummaryEmojiFormatterTests
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(Array.Empty<string>());
     }
 }
+
+

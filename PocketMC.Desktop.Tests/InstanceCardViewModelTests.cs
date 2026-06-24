@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Windows;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 

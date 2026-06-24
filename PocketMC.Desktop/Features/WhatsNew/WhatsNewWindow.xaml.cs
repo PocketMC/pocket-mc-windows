@@ -95,3 +95,5 @@ namespace PocketMC.Desktop.Features.WhatsNew
         }
     }
 }
+
+

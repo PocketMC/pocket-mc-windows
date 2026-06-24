@@ -5,10 +5,9 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Providers;
 
@@ -104,7 +103,7 @@ public class NeoForgeProvider : IServerSoftwareProvider
         var versions = await GetAvailableVersionsAsync();
         var mcv = versions.FirstOrDefault(v => v.Id == mcVersion) as GameVersionWithLoaders;
         var latest = mcv?.LoaderVersions.FirstOrDefault();
-        
+
         if (latest == null)
             throw new Exception($"No NeoForge versions found for Minecraft {mcVersion}");
 
@@ -118,3 +117,4 @@ public class NeoForgeProvider : IServerSoftwareProvider
         await _downloader.DownloadFileAsync(url, destinationPath, null, progress, cancellationToken);
     }
 }
+

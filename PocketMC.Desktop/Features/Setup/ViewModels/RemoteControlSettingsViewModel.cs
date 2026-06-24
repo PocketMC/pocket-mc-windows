@@ -1,9 +1,10 @@
+using PocketMC.Desktop.Features.RemoteControl.Models;
 using System.IO;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PocketMC.Desktop.Features.RemoteControl.Hosting;
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
@@ -51,8 +52,8 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         _allowRemoteConsoleCommands = remote.AllowRemoteConsoleCommands;
         _allowRemotePlayerActions = remote.AllowRemotePlayerActions;
         _requireAuthentication = remote.RequireAuthentication;
-        _accessMode = remote.AccessMode == RemoteAccessMode.LanOnly 
-            ? RemoteAccessMode.CloudflaredQuickTunnel 
+        _accessMode = remote.AccessMode == RemoteAccessMode.LanOnly
+            ? RemoteAccessMode.CloudflaredQuickTunnel
             : remote.AccessMode;
 
         _isDiscordLinked = !string.IsNullOrEmpty(_applicationState.Settings.DiscordUserId);
@@ -210,7 +211,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     private bool _isUpdatingFromSettings;
 
-    private void OnSettingsSaved(object? sender, Models.AppSettings settings)
+    private void OnSettingsSaved(object? sender, PocketMC.Domain.Models.AppSettings settings)
     {
         System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
         {
@@ -328,7 +329,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     {
         RemoteDashboardStatus status = _coordinator.GetStatus();
         LocalUrl = status.LocalUrls.FirstOrDefault();
-        
+
         PublicUrlProviderName = AccessMode switch
         {
             RemoteAccessMode.CloudflaredQuickTunnel => "Cloudflare",
@@ -407,7 +408,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             using var qrCodeData = qrGenerator.CreateQrCode(text, QRCoder.QRCodeGenerator.ECCLevel.Q);
             using var pngQrCode = new QRCoder.PngByteQRCode(qrCodeData);
             byte[] qrCodeBytes = pngQrCode.GetGraphic(10);
-            
+
             using var ms = new MemoryStream(qrCodeBytes);
             var image = new BitmapImage();
             image.BeginInit();
@@ -424,3 +425,6 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         }
     }
 }
+
+
+

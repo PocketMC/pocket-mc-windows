@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Desktop.Features.Instances.Backups;
 using PocketMC.Desktop.Features.Setup;
@@ -15,7 +15,6 @@ using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Infrastructure.Process;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.CloudBackups;
 
@@ -42,7 +41,7 @@ public class BackupService
     private readonly ILogger<BackupService> _logger;
 
     public BackupService(
-        ServerProcessManager serverProcessManager, 
+        ServerProcessManager serverProcessManager,
         ServerConfigurationService configService,
         SettingsManager settingsManager,
         CloudBackupService cloudBackupService,
@@ -63,7 +62,7 @@ public class BackupService
     public async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, bool isManualBackup = true, Action<string>? onProgress = null)
     {
         var localResult = await CreateLocalBackupAsync(metadata, serverDir, onProgress);
-        
+
         if (!localResult.Success || string.IsNullOrEmpty(localResult.ZipPath))
         {
             // Record failure in manifest for health warnings
@@ -81,10 +80,10 @@ public class BackupService
 
         // Cloud replication
         await _cloudBackupService.UploadBackupToEnabledProvidersAsync(
-            metadata.Id, 
-            metadata.Name, 
-            localResult.ZipPath, 
-            isManualBackup, 
+            metadata.Id,
+            metadata.Name,
+            localResult.ZipPath,
+            isManualBackup,
             onProgress);
 
         // Update metadata
@@ -289,7 +288,7 @@ public class BackupService
                 if (!syncSuccess)
                 {
                     _logger.LogInformation("RCON sync not available or failed; falling back to console ingestion for server {ServerName}.", metadata.Name);
-                    
+
                     onProgress?.Invoke("Disabling auto-save (Console)...");
                     await process.WriteInputAsync("save-off");
                     await Task.Delay(500);
@@ -410,7 +409,7 @@ public class BackupService
                 string timestamp = Path.GetFileNameWithoutExtension(zipPath).Replace("world-", "");
                 string externalTarget = Path.Combine(appSettings.ExternalBackupDirectory, metadata.Name, "backups");
                 Directory.CreateDirectory(externalTarget);
-                
+
                 string destinationPath = Path.Combine(externalTarget, $"world-{timestamp}.zip");
                 await Task.Run(() => File.Copy(zipPath, destinationPath, true));
                 _logger.LogInformation("Successfully replicated backup to external location: {Destination}", destinationPath);
@@ -440,10 +439,10 @@ public class BackupService
 
             onProgress?.Invoke("Syncing via RCON: save-off");
             await rcon.ExecuteCommandAsync("save-off");
-            
+
             onProgress?.Invoke("Syncing via RCON: save-all");
             var response = await rcon.ExecuteCommandAsync("save-all");
-            
+
             return true;
         }
         catch (Exception ex)
@@ -644,3 +643,4 @@ public class BackupService
         FileUtils.AtomicWriteAllText(metaFile, json);
     }
 }
+

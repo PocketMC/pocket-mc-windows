@@ -1,10 +1,9 @@
 using Moq;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Java;
-using PocketMC.Desktop.Models;
 using System.Diagnostics;
 
 namespace PocketMC.Desktop.Tests;
@@ -21,15 +20,15 @@ public sealed class ServerLaunchConfiguratorTests : IDisposable
     public ServerLaunchConfiguratorTests()
     {
         Directory.CreateDirectory(_tempDirectory);
-        
+
         // Use a realish but inert provisioner setup if needed, or just mock the class if virtual methods allow.
         // Actually JavaProvisioningService methods aren't virtual. I might need to mock dependencies instead.
         // For simplicity in this test, I'll mock the dependencies of the provisioners if I can't mock them directly.
         // But ServerLaunchConfigurator only calls Ensured versions which we can assume pass for these unit tests.
-        
+
         _javaMock = new Mock<JavaProvisioningService>(null!, null!, null!, null!, null!, null!);
         _javaMock.Setup(x => x.IsJavaVersionPresent(It.IsAny<int>())).Returns(true);
-        
+
         _phpMock = new Mock<PhpProvisioningService>(new HttpClient(), null!, null!, null!);
         _vanillaMock = new Mock<VanillaProvider>(new HttpClient(), null!, null!, null!);
         _loggerMock = new Mock<ILogger<ServerLaunchConfigurator>>();
@@ -85,7 +84,7 @@ public sealed class ServerLaunchConfiguratorTests : IDisposable
     {
         var meta = new InstanceMetadata { MinecraftVersion = "1.12.2", ServerType = "Forge", CustomJavaPath = Path.Combine(_tempDirectory, "java.exe") };
         File.WriteAllText(meta.CustomJavaPath, "");
-        
+
         string forgeJar = Path.Combine(_tempDirectory, "forge-1.12.2-14.23.5.2859.jar");
         File.WriteAllText(forgeJar, "");
 
@@ -148,3 +147,6 @@ public sealed class ServerLaunchConfiguratorTests : IDisposable
         }
     }
 }
+
+
+

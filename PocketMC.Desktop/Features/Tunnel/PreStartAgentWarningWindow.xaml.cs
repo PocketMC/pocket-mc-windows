@@ -14,9 +14,9 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             InitializeComponent();
             _provisioningService = provisioningService;
-            
+
             _provisioningService.StateChanged += OnStateChanged;
-            Closed += (s, e) => 
+            Closed += (s, e) =>
             {
                 _provisioningService.StateChanged -= OnStateChanged;
                 _tcs.TrySetResult(false);
@@ -44,7 +44,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             ConnectAgentButton.IsEnabled = false;
             await _provisioningService.ConnectAsync();
-            
+
             // Close the dialog and abort the start flow so the user can interact with the Setup Wizard freely
             _tcs.TrySetResult(false);
             Close();

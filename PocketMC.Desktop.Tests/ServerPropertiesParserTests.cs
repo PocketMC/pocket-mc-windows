@@ -1,7 +1,7 @@
 using System.Text;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -58,3 +58,6 @@ public sealed class ServerPropertiesParserTests : IDisposable
         }
     }
 }
+
+
+

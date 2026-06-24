@@ -2,6 +2,7 @@ using PocketMC.Desktop.Features.Diagnostics;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Tests;
 

@@ -3,7 +3,8 @@ using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -148,3 +149,5 @@ public sealed class AddonUpdateServiceAtomicTests : IDisposable
         return new AddonUpdateService(new AddonManifestService(), null!, null!, factory, downloader, installer);
     }
 }
+
+

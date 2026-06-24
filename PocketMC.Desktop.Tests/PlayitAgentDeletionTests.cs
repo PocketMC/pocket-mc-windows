@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Tests
 {
@@ -15,7 +16,7 @@ namespace PocketMC.Desktop.Tests
         {
             using var workspace = new PortReliabilityTestWorkspace();
             var harness = workspace.CreatePlayitAgentHarness();
-            
+
             bool result = await harness.Service.DeleteAgentBinaryAsync();
             Assert.True(result);
         }
@@ -27,10 +28,10 @@ namespace PocketMC.Desktop.Tests
             var harness = workspace.CreatePlayitAgentHarness();
             string exePath = workspace.AppState.GetPlayitExecutablePath();
             string partialPath = exePath + ".partial";
-            
+
             Directory.CreateDirectory(Path.GetDirectoryName(partialPath)!);
             await File.WriteAllTextAsync(partialPath, "stub partial");
-            
+
             Assert.True(File.Exists(partialPath));
             bool result = await harness.Service.DeleteAgentBinaryAsync();
             Assert.True(result);
@@ -57,7 +58,7 @@ namespace PocketMC.Desktop.Tests
                 CreateNoWindow = true,
                 UseShellExecute = false
             };
-            
+
             using var process = Process.Start(psi);
             Assert.NotNull(process);
             try
@@ -72,7 +73,7 @@ namespace PocketMC.Desktop.Tests
                 // Now, run the deletion logic
                 bool result = await harness.Service.DeleteAgentBinaryAsync();
                 Assert.True(result);
-                
+
                 // The process should have been terminated and file deleted
                 Assert.True(process.HasExited);
                 Assert.False(File.Exists(exePath));
@@ -96,7 +97,7 @@ namespace PocketMC.Desktop.Tests
 
             // Create a file and lock it (keep file stream open)
             await File.WriteAllTextAsync(exePath, "original content");
-            
+
             // Open it with FileShare.Read | FileShare.Delete to prevent normal deletion but allow renaming
             using (var fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
             {
@@ -105,7 +106,7 @@ namespace PocketMC.Desktop.Tests
 
                 // The original file path should no longer exist because it was renamed
                 Assert.False(File.Exists(exePath));
-                
+
                 // Let's verify that a pending delete file was created in the same directory
                 string dir = Path.GetDirectoryName(exePath)!;
                 string[] pendingFiles = Directory.GetFiles(dir, "*.delete-pending.exe");
@@ -119,3 +120,5 @@ namespace PocketMC.Desktop.Tests
         }
     }
 }
+
+

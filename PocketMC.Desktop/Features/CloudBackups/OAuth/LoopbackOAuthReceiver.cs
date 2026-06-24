@@ -35,7 +35,7 @@ public class LoopbackOAuthReceiver
                 error = "invalid_state";
             }
 
-            string responseString = string.IsNullOrEmpty(error) 
+            string responseString = string.IsNullOrEmpty(error)
                 ? "<html><body><h2>Authentication successful!</h2><p>You can close this tab and return to PocketMC.</p></body></html>"
                 : $"<html><body><h2>Authentication failed</h2><p>Error: {WebUtility.HtmlEncode(error)}</p><p>You can close this tab.</p></body></html>";
 

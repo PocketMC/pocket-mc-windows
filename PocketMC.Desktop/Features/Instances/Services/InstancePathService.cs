@@ -1,45 +1,47 @@
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using System;
 using System.IO;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
-    /// <summary>
-    /// Provides path resolution for instance-related files and directories.
-    /// Centralizes knowledge of the server storage structure.
-    /// </summary>
-    public sealed class InstancePathService
+
+/// <summary>
+/// Provides path resolution for instance-related files and directories.
+/// Centralizes knowledge of the server storage structure.
+/// </summary>
+public sealed class InstancePathService
+{
+    public const string MetadataFileName = ".pocket-mc.json";
+    public const string EulaFileName = "eula.txt";
+
+    private readonly ApplicationState _applicationState;
+
+    public InstancePathService(ApplicationState applicationState)
     {
-        public const string MetadataFileName = ".pocket-mc.json";
-        public const string EulaFileName = "eula.txt";
+        _applicationState = applicationState;
+    }
 
-        private readonly ApplicationState _applicationState;
+    public string GetServersRoot() => _applicationState.GetServersDirectory();
 
-        public InstancePathService(ApplicationState applicationState)
+    public string GetInstancePath(string slug) => Path.Combine(GetServersRoot(), slug);
+
+    public string GetMetadataPath(string instancePath) => Path.Combine(instancePath, MetadataFileName);
+
+    public string GetEulaPath(string instancePath) => Path.Combine(instancePath, EulaFileName);
+
+    public void EnsureServersRootExists()
+    {
+        if (!_applicationState.IsConfigured)
         {
-            _applicationState = applicationState;
+            throw new InvalidOperationException("PocketMC is not configured with an app root path.");
         }
 
-        public string GetServersRoot() => _applicationState.GetServersDirectory();
-
-        public string GetInstancePath(string slug) => Path.Combine(GetServersRoot(), slug);
-
-        public string GetMetadataPath(string instancePath) => Path.Combine(instancePath, MetadataFileName);
-
-        public string GetEulaPath(string instancePath) => Path.Combine(instancePath, EulaFileName);
-
-        public void EnsureServersRootExists()
+        string root = GetServersRoot();
+        if (!Directory.Exists(root))
         {
-            if (!_applicationState.IsConfigured)
-            {
-                throw new InvalidOperationException("PocketMC is not configured with an app root path.");
-            }
-
-            string root = GetServersRoot();
-            if (!Directory.Exists(root))
-            {
-                Directory.CreateDirectory(root);
-            }
+            Directory.CreateDirectory(root);
         }
     }
+}
+
 

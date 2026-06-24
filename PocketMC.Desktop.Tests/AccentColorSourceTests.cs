@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Views.Behaviors;
 namespace PocketMC.Desktop.Tests;
 
 public sealed class AccentColorSourceTests
@@ -136,7 +137,8 @@ public sealed class AccentColorSourceTests
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",
-            "Helpers",
+            "Views",
+            "Behaviors",
             "AnimatedNavIndicatorBehavior.cs"));
 
         Assert.Contains("AccentColorService.GlobalAccentChanged", source);

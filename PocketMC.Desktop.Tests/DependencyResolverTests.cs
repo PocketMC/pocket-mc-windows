@@ -1,9 +1,11 @@
+using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Features.Marketplace.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace.Models;
-using PocketMC.Desktop.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 using Xunit;
 
 namespace PocketMC.Desktop.Tests
@@ -296,3 +298,6 @@ namespace PocketMC.Desktop.Tests
         }
     }
 }
+
+
+

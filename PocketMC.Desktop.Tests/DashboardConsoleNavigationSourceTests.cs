@@ -9,7 +9,7 @@ public sealed class DashboardConsoleNavigationSourceTests
             "PocketMC.Desktop",
             "Features",
             "Dashboard",
-            "DashboardActionsVM.cs"));
+            "DashboardActionsViewModel.cs"));
 
         string method = ExtractMethod(source, "public void OpenConsole");
 

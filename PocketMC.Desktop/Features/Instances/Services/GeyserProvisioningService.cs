@@ -5,7 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
@@ -185,10 +186,10 @@ public class GeyserProvisioningService
         return serverType.ToLowerInvariant() switch
         {
             "paper" or "spigot" => "spigot",
-            "fabric"            => "fabric",
-            "forge"             => IsNewerOrEqual(minecraftVersion, "1.20.5") ? "neoforge" : "forge",
-            "neoforge"          => "neoforge",
-            _                   => "spigot" // safe default
+            "fabric" => "fabric",
+            "forge" => IsNewerOrEqual(minecraftVersion, "1.20.5") ? "neoforge" : "forge",
+            "neoforge" => "neoforge",
+            _ => "spigot" // safe default
         };
     }
 
@@ -321,3 +322,4 @@ public class GeyserProvisioningService
         }
     }
 }
+

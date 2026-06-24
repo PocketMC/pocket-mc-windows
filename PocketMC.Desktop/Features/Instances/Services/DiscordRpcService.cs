@@ -5,8 +5,7 @@ using DiscordRPC;
 using DiscordRPC.Logging;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances.Models;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
@@ -415,3 +414,4 @@ public sealed class DiscordRpcService : IDiscordRpcService
         }
     }
 }
+

@@ -2,7 +2,7 @@ using System.IO;
 using System.Text.Json;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Updates;
 
@@ -53,12 +53,12 @@ public sealed class InstanceRollbackService
         }
 
         string serverRoot = Path.GetFullPath(serverDir);
-        
+
         if (Directory.Exists(serverRoot))
         {
             string tempDeleteDir = serverRoot + "_todelete_" + Guid.NewGuid().ToString("N");
             Directory.Move(serverRoot, tempDeleteDir);
-            
+
             Directory.Move(rollbackDirectory, serverRoot);
 
             try

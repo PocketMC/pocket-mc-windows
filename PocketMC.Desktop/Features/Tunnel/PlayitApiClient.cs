@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Core.Mvvm;
 
 namespace PocketMC.Desktop.Features.Tunnel
@@ -31,10 +31,10 @@ namespace PocketMC.Desktop.Features.Tunnel
         public int Port { get => _port; set => SetProperty(ref _port, value); }
 
         private string _publicAddress = string.Empty;
-        public string PublicAddress 
-        { 
-            get => _publicAddress; 
-            set 
+        public string PublicAddress
+        {
+            get => _publicAddress;
+            set
             {
                 if (SetProperty(ref _publicAddress, value))
                 {
@@ -47,10 +47,10 @@ namespace PocketMC.Desktop.Features.Tunnel
         public string? NumericAddress { get => _numericAddress; set => SetProperty(ref _numericAddress, value); }
 
         private string? _tunnelType;
-        public string? TunnelType 
-        { 
-            get => _tunnelType; 
-            set 
+        public string? TunnelType
+        {
+            get => _tunnelType;
+            set
             {
                 if (SetProperty(ref _tunnelType, value))
                 {

@@ -1,8 +1,9 @@
+using PocketMC.Desktop.Features.Marketplace.Models;
 using System.IO;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Updates;
 
@@ -353,3 +354,4 @@ public sealed class AddonMigrationPlanner
 
     private sealed record AddonFileInfo(string FileName, string SubDirectory, string FullPath);
 }
+

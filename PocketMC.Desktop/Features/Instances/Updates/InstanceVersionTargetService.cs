@@ -1,6 +1,6 @@
 using PocketMC.Desktop.Features.Instances.Providers;
 using PocketMC.Desktop.Features.Java;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Instances.Updates;
 

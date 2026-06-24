@@ -1,5 +1,6 @@
-using PocketMC.Desktop.Features.RemoteControl.Hosting;
 using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.Desktop.Features.RemoteControl.Hosting;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.RemoteControl.Tunnels;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
@@ -100,25 +101,25 @@ public sealed class RemoteControlCoordinator
 
         await _dashboardHost.StartAsync(cancellationToken);
         var result = await _tunnelManager.StartAsync(cancellationToken);
-        
+
         if (result.Success && !string.IsNullOrEmpty(result.PublicUrl))
         {
             _ = NotifyDiscordOfRemoteControlUrlAsync(result.PublicUrl);
 
-            if (_applicationState.Settings.EnableRemoteControlNotifications && 
-                _lastNotifiedTunnelUrl != result.PublicUrl && 
+            if (_applicationState.Settings.EnableRemoteControlNotifications &&
+                _lastNotifiedTunnelUrl != result.PublicUrl &&
                 _toastNotificationService != null)
             {
                 _lastNotifiedTunnelUrl = result.PublicUrl;
                 _toastNotificationService.ShowRemoteControlStarted();
             }
         }
-        
+
         return result;
     }
 
     private string? _lastNotifiedUrl;
-    
+
     private async Task NotifyDiscordOfRemoteControlUrlAsync(string publicUrl)
     {
         var settings = _applicationState.Settings;
@@ -136,7 +137,7 @@ public sealed class RemoteControlCoordinator
         {
             using var client = new System.Net.Http.HttpClient();
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", settings.DiscordApiKey);
-            
+
             var payload = new
             {
                 user_id = settings.DiscordUserId,
@@ -144,7 +145,7 @@ public sealed class RemoteControlCoordinator
             };
 
             var content = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
-            
+
             var response = await client.PostAsync($"{settings.DiscordApiUrl.TrimEnd('/')}/send-dm", content);
             if (response.IsSuccessStatusCode)
             {
@@ -170,3 +171,4 @@ public sealed class RemoteControlCoordinator
         await _dashboardHost.StopAsync(cancellationToken);
     }
 }
+

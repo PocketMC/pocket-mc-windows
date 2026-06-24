@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Java;
 
 namespace PocketMC.Desktop.Tests;
@@ -69,3 +69,5 @@ public sealed class JavaRuntimeResolverTests : IDisposable
         }
     }
 }
+
+

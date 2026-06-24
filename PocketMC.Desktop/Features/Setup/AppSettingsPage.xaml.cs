@@ -8,18 +8,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.RemoteControl.Models;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Intelligence;
+using PocketMC.Application.Interfaces.AI;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Infrastructure.Power;
 
@@ -50,7 +50,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly ApplicationState _applicationState;
         private readonly SettingsManager _settingsManager;
         private readonly IDialogService _dialogService;
-        private readonly AiApiClient _aiApiClient;
+        private readonly ILlmProviderFactory _aiProviderFactory;
         private readonly UpdateService _updateService;
         private readonly PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService _diagnosticService;
         private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
@@ -78,14 +78,14 @@ namespace PocketMC.Desktop.Features.Setup
             ("Gold", "#C19C00"),
             ("Coral", "#E74856")
         };
-        
+
         public CloudBackupSettingsViewModel CloudBackups { get; }
 
         public AppSettingsPage(
-            ApplicationState applicationState, 
-            SettingsManager settingsManager, 
-            IDialogService dialogService, 
-            AiApiClient aiApiClient,
+            ApplicationState applicationState,
+            SettingsManager settingsManager,
+            IDialogService dialogService,
+            ILlmProviderFactory aiProviderFactory,
             UpdateService updateService,
             PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService diagnosticService,
             PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
@@ -99,7 +99,7 @@ namespace PocketMC.Desktop.Features.Setup
             _applicationState = applicationState;
             _settingsManager = settingsManager;
             _dialogService = dialogService;
-            _aiApiClient = aiApiClient;
+            _aiProviderFactory = aiProviderFactory;
             _updateService = updateService;
             _diagnosticService = diagnosticService;
             _healthMonitor = healthMonitor;
@@ -120,7 +120,7 @@ namespace PocketMC.Desktop.Features.Setup
 
             _isInitializing = true;
             CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
-            
+
             // Setup Backdrop Combo
             BackdropCombo.Items.Clear();
             if (Environment.OSVersion.Version.Build >= 22000)
@@ -141,7 +141,7 @@ namespace PocketMC.Desktop.Features.Setup
                     break;
                 }
             }
-            
+
             if (BackdropCombo.SelectedItem == null && BackdropCombo.Items.Count > 0)
             {
                 BackdropCombo.SelectedIndex = 0;
@@ -162,10 +162,10 @@ namespace PocketMC.Desktop.Features.Setup
 
             // AI Settings
             AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
-            
-            var initialProviderType = AiApiClient.ParseProvider(_applicationState.Settings.AiProvider ?? "Gemini");
-            var (initialDefaultModel, initialDefaultEndpoint) = AiApiClient.GetProviderDefaults(initialProviderType);
-            
+
+            var initialProviderType = _aiProviderFactory.ParseProvider(_applicationState.Settings.AiProvider ?? "Gemini");
+            var (initialDefaultModel, initialDefaultEndpoint) = _aiProviderFactory.GetProviderDefaults(initialProviderType);
+
             PopulateModelsForProvider(initialProviderType);
             SetSelectedModel(_applicationState.Settings.GetCurrentAiModel() ?? initialDefaultModel);
 
@@ -177,8 +177,8 @@ namespace PocketMC.Desktop.Features.Setup
 
             // Set provider combo selection
             var savedProvider = _applicationState.Settings.AiProvider ?? "Gemini";
-            var providerType = AiApiClient.ParseProvider(savedProvider);
-            var displayName = AiApiClient.GetDisplayName(providerType);
+            var providerType = _aiProviderFactory.ParseProvider(savedProvider);
+            var displayName = _aiProviderFactory.GetDisplayName(providerType);
             for (int i = 0; i < AiProviderCombo.Items.Count; i++)
             {
                 if (AiProviderCombo.Items[i] is ComboBoxItem item && item.Content?.ToString() == displayName)
@@ -359,9 +359,9 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void UpdateDependencyHealth()
         {
-            if (Application.Current?.Dispatcher?.CheckAccess() == false)
+            if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
             {
-                Application.Current.Dispatcher.BeginInvoke(() => UpdateDependencyHealth());
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(() => UpdateDependencyHealth());
                 return;
             }
 
@@ -479,7 +479,7 @@ namespace PocketMC.Desktop.Features.Setup
                 _settingsManager.Save(settings);
 
                 _accentColorService.ApplyCustomAccent(color);
-                if (Application.Current.MainWindow is MainWindow mainWindow)
+                if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
                 {
                     mainWindow.ApplyTheme();
                 }
@@ -498,7 +498,7 @@ namespace PocketMC.Desktop.Features.Setup
                 _settingsManager.Save(settings);
 
                 _accentColorService.ApplySystemAccent();
-                if (Application.Current.MainWindow is MainWindow mainWindow)
+                if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
                 {
                     mainWindow.ApplyTheme();
                 }
@@ -571,7 +571,7 @@ namespace PocketMC.Desktop.Features.Setup
             _isInitializing = wasInitializing;
 
             _accentColorService.ApplyCustomAccent(color);
-            if (Application.Current.MainWindow is MainWindow mainWindow)
+            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
             {
                 mainWindow.ApplyTheme();
             }
@@ -803,11 +803,11 @@ namespace PocketMC.Desktop.Features.Setup
 
             PopulateModelsForProvider(providerType);
 
-            var (defaultModel, defaultEndpoint) = AiApiClient.GetProviderDefaults(providerType);
+            var (defaultModel, defaultEndpoint) = _aiProviderFactory.GetProviderDefaults(providerType);
             // Update endpoint BEFORE model to prevent stale endpoint being saved by cascading handlers
             AiEndpointUrlInput.Text = !string.IsNullOrWhiteSpace(endpoint) ? endpoint : defaultEndpoint;
             SetSelectedModel(!string.IsNullOrWhiteSpace(model) ? model : defaultModel);
-            
+
             EndpointUrlPanel.Visibility = providerType == AiProviderType.Ollama ? Visibility.Visible : Visibility.Collapsed;
 
             _isInitializing = wasInitializing;
@@ -919,16 +919,16 @@ namespace PocketMC.Desktop.Features.Setup
                 return;
             }
 
-            string maskedKey = apiKey.Length > 8 
-                ? apiKey[..4] + "..." + apiKey[^4..] 
+            string maskedKey = apiKey.Length > 8
+                ? apiKey[..4] + "..." + apiKey[^4..]
                 : "invalid/too-short";
 
-            AiKeyStatus.Text = $"⏳ Validating {AiApiClient.GetDisplayName(provider)} with key {maskedKey}...";
+            AiKeyStatus.Text = $"⏳ Validating {_aiProviderFactory.GetDisplayName(provider)} with key {maskedKey}...";
             AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
 
             try
             {
-                var result = await _aiApiClient.ValidateKeyAsync(provider, apiKey, modelName, endpointUrl);
+                var result = await _aiProviderFactory.GetProvider(provider).ValidateKeyAsync(apiKey, modelName, endpointUrl);
                 if (result.Success)
                 {
                     AiKeyStatus.Text = "✅ API key is valid! Connection successful.";
@@ -986,7 +986,7 @@ namespace PocketMC.Desktop.Features.Setup
             {
                 string? name = item.Content?.ToString()?.Trim();
                 if (!string.IsNullOrWhiteSpace(name))
-                    return AiApiClient.ParseProvider(name);
+                    return _aiProviderFactory.ParseProvider(name);
             }
             return AiProviderType.Gemini;
         }
@@ -1214,3 +1214,8 @@ namespace PocketMC.Desktop.Features.Setup
 
     }
 }
+
+
+
+
+

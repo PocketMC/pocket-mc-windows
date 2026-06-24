@@ -109,3 +109,5 @@ public class InstanceExportManifestTests
         Assert.Equal("1.0.0", bedrockAddon.Version);
     }
 }
+
+

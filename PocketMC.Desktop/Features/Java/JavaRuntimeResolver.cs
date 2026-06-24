@@ -1,6 +1,6 @@
 using System.IO;
 using System.Text.RegularExpressions;
-using PocketMC.Desktop.Models;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Java;
 

@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Features.Marketplace.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,13 +13,12 @@ using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Desktop.Features.Marketplace;
 using Wpf.Ui.Controls;
 using System.Collections.ObjectModel;
-using PocketMC.Desktop.Models;
 using PocketMC.Desktop.Infrastructure.Security;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxImage = System.Windows.MessageBoxImage;
@@ -79,7 +79,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             string baseTitle = _isModpackMode ? "Modpack Marketplace" : (_projectType.Contains("plugin") ? "Plugin Marketplace" : "Mod Marketplace");
             if (_compat.Family == EngineFamily.Bedrock) baseTitle = "Bedrock Add-Ons Marketplace";
-            if (_compat.Family == EngineFamily.Pocketmine) 
+            if (_compat.Family == EngineFamily.Pocketmine)
             {
                 baseTitle = "Pocketmine Plugins";
                 CmbSource.Items.Clear();
@@ -97,7 +97,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 TxtSearch.PlaceholderText = $"Search {loaderLabel}...";
             }
             else TxtSearch.PlaceholderText = "Search mods...";
-            Loaded += async (s, e) => 
+            Loaded += async (s, e) =>
             {
                 if (_serverDir != null)
                 {
@@ -242,7 +242,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (string.IsNullOrEmpty(projectId)) projectId = vm.Slug;
 
                 string mcVersionArg = (_compat.Family == EngineFamily.Bedrock || _compat.Family == EngineFamily.Pocketmine) ? "" : (_mcVersion == "*" ? "" : _mcVersion);
-                
+
                 IAddonProvider provider = vm.Provider switch
                 {
                     "CurseForge" => _curseForge,
@@ -268,7 +268,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     vm.State = InstallState.NotInstalled;
                     return;
                 }
-                
+
                 // --- 2. User Confirmation ---
                 var confVm = new DependencyConfirmationViewModel(resolved);
                 var win = new DependencyConfirmationWindow(confVm) { Owner = Window.GetWindow(this) };
@@ -428,3 +428,4 @@ namespace PocketMC.Desktop.Features.Marketplace
         }
     }
 }
+

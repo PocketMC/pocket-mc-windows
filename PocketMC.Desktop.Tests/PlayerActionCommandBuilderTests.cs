@@ -1,5 +1,7 @@
+using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Helpers;
+using PocketMC.Desktop.Views.Behaviors;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Tests;
 

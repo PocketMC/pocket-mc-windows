@@ -72,7 +72,7 @@ namespace PocketMC.Desktop.Features.Java
 
                     var binary = array[0]?["binary"];
                     var package = binary?["package"];
-                    
+
                     string? link = package?["link"]?.ToString();
                     string? checksum = package?["checksum"]?.ToString();
 
