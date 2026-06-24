@@ -470,17 +470,16 @@ namespace PocketMC.Desktop.Features.Dashboard
                     
                     if (serverDir != null)
                     {
-                        // Update configuration
-                        var portUpdater = _serviceProvider.GetRequiredService<PocketMC.Desktop.Features.Networking.InstancePortUpdateService>();
-                        await portUpdater.UpdatePortAsync(vm.Metadata, serverDir, primary.Request.BindingRole, newPort);
-
-                        // Retry start
-                        vm.ClearPortIssue();
-                        
                         try
                         {
+                            // Update state immediately so user isn't in a blind state while tunnel resolves
                             vm.UpdateState(ServerState.SettingUp);
+                            vm.ClearPortIssue();
                             onStateChanged(vm);
+
+                            // Update configuration (which may take time if creating a tunnel)
+                            var portUpdater = _serviceProvider.GetRequiredService<PocketMC.Desktop.Features.Networking.InstancePortUpdateService>();
+                            await portUpdater.UpdatePortAsync(vm.Metadata, serverDir, primary.Request.BindingRole, newPort);
                             
                             if (operation == "restart")
                             {

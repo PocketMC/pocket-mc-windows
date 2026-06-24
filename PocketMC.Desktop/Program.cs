@@ -10,32 +10,22 @@ public static class Program
 {
     private const ShortcutLocation ShortcutRefreshLocations = ShortcutLocation.Desktop | ShortcutLocation.StartMenuRoot;
 
-#pragma warning disable CS0618 // Velopack shortcut helpers are required here to explicitly refresh shortcuts after install/update.
-    private static void RecreateShortcuts(string reason)
+    [System.Runtime.InteropServices.DllImport("Shell32.dll")]
+    private static extern int SHChangeNotify(int eventId, int flags, IntPtr item1, IntPtr item2);
+
+    private static void RefreshWindowsIconCache(string reason)
     {
         try
         {
-            var shortcuts = new Shortcuts();
-            var currentExeName = Path.GetFileName(Environment.ProcessPath) ?? AppDomain.CurrentDomain.FriendlyName;
-            var existingShortcuts = shortcuts.FindShortcuts(currentExeName, ShortcutRefreshLocations);
-
-            foreach (var location in new[] { ShortcutLocation.Desktop, ShortcutLocation.StartMenuRoot })
-            {
-                LogShortcutRefresh($"{reason}: Pocket MC shortcut {(existingShortcuts.ContainsKey(location) ? "exists" : "does not exist")} at {location}.");
-            }
-
-            shortcuts.DeleteShortcuts(currentExeName, ShortcutRefreshLocations);
-            LogShortcutRefresh($"{reason}: Deleted existing Pocket MC shortcuts from Desktop and Start Menu locations.");
-
-            shortcuts.CreateShortcutForThisExe(ShortcutRefreshLocations);
-            LogShortcutRefresh($"{reason}: Recreated Pocket MC shortcuts for current executable in Desktop and Start Menu locations.");
+            // SHCNE_ASSOCCHANGED = 0x08000000, SHCNF_IDLIST = 0x0000
+            SHChangeNotify(0x08000000, 0x0000, IntPtr.Zero, IntPtr.Zero);
+            LogShortcutRefresh($"{reason}: Broadcasted SHChangeNotify to refresh Windows icon cache.");
         }
         catch (Exception ex)
         {
-            LogShortcutRefresh($"{reason}: Shortcut refresh failed but install/update will continue. {ex}");
+            LogShortcutRefresh($"{reason}: Failed to refresh icon cache. {ex}");
         }
     }
-#pragma warning restore CS0618
 
     private static void LogShortcutRefresh(string message)
     {
@@ -64,8 +54,8 @@ public static class Program
         // This handles squirrel-style install/uninstall hooks and
         // delta-patch application on startup.
         VelopackApp.Build()
-            .OnAfterInstallFastCallback((v) => RecreateShortcuts("install"))
-            .OnAfterUpdateFastCallback((v) => RecreateShortcuts("update"))
+            .OnAfterInstallFastCallback((v) => RefreshWindowsIconCache("install"))
+            .OnAfterUpdateFastCallback((v) => RefreshWindowsIconCache("update"))
             .Run();
 
         // Enforce single instance rule before starting WPF
