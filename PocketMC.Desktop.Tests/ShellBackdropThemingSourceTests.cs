@@ -14,6 +14,7 @@ public sealed class ShellBackdropThemingSourceTests
         Assert.DoesNotContain("WindowBackdropType=\"Mica\"", xaml);
         Assert.Contains("Background=\"#FF242424\"", xaml);
         Assert.Contains("x:Name=\"BackdropTintLayer\"", xaml);
+        Assert.Contains("Background=\"#CC202020\"", xaml);
         Assert.Contains("Activated=\"Window_Activated\"", xaml);
         Assert.Contains("Deactivated=\"Window_Deactivated\"", xaml);
     }
@@ -43,8 +44,6 @@ public sealed class ShellBackdropThemingSourceTests
         Assert.Contains("DwmSetWindowAttribute", source);
         Assert.Contains("WindowBackdropType.None", source);
         Assert.Contains("#FF242424", source);
-        Assert.Contains("#CC202020", source);
-        Assert.Contains("#B8202020", source);
     }
 
     [Fact]
