@@ -19,7 +19,7 @@
       <a href="https://www.youtube.com/@OfficialPocketMC"><img src="https://img.shields.io/badge/YouTube-Watch-%23FF0000?style=flat-square&logo=youtube" alt="YouTube" /></a>
       <a href="https://www.buymeacoffee.com/sahaj33"><img src="https://img.shields.io/badge/Donate-BMC-%23FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" /></a>
       <br><br>
-      <a href="https://github.com/PocketMC/pocket-mc-windows/releases/download/latest/PocketMC-win-Setup.exe"><img src="https://img.shields.io/badge/Download-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Setup.exe" /></a>
+      <a href="https://github.com/PocketMC/pocket-mc-windows/releases/latest/download/PocketMC-win-Setup.exe"><img src="https://img.shields.io/badge/Download-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Setup.exe" /></a>
     </td>
   </tr>
 </table>
