@@ -136,9 +136,10 @@ jobs:
 
           $payload = @{
             embeds = @(@{
-              title       = "🛠️ New Beta Portable Build Available!"
-              description = "**Branch:** ``$branch`` `n**Commit:** ``$commit`` `n`n**Message:**`n" + '```text' + "`n$commitMessage`n" + '```'
+              title       = "❖ PocketMC Beta Available ❖"
+              description = "**Branch:** ``$branch`` `n**Commit:** ``$commit`` `n`n### ❯ Message`n" + '```text' + "`n$commitMessage`n" + '```'
               color       = 16753920
+              image       = @{ url = "https://cdn.discordapp.com/attachments/1493841758864412715/1512177063572934717/banner.png" }
               footer      = @{ text = "PocketMC CI/CD" }
             })
             components = @(

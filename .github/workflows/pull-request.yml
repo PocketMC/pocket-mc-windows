@@ -29,33 +29,20 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($title)) { $title = "No Title Provided" }
 
           $payload = @{
-            embeds = @(
-              @{
-                title = "🔄 Pull Request: $title"
-                url = $prUrl
-                color = 3447003 # Light Blue
-                author = @{
-                  name = $author
-                  url = "https://github.com/$author"
-                  icon_url = $authorIcon
-                }
-                fields = @(
-                  @{
-                    name = "Source Branch"
-                    value = "``$sourceBranch``"
-                    inline = $true
-                  },
-                  @{
-                    name = "Target Branch"
-                    value = "``$targetBranch``"
-                    inline = $true
-                  }
-                )
-                footer = @{
-                  text = "PocketMC PR System"
-                }
-              }
-            )
+            embeds = @(@{
+              title       = "❖ New Pull Request ❖"
+              description = "**Title:** $title`n**Author:** $author`n**Branch:** ``$sourceBranch`` ➞ ``$targetBranch``"
+              color       = 3447003
+              image       = @{ url = "https://cdn.discordapp.com/attachments/1493841758864412715/1512177063572934717/banner.png" }
+              author      = @{ name = $author; icon_url = $authorIcon }
+              footer      = @{ text = "PocketMC PR System" }
+            })
+            components = @(@{
+              type = 1
+              components = @(@{
+                type = 2; style = 5; label = "View Pull Request"; url = $prUrl
+              })
+            })
           }
 
           try {
