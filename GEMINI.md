@@ -1,5 +1,24 @@
 # PocketMC Windows Agent Rules
 
+## Project Overview
+
+PocketMC is a native WPF/.NET 8 desktop app for local Minecraft server hosting. It handles software downloads, isolated instances, managed Java and PHP runtimes, live metrics, logs, backups, cloud replication, Playit.gg tunnels, add-ons, and a remote web dashboard all within a native Windows UI.
+
+The architecture strictly follows Clean Architecture: Domain (models), Application (use cases), Infrastructure (networking/external), Desktop (WPF UI), and RemoteControl (web API). 
+
+## Building and Running
+
+Use the following commands to build, run, and test the project:
+
+```bash
+dotnet restore
+dotnet build
+dotnet test
+dotnet run --project PocketMC.Desktop/PocketMC.Desktop.csproj
+```
+
+## Development Conventions
+
 These rules dictate the architectural constraints and development practices for this repository. Adhere to them strictly when making modifications or adding new features.
 
 ## 1. Architecture & Layering
