@@ -181,14 +181,14 @@
                                             <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
                                                 <TextBlock Text="{Binding MinecraftVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
-                                            <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                                <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="{DynamicResource SystemFillColorAttentionBrush}" FontWeight="SemiBold"/>
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                                <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
-                                            <Border Background="#2234D399" BorderBrush="#5534D399" BorderThickness="1" CornerRadius="4" Padding="6,2" Visibility="{Binding CrossPlayBadgeVisibility}" ToolTip="{Binding CrossPlayBadgeTooltip}">
-                                                <TextBlock Text="{Binding CrossPlayBadgeText}" FontSize="10" Foreground="#34D399" FontWeight="SemiBold"/>
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0" Visibility="{Binding CrossPlayBadgeVisibility}" ToolTip="{Binding CrossPlayBadgeTooltip}">
+                                                <TextBlock Text="{Binding CrossPlayBadgeText}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
-                                            <Border Background="#226366F1" BorderBrush="#556366F1" BorderThickness="1" CornerRadius="4" Padding="5,2" Margin="4,0,0,0" Visibility="{Binding VoiceChatBadgeVisibility}" ToolTip="{Binding VoiceChatBadgeTooltip}">
-                                                <ui:SymbolIcon Symbol="Mic24" FontSize="11" Foreground="#6366F1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="5,2" Visibility="{Binding VoiceChatBadgeVisibility}" ToolTip="{Binding VoiceChatBadgeTooltip}">
+                                                <ui:SymbolIcon Symbol="Mic24" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                             </Border>
                                         </WrapPanel>
                                         <TextBlock Text="{Binding Description}" FontSize="12" Foreground="SlateGray" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="32" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource NullOrEmptyToVis}}"/>
