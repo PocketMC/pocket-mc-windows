@@ -46,7 +46,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             var metas = _registry.GetAll()
                 .OrderByDescending(m => m.PinnedAt.HasValue)
                 .ThenBy(m => m.PinnedAt)
-                .ThenByDescending(m => m.LastPlayedAt ?? m.CreatedAt)
+                .ThenByDescending(m => m.CreatedAt)
                 .ToList();
             foreach (var meta in metas)
             {
