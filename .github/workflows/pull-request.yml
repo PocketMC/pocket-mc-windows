@@ -42,12 +42,12 @@ jobs:
                 fields = @(
                   @{
                     name = "Source Branch"
-                    value = "\`$sourceBranch\`"
+                    value = "``$sourceBranch``"
                     inline = $true
                   },
                   @{
                     name = "Target Branch"
-                    value = "\`$targetBranch\`"
+                    value = "``$targetBranch``"
                     inline = $true
                   }
                 )

@@ -113,7 +113,7 @@ jobs:
           $payload = @{
             embeds = @(@{
               title       = "🛠️ New Beta Portable Build Available!"
-              description = "**Branch:** ``$branch`` `n**Commit:** ``$commit`` `n`n**Message:**`n```text`n$commitMessage`n```"
+              description = "**Branch:** ``$branch`` `n**Commit:** ``$commit`` `n`n**Message:**`n" + '```text' + "`n$commitMessage`n" + '```'
               color       = 16753920
               footer      = @{ text = "PocketMC CI/CD" }
             })
