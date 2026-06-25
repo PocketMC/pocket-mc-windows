@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 
 namespace PocketMC.Desktop.Features.Networking
@@ -36,6 +36,8 @@ namespace PocketMC.Desktop.Features.Networking
             _probeService = probeService;
 
             InitializeComponent();
+            var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
+            visualService.ApplyThemeToDialog(this);
 
             // Re-assert accent color to prevent FluentWindow from reverting to system accent.
             try
@@ -104,7 +106,7 @@ namespace PocketMC.Desktop.Features.Networking
 
                 if (!result.IsSuccessful)
                 {
-                    ShowValidationError($"Port {port} is not available — it may already be in use.");
+                    ShowValidationError($"Port {port} is not available â€” it may already be in use.");
                     return;
                 }
             }
@@ -115,7 +117,7 @@ namespace PocketMC.Desktop.Features.Networking
             }
 
             // Port is valid and available
-            TxtSuccess.Text = $"✓ Port {port} is available.";
+            TxtSuccess.Text = $"âœ“ Port {port} is available.";
             TxtSuccess.Visibility = Visibility.Visible;
             BtnConfirm.IsEnabled = true;
         }

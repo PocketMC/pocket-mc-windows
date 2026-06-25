@@ -67,7 +67,10 @@ namespace PocketMC.Desktop.Features.Shell
                 if (!_isWindowActive)
                 {
                     HideFakeMicaLayer(window);
-                    ApplySolidFallback(window, SolidDarkFallback);
+                    string fallbackColor = backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase) 
+                        ? SolidLightFallback 
+                        : SolidDarkFallback;
+                    ApplySolidFallback(window, fallbackColor);
                     return;
                 }
 
@@ -231,7 +234,53 @@ namespace PocketMC.Desktop.Features.Shell
 
         // ── Existing Helpers ──────────────────────────────────────────
 
-        private static void ApplyDwmDarkMode(FluentWindow window)
+        public void ApplyThemeToDialog(FluentWindow dialog)
+        {
+            if (!dialog.Dispatcher.CheckAccess())
+            {
+                dialog.Dispatcher.Invoke(() => ApplyThemeToDialog(dialog));
+                return;
+            }
+
+            try
+            {
+                ApplyDwmDarkMode(dialog);
+
+                string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
+
+                if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
+                    _windowsCornerService.IsWindows11())
+                {
+                    dialog.Background = Brushes.Transparent;
+                    dialog.WindowBackdropType = WindowBackdropType.Mica;
+                    return;
+                }
+
+                if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase) &&
+                    _windowsCornerService.IsWindows11())
+                {
+                    dialog.Background = Brushes.Transparent;
+                    dialog.WindowBackdropType = WindowBackdropType.Acrylic;
+                    return;
+                }
+
+                dialog.WindowBackdropType = WindowBackdropType.None;
+
+                if (backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase))
+                {
+                    dialog.Background = CreateBrush(SolidLightFallback);
+                    return;
+                }
+
+                dialog.Background = CreateBrush(SolidDarkFallback);
+            }
+            catch
+            {
+                dialog.Background = CreateBrush(SolidDarkFallback);
+            }
+        }
+
+        private static void ApplyDwmDarkMode(Window window)
         {
             try
             {

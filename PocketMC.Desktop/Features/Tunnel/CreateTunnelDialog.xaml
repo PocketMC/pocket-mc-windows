@@ -21,10 +21,10 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <TextBlock Text="✦ Create Tunnel"
                        FontSize="18" FontWeight="Bold"
-                       Foreground="#89B4FA"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                        Margin="0,0,0,4"/>
             <TextBlock Text="Configure a new PlayIt.gg tunnel for your Minecraft server."
-                       Foreground="#BAC2DE" FontSize="13"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"
                        TextWrapping="Wrap"/>
         </StackPanel>
 
@@ -33,32 +33,25 @@
             <StackPanel>
                 <!-- Tunnel Name -->
                 <TextBlock Text="Tunnel Name"
-                           Foreground="#CDD6F4" FontWeight="SemiBold" FontSize="13"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"
                            Margin="0,0,0,6"/>
-                <TextBox x:Name="TxtTunnelName"
+                <ui:TextBox x:Name="TxtTunnelName"
                          MaxLength="64"
                          FontSize="13"
-                         Foreground="#CDD6F4"
-                         Background="#313244"
-                         BorderBrush="#45475A"
-                         CaretBrush="#CDD6F4"
                          Padding="10,8"
                          ToolTip="ASCII characters only"/>
                 <TextBlock x:Name="TxtNameError"
-                           Foreground="#F38BA8" FontSize="11"
+                           Foreground="{DynamicResource SystemFillColorCriticalBrush}" FontSize="11"
                            Margin="0,4,0,0"
                            Visibility="Collapsed"
                            TextWrapping="Wrap"/>
 
                 <!-- Tunnel Type -->
                 <TextBlock Text="Tunnel Type"
-                           Foreground="#CDD6F4" FontWeight="SemiBold" FontSize="13"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"
                            Margin="0,16,0,6"/>
                 <ComboBox x:Name="CmbTunnelType"
                           FontSize="13"
-                          Foreground="#CDD6F4"
-                          Background="#313244"
-                          BorderBrush="#45475A"
                           SelectedIndex="0"
                           MinHeight="36">
                     <ComboBoxItem Content="Minecraft Java" Tag="minecraft-java"/>
@@ -67,34 +60,27 @@
 
                 <!-- Local Port -->
                 <TextBlock Text="Local Port"
-                           Foreground="#CDD6F4" FontWeight="SemiBold" FontSize="13"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"
                            Margin="0,16,0,6"/>
-                <TextBox x:Name="TxtLocalPort"
+                <ui:TextBox x:Name="TxtLocalPort"
                          Text="25565"
                          MaxLength="5"
                          FontSize="13"
-                         Foreground="#CDD6F4"
-                         Background="#313244"
-                         BorderBrush="#45475A"
-                         CaretBrush="#CDD6F4"
                          Padding="10,8"
                          ToolTip="Port number between 1 and 65535"
                          PreviewTextInput="TxtLocalPort_PreviewTextInput"/>
                 <TextBlock x:Name="TxtPortError"
-                           Foreground="#F38BA8" FontSize="11"
+                           Foreground="{DynamicResource SystemFillColorCriticalBrush}" FontSize="11"
                            Margin="0,4,0,0"
                            Visibility="Collapsed"
                            TextWrapping="Wrap"/>
 
                 <!-- Region -->
                 <TextBlock Text="Region"
-                           Foreground="#CDD6F4" FontWeight="SemiBold" FontSize="13"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"
                            Margin="0,16,0,6"/>
                 <ComboBox x:Name="CmbRegion"
                           FontSize="13"
-                          Foreground="#CDD6F4"
-                          Background="#313244"
-                          BorderBrush="#45475A"
                           SelectedIndex="0"
                           MinHeight="36">
                     <ComboBoxItem Content="Global (default)" Tag="global"/>
@@ -115,9 +101,9 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                         <TextBlock Text="Enable immediately"
-                                   Foreground="#CDD6F4" FontWeight="SemiBold" FontSize="13"/>
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"/>
                         <TextBlock Text="The tunnel will start routing traffic as soon as it's created."
-                                   Foreground="#A6ADC8" FontSize="11"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="11"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
                     <ui:ToggleSwitch x:Name="ToggleEnabled"
@@ -131,15 +117,15 @@
         <!-- Inline error message area -->
         <Border Grid.Row="2"
                 x:Name="ErrorBorder"
-                Background="#3B1A26"
-                BorderBrush="#F38BA8"
+                Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12,8"
                 Margin="0,0,0,12"
                 Visibility="Collapsed">
             <TextBlock x:Name="TxtApiError"
-                       Foreground="#F38BA8" FontSize="12"
+                       Foreground="{DynamicResource SystemFillColorCriticalBrush}" FontSize="12"
                        TextWrapping="Wrap"/>
         </Border>
 

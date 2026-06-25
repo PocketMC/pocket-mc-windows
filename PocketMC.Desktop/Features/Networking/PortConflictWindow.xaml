@@ -35,7 +35,7 @@
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,14">
                 <ui:SymbolIcon Symbol="Warning24"
                                FontSize="24"
-                               Foreground="{DynamicResource PaletteRedBrush}"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                                VerticalAlignment="Center"
                                Margin="0,0,12,0"/>
                 <TextBlock x:Name="TxtTitle"
@@ -81,7 +81,7 @@
                 <!-- Validation message -->
                 <TextBlock x:Name="TxtValidation"
                            FontSize="12"
-                           Foreground="{DynamicResource PaletteRedBrush}"
+                           Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                            Margin="0,6,0,0"
                            TextWrapping="Wrap"
                            Visibility="Collapsed"/>
@@ -89,7 +89,7 @@
                 <!-- Success message -->
                 <TextBlock x:Name="TxtSuccess"
                            FontSize="12"
-                           Foreground="{DynamicResource PaletteGreenBrush}"
+                           Foreground="{DynamicResource SystemFillColorSuccessBrush}"
                            Margin="0,6,0,0"
                            TextWrapping="Wrap"
                            Visibility="Collapsed"/>

@@ -11,7 +11,7 @@
         Title="Confirm Installation" Height="500" Width="600"
         WindowStartupLocation="CenterOwner"
         ExtendsContentIntoTitleBar="True"
-        WindowBackdropType="Mica"
+        WindowBackdropType="None"
         Background="{DynamicResource ApplicationBackgroundBrush}">
 
     <ui:FluentWindow.Resources>

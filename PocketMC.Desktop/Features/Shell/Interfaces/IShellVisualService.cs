@@ -7,6 +7,7 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
     {
         void RequestMicaUpdate();
         void ApplyTheme();
+        void ApplyThemeToDialog(Wpf.Ui.Controls.FluentWindow dialog);
         void SetWindowActive(bool isActive);
     }
 }

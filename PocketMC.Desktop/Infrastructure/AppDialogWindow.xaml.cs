@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 
 namespace PocketMC.Desktop.Infrastructure
 {
@@ -14,6 +14,8 @@ namespace PocketMC.Desktop.Infrastructure
         public AppDialogWindow()
         {
             InitializeComponent();
+            var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
+            visualService.ApplyThemeToDialog(this);
 
             // FluentWindow initialization can reset accent resources.
             // Re-assert the current accent to prevent the dialog from
@@ -29,7 +31,7 @@ namespace PocketMC.Desktop.Infrastructure
             }
             catch
             {
-                // Non-critical — dialog will still work with whatever accent is current.
+                // Non-critical â€” dialog will still work with whatever accent is current.
             }
         }
 

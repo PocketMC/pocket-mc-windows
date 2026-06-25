@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Marketplace.Models;
+﻿using PocketMC.Desktop.Features.Marketplace.Models;
 using System;
 using System.Globalization;
 using System.Windows;
@@ -16,6 +16,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             DataContext = viewModel;
             InitializeComponent();
             viewModel.CloseRequested += () => Close();
+            var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
+            visualService.ApplyThemeToDialog(this);
         }
 
         public bool? ShowDialogWithResult()

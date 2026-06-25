@@ -13,6 +13,9 @@ namespace PocketMC.Desktop.Features.Instances
             DataContext = _viewModel;
             InitializeComponent();
 
+            var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
+            visualService.ApplyThemeToDialog(this);
+
             _viewModel.OnComplete += () =>
             {
                 Dispatcher.BeginInvoke(() =>
