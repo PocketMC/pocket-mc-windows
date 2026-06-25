@@ -160,18 +160,18 @@ namespace PocketMC.Desktop.Features.Tunnel
 
             if (!_applicationState.IsConfigured)
             {
+                ToolTipService.SetToolTip(AgentPathInfoIcon, "App root not configured");
                 SetUiState(TunnelUiState.Missing, "Missing", "PocketMC is not configured with an app root path yet.", Brushes.Orange);
-                TxtExecutablePath.Text = "App root not configured";
                 ShowNoTunnels("Finish PocketMC setup before managing tunnels.");
                 UpdateActionButtons(binaryExists: false);
                 return;
             }
 
             string executablePath = _applicationState.GetPlayitExecutablePath();
+            ToolTipService.SetToolTip(AgentPathInfoIcon, executablePath);
             bool binaryExists = File.Exists(executablePath);
             bool partialExists = File.Exists(executablePath + ".partial");
 
-            TxtExecutablePath.Text = executablePath;
             bool isDownloading = _playitAgentService.IsDownloadingBinary;
 
             if (!isDownloading)
