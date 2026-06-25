@@ -416,7 +416,7 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full packaging and release flow
 <a href="https://www.buymeacoffee.com/sahaj33" target="_blank">
   <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" height="38" />
 </a>
-<br>
+<br><br>
 <a href="https://deepwiki.com/PocketMC/pocket-mc-windows">
   <img src="https://deepwiki.com/badge.svg" alt="DeepWiki" />
 </a>
