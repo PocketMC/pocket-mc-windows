@@ -423,6 +423,20 @@ namespace PocketMC.Desktop.Features.Dashboard
             _navigationService.NavigateToDetailPage(page, $"Players: {vm.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.Dashboard, true);
         }
 
+        public void TogglePin(InstanceCardViewModel vm)
+        {
+            if (vm.Metadata.PinnedAt.HasValue)
+                vm.Metadata.PinnedAt = null;
+            else
+                vm.Metadata.PinnedAt = DateTime.UtcNow;
+                
+            string? path = _registry.GetPath(vm.Id);
+            if (path != null)
+            {
+                _instanceManager.SaveMetadata(vm.Metadata, path);
+            }
+        }
+
         private async Task HandlePortReliabilityFailureAsync(
             InstanceCardViewModel vm,
             PortReliabilityException ex,

@@ -49,6 +49,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         public ICommand ServerSettingsCommand { get; }
         public ICommand OpenConsoleCommand { get; }
         public ICommand OpenPlayersCommand { get; }
+        public ICommand TogglePinCommand { get; }
         public DashboardViewModel(
             DashboardInstanceListViewModel listVm,
             DashboardMetricsViewModel metricsVm,
@@ -88,6 +89,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             ServerSettingsCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenSettings(vm); });
             OpenConsoleCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenConsole(vm); });
             OpenPlayersCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.OpenPlayers(vm); });
+            TogglePinCommand = new RelayCommand(p => { if (p is InstanceCardViewModel vm) _actionsVm.TogglePin(vm); });
         }
 
         public void Activate()

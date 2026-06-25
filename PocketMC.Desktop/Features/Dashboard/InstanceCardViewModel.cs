@@ -73,6 +73,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public Guid Id => _metadata.Id;
     public string Name => _metadata.Name;
     public string Description => _metadata.Description;
+    public bool IsPinned => _metadata.PinnedAt.HasValue;
     public bool IsRunning => _state == ServerState.Installing || _state == ServerState.SettingUp || _state == ServerState.Starting || _state == ServerState.Online || _state == ServerState.Stopping;
     public bool IsWaitingToRestart => _lifecycleService.IsWaitingToRestart(Id);
     public bool ShowRunningControls => IsRunning || IsWaitingToRestart;
@@ -484,6 +485,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         _metadata = newMeta;
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(Description));
+        OnPropertyChanged(nameof(IsPinned));
         OnPropertyChanged(nameof(MinecraftVersion));
         OnPropertyChanged(nameof(ServerType));
         OnPropertyChanged(nameof(MaxPlayers));
