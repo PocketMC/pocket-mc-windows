@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
 
       - name: Parse Root Configuration
         id: config
@@ -45,6 +46,29 @@ jobs:
           } else {
             echo "skip=false" >> $env:GITHUB_OUTPUT
           }
+
+      - name: Calculate Beta Version
+        if: steps.check_channel.outputs.skip == 'false'
+        id: calc_beta
+        shell: pwsh
+        run: |
+          $version = "${{ steps.config.outputs.version }}"
+          $prefix = "v$version-beta."
+          
+          $tags = git tag --list "$prefix*"
+          $maxBeta = 0
+          
+          foreach ($tag in $tags) {
+            $numString = $tag.Substring($prefix.Length)
+            if ([int]::TryParse($numString, [ref]$num)) {
+              if ($num -gt $maxBeta) {
+                $maxBeta = $num
+              }
+            }
+          }
+          
+          $nextBeta = $maxBeta + 1
+          echo "beta_number=$nextBeta" >> $env:GITHUB_OUTPUT
 
       - uses: actions/setup-dotnet@v4
         if: steps.check_channel.outputs.skip == 'false'
@@ -75,15 +99,15 @@ jobs:
         id: upload-beta-portable
         uses: actions/upload-artifact@v4
         with:
-          name: PocketMC-Beta-Portable-${{ github.run_number }}
+          name: PocketMC-Beta-Portable-${{ steps.calc_beta.outputs.beta_number }}
           path: Beta Release/Portable/
 
       - name: Create Beta GitHub Release
         if: steps.check_channel.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.config.outputs.version }}-beta.${{ github.run_number }}
-          name: PocketMC v${{ steps.config.outputs.version }} (Beta ${{ github.run_number }})
+          tag_name: v${{ steps.config.outputs.version }}-beta.${{ steps.calc_beta.outputs.beta_number }}
+          name: PocketMC v${{ steps.config.outputs.version }} (Beta ${{ steps.calc_beta.outputs.beta_number }})
           body: "This is an automated beta release for testing upcoming features."
           files: |
             Beta Release/Portable/PocketMC.Desktop.exe
