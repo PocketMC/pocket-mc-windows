@@ -1,0 +1,66 @@
+name: Pull Request Notification
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+jobs:
+  notify:
+    runs-on: windows-latest
+    steps:
+      - name: Send Discord Pull Request Notification
+        shell: pwsh
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          $webhookUrl = "${{ secrets.DISCORD_PR_WEBHOOK }}"
+          if (-not $webhookUrl) {
+            Write-Warning "DISCORD_PR_WEBHOOK secret is not set. Skipping notification."
+            exit 0
+          }
+
+          $prUrl = "${{ github.event.pull_request.html_url }}"
+          $author = "${{ github.event.pull_request.user.login }}"
+          $authorIcon = "https://github.com/${author}.png"
+          $sourceBranch = "${{ github.event.pull_request.head.ref }}"
+          $targetBranch = "${{ github.event.pull_request.base.ref }}"
+          
+          $title = $env:PR_TITLE
+          if ([string]::IsNullOrWhiteSpace($title)) { $title = "No Title Provided" }
+
+          $payload = @{
+            embeds = @(
+              @{
+                title = "🔄 Pull Request: $title"
+                url = $prUrl
+                color = 3447003 # Light Blue
+                author = @{
+                  name = $author
+                  url = "https://github.com/$author"
+                  icon_url = $authorIcon
+                }
+                fields = @(
+                  @{
+                    name = "Source Branch"
+                    value = "``$sourceBranch``"
+                    inline = $true
+                  },
+                  @{
+                    name = "Target Branch"
+                    value = "``$targetBranch``"
+                    inline = $true
+                  }
+                )
+                footer = @{
+                  text = "PocketMC PR System"
+                }
+              }
+            )
+          }
+
+          try {
+            $json = $payload | ConvertTo-Json -Depth 5
+            Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $json -ContentType "application/json"
+          } catch {
+            Write-Warning "Failed to send Discord notification: $_"
+          }

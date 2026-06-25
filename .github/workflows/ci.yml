@@ -1,0 +1,43 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      DOTNET_VERSION: "8.0.x"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse Root Configuration
+        id: config
+        shell: pwsh
+        run: |
+          $content = Get-Content pocketmc.yml -Raw
+          $version = if ($content -match '(?m)^version:\s*(.+)$') { $matches[1].Trim() } else { "1.0.0" }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore PocketMC.Desktop.sln
+
+      - name: Build (Debug)
+        run: dotnet build PocketMC.Desktop.sln -c Debug --no-restore -p:Version=${{ steps.config.outputs.version }}
+
+      - name: Test
+        run: dotnet test PocketMC.Desktop.sln -c Debug --no-build --no-restore

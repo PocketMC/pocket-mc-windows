@@ -386,31 +386,30 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
 
     private async Task<HttpResponseMessage> PostToProxyAsync<T>(string path, T payload, CancellationToken ct, AppSettings? settings = null)
     {
-        var proxyUrl = _settingsManager.GetPlayitPartnerBackendUrl(settings);
-        var fallbackUrl = _settingsManager.GetFallbackPlayitPartnerBackendUrl(settings);
+        var urls = _settingsManager.GetPlayitPartnerBackendUrls(settings);
+        Exception? lastException = null;
 
-        HttpResponseMessage? primaryResponse = null;
-        try
+        foreach (var url in urls)
         {
-            primaryResponse = await _httpClient.PostAsJsonAsync($"{proxyUrl.TrimEnd('/')}{path}", payload, ct);
-            if (primaryResponse.IsSuccessStatusCode)
-                return primaryResponse;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Primary proxy failed for {Path}. Trying fallback.", path);
+            if (string.IsNullOrWhiteSpace(url)) continue;
+            
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync($"{url.TrimEnd('/')}{path}", payload, ct);
+                if (response.IsSuccessStatusCode)
+                    return response;
+                
+                if (url == urls[urls.Count - 1]) return response;
+                response.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Proxy failed for {Path}. Trying next.", path);
+                lastException = ex;
+            }
         }
 
-        try
-        {
-            var fallbackResponse = await _httpClient.PostAsJsonAsync($"{fallbackUrl.TrimEnd('/')}{path}", payload, ct);
-            if (primaryResponse != null) primaryResponse.Dispose();
-            return fallbackResponse;
-        }
-        catch
-        {
-            if (primaryResponse != null) return primaryResponse;
-            throw;
-        }
+        if (lastException != null) throw lastException;
+        throw new HttpRequestException($"All proxy backends failed for {path}");
     }
 }

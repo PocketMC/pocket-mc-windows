@@ -117,20 +117,15 @@ namespace PocketMC.Desktop.Features.Settings
             return Path.Combine(effectiveSettings.PlayitConfigDirectory!, "playit.toml");
         }
 
-        private const string PlayitPartnerBackendUrl = "https://pocket-mc-proxy-20d5.onrender.com";
-        private const string FallbackPlayitPartnerBackendUrl = "https://pocket-mc-proxy-n2qx.onrender.com";
-
-        public string GetPlayitPartnerBackendUrl(AppSettings? settings = null)
+        public System.Collections.Generic.IReadOnlyList<string> GetPlayitPartnerBackendUrls(AppSettings? settings = null)
         {
             // Dev override only — never exposed to users
             string? fromEnvironment = Environment.GetEnvironmentVariable("POCKETMC_PLAYIT_BACKEND_URL");
-            return !string.IsNullOrWhiteSpace(fromEnvironment) ? fromEnvironment : PlayitPartnerBackendUrl;
-        }
-
-        public string GetFallbackPlayitPartnerBackendUrl(AppSettings? settings = null)
-        {
-            string? fromEnvironment = Environment.GetEnvironmentVariable("POCKETMC_PLAYIT_BACKEND_FALLBACK_URL");
-            return !string.IsNullOrWhiteSpace(fromEnvironment) ? fromEnvironment : FallbackPlayitPartnerBackendUrl;
+            if (!string.IsNullOrWhiteSpace(fromEnvironment))
+            {
+                return new[] { fromEnvironment };
+            }
+            return AppConfig.AuthProxies;
         }
 
         private AppSettings CreateDefaultSettings()

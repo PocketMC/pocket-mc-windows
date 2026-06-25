@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildProjectDirectory)\..\pocketmc.yml" LogicalName="PocketMC.Desktop.pocketmc.yml" />
     <Resource Include="icon.ico" />
     <Resource Include="Assets\dark_dirt.png" />
     <Resource Include="Assets\logo.png" />
