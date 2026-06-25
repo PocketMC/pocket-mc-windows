@@ -1,8 +1,15 @@
 version: 1.9.5
-channel:
+channel: beta
 auth_proxies:
   - "https://pocket-mc-proxy-20d5.onrender.com"
   - "https://pocket-mc-proxy-n2qx.onrender.com"
 telemetry_proxies:
   - "https://pocket-mc-proxy-3fqm.onrender.com/"
   - "https://pocket-mc-proxy.onrender.com/"
+
+link_discord: "https://discord.gg/h27uNCaxPH"
+link_feedback: "https://docs.google.com/forms/d/e/1FAIpQLSd6cNMawAbvoELxqIF_FobaC3DptKnjQxViDh9XLcyJdNbTAQ/viewform?usp=dialog"
+link_youtube: "https://www.youtube.com/@OfficialPocketMC"
+link_reddit: "https://www.reddit.com/r/PocketMC/"
+link_github: "https://github.com/PocketMC/pocket-mc-windows"
+link_donation: "https://buymeacoffee.com/sahaj33"
