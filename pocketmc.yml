@@ -1,0 +1,8 @@
+version: 1.9.5
+channel: beta
+auth_proxies:
+  - "https://pocket-mc-proxy-20d5.onrender.com"
+  - "https://pocket-mc-proxy-n2qx.onrender.com"
+telemetry_proxies:
+  - "https://pocket-mc-proxy-3fqm.onrender.com/"
+  - "https://pocket-mc-proxy.onrender.com/"

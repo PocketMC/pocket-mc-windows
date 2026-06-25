@@ -1,0 +1,144 @@
+name: Beta Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    types:
+      - completed
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  beta-build:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: windows-latest
+    env:
+      DOTNET_VERSION: "8.0.x"
+      RUNTIME: win-x64
+      APP_ID: PocketMC
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - name: Parse Root Configuration
+        id: config
+        shell: pwsh
+        run: |
+          $content = Get-Content pocketmc.yml -Raw
+          $version = if ($content -match '(?m)^version:\s*(.+)$') { $matches[1].Trim() } else { "1.0.0" }
+          $channel = if ($content -match '(?m)^channel:\s*(.+)$') { $matches[1].Trim() } else { "none" }
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "channel=$channel" >> $env:GITHUB_OUTPUT
+
+      - name: Ensure Beta Channel
+        id: check_channel
+        shell: pwsh
+        run: |
+          if ("${{ steps.config.outputs.channel }}" -ne "beta") {
+            echo "skip=true" >> $env:GITHUB_OUTPUT
+            Write-Host "Channel is not beta. Exiting gracefully..."
+          } else {
+            echo "skip=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.check_channel.outputs.skip == 'false'
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        if: steps.check_channel.outputs.skip == 'false'
+        run: dotnet restore PocketMC.Desktop/PocketMC.Desktop.csproj -r ${{ env.RUNTIME }}
+
+      - name: Publish Portable
+        if: steps.check_channel.outputs.skip == 'false'
+        run: |
+          dotnet publish PocketMC.Desktop/PocketMC.Desktop.csproj `
+            -c Release `
+            -r $env:RUNTIME `
+            --self-contained true `
+            --no-restore `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -p:Version=${{ steps.config.outputs.version }} `
+            -o "Beta Release/Portable"
+
+      - name: Upload Beta Artifact
+        if: steps.check_channel.outputs.skip == 'false'
+        id: upload-beta-portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: PocketMC-Beta-Portable-${{ github.run_number }}
+          path: Beta Release/Portable/
+
+      - name: Create Beta GitHub Release
+        if: steps.check_channel.outputs.skip == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.config.outputs.version }}-beta.${{ github.run_number }}
+          name: PocketMC v${{ steps.config.outputs.version }} (Beta ${{ github.run_number }})
+          body: "This is an automated beta release for testing upcoming features."
+          files: |
+            Beta Release/Portable/PocketMC.Desktop.exe
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Discord Beta Notification
+        if: steps.check_channel.outputs.skip == 'false'
+        shell: pwsh
+        env:
+          COMMIT_MESSAGE: ${{ github.event.workflow_run.head_commit.message }}
+        run: |
+          $webhookUrl = "${{ secrets.DISCORD_BETA_WEBHOOK }}"
+          if (-not $webhookUrl) { Write-Warning "DISCORD_BETA_WEBHOOK not set."; exit 0 }
+
+          $runId      = "${{ github.run_id }}"
+          $artifactId = "${{ steps.upload-beta-portable.outputs.artifact-id }}"
+          $repo       = "${{ github.repository }}"
+          $commit     = "${{ github.event.workflow_run.head_sha }}".Substring(0, 7)
+          $branch     = "${{ github.event.workflow_run.head_branch }}"
+
+          $commitMessage = $env:COMMIT_MESSAGE
+          if ([string]::IsNullOrWhiteSpace($commitMessage)) { $commitMessage = "No commit message." }
+          elseif ($commitMessage.Length -gt 1000) { $commitMessage = $commitMessage.Substring(0, 1000) + "..." }
+
+          $payload = @{
+            embeds = @(@{
+              title       = "🛠️ New Beta Portable Build Available!"
+              description = "**Branch:** ``$branch`` `n**Commit:** ``$commit`` `n`n**Message:**`n```text`n$commitMessage`n```"
+              color       = 16753920
+              footer      = @{ text = "PocketMC CI/CD" }
+            })
+            components = @(
+              @{
+                type = 1
+                components = @(
+                  @{
+                    type = 2
+                    style = 5
+                    label = "Download Beta"
+                    url = "https://github.com/$repo/actions/runs/$runId/artifacts/$artifactId"
+                  },
+                  @{
+                    type = 2
+                    style = 5
+                    label = "View GitHub Run"
+                    url = "https://github.com/$repo/actions/runs/$runId"
+                  }
+                )
+              }
+            )
+          }
+          try {
+            Invoke-RestMethod -Uri $webhookUrl -Method Post -Body ($payload | ConvertTo-Json -Depth 5) -ContentType "application/json"
+          } catch {
+            Write-Warning "Failed to send Discord notification: $_"
+          }

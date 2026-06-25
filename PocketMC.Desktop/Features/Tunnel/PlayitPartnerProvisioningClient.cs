@@ -83,7 +83,7 @@ public sealed class PlayitPartnerProvisioningClient
         _httpClient = httpClient ?? new HttpClient();
     }
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(_settingsManager.GetPlayitPartnerBackendUrl(_applicationState.Settings));
+    public bool IsConfigured => _settingsManager.GetPlayitPartnerBackendUrls(_applicationState.Settings).Count > 0;
 
     public Uri? GetSetupPageUri()
     {
@@ -105,8 +105,7 @@ public sealed class PlayitPartnerProvisioningClient
             };
         }
 
-        string? backendBaseUrl = _settingsManager.GetPlayitPartnerBackendUrl(_applicationState.Settings);
-        if (string.IsNullOrWhiteSpace(backendBaseUrl))
+        if (_settingsManager.GetPlayitPartnerBackendUrls(_applicationState.Settings).Count == 0)
         {
             return new PlayitPartnerCreateAgentResult
             {
@@ -160,33 +159,33 @@ public sealed class PlayitPartnerProvisioningClient
 
     private async Task<HttpResponseMessage> PostWithFallbackAsync(string path, object payload, CancellationToken ct)
     {
-        string? primaryUrl = _settingsManager.GetPlayitPartnerBackendUrl(_applicationState.Settings);
-        string? fallbackUrl = _settingsManager.GetFallbackPlayitPartnerBackendUrl(_applicationState.Settings);
+        var urls = _settingsManager.GetPlayitPartnerBackendUrls(_applicationState.Settings);
+        Exception? lastException = null;
 
-        HttpResponseMessage? primaryResponse = null;
-        try
+        foreach (var url in urls)
         {
-            var endpoint = new Uri(new Uri(primaryUrl!.TrimEnd('/') + "/"), path);
-            primaryResponse = await _httpClient.PostAsJsonAsync(endpoint, payload, ct);
-            if (primaryResponse.IsSuccessStatusCode)
-                return primaryResponse;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Primary proxy request threw exception. Trying fallback.");
+            if (string.IsNullOrWhiteSpace(url)) continue;
+            
+            try
+            {
+                var endpoint = new Uri(new Uri(url.TrimEnd('/') + "/"), path);
+                var response = await _httpClient.PostAsJsonAsync(endpoint, payload, ct);
+                if (response.IsSuccessStatusCode)
+                    return response;
+                
+                // Dispose non-success to try next, or wait... maybe we want to return non-success if ALL fail?
+                // For simplicity, let's just return the last non-success response if all fail.
+                if (url == urls[urls.Count - 1]) return response;
+                response.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Proxy request threw exception to {Url}. Trying next.", url);
+                lastException = ex;
+            }
         }
 
-        try
-        {
-            var fallbackEndpoint = new Uri(new Uri(fallbackUrl!.TrimEnd('/') + "/"), path);
-            var fallbackResponse = await _httpClient.PostAsJsonAsync(fallbackEndpoint, payload, ct);
-            if (primaryResponse != null) primaryResponse.Dispose();
-            return fallbackResponse;
-        }
-        catch
-        {
-            if (primaryResponse != null) return primaryResponse;
-            throw;
-        }
+        if (lastException != null) throw lastException;
+        throw new HttpRequestException("All Playit partner backends failed.");
     }
 }

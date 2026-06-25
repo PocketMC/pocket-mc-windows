@@ -32,9 +32,6 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private string _cachedCountry = "Unknown";
     private bool _hasFetchedCountry = false;
 
-    private const string ProxyBaseUrl = "https://pocket-mc-proxy-3fqm.onrender.com/";
-    private const string FallbackProxyBaseUrl = "https://pocket-mc-proxy.onrender.com/";
-
     public TelemetryService(
         SettingsManager settingsManager,
         ServerProcessManager processManager,
@@ -291,23 +288,33 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         _cts.Dispose();
     }
 
-    private async Task<HttpResponseMessage> PostTelemetryAsJsonAsync<TValue>(HttpClient client, string path, TValue payload, CancellationToken ct = default)
-    {
-        try
+        private async Task<HttpResponseMessage> PostTelemetryAsJsonAsync<TValue>(HttpClient client, string path, TValue payload, CancellationToken ct = default)
         {
-            var response = await client.PostAsJsonAsync($"{ProxyBaseUrl.TrimEnd('/')}{path}", payload, ct);
-            if (!response.IsSuccessStatusCode)
+            var proxies = AppConfig.TelemetryProxies;
+            Exception? lastException = null;
+
+            foreach (var proxy in proxies)
             {
-                _logger.LogDebug("Primary proxy failed with status {StatusCode}, trying fallback...", response.StatusCode);
-                return await client.PostAsJsonAsync($"{FallbackProxyBaseUrl.TrimEnd('/')}{path}", payload, ct);
+                if (string.IsNullOrWhiteSpace(proxy)) continue;
+
+                try
+                {
+                    var response = await client.PostAsJsonAsync($"{proxy.TrimEnd('/')}{path}", payload, ct);
+                    if (response.IsSuccessStatusCode)
+                        return response;
+                    
+                    if (proxy == proxies[proxies.Count - 1]) return response;
+                    response.Dispose();
+                }
+                catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
+                {
+                    _logger.LogDebug(ex, "Proxy {Proxy} request failed, trying next...", proxy);
+                    lastException = ex;
+                }
             }
-            return response;
+
+            if (lastException != null) throw lastException;
+            throw new HttpRequestException("All telemetry proxies failed.");
         }
-        catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
-        {
-            _logger.LogDebug(ex, "Primary proxy request failed, trying fallback...");
-            return await client.PostAsJsonAsync($"{FallbackProxyBaseUrl.TrimEnd('/')}{path}", payload, ct);
-        }
-    }
 }
 
