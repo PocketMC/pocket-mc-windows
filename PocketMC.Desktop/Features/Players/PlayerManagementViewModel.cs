@@ -124,9 +124,9 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         BackCommand = new RelayCommand(_ => NavigateBack());
         RefreshCommand = new AsyncRelayCommand(_ => RefreshAllPlayerDataAsync());
-        ToggleWhitelistCommand = new AsyncRelayCommand(_ => ToggleWhitelistAsync(), _ => IsServerOnline);
-        AddToWhitelistCommand = new AsyncRelayCommand(_ => AddToWhitelistAsync(), _ => IsServerOnline && !string.IsNullOrWhiteSpace(WhitelistAddUsername));
-        RemoveFromWhitelistCommand = new AsyncRelayCommand(param => RemoveFromWhitelistAsync(param as string), _ => IsServerOnline);
+        ToggleWhitelistCommand = new AsyncRelayCommand(_ => ToggleWhitelistAsync(), _ => CanManageWhitelist);
+        AddToWhitelistCommand = new AsyncRelayCommand(_ => AddToWhitelistAsync(), _ => CanManageWhitelist && !string.IsNullOrWhiteSpace(WhitelistAddUsername));
+        RemoveFromWhitelistCommand = new AsyncRelayCommand(param => RemoveFromWhitelistAsync(param as string), _ => CanManageWhitelist);
         ReloadWhitelistCommand = new AsyncRelayCommand(_ => ReloadWhitelistAsync(), _ => IsServerOnline);
 
         if (_serverProcess != null)
@@ -173,6 +173,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     private bool UsesJavaNativePlayerData => !IsBedrock && !IsPocketMine;
     private bool UsesSidecarGamemode => IsBedrock || IsPocketMine;
     public bool IsServerOnline => _serverProcess?.State == ServerState.Online;
+    public bool CanManageWhitelist => _serverProcess == null || _serverProcess.State == ServerState.Online || _serverProcess.State == ServerState.Stopped || _serverProcess.State == ServerState.Crashed;
     public bool HasOnlinePlayers => OnlinePlayers.Count > 0;
     public bool HasBannedPlayers => BannedPlayers.Count > 0;
     public bool HasWhitelistedPlayers => WhitelistedPlayers.Count > 0;
@@ -1061,6 +1062,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         _ = _dispatcher.InvokeAsync(() =>
         {
             OnPropertyChanged(nameof(IsServerOnline));
+            OnPropertyChanged(nameof(CanManageWhitelist));
             OnPropertyChanged(nameof(ServerStatusText));
             OnPropertyChanged(nameof(ServerStatusBrush));
             OnPropertyChanged(nameof(EmptyOnlineText));

@@ -160,11 +160,11 @@
                             VerticalAlignment="Top"
                             HorizontalAlignment="Right"
                             Margin="20,0,0,0">
-                    <TextBlock Text="Special Thanks to Playit.gg ❤️"
+                    <TextBlock Text="Special Thanks to Playit.gg"
                                FontSize="13"
                                FontWeight="Medium"
                                HorizontalAlignment="Right"
-                               Margin="0,0,0,6">
+                               Margin="0,0,10,6">
                         <TextBlock.Foreground>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                 <GradientStop Color="#89dceb" Offset="0.0" />
