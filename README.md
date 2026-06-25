@@ -18,6 +18,8 @@
       <a href="https://www.reddit.com/r/PocketMC/"><img src="https://img.shields.io/badge/Reddit-r%2FPocketMC-%23FF4500?style=flat-square&logo=reddit" alt="Reddit" /></a>
       <a href="https://www.youtube.com/@OfficialPocketMC"><img src="https://img.shields.io/badge/YouTube-Watch-%23FF0000?style=flat-square&logo=youtube" alt="YouTube" /></a>
       <a href="https://www.buymeacoffee.com/sahaj33"><img src="https://img.shields.io/badge/Donate-BMC-%23FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" /></a>
+      <br><br>
+      <a href="https://github.com/PocketMC/pocket-mc-windows/releases/download/latest/PocketMC-win-Setup.exe"><img src="https://img.shields.io/badge/Download-Setup.exe-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Setup.exe" /></a>
     </td>
   </tr>
 </table>
@@ -79,7 +81,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 
 ## Features
 
-<details open>
+<details>
 <summary><b> &nbsp;Instance lifecycle</b></summary>
 <br>
 
@@ -95,7 +97,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>☕ &nbsp;Managed runtimes — zero Java headaches</b></summary>
+<summary><b> &nbsp;Managed runtimes — zero Java headaches</b></summary>
 <br>
 
 - App-local Java provisioning through Adoptium: **Java 8, 11, 17, 21, and 25**.
@@ -114,7 +116,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>📊 &nbsp;Dashboard, metrics, and console</b></summary>
+<summary><b> &nbsp;Dashboard, metrics, and console</b></summary>
 <br>
 
 - Live CPU / RAM / player metrics for running instances.
@@ -127,7 +129,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>🌐 &nbsp;Public access via Playit.gg</b></summary>
+<summary><b> &nbsp;Public access via Playit.gg</b></summary>
 <br>
 
 - Built-in Playit agent provisioning and setup flow (simplified two-step wizard).
@@ -139,7 +141,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>🔀 &nbsp;Java & Bedrock cross-play</b></summary>
+<summary><b> &nbsp;Java & Bedrock cross-play</b></summary>
 <br>
 
 - Geyser and Floodgate are provisioned automatically during server creation for supported Java server types.
@@ -149,7 +151,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>🧩 &nbsp;Mods, plugins, packs, and add-ons</b></summary>
+<summary><b> &nbsp;Mods, plugins, packs, and add-ons</b></summary>
 <br>
 
 - Modrinth browser for server-side mods, plugins, and modpacks.
@@ -167,7 +169,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>💾 &nbsp;Backups, cloud replication, and safe restore</b></summary>
+<summary><b> &nbsp;Backups, cloud replication, and safe restore</b></summary>
 <br>
 
 - Manual and scheduled backups with retention pruning.
@@ -181,7 +183,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>👥 &nbsp;Player and server controls</b></summary>
+<summary><b> &nbsp;Player and server controls</b></summary>
 <br>
 
 - Online player parsing for Java, Bedrock, and PocketMine log formats.
@@ -192,7 +194,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>🔄 &nbsp;Instance version updates</b></summary>
+<summary><b> &nbsp;Instance version updates</b></summary>
 <br>
 
 - Offline update workflow with target version selection and Java runtime requirement checks.
@@ -204,7 +206,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>📦 &nbsp;Instance import & export</b></summary>
+<summary><b> &nbsp;Instance import & export</b></summary>
 <br>
 
 - Export a complete instance (server files, world, add-ons, metadata) to a portable archive.
@@ -215,7 +217,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>🖱️ &nbsp;Remote Control Dashboard</b></summary>
+<summary><b> &nbsp;Remote Control Dashboard</b></summary>
 <br>
 
 - Browser-based dashboard for managing servers from any device with light and dark mode support.
@@ -230,7 +232,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 </details>
 
 <details>
-<summary><b>🤖 &nbsp;AI session summaries</b></summary>
+<summary><b> &nbsp;AI session summaries</b></summary>
 <br>
 
 Generates structured session summaries from server logs using your own API key or a local endpoint.
@@ -242,7 +244,7 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 </details>
 
 <details>
-<summary><b>🔍 &nbsp;Diagnostics</b></summary>
+<summary><b> &nbsp;Diagnostics</b></summary>
 <br>
 
 - Dependency health monitoring for required services and runtimes.
@@ -252,7 +254,7 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 </details>
 
 <details>
-<summary><b>🪟 &nbsp;Windows integration and app polish</b></summary>
+<summary><b> &nbsp;Windows integration and app polish</b></summary>
 <br>
 
 - Toast notifications for server online, Playit agent connection, Remote Control availability, and AI summary completion — each individually toggleable in App Settings.
