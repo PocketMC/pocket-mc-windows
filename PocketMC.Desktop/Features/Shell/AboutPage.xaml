@@ -50,7 +50,7 @@
                     </Border>
 
                     <!-- Info Content -->
-                    <StackPanel Grid.Column="1">
+                    <StackPanel Grid.Column="1" Margin="0,0,24,0">
                         <TextBlock Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
                         <TextBlock Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
@@ -58,6 +58,7 @@
                         <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
                         <StackPanel Orientation="Horizontal">
                             <ui:Button Content="GitHub" Appearance="Secondary" Click="OpenGitHub_Click" Icon="{ui:SymbolIcon Code24}"/>
+                            <ui:Button Content="View What's New" Appearance="Primary" Margin="8,0,0,0" Click="WhatsNew_Click" Icon="{ui:SymbolIcon Megaphone24}"/>
                         </StackPanel>
                     </StackPanel>
                 </Grid>
@@ -86,28 +87,6 @@
                     </StackPanel>
                 </StackPanel>
             </ui:CardExpander>
-
-            <!-- WHAT'S NEW SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Rocket24}" Margin="0,12,0,0">
-                <ui:CardExpander.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="What's New" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="See what's changed in the latest version of PocketMC." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:CardExpander.Header>
-
-                <StackPanel Margin="16,8,16,16">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Content="View What's New" Appearance="Primary" Click="WhatsNew_Click" Icon="{ui:SymbolIcon Megaphone24}"/>
-                    </StackPanel>
-                </StackPanel>
-            </ui:CardExpander>
-
             <!-- FEEDBACK SECTION -->
             <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Bug24}" Margin="0,12,0,0">
                 <ui:CardExpander.Header>

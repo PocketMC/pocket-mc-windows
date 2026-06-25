@@ -12,8 +12,8 @@ namespace PocketMC.Desktop.Features.Shell
     public sealed class ShellVisualService : IShellVisualService, IDisposable
     {
         private const string SolidDarkFallback = "#FF242424";
-        private const string AcrylicActiveTint = "#CC202020";
-        private const string MicaActiveTint = "#B8202020";
+        private const string AcrylicActiveTint = "#40202020";
+        private const string MicaActiveTint = "#00000000";
         private const string SolidLightFallback = "#FFF7F7F7";
         private const string TransparentTint = "#00FFFFFF";
         private const int DwmUseImmersiveDarkMode = 20;
@@ -64,6 +64,13 @@ namespace PocketMC.Desktop.Features.Shell
 
                 string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 
+                if (!_isWindowActive)
+                {
+                    HideFakeMicaLayer(window);
+                    ApplySolidFallback(window, SolidDarkFallback);
+                    return;
+                }
+
                 // Native Mica/Acrylic handled by DWM (includes native inactive dimming)
                 if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
                     _windowsCornerService.IsWindows11())
@@ -88,14 +95,6 @@ namespace PocketMC.Desktop.Features.Shell
                     window.WindowBackdropType = WindowBackdropType.Acrylic;
 
                     SetTintLayer(window, AcrylicActiveTint);
-                    return;
-                }
-
-                // Manual inactive state handling for non-native backdrops (FakeMica, Light, Dark)
-                if (!_isWindowActive)
-                {
-                    HideFakeMicaLayer(window);
-                    ApplySolidFallback(window, SolidDarkFallback);
                     return;
                 }
 
