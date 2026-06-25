@@ -89,7 +89,7 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,24" Orientation="Horizontal">
             <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-            <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand"/>
+            <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand" VerticalAlignment="Center" Margin="0,6,0,0"/>
         </StackPanel>
 
         <ScrollViewer x:Name="DashboardScrollViewer"
