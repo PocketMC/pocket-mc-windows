@@ -84,19 +84,25 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <StackPanel Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource VisibleIfTrue}}">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Auto-Start Toggle -->
+                        <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" 
+                                         Content="Auto-start server at PocketMC startup" 
+                                         Margin="0,0,24,0"
+                                         VerticalAlignment="Center"/>
+
+                        <StackPanel Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource VisibleIfTrue}}" VerticalAlignment="Center" Margin="0,0,24,0">
                             <TextBlock Text="{Binding VersionUpdates.StatusText}"
-                                       Foreground="#89B4FA"
+                                       Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        TextWrapping="Wrap"/>
-                            <StackPanel Margin="0,8,24,0"
+                            <StackPanel Margin="0,4,0,0"
                                         Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
                                 <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
                                              Maximum="100"
                                              Height="5"
-                                             Width="420"
+                                             Width="200"
                                              HorizontalAlignment="Left"
                                              IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
                                 <TextBlock Text="{Binding VersionUpdates.ProgressDetailText}"
@@ -108,10 +114,10 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
-                                    Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}">
-                            <ui:SymbolIcon Symbol="Warning24" Foreground="#F38BA8" Margin="0,0,10,0"/>
+                                    Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,24,0">
+                            <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,10,0"/>
                             <TextBlock Text="Unsaved changes detected"
-                                       Foreground="#F38BA8"
+                                       Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                                        FontSize="13"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
@@ -119,9 +125,9 @@
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                     Visibility="{Binding IsRestartRequired, Converter={StaticResource VisibleIfTrue}}">
-                            <ui:SymbolIcon Symbol="ArrowClockwise24" Foreground="#89B4FA" Margin="0,0,10,0"/>
+                            <ui:SymbolIcon Symbol="ArrowClockwise24" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" Margin="0,0,10,0"/>
                             <TextBlock Text="Server restart required to apply changes"
-                                       Foreground="#89B4FA"
+                                       Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
                                        FontSize="13"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
@@ -180,20 +186,25 @@
                                     <ui:CardExpander Header="Visual Identity" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12" IsExpanded="True">
                                         <StackPanel Margin="16,8,16,16">
                                             <!-- Instance Alias & Description -->
-                                            <TextBlock Text="Instance Name (Label)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="The display name for this instance in your dashboard." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                            <ui:TextBox Text="{Binding General.InstanceName, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="My Epic Server" Margin="0,0,0,16"/>
+                                            <Grid Margin="0,0,0,16">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="24" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="Instance Name (Label)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="The display name for this instance in your dashboard." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                    <ui:TextBox Text="{Binding General.InstanceName, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="My Epic Server"/>
+                                                </StackPanel>
 
-                                            <TextBlock Text="Instance Description" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="A short note about this instance's purpose or configuration." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                            <ui:TextBox Text="{Binding General.InstanceDescription, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Testing new mods..." Margin="0,0,0,20"/>
-
-                                            <Separator Margin="0,0,0,20" Opacity="0.15"/>
-
-                                            <!-- Startup Auto-Start -->
-                                            <TextBlock Text="Auto-Start on Application Launch" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Automatically start this specific server instance when PocketMC starts." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                            <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" Content="Auto-start server at PocketMC startup" Margin="0,0,0,20"/>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="Instance Description" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="A short note about this instance's purpose or configuration." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                    <ui:TextBox Text="{Binding General.InstanceDescription, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Testing new mods..."/>
+                                                </StackPanel>
+                                            </Grid>
 
                                             <Separator Margin="0,0,0,20" Opacity="0.15"/>
 
@@ -305,77 +316,36 @@
                                         </StackPanel>
                                     </ui:CardExpander>
 
-                                    <!-- NETWORKING & IP -->
-                                    <ui:CardExpander Header="Networking &amp; IP" Icon="{ui:SymbolIcon Globe24}" Margin="0,0,0,12" IsExpanded="True">
+                                    <!-- Port Configuration -->
+                                    <ui:CardExpander Header="Port Configuration" Icon="{ui:SymbolIcon Globe24}" Margin="0,0,0,12" IsExpanded="True">
                                         <StackPanel Margin="16,8,16,16">
 
-                                            <!-- Server Port -->
-                                            <TextBlock Text="Server Port" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8">
-                                                <Run Text="The port your Minecraft server listens on. Default is "/>
-                                                <Run Text="{Binding DefaultServerPortText, Mode=OneWay}"/>
-                                                <Run Text="."/>
-                                            </TextBlock>
-                                            <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}"
-                                                        PlaceholderText="{Binding DefaultServerPortText, Mode=OneWay}" Width="160" HorizontalAlignment="Left"/>
-
-                                            <StackPanel Visibility="{Binding SupportsGeyserSettings, Converter={StaticResource BoolToVis}}">
-                                                <Separator Margin="0,16" Opacity="0.15"/>
-
-                                                <TextBlock Text="Geyser Bedrock Port (UDP)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                                <TextBlock Text="The UDP port used by Bedrock players to connect via Geyser."
-                                                           FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
-                                                <ui:TextBox Text="{Binding General.GeyserBedrockPort, UpdateSourceTrigger=PropertyChanged}"
-                                                            PlaceholderText="19132" Width="160" HorizontalAlignment="Left"/>
-                                            </StackPanel>
-
-                                            <Separator Margin="0,16" Opacity="0.15"/>
-                                            <!-- Public IP / Tunnel Endpoint -->
-                                            <TextBlock Text="Public Address (Tunnel)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                            <TextBlock Text="The public address players use to connect. Resolved from your active Playit.gg tunnels."
-                                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
-
+                                            <!-- Server Ports -->
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="24" />
+                                                    <ColumnDefinition Width="*" />
                                                 </Grid.ColumnDefinitions>
+                                                
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="Server Port" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap">
+                                                        <Run Text="The port your Minecraft server listens on. Default is "/>
+                                                        <Run Text="{Binding DefaultServerPortText, Mode=OneWay}"/>
+                                                        <Run Text="."/>
+                                                    </TextBlock>
+                                                    <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}"
+                                                                PlaceholderText="{Binding DefaultServerPortText, Mode=OneWay}" Width="160" HorizontalAlignment="Left"/>
+                                                </StackPanel>
 
-                                                <Grid>
-                                                    <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                    </Grid.RowDefinitions>
-
-                                                    <!-- Primary Java Tunnel -->
-                                                    <Border Grid.Row="0" Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                                            BorderThickness="1" CornerRadius="4" Padding="12,8" VerticalAlignment="Center">
-                                                        <StackPanel>
-                                                            <TextBlock x:Name="TxtPlayitAddress" Text="{Binding PlayitAddress}"
-                                                                       FontFamily="Consolas" FontSize="14"
-                                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                        </StackPanel>
-                                                    </Border>
-
-                                                    <!-- Secondary Bedrock Tunnel -->
-                                                    <Border Grid.Row="1" Background="#22F9A825"
-                                                            BorderBrush="#44F9A825" Margin="0,8,0,0"
-                                                            BorderThickness="1" CornerRadius="4" Padding="12,8" VerticalAlignment="Center"
-                                                            Visibility="{Binding HasGeyser, Converter={StaticResource VisibleIfTrue}}">
-                                                        <StackPanel>
-                                                            <TextBlock Text="Bedrock Address:" FontSize="11" Foreground="#F9A825" Margin="0,0,0,2"/>
-                                                            <TextBlock x:Name="TxtPlayitBedrockAddress" Text="{Binding PlayitBedrockAddress}"
-                                                                       FontFamily="Consolas" FontSize="14"
-                                                                       Foreground="#FFD54F"/>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </Grid>
-
-                                                <ui:Button Grid.Column="1" Appearance="Secondary"
-                                                           Content="Refresh" Icon="{ui:SymbolIcon ArrowSync24}"
-                                                           Command="{Binding ResolvePlayitCommand}"
-                                                           Margin="8,0,0,0" VerticalAlignment="Center" ToolTip="Re-resolve tunnel address for current port"/>
+                                                <StackPanel Grid.Column="2" Visibility="{Binding SupportsGeyserSettings, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="Geyser Bedrock Port (UDP)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="The UDP port used by Bedrock players to connect via Geyser."
+                                                               FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                                                    <ui:TextBox Text="{Binding General.GeyserBedrockPort, UpdateSourceTrigger=PropertyChanged}"
+                                                                PlaceholderText="19132" Width="160" HorizontalAlignment="Left"/>
+                                                </StackPanel>
                                             </Grid>
 
 
@@ -414,25 +384,41 @@
                         <TabItem Header="VersionUpdates">
                             <ScrollViewer x:Name="VersionUpdatesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
+                                    <!-- 1. Unified Version Selector -->
                                     <ui:Card Padding="24" Margin="0,0,0,16">
                                         <StackPanel>
                                             <TextBlock Text="Version &amp; Updates" Style="{StaticResource SettingsHeader}" FontSize="18"/>
-                                            <Grid Margin="0,10,0,0">
+                                            <Grid Margin="0,16,0,0">
                                                 <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" MinWidth="120"/>
                                                     <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="16"/>
-                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="1.5*"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <StackPanel Grid.Column="0">
+                                                <!-- Current Version -->
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                                     <TextBlock Text="Current server version" Style="{StaticResource SettingsSubtext}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.CurrentServerVersion}" FontSize="22" FontWeight="SemiBold"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.CurrentServerType}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
+                                                    <TextBlock Text="{Binding VersionUpdates.CurrentServerVersion}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                    <TextBlock Text="{Binding VersionUpdates.CurrentServerType}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
                                                 </StackPanel>
 
-                                                <StackPanel Grid.Column="2">
+                                                <!-- Arrow Divider -->
+                                                <Grid Grid.Column="1" Margin="24,0,32,0" VerticalAlignment="Center">
+                                                    <Rectangle Height="1.5" Fill="{DynamicResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" Margin="0,0,1,0"/>
+                                                    <Path Data="M 0 0 L 8 5 L 0 10" 
+                                                          Stroke="{DynamicResource TextFillColorTertiaryBrush}" 
+                                                          StrokeThickness="1.5" 
+                                                          HorizontalAlignment="Right" 
+                                                          VerticalAlignment="Center"
+                                                          StrokeEndLineCap="Round" 
+                                                          StrokeStartLineCap="Round" 
+                                                          StrokeLineJoin="Round" />
+                                                </Grid>
+
+                                                <!-- Target Version -->
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                                     <TextBlock Text="Target server version" Style="{StaticResource SettingsSubtext}"/>
-                                                    <Grid>
+                                                    <Grid Margin="0,4,0,0">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*"/>
                                                             <ColumnDefinition Width="Auto"/>
@@ -441,7 +427,7 @@
                                                                   SelectedItem="{Binding VersionUpdates.SelectedTargetVersion, Mode=TwoWay}"
                                                                   DisplayMemberPath="Id"
                                                                   IsEnabled="{Binding VersionUpdates.HasTargetVersions}"
-                                                                  MinHeight="34"/>
+                                                                  MinHeight="36"/>
                                                         <ui:Button Grid.Column="1"
                                                                    Icon="{ui:SymbolIcon ArrowClockwise24}"
                                                                    Appearance="Secondary"
@@ -457,86 +443,100 @@
                                                 </StackPanel>
                                             </Grid>
 
-                                            <TextBlock Text="Required Java version change" Style="{StaticResource SettingsSubtext}" Margin="0,20,0,4"/>
-                                            <TextBlock Text="{Binding VersionUpdates.RequiredJavaVersionChange}" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-
-                                            <TextBlock Text="Addon update mode" Style="{StaticResource SettingsSubtext}" Margin="0,20,0,8"/>
-                                            <ComboBox ItemsSource="{Binding VersionUpdates.UpdateModes}"
-                                                      SelectedItem="{Binding VersionUpdates.SelectedUpdateMode, Mode=TwoWay}"
-                                                      DisplayMemberPath="DisplayName"
-                                                      MinHeight="34"/>
+                                            <!-- Required Java Change Alert -->
+                                            <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" 
+                                                    BorderBrush="{DynamicResource SystemFillColorCautionBrush}"
+                                                    BorderThickness="1" CornerRadius="4" Padding="12,8" Margin="0,20,0,0"
+                                                    Visibility="{Binding VersionUpdates.RequiredJavaVersionChange, Converter={StaticResource VisibleIfNotEmpty}}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:SymbolIcon Symbol="Info24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,8,0"/>
+                                                    <TextBlock Text="{Binding VersionUpdates.RequiredJavaVersionChange}" 
+                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                               VerticalAlignment="Center" FontSize="12"/>
+                                                </StackPanel>
+                                            </Border>
                                         </StackPanel>
                                     </ui:Card>
 
-                                    <ui:Card Padding="24" Margin="0,0,0,16">
-                                        <StackPanel>
-                                            <TextBlock Text="Addon Migration Summary" Style="{StaticResource SettingsHeader}" FontSize="16"/>
-                                            <UniformGrid Columns="2" Margin="0,8,0,0">
-                                                <StackPanel Margin="0,0,16,12">
-                                                    <TextBlock Text="Tracked addons" Style="{StaticResource SettingsSubtext}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.TrackedAddonCount}" FontSize="20" FontWeight="SemiBold"/>
-                                                </StackPanel>
-                                                <StackPanel Margin="0,0,16,12">
-                                                    <TextBlock Text="Manual/untracked addons" Style="{StaticResource SettingsSubtext}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.ManualUntrackedAddonCount}" FontSize="20" FontWeight="SemiBold"/>
-                                                </StackPanel>
-                                                <StackPanel Margin="0,0,16,12">
-                                                    <TextBlock Text="Compatible updates" Style="{StaticResource SettingsSubtext}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.CompatibleUpdateCount}" FontSize="20" FontWeight="SemiBold"/>
-                                                </StackPanel>
-                                                <StackPanel Margin="0,0,16,12">
-                                                    <TextBlock Text="Incompatible addons" Style="{StaticResource SettingsSubtext}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.IncompatibleAddonCount}" FontSize="20" FontWeight="SemiBold"/>
-                                                </StackPanel>
-                                                <StackPanel Margin="0,0,16,12">
-                                                    <TextBlock Text="Dependency additions" Style="{StaticResource SettingsSubtext}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.DependencyAdditionCount}" FontSize="20" FontWeight="SemiBold"/>
-                                                </StackPanel>
-                                            </UniformGrid>
-                                        </StackPanel>
-                                    </ui:Card>
-
-                                    <ui:Card Padding="24" Margin="0,0,0,16">
-                                        <StackPanel>
-                                            <TextBlock Text="Rollback Recovery" Style="{StaticResource SettingsHeader}" FontSize="16"/>
-                                            <TextBlock Text="{Binding VersionUpdates.RollbackAvailabilityText}" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,16"/>
-                                            
-                                            <StackPanel Orientation="Horizontal">
-                                                <ui:Button Content="Rollback Server"
-                                                           Command="{Binding VersionUpdates.RollbackCommand}"
-                                                           Icon="{ui:SymbolIcon ArrowUndo24}"
-                                                           Appearance="Primary"
-                                                           Margin="0,0,8,0" />
-                                                <ui:Button Content="Delete Rollback Backup"
-                                                           Command="{Binding VersionUpdates.DeleteRollbackCommand}"
-                                                           Icon="{ui:SymbolIcon Delete24}"
-                                                           Appearance="Danger" />
+                                    <!-- 2. Addon Update Mode (CardControl) -->
+                                    <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon PuzzlePiece24}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel Margin="0,0,16,0">
+                                                <TextBlock Text="Addon update mode" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="0,0,0,2"/>
+                                                <TextBlock Text="Configure how addons are migrated during a version upgrade." Style="{StaticResource SettingsSubtext}" FontSize="12" TextWrapping="Wrap"/>
                                             </StackPanel>
-                                        </StackPanel>
-                                    </ui:Card>
+                                        </ui:CardControl.Header>
+                                        <ComboBox ItemsSource="{Binding VersionUpdates.UpdateModes}"
+                                                  SelectedItem="{Binding VersionUpdates.SelectedUpdateMode, Mode=TwoWay}"
+                                                  DisplayMemberPath="DisplayName"
+                                                  Width="250" MinHeight="34"/>
+                                    </ui:CardControl>
 
-                                    <ui:Card Padding="24" Margin="0,0,0,16">
-                                        <StackPanel>
-                                            <TextBlock Text="Changelog Preview" Style="{StaticResource SettingsHeader}" FontSize="16"/>
-                                            <TextBlock Text="{Binding VersionUpdates.ChangelogPreview}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,6,0,0"/>
-                                        </StackPanel>
-                                    </ui:Card>
+                                    <!-- 3. Migration Summary Ribbon -->
+                                    <ui:CardExpander Header="Addon Migration Summary" Icon="{ui:SymbolIcon DocumentData24}" Margin="0,0,0,16" IsExpanded="True">
+                                        <UniformGrid Columns="5" Margin="16,8,16,16">
+                                            <StackPanel>
+                                                <TextBlock Text="Tracked" Style="{StaticResource SettingsSubtext}" FontSize="12"/>
+                                                <TextBlock Text="{Binding VersionUpdates.TrackedAddonCount}" FontSize="24" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Untracked" Style="{StaticResource SettingsSubtext}" FontSize="12"/>
+                                                <TextBlock Text="{Binding VersionUpdates.ManualUntrackedAddonCount}" FontSize="24" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Compatible" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
+                                                <TextBlock Text="{Binding VersionUpdates.CompatibleUpdateCount}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Incompatible" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
+                                                <TextBlock Text="{Binding VersionUpdates.IncompatibleAddonCount}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Dependencies" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
+                                                <TextBlock Text="{Binding VersionUpdates.DependencyAdditionCount}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
+                                            </StackPanel>
+                                        </UniformGrid>
+                                    </ui:CardExpander>
 
-                                    <ui:Card Padding="24" Margin="0,0,0,16">
-                                        <StackPanel>
-                                            <TextBlock Text="Warnings" Style="{StaticResource SettingsHeader}" FontSize="16"/>
-                                            <ItemsControl ItemsSource="{Binding VersionUpdates.Warnings}" Margin="0,8,0,0">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                            <ui:SymbolIcon Symbol="Warning24" Foreground="#F9E2AF" Margin="0,0,8,0"/>
-                                                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </ui:Card>
+                                    <!-- 4. Rollback & Recovery -->
+                                    <ui:CardAction Margin="0,0,0,16" Icon="{ui:SymbolIcon ArrowUndo24}" Command="{Binding VersionUpdates.RollbackCommand}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="Rollback Recovery" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="0,0,0,2"/>
+                                                <TextBlock Text="{Binding VersionUpdates.RollbackAvailabilityText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                            <ui:Button Grid.Column="1" Content="Delete Backup"
+                                                       Command="{Binding VersionUpdates.DeleteRollbackCommand}"
+                                                       Icon="{ui:SymbolIcon Delete24}"
+                                                       Appearance="Danger" 
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </ui:CardAction>
+
+                                    <!-- 5. Changelog & Warnings -->
+                                    <ui:CardExpander Header="Changelog Preview" Icon="{ui:SymbolIcon DocumentBulletList24}" Margin="0,0,0,16" 
+                                                     Visibility="{Binding VersionUpdates.ChangelogPreview, Converter={StaticResource VisibleIfNotEmpty}}">
+                                        <TextBlock Text="{Binding VersionUpdates.ChangelogPreview}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="16,8,16,16"/>
+                                    </ui:CardExpander>
+
+                                    <ItemsControl ItemsSource="{Binding VersionUpdates.Warnings}" Margin="0,0,0,16">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
+                                                        BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
+                                                        BorderThickness="1" CornerRadius="4" Padding="12,12" Margin="0,0,0,8">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,12,0"/>
+                                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="13" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
