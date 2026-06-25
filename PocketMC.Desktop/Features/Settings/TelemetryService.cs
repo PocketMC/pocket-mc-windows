@@ -224,7 +224,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
                 .Distinct()
                 .ToList();
 
-            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "Unknown";
+            var version = AppConfig.AppVersion;
 
             var payload = new
             {

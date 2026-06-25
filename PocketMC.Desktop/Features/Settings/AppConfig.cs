@@ -20,6 +20,14 @@ namespace PocketMC.Desktop.Features.Settings
             "https://pocket-mc-proxy.onrender.com/"
         };
 
+        public static string AppVersion { get; private set; } = "1.0.0";
+        public static string LinkDiscord { get; private set; } = "https://discord.gg/h27uNCaxPH";
+        public static string LinkFeedback { get; private set; } = "https://docs.google.com/forms/d/e/1FAIpQLSd6cNMawAbvoELxqIF_FobaC3DptKnjQxViDh9XLcyJdNbTAQ/viewform?usp=dialog";
+        public static string LinkYouTube { get; private set; } = "https://www.youtube.com/@OfficialPocketMC";
+        public static string LinkReddit { get; private set; } = "https://www.reddit.com/r/PocketMC/";
+        public static string LinkGitHub { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows";
+        public static string LinkDonation { get; private set; } = "https://buymeacoffee.com/sahaj33";
+
         static AppConfig()
         {
             try
@@ -70,6 +78,27 @@ namespace PocketMC.Desktop.Features.Settings
                                 inAuth = false;
                                 inTelemetry = false;
                             }
+
+                            var versionMatch = Regex.Match(trimmed, @"version:\s*""?([^""\r\n]+)""?");
+                            if (versionMatch.Success) AppVersion = versionMatch.Groups[1].Value;
+
+                            var discordMatch = Regex.Match(trimmed, @"link_discord:\s*""?([^""\r\n]+)""?");
+                            if (discordMatch.Success) LinkDiscord = discordMatch.Groups[1].Value;
+
+                            var feedbackMatch = Regex.Match(trimmed, @"link_feedback:\s*""?([^""\r\n]+)""?");
+                            if (feedbackMatch.Success) LinkFeedback = feedbackMatch.Groups[1].Value;
+
+                            var youtubeMatch = Regex.Match(trimmed, @"link_youtube:\s*""?([^""\r\n]+)""?");
+                            if (youtubeMatch.Success) LinkYouTube = youtubeMatch.Groups[1].Value;
+
+                            var redditMatch = Regex.Match(trimmed, @"link_reddit:\s*""?([^""\r\n]+)""?");
+                            if (redditMatch.Success) LinkReddit = redditMatch.Groups[1].Value;
+
+                            var githubMatch = Regex.Match(trimmed, @"link_github:\s*""?([^""\r\n]+)""?");
+                            if (githubMatch.Success) LinkGitHub = githubMatch.Groups[1].Value;
+
+                            var donationMatch = Regex.Match(trimmed, @"link_donation:\s*""?([^""\r\n]+)""?");
+                            if (donationMatch.Success) LinkDonation = donationMatch.Groups[1].Value;
                         }
                     }
 

@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Navigation;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.WhatsNew;
+using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Shell
@@ -21,8 +22,7 @@ namespace PocketMC.Desktop.Features.Shell
             _dialogService = dialogService;
             _whatsNewService = whatsNewService;
 
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-            TxtVersion.Text = $"Version {version?.Major}.{version?.Minor}.{version?.Build}";
+            TxtVersion.Text = $"Version {AppConfig.AppVersion}";
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -40,7 +40,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenDiscord_Click(object sender, RoutedEventArgs e)
         {
-            var invite = "https://discord.gg/h27uNCaxPH";
+            var invite = AppConfig.LinkDiscord;
             try
             {
                 var psi = new ProcessStartInfo(invite) { UseShellExecute = true };
@@ -54,7 +54,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private async void CopyDiscordInvite_Click(object sender, RoutedEventArgs e)
         {
-            bool ok = await Infrastructure.ClipboardHelper.TrySetTextAsync("https://discord.gg/h27uNCaxPH");
+            bool ok = await Infrastructure.ClipboardHelper.TrySetTextAsync(AppConfig.LinkDiscord);
             if (ok)
                 _dialogService.ShowMessage("Copied", "Discord invite copied to clipboard.");
             else
@@ -63,7 +63,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenFeedbackForm_Click(object sender, RoutedEventArgs e)
         {
-            var formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSd6cNMawAbvoELxqIF_FobaC3DptKnjQxViDh9XLcyJdNbTAQ/viewform?usp=dialog";
+            var formUrl = AppConfig.LinkFeedback;
             try
             {
                 var psi = new ProcessStartInfo(formUrl) { UseShellExecute = true };
@@ -77,7 +77,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenYouTube_Click(object sender, RoutedEventArgs e)
         {
-            var url = "https://www.youtube.com/@OfficialPocketMC";
+            var url = AppConfig.LinkYouTube;
             try
             {
                 var psi = new ProcessStartInfo(url) { UseShellExecute = true };
@@ -91,7 +91,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenReddit_Click(object sender, RoutedEventArgs e)
         {
-            var url = "https://www.reddit.com/r/PocketMC/";
+            var url = AppConfig.LinkReddit;
             try
             {
                 var psi = new ProcessStartInfo(url) { UseShellExecute = true };
@@ -105,7 +105,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenGitHub_Click(object sender, RoutedEventArgs e)
         {
-            var repoUrl = "https://github.com/PocketMC/pocket-mc-windows";
+            var repoUrl = AppConfig.LinkGitHub;
             try
             {
                 var psi = new ProcessStartInfo(repoUrl) { UseShellExecute = true };
@@ -119,7 +119,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenDonationPage_Click(object sender, RoutedEventArgs e)
         {
-            var donationUrl = "https://buymeacoffee.com/sahaj33";
+            var donationUrl = AppConfig.LinkDonation;
             try
             {
                 var psi = new ProcessStartInfo(donationUrl) { UseShellExecute = true };

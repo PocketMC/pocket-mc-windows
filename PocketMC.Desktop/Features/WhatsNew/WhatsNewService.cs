@@ -34,10 +34,7 @@ namespace PocketMC.Desktop.Features.WhatsNew
         /// </summary>
         public string GetCurrentVersion()
         {
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-            return version != null
-                ? $"{version.Major}.{version.Minor}.{version.Build}"
-                : "0.0.0";
+            return AppConfig.AppVersion;
         }
 
         /// <summary>
