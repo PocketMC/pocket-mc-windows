@@ -91,27 +91,7 @@
                                          Margin="0,0,24,0"
                                          VerticalAlignment="Center"/>
 
-                        <StackPanel Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource VisibleIfTrue}}" VerticalAlignment="Center" Margin="0,0,24,0">
-                            <TextBlock Text="{Binding VersionUpdates.StatusText}"
-                                       Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"
-                                       TextWrapping="Wrap"/>
-                            <StackPanel Margin="0,4,0,0"
-                                        Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
-                                <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
-                                             Maximum="100"
-                                             Height="5"
-                                             Width="200"
-                                             HorizontalAlignment="Left"
-                                             IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
-                                <TextBlock Text="{Binding VersionUpdates.ProgressDetailText}"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           FontSize="11"
-                                           Margin="0,5,0,0"
-                                           TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </StackPanel>
+
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                     Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,24,0">
@@ -393,6 +373,8 @@
                                                     <ColumnDefinition Width="Auto" MinWidth="120"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="1.5*"/>
+                                                    <ColumnDefinition Width="16"/>
+                                                    <ColumnDefinition Width="1.5*"/>
                                                 </Grid.ColumnDefinitions>
 
                                                 <!-- Current Version -->
@@ -441,6 +423,22 @@
                                                                TextWrapping="Wrap"
                                                                Margin="0,6,0,0"/>
                                                 </StackPanel>
+
+                                                <!-- Addon Update Mode -->
+                                                <StackPanel Grid.Column="4" VerticalAlignment="Top">
+                                                    <TextBlock Text="Addon update mode" Style="{StaticResource SettingsSubtext}"/>
+                                                    <ComboBox Margin="0,4,0,0"
+                                                              ItemsSource="{Binding VersionUpdates.UpdateModes}"
+                                                              SelectedItem="{Binding VersionUpdates.SelectedUpdateMode, Mode=TwoWay}"
+                                                              DisplayMemberPath="DisplayName"
+                                                              HorizontalAlignment="Stretch"
+                                                              MinHeight="36"/>
+                                                    <TextBlock Text="Configure how addons are migrated."
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,6,0,0"/>
+                                                </StackPanel>
                                             </Grid>
 
                                             <!-- Required Java Change Alert -->
@@ -458,19 +456,6 @@
                                         </StackPanel>
                                     </ui:Card>
 
-                                    <!-- 2. Addon Update Mode (CardControl) -->
-                                    <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon PuzzlePiece24}">
-                                        <ui:CardControl.Header>
-                                            <StackPanel Margin="0,0,16,0">
-                                                <TextBlock Text="Addon update mode" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="0,0,0,2"/>
-                                                <TextBlock Text="Configure how addons are migrated during a version upgrade." Style="{StaticResource SettingsSubtext}" FontSize="12" TextWrapping="Wrap"/>
-                                            </StackPanel>
-                                        </ui:CardControl.Header>
-                                        <ComboBox ItemsSource="{Binding VersionUpdates.UpdateModes}"
-                                                  SelectedItem="{Binding VersionUpdates.SelectedUpdateMode, Mode=TwoWay}"
-                                                  DisplayMemberPath="DisplayName"
-                                                  Width="250" MinHeight="34"/>
-                                    </ui:CardControl>
 
                                     <!-- 3. Migration Summary Ribbon -->
                                     <ui:CardExpander Header="Addon Migration Summary" Icon="{ui:SymbolIcon DocumentData24}" Margin="0,0,0,16" IsExpanded="True">
@@ -523,6 +508,32 @@
                                         <TextBlock Text="{Binding VersionUpdates.ChangelogPreview}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="16,8,16,16"/>
                                     </ui:CardExpander>
 
+                                    <!-- 6. Update Status & Progress -->
+                                    <StackPanel Margin="0,16,0,32" HorizontalAlignment="Center"
+                                                Visibility="{Binding VersionUpdates.StatusText, Converter={StaticResource VisibleIfNotEmpty}}">
+                                        <TextBlock Text="{Binding VersionUpdates.StatusText}"
+                                                   Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   TextWrapping="Wrap"/>
+                                        <StackPanel Margin="0,12,0,0"
+                                                    Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
+                                            <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
+                                                         Maximum="100"
+                                                         Height="6"
+                                                         Width="300"
+                                                         HorizontalAlignment="Center"
+                                                         IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
+                                            <TextBlock Text="{Binding VersionUpdates.ProgressDetailText}"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                       FontSize="12"
+                                                       Margin="0,8,0,0"
+                                                       HorizontalAlignment="Center"
+                                                       TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
                                     <ItemsControl ItemsSource="{Binding VersionUpdates.Warnings}" Margin="0,0,0,16">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -548,7 +559,8 @@
                                     <ui:Card Padding="24" Margin="0,0,0,16"
                                              Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <WrapPanel>
+                                            <TextBlock Text="Core Rules" Style="{StaticResource SettingsHeader}" FontSize="18"/>
+                                            <WrapPanel Margin="0,10,0,0">
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Default Gamemode:" Style="{StaticResource SettingsSubtext}"/>
                                                     <ComboBox ItemsSource="{Binding World.Gamemodes}" SelectedItem="{Binding World.Gamemode, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
@@ -567,8 +579,14 @@
                                                 </StackPanel>
                                             </WrapPanel>
 
+                                        </StackPanel>
+                                    </ui:Card>
+
+                                    <ui:Card Padding="24" Margin="0,0,0,16"
+                                             Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel>
                                             <!-- Render & Simulation Distance Sliders -->
-                                            <TextBlock Text="Render &amp; Simulation Distance (Requires Restart)" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="10,4,0,2"/>
+                                            <TextBlock Text="World Simulation (Requires Restart)" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,4,0,2"/>
                                             <TextBlock Text="Controls how far (in chunks) players can see and how far the server actively simulates game mechanics."
                                                        Style="{StaticResource SettingsSubtext}" Margin="10,0,0,12"/>
                                             <Grid Margin="10,0,10,8">
@@ -578,13 +596,13 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="View Distance:" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                <TextBlock Text="View Distance:" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                                     <Run Text="{Binding World.ViewDistance, Mode=OneWay}"/><Run Text=" chunks"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding World.ViewDistance}" Minimum="3" Maximum="32"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
-                                                <TextBlock Grid.Column="3" Text="32" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                <TextBlock Grid.Column="3" Text="32" VerticalAlignment="Center" FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                             </Grid>
                                             <Grid Margin="10,0,10,12">
                                                 <Grid.ColumnDefinitions>
@@ -593,17 +611,22 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="Simulation Distance:" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                <TextBlock Text="Simulation Distance:" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                                     <Run Text="{Binding World.SimulationDistance, Mode=OneWay}"/><Run Text=" chunks"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding World.SimulationDistance}" Minimum="3" Maximum="32"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
-                                                <TextBlock Grid.Column="3" Text="32" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                <TextBlock Grid.Column="3" Text="32" VerticalAlignment="Center" FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                             </Grid>
 
-                                            <Separator Margin="0,10,0,20" Background="#313244"/>
+                                        </StackPanel>
+                                    </ui:Card>
 
+                                    <ui:Card Padding="24" Margin="0,0,0,16"
+                                             Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel>
+                                            <TextBlock Text="Features &amp; Security" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,0,0,12"/>
                                             <WrapPanel>
                                                 <StackPanel Width="400" Margin="10">
                                                     <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="Online Mode (Identity Auth)" />
@@ -622,7 +645,7 @@
                                     <ui:Card Padding="24" Margin="0,0,0,16"
                                              Visibility="{Binding IsBedrockSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <TextBlock Text="Bedrock Rules" Style="{StaticResource SettingsHeader}" FontSize="18"/>
+                                            <TextBlock Text="Core Rules" Style="{StaticResource SettingsHeader}" FontSize="18"/>
                                             <WrapPanel Margin="0,10,0,8">
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Default Gamemode:" Style="{StaticResource SettingsSubtext}"/>
@@ -650,8 +673,14 @@
                                                 </StackPanel>
                                             </WrapPanel>
 
+                                        </StackPanel>
+                                    </ui:Card>
+
+                                    <ui:Card Padding="24" Margin="0,0,0,16"
+                                             Visibility="{Binding IsBedrockSettings, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel>
                                             <!-- Bedrock Render Distance Slider -->
-                                            <TextBlock Text="Render Distance (Requires Restart)" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="10,4,0,2"/>
+                                            <TextBlock Text="World Simulation (Requires Restart)" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,4,0,2"/>
                                             <TextBlock Text="The maximum distance in chunks that the server will send world data to players. Higher values increase network and memory usage."
                                                        Style="{StaticResource SettingsSubtext}" Margin="10,0,0,12" TextWrapping="Wrap"/>
                                             <Grid Margin="10,0,10,12">
@@ -661,17 +690,22 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="View Distance:" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                <TextBlock Text="View Distance:" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                                     <Run Text="{Binding Bedrock.ViewDistance, Mode=OneWay}"/><Run Text=" chunks"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding Bedrock.ViewDistance}" Minimum="5" Maximum="96"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
-                                                <TextBlock Grid.Column="3" Text="96" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                <TextBlock Grid.Column="3" Text="96" VerticalAlignment="Center" FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                             </Grid>
 
-                                            <Separator Margin="0,10,0,20" Background="#313244"/>
+                                        </StackPanel>
+                                    </ui:Card>
 
+                                    <ui:Card Padding="24" Margin="0,0,0,16"
+                                             Visibility="{Binding IsBedrockSettings, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel>
+                                            <TextBlock Text="Features &amp; Security" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,0,0,12"/>
                                             <WrapPanel>
                                                 <StackPanel Width="400" Margin="10">
                                                     <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="Online Mode" />
@@ -694,27 +728,44 @@
                         <TabItem Header="World">
                             <ScrollViewer x:Name="WorldScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
-                                    <ui:Card Padding="32" Margin="0,0,0,16">
-                                        <StackPanel>
-                                            <TextBlock Text="World Instance Management" Style="{StaticResource SettingsHeader}" FontSize="18"/>
-                                            <TextBlock Text="{Binding World.WorldStatusText}" Foreground="#A6E3A1" FontWeight="SemiBold" Margin="0,5,0,2"/>
-                                            <TextBlock Text="{Binding World.WorldSizeText}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,25"/>
-
-                                            <TextBlock Text="World Generation Seed:" Style="{StaticResource SettingsHeader}"/>
-                                            <ui:TextBox Text="{Binding World.Seed, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Leave empty for random" Margin="0,0,0,15"/>
-
-                                            <StackPanel Visibility="{Binding SupportsJavaWorldGenerator, Converter={StaticResource VisibleIfTrue}}">
-                                                <TextBlock Text="World Generator Type:" Style="{StaticResource SettingsHeader}"/>
-                                                <ComboBox ItemsSource="{Binding World.LevelTypes}" SelectedItem="{Binding World.LevelType, Mode=TwoWay}" Margin="0,0,0,30" HorizontalAlignment="Left" Width="300"/>
+                                    <!-- 1. World Status CardControl -->
+                                    <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon Folder24}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="Current World Status" FontSize="15" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding World.WorldSizeText}" Style="{StaticResource SettingsSubtext}" Margin="0,2,0,0"/>
                                             </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <TextBlock Text="{Binding World.WorldStatusText}" Foreground="#A6E3A1" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                    </ui:CardControl>
 
+                                    <!-- 2. World Generation Settings -->
+                                    <ui:Card Padding="24" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="World Generation" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,16"/>
+                                            <WrapPanel>
+                                                <StackPanel Width="300" Margin="0,0,24,16">
+                                                    <TextBlock Text="World Generation Seed:" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                    <ui:TextBox Text="{Binding World.Seed, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Leave empty for random"/>
+                                                </StackPanel>
+                                                <StackPanel Width="300" Visibility="{Binding SupportsJavaWorldGenerator, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,16">
+                                                    <TextBlock Text="World Generator Type:" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                    <ComboBox ItemsSource="{Binding World.LevelTypes}" SelectedItem="{Binding World.LevelType, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
+                                                </StackPanel>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </ui:Card>
+
+                                    <!-- 3. File Management -->
+                                    <ui:Card Padding="24" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="File Management" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Import a new map from the web or wipe your existing data to start fresh." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,16"/>
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:Button Content="{Binding World.ImportWorldButtonText}" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}"/>
-                                                <ui:Button Content="Wipe World Data" Command="{Binding World.DeleteWorldCommand}" Appearance="Danger" Margin="0,0,12,0" Icon="{ui:SymbolIcon Delete24}"/>
-                                                <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}"/>
+                                                <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,12,0"/>
+                                                <ui:Button Content="Wipe World Data" Command="{Binding World.DeleteWorldCommand}" Appearance="Danger" Margin="0,0,0,0" Icon="{ui:SymbolIcon Delete24}"/>
                                             </StackPanel>
-                                            <TextBlock Text="Download a map from the web, then import it using the button above."
-                                                       Style="{StaticResource SettingsSubtext}" Margin="0,10,0,0"/>
                                         </StackPanel>
                                     </ui:Card>
                                 </StackPanel>
