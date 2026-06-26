@@ -129,7 +129,7 @@
                         </Border>
 
                         <ScrollViewer Grid.Row="1" MaxHeight="150" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Padding="12">
-                            <TextBlock x:Name="TxtCrashLog" Foreground="#FF6B6B" FontFamily="Consolas" FontSize="11" TextWrapping="Wrap" Opacity="0.9"/>
+                            <TextBlock x:Name="TxtCrashLog" Foreground="#FF6B6B" FontFamily="Cascadia Mono, Consolas" FontSize="13" TextWrapping="Wrap" Opacity="0.9"/>
                         </ScrollViewer>
                     </Grid>
                 </Border>
@@ -150,7 +150,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <TextBlock Grid.Column="0" Text="{Binding Text}" Foreground="{Binding TextColor}"
-                                           FontFamily="Consolas" FontSize="13" TextWrapping="Wrap"
+                                           FontFamily="Cascadia Mono, Consolas" FontSize="14" TextWrapping="Wrap"
                                            Padding="4,1"/>
 
                                 <ui:Button x:Name="BtnAnalyze" Grid.Column="1"
