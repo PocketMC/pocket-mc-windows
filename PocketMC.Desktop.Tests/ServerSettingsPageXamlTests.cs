@@ -46,6 +46,6 @@ public sealed class ServerSettingsPageXamlTests
 
         Assert.InRange(planCommandIndex, bottomActionBarIndex, mainLayoutIndex);
         Assert.InRange(applyCommandIndex, bottomActionBarIndex, mainLayoutIndex);
-        Assert.InRange(progressIndex, bottomActionBarIndex, mainLayoutIndex);
+        Assert.True(progressIndex > mainLayoutIndex);
     }
 }

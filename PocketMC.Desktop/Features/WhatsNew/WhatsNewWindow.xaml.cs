@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Windows;
 
@@ -19,6 +19,8 @@ namespace PocketMC.Desktop.Features.WhatsNew
             _version = version;
 
             InitializeComponent();
+            var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
+            visualService.ApplyThemeToDialog(this);
 
             // Re-assert accent color to prevent FluentWindow from reverting to system accent.
             try
@@ -32,7 +34,7 @@ namespace PocketMC.Desktop.Features.WhatsNew
             }
             catch
             {
-                // Non-critical — dialog will still work.
+                // Non-critical â€” dialog will still work.
             }
 
             if (changelog != null && changelog.Sections.Count > 0)
@@ -57,7 +59,7 @@ namespace PocketMC.Desktop.Features.WhatsNew
 
         private void ConfigureWithFallback()
         {
-            TxtHeader.Text = $"🎉 Updated to v{_version}";
+            TxtHeader.Text = $"ðŸŽ‰ Updated to v{_version}";
             TxtSubheader.Text = string.Empty;
 
             TxtFallback.Text = "Pocket MC has been updated successfully.\nThank you for updating!";

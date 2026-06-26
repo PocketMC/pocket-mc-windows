@@ -43,7 +43,11 @@ namespace PocketMC.Desktop.Features.Dashboard
 
             var existingVms = Instances.ToList();
             Instances.Clear();
-            var metas = _registry.GetAll();
+            var metas = _registry.GetAll()
+                .OrderByDescending(m => m.PinnedAt.HasValue)
+                .ThenBy(m => m.PinnedAt)
+                .ThenByDescending(m => m.CreatedAt)
+                .ToList();
             foreach (var meta in metas)
             {
                 if (meta.ServerPort == null)

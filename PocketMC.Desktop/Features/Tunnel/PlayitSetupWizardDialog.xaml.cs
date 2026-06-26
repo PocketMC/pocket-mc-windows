@@ -30,9 +30,11 @@ namespace PocketMC.Desktop.Features.Tunnel
         public PlayitSetupWizardDialog(
             PlayitAgentService playitAgentService,
             PlayitPartnerProvisioningClient partnerProvisioningClient,
-            ILogger<PlayitSetupWizardDialog> logger)
+            ILogger<PlayitSetupWizardDialog> logger,
+            PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService visualService)
         {
             InitializeComponent();
+            visualService.ApplyThemeToDialog(this);
             _playitAgentService = playitAgentService;
             _partnerProvisioningClient = partnerProvisioningClient;
             _logger = logger;

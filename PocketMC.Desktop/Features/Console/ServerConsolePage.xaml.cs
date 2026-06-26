@@ -550,17 +550,20 @@ namespace PocketMC.Desktop.Features.Console
 
         private static Brush GetBrushForLogLine(string text, LogLevel level)
         {
+            if (text.Contains("Done (", StringComparison.Ordinal) || text.Contains("Server started", StringComparison.OrdinalIgnoreCase) || text.Contains("Minecraft JAR has been successfully downloaded", StringComparison.OrdinalIgnoreCase))
+            {
+                return Brushes.LimeGreen;
+            }
+
             return level switch
             {
                 LogLevel.Error => Brushes.OrangeRed,
-                LogLevel.Warn => Brushes.Yellow,
+                LogLevel.Warn => Brushes.Goldenrod,
                 LogLevel.Debug => Brushes.Cyan,
                 LogLevel.Trace => Brushes.Gray,
-                LogLevel.Chat => Brushes.White,
+                LogLevel.Chat => Brushes.LightSkyBlue,
                 LogLevel.System => Brushes.CornflowerBlue,
-                _ when text.Contains("Done (") || text.Contains("Server started", StringComparison.OrdinalIgnoreCase) => Brushes.LimeGreen,
-                _ when text.Contains("/INFO]") || text.Contains("[INFO]") => Brushes.LightGray,
-                _ => Brushes.WhiteSmoke
+                _ => Brushes.LightGray
             };
         }
 
@@ -820,7 +823,6 @@ namespace PocketMC.Desktop.Features.Console
         {
             if (_isShellScrollLocked)
             {
-                UpdatePageViewportHeight();
                 return;
             }
 
@@ -834,10 +836,7 @@ namespace PocketMC.Desktop.Features.Console
             _originalShellHorizontalScrollBarVisibility = _shellScrollViewer.HorizontalScrollBarVisibility;
             _shellScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
             _shellScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-            _shellScrollViewer.SizeChanged += ShellScrollViewer_SizeChanged;
             _isShellScrollLocked = true;
-
-            UpdatePageViewportHeight();
         }
 
         private void UnlockShellScrollHost()
@@ -847,37 +846,10 @@ namespace PocketMC.Desktop.Features.Console
                 return;
             }
 
-            _shellScrollViewer.SizeChanged -= ShellScrollViewer_SizeChanged;
             _shellScrollViewer.VerticalScrollBarVisibility = _originalShellVerticalScrollBarVisibility;
             _shellScrollViewer.HorizontalScrollBarVisibility = _originalShellHorizontalScrollBarVisibility;
             _shellScrollViewer = null;
             _isShellScrollLocked = false;
-            PageRoot.Height = double.NaN;
-        }
-
-        private void ShellScrollViewer_SizeChanged(object? sender, SizeChangedEventArgs e)
-        {
-            UpdatePageViewportHeight();
-        }
-
-        private void UpdatePageViewportHeight()
-        {
-            if (_shellScrollViewer == null)
-            {
-                return;
-            }
-
-            double hostHeight = _shellScrollViewer.ViewportHeight > 0
-                ? _shellScrollViewer.ViewportHeight
-                : _shellScrollViewer.ActualHeight;
-
-            if (hostHeight <= 0)
-            {
-                return;
-            }
-
-            double verticalMargin = PageRoot.Margin.Top + PageRoot.Margin.Bottom;
-            PageRoot.Height = Math.Max(0, hostHeight - verticalMargin - 1);
         }
 
         private void EnsureLogScrollViewer()

@@ -73,7 +73,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public Guid Id => _metadata.Id;
     public string Name => _metadata.Name;
     public string Description => _metadata.Description;
+    public bool IsPinned => _metadata.PinnedAt.HasValue;
     public bool IsRunning => _state == ServerState.Installing || _state == ServerState.SettingUp || _state == ServerState.Starting || _state == ServerState.Online || _state == ServerState.Stopping;
+    public bool IsBusy => _state == ServerState.Installing || _state == ServerState.SettingUp || _state == ServerState.Starting || _state == ServerState.Stopping;
+    public Visibility BusySpinnerVisibility => IsBusy ? Visibility.Visible : Visibility.Collapsed;
     public bool IsWaitingToRestart => _lifecycleService.IsWaitingToRestart(Id);
     public bool ShowRunningControls => IsRunning || IsWaitingToRestart;
     public Visibility RunningControlsVisibility => ShowRunningControls ? Visibility.Visible : Visibility.Collapsed;
@@ -244,11 +247,11 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public string StatusText => _stateTextOverride ?? _countdownText ?? _state switch
     {
         ServerState.Stopped => "● Stopped",
-        ServerState.Installing => "⚙ Installing...",
-        ServerState.SettingUp => "⚙ Setting Up...",
-        ServerState.Starting => "● Starting",
+        ServerState.Installing => "Installing...",
+        ServerState.SettingUp => "Setting Up...",
+        ServerState.Starting => "Starting...",
         ServerState.Online => "● Online",
-        ServerState.Stopping => "● Stopping",
+        ServerState.Stopping => "Stopping...",
         ServerState.Crashed => "⚠️ Crashed",
         _ => "● Unknown"
     };
@@ -411,6 +414,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(StoppedControlsVisibility));
             OnPropertyChanged(nameof(StopButtonText));
             OnPropertyChanged(nameof(HasLanAddress));
+            OnPropertyChanged(nameof(IsBusy));
+            OnPropertyChanged(nameof(BusySpinnerVisibility));
         }
     }
 
@@ -484,6 +489,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         _metadata = newMeta;
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(Description));
+        OnPropertyChanged(nameof(IsPinned));
         OnPropertyChanged(nameof(MinecraftVersion));
         OnPropertyChanged(nameof(ServerType));
         OnPropertyChanged(nameof(MaxPlayers));

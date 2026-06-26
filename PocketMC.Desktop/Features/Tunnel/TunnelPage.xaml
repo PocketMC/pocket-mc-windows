@@ -63,10 +63,17 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock Text="Agent Status"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   FontSize="12"
-                                   Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="Agent Status"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       FontSize="12"/>
+                            <ui:SymbolIcon x:Name="AgentPathInfoIcon"
+                                           Symbol="Info24"
+                                           FontSize="14"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           Margin="6,0,0,0"
+                                           ToolTipService.ToolTip="Agent Path: Not configured"/>
+                        </StackPanel>
                         <TextBlock x:Name="TxtStatusValue"
                                    Text="Checking..."
                                    Foreground="{DynamicResource SystemFillColorCautionBrush}"
@@ -78,23 +85,6 @@
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
-
-                    <Border Grid.Row="1"
-                            Background="{DynamicResource ControlFillColorDefaultBrush}"
-                            CornerRadius="8"
-                            Padding="12"
-                            Margin="0,0,0,12">
-                        <StackPanel>
-                            <TextBlock Text="Agent Path"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                       FontSize="12"
-                                       Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtExecutablePath"
-                                       Text=""
-                                       TextWrapping="Wrap"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        </StackPanel>
-                    </Border>
 
                     <StackPanel Grid.Row="2" Margin="0,0,0,12">
                         <ProgressBar x:Name="DownloadProgressBar"
@@ -160,11 +150,11 @@
                             VerticalAlignment="Top"
                             HorizontalAlignment="Right"
                             Margin="20,0,0,0">
-                    <TextBlock Text="Special Thanks to Playit.gg ❤️"
+                    <TextBlock Text="Special Thanks to Playit.gg"
                                FontSize="13"
                                FontWeight="Medium"
                                HorizontalAlignment="Right"
-                               Margin="0,0,0,6">
+                               Margin="0,0,10,6">
                         <TextBlock.Foreground>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                 <GradientStop Color="#89dceb" Offset="0.0" />

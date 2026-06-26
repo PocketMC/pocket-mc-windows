@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using Wpf.Ui.Controls;
 
@@ -14,6 +14,9 @@ namespace PocketMC.Desktop.Infrastructure
             TxtTitle.Text = title;
             TxtMessage.Text = message;
             
+            var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
+            visualService.ApplyThemeToDialog(this);
+
             // Focus password box when dialog opens
             Loaded += (s, e) => PwdInput.Focus();
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -26,9 +26,11 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             _playitApiClient = playitApiClient;
             InitializeComponent();
+            var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
+            visualService.ApplyThemeToDialog(this);
         }
 
-        // ─── Validation helpers ──────────────────────────────────────────
+        // â”€â”€â”€ Validation helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         private bool ValidateForm()
         {
@@ -55,7 +57,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             string portText = TxtLocalPort.Text?.Trim() ?? string.Empty;
             if (!int.TryParse(portText, out int port) || port < 1 || port > 65535)
             {
-                ShowFieldError(TxtPortError, "Enter a valid port number (1–65535).");
+                ShowFieldError(TxtPortError, "Enter a valid port number (1â€“65535).");
                 valid = false;
             }
             else
@@ -84,7 +86,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             e.Handled = !e.Text.All(char.IsDigit);
         }
 
-        // ─── Actions ─────────────────────────────────────────────────────
+        // â”€â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {

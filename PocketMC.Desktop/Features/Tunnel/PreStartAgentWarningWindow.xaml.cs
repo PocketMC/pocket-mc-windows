@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
 using Wpf.Ui.Controls;
@@ -13,6 +13,8 @@ namespace PocketMC.Desktop.Features.Tunnel
         public PreStartAgentWarningWindow(AgentProvisioningService provisioningService)
         {
             InitializeComponent();
+            var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
+            visualService.ApplyThemeToDialog(this);
             _provisioningService = provisioningService;
 
             _provisioningService.StateChanged += OnStateChanged;

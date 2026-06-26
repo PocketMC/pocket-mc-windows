@@ -19,6 +19,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
     private readonly IDialogService _dialogService;
     private readonly Func<bool> _isRunningCheck;
     private readonly Action _onReloadRequested;
+    private readonly JavaProvisioningService _javaProvisioningService;
     private string _serverDir;
     private InstanceUpdatePlan? _currentPlan;
 
@@ -50,7 +51,8 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         InstanceRollbackService rollbackService,
         IDialogService dialogService,
         Func<bool> isRunningCheck,
-        Action onReloadRequested)
+        Action onReloadRequested,
+        JavaProvisioningService javaProvisioningService)
     {
         _metadata = metadata;
         _serverDir = serverDir;
@@ -61,8 +63,18 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         _dialogService = dialogService;
         _isRunningCheck = isRunningCheck;
         _onReloadRequested = onReloadRequested;
+        _javaProvisioningService = javaProvisioningService;
+        
         int currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(metadata);
-        _requiredJavaVersionChange = $"Java {currentJava} remains required";
+        if (!_javaProvisioningService.IsJavaVersionPresent(currentJava))
+        {
+            _requiredJavaVersionChange = $"Java {currentJava} is missing and will be installed.";
+        }
+        else
+        {
+            _requiredJavaVersionChange = "";
+        }
+        
         _targetVersionStatusText = "Checking for available updates...";
         _changelogPreview = $"Current {metadata.ServerType} version is {metadata.MinecraftVersion}. Select an available target version and preview the update.";
 
@@ -264,7 +276,17 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
                 TargetMinecraftVersion.Trim(),
                 SelectedUpdateMode.Mode);
 
-            RequiredJavaVersionChange = _currentPlan.RequiredJavaVersionChangeText;
+            if (_javaProvisioningService.IsJavaVersionPresent(_currentPlan.TargetRequiredJavaVersion))
+            {
+                RequiredJavaVersionChange = "";
+            }
+            else
+            {
+                RequiredJavaVersionChange = _currentPlan.CurrentRequiredJavaVersion == _currentPlan.TargetRequiredJavaVersion
+                    ? $"Java {_currentPlan.TargetRequiredJavaVersion} is missing and will be installed."
+                    : $"Java {_currentPlan.CurrentRequiredJavaVersion} -> Java {_currentPlan.TargetRequiredJavaVersion} (will be installed)";
+            }
+            
             ChangelogPreview = _currentPlan.ChangelogPreview;
             TrackedAddonCount = _currentPlan.AddonMigrationPlan.TrackedAddonCount;
             ManualUntrackedAddonCount = _currentPlan.AddonMigrationPlan.ManualUntrackedAddonCount;

@@ -158,7 +158,8 @@ namespace PocketMC.Desktop.Features.Settings
                 serviceProvider.GetRequiredService<InstanceRollbackService>(),
                 dialogService,
                 () => IsRunning,
-                () => ReloadCurrentInstance(serviceProvider));
+                () => ReloadCurrentInstance(serviceProvider),
+                serviceProvider.GetRequiredService<PocketMC.Desktop.Features.Java.JavaProvisioningService>());
             Advanced = new SettingsAdvancedVM(ServerDir, serverConfigurationService, MarkChanged);
 
             var summaryStorage = (SummaryStorageService)serviceProvider.GetService(typeof(SummaryStorageService))!;

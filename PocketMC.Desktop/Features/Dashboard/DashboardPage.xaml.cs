@@ -125,7 +125,21 @@ namespace PocketMC.Desktop.Features.Dashboard
 
         private async Task ShowCopiedFeedback(FrameworkElement element)
         {
-            // Visual feedback placeholder
+            if (element is Wpf.Ui.Controls.Button btn)
+            {
+                if (btn.Tag?.ToString() == "Copying") return;
+                btn.Tag = "Copying";
+                
+                var oldForeground = btn.Foreground;
+                btn.Icon = new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Checkmark24);
+                btn.Foreground = System.Windows.Media.Brushes.LimeGreen;
+                
+                await System.Threading.Tasks.Task.Delay(1000);
+                
+                btn.Icon = new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Copy16);
+                btn.Foreground = oldForeground;
+                btn.Tag = null;
+            }
         }
 
         private async void BtnCopyBedrockIp_Click(object sender, RoutedEventArgs e)

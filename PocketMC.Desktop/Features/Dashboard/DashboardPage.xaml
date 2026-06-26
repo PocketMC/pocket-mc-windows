@@ -89,7 +89,7 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,24" Orientation="Horizontal">
             <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-            <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand"/>
+            <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand" VerticalAlignment="Center" Margin="0,6,0,0"/>
         </StackPanel>
 
         <ScrollViewer x:Name="DashboardScrollViewer"
@@ -98,8 +98,48 @@
                       HorizontalScrollBarVisibility="Disabled"
                       CanContentScroll="False"
                       PanningMode="VerticalOnly">
-            <ItemsControl ItemsSource="{Binding Instances}">
-                <ItemsControl.ItemsPanel>
+            <Grid>
+                <!-- Empty State -->
+                <Border HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,64" Padding="64,48"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="16">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Instances.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel>
+                        <Border Width="80" Height="80" CornerRadius="40" Background="{DynamicResource ControlFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,24">
+                            <ui:SymbolIcon Symbol="Box24" FontSize="40" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        
+                        <ui:TextBlock FontTypography="Title" Text="No instances found" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <ui:TextBlock Text="Get started by creating your first local Minecraft server instance." FontSize="14" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,32"/>
+                        
+                        <ui:Button Content="Create Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" HorizontalAlignment="Center" Cursor="Hand" Padding="32,10" FontSize="14" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Items Control -->
+                <ItemsControl ItemsSource="{Binding Instances}">
+                    <ItemsControl.Style>
+                        <Style TargetType="ItemsControl">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Instances.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Style>
+                    <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
                     </ItemsPanelTemplate>
@@ -125,6 +165,7 @@
                                     <RowDefinition Height="Auto"/> <!-- Actions -->
                                 </Grid.RowDefinitions>
 
+
                                 <!-- Header -->
                                 <Grid Grid.Row="0" Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions>
@@ -132,27 +173,48 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <ui:TextBlock FontTypography="Subtitle" Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ui:TextBlock FontTypography="Subtitle" Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis" MaxWidth="220" VerticalAlignment="Center"/>
+                                            <ui:SymbolIcon Symbol="Pin24" FontSize="16" Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}" Margin="6,3,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" ToolTip="Pinned to Top"/>
+                                        </StackPanel>
                                         <WrapPanel Margin="0,6,0,0">
                                             <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
                                                 <TextBlock Text="{Binding MinecraftVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
-                                            <Border Background="#3389B4FA" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                                <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="{DynamicResource SystemFillColorAttentionBrush}" FontWeight="SemiBold"/>
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                                <TextBlock Text="{Binding ServerType}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
-                                            <Border Background="#2234D399" BorderBrush="#5534D399" BorderThickness="1" CornerRadius="4" Padding="6,2" Visibility="{Binding CrossPlayBadgeVisibility}" ToolTip="{Binding CrossPlayBadgeTooltip}">
-                                                <TextBlock Text="{Binding CrossPlayBadgeText}" FontSize="10" Foreground="#34D399" FontWeight="SemiBold"/>
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,4,0" Visibility="{Binding CrossPlayBadgeVisibility}" ToolTip="{Binding CrossPlayBadgeTooltip}">
+                                                <TextBlock Text="{Binding CrossPlayBadgeText}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Border>
-                                            <Border Background="#226366F1" BorderBrush="#556366F1" BorderThickness="1" CornerRadius="4" Padding="5,2" Margin="4,0,0,0" Visibility="{Binding VoiceChatBadgeVisibility}" ToolTip="{Binding VoiceChatBadgeTooltip}">
-                                                <ui:SymbolIcon Symbol="Mic24" FontSize="11" Foreground="#6366F1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="4" Padding="5,2" Visibility="{Binding VoiceChatBadgeVisibility}" ToolTip="{Binding VoiceChatBadgeTooltip}">
+                                                <ui:SymbolIcon Symbol="Mic24" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                             </Border>
                                         </WrapPanel>
                                         <TextBlock Text="{Binding Description}" FontSize="12" Foreground="SlateGray" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="32" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource NullOrEmptyToVis}}"/>
-                                        <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="Bold" FontSize="11" Margin="0,8,0,0"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <ui:ProgressRing IsIndeterminate="True" Width="14" Height="14" Margin="0,0,6,0" Visibility="{Binding BusySpinnerVisibility}" Foreground="{Binding StatusBrush}"/>
+                                            <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
+                                        </StackPanel>
                                     </StackPanel>
                                     <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}" Click="BtnMoreOptions_Click" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Page}}">
                                         <ui:Button.ContextMenu>
                                             <ContextMenu>
+                                                <MenuItem Command="{Binding PlacementTarget.Tag.TogglePinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}">
+                                                    <MenuItem.Style>
+                                                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                            <Setter Property="Header" Value="Pin Instance" />
+                                                            <Setter Property="Icon" Value="{ui:SymbolIcon Pin24}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                    <Setter Property="Header" Value="Unpin Instance" />
+                                                                    <Setter Property="Icon" Value="{ui:SymbolIcon PinOff24}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </MenuItem.Style>
+                                                </MenuItem>
+                                                <Separator/>
                                                 <MenuItem Header="Copy Crash Report" Command="{Binding PlacementTarget.Tag.CopyCrashReportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                                 <MenuItem Header="Open Folder" Command="{Binding PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                                 <MenuItem Header="Export Instance" Command="{Binding PlacementTarget.Tag.ExportInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
@@ -342,6 +404,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            </Grid>
         </ScrollViewer>
     </Grid>
 </Page>

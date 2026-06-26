@@ -8,7 +8,12 @@ public static class LogLineClassifier
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(250);
 
     private static readonly Regex ChatOrPlayerEventRegex = new(
-        @"^\[\d{2}:\d{2}:\d{2}\sINFO\]:\s(?:<[^>]+>\s.*|[^\s:]+\s(?:joined|left) the game|\[[^\]]+\]\s.*)$",
+        @"^\[.*?\](?:\s*\[.*?\])*:\s*(?:<[^>]+>\s.*|[^\s:]+\s(?:joined|left) the game)$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        RegexTimeout);
+
+    private static readonly Regex LogPrefixRegex = new(
+        @"^\[.*?\](?:\s*\[.*?\])*:\s*",
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         RegexTimeout);
 
@@ -17,37 +22,6 @@ public static class LogLineClassifier
         if (string.IsNullOrWhiteSpace(text))
         {
             return LogLevel.Info;
-        }
-
-        if (ContainsAny(text, "/ERROR]", "[ERROR]", " ERROR]", "Exception", "Fatal", "FATAL", "Error:", " SEVERE", " CRITICAL"))
-        {
-            return LogLevel.Error;
-        }
-
-        if (ContainsAny(text, "/WARN]", "[WARN]", " WARN]", " WARN", "Warning", "WARNING", "****", "***"))
-        {
-            return LogLevel.Warn;
-        }
-
-        if (ContainsAny(text, "/DEBUG]", "[DEBUG]", " DEBUG]"))
-        {
-            return LogLevel.Debug;
-        }
-
-        if (ContainsAny(text, "/TRACE]", "[TRACE]", " TRACE]"))
-        {
-            return LogLevel.Trace;
-        }
-
-        if (text.Contains("Done (", StringComparison.Ordinal) ||
-            text.Contains("Server started", StringComparison.OrdinalIgnoreCase))
-        {
-            return LogLevel.Info;
-        }
-
-        if (IsChatOrPlayerEvent(text))
-        {
-            return LogLevel.Chat;
         }
 
         string trimmed = text.TrimStart();
@@ -61,6 +35,51 @@ public static class LogLineClassifier
         if (text.StartsWith("> ", StringComparison.Ordinal))
         {
             return LogLevel.System;
+        }
+
+        if (IsChatOrPlayerEvent(text))
+        {
+            return LogLevel.Chat;
+        }
+
+        string searchTarget = text.ToUpperInvariant();
+        try
+        {
+            Match prefixMatch = LogPrefixRegex.Match(text);
+            if (prefixMatch.Success)
+            {
+                searchTarget = prefixMatch.Value.ToUpperInvariant();
+            }
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            // Fallback to full text if regex times out
+        }
+
+        if (ContainsAny(searchTarget, "ERROR", "FATAL", "SEVERE", "CRITICAL", "EXCEPTION"))
+        {
+            return LogLevel.Error;
+        }
+
+        if (ContainsAny(searchTarget, "WARN", "****", "***"))
+        {
+            return LogLevel.Warn;
+        }
+
+        if (ContainsAny(searchTarget, "DEBUG"))
+        {
+            return LogLevel.Debug;
+        }
+
+        if (ContainsAny(searchTarget, "TRACE"))
+        {
+            return LogLevel.Trace;
+        }
+
+        if (text.Contains("Done (", StringComparison.Ordinal) ||
+            text.Contains("Server started", StringComparison.OrdinalIgnoreCase))
+        {
+            return LogLevel.Info; // Could add a Success level later, but Info is fine
         }
 
         return LogLevel.Info;
