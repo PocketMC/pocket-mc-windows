@@ -1008,12 +1008,12 @@
                                                                              ToolTip="{Binding ToggleToolTip}"
                                                                              OnContent="" OffContent="" Content=""
                                                                              VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                            <ui:Button Content="Open" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                            <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
                                                                        Icon="{ui:SymbolIcon FolderOpen20}"
                                                                        ToolTip="Open file location"/>
-                                                            <ui:Button Content="Check update" Appearance="Info" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                            <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding}"
                                                                        IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
@@ -1021,7 +1021,7 @@
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
                                                                        ToolTip="Check for updates from the marketplace"/>
 
-                                                            <ui:Button Content="Delete" Appearance="Danger" VerticalAlignment="Center"
+                                                            <ui:Button Appearance="Secondary" Foreground="#F38BA8" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
                                                                        Icon="{ui:SymbolIcon Delete20}"
@@ -1226,12 +1226,12 @@
                                                                              ToolTip="{Binding ToggleToolTip}"
                                                                              OnContent="" OffContent="" Content=""
                                                                              VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                            <ui:Button Content="Open" Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                            <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
                                                                        Icon="{ui:SymbolIcon FolderOpen20}"
                                                                        ToolTip="Open file location"/>
-                                                            <ui:Button Content="Check update" Appearance="Info" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                            <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding}"
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
@@ -1252,7 +1252,7 @@
                                                                 </ui:Button.Style>
                                                             </ui:Button>
 
-                                                            <ui:Button Content="Delete" Appearance="Danger" VerticalAlignment="Center"
+                                                            <ui:Button Appearance="Secondary" Foreground="#F38BA8" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
                                                                        Icon="{ui:SymbolIcon Delete20}"
@@ -1390,73 +1390,90 @@
                                         </UniformGrid>
                                     </Border>
 
-                                    <!-- LOCAL BACKUP LOCATION -->
-                                    <ui:Card Padding="24" Margin="0,0,0,20">
-                                        <StackPanel>
-                                            <TextBlock Text="Local Backup Destination" Style="{StaticResource SettingsHeader}"/>
-                                            <TextBlock Text="Choose where to keep local world backups. Leave blank to store backups inside the server directory." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <ui:TextBox Grid.Column="0" Text="{Binding Backups.CustomBackupDirectory, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Default: [Server Folder]\backups" IsReadOnly="True" Margin="0,0,8,0"/>
-                                                <ui:Button Grid.Column="1" Content="Browse" Command="{Binding Backups.BrowseBackupDirCommand}" Margin="0,0,8,0" Width="100"/>
-                                                <ui:Button Grid.Column="2" Content="Reset" Command="{Binding Backups.ResetBackupDirCommand}" Width="80"/>
-                                            </Grid>
-                                        </StackPanel>
+                                    <!-- LOCAL BACKUP LOCATION & MANUAL BACKUP -->
+                                    <ui:Card Padding="16,12" Margin="0,0,0,16">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Location config -->
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                                                <TextBlock Text="Local Storage Destination" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <ui:TextBox Grid.Column="0" Text="{Binding Backups.CustomBackupDirectory, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Default: [Server Folder]\backups" IsReadOnly="True" Margin="0,0,8,0"/>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                        <ui:Button Content="Browse" Command="{Binding Backups.BrowseBackupDirCommand}" Margin="0,0,8,0"/>
+                                                        <ui:Button Content="Reset" Command="{Binding Backups.ResetBackupDirCommand}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+
+                                            <!-- Manual Action -->
+                                            <Border Grid.Column="1" VerticalAlignment="Center" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="1,0,0,0" Padding="16,0,0,0">
+                                                <StackPanel>
+                                                    <TextBlock Text="Manual Action" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" HorizontalAlignment="Center"/>
+                                                    <ui:Button Content="Create Backup Now" Command="{Binding Backups.CreateBackupCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Save20}"/>
+                                                    <ProgressBar IsIndeterminate="True" Height="2" Margin="0,4,0,0" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
                                     </ui:Card>
 
                                     <!-- AUTOMATED DATA RETENTION CONFIG -->
-                                    <ui:Card Padding="24" Margin="0,0,0,20">
-                                        <StackPanel>
-                                            <TextBlock Text="Automated Data Retention" Style="{StaticResource SettingsHeader}"/>
-                                            <WrapPanel Margin="0,10,0,20">
-                                                <StackPanel Width="230" Margin="0,0,20,10">
-                                                    <TextBlock Text="Interval (Hours):" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding Backups.BackupIntervalHours, Mode=TwoWay}" PlaceholderText="0 = Manual Only"/>
-                                                </StackPanel>
-                                                <StackPanel Width="230" Margin="0,0,0,10">
-                                                    <TextBlock Text="Max Archives Kept:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding Backups.MaxBackupsToKeep, Mode=TwoWay}"/>
-                                                </StackPanel>
-                                            </WrapPanel>
-                                            <ui:Button Content="Create Backup Now" Command="{Binding Backups.CreateBackupCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Save20}" Margin="0,5,0,0"/>
-                                            <StackPanel Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}" Margin="0,15,0,0">
-                                                <ProgressBar IsIndeterminate="True" Height="4"/>
+                                    <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon Timer24}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="Automated Data Retention" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Backup interval and maximum archives to keep" Style="{StaticResource SettingsSubtext}" Margin="0,2,0,0"/>
                                             </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="Interval (Hours):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <ui:TextBox Text="{Binding Backups.BackupIntervalHours, Mode=TwoWay}" Width="60" PlaceholderText="0" Margin="0,0,16,0"/>
+                                            <TextBlock Text="Keep limit:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <ui:TextBox Text="{Binding Backups.MaxBackupsToKeep, Mode=TwoWay}" Width="60"/>
                                         </StackPanel>
-                                    </ui:Card>
+                                    </ui:CardControl>
 
-                                    <ui:Card Padding="24" Margin="0,0,0,20"
+                                    <ui:Card Padding="16,12" Margin="0,0,0,16"
                                              Visibility="{Binding CloudBackups.IsCloudBackupsEnabled, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel DataContext="{Binding CloudBackups}">
-                                            <TextBlock Text="Cloud Off-site Sync" Style="{StaticResource SettingsHeader}"/>
-                                            <TextBlock Text="Enable and configure cloud retention for this instance. Requires a connected provider in App Settings." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,16"/>
+                                            <TextBlock Text="Cloud Off-site Sync" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Enable cloud retention. Requires a connected provider in App Settings." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,0,0,12"/>
 
                                             <StackPanel Visibility="{Binding IsRefreshingProviders, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,12">
-                                                <ProgressBar IsIndeterminate="True" Height="4"/>
-                                                <TextBlock Text="{Binding ProviderStatusMessage}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,8,0,0"/>
+                                                <ProgressBar IsIndeterminate="True" Height="2"/>
+                                                <TextBlock Text="{Binding ProviderStatusMessage}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                                             </StackPanel>
 
                                             <StackPanel Visibility="{Binding ShowNoConnectedProvidersMessage, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,12">
-                                                <TextBlock Text="{Binding ProviderStatusMessage}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding ProviderStatusMessage}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
                                             </StackPanel>
 
                                             <StackPanel Visibility="{Binding HasConnectedProviders, Converter={StaticResource VisibleIfTrue}}">
                                                 <ItemsControl ItemsSource="{Binding Targets}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Grid Margin="0,0,0,12">
+                                                            <Grid Margin="0,0,24,12">
                                                                 <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="150"/>
-                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="Auto"/>
                                                                 </Grid.ColumnDefinitions>
-                                                                <ui:ToggleSwitch Grid.Column="0" Content="{Binding ProviderType}" IsChecked="{Binding IsEnabled, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                                                <ui:ToggleSwitch Grid.Column="0" Content="{Binding ProviderType}" IsChecked="{Binding IsEnabled, Mode=TwoWay}" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0"/>
                                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding IsEnabled, Converter={StaticResource VisibleIfTrue}}">
-                                                                    <TextBlock Text="Retention Count:" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                                                    <ui:TextBox Text="{Binding RetentionCount, Mode=TwoWay}" Width="80" VerticalAlignment="Center"/>
+                                                                    <TextBlock Text="Retention:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                    <ui:TextBox Text="{Binding RetentionCount, Mode=TwoWay}" Width="50" VerticalAlignment="Center" ClearButtonEnabled="False"/>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </DataTemplate>
@@ -1470,35 +1487,39 @@
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="Remote Backups:" FontWeight="Medium" VerticalAlignment="Center"/>
-                                                    <ui:Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshRemoteBackupsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync20}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="Remote Backups" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    <ui:Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshRemoteBackupsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync20}" VerticalAlignment="Center" Padding="8,4"/>
                                                 </Grid>
 
-                                                <ui:ListView ItemsSource="{Binding RemoteBackups}" Margin="0,12,0,0" MaxHeight="250" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                                                    <ui:ListView.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Grid Margin="0,4">
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                </Grid.ColumnDefinitions>
-                                                                <ui:SymbolIcon Symbol="Cloud20" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding FileName}" FontWeight="Bold" FontSize="13"/>
-                                                                    <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                                                        <Run Text="{Binding Provider, StringFormat={}[{0}] }"/>
-                                                                        <Run Text="{Binding SizeMb, StringFormat={}{0:F1} MB}"/>
-                                                                    </TextBlock>
-                                                                </StackPanel>
-                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                    <ui:Button Content="Restore" Appearance="Secondary" Command="{Binding DataContext.RestoreRemoteBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Margin="0,0,8,0"/>
-                                                                    <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger" Command="{Binding DataContext.DeleteRemoteBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
-                                                                </StackPanel>
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </ui:ListView.ItemTemplate>
-                                                </ui:ListView>
+                                                <ScrollViewer Margin="0,12,0,0" MaxHeight="250" VerticalScrollBarVisibility="Auto">
+                                                    <ItemsControl ItemsSource="{Binding RemoteBackups}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <ui:Card Margin="0,0,0,8" Padding="12,8">
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <ui:SymbolIcon Symbol="Cloud20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                            <TextBlock Text="{Binding FileName}" FontWeight="Bold" FontSize="13"/>
+                                                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                                                <Run Text="{Binding Provider, StringFormat={}[{0}] }"/>
+                                                                                <Run Text="{Binding SizeMb, StringFormat={}{0:F1} MB}"/>
+                                                                            </TextBlock>
+                                                                        </StackPanel>
+                                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                            <ui:Button Content="Restore" Appearance="Secondary" Command="{Binding DataContext.RestoreRemoteBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Margin="0,0,8,0"/>
+                                                                            <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger" Command="{Binding DataContext.DeleteRemoteBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                </ui:Card>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
                                             </StackPanel>
                                         </StackPanel>
                                     </ui:Card>
