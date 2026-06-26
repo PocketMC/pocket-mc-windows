@@ -1021,7 +1021,7 @@
                                                                        Icon="{ui:SymbolIcon ArrowSync20}"
                                                                        ToolTip="Check for updates from the marketplace"/>
 
-                                                            <ui:Button Appearance="Secondary" Foreground="#F38BA8" VerticalAlignment="Center"
+                                                            <ui:Button Appearance="Danger" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
                                                                        Icon="{ui:SymbolIcon Delete20}"
@@ -1252,7 +1252,7 @@
                                                                 </ui:Button.Style>
                                                             </ui:Button>
 
-                                                            <ui:Button Appearance="Secondary" Foreground="#F38BA8" VerticalAlignment="Center"
+                                                            <ui:Button Appearance="Danger" VerticalAlignment="Center"
                                                                        Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding Path}"
                                                                        Icon="{ui:SymbolIcon Delete20}"
