@@ -820,7 +820,6 @@ namespace PocketMC.Desktop.Features.Console
         {
             if (_isShellScrollLocked)
             {
-                UpdatePageViewportHeight();
                 return;
             }
 
@@ -834,10 +833,7 @@ namespace PocketMC.Desktop.Features.Console
             _originalShellHorizontalScrollBarVisibility = _shellScrollViewer.HorizontalScrollBarVisibility;
             _shellScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
             _shellScrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-            _shellScrollViewer.SizeChanged += ShellScrollViewer_SizeChanged;
             _isShellScrollLocked = true;
-
-            UpdatePageViewportHeight();
         }
 
         private void UnlockShellScrollHost()
@@ -847,37 +843,10 @@ namespace PocketMC.Desktop.Features.Console
                 return;
             }
 
-            _shellScrollViewer.SizeChanged -= ShellScrollViewer_SizeChanged;
             _shellScrollViewer.VerticalScrollBarVisibility = _originalShellVerticalScrollBarVisibility;
             _shellScrollViewer.HorizontalScrollBarVisibility = _originalShellHorizontalScrollBarVisibility;
             _shellScrollViewer = null;
             _isShellScrollLocked = false;
-            PageRoot.Height = double.NaN;
-        }
-
-        private void ShellScrollViewer_SizeChanged(object? sender, SizeChangedEventArgs e)
-        {
-            UpdatePageViewportHeight();
-        }
-
-        private void UpdatePageViewportHeight()
-        {
-            if (_shellScrollViewer == null)
-            {
-                return;
-            }
-
-            double hostHeight = _shellScrollViewer.ViewportHeight > 0
-                ? _shellScrollViewer.ViewportHeight
-                : _shellScrollViewer.ActualHeight;
-
-            if (hostHeight <= 0)
-            {
-                return;
-            }
-
-            double verticalMargin = PageRoot.Margin.Top + PageRoot.Margin.Bottom;
-            PageRoot.Height = Math.Max(0, hostHeight - verticalMargin - 1);
         }
 
         private void EnsureLogScrollViewer()

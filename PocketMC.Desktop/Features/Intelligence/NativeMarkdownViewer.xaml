@@ -6,5 +6,6 @@
                               HorizontalScrollBarVisibility="Disabled"
                               IsToolBarVisible="False"
                               Background="Transparent"
-                              Focusable="False"/>
+                              Focusable="False"
+                              PreviewMouseWheel="DocumentViewer_PreviewMouseWheel"/>
 </UserControl>

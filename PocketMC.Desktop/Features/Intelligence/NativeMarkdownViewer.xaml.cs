@@ -66,5 +66,41 @@ namespace PocketMC.Desktop.Features.Intelligence
                 System.Diagnostics.Debug.WriteLine($"NativeMarkdownViewer render error: {ex.Message}");
             }
         }
+        private ScrollViewer? _internalScrollViewer;
+
+        private void DocumentViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            if (e.Handled) return;
+
+            _internalScrollViewer ??= FindVisualChild<ScrollViewer>(DocumentViewer);
+
+            if (_internalScrollViewer != null)
+            {
+                e.Handled = true;
+                
+                // Mouse.MouseWheelDeltaForOneLine is usually 120
+                int steps = System.Math.Max(1, System.Math.Abs(e.Delta) / 120) * 3;
+                for (int i = 0; i < steps; i++)
+                {
+                    if (e.Delta > 0) _internalScrollViewer.LineUp();
+                    else _internalScrollViewer.LineDown();
+                }
+            }
+        }
+
+        private T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is T typedChild)
+                    return typedChild;
+
+                var descendant = FindVisualChild<T>(child);
+                if (descendant != null)
+                    return descendant;
+            }
+            return null;
+        }
     }
 }
