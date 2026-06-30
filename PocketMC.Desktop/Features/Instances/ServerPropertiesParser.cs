@@ -22,7 +22,7 @@ public static class ServerPropertiesParser
             return properties;
         }
 
-        var lines = File.ReadAllLines(filePath, Encoding.UTF8);
+        var lines = ReadAllLinesShared(filePath, Encoding.UTF8);
         foreach (var line in lines)
         {
             var trimmed = line.Trim();
@@ -48,7 +48,7 @@ public static class ServerPropertiesParser
 
         if (File.Exists(filePath))
         {
-            existingLines.AddRange(File.ReadAllLines(filePath, Encoding.UTF8));
+            existingLines.AddRange(ReadAllLinesShared(filePath, Encoding.UTF8));
         }
 
         var newLines = new List<string>();
@@ -113,5 +113,18 @@ public static class ServerPropertiesParser
         string valuePortion = line.Substring(separatorIndex + 1);
         var match = InlineCommentRegex.Match(valuePortion);
         return match.Success ? match.Groups["comment"].Value : string.Empty;
+    }
+
+    private static string[] ReadAllLinesShared(string filePath, Encoding encoding)
+    {
+        var lines = new List<string>();
+        using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(fs, encoding);
+        string? line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            lines.Add(line);
+        }
+        return lines.ToArray();
     }
 }
