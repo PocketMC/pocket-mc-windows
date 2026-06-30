@@ -5,6 +5,7 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <StartupObject>PocketMC.Desktop.Program</StartupObject>
+    <PublishReadyToRun>true</PublishReadyToRun>
   <NoWarn>$(NoWarn);CS0105</NoWarn>
   </PropertyGroup>
 
@@ -12,8 +13,9 @@
     <EmbeddedResource Include="$(MSBuildProjectDirectory)\..\pocketmc.yml" LogicalName="PocketMC.Desktop.pocketmc.yml" />
     <Resource Include="icon.ico" />
     <Resource Include="Assets\dark_dirt.png" />
-    <Resource Include="Assets\logo.png" />
+    <SplashScreen Include="Assets\logo.png" />
     <Resource Include="Assets\logo_highres.png" />
+    <Resource Include="Assets\splash.png" />
     <Content Include="Assets\default_wallpaper.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\WhatsNew.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Features\RemoteControl\Web\**\*.*" CopyToOutputDirectory="PreserveNewest" />
