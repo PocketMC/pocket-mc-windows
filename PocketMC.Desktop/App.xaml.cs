@@ -87,6 +87,7 @@ public partial class App : System.Windows.Application
 
             var updateWindow = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.StartupUpdateWindow>();
             updateWindow.StartUpdateCheck();
+            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
             updateWindow.ShowDialog();
 
             if (!updateWindow.ShouldContinueToApp)
@@ -107,10 +108,12 @@ public partial class App : System.Windows.Application
 
         if (startupOptions.ShouldStartMinimizedToTray)
         {
+            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
             mainWindow.ShowMinimizedToTray();
         }
         else
         {
+            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
             mainWindow.Show();
         }
 
