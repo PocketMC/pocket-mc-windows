@@ -24,6 +24,8 @@ public sealed class BannedPlayerEntry
 
 public sealed class ServerStateFileService
 {
+    private static readonly System.Threading.ReaderWriterLockSlim _lock = new System.Threading.ReaderWriterLockSlim();
+
     private readonly InstanceRegistry _registry;
     private readonly ILogger<ServerStateFileService> _logger;
 
@@ -348,6 +350,18 @@ public sealed class ServerStateFileService
     }
 
     private static async Task<string?> ReadTextWithRetriesAsync(string path)
+    {
+        _lock.EnterReadLock();
+        try
+        {
+            return await ReadTextWithRetriesInternalAsync(path);
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
+    private static async Task<string?> ReadTextWithRetriesInternalAsync(string path)
     {
         if (!File.Exists(path))
         {
