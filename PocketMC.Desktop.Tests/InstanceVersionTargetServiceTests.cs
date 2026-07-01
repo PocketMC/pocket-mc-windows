@@ -1,6 +1,6 @@
-using PocketMC.Desktop.Features.Instances.Providers;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Updates;
+using PocketMC.Application.Instances.Providers;
+using PocketMC.Application.Instances.Services;
+using PocketMC.Application.Instances.Updates;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;

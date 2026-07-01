@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Dashboard;
 
 namespace PocketMC.Desktop.Tests;

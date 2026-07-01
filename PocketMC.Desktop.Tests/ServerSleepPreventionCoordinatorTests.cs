@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Infrastructure.Power;
 using PocketMC.Domain.Models;

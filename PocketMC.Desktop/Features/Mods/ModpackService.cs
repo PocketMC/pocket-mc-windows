@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Core.Presentation;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Application.Instances.Providers;
 
 namespace PocketMC.Desktop.Features.Mods
 {

@@ -16,9 +16,9 @@ using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Application.Instances.Providers;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;

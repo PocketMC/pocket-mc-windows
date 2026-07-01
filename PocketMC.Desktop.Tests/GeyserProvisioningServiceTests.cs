@@ -1,5 +1,5 @@
 using System.IO;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace PocketMC.Desktop.Tests;

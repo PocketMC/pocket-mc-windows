@@ -1,6 +1,6 @@
 using System;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 
 namespace PocketMC.Desktop.Features.Instances
 {

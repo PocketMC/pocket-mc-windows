@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Java;

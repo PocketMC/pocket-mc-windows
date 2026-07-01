@@ -12,11 +12,11 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Application.Instances.Backups;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Infrastructure.Process;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Players.Services;
 
 namespace PocketMC.Domain.Models;

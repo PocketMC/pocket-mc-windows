@@ -12,15 +12,15 @@ using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Instances.Updates;
+using PocketMC.Application.Instances.Backups;
+using PocketMC.Application.Instances.Updates;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.CloudBackups;

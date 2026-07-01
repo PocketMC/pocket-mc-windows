@@ -12,7 +12,7 @@ using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Setup;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Features.RemoteControl.UI;
 using PocketMC.Desktop.Infrastructure;

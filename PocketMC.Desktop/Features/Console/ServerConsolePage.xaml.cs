@@ -15,7 +15,7 @@ using Wpf.Ui.Controls;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Application.Interfaces.AI;
 using PocketMC.Domain.Models;

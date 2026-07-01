@@ -3,7 +3,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Helpers;
 
 namespace PocketMC.Desktop.Features.Settings;

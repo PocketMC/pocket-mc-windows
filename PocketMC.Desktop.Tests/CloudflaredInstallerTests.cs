@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
 
