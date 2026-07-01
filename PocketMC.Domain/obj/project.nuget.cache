@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "vUHb0F1vnBI=",
+  "success": true,
+  "projectFilePath": "/app/PocketMC.Domain/PocketMC.Domain.csproj",
+  "expectedPackageFiles": [
+    "/home/jules/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.24/microsoft.windowsdesktop.app.ref.8.0.24.nupkg.sha512"
+  ],
+  "logs": []
+}

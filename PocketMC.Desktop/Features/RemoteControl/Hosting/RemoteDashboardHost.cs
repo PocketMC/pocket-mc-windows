@@ -118,21 +118,10 @@ public sealed class RemoteDashboardHost
                 });
             builder.Services.AddAuthorization();
 
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("RemoteDashboardCors", policy =>
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
-                });
-            });
-
             WebApplication app = builder.Build();
             app.UseWebSockets();
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseCors("RemoteDashboardCors");
 
             app.Use(async (context, next) =>
             {

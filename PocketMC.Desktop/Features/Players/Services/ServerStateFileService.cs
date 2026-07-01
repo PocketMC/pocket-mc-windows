@@ -24,7 +24,7 @@ public sealed class BannedPlayerEntry
 
 public sealed class ServerStateFileService
 {
-    private static readonly System.Threading.SemaphoreSlim _lock = new System.Threading.SemaphoreSlim(1, 1);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Threading.SemaphoreSlim> _fileLocks = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly InstanceRegistry _registry;
     private readonly ILogger<ServerStateFileService> _logger;
@@ -351,14 +351,15 @@ public sealed class ServerStateFileService
 
     private static async Task<string?> ReadTextWithRetriesAsync(string path)
     {
-        await _lock.WaitAsync();
+        var fileLock = _fileLocks.GetOrAdd(path, _ => new System.Threading.SemaphoreSlim(1, 1));
+        await fileLock.WaitAsync();
         try
         {
             return await ReadTextWithRetriesInternalAsync(path);
         }
         finally
         {
-            _lock.Release();
+            fileLock.Release();
         }
     }
     private static async Task<string?> ReadTextWithRetriesInternalAsync(string path)

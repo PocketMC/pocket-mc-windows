@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "dgSpecHash": "U7yLDg37zNs=",
+  "success": false,
+  "projectFilePath": "/app/PocketMC.Infrastructure/PocketMC.Infrastructure.csproj",
+  "expectedPackageFiles": [
+    "/home/jules/.nuget/packages/microsoft.extensions.configuration/10.0.9/microsoft.extensions.configuration.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.configuration.abstractions/10.0.9/microsoft.extensions.configuration.abstractions.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.configuration.binder/10.0.9/microsoft.extensions.configuration.binder.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.dependencyinjection/10.0.9/microsoft.extensions.dependencyinjection.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/10.0.9/microsoft.extensions.dependencyinjection.abstractions.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.diagnostics/10.0.9/microsoft.extensions.diagnostics.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.diagnostics.abstractions/10.0.9/microsoft.extensions.diagnostics.abstractions.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.http/10.0.9/microsoft.extensions.http.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.http.polly/10.0.9/microsoft.extensions.http.polly.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.logging/10.0.9/microsoft.extensions.logging.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.logging.abstractions/10.0.9/microsoft.extensions.logging.abstractions.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.options/10.0.9/microsoft.extensions.options.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.options.configurationextensions/10.0.9/microsoft.extensions.options.configurationextensions.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.extensions.primitives/10.0.9/microsoft.extensions.primitives.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/polly/7.2.4/polly.7.2.4.nupkg.sha512",
+    "/home/jules/.nuget/packages/polly.extensions.http/3.0.0/polly.extensions.http.3.0.0.nupkg.sha512",
+    "/home/jules/.nuget/packages/system.diagnostics.diagnosticsource/10.0.9/system.diagnostics.diagnosticsource.10.0.9.nupkg.sha512",
+    "/home/jules/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.24/microsoft.windowsdesktop.app.ref.8.0.24.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1201",
+      "level": "Error",
+      "message": "Project PocketMC.Application is not compatible with net8.0 (.NETCoreApp,Version=v8.0). Project PocketMC.Application supports: net8.0-windows10.0.17763 (.NETCoreApp,Version=v8.0)",
+      "projectPath": "/app/PocketMC.Infrastructure/PocketMC.Infrastructure.csproj",
+      "filePath": "/app/PocketMC.Infrastructure/PocketMC.Infrastructure.csproj",
+      "libraryId": "PocketMC.Application",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
+}
