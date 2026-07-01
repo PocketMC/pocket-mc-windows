@@ -15,7 +15,7 @@ namespace PocketMC.Desktop.Features.Intelligence;
 /// </summary>
 public class SummaryStorageService
 {
-    private static readonly System.Threading.ReaderWriterLockSlim _lock = new System.Threading.ReaderWriterLockSlim();
+    private static readonly System.Threading.SemaphoreSlim _lock = new System.Threading.SemaphoreSlim(1, 1);
 
     private const string SummariesFolder = "summaries";
 
@@ -24,7 +24,7 @@ public class SummaryStorageService
     /// </summary>
     public string Save(string serverDir, SessionSummary summary)
     {
-        _lock.EnterWriteLock();
+        _lock.Wait();
         try
         {
         var dir = Path.Combine(serverDir, SummariesFolder);
@@ -52,7 +52,7 @@ public class SummaryStorageService
         }
         finally
         {
-            _lock.ExitWriteLock();
+            _lock.Release();
         }
     }
 
@@ -61,7 +61,7 @@ public class SummaryStorageService
     /// </summary>
     public List<SessionSummary> ListSummaries(string serverDir)
     {
-        _lock.EnterReadLock();
+        _lock.Wait();
         try
         {
         var dir = Path.Combine(serverDir, SummariesFolder);
@@ -92,7 +92,7 @@ public class SummaryStorageService
         }
         finally
         {
-            _lock.ExitReadLock();
+            _lock.Release();
         }
     }
 
@@ -101,7 +101,7 @@ public class SummaryStorageService
     /// </summary>
     public SessionSummary? Read(string serverDir, string fileName)
     {
-        _lock.EnterReadLock();
+        _lock.Wait();
         try
         {
         string? filePath = ResolveSummaryFilePath(serverDir, fileName);
@@ -120,7 +120,7 @@ public class SummaryStorageService
     }
     finally
     {
-        _lock.ExitReadLock();
+        _lock.Release();
     }
 }
 
@@ -129,7 +129,7 @@ public class SummaryStorageService
     /// </summary>
     public bool Delete(string serverDir, string fileName)
     {
-        _lock.EnterWriteLock();
+        _lock.Wait();
         try
         {
         string? filePath = ResolveSummaryFilePath(serverDir, fileName);
@@ -148,7 +148,7 @@ public class SummaryStorageService
     }
     finally
     {
-        _lock.ExitWriteLock();
+        _lock.Release();
     }
 }
 
@@ -157,7 +157,7 @@ public class SummaryStorageService
     /// </summary>
     public int GetCount(string serverDir)
     {
-        _lock.EnterReadLock();
+        _lock.Wait();
         try
         {
         var dir = Path.Combine(serverDir, SummariesFolder);
@@ -166,7 +166,7 @@ public class SummaryStorageService
         }
         finally
         {
-            _lock.ExitReadLock();
+            _lock.Release();
         }
     }
 
