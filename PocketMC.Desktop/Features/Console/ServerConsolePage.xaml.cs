@@ -199,6 +199,7 @@ namespace PocketMC.Desktop.Features.Console
 
             _maxLogLines = _applicationState.Settings.ConsoleBufferSize;
             if (_maxLogLines <= 0) _maxLogLines = 5000;
+            if (_maxLogLines > 5000) _maxLogLines = 5000;
 
             InitializeComponent();
             DataContext = this;

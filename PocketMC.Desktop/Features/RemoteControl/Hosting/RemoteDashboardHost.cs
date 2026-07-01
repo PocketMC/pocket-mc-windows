@@ -118,10 +118,21 @@ public sealed class RemoteDashboardHost
                 });
             builder.Services.AddAuthorization();
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("RemoteDashboardCors", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
+
             WebApplication app = builder.Build();
             app.UseWebSockets();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseCors("RemoteDashboardCors");
 
             app.Use(async (context, next) =>
             {
@@ -199,6 +210,11 @@ public sealed class RemoteDashboardHost
     {
         var api = app.MapGroup("/api").AddEndpointFilter(async (context, next) =>
         {
+            if (context.HttpContext.Request.Method != HttpMethods.Get && !context.HttpContext.Request.Headers.ContainsKey("X-Requested-With"))
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var path = context.HttpContext.Request.Path.Value;
             if (path == "/api/login" || path == "/api/status")
             {

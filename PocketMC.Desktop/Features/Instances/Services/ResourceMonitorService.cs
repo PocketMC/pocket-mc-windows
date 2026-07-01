@@ -98,6 +98,21 @@ namespace PocketMC.Desktop.Features.Instances.Services
                 // Adaptive polling
                 nextInterval = (count >= 7) ? 10000 : (count >= 4) ? 5000 : 2000;
 
+                bool isMinimized = false;
+                if (System.Windows.Application.Current != null && System.Windows.Application.Current.Dispatcher != null)
+                {
+                    isMinimized = System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        var mainWindow = System.Windows.Application.Current.MainWindow;
+                        return mainWindow != null && mainWindow.WindowState == System.Windows.WindowState.Minimized;
+                    });
+                }
+
+                if (isMinimized)
+                {
+                    nextInterval = 10000; // Drop polling rate to 10s if minimized
+                }
+
                 _listCommandTick++;
                 bool sendListCommand = (_listCommandTick * (nextInterval / 1000.0)) >= 10;
                 if (sendListCommand) _listCommandTick = 0;

@@ -339,7 +339,11 @@ public class BackupService
             {
                 try
                 {
-                    await process.WriteInputAsync("save-on");
+                    bool rconRestored = await TrySyncSaveOnViaRconAsync(serverDir, onProgress);
+                    if (!rconRestored)
+                    {
+                        await process.WriteInputAsync("save-on");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -422,6 +426,30 @@ public class BackupService
         }
     }
 
+
+    private async Task<bool> TrySyncSaveOnViaRconAsync(string serverDir, Action<string>? onProgress)
+    {
+        try
+        {
+            if (!_configService.TryGetProperty(serverDir, "enable-rcon", out var rconEnabled) || rconEnabled != "true") return false;
+
+            _configService.TryGetProperty(serverDir, "rcon.port", out var portStr);
+            _configService.TryGetProperty(serverDir, "rcon.password", out var password);
+
+            if (string.IsNullOrEmpty(password) || !int.TryParse(portStr ?? "25575", out int port)) return false;
+
+            using var rcon = new RconClient("127.0.0.1", port, password);
+            await rcon.ConnectAsync();
+            await rcon.ExecuteCommandAsync("save-on");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "RCON save-on sync failed.");
+            return false;
+        }
+    }
+
     private async Task<bool> TrySyncSaveViaRconAsync(string serverDir, Action<string>? onProgress)
     {
         try
@@ -440,8 +468,16 @@ public class BackupService
             onProgress?.Invoke("Syncing via RCON: save-off");
             await rcon.ExecuteCommandAsync("save-off");
 
-            onProgress?.Invoke("Syncing via RCON: save-all");
-            var response = await rcon.ExecuteCommandAsync("save-all");
+            onProgress?.Invoke("Syncing via RCON: save-all flush");
+            var response = await rcon.ExecuteCommandAsync("save-all flush");
+
+            // Try to parse the response or wait briefly just to be sure if RCON is asynchronous,
+            // though 'save-all flush' is synchronous in modern Minecraft versions.
+            if (!string.IsNullOrWhiteSpace(response) && !SaveCompletedRegex.IsMatch(response))
+            {
+                _logger.LogWarning("RCON save-all flush did not return a recognized completion response: {Response}", response);
+                // Still returning true since we issued the command and it succeeded at RCON level
+            }
 
             return true;
         }
