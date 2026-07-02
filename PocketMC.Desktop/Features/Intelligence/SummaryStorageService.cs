@@ -15,7 +15,7 @@ namespace PocketMC.Desktop.Features.Intelligence;
 /// </summary>
 public class SummaryStorageService
 {
-    private static readonly object _syncRoot = new object();
+    private static readonly System.Threading.SemaphoreSlim _lock = new System.Threading.SemaphoreSlim(1, 1);
 
     private const string SummariesFolder = "summaries";
 
@@ -24,7 +24,8 @@ public class SummaryStorageService
     /// </summary>
     public string Save(string serverDir, SessionSummary summary)
     {
-        lock (_syncRoot)
+        _lock.Wait();
+        try
         {
         var dir = Path.Combine(serverDir, SummariesFolder);
         Directory.CreateDirectory(dir);
@@ -49,7 +50,10 @@ public class SummaryStorageService
         FileUtils.AtomicWriteAllText(filePath, json);
         return filePath;
         }
-
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     /// <summary>
@@ -57,7 +61,8 @@ public class SummaryStorageService
     /// </summary>
     public List<SessionSummary> ListSummaries(string serverDir)
     {
-        lock (_syncRoot)
+        _lock.Wait();
+        try
         {
         var dir = Path.Combine(serverDir, SummariesFolder);
         if (!Directory.Exists(dir))
@@ -85,7 +90,10 @@ public class SummaryStorageService
 
         return summaries;
         }
-
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     /// <summary>
@@ -93,7 +101,8 @@ public class SummaryStorageService
     /// </summary>
     public SessionSummary? Read(string serverDir, string fileName)
     {
-        lock (_syncRoot)
+        _lock.Wait();
+        try
         {
         string? filePath = ResolveSummaryFilePath(serverDir, fileName);
         if (filePath == null) return null;
@@ -120,7 +129,8 @@ public class SummaryStorageService
     /// </summary>
     public bool Delete(string serverDir, string fileName)
     {
-        lock (_syncRoot)
+        _lock.Wait();
+        try
         {
         string? filePath = ResolveSummaryFilePath(serverDir, fileName);
         if (filePath == null) return false;
@@ -147,13 +157,17 @@ public class SummaryStorageService
     /// </summary>
     public int GetCount(string serverDir)
     {
-        lock (_syncRoot)
+        _lock.Wait();
+        try
         {
         var dir = Path.Combine(serverDir, SummariesFolder);
         if (!Directory.Exists(dir)) return 0;
         return Directory.GetFiles(dir, "summary_*.json").Length;
         }
-
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     private static string? ResolveSummaryFilePath(string serverDir, string fileName)
