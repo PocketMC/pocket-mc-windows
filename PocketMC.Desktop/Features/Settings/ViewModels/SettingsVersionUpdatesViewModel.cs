@@ -3,9 +3,9 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Java;
-using PocketMC.Desktop.Features.Instances.Updates;
+using PocketMC.Application.Instances.Updates;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Settings.ViewModels;

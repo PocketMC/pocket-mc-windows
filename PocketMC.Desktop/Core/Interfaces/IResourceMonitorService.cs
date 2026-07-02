@@ -1,6 +1,6 @@
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Application.Instances.Services;
+using PocketMC.Application.Instances.Providers;
 using PocketMC.Desktop.Features.Mods;
 using System;
 using System.Collections.Concurrent;

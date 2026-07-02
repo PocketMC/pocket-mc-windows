@@ -4,9 +4,9 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Application.Instances.Backups;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using Xunit;
 

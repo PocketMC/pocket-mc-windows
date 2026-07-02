@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Mods;
 
 namespace PocketMC.Desktop.Infrastructure

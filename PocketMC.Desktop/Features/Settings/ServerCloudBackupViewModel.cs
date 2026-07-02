@@ -10,7 +10,7 @@ using System.Windows.Input;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.CloudBackups;
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Application.Instances.Backups;
 
 namespace PocketMC.Desktop.Features.Settings;
 

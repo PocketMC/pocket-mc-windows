@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Settings;
 

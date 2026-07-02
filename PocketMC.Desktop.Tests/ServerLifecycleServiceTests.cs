@@ -1,5 +1,5 @@
 using PocketMC.Desktop.Features.Networking;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 
 namespace PocketMC.Desktop.Tests;
 

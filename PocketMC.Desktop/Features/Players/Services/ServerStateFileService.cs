@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Helpers;
 using PocketMC.Domain.Models;
 
@@ -24,6 +24,8 @@ public sealed class BannedPlayerEntry
 
 public sealed class ServerStateFileService
 {
+    private static readonly System.Threading.SemaphoreSlim _lock = new System.Threading.SemaphoreSlim(1, 1);
+
     private readonly InstanceRegistry _registry;
     private readonly ILogger<ServerStateFileService> _logger;
 
@@ -348,6 +350,18 @@ public sealed class ServerStateFileService
     }
 
     private static async Task<string?> ReadTextWithRetriesAsync(string path)
+    {
+        await _lock.WaitAsync();
+        try
+        {
+            return await ReadTextWithRetriesInternalAsync(path);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+    private static async Task<string?> ReadTextWithRetriesInternalAsync(string path)
     {
         if (!File.Exists(path))
         {

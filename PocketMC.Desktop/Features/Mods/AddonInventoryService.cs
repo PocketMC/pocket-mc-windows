@@ -2,7 +2,7 @@ using System.IO;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Infrastructure.Security;

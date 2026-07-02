@@ -1,6 +1,6 @@
 using System.Text;
 using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;

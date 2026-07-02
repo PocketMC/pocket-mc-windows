@@ -1,7 +1,7 @@
 using Xunit;
 using Moq;
 using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Domain.Models;
 using Microsoft.Extensions.Logging;
 using System;

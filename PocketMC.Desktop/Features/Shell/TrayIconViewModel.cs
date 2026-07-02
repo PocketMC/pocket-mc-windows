@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Windows;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 
 namespace PocketMC.Desktop.Features.Shell
 {

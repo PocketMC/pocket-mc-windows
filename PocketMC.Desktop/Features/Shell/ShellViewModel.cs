@@ -8,7 +8,7 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Features.Shell

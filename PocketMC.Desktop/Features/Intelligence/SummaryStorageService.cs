@@ -15,6 +15,8 @@ namespace PocketMC.Desktop.Features.Intelligence;
 /// </summary>
 public class SummaryStorageService
 {
+    private static readonly System.Threading.SemaphoreSlim _lock = new System.Threading.SemaphoreSlim(1, 1);
+
     private const string SummariesFolder = "summaries";
 
     /// <summary>
@@ -22,6 +24,9 @@ public class SummaryStorageService
     /// </summary>
     public string Save(string serverDir, SessionSummary summary)
     {
+        _lock.Wait();
+        try
+        {
         var dir = Path.Combine(serverDir, SummariesFolder);
         Directory.CreateDirectory(dir);
 
@@ -44,6 +49,11 @@ public class SummaryStorageService
         var json = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true });
         FileUtils.AtomicWriteAllText(filePath, json);
         return filePath;
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     /// <summary>
@@ -51,6 +61,9 @@ public class SummaryStorageService
     /// </summary>
     public List<SessionSummary> ListSummaries(string serverDir)
     {
+        _lock.Wait();
+        try
+        {
         var dir = Path.Combine(serverDir, SummariesFolder);
         if (!Directory.Exists(dir))
             return new List<SessionSummary>();
@@ -76,6 +89,11 @@ public class SummaryStorageService
         }
 
         return summaries;
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     /// <summary>
@@ -83,6 +101,9 @@ public class SummaryStorageService
     /// </summary>
     public SessionSummary? Read(string serverDir, string fileName)
     {
+        _lock.Wait();
+        try
+        {
         string? filePath = ResolveSummaryFilePath(serverDir, fileName);
         if (filePath == null) return null;
         if (!File.Exists(filePath)) return null;
@@ -97,12 +118,20 @@ public class SummaryStorageService
             return null;
         }
     }
+    finally
+    {
+        _lock.Release();
+    }
+}
 
     /// <summary>
     /// Delete a summary file.
     /// </summary>
     public bool Delete(string serverDir, string fileName)
     {
+        _lock.Wait();
+        try
+        {
         string? filePath = ResolveSummaryFilePath(serverDir, fileName);
         if (filePath == null) return false;
         if (!File.Exists(filePath)) return false;
@@ -117,15 +146,28 @@ public class SummaryStorageService
             return false;
         }
     }
+    finally
+    {
+        _lock.Release();
+    }
+}
 
     /// <summary>
     /// Get the number of summaries for a server.
     /// </summary>
     public int GetCount(string serverDir)
     {
+        _lock.Wait();
+        try
+        {
         var dir = Path.Combine(serverDir, SummariesFolder);
         if (!Directory.Exists(dir)) return 0;
         return Directory.GetFiles(dir, "summary_*.json").Length;
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     private static string? ResolveSummaryFilePath(string serverDir, string fileName)

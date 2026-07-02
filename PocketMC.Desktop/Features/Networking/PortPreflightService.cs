@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Networking;

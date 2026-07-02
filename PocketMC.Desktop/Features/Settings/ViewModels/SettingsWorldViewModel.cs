@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Marketplace;
 

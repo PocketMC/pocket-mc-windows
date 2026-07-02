@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Moq;
 using Moq.Protected;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Application.Instances.Providers;
 using Xunit;
 
 namespace PocketMC.Desktop.Tests.Providers;

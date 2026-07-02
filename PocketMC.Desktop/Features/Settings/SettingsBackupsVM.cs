@@ -9,7 +9,7 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Application.Instances.Backups;
 
 namespace PocketMC.Desktop.Features.Settings
 {

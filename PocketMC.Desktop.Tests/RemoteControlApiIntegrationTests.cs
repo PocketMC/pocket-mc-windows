@@ -65,6 +65,7 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         {
             BaseAddress = new Uri($"http://127.0.0.1:{_port}")
         };
+        _client.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
     }
 
     public async Task InitializeAsync()

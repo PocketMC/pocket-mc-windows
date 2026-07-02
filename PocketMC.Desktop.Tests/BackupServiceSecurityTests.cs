@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Application.Instances.Backups;
 
 namespace PocketMC.Desktop.Tests;
 

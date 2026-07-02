@@ -6,8 +6,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Diagnostics;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Application.Instances.Services;
+using PocketMC.Application.Instances.Providers;
 using PocketMC.Desktop.Features.Java;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Players.Services;
@@ -275,7 +275,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             notificationService ?? new RecordingNotificationService(),
             NullLogger<ServerLifecycleService>.Instance,
             AppState,
-            new PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService>.Instance),
+            new PocketMC.Application.Instances.Services.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Application.Instances.Services.GeyserProvisioningService>.Instance),
             new PocketMC.Desktop.Helpers.GeyserDetector());
     }
 

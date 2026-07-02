@@ -2,7 +2,7 @@ using PocketMC.Desktop.Features.RemoteControl.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Instances.Services;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.Shell;
