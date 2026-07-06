@@ -532,6 +532,8 @@ namespace PocketMC.Desktop.Features.Settings
             Metadata.AutoStartWithApp = General.AutoStartWithApp;
             Metadata.AutoUpdateAddons = Addons.AutoUpdateAddons;
             Metadata.CustomBackupDirectory = Backups.CustomBackupDirectory;
+            Metadata.BackupIntervalHours = Backups.BackupIntervalHours;
+            Metadata.MaxBackupsToKeep = Backups.MaxBackupsToKeep;
 
             _serverConfigurationService.Save(Metadata, currentServerDir, cfg);
             if (Advanced.IsRawServerPropertiesDirty)

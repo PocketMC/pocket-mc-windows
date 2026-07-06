@@ -226,7 +226,6 @@
 
                                                         <!-- MOTD Display & Editor -->
                                                         <Grid Grid.Row="1" VerticalAlignment="Top">
-
                                                             <!-- Display Mode -->
                                                             <StackPanel x:Name="MotdDisplayMode">
                                                                 <StackPanel Orientation="Horizontal">
@@ -236,33 +235,6 @@
                                                                         </ContentControl.Effect>
                                                                     </ContentControl>
                                                                     <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Edit16}" Click="BtnEditMotd_Click" Margin="4,-2,0,0" Padding="2" ToolTip="Edit MOTD"/>
-                                                                </StackPanel>
-                                                            </StackPanel>
-
-                                                            <!-- MOTD Editor Mode -->
-                                                            <StackPanel x:Name="MotdEditorMode" Visibility="Collapsed" Margin="0,0,0,0">
-                                                                <WrapPanel Margin="0,0,0,4" MaxWidth="280">
-                                                                    <!-- Colors -->
-                                                                    <Button Content="&#167;4" ToolTip="Dark Red" Click="BtnInsertMotdColor_Click" Tag="&#167;4" Background="#AA0000" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;c" ToolTip="Red" Click="BtnInsertMotdColor_Click" Tag="&#167;c" Background="#FF5555" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;6" ToolTip="Gold" Click="BtnInsertMotdColor_Click" Tag="&#167;6" Background="#FFAA00" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;e" ToolTip="Yellow" Click="BtnInsertMotdColor_Click" Tag="&#167;e" Background="#FFFF55" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;2" ToolTip="Dark Green" Click="BtnInsertMotdColor_Click" Tag="&#167;2" Background="#00AA00" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;a" ToolTip="Green" Click="BtnInsertMotdColor_Click" Tag="&#167;a" Background="#55FF55" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;b" ToolTip="Aqua" Click="BtnInsertMotdColor_Click" Tag="&#167;b" Background="#55FFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;1" ToolTip="Dark Blue" Click="BtnInsertMotdColor_Click" Tag="&#167;1" Background="#0000AA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;d" ToolTip="Light Purple" Click="BtnInsertMotdColor_Click" Tag="&#167;d" Background="#FF55FF" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;f" ToolTip="White" Click="BtnInsertMotdColor_Click" Tag="&#167;f" Background="#FFFFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;0" ToolTip="Black" Click="BtnInsertMotdColor_Click" Tag="&#167;0" Background="#000000" Foreground="White" BorderThickness="0" Margin="0,0,8,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-
-                                                                    <!-- Formatters -->
-                                                                    <Button Content="&#167;l" ToolTip="Bold" Click="BtnInsertMotdColor_Click" Tag="&#167;l" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" FontWeight="Bold" Cursor="Hand"/>
-                                                                    <Button Content="&#167;n" ToolTip="Underline" Click="BtnInsertMotdColor_Click" Tag="&#167;n" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                    <Button Content="&#167;r" ToolTip="Reset" Click="BtnInsertMotdColor_Click" Tag="&#167;r" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="2" FontFamily="Consolas" Cursor="Hand"/>
-                                                                </WrapPanel>
-                                                                <StackPanel Orientation="Horizontal">
-                                                                    <ui:TextBox x:Name="TxtMotdRaw" Text="{Binding General.Motd, UpdateSourceTrigger=PropertyChanged}" Width="280" FontFamily="Consolas"/>
-                                                                    <ui:Button Appearance="Primary" Icon="{ui:SymbolIcon Checkmark16}" Click="BtnSaveMotd_Click" Margin="6,0,0,0" ToolTip="Save"/>
                                                                 </StackPanel>
                                                             </StackPanel>
                                                         </Grid>
@@ -285,6 +257,63 @@
                                                     </StackPanel>
                                                 </Grid>
                                             </Border>
+
+                                            <!-- MOTD Editor Panel (shown below the preview card) -->
+                                            <StackPanel x:Name="MotdEditorMode" Visibility="Collapsed" Margin="0,8,0,16">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="12"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Color Palette (left side) -->
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="Colors" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                                        <WrapPanel MaxWidth="200">
+                                                            <Button Content="§0" ToolTip="Black" Click="BtnInsertMotdColor_Click" Tag="\u00A70" Background="#000000" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§1" ToolTip="Dark Blue" Click="BtnInsertMotdColor_Click" Tag="\u00A71" Background="#0000AA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§2" ToolTip="Dark Green" Click="BtnInsertMotdColor_Click" Tag="\u00A72" Background="#00AA00" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§3" ToolTip="Dark Aqua" Click="BtnInsertMotdColor_Click" Tag="\u00A73" Background="#00AAAA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§4" ToolTip="Dark Red" Click="BtnInsertMotdColor_Click" Tag="\u00A74" Background="#AA0000" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§5" ToolTip="Dark Purple" Click="BtnInsertMotdColor_Click" Tag="\u00A75" Background="#AA00AA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§6" ToolTip="Gold" Click="BtnInsertMotdColor_Click" Tag="\u00A76" Background="#FFAA00" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§7" ToolTip="Gray" Click="BtnInsertMotdColor_Click" Tag="\u00A77" Background="#AAAAAA" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§8" ToolTip="Dark Gray" Click="BtnInsertMotdColor_Click" Tag="\u00A78" Background="#555555" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§9" ToolTip="Blue" Click="BtnInsertMotdColor_Click" Tag="\u00A79" Background="#5555FF" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§a" ToolTip="Green" Click="BtnInsertMotdColor_Click" Tag="\u00A7a" Background="#55FF55" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§b" ToolTip="Aqua" Click="BtnInsertMotdColor_Click" Tag="\u00A7b" Background="#55FFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§c" ToolTip="Red" Click="BtnInsertMotdColor_Click" Tag="\u00A7c" Background="#FF5555" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§d" ToolTip="Light Purple" Click="BtnInsertMotdColor_Click" Tag="\u00A7d" Background="#FF55FF" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§e" ToolTip="Yellow" Click="BtnInsertMotdColor_Click" Tag="\u00A7e" Background="#FFFF55" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§f" ToolTip="White" Click="BtnInsertMotdColor_Click" Tag="\u00A7f" Background="#FFFFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                        </WrapPanel>
+                                                        <TextBlock Text="Formatting" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,6,0,4"/>
+                                                        <WrapPanel>
+                                                            <Button Content="B" ToolTip="Bold (§l)" Click="BtnInsertMotdColor_Click" Tag="\u00A7l" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
+                                                            <Button Content="I" ToolTip="Italic (§o)" Click="BtnInsertMotdColor_Click" Tag="\u00A7o" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontStyle="Italic" Cursor="Hand"/>
+                                                            <Button Content="U" ToolTip="Underline (§n)" Click="BtnInsertMotdColor_Click" Tag="\u00A7n" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand">
+                                                                <Button.Resources><Style TargetType="TextBlock"><Setter Property="TextDecorations" Value="Underline"/></Style></Button.Resources>
+                                                            </Button>
+                                                            <Button Content="S" ToolTip="Strikethrough (§m)" Click="BtnInsertMotdColor_Click" Tag="\u00A7m" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand">
+                                                                <Button.Resources><Style TargetType="TextBlock"><Setter Property="TextDecorations" Value="Strikethrough"/></Style></Button.Resources>
+                                                            </Button>
+                                                            <Button Content="?" ToolTip="Obfuscated (§k)" Click="BtnInsertMotdColor_Click" Tag="\u00A7k" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="R" ToolTip="Reset (§r)" Click="BtnInsertMotdColor_Click" Tag="\u00A7r" Background="#444" Foreground="#FF5555" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
+                                                            <Button Content="↵" ToolTip="New Line (\n)" Click="BtnInsertMotdColor_Click" Tag="\n" Background="#444" Foreground="#55FFFF" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                        </WrapPanel>
+                                                    </StackPanel>
+
+                                                    <!-- Text Input + Save (right side) -->
+                                                    <StackPanel Grid.Column="2" VerticalAlignment="Top">
+                                                        <TextBlock Text="Raw MOTD Text" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                                        <ui:TextBox x:Name="TxtMotdRaw" Text="{Binding General.Motd, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" AcceptsReturn="False"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" HorizontalAlignment="Right">
+                                                            <ui:Button Appearance="Primary" Content="Done" Icon="{ui:SymbolIcon Checkmark16}" Click="BtnSaveMotd_Click"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
 
                                             <!-- Simple MOTD Editor (Non-Java) -->
                                             <StackPanel Margin="0,0,0,16" Visibility="{Binding IsJavaSettings, Converter={StaticResource InvertedVisibilityConverter}}">
@@ -469,7 +498,7 @@
                                                 <TextBlock Text="{Binding VersionUpdates.ManualUntrackedAddonCount}" FontSize="24" FontWeight="SemiBold"/>
                                             </StackPanel>
                                             <StackPanel>
-                                                <TextBlock Text="Compatible" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
+                                                <TextBlock Text="Updates" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
                                                 <TextBlock Text="{Binding VersionUpdates.CompatibleUpdateCount}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
                                             </StackPanel>
                                             <StackPanel>
@@ -509,30 +538,33 @@
                                     </ui:CardExpander>
 
                                     <!-- 6. Update Status & Progress -->
-                                    <StackPanel Margin="0,16,0,32" HorizontalAlignment="Center"
-                                                Visibility="{Binding VersionUpdates.StatusText, Converter={StaticResource VisibleIfNotEmpty}}">
-                                        <TextBlock Text="{Binding VersionUpdates.StatusText}"
-                                                   Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
-                                                   HorizontalAlignment="Center"
-                                                   TextWrapping="Wrap"/>
-                                        <StackPanel Margin="0,12,0,0"
-                                                    Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
-                                            <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
-                                                         Maximum="100"
-                                                         Height="6"
-                                                         Width="300"
-                                                         HorizontalAlignment="Center"
-                                                         IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
-                                            <TextBlock Text="{Binding VersionUpdates.ProgressDetailText}"
-                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                       FontSize="12"
-                                                       Margin="0,8,0,0"
-                                                       HorizontalAlignment="Center"
-                                                       TextWrapping="Wrap"/>
+                                    <ui:Card Margin="0,0,0,16" Padding="24" 
+                                             Visibility="{Binding VersionUpdates.StatusText, Converter={StaticResource VisibleIfNotEmpty}}">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                                <ui:SymbolIcon Symbol="ArrowSync24" FontSize="20" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                                <ui:TextBlock Text="{Binding VersionUpdates.StatusText}"
+                                                           FontTypography="BodyStrong"
+                                                           FontSize="16"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                            </StackPanel>
+
+                                            <StackPanel Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
+                                                <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             HorizontalAlignment="Stretch"
+                                                             IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
+                                                <TextBlock Text="{Binding VersionUpdates.ProgressDetailText}"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                           FontSize="12"
+                                                           Margin="0,8,0,0"
+                                                           HorizontalAlignment="Right"
+                                                           TextWrapping="Wrap"/>
+                                            </StackPanel>
                                         </StackPanel>
-                                    </StackPanel>
+                                    </ui:Card>
 
                                     <ItemsControl ItemsSource="{Binding VersionUpdates.Warnings}" Margin="0,0,0,16">
                                         <ItemsControl.ItemTemplate>
@@ -1419,7 +1451,8 @@
                                                 <StackPanel>
                                                     <TextBlock Text="Manual Action" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" HorizontalAlignment="Center"/>
                                                     <ui:Button Content="Create Backup Now" Command="{Binding Backups.CreateBackupCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Save20}"/>
-                                                    <ProgressBar IsIndeterminate="True" Height="2" Margin="0,4,0,0" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
+                                                    <TextBlock Text="{Binding Backups.BackupStatusText}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" HorizontalAlignment="Center" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
+                                                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding Backups.BackupProgressValue}" IsIndeterminate="{Binding Backups.IsBackupProgressIndeterminate}" Height="2" Margin="0,2,0,0" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                             </Border>
                                         </Grid>

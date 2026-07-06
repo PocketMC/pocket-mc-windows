@@ -1,4 +1,4 @@
-version: 1.9.6
+version: 1.9.6.2
 channel: 
 auth_proxies:
   - "https://pocket-mc-proxy-20d5.onrender.com"

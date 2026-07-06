@@ -59,9 +59,9 @@ public class BackupService
         "session.lock"
     };
 
-    public async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, bool isManualBackup = true, Action<string>? onProgress = null)
+    public async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, bool isManualBackup = true, Action<string>? onProgress = null, IProgress<double>? progress = null)
     {
-        var localResult = await CreateLocalBackupAsync(metadata, serverDir, onProgress);
+        var localResult = await CreateLocalBackupAsync(metadata, serverDir, onProgress, progress);
 
         if (!localResult.Success || string.IsNullOrEmpty(localResult.ZipPath))
         {
@@ -237,7 +237,7 @@ public class BackupService
         return PathSafety.ValidateContainedPath(backupDir, fileName);
     }
 
-    private async Task<LocalBackupResult> CreateLocalBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress)
+    private async Task<LocalBackupResult> CreateLocalBackupAsync(InstanceMetadata metadata, string serverDir, Action<string>? onProgress, IProgress<double>? progress)
     {
         string worldDir;
         string worldDisplayName;
@@ -308,7 +308,7 @@ public class BackupService
             }
 
             onProgress?.Invoke("Compressing world...");
-            await Task.Run(() => CreateZipWithLockedFileSkip(worldDir, zipPath, skippedFiles));
+            await Task.Run(() => CreateZipWithLockedFileSkip(worldDir, zipPath, skippedFiles, progress));
 
             var zipInfo = new FileInfo(zipPath);
             if (!zipInfo.Exists || zipInfo.Length == 0)
@@ -452,10 +452,22 @@ public class BackupService
         }
     }
 
-    private void CreateZipWithLockedFileSkip(string sourceDir, string zipPath, List<string> skippedFiles)
+    private void CreateZipWithLockedFileSkip(string sourceDir, string zipPath, List<string> skippedFiles, IProgress<double>? progress)
     {
         using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
         var allFiles = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
+
+        long totalBytes = 0;
+        foreach (var filePath in allFiles)
+        {
+            if (!SkipFiles.Contains(Path.GetFileName(filePath)))
+            {
+                totalBytes += new FileInfo(filePath).Length;
+            }
+        }
+
+        long copiedBytes = 0;
+        byte[] buffer = new byte[81920]; // 80KB buffer
 
         foreach (var filePath in allFiles)
         {
@@ -473,7 +485,17 @@ public class BackupService
                 var entry = archive.CreateEntry(relativePath, CompressionLevel.Fastest);
                 using var entryStream = entry.Open();
                 using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                fileStream.CopyTo(entryStream);
+                
+                int bytesRead;
+                while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    entryStream.Write(buffer, 0, bytesRead);
+                    copiedBytes += bytesRead;
+                    if (totalBytes > 0)
+                    {
+                        progress?.Report((double)copiedBytes / totalBytes * 100);
+                    }
+                }
             }
             catch (IOException)
             {

@@ -50,6 +50,15 @@ namespace PocketMC.Desktop.Features.Settings
         private bool _isBackingUp;
         public bool IsBackingUp { get => _isBackingUp; set => SetProperty(ref _isBackingUp, value); }
 
+        private double _backupProgressValue;
+        public double BackupProgressValue { get => _backupProgressValue; set => SetProperty(ref _backupProgressValue, value); }
+
+        private bool _isBackupProgressIndeterminate;
+        public bool IsBackupProgressIndeterminate { get => _isBackupProgressIndeterminate; set => SetProperty(ref _isBackupProgressIndeterminate, value); }
+
+        private string _backupStatusText = string.Empty;
+        public string BackupStatusText { get => _backupStatusText; set => SetProperty(ref _backupStatusText, value); }
+
         // --- Health Warning Properties ---
 
         private bool _hasHealthWarning;
@@ -303,10 +312,24 @@ namespace PocketMC.Desktop.Features.Settings
         private async Task CreateBackupAsync()
         {
             IsBackingUp = true;
+            IsBackupProgressIndeterminate = true;
+            BackupProgressValue = 0;
+            BackupStatusText = "Preparing backup...";
+
+            var progress = new Progress<double>(p => 
+            {
+                IsBackupProgressIndeterminate = false;
+                BackupProgressValue = p;
+            });
+
             try
             {
                 _metadata.CustomBackupDirectory = CustomBackupDirectory;
-                await _backupService.RunBackupAsync(_metadata, _serverDir);
+                await _backupService.RunBackupAsync(
+                    _metadata, 
+                    _serverDir, 
+                    onProgress: status => BackupStatusText = status,
+                    progress: progress);
                 LoadBackups();
             }
             catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }

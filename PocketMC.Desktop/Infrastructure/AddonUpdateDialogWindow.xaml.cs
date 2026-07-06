@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -192,7 +192,7 @@ namespace PocketMC.Desktop.Infrastructure
                     await InstallAction(item, progress, _cts.Token);
                     item.ProgressValue = 100;
                     item.IsDownloading = false;
-                    item.StatusText = "âœ“ Updated successfully";
+                    item.StatusText = "\u2713 Updated successfully";
                     item.StatusForeground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1)); // Green
                     succeeded++;
                 }
@@ -206,7 +206,7 @@ namespace PocketMC.Desktop.Infrastructure
                 catch (Exception ex)
                 {
                     item.IsDownloading = false;
-                    item.StatusText = $"âœ• Failed: {ex.Message}";
+                    item.StatusText = $"\u2717 Failed: {ex.Message}";
                     item.StatusForeground = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8)); // Red
                     failed++;
                 }
