@@ -77,7 +77,7 @@ public class NeoForgeProvider : IServerSoftwareProvider
                 Id = kvp.Key,
                 Type = "release",
                 ReleaseTime = DateTime.MinValue,
-                LoaderVersions = kvp.Value.OrderByDescending(l => l.IsStable).ThenByDescending(l => l.Version).ToList()
+                LoaderVersions = kvp.Value.OrderByDescending(l => l.IsStable).ThenByDescending(l => l.Version, new VersionStringComparer()).ToList()
             });
         }
 
