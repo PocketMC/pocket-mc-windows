@@ -9,7 +9,6 @@
         <DockPanel LastChildFill="True">
 
         <Grid DockPanel.Dock="Top"
-              MaxWidth="980"
               HorizontalAlignment="Stretch"
               Margin="0,0,0,20">
             <Grid.ColumnDefinitions>
@@ -57,7 +56,21 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Grid Grid.Column="0" Margin="0,0,24,0" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Margin="0,0,24,0" VerticalAlignment="Center">
+                    <!-- EULA Checkbox -->
+                    <StackPanel x:Name="EulaPanel" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,4,0,4">
+                        <CheckBox x:Name="ChkAcceptEula" VerticalAlignment="Center" Margin="0,0,12,0" Checked="ChkAcceptEula_Changed" Unchecked="ChkAcceptEula_Changed"/>
+                        
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="I accept the Minecraft End User License Agreement" FontWeight="Medium" FontSize="13" Margin="0,0,0,2"/>
+                            <TextBlock FontSize="12" Opacity="0.8" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap">
+                                <Run Text="PocketMC will write eula.txt automatically. Review "/>
+                                <Hyperlink NavigateUri="https://aka.ms/MinecraftEULA" RequestNavigate="MinecraftEulaLink_RequestNavigate">Mojang's EULA</Hyperlink>
+                                <Run Text=" before creating the instance."/>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+
                     <!-- Error Callout -->
                     <Border x:Name="ErrorCallout"
                             HorizontalAlignment="Left"
@@ -117,7 +130,7 @@
                                      Margin="0,0,0,0"
                                      VerticalAlignment="Center"/>
                     </StackPanel>
-                </Grid>
+                </StackPanel>
 
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
@@ -141,58 +154,44 @@
 
         <Grid>
             <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="ContentLayoutRoot" MaxWidth="980" HorizontalAlignment="Stretch">
+                <StackPanel x:Name="ContentLayoutRoot" HorizontalAlignment="Stretch">
 
-            <ui:Card x:Name="FormCard"
-                     Padding="24"
-                     Margin="0">
-                <Grid x:Name="InputsPanel">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="Col0" Width="*" />
-                        <ColumnDefinition x:Name="Col1" Width="32" />
-                        <ColumnDefinition x:Name="Col2" Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition x:Name="Row0" Height="Auto" />
-                        <RowDefinition x:Name="Row1" Height="0" />
-                        <RowDefinition x:Name="Row2" Height="Auto" />
-                        <RowDefinition x:Name="Row3" Height="0" />
-                        <RowDefinition x:Name="Row4" Height="Auto" />
-                    </Grid.RowDefinitions>
+            <Grid x:Name="InputsPanel">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="Col0" Width="*"/>
+                    <ColumnDefinition x:Name="Col1" Width="0"/>
+                    <ColumnDefinition x:Name="Col2" Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition x:Name="Row0" Height="Auto"/>
+                    <RowDefinition x:Name="Row1" Height="0"/>
+                    <RowDefinition x:Name="Row2" Height="Auto"/>
+                    <RowDefinition x:Name="Row3" Height="0"/>
+                    <RowDefinition x:Name="Row4" Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                    <!-- Left Column: Basics & Compliance -->
-                    <StackPanel x:Name="LeftPanel" Grid.Column="0" Grid.Row="0">
-                        <TextBlock Text="Basics"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   Margin="0,0,0,16"/>
+                <!-- Left Column: Basics & Software -->
+                <ui:Card x:Name="LeftPanel" Grid.Column="0" Grid.Row="0" Margin="0,0,12,24" VerticalAlignment="Top" Padding="24">
+                    <StackPanel>
+                        <!-- Card Header -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                            <ui:SymbolIcon Symbol="Server24" FontSize="20" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ui:TextBlock Text="Server Identity &amp; Software" FontTypography="BodyStrong" FontSize="16" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        </StackPanel>
 
                         <!-- Server Name -->
-                        <TextBlock Text="Server Name"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:TextBox x:Name="TxtName"
-                                    PlaceholderText="My Cool Server"
-                                    Margin="0,0,0,16"/>
+                        <TextBlock Text="Server Name" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ui:TextBox x:Name="TxtName" PlaceholderText="My Cool Server" Margin="0,0,0,16"/>
 
                         <!-- Description -->
-                        <TextBlock Text="Description"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:TextBox x:Name="TxtDescription"
-                                    PlaceholderText="What this instance is for"
-                                    Margin="0,0,0,16"/>
+                        <TextBlock Text="Description" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ui:TextBox x:Name="TxtDescription" PlaceholderText="What this instance is for" Margin="0,0,0,24"/>
+                        
+                        <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,0,0,24"/>
 
                         <!-- Server Type -->
-                        <TextBlock Text="Server Type"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ComboBox x:Name="CmbServerType"
-                                  Margin="0,0,0,16"
-                                  HorizontalAlignment="Stretch"
-                                  MinHeight="40"
-                                  SelectionChanged="CmbServerType_SelectionChanged">
+                        <TextBlock Text="Server Type" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ComboBox x:Name="CmbServerType" Margin="0,0,0,16" HorizontalAlignment="Stretch" MinHeight="40" SelectionChanged="CmbServerType_SelectionChanged">
                             <ComboBoxItem Tag="Vanilla" Content="Vanilla" IsSelected="True"/>
                             <ComboBoxItem Tag="Paper" Content="Paper"/>
                             <ComboBoxItem Tag="Fabric" Content="Fabric"/>
@@ -203,110 +202,68 @@
                         </ComboBox>
 
                         <!-- Minecraft Version -->
-                        <TextBlock Text="Minecraft Version"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ComboBox x:Name="CmbVersion"
-                                  Margin="0,0,0,8"
-                                  HorizontalAlignment="Stretch"
-                                  MinHeight="40"
-                                  DisplayMemberPath="Id"
-                                  SelectionChanged="CmbVersion_SelectionChanged"/>
+                        <TextBlock Text="Minecraft Version" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ComboBox x:Name="CmbVersion" Margin="0,0,0,8" HorizontalAlignment="Stretch" MinHeight="40" DisplayMemberPath="Id" SelectionChanged="CmbVersion_SelectionChanged"/>
                         
-                        <TextBlock x:Name="TxtVersionState"
-                                   Text="Choose a server type to load available versions."
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,16"/>
+                        <TextBlock x:Name="TxtVersionState" Text="Choose a server type to load available versions." FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                         <!-- Snapshots & Warnings -->
-                        <CheckBox x:Name="ChkShowSnapshots"
-                                  Content="Show snapshots and pre-releases"
-                                  Checked="ChkShowSnapshots_Changed"
-                                  Unchecked="ChkShowSnapshots_Changed"
-                                  Margin="0,0,0,8"/>
+                        <CheckBox x:Name="ChkShowSnapshots" Content="Show snapshots and pre-releases" Checked="ChkShowSnapshots_Changed" Unchecked="ChkShowSnapshots_Changed" Margin="0,0,0,16"/>
 
                         <!-- Loader Version -->
-                        <StackPanel x:Name="LoaderVersionPanel" Visibility="Collapsed" Margin="0,8,0,16">
-                            <TextBlock Text="Loader Version"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                       Margin="0,0,0,6"/>
-                               <ComboBox x:Name="CmbLoaderVersion"
-                                      HorizontalAlignment="Stretch"
-                                      MinHeight="40"
-                                      DisplayMemberPath="Version"/>
+                        <StackPanel x:Name="LoaderVersionPanel" Visibility="Collapsed" Margin="0,0,0,16">
+                            <TextBlock Text="Loader Version" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,6"/>
+                            <ComboBox x:Name="CmbLoaderVersion" HorizontalAlignment="Stretch" MinHeight="40" DisplayMemberPath="Version"/>
                         </StackPanel>
 
                         <!-- Addon Panel (Cross-play) -->
-                        <StackPanel x:Name="AddonPanel" Margin="0,8,0,16">
-                            <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,8,0,16"/>
+                        <StackPanel x:Name="AddonPanel" Margin="0,0,0,0">
+                            <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,0,0,16"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <CheckBox x:Name="ChkEnableGeyser"
-                                          Grid.Column="0"
-                                          VerticalAlignment="Top"
-                                          Margin="0,2,12,0"/>
+                                <CheckBox x:Name="ChkEnableGeyser" Grid.Column="0" VerticalAlignment="Top" Margin="0,2,12,0"/>
                                 
                                 <StackPanel Grid.Column="1">
-                                    <TextBlock Text="Enable Cross-play (Geyser + Floodgate)"
-                                               FontWeight="Medium"
-                                               FontSize="13"
-                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                               Margin="0,0,0,4"/>
-                                    <TextBlock FontSize="12"
-                                               Opacity="0.8"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="Wrap">
+                                    <TextBlock Text="Enable Cross-play (Geyser + Floodgate)" FontWeight="Medium" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBlock FontSize="12" Opacity="0.8" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap">
                                         <Run Text="Allows Minecraft Bedrock players to join this Java server."/>
                                     </TextBlock>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
-
                     </StackPanel>
+                </ui:Card>
 
-                    <!-- Right Column: World & Gameplay Settings -->
-                    <StackPanel x:Name="RightPanel" Grid.Column="2" Grid.Row="0">
-                        <TextBlock Text="World &amp; Gameplay Settings"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   Margin="0,0,0,16"/>
+                <!-- Right Column: World & Gameplay Settings -->
+                <ui:Card x:Name="RightPanel" Grid.Column="2" Grid.Row="0" Margin="12,0,0,24" VerticalAlignment="Top" Padding="24">
+                    <StackPanel>
+                        <!-- Card Header -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                            <ui:SymbolIcon Symbol="Earth24" FontSize="20" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ui:TextBlock Text="World &amp; Gameplay Settings" FontTypography="BodyStrong" FontSize="16" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        </StackPanel>
 
                         <!-- World Seed -->
-                        <TextBlock Text="World Seed"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:TextBox x:Name="TxtSeed"
-                                    PlaceholderText="Leave empty for random seed"
-                                    Margin="0,0,0,16"/>
+                        <TextBlock Text="World Seed" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ui:TextBox x:Name="TxtSeed" PlaceholderText="Leave empty for random seed" Margin="0,0,0,16"/>
 
                         <!-- World Generation Type -->
-                        <TextBlock Text="World Generation Type"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ComboBox x:Name="CmbLevelType"
-                                  Margin="0,0,0,16"
-                                  HorizontalAlignment="Stretch"
-                                  MinHeight="40">
+                        <TextBlock Text="World Generation Type" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ComboBox x:Name="CmbLevelType" Margin="0,0,0,16" HorizontalAlignment="Stretch" MinHeight="40">
                             <ComboBoxItem Content="Default" IsSelected="True"/>
                             <ComboBoxItem Content="Flat"/>
                             <ComboBoxItem Content="LargeBiomes"/>
                             <ComboBoxItem Content="Amplified"/>
                         </ComboBox>
+                        
+                        <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,8,0,24"/>
 
                         <!-- Default Gamemode -->
-                        <TextBlock Text="Default Gamemode"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ComboBox x:Name="CmbGamemode"
-                                  Margin="0,0,0,16"
-                                  HorizontalAlignment="Stretch"
-                                  MinHeight="40">
+                        <TextBlock Text="Default Gamemode" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ComboBox x:Name="CmbGamemode" Margin="0,0,0,16" HorizontalAlignment="Stretch" MinHeight="40">
                             <ComboBoxItem Content="Survival" IsSelected="True"/>
                             <ComboBoxItem Content="Creative"/>
                             <ComboBoxItem Content="Adventure"/>
@@ -314,13 +271,8 @@
                         </ComboBox>
 
                         <!-- World Difficulty -->
-                        <TextBlock Text="World Difficulty"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ComboBox x:Name="CmbDifficulty"
-                                  Margin="0,0,0,16"
-                                  HorizontalAlignment="Stretch"
-                                  MinHeight="40">
+                        <TextBlock Text="World Difficulty" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ComboBox x:Name="CmbDifficulty" Margin="0,0,0,16" HorizontalAlignment="Stretch" MinHeight="40">
                             <ComboBoxItem Content="Peaceful"/>
                             <ComboBoxItem Content="Easy" IsSelected="True"/>
                             <ComboBoxItem Content="Normal"/>
@@ -328,76 +280,24 @@
                         </ComboBox>
 
                         <!-- Players Limit -->
-                        <TextBlock Text="Players Limit"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:TextBox x:Name="TxtMaxPlayers"
-                                    Text="20"
-                                    Margin="0,0,0,16"/>
+                        <TextBlock Text="Players Limit" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ui:TextBox x:Name="TxtMaxPlayers" Text="20" Margin="0,0,0,24"/>
+                        
+                        <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,0,0,24"/>
 
                         <!-- Custom World Upload -->
-                        <TextBlock Text="Custom World Upload (.zip / .mcworld)"
-                                   Margin="0,0,0,6"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="Custom World Upload (.zip / .mcworld)" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <ui:TextBox x:Name="TxtCustomWorldPath"
-                                        PlaceholderText="Optional (.zip / .mcworld)"
-                                        IsReadOnly="True"
-                                        Margin="0,0,8,0"/>
-                            <ui:Button x:Name="BtnBrowseWorld"
-                                       Grid.Column="1"
-                                       Content="Browse"
-                                       Appearance="Secondary"
-                                       MinHeight="40"
-                                       Click="BtnBrowseWorld_Click"/>
-                        </Grid>
-
-                    </StackPanel>
-
-                    <!-- Bottom Row: Compliance & EULA -->
-                    <StackPanel x:Name="CompliancePanel" Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="3">
-                        <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,8,0,16"/>
-                        <TextBlock Text="Compliance"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   Margin="0,0,0,12"/>
-
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="ChkAcceptEula"
-                                      Grid.Column="0"
-                                      VerticalAlignment="Top"
-                                      Margin="0,2,12,0"
-                                      Checked="ChkAcceptEula_Changed"
-                                      Unchecked="ChkAcceptEula_Changed"/>
-                            
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="I accept the Minecraft End User License Agreement"
-                                           FontWeight="Medium"
-                                           FontSize="13"
-                                           Margin="0,0,0,4"/>
-                                <TextBlock FontSize="12"
-                                           Opacity="0.8"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           TextWrapping="Wrap">
-                                    <Run Text="PocketMC will write eula.txt automatically. Review "/>
-                                    <Hyperlink NavigateUri="https://aka.ms/MinecraftEULA"
-                                               RequestNavigate="MinecraftEulaLink_RequestNavigate">Mojang's EULA</Hyperlink>
-                                    <Run Text=" before creating the instance."/>
-                                </TextBlock>
-                            </StackPanel>
+                            <ui:TextBox x:Name="TxtCustomWorldPath" PlaceholderText="Optional (.zip / .mcworld)" IsReadOnly="True" Margin="0,0,8,0"/>
+                            <ui:Button x:Name="BtnBrowseWorld" Grid.Column="1" Content="Browse" Appearance="Secondary" MinHeight="40" Click="BtnBrowseWorld_Click"/>
                         </Grid>
                     </StackPanel>
-                </Grid>
-            </ui:Card>
+                </ui:Card>
+            </Grid>
                 </StackPanel>
             </ScrollViewer>
         </Grid>

@@ -127,61 +127,57 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
         private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (InputsPanel == null || LeftPanel == null || RightPanel == null || CompliancePanel == null)
+            if (InputsPanel == null || LeftPanel == null || RightPanel == null)
                 return;
 
-            // When page width is narrow (e.g., less than 780 pixels), stack columns vertically
-            if (e.NewSize.Width < 780)
+            // When page width is narrow (e.g., less than 850 pixels), stack columns vertically
+            if (e.NewSize.Width < 850)
             {
                 // Stack vertically
                 Col0.Width = new GridLength(1, GridUnitType.Star);
                 Col1.Width = new GridLength(0);
                 Col2.Width = new GridLength(0);
 
-                Row1.Height = new GridLength(24); // spacing between Basics and World Settings
+                Row1.Height = new GridLength(0); 
                 Row2.Height = GridLength.Auto;
-                Row3.Height = new GridLength(24); // spacing before EULA
+                Row3.Height = new GridLength(0); 
                 Row4.Height = GridLength.Auto;
 
                 Grid.SetColumn(LeftPanel, 0);
                 Grid.SetRow(LeftPanel, 0);
                 Grid.SetColumnSpan(LeftPanel, 3);
+                LeftPanel.Margin = new Thickness(0, 0, 0, 24);
 
                 Grid.SetColumn(RightPanel, 0);
                 Grid.SetRow(RightPanel, 2);
                 Grid.SetColumnSpan(RightPanel, 3);
+                RightPanel.Margin = new Thickness(0, 0, 0, 24);
 
-                Grid.SetColumn(CompliancePanel, 0);
-                Grid.SetRow(CompliancePanel, 4);
-                Grid.SetColumnSpan(CompliancePanel, 3);
+
             }
             else
             {
                 // Side-by-side
                 Col0.Width = new GridLength(1, GridUnitType.Star);
-                Col1.Width = new GridLength(32);
+                Col1.Width = new GridLength(0);
                 Col2.Width = new GridLength(1, GridUnitType.Star);
 
                 Row1.Height = new GridLength(0);
                 Row2.Height = new GridLength(0);
-                Row3.Height = new GridLength(24); // spacing before EULA
+                Row3.Height = new GridLength(0); 
                 Row4.Height = GridLength.Auto;
 
                 Grid.SetColumn(LeftPanel, 0);
                 Grid.SetRow(LeftPanel, 0);
                 Grid.SetColumnSpan(LeftPanel, 1);
+                LeftPanel.Margin = new Thickness(0, 0, 12, 24);
 
                 Grid.SetColumn(RightPanel, 2);
                 Grid.SetRow(RightPanel, 0);
                 Grid.SetColumnSpan(RightPanel, 1);
-
-                Grid.SetColumn(CompliancePanel, 0);
-                Grid.SetRow(CompliancePanel, 4);
-                Grid.SetColumnSpan(CompliancePanel, 3);
+                RightPanel.Margin = new Thickness(12, 0, 0, 24);
             }
         }
-
-
 
         private async void CmbServerType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -635,7 +631,10 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             InputsPanel.IsEnabled = !isCreating;
             BtnCancel.IsEnabled = true;
             ProgressOverlay.Visibility = isCreating ? Visibility.Visible : Visibility.Collapsed;
-
+            if (EulaPanel != null)
+            {
+                EulaPanel.Visibility = isCreating ? Visibility.Collapsed : Visibility.Visible;
+            }
             if (isCreating)
             {
                 BtnCreate.Content = "Creating...";
