@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Windows;
 
@@ -59,7 +59,7 @@ namespace PocketMC.Desktop.Features.WhatsNew
 
         private void ConfigureWithFallback()
         {
-            TxtHeader.Text = $"ðŸŽ‰ Updated to v{_version}";
+            TxtHeader.Text = $"Updated to v{_version}";
             TxtSubheader.Text = string.Empty;
 
             TxtFallback.Text = "Pocket MC has been updated successfully.\nThank you for updating!";
