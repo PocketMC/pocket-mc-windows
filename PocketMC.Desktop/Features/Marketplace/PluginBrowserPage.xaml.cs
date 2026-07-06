@@ -229,10 +229,32 @@ namespace PocketMC.Desktop.Features.Marketplace
             await RefreshResultsAsync(append: true);
         }
 
+        private void ShowCurseForgeApiKeyDialog()
+        {
+            bool goToSettings = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
+                "CurseForge API Key Required",
+                "To search and install addons from CurseForge, you must configure a CurseForge API key in Settings.\n\n" +
+                "You can get a free API key at:\nhttps://console.curseforge.com/\n\n" +
+                "Would you like to open Settings to configure it now?");
+
+            if (goToSettings)
+            {
+                _navigationService.NavigateToShellPage(typeof(PocketMC.Desktop.Features.Setup.AppSettingsPage));
+            }
+        }
+
         private async void BtnInstall_Click(object sender, RoutedEventArgs e)
         {
             var btn = (System.Windows.Controls.Button)sender;
             var vm = (MarketplaceItemViewModel)btn.DataContext;
+
+            if (vm.Provider == "CurseForge" && (string.IsNullOrEmpty(vm.ProjectId) && string.IsNullOrEmpty(vm.Slug) || vm.Title.Contains("API Error") || vm.Title.Contains("Key Required")))
+            {
+                ShowCurseForgeApiKeyDialog();
+                vm.State = InstallState.NotInstalled;
+                return;
+            }
+
             vm.IsActionEnabled = false;
             vm.State = InstallState.Installing;
 
