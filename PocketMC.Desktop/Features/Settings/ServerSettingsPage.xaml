@@ -469,7 +469,7 @@
                                                 <TextBlock Text="{Binding VersionUpdates.ManualUntrackedAddonCount}" FontSize="24" FontWeight="SemiBold"/>
                                             </StackPanel>
                                             <StackPanel>
-                                                <TextBlock Text="Compatible" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
+                                                <TextBlock Text="Updates" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
                                                 <TextBlock Text="{Binding VersionUpdates.CompatibleUpdateCount}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
                                             </StackPanel>
                                             <StackPanel>
@@ -509,30 +509,33 @@
                                     </ui:CardExpander>
 
                                     <!-- 6. Update Status & Progress -->
-                                    <StackPanel Margin="0,16,0,32" HorizontalAlignment="Center"
-                                                Visibility="{Binding VersionUpdates.StatusText, Converter={StaticResource VisibleIfNotEmpty}}">
-                                        <TextBlock Text="{Binding VersionUpdates.StatusText}"
-                                                   Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
-                                                   FontSize="14"
-                                                   FontWeight="SemiBold"
-                                                   HorizontalAlignment="Center"
-                                                   TextWrapping="Wrap"/>
-                                        <StackPanel Margin="0,12,0,0"
-                                                    Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
-                                            <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
-                                                         Maximum="100"
-                                                         Height="6"
-                                                         Width="300"
-                                                         HorizontalAlignment="Center"
-                                                         IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
-                                            <TextBlock Text="{Binding VersionUpdates.ProgressDetailText}"
-                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                       FontSize="12"
-                                                       Margin="0,8,0,0"
-                                                       HorizontalAlignment="Center"
-                                                       TextWrapping="Wrap"/>
+                                    <ui:Card Margin="0,0,0,16" Padding="24" 
+                                             Visibility="{Binding VersionUpdates.StatusText, Converter={StaticResource VisibleIfNotEmpty}}">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                                <ui:SymbolIcon Symbol="ArrowSync24" FontSize="20" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                                <ui:TextBlock Text="{Binding VersionUpdates.StatusText}"
+                                                           FontTypography="BodyStrong"
+                                                           FontSize="16"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                            </StackPanel>
+
+                                            <StackPanel Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
+                                                <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             HorizontalAlignment="Stretch"
+                                                             IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
+                                                <TextBlock Text="{Binding VersionUpdates.ProgressDetailText}"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                           FontSize="12"
+                                                           Margin="0,8,0,0"
+                                                           HorizontalAlignment="Right"
+                                                           TextWrapping="Wrap"/>
+                                            </StackPanel>
                                         </StackPanel>
-                                    </StackPanel>
+                                    </ui:Card>
 
                                     <ItemsControl ItemsSource="{Binding VersionUpdates.Warnings}" Margin="0,0,0,16">
                                         <ItemsControl.ItemTemplate>
