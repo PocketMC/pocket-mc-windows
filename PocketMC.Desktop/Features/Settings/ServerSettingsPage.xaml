@@ -1422,7 +1422,8 @@
                                                 <StackPanel>
                                                     <TextBlock Text="Manual Action" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" HorizontalAlignment="Center"/>
                                                     <ui:Button Content="Create Backup Now" Command="{Binding Backups.CreateBackupCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Save20}"/>
-                                                    <ProgressBar IsIndeterminate="True" Height="2" Margin="0,4,0,0" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
+                                                    <TextBlock Text="{Binding Backups.BackupStatusText}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" HorizontalAlignment="Center" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
+                                                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding Backups.BackupProgressValue}" IsIndeterminate="{Binding Backups.IsBackupProgressIndeterminate}" Height="2" Margin="0,2,0,0" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                             </Border>
                                         </Grid>
