@@ -548,7 +548,13 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                                 <TextBlock Text="CurseForge API Key" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Obtain a key from CurseForge console if you hit rate limits." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap">
+                                    <Run Text="Obtain a free key from the "/>
+                                    <Hyperlink NavigateUri="https://console.curseforge.com/" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="CurseForge Console"/>
+                                    </Hyperlink>
+                                    <Run Text=" to access CurseForge addons."/>
+                                </TextBlock>
                                 <ui:TextBox x:Name="CurseForgeKeyInput" Margin="0,8,0,0" PlaceholderText="$2a$10$..."/>
                             </StackPanel>
                             <ui:Button Grid.Column="1" Content="Save Key" Appearance="Primary" VerticalAlignment="Bottom" Click="SaveApiKey_Click"/>
