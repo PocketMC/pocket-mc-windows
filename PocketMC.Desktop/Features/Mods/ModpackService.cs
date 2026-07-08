@@ -84,28 +84,36 @@ namespace PocketMC.Desktop.Features.Mods
             // 3. Resolve and Download Mods
             await ResolveModUrlsAsync(pack);
 
-            foreach (var mod in pack.Mods)
-            {
-                if (string.IsNullOrEmpty(mod.DownloadUrl) || mod.DownloadUrl.StartsWith("CURSEFORGE:")) continue;
-
-                string? dest = PathSafety.ValidateContainedPath(instancePath, mod.DestinationPath);
-                if (dest == null)
+            using var semaphore = new System.Threading.SemaphoreSlim(4);
+            var downloadTasks = pack.Mods
+                .Where(mod => !string.IsNullOrEmpty(mod.DownloadUrl) && !mod.DownloadUrl.StartsWith("CURSEFORGE:"))
+                .Select(async mod =>
                 {
-                    _logger.LogWarning("Blocked mod download with path-traversal destination: {Path}", mod.DestinationPath);
-                    continue;
-                }
+                    string? dest = PathSafety.ValidateContainedPath(instancePath, mod.DestinationPath);
+                    if (dest == null)
+                    {
+                        _logger.LogWarning("Blocked mod download with path-traversal destination: {Path}", mod.DestinationPath);
+                        return;
+                    }
 
-                Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
 
-                try
-                {
-                    await _downloader.DownloadFileAsync(mod.DownloadUrl, dest);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to download mod: {ModName} from {Url}", mod.Name, mod.DownloadUrl);
-                }
-            }
+                    await semaphore.WaitAsync().ConfigureAwait(false);
+                    try
+                    {
+                        await _downloader.DownloadFileAsync(mod.DownloadUrl, dest).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to download mod: {ModName} from {Url}", mod.Name, mod.DownloadUrl);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                });
+
+            await Task.WhenAll(downloadTasks).ConfigureAwait(false);
 
             // 4. Extract safe overrides only.
             pack.OverrideExtractionResult = await ExtractOverridesAsync(zipPath, instancePath);

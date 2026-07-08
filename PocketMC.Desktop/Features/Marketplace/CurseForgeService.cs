@@ -326,6 +326,44 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
+        public async Task<MarketplaceVersion?> GetVersionByFingerprintAsync(long fingerprint)
+        {
+            try
+            {
+                string? apiKey = GetActiveApiKey();
+                if (string.IsNullOrEmpty(apiKey)) return null;
+
+                string url = $"{ApiBase}/fingerprints";
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = JsonContent.Create(new { fingerprints = new[] { fingerprint } })
+                };
+                request.Headers.Add("x-api-key", apiKey);
+
+                var httpResponse = await _httpClient.SendAsync(request).ConfigureAwait(false);
+                if (!httpResponse.IsSuccessStatusCode) return null;
+
+                var rootNode = await httpResponse.Content.ReadFromJsonAsync<JsonNode>().ConfigureAwait(false);
+                var exactMatches = rootNode?["data"]?["exactMatches"]?.AsArray();
+                if (exactMatches == null || exactMatches.Count == 0) return null;
+
+                var firstMatch = exactMatches[0];
+                var fileNode = firstMatch?["file"];
+                if (fileNode == null) return null;
+
+                string modId = fileNode["modId"]?.ToString() ?? "";
+                if (string.IsNullOrEmpty(modId)) return null;
+
+                var projectInfo = await GetProjectInfoAsync(modId).ConfigureAwait(false);
+                return MapToMarketplaceVersion(fileNode, projectInfo);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
         public async Task<MarketplaceProjectInfo?> GetProjectInfoAsync(string projectId)
         {
             try
