@@ -208,9 +208,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             var entriesToRemove = new List<AddonManifestEntry>();
             foreach (var entry in manifest.Entries)
             {
-                // Better dynamic path detection based on suffix
-                string subDir = (entry.FileName.EndsWith(".phar") || entry.FileName.EndsWith(".php")) ? "plugins" :
-                                (entry.FileName.EndsWith(".mcpack") || entry.FileName.EndsWith(".mcaddon")) ? "behavior_packs" : "mods";
+                string subDir = compat.PrimaryAddonSubDir;
 
                 string? filePath = ResolveAddonFilePath(serverDir, subDir, entry.FileName);
                 if (filePath == null || !File.Exists(filePath))
