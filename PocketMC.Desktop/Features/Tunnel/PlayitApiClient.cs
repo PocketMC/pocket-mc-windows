@@ -519,21 +519,21 @@ namespace PocketMC.Desktop.Features.Tunnel
             return await CreateTunnelAsync(tunnelName, tunnelType, localPort, "global", enabled: true);
         }
 
-        public async Task<TunnelCreateResult> CreateHttpTunnelAsync(string tunnelName, int localPort)
+        public async Task<TunnelCreateResult> CreateHttpTunnelAsync(string tunnelName, int localPort, string? agentId = null)
         {
-            return await CreateTunnelAsync(tunnelName, "https", localPort, "global", enabled: true);
+            return await CreateTunnelAsync(tunnelName, "https", localPort, "global", enabled: true, agentId: agentId);
         }
 
         /// <summary>
         /// Creates a PlayIt tunnel with the specified region and enabled state via v1/tunnels/create.
         /// </summary>
-        public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort, string region, bool enabled)
+        public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort, string region, bool enabled, string? agentId = null)
         {
             var payload = new
             {
                 name = tunnelName,
                 protocol = new { type = "tunnel-type", details = tunnelType },
-                origin = BuildAgentOrigin(localPort),
+                origin = BuildAgentOrigin(localPort, agentId),
                 endpoint = BuildRegionEndpoint(region),
                 enabled
             };
@@ -614,14 +614,14 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
         }
 
-        private static object BuildAgentOrigin(int localPort)
+        private static object BuildAgentOrigin(int localPort, string? agentId = null)
         {
             return new
             {
                 type = "agent",
                 data = new
                 {
-                    agent_id = (string?)null,
+                    agent_id = agentId,
                     config = new
                     {
                         fields = new[]

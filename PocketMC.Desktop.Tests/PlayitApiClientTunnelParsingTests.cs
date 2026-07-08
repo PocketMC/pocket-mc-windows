@@ -161,6 +161,28 @@ public sealed class PlayitApiClientTunnelParsingTests
         Assert.Contains("\"details\":\"https\"", requestBody);
         Assert.Contains("\"local_port\"", requestBody);
         Assert.Contains("\"25580\"", requestBody);
+        Assert.Contains("\"agent_id\":null", requestBody);
+    }
+
+    [Fact]
+    public async Task CreateHttpTunnelAsync_SendsAgentIdWhenProvided()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+        string? requestBody = null;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(request =>
+        {
+            using Stream stream = request.Content!.ReadAsStream();
+            using var reader = new StreamReader(stream);
+            requestBody = reader.ReadToEnd();
+            return JsonResponse("""{"status":"success","data":{"id":"remote-http"}}""");
+        });
+
+        TunnelCreateResult result = await apiClient.CreateHttpTunnelAsync("pocketmc-remote", 25580, agentId: "my-agent-id-123");
+
+        Assert.True(result.Success);
+        Assert.Equal("remote-http", result.TunnelId);
+        Assert.Contains("\"agent_id\":\"my-agent-id-123\"", requestBody);
     }
 
     [Fact]

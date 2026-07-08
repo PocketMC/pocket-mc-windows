@@ -71,7 +71,7 @@ public sealed class PlayitHttpsTunnelProvider : IRemoteTunnelProvider
 
             if (tunnel == null)
             {
-                TunnelCreateResult createResult = await _apiClient.CreateHttpTunnelAsync(DedicatedTunnelName, request.LocalPort);
+                TunnelCreateResult createResult = await _apiClient.CreateHttpTunnelAsync(DedicatedTunnelName, request.LocalPort, agentId: _apiClient.GetAgentId());
                 if (!createResult.Success)
                 {
                     string message = createResult.RequiresPlayitPremium
