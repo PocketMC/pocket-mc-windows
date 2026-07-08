@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -159,9 +160,39 @@ public sealed class PlayitApiClientTunnelParsingTests
         Assert.True(result.Success);
         Assert.Equal("remote-http", result.TunnelId);
         Assert.Contains("\"details\":\"https\"", requestBody);
-        Assert.Contains("\"local_port\"", requestBody);
+        Assert.Contains("\"http_port\"", requestBody);
+        Assert.Contains("\"https_port\"", requestBody);
         Assert.Contains("\"25580\"", requestBody);
     }
+
+    [Fact]
+    public async Task CreateHttpTunnelAsync_SendsAgentIdWhenPresent()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        workspace.WritePlayitSecret();
+
+        workspace.AppState.Settings.PlayitPartnerConnection = new PlayitPartnerConnection
+        {
+            AgentId = "test-agent-uuid-1234",
+            AgentSecretKey = "test-secret"
+        };
+
+        string? requestBody = null;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(request =>
+        {
+            using Stream stream = request.Content!.ReadAsStream();
+            using var reader = new StreamReader(stream);
+            requestBody = reader.ReadToEnd();
+            return JsonResponse("""{"status":"success","data":{"id":"remote-http"}}""");
+        });
+
+        TunnelCreateResult result = await apiClient.CreateHttpTunnelAsync("pocketmc-remote", 25580);
+
+        Assert.True(result.Success);
+        Assert.Contains("\"agent_id\":\"test-agent-uuid-1234\"", requestBody);
+    }
+
+
 
     [Fact]
     public async Task CreateHttpTunnelAsync_ReportsWhenPlayitPremiumIsRequired()
