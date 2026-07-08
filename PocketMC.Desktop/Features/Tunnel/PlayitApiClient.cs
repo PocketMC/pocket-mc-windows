@@ -393,6 +393,16 @@ namespace PocketMC.Desktop.Features.Tunnel
                         !string.IsNullOrWhiteSpace(tunnel.AgentId));
                 }
 
+                if (string.IsNullOrWhiteSpace(GetAgentId()))
+                {
+                    string? foundAgentId = normalizedTunnels
+                        .FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.AgentId))?.AgentId;
+                    if (!string.IsNullOrWhiteSpace(foundAgentId))
+                    {
+                        SaveAgentId(foundAgentId);
+                    }
+                }
+
                 return new TunnelListResult
                 {
                     Success = true,
@@ -519,21 +529,21 @@ namespace PocketMC.Desktop.Features.Tunnel
             return await CreateTunnelAsync(tunnelName, tunnelType, localPort, "global", enabled: true);
         }
 
-        public async Task<TunnelCreateResult> CreateHttpTunnelAsync(string tunnelName, int localPort, string? agentId = null)
+        public async Task<TunnelCreateResult> CreateHttpTunnelAsync(string tunnelName, int localPort)
         {
-            return await CreateTunnelAsync(tunnelName, "https", localPort, "global", enabled: true, agentId: agentId);
+            return await CreateTunnelAsync(tunnelName, "https", localPort, "global", enabled: true);
         }
 
         /// <summary>
         /// Creates a PlayIt tunnel with the specified region and enabled state via v1/tunnels/create.
         /// </summary>
-        public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort, string region, bool enabled, string? agentId = null)
+        public async Task<TunnelCreateResult> CreateTunnelAsync(string tunnelName, string tunnelType, int localPort, string region, bool enabled)
         {
             var payload = new
             {
                 name = tunnelName,
                 protocol = new { type = "tunnel-type", details = tunnelType },
-                origin = BuildAgentOrigin(localPort, agentId),
+                origin = BuildAgentOrigin(localPort, tunnelType),
                 endpoint = BuildRegionEndpoint(region),
                 enabled
             };
@@ -614,8 +624,31 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
         }
 
-        private static object BuildAgentOrigin(int localPort, string? agentId = null)
+        private object BuildAgentOrigin(int localPort, string tunnelType)
         {
+            string? agentId = GetAgentId();
+            if (string.IsNullOrWhiteSpace(agentId))
+            {
+                _logger.LogWarning("Creating Playit tunnel but Agent ID is missing from settings.");
+            }
+
+            object[] fields;
+            if (IsHttpTunnelType(tunnelType))
+            {
+                fields = new[]
+                {
+                    new { name = "http_port", value = localPort.ToString() },
+                    new { name = "https_port", value = localPort.ToString() }
+                };
+            }
+            else
+            {
+                fields = new[]
+                {
+                    new { name = "local_port", value = localPort.ToString() }
+                };
+            }
+
             return new
             {
                 type = "agent",
@@ -624,10 +657,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                     agent_id = agentId,
                     config = new
                     {
-                        fields = new[]
-                        {
-                            new { name = "local_port", value = localPort.ToString() }
-                        }
+                        fields
                     }
                 }
             };
@@ -1005,5 +1035,38 @@ namespace PocketMC.Desktop.Features.Tunnel
         /// <summary>Updates the local address / port / enabled state. Path: /tunnels/update.</summary>
         public Task<TunnelActionResult> UpdateTunnelAsync(string tunnelId, string localIp, int? localPort, string? agentId, bool enabled)
             => PostActionAsync("/tunnels/update", new { tunnel_id = tunnelId, local_ip = localIp, local_port = localPort, agent_id = agentId, enabled });
+
+        private void SaveAgentId(string agentId)
+        {
+            if (string.IsNullOrWhiteSpace(agentId))
+            {
+                return;
+            }
+
+            PlayitPartnerConnection? connection = GetPartnerConnection();
+            if (connection == null)
+            {
+                connection = new PlayitPartnerConnection { AgentId = agentId };
+                _applicationState.Settings.PlayitPartnerConnection = connection;
+            }
+            else
+            {
+                if (string.Equals(connection.AgentId, agentId, StringComparison.Ordinal))
+                {
+                    return;
+                }
+                connection.AgentId = agentId;
+            }
+
+            try
+            {
+                _settingsManager.Save(_applicationState.Settings);
+                _logger.LogInformation("Saved recovered Playit Agent ID: {AgentId}", agentId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to save the PlayIt Agent ID.");
+            }
+        }
     }
 }
