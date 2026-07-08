@@ -913,18 +913,7 @@
                                                                ToolTip="Check all installed plugins for updates"/>
                                                 </StackPanel>
                                             </Grid>
-                                            <TextBlock Text="{Binding Addons.UpdateAllStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,8,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+
                                         </StackPanel>
                                     </ui:Card>
                                     <ItemsControl ItemsSource="{Binding Addons.Plugins}" Margin="0,0,0,24">
@@ -987,10 +976,8 @@
                                                                 </Border>
                                                             </StackPanel>
                                                             
-                                                            <!-- Subtitle: Filename · Loader · Version · Source · Side -->
+                                                            <!-- Subtitle: Loader · Version · Source · Side -->
                                                             <WrapPanel Margin="0,2,0,0" VerticalAlignment="Center">
-                                                                <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                                                 <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                                                     <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                                 </Border>
@@ -1014,9 +1001,7 @@
                                                             <TextBlock Visibility="{Binding HasWarnings, Converter={StaticResource VisibleIfTrue}}"
                                                                        Text="{Binding WarningText}" FontSize="11" Foreground="#F38BA8" Margin="0,4,0,0" TextWrapping="Wrap"/>
                                                             
-                                                            <!-- Update status -->
-                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0"
-                                                                       Visibility="{Binding UpdateStatusText, Converter={StaticResource VisibleIfNotEmpty}}"/>
+
                                                         </StackPanel>
                                                         
                                                         <!-- Action buttons -->
@@ -1105,18 +1090,7 @@
                                                                Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                             </Grid>
-                                            <TextBlock Text="{Binding Addons.UpdateAllStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,8,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+
                                         </StackPanel>
                                     </ui:Card>
                                     <ItemsControl ItemsSource="{Binding Addons.Mods}"
@@ -1232,9 +1206,7 @@
                                                                 </StackPanel>
                                                             </Border>
 
-                                                            <!-- Update status -->
-                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0"
-                                                                       Visibility="{Binding UpdateStatusText, Converter={StaticResource VisibleIfNotEmpty}}"/>
+
                                                         </StackPanel>
 
                                                         <!-- Actions -->

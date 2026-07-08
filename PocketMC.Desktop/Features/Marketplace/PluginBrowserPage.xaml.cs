@@ -101,7 +101,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 if (_serverDir != null)
                 {
-                    await _manifestService.SyncManifestAsync(_serverDir, _modrinth, _compat);
+                    // Run sync in the background so it doesn't block the UI loading
+                    _ = Task.Run(() => _manifestService.SyncManifestAsync(_serverDir, _modrinth, _compat));
                 }
                 await RefreshResultsAsync();
             };
@@ -302,19 +303,40 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
 
                 // --- 3. Batch Installation ---
-                foreach (var item in resolved.Where(d => d.IsSelected))
+                var itemsToInstall = resolved.Where(d => d.IsSelected).Select(item => new AddonInstallRowViewModel
                 {
+                    ResolvedItem = item
+                }).ToList();
+
+                var installDialog = new AddonInstallDialogWindow();
+                installDialog.SetItems(itemsToInstall);
+                installDialog.InstallAction = async (row, progress, ct) =>
+                {
+                    var item = row.ResolvedItem;
                     bool isRoot = item.ProjectId.Equals(projectId, StringComparison.OrdinalIgnoreCase);
                     string? title = isRoot ? vm.Title : item.ProjectTitle;
                     string? icon = isRoot ? vm.IconUrl : null;
                     string? disp = isRoot ? vm.Title : item.ProjectTitle;
 
-                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp, item.ClientSide, item.ServerSide);
-                }
+                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp, item.ClientSide, item.ServerSide, progress, ct);
+                };
 
-                vm.State = InstallState.Installed;
-                vm.IsActionEnabled = true;
-                _onCompleted?.Invoke();
+                installDialog.OnAllInstallsCompleted = () =>
+                {
+                    if (installDialog.AnyInstalled)
+                    {
+                        vm.State = InstallState.Installed;
+                        _onCompleted?.Invoke();
+                    }
+                    else
+                    {
+                        vm.State = InstallState.NotInstalled;
+                    }
+                    vm.IsActionEnabled = true;
+                };
+
+                installDialog.Owner = Window.GetWindow(this);
+                installDialog.ShowDialog();
             }
             catch (Exception ex)
             {
@@ -351,7 +373,9 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? iconUrl = null,
             string? displayName = null,
             string? clientSide = null,
-            string? serverSide = null)
+            string? serverSide = null,
+            IProgress<DownloadProgress>? progress = null,
+            CancellationToken cancellationToken = default)
         {
             if (_serverDir == null && !_isModpackMode) return;
             string safeFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(fileName, _compat, _isModpackMode);
@@ -371,7 +395,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     ?? throw new InvalidOperationException($"Invalid marketplace add-on file name '{safeFileName}'.");
             }
 
-            await _fileInstaller.InstallAsync(url, destFile, hash, hashType);
+            await _fileInstaller.InstallAsync(url, destFile, hash, hashType, progress, cancellationToken);
             IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile, isPlugin: _projectType.Contains("plugin"));
             if (metadataWarnings.Count > 0)
             {

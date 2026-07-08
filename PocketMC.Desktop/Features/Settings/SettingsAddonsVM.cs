@@ -148,12 +148,7 @@ namespace PocketMC.Desktop.Features.Settings
             set => SetProperty(ref _isUpdatingAll, value);
         }
 
-        private string _updateAllStatusText = "";
-        public string UpdateAllStatusText
-        {
-            get => _updateAllStatusText;
-            set => SetProperty(ref _updateAllStatusText, value);
-        }
+
 
         public SettingsAddonsVM(
             InstanceMetadata metadata,
@@ -492,9 +487,46 @@ namespace PocketMC.Desktop.Features.Settings
                 // Step 5: Copy file
                 var dir = System.IO.Path.Combine(_serverDir, "plugins");
                 Directory.CreateDirectory(dir);
-                await FileUtils.CopyFileAsync(f, System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f)), true);
+                string targetFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f));
+                await FileUtils.CopyFileAsync(f, targetFile, true);
+                
+                await TryLinkModrinthByHashAsync(targetFile);
             }
             LoadAddons(); _onAddonChanged();
+        }
+
+        private async Task TryLinkModrinthByHashAsync(string filePath)
+        {
+            try
+            {
+                using var sha1 = System.Security.Cryptography.SHA1.Create();
+                using var stream = File.OpenRead(filePath);
+                var hashBytes = await sha1.ComputeHashAsync(stream);
+                var hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+
+                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Desktop.Features.Marketplace.ModrinthService)) as PocketMC.Desktop.Features.Marketplace.ModrinthService;
+                if (modrinthService == null) return;
+
+                var match = await modrinthService.GetVersionsByHashesAsync(new[] { hash }, "sha1");
+                if (match != null && match.TryGetValue(hash, out var version) && !string.IsNullOrEmpty(version.ProjectId))
+                {
+                    var projectInfo = await modrinthService.GetProjectInfoAsync(version.ProjectId);
+                    await _manifestService.RegisterInstallAsync(
+                        _serverDir,
+                        "Modrinth",
+                        version.ProjectId,
+                        version.Id,
+                        System.IO.Path.GetFileName(filePath),
+                        projectInfo?.Title ?? System.IO.Path.GetFileNameWithoutExtension(filePath),
+                        projectInfo?.IconUrl,
+                        projectInfo?.Title ?? System.IO.Path.GetFileNameWithoutExtension(filePath)
+                    );
+                }
+            }
+            catch
+            {
+                // Gracefully fallback to manual on any error (hashing, API, network, etc.)
+            }
         }
 
         private static bool IsApiVersionIncompatible(string? pluginApiVersion, string? serverMinecraftVersion)
@@ -671,7 +703,10 @@ namespace PocketMC.Desktop.Features.Settings
 
                 var dir = System.IO.Path.Combine(_serverDir, "mods");
                 Directory.CreateDirectory(dir);
-                await FileUtils.CopyFileAsync(f, System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f)), true);
+                string targetFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f));
+                await FileUtils.CopyFileAsync(f, targetFile, true);
+                
+                await TryLinkModrinthByHashAsync(targetFile);
             }
             LoadAddons(); _onAddonChanged();
         }
@@ -772,7 +807,6 @@ namespace PocketMC.Desktop.Features.Settings
                 vm.LoaderTypeForUpdate,
                 vm.Version,
                 vm.Name,
-                s => vm.UpdateStatusText = s,
                 b => vm.IsUpdating = b,
                 status => vm.UpdateStatus = status,
                 info => vm.UpdateInfo = info,
@@ -790,7 +824,6 @@ namespace PocketMC.Desktop.Features.Settings
                 vm.LoaderType,
                 vm.Version,
                 vm.Name,
-                s => vm.UpdateStatusText = s,
                 b => vm.IsUpdating = b,
                 status => vm.UpdateStatus = status,
                 info => vm.UpdateInfo = info,
@@ -809,15 +842,12 @@ namespace PocketMC.Desktop.Features.Settings
             string loaderType,
             string? version,
             string displayName,
-            Action<string> setStatus,
             Action<bool> setUpdating,
             Action<AddonUpdateStatus> setUpdateStatus,
             Action<AddonUpdateInfo?> setUpdateInfo,
             AddonManifestEntry? manifestEntry = null)
         {
             setUpdating(true);
-            setStatus("Checking for updates...");
-            setUpdateStatus(AddonUpdateStatus.Checking);
 
             try
             {
@@ -838,10 +868,37 @@ namespace PocketMC.Desktop.Features.Settings
                     Warnings = Array.Empty<string>()
                 };
 
-                AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, inventoryItem);
-                setUpdateStatus(result.Status);
-                setUpdateInfo(result.UpdateInfo);
-                setStatus(FormatPassiveUpdateStatus(result, displayName));
+                AddonUpdateCheckResultModel result = null!;
+
+                var checkViewModel = new AddonUpdateCheckRowViewModel
+                {
+                    DisplayName = displayName,
+                    OriginalVM = new object(), // Not used for single check
+                    CheckAction = async () =>
+                    {
+                        result = await _updateCheckService.CheckAsync(_metadata, _serverDir, inventoryItem);
+                        setUpdateStatus(result.Status);
+                        setUpdateInfo(result.UpdateInfo);
+                        return result.Status == AddonUpdateStatus.UpdateAvailable;
+                    }
+                };
+
+                var checkDialog = new AddonUpdateCheckDialogWindow();
+                checkDialog.SetItems(new[] { checkViewModel });
+                checkDialog.Owner = System.Windows.Application.Current.MainWindow;
+                checkDialog.ShowDialog();
+
+                if (!checkDialog.ProceedToUpdate)
+                {
+                    setUpdating(false);
+                    
+                    if (!checkDialog.UpdatesFound && !checkDialog.IsCancelled)
+                    {
+                        _dialogService.ShowMessage("Up to Date", $"{displayName} is already up to date.", DialogType.Information);
+                    }
+                    
+                    return; // User cancelled or closed the dialog without proceeding, or it was auto-closed due to being up-to-date
+                }
 
                 // Prompt user to install when an update is found
                 if (result.Status == AddonUpdateStatus.UpdateAvailable && result.UpdateInfo != null && manifestEntry != null)
@@ -855,7 +912,6 @@ namespace PocketMC.Desktop.Features.Settings
                     var dialogResult = await _dialogService.ShowDialogAsync("Update Available", message, DialogType.Question);
                     if (dialogResult == DialogResult.Yes)
                     {
-                        setStatus("Installing update...");
                         setUpdating(true);
                         try
                         {
@@ -865,7 +921,6 @@ namespace PocketMC.Desktop.Features.Settings
                                 manifestEntry.Provider,
                                 manifestEntry.ProjectId,
                                 displayName,
-                                setStatus,
                                 setUpdateStatus);
                             _dialogService.ShowMessage("Update Installed",
                                 $"'{displayName}' has been updated to {result.UpdateInfo.LatestVersionName ?? result.UpdateInfo.LatestVersionId ?? "the latest version"}.",
@@ -885,7 +940,6 @@ namespace PocketMC.Desktop.Features.Settings
             catch (Exception ex)
             {
                 setUpdateStatus(AddonUpdateStatus.ProviderError);
-                setStatus("Update check failed");
                 _dialogService.ShowMessage("Update Check Failed", ex.Message, DialogType.Error);
             }
             finally
@@ -904,7 +958,6 @@ namespace PocketMC.Desktop.Features.Settings
             string provider,
             string projectId,
             string displayName,
-            Action<string> setStatus,
             Action<AddonUpdateStatus> setUpdateStatus,
             IProgress<DownloadProgress>? progress = null,
             CancellationToken cancellationToken = default)
@@ -936,17 +989,14 @@ namespace PocketMC.Desktop.Features.Settings
                     cancellationToken);
 
                 setUpdateStatus(AddonUpdateStatus.UpToDate);
-                setStatus($"Updated to {updateInfo.LatestVersionName ?? updateInfo.LatestVersionId ?? "latest"}");
             }
             catch (OperationCanceledException)
             {
-                setStatus("Update cancelled");
                 throw;
             }
             catch (Exception)
             {
                 setUpdateStatus(AddonUpdateStatus.ProviderError);
-                setStatus("Update install failed");
                 throw;
             }
         }
@@ -1026,7 +1076,6 @@ namespace PocketMC.Desktop.Features.Settings
         private async Task UpdateAllAddonsAsync(bool isPlugins)
         {
             IsUpdatingAll = true;
-            UpdateAllStatusText = "Scanning for updates...";
 
             try
             {
@@ -1040,49 +1089,34 @@ namespace PocketMC.Desktop.Features.Settings
 
                 if (trackedItems.Count == 0)
                 {
-                    UpdateAllStatusText = "";
                     _dialogService.ShowMessage("No Tracked Addons",
                         "No addons were installed from a marketplace. Update checking is only available for marketplace-installed items.",
                         DialogType.Information);
                     return;
                 }
 
-                int available = 0;
-                int failed = 0;
-                int checked_count = 0;
-
-                foreach (var item in trackedItems)
+                var checkViewModels = trackedItems.Select(item => new AddonUpdateCheckRowViewModel
                 {
-                    checked_count++;
-                    UpdateAllStatusText = $"Checking {checked_count}/{trackedItems.Count}: {item.Name}...";
-                    SetItemStatus(item.VM, "Checking...", true);
-
-                    AddonUpdateCheckResultModel result = item.VM switch
+                    DisplayName = item.Name,
+                    OriginalVM = item.VM,
+                    CheckAction = async () =>
                     {
-                        PluginItemViewModel plugin => await CheckPassiveUpdateAsync(plugin),
-                        ModItemViewModel mod => await CheckPassiveUpdateAsync(mod),
-                        _ => new AddonUpdateCheckResultModel { Status = AddonUpdateStatus.Unknown }
-                    };
-
-                    if (result.Status == AddonUpdateStatus.UpdateAvailable)
-                    {
-                        available++;
+                        AddonUpdateCheckResultModel result = item.VM switch
+                        {
+                            PluginItemViewModel plugin => await CheckPassiveUpdateAsync(plugin),
+                            ModItemViewModel mod => await CheckPassiveUpdateAsync(mod),
+                            _ => new AddonUpdateCheckResultModel { Status = AddonUpdateStatus.Unknown }
+                        };
+                        return result.Status == AddonUpdateStatus.UpdateAvailable;
                     }
-                    else if (result.Status == AddonUpdateStatus.ProviderError ||
-                             result.Status == AddonUpdateStatus.UnsupportedProvider)
-                    {
-                        failed++;
-                    }
+                }).ToList();
 
-                    SetItemStatus(item.VM, FormatPassiveUpdateStatus(result, item.Name), false);
-                }
+                var checkDialog = new AddonUpdateCheckDialogWindow();
+                checkDialog.SetItems(checkViewModels);
+                checkDialog.Owner = System.Windows.Application.Current.MainWindow;
+                checkDialog.ShowDialog();
 
-                UpdateAllStatusText = failed > 0
-                    ? $"{available} update(s) available, {failed} check(s) failed"
-                    : $"{available} update(s) available";
-
-                // Prompt user to batch-install all available updates via the update dialog
-                if (available > 0)
+                if (checkDialog.ProceedToUpdate)
                 {
                     var updatableItems = trackedItems
                         .Where(t => t.VM switch
@@ -1098,10 +1132,13 @@ namespace PocketMC.Desktop.Features.Settings
                         ShowUpdateDialog(updatableItems);
                     }
                 }
+                else if (!checkDialog.UpdatesFound && !checkDialog.IsCancelled)
+                {
+                    _dialogService.ShowMessage("Up to Date", "All checked addons are already up to date.", DialogType.Information);
+                }
             }
             catch (Exception ex)
             {
-                UpdateAllStatusText = "Update checks failed";
                 _dialogService.ShowMessage("Update Checks Failed", ex.Message, DialogType.Error);
             }
             finally
@@ -1152,7 +1189,6 @@ namespace PocketMC.Desktop.Features.Settings
                     row.Provider,
                     row.ProjectId,
                     row.DisplayName,
-                    s => { }, // status is handled by the dialog
                     status =>
                     {
                         // Update the original VM's status
@@ -1169,9 +1205,6 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 LoadAddons();
                 _onAddonChanged();
-                UpdateAllStatusText = dialog.FailedCount > 0
-                    ? $"{dialog.InstalledCount} updated, {dialog.FailedCount} failed"
-                    : $"All {dialog.InstalledCount} addon(s) updated successfully";
             };
 
             try
@@ -1187,29 +1220,27 @@ namespace PocketMC.Desktop.Features.Settings
             dialog.ShowDialog();
         }
 
-        private static void SetItemStatus(object vm, string status, bool isUpdating)
+        private static void SetItemIsUpdating(object vm, bool isUpdating)
         {
             if (vm is PluginItemViewModel pvm)
             {
-                pvm.UpdateStatusText = status;
                 pvm.IsUpdating = isUpdating;
             }
             else if (vm is ModItemViewModel mvm)
             {
-                mvm.UpdateStatusText = status;
                 mvm.IsUpdating = isUpdating;
             }
         }
 
-        private void ClearAllItemStatus(bool isPlugins)
+        private void ClearAllItemIsUpdating(bool isPlugins)
         {
             if (isPlugins)
             {
-                foreach (var p in Plugins) { p.UpdateStatusText = ""; p.IsUpdating = false; }
+                foreach (var p in Plugins) { p.IsUpdating = false; }
             }
             else
             {
-                foreach (var m in Mods) { m.UpdateStatusText = ""; m.IsUpdating = false; }
+                foreach (var m in Mods) { m.IsUpdating = false; }
             }
         }
 
@@ -1400,7 +1431,6 @@ namespace PocketMC.Desktop.Features.Settings
     public class PluginItemViewModel : Core.Mvvm.ViewModelBase
     {
         private bool _isUpdating;
-        private string _updateStatusText = "";
 
         public string Name { get; set; } = "";
         public string Path { get; set; } = "";
@@ -1418,11 +1448,7 @@ namespace PocketMC.Desktop.Features.Settings
             set => SetProperty(ref _isUpdating, value);
         }
 
-        public string UpdateStatusText
-        {
-            get => _updateStatusText;
-            set => SetProperty(ref _updateStatusText, value);
-        }
+
 
         /// <summary>True when this addon is tracked in the manifest (marketplace-installed).</summary>
         public bool IsTracked => ManifestEntry != null;
@@ -1466,7 +1492,6 @@ namespace PocketMC.Desktop.Features.Settings
     public class ModItemViewModel : Core.Mvvm.ViewModelBase
     {
         private bool _isUpdating;
-        private string _updateStatusText = "";
 
         public string Name { get; set; } = "";
         public string Path { get; set; } = "";
@@ -1484,11 +1509,7 @@ namespace PocketMC.Desktop.Features.Settings
             set => SetProperty(ref _isUpdating, value);
         }
 
-        public string UpdateStatusText
-        {
-            get => _updateStatusText;
-            set => SetProperty(ref _updateStatusText, value);
-        }
+
 
         /// <summary>True when this addon is tracked in the manifest (marketplace-installed).</summary>
         public bool IsTracked => ManifestEntry != null;

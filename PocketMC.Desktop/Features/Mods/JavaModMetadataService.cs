@@ -50,7 +50,6 @@ namespace PocketMC.Desktop.Features.Mods
 
                 var metadata = ScanJarInternal(fi);
                 metadata.FileName = fi.Name;
-                ApplyFilenameHeuristics(fi.Name, metadata);
                 _cache[key] = metadata;
                 return metadata;
             }
@@ -66,20 +65,6 @@ namespace PocketMC.Desktop.Features.Mods
             }
         }
 
-        private static void ApplyFilenameHeuristics(string filename, JavaModMetadata metadata)
-        {
-            string lowerName = filename.ToLowerInvariant();
-            string[] suspiciousNames = { "sodium", "iris", "optifine", "canvas", "xaero", "journeymap", "minimap", "replaymod", "rubidium", "embeddium", "oculus" };
-            if (suspiciousNames.Any(n => lowerName.Contains(n)))
-            {
-                metadata.SideSupport = ModSideSupport.ClientOnly;
-                metadata.SideLabel = "Client-only";
-                if (!metadata.Warnings.Any(w => w.Contains("client-only")))
-                {
-                    metadata.Warnings.Add("This mod's filename suggests it is a client-side rendering or utility mod. It may crash the server.");
-                }
-            }
-        }
 
         private static JavaModMetadata ScanJarInternal(FileInfo fi)
         {

@@ -203,7 +203,6 @@ namespace PocketMC.Desktop.Features.Marketplace
         public async Task SyncManifestAsync(string serverDir, ModrinthService modrinth, EngineCompatibility compat)
         {
             var manifest = await LoadManifestAsync(serverDir);
-            bool modified = false;
 
             // 1. Cleanup stale entries
             var entriesToRemove = new List<AddonManifestEntry>();
@@ -220,14 +219,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
             }
 
-            if (entriesToRemove.Count > 0)
-            {
-                foreach (var entry in entriesToRemove) manifest.Entries.Remove(entry);
-                modified = true;
-            }
-
             // 2. Identify untracked files
             string targetDir = Path.Combine(serverDir, compat.PrimaryAddonSubDir);
+            var untrackedFiles = new List<string>();
 
             if (Directory.Exists(targetDir))
             {
@@ -244,70 +238,104 @@ namespace PocketMC.Desktop.Features.Marketplace
                     files.AddRange(Directory.GetFiles(targetDir, ext));
                 }
 
-                var untrackedFiles = files.Where(f => !manifest.Entries.Any(e => e.FileName == Path.GetFileName(f))).ToList();
+                untrackedFiles = files.Where(f => !manifest.Entries.Any(e => e.FileName == Path.GetFileName(f))).ToList();
+            }
 
-                if (untrackedFiles.Count > 0)
+            var newEntries = new List<AddonManifestEntry>();
+
+            if (untrackedFiles.Count > 0)
+            {
+                var hashToLocalPath = new Dictionary<string, string>();
+                foreach (var file in untrackedFiles)
                 {
-                    var hashToLocalPath = new Dictionary<string, string>();
-                    foreach (var file in untrackedFiles)
+                    try
                     {
-                        try
-                        {
-                            string hash = await CalculateSha1Async(file);
-                            hashToLocalPath[hash] = file;
-                        }
-                        catch { /* Skip unreadable files */ }
+                        string hash = await CalculateSha1Async(file);
+                        hashToLocalPath[hash] = file;
                     }
+                    catch { /* Skip unreadable files */ }
+                }
 
-                    if (hashToLocalPath.Count > 0)
+                if (hashToLocalPath.Count > 0)
+                {
+                    var modrinthResults = await modrinth.GetVersionsByHashesAsync(hashToLocalPath.Keys);
+                    
+                    var tasks = modrinthResults.Select(async kvp =>
                     {
-                        var modrinthResults = await modrinth.GetVersionsByHashesAsync(hashToLocalPath.Keys);
-                        foreach (var kvp in modrinthResults)
+                        var hash = kvp.Key;
+                        var version = kvp.Value;
+                        if (hashToLocalPath.TryGetValue(hash, out string? localPath))
                         {
-                            var hash = kvp.Key;
-                            var version = kvp.Value;
-                            if (hashToLocalPath.TryGetValue(hash, out string? localPath))
+                            var projectInfo = await modrinth.GetProjectInfoAsync(version.ProjectId).ConfigureAwait(false);
+                            var file = version.Files.FirstOrDefault(f => f.Hashes.ContainsValue(hash)) ??
+                                       version.Files.FirstOrDefault(f => f.IsPrimary) ??
+                                       version.Files.FirstOrDefault();
+                            
+                            string? fileHash = null;
+                            string? fileHashType = null;
+                            if (file != null)
                             {
-                                var projectInfo = await modrinth.GetProjectInfoAsync(version.ProjectId).ConfigureAwait(false);
-                                var file = version.Files.FirstOrDefault(f => f.Hashes.ContainsValue(hash)) ??
-                                           version.Files.FirstOrDefault(f => f.IsPrimary) ??
-                                           version.Files.FirstOrDefault();
-                                string? fileHash = null;
-                                string? fileHashType = null;
-                                if (file != null)
-                                {
-                                    fileHash = hash;
-                                    fileHashType = file.Hashes.FirstOrDefault(h => h.Value.Equals(hash, StringComparison.OrdinalIgnoreCase)).Key ?? "sha1";
-                                }
-
-                                manifest.Entries.Add(new AddonManifestEntry
-                                {
-                                    Provider = "Modrinth",
-                                    ProjectId = version.ProjectId,
-                                    VersionId = version.Id,
-                                    FileName = Path.GetFileName(localPath),
-                                    InstalledAt = DateTime.UtcNow,
-                                    ProjectTitle = projectInfo?.Title ?? version.Name,
-                                    DisplayName = version.Name,
-                                    IconUrl = projectInfo?.IconUrl,
-                                    ClientSide = projectInfo?.ClientSide,
-                                    ServerSide = projectInfo?.ServerSide,
-                                    FileHash = fileHash,
-                                    FileHashType = fileHashType,
-                                    MinecraftVersion = version.GameVersions.FirstOrDefault(),
-                                    Loader = version.Loaders.FirstOrDefault() ?? compat.LoaderName,
-                                    DownloadUrl = file?.Url
-                                });
-                                modified = true;
+                                fileHash = hash;
+                                fileHashType = file.Hashes.FirstOrDefault(h => h.Value.Equals(hash, StringComparison.OrdinalIgnoreCase)).Key ?? "sha1";
                             }
+
+                            return new AddonManifestEntry
+                            {
+                                Provider = "Modrinth",
+                                ProjectId = version.ProjectId,
+                                VersionId = version.Id,
+                                FileName = Path.GetFileName(localPath),
+                                InstalledAt = DateTime.UtcNow,
+                                ProjectTitle = projectInfo?.Title ?? version.Name,
+                                DisplayName = version.Name,
+                                IconUrl = projectInfo?.IconUrl,
+                                ClientSide = projectInfo?.ClientSide,
+                                ServerSide = projectInfo?.ServerSide,
+                                FileHash = fileHash,
+                                FileHashType = fileHashType,
+                                MinecraftVersion = version.GameVersions.FirstOrDefault(),
+                                Loader = version.Loaders.FirstOrDefault() ?? compat.LoaderName,
+                                DownloadUrl = file?.Url
+                            };
                         }
+                        return null;
+                    });
+
+                    var resolvedEntries = await Task.WhenAll(tasks);
+                    foreach (var entry in resolvedEntries)
+                    {
+                        if (entry != null) newEntries.Add(entry);
                     }
                 }
             }
 
-            if (modified)
+            // 3. Re-load manifest to apply changes (avoids race condition if user installs addons while this was running)
+            if (entriesToRemove.Count > 0 || newEntries.Count > 0)
             {
-                await SaveManifestAsync(serverDir, manifest);
+                var latestManifest = await LoadManifestAsync(serverDir);
+                bool modified = false;
+
+                foreach (var entry in entriesToRemove)
+                {
+                    if (latestManifest.Entries.RemoveAll(e => e.FileName == entry.FileName && e.ProjectId == entry.ProjectId) > 0)
+                    {
+                        modified = true;
+                    }
+                }
+
+                foreach (var entry in newEntries)
+                {
+                    if (!latestManifest.Entries.Any(e => e.FileName == entry.FileName))
+                    {
+                        latestManifest.Entries.Add(entry);
+                        modified = true;
+                    }
+                }
+
+                if (modified)
+                {
+                    await SaveManifestAsync(serverDir, latestManifest);
+                }
             }
         }
 
