@@ -11,6 +11,19 @@ namespace PocketMC.Desktop.Features.Mods
 {
     public static class JavaModMetadataService
     {
+        public static bool IsPluginJar(string filePath)
+        {
+            try
+            {
+                using var archive = ZipFile.OpenRead(filePath);
+                return archive.GetEntry("plugin.yml") != null || archive.GetEntry("paper-plugin.yml") != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static readonly ConcurrentDictionary<(string Path, long Length, DateTime LastWriteTime), JavaModMetadata> _cache = new();
 
         public static JavaModMetadata ScanJar(string filePath)
@@ -77,6 +90,9 @@ namespace PocketMC.Desktop.Features.Mods
             {
                 using var archive = ZipFile.OpenRead(fi.FullName);
 
+                var pluginEntry = archive.GetEntry("plugin.yml") ?? archive.GetEntry("paper-plugin.yml");
+                metadata.HasPluginMetadata = pluginEntry != null;
+
                 // 1. Quilt
                 var quiltEntry = archive.GetEntry("quilt.mod.json");
                 if (quiltEntry != null)
@@ -116,7 +132,6 @@ namespace PocketMC.Desktop.Features.Mods
                 }
 
                 // 5. Bukkit/Paper Plugin
-                var pluginEntry = archive.GetEntry("plugin.yml") ?? archive.GetEntry("paper-plugin.yml");
                 if (pluginEntry != null)
                 {
                     metadata.LoaderType = "Plugin";
@@ -566,6 +581,46 @@ namespace PocketMC.Desktop.Features.Mods
                 if (descMatch.Success)
                 {
                     metadata.Description = descMatch.Groups[1].Value.Trim();
+                }
+
+                var apiVerMatch = Regex.Match(yaml, @"^api-version:\s*['""]?([^\r\n'""]+)['""]?", RegexOptions.Multiline | RegexOptions.IgnoreCase, regexTimeout);
+                if (apiVerMatch.Success)
+                {
+                    metadata.ApiVersion = apiVerMatch.Groups[1].Value.Trim();
+                }
+
+                var lines = yaml.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                string? currentList = null;
+                foreach(var line in lines)
+                {
+                    if (Regex.IsMatch(line, @"^\s*depend:\s*$")) { currentList = "depend"; continue; }
+                    if (Regex.IsMatch(line, @"^\s*softdepend:\s*$")) { currentList = "softdepend"; continue; }
+                    
+                    var listMatch = Regex.Match(line, @"^\s*-\s*['""]?([^'""]+)['""]?");
+                    if (listMatch.Success && currentList != null)
+                    {
+                        string dep = listMatch.Groups[1].Value.Trim();
+                        if (currentList == "depend") metadata.RequiredDependencies.Add(dep);
+                        else metadata.OptionalDependencies.Add(dep);
+                        continue;
+                    }
+
+                    var inlineDepend = Regex.Match(line, @"^\s*depend:\s*\[([^\]]+)\]");
+                    if (inlineDepend.Success) {
+                        foreach(var d in inlineDepend.Groups[1].Value.Split(',')) metadata.RequiredDependencies.Add(d.Trim(' ', '\'', '"'));
+                        currentList = null;
+                        continue;
+                    }
+                    var inlineSoftDepend = Regex.Match(line, @"^\s*softdepend:\s*\[([^\]]+)\]");
+                    if (inlineSoftDepend.Success) {
+                        foreach(var d in inlineSoftDepend.Groups[1].Value.Split(',')) metadata.OptionalDependencies.Add(d.Trim(' ', '\'', '"'));
+                        currentList = null;
+                        continue;
+                    }
+
+                    if (Regex.IsMatch(line, @"^\s*[a-zA-Z0-9_-]+:")) {
+                        currentList = null;
+                    }
                 }
             }
             catch

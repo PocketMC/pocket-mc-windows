@@ -450,24 +450,86 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 if (!IsPocketmine)
                 {
-                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
-                    if (!IsLoaderCompatible(metadata.LoaderType))
+                    // Step 1: Plugin presence check
+                    if (!PocketMC.Desktop.Features.Mods.JavaModMetadataService.IsPluginJar(f))
                     {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Plugin Warning",
-                            $"The file '{System.IO.Path.GetFileName(f)}' is made for {metadata.LoaderType}, but this server is running {_metadata.ServerType}.\n" +
-                            "Installing incompatible plugins can cause the server to crash or fail to start.\n\n" +
-                            "Do you want to skip this plugin?",
-                            DialogType.Question);
+                        _dialogService.ShowMessage("Invalid Plugin",
+                            $"'{System.IO.Path.GetFileName(f)}' does not appear to be a valid Paper/Bukkit plugin.",
+                            DialogType.Error);
+                        continue;
+                    }
 
-                        if (res == DialogResult.Yes) continue;
+                    // Step 2: Scan metadata
+                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    
+                    // Step 3: API version check
+                    if (!string.IsNullOrEmpty(metadata.ApiVersion) && !string.IsNullOrEmpty(_metadata.MinecraftVersion))
+                    {
+                        if (IsApiVersionIncompatible(metadata.ApiVersion, _metadata.MinecraftVersion))
+                        {
+                            var res = await _dialogService.ShowDialogAsync("Incompatible API Version",
+                                $"'{System.IO.Path.GetFileName(f)}' requires api-version {metadata.ApiVersion}, but this server is running Minecraft {_metadata.MinecraftVersion}. The plugin may not load correctly.\n\nDo you want to install it anyway?",
+                                DialogType.Question);
+                            if (res != DialogResult.Yes) continue;
+                        }
+                    }
+
+                    // Step 4: Dependency display
+                    if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
+                    {
+                        var depList = new List<string>();
+                        foreach (var dep in metadata.RequiredDependencies)
+                            depList.Add($"[Required] {dep}");
+                        foreach (var dep in metadata.OptionalDependencies)
+                            depList.Add($"[Optional] {dep}");
+
+                        _dialogService.ShowMessage("Plugin Dependencies",
+                            $"The plugin '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the plugin to work properly:\n\n{string.Join("\n", depList)}",
+                            DialogType.Information);
                     }
                 }
 
+                // Step 5: Copy file
                 var dir = System.IO.Path.Combine(_serverDir, "plugins");
                 Directory.CreateDirectory(dir);
                 await FileUtils.CopyFileAsync(f, System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f)), true);
             }
             LoadAddons(); _onAddonChanged();
+        }
+
+        private static bool IsApiVersionIncompatible(string? pluginApiVersion, string? serverMinecraftVersion)
+        {
+            if (string.IsNullOrEmpty(pluginApiVersion) || string.IsNullOrEmpty(serverMinecraftVersion))
+                return false;
+
+            try
+            {
+                var pluginVer = ParseMajorMinor(pluginApiVersion);
+                var serverVer = ParseMajorMinor(serverMinecraftVersion);
+
+                if (pluginVer == null || serverVer == null)
+                    return false;
+
+                return pluginVer.Value.major > serverVer.Value.major ||
+                       (pluginVer.Value.major == serverVer.Value.major && pluginVer.Value.minor > serverVer.Value.minor);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static (int major, int minor)? ParseMajorMinor(string version)
+        {
+            version = version.Trim().Trim('\'', '"');
+
+            var parts = version.Split('.');
+            if (parts.Length < 2) return null;
+
+            if (int.TryParse(parts[0], out int major) && int.TryParse(parts[1], out int minor))
+                return (major, minor);
+
+            return null;
         }
 
         private async Task DeletePluginAsync(string? path)

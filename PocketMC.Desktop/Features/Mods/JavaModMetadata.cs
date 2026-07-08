@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-
+using System.Linq;
 namespace PocketMC.Desktop.Features.Mods
 {
     public enum ModSideSupport
@@ -40,7 +40,11 @@ namespace PocketMC.Desktop.Features.Mods
         }
 
         public bool IsPluginInModsFolder { get; set; }
-        public List<string> Dependencies { get; set; } = new();
+        public bool HasPluginMetadata { get; set; }
+        public string? ApiVersion { get; set; }
+        public List<string> RequiredDependencies { get; set; } = new();
+        public List<string> OptionalDependencies { get; set; } = new();
+        public List<string> Dependencies => RequiredDependencies.Concat(OptionalDependencies).ToList();
         public List<string> Warnings { get; set; } = new();
     }
 }

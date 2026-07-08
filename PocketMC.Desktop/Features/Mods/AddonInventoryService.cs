@@ -128,6 +128,12 @@ public sealed class AddonInventoryService
         }
 
         JavaModMetadata jarMetadata = JavaModMetadataService.ScanJar(fullPath);
+
+        // Treat hybrid JARs (e.g. ViaVersion) as plugins if the server supports plugins.
+        if (jarMetadata.HasPluginMetadata && metadata.Compatibility.SupportsPlugins)
+        {
+            jarMetadata.LoaderType = "Plugin";
+        }
         AddonManifestEntry? manifestEntry = FindManifestEntry(manifest, originalFileName, actualFileName);
         AddonProvenance? provenance = BuildProvenance(manifestEntry, metadata);
         string displayName = ResolveDisplayName(jarMetadata, manifestEntry, stateEntry, originalFileName);
