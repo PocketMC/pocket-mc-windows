@@ -564,17 +564,12 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
             };
         }
 
-        private AddonManifestEntry? FindManifestEntry(string fileName, string relativePath)
+        private AddonManifestEntry? FindManifestEntry(AddonInventoryItem item)
         {
             var manifest = _manifestService.LoadManifest(_serverDir);
             return manifest.Entries.FirstOrDefault(entry =>
-                entry.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase) ||
-                entry.FileName.Equals(Path.GetFileName(relativePath), StringComparison.OrdinalIgnoreCase));
-        }
-
-        private AddonManifestEntry? FindManifestEntry(AddonInventoryItem item)
-        {
-            return FindManifestEntry(item.FileName, item.RelativePath);
+                entry.FileName.Equals(item.FileName, StringComparison.OrdinalIgnoreCase) ||
+                entry.FileName.Equals(Path.GetFileName(item.RelativePath), StringComparison.OrdinalIgnoreCase));
         }
 
         private async Task AddModAsync()
@@ -718,8 +713,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 b => vm.IsUpdating = b,
                 status => vm.UpdateStatus = status,
                 info => vm.UpdateInfo = info,
-                entry => vm.ManifestEntry = entry,
-                source => vm.SourceLabel = source,
                 vm.ManifestEntry);
         }
 
@@ -738,8 +731,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 b => vm.IsUpdating = b,
                 status => vm.UpdateStatus = status,
                 info => vm.UpdateInfo = info,
-                entry => vm.ManifestEntry = entry,
-                source => vm.SourceLabel = source,
                 vm.ManifestEntry);
         }
 
@@ -759,8 +750,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
             Action<bool> setUpdating,
             Action<AddonUpdateStatus> setUpdateStatus,
             Action<AddonUpdateInfo?> setUpdateInfo,
-            Action<AddonManifestEntry?> setManifestEntry,
-            Action<string> setSourceLabel,
             AddonManifestEntry? manifestEntry = null)
         {
             setUpdating(true);
@@ -790,16 +779,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 setUpdateStatus(result.Status);
                 setUpdateInfo(result.UpdateInfo);
                 setStatus(FormatPassiveUpdateStatus(result, displayName));
-
-                if (manifestEntry == null)
-                {
-                    manifestEntry = FindManifestEntry(inventoryItem);
-                    if (manifestEntry != null)
-                    {
-                        setManifestEntry(manifestEntry);
-                        setSourceLabel(manifestEntry.Provider);
-                    }
-                }
 
                 // Prompt user to install when an update is found
                 if (result.Status == AddonUpdateStatus.UpdateAvailable && result.UpdateInfo != null && manifestEntry != null)
@@ -950,17 +929,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);
             plugin.UpdateStatus = result.Status;
             plugin.UpdateInfo = result.UpdateInfo;
-
-            if (plugin.ManifestEntry == null)
-            {
-                var entry = FindManifestEntry(plugin.FileName, plugin.RelativePath);
-                if (entry != null)
-                {
-                    plugin.ManifestEntry = entry;
-                    plugin.SourceLabel = entry.Provider;
-                }
-            }
-
             return result;
         }
 
@@ -986,22 +954,11 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);
             mod.UpdateStatus = result.Status;
             mod.UpdateInfo = result.UpdateInfo;
-
-            if (mod.ManifestEntry == null)
-            {
-                var entry = FindManifestEntry(mod.FileName, mod.RelativePath);
-                if (entry != null)
-                {
-                    mod.ManifestEntry = entry;
-                    mod.SourceLabel = entry.Provider;
-                }
-            }
-
             return result;
         }
 
         /// <summary>
-        /// Batch-checks all enabled add-ons and reports passive status only.
+        /// Batch-checks marketplace-tracked add-ons and reports passive status only.
         /// </summary>
         private async Task UpdateAllAddonsAsync(bool isPlugins)
         {
@@ -1011,18 +968,18 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
             try
             {
                 var trackedItems = isPlugins
-                    ? Plugins.Where(p => !p.IsDisabled)
+                    ? Plugins.Where(p => p.ManifestEntry != null && !p.IsDisabled)
                              .Select(p => (Name: p.Name, VM: (object)p))
                              .ToList()
-                    : Mods.Where(m => !m.IsDisabled)
+                    : Mods.Where(m => m.ManifestEntry != null && !m.IsDisabled)
                           .Select(m => (Name: m.Name, VM: (object)m))
                           .ToList();
 
                 if (trackedItems.Count == 0)
                 {
                     UpdateAllStatusText = "";
-                    _dialogService.ShowMessage("No Addons",
-                        "No addons are currently enabled.",
+                    _dialogService.ShowMessage("No Tracked Addons",
+                        "No addons were installed from a marketplace. Update checking is only available for marketplace-installed items.",
                         DialogType.Information);
                     return;
                 }
@@ -1416,12 +1373,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
         public string SideLabel { get; set; } = "Server-only";
         public ModSideSupport SideSupport { get; set; }
         public bool ShowSideBadge => SideSupport == ModSideSupport.ClientOnly;
-        private string _sourceLabel = "Manual";
-        public string SourceLabel
-        {
-            get => _sourceLabel;
-            set => SetProperty(ref _sourceLabel, value);
-        }
+        public string SourceLabel { get; set; } = "Manual";
         public ImageSource? Icon { get; set; }
         public bool HasWarnings { get; set; }
         public string WarningText { get; set; } = "";
@@ -1484,12 +1436,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
         public string RelativePath { get; set; } = "";
         public string? Version { get; set; }
         public string LoaderType { get; set; } = "Unknown";
-        private string _sourceLabel = "Manual";
-        public string SourceLabel
-        {
-            get => _sourceLabel;
-            set => SetProperty(ref _sourceLabel, value);
-        }
+        public string SourceLabel { get; set; } = "Manual";
         public ImageSource? Icon { get; set; }
         public bool HasWarnings { get; set; }
         public string WarningText { get; set; } = "";

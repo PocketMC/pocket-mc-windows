@@ -81,21 +81,21 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             else if (compat.Family == EngineFamily.Fabric)
             {
-                if (fn.Contains("forge") || fn.Contains("neoforge") || fn.Contains("bukkit") || fn.Contains("spigot") || fn.Contains("paper"))
+                if (fn.Contains("forge") || fn.Contains("neoforge"))
                 {
                     return false;
                 }
             }
             else if (compat.Family == EngineFamily.Forge)
             {
-                if (fn.Contains("fabric") || fn.Contains("neoforge") || fn.Contains("quilt") || fn.Contains("bukkit") || fn.Contains("spigot") || fn.Contains("paper"))
+                if (fn.Contains("fabric") || fn.Contains("neoforge"))
                 {
                     return false;
                 }
             }
             else if (compat.Family == EngineFamily.NeoForge)
             {
-                if (fn.Contains("fabric") || fn.Contains("quilt") || fn.Contains("bukkit") || fn.Contains("spigot") || fn.Contains("paper") || (fn.Contains("forge") && !fn.Contains("neoforge")))
+                if (fn.Contains("fabric") || (fn.Contains("forge") && !fn.Contains("neoforge")))
                 {
                     return false;
                 }
