@@ -416,7 +416,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                 string sourceLabel = entry != null ? (entry.Provider ?? "Manual") : "Manual";
 
-                result.Add(new PluginItemViewModel
+                var vm = new PluginItemViewModel
                 {
                     Name = entry?.DisplayName ?? entry?.ProjectTitle ?? fi.Name,
                     FileName = fi.Name,
@@ -428,7 +428,21 @@ namespace PocketMC.Desktop.Features.Settings
                     ManifestEntry = entry,
                     SourceLabel = sourceLabel,
                     Icon = AddonIconService.PluginFallback
-                });
+                };
+
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.IconUrl))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        var remoteIcon = await AddonIconService.GetCachedRemoteIconAsync(entry.IconUrl);
+                        if (remoteIcon != null)
+                        {
+                            System.Windows.Application.Current.Dispatcher.Invoke(() => vm.Icon = remoteIcon);
+                        }
+                    });
+                }
+
+                result.Add(vm);
             }
             return result;
         }
@@ -632,7 +646,7 @@ namespace PocketMC.Desktop.Features.Settings
                 warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
             }
 
-            return new PluginItemViewModel
+            var vm = new PluginItemViewModel
             {
                 Name = item.DisplayName,
                 DisplayName = item.DisplayName,
@@ -661,6 +675,20 @@ namespace PocketMC.Desktop.Features.Settings
                 CanDisable = item.CanDisable,
                 RequiresServerStopped = item.RequiresServerStopped
             };
+
+            if (item.IconBytes == null && entry != null && !string.IsNullOrWhiteSpace(entry.IconUrl))
+            {
+                _ = Task.Run(async () =>
+                {
+                    var remoteIcon = await AddonIconService.GetCachedRemoteIconAsync(entry.IconUrl);
+                    if (remoteIcon != null)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(() => vm.Icon = remoteIcon);
+                    }
+                });
+            }
+
+            return vm;
         }
 
         private ModItemViewModel CreateModViewModel(AddonInventoryItem item)
