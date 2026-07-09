@@ -104,8 +104,7 @@ public static class MarketplaceArchiveInspector
             using var reader = new StreamReader(stream);
             string content = reader.ReadToEnd();
 
-            bool isClientOnly = Regex.IsMatch(content, @"clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100))
-                || Regex.IsMatch(content, @"displayTest\s*=\s*""NONE""", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
+            bool isClientOnly = Regex.IsMatch(content, @"clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100));
 
             if (isClientOnly)
             {

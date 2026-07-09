@@ -317,11 +317,11 @@ namespace PocketMC.Desktop.Features.Mods
                             {
                                 if (elem.ValueKind == JsonValueKind.Object && elem.TryGetProperty("id", out var depIdProp) && depIdProp.ValueKind == JsonValueKind.String)
                                 {
-                                    metadata.Dependencies.Add(depIdProp.GetString()!);
+                                    metadata.RequiredDependencies.Add(depIdProp.GetString()!);
                                 }
                                 else if (elem.ValueKind == JsonValueKind.String)
                                 {
-                                    metadata.Dependencies.Add(elem.GetString()!);
+                                    metadata.RequiredDependencies.Add(elem.GetString()!);
                                 }
                             }
                         }
@@ -329,7 +329,7 @@ namespace PocketMC.Desktop.Features.Mods
                         {
                             foreach (var prop in dependsProp.EnumerateObject())
                             {
-                                metadata.Dependencies.Add(prop.Name);
+                                metadata.RequiredDependencies.Add(prop.Name);
                             }
                         }
                     }
@@ -416,7 +416,7 @@ namespace PocketMC.Desktop.Features.Mods
                         }
                         else
                         {
-                            metadata.Dependencies.Add(val);
+                            metadata.RequiredDependencies.Add(val);
                         }
                     }
                 }
@@ -456,11 +456,80 @@ namespace PocketMC.Desktop.Features.Mods
                     ExtractIconBytes(archive, logo, metadata);
                 }
 
-                // Use a TOML-aware scan that skips comments, multi-line strings,
-                // and quoted values to avoid false-positive side detection.
-                bool isClientOnly = IsActiveTomlKeyTrue(toml, "clientSideOnly");
-                bool hasDisplayTest = HasActiveTomlKey(toml, "displayTest");
+                bool isClientOnly = false;
+                bool hasDisplayTest = false;
 
+                string lastSection = "";
+                string currentDepId = "";
+                bool currentDepMandatory = true;
+                string currentDepVersionRange = "";
+
+                foreach (var (line, section) in EnumerateActiveTomlLines(toml))
+                {
+                    bool isNewSection = line.StartsWith("[");
+                    if (isNewSection)
+                    {
+                        if (lastSection.StartsWith("[[dependencies", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(currentDepId))
+                        {
+                            if (currentDepId.Equals("minecraft", StringComparison.OrdinalIgnoreCase))
+                                metadata.RequiredMinecraftVersion = currentDepVersionRange;
+                            else if (currentDepId.Equals("forge", StringComparison.OrdinalIgnoreCase) || currentDepId.Equals("neoforge", StringComparison.OrdinalIgnoreCase))
+                                metadata.RequiredLoaderVersion = currentDepVersionRange;
+                            else if (currentDepId != "java")
+                            {
+                                if (currentDepMandatory) metadata.RequiredDependencies.Add(currentDepId);
+                                else metadata.OptionalDependencies.Add(currentDepId);
+                            }
+                        }
+                        
+                        currentDepId = "";
+                        currentDepMandatory = true;
+                        currentDepVersionRange = "";
+                        lastSection = section;
+                    }
+                    
+                    if (section.StartsWith("[[dependencies", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var idMatch = Regex.Match(line, @"^\s*modId\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (idMatch.Success) currentDepId = idMatch.Groups[1].Value.Trim();
+
+                        var mandatoryMatch = Regex.Match(line, @"^\s*mandatory\s*=\s*(true)", RegexOptions.IgnoreCase, regexTimeout);
+                        var typeMatch = Regex.Match(line, @"^\s*type\s*=\s*[""']required[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (mandatoryMatch.Success || typeMatch.Success) currentDepMandatory = true;
+                        
+                        var mandatoryFalseMatch = Regex.Match(line, @"^\s*mandatory\s*=\s*(false)", RegexOptions.IgnoreCase, regexTimeout);
+                        var typeOptionalMatch = Regex.Match(line, @"^\s*type\s*=\s*[""']optional[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (mandatoryFalseMatch.Success || typeOptionalMatch.Success) currentDepMandatory = false;
+
+                        var versionRangeMatch = Regex.Match(line, @"^\s*versionRange\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (versionRangeMatch.Success) currentDepVersionRange = versionRangeMatch.Groups[1].Value.Trim();
+                    }
+                    else if (section.StartsWith("[mods.", StringComparison.OrdinalIgnoreCase) || section.StartsWith("[[mods", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var idMatch = Regex.Match(line, @"^\s*modId\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (idMatch.Success && string.IsNullOrEmpty(metadata.ModId)) metadata.ModId = idMatch.Groups[1].Value.Trim();
+                    }
+                    
+                    var clientOnlyMatch = Regex.Match(line, @"^\s*clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase, regexTimeout);
+                    if (clientOnlyMatch.Success) isClientOnly = true;
+
+                    var displayTestMatch = Regex.Match(line, @"^\s*displayTest\s*=", RegexOptions.IgnoreCase, regexTimeout);
+                    if (displayTestMatch.Success) hasDisplayTest = true;
+                }
+                
+                // Flush the last dependency if needed
+                if (lastSection.StartsWith("[[dependencies", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(currentDepId))
+                {
+                    if (currentDepId.Equals("minecraft", StringComparison.OrdinalIgnoreCase))
+                        metadata.RequiredMinecraftVersion = currentDepVersionRange;
+                    else if (currentDepId.Equals("forge", StringComparison.OrdinalIgnoreCase) || currentDepId.Equals("neoforge", StringComparison.OrdinalIgnoreCase))
+                        metadata.RequiredLoaderVersion = currentDepVersionRange;
+                    else if (currentDepId != "java")
+                    {
+                        if (currentDepMandatory) metadata.RequiredDependencies.Add(currentDepId);
+                        else metadata.OptionalDependencies.Add(currentDepId);
+                    }
+                }
 
                 if (isClientOnly)
                 {
@@ -548,7 +617,7 @@ namespace PocketMC.Desktop.Features.Mods
                         {
                             if (dep.ValueKind == JsonValueKind.String)
                             {
-                                metadata.Dependencies.Add(dep.GetString()!);
+                                metadata.RequiredDependencies.Add(dep.GetString()!);
                             }
                         }
                     }

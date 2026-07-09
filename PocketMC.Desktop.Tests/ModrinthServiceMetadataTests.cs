@@ -197,10 +197,10 @@ public sealed class ModrinthServiceMetadataTests
         Assert.NotNull(version);
         Assert.Equal("bukkit-version", version.Id);
         var versionQueries = queriedUrls.Where(u => u.Contains("/version")).ToList();
-        Assert.Equal(5, versionQueries.Count);
+        Assert.Single(versionQueries);
         Assert.Contains("paper", versionQueries[0].ToLowerInvariant());
-        Assert.Contains("spigot", versionQueries[2].ToLowerInvariant());
-        Assert.Contains("bukkit", versionQueries[4].ToLowerInvariant());
+        Assert.Contains("spigot", versionQueries[0].ToLowerInvariant());
+        Assert.Contains("bukkit", versionQueries[0].ToLowerInvariant());
     }
 
     [Fact]
@@ -243,9 +243,9 @@ public sealed class ModrinthServiceMetadataTests
         Assert.NotNull(version);
         Assert.Equal("bukkit-version", version.Id);
         var versionQueries = queriedUrls.Where(u => u.Contains("/version")).ToList();
-        Assert.Equal(3, versionQueries.Count);
+        Assert.Single(versionQueries);
         Assert.Contains("spigot", versionQueries[0].ToLowerInvariant());
-        Assert.Contains("bukkit", versionQueries[2].ToLowerInvariant());
+        Assert.Contains("bukkit", versionQueries[0].ToLowerInvariant());
     }
 
     [Fact]

@@ -154,10 +154,24 @@ public sealed class AddonInventoryService
 
         ModSideSupport sideSupport = ResolveSideSupport(jarMetadata, manifestEntry);
 
+        bool isMinecraftIncompatible = false;
+        if (!string.IsNullOrWhiteSpace(jarMetadata.RequiredMinecraftVersion) && !string.IsNullOrWhiteSpace(metadata.MinecraftVersion))
+        {
+            isMinecraftIncompatible = !PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(jarMetadata.RequiredMinecraftVersion, metadata.MinecraftVersion);
+        }
+
+        bool isLoaderVersionIncompatible = false;
+        if (!string.IsNullOrWhiteSpace(jarMetadata.RequiredLoaderVersion) && !string.IsNullOrWhiteSpace(metadata.LoaderVersion))
+        {
+            isLoaderVersionIncompatible = !PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(jarMetadata.RequiredLoaderVersion, metadata.LoaderVersion);
+        }
+
         bool isInvalid = jarMetadata.LoaderType == "Unknown" ||
                          jarMetadata.IsPluginInModsFolder ||
                          sideSupport == ModSideSupport.ClientOnly ||
-                         !isCompatibleLoader;
+                         !isCompatibleLoader ||
+                         isMinecraftIncompatible ||
+                         isLoaderVersionIncompatible;
 
         if (isInvalid)
         {

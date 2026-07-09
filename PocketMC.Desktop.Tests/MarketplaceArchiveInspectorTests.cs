@@ -28,7 +28,7 @@ public sealed class MarketplaceArchiveInspectorTests : IDisposable
 
         IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(jarPath);
 
-        Assert.Contains(warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(warnings, warning => warning.Contains("client only mod", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class MarketplaceArchiveInspectorTests : IDisposable
 
         IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(jarPath);
 
-        Assert.Contains(warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(warnings, warning => warning.Contains("client only mod", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -66,29 +66,7 @@ public sealed class MarketplaceArchiveInspectorTests : IDisposable
 
         IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(jarPath);
 
-        Assert.Contains(warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
-    public void InspectServerCompatibilityWarnings_WarnsForForgeDisplayTestNone()
-    {
-        string jarPath = Path.Combine(_tempDirectory, "forge-displaytest.jar");
-        using (ZipArchive archive = ZipFile.Open(jarPath, ZipArchiveMode.Create))
-        {
-            ZipArchiveEntry entry = archive.CreateEntry("META-INF/neoforge.mods.toml");
-            using Stream stream = entry.Open();
-            using var writer = new StreamWriter(stream, Encoding.UTF8);
-            writer.Write("""
-            modLoader="javafml"
-            [[mods]]
-            modId="test"
-            displayTest="NONE"
-            """);
-        }
-
-        IReadOnlyList<string> warnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(jarPath);
-
-        Assert.Contains(warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(warnings, warning => warning.Contains("client only mod", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

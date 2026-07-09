@@ -785,7 +785,23 @@ namespace PocketMC.Desktop.Features.Settings
 
                 if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
                 {
-                    if (metadata.LoaderType == "Fabric")
+                    bool isFabric = metadata.LoaderType == "Fabric";
+                    bool isForgeOrNeo = metadata.LoaderType == "Forge" || metadata.LoaderType == "NeoForge";
+                    if (!IsLoaderCompatible(metadata.LoaderType))
+                    {
+                        string requiredType = _metadata.ServerType;
+                        if (requiredType == "NeoForge") requiredType = "NeoForge mod";
+                        else if (requiredType == "Forge") requiredType = "Forge mod";
+                        else if (requiredType == "Fabric") requiredType = "Fabric mod";
+                        else requiredType = "Plugin";
+                        
+                        _dialogService.ShowMessage("Invalid Mod",
+                            $"The file '{System.IO.Path.GetFileName(f)}' is not a valid {requiredType}.",
+                            DialogType.Error);
+                        continue;
+                    }
+
+                    if (isFabric || isForgeOrNeo)
                     {
                         if (metadata.IsClientOnly)
                         {
@@ -806,22 +822,13 @@ namespace PocketMC.Desktop.Features.Settings
                         if (!PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
                         {
                             _dialogService.ShowMessage("Incompatible Loader Version",
-                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Fabric Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. This mod cannot be installed.",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. This mod cannot be installed.",
                                 DialogType.Error);
                             continue;
                         }
                     }
 
-                    if (!IsLoaderCompatible(metadata.LoaderType))
-                    {
-                        string requiredType = _metadata.ServerType == "Fabric" ? "Fabric mod" : "Plugin";
-                        _dialogService.ShowMessage("Invalid Mod",
-                            $"The file '{System.IO.Path.GetFileName(f)}' is not a valid {requiredType}.",
-                            DialogType.Error);
-                        continue;
-                    }
-
-                    if (metadata.LoaderType == "Fabric" && (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0))
+                    if ((isFabric || isForgeOrNeo) && (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0))
                     {
                         var depList = new List<string>();
                         foreach (var dep in metadata.RequiredDependencies)
