@@ -91,7 +91,8 @@ public sealed class AddonInventoryService
             foreach (string file in Directory.EnumerateFiles(enabledDirectory, "*.jar", SearchOption.TopDirectoryOnly))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                items.Add(BuildItem(root, metadata, kind, AddonState.Enabled, file, manifest, state, serverRunning));
+                var item = BuildItem(root, metadata, kind, AddonState.Enabled, file, manifest, state, serverRunning);
+                if (item != null) items.Add(item);
             }
         }
 
@@ -100,12 +101,13 @@ public sealed class AddonInventoryService
             foreach (string file in Directory.EnumerateFiles(disabledDirectory, "*.jar.disabled-by-pocketmc", SearchOption.TopDirectoryOnly))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                items.Add(BuildItem(root, metadata, kind, AddonState.Disabled, file, manifest, state, serverRunning));
+                var item = BuildItem(root, metadata, kind, AddonState.Disabled, file, manifest, state, serverRunning);
+                if (item != null) items.Add(item);
             }
         }
     }
 
-    private AddonInventoryItem BuildItem(
+    private AddonInventoryItem? BuildItem(
         string root,
         InstanceMetadata metadata,
         AddonKind kind,
@@ -135,11 +137,47 @@ public sealed class AddonInventoryService
             jarMetadata.LoaderType = "Plugin";
         }
         AddonManifestEntry? manifestEntry = FindManifestEntry(manifest, originalFileName, actualFileName);
+
+        // Determine compatibility
+        bool isCompatibleLoader = true;
+        if (jarMetadata.LoaderType != "Unknown")
+        {
+            if (jarMetadata.LoaderType.Equals("Plugin", StringComparison.OrdinalIgnoreCase))
+            {
+                isCompatibleLoader = metadata.Compatibility.SupportsPlugins;
+            }
+            else
+            {
+                isCompatibleLoader = metadata.Compatibility.CompatibleLoaderNames.Contains(jarMetadata.LoaderType, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        ModSideSupport sideSupport = ResolveSideSupport(jarMetadata, manifestEntry);
+
+        bool isInvalid = jarMetadata.LoaderType == "Unknown" ||
+                         jarMetadata.IsPluginInModsFolder ||
+                         sideSupport == ModSideSupport.ClientOnly ||
+                         !isCompatibleLoader;
+
+        if (isInvalid)
+        {
+            try
+            {
+                File.Delete(fullPath);
+                // Also clean up any disabled version if it exists
+                if (itemState == AddonState.Disabled)
+                {
+                    File.Delete(fullPath); 
+                }
+            }
+            catch { /* Ignore deletion errors if locked */ }
+            
+            return null; // Don't return an item so it doesn't show in UI
+        }
+
         AddonProvenance? provenance = BuildProvenance(manifestEntry, metadata);
         string displayName = ResolveDisplayName(jarMetadata, manifestEntry, stateEntry, originalFileName);
-        ModSideSupport sideSupport = ResolveSideSupport(jarMetadata, manifestEntry);
         string sideLabel = ResolveSideLabel(sideSupport, jarMetadata.SideLabel);
-        var warnings = new List<string>(jarMetadata.Warnings);
 
         FileInfo? fileInfo = TryGetFileInfo(fullPath);
         string disabledPath = itemState == AddonState.Disabled
@@ -163,7 +201,6 @@ public sealed class AddonInventoryService
             SideLabel = sideLabel,
             IconBytes = jarMetadata.IconBytes,
             Dependencies = jarMetadata.Dependencies.ToArray(),
-            Warnings = warnings,
             UpdateStatus = provenance == null ? AddonUpdateStatus.UnknownSource : AddonUpdateStatus.Unknown,
             CanEnable = itemState == AddonState.Disabled && !serverRunning,
             CanDisable = itemState == AddonState.Enabled && !serverRunning,

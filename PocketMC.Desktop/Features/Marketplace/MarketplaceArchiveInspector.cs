@@ -60,7 +60,7 @@ public static class MarketplaceArchiveInspector
             InspectFabricLikeManifest(archive, "quilt.mod.json", "Quilt", warnings);
             InspectForgeLikeManifest(archive, warnings);
 
-            return warnings.Any(w => w.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+            return warnings.Any(w => w.Contains("client only", StringComparison.OrdinalIgnoreCase));
         }
         catch
         {
@@ -86,7 +86,7 @@ public static class MarketplaceArchiveInspector
         string? environment = manifest?["environment"]?.ToString();
         if (environment != null && environment.Equals("client", StringComparison.OrdinalIgnoreCase))
         {
-            warnings.Add($"{loaderName} metadata marks this add-on as client-only. It may crash or be ignored by a server.");
+            warnings.Add($"client only mod");
         }
     }
 
@@ -109,7 +109,7 @@ public static class MarketplaceArchiveInspector
 
             if (isClientOnly)
             {
-                warnings.Add("Forge/NeoForge metadata suggests this add-on is client-only or not required on the server.");
+                warnings.Add("client only mod");
             }
         }
         catch

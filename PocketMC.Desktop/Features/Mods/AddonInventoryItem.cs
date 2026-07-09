@@ -17,7 +17,6 @@ public sealed class AddonInventoryItem
     public string SideLabel { get; init; } = "Side unknown";
     public byte[]? IconBytes { get; init; }
     public IReadOnlyList<string> Dependencies { get; init; } = Array.Empty<string>();
-    public IReadOnlyList<string> Warnings { get; init; } = Array.Empty<string>();
     public AddonUpdateStatus UpdateStatus { get; init; } = AddonUpdateStatus.Unknown;
     public AddonUpdateInfo? UpdateInfo { get; init; }
     public bool CanEnable { get; init; }

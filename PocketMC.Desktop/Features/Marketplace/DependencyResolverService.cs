@@ -129,7 +129,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (depType == DependencyType.Required && existing.Type == DependencyType.Optional)
                 {
                     existing.Type = DependencyType.Required;
-                    existing.IsSelected = true;
+                    if (!existing.IsAlreadyInstalled) existing.IsSelected = true;
                 }
                 return results;
             }
@@ -212,7 +212,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (depType == DependencyType.Required && canonicalExisting.Type == DependencyType.Optional)
                 {
                     canonicalExisting.Type = DependencyType.Required;
-                    canonicalExisting.IsSelected = true;
+                    if (!canonicalExisting.IsAlreadyInstalled) canonicalExisting.IsSelected = true;
                 }
                 return results;
             }

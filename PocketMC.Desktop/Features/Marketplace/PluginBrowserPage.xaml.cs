@@ -306,12 +306,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     return;
                 }
 
-                if (vm.Provider == "CurseForge" && !ConfirmMarketplaceRisk(vm.Title, rootResolved.FileName ?? vm.Title))
-                {
-                    vm.IsActionEnabled = true;
-                    vm.State = InstallState.NotInstalled;
-                    return;
-                }
+
 
                 // --- 2. User Confirmation ---
                 var confVm = new DependencyConfirmationViewModel(resolved);
@@ -367,20 +362,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        private bool ConfirmMarketplaceRisk(string projectTitle, string fileName)
-        {
-            MarketplaceInstallRisk risk = MarketplaceInstallRiskAnalyzer.Analyze(providerName: "CurseForge", _projectType, projectTitle, fileName);
-            if (!risk.RequiresConfirmation)
-            {
-                return true;
-            }
 
-            return PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
-                "CurseForge Compatibility Warning",
-                string.Join(Environment.NewLine + Environment.NewLine, risk.Warnings) +
-                Environment.NewLine + Environment.NewLine +
-                "Install anyway?");
-        }
 
         private async Task InstallSingleFileAsync(
             string url,
@@ -421,18 +403,14 @@ namespace PocketMC.Desktop.Features.Marketplace
             IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile, isPlugin: _projectType.Contains("plugin"));
             if (metadataWarnings.Count > 0)
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
-                    "Marketplace Compatibility Warning",
-                    string.Join(Environment.NewLine + Environment.NewLine, metadataWarnings));
+                File.Delete(destFile);
+                throw new InvalidOperationException(metadataWarnings[0]);
             }
 
             if (!_isModpackMode && MarketplaceArchiveInspector.IsClientOnlyAddon(destFile))
             {
-                string disabledDestFile = destFile + ".disabled-by-pocketmc";
-                if (File.Exists(disabledDestFile)) File.Delete(disabledDestFile);
-                File.Move(destFile, disabledDestFile);
-                destFile = disabledDestFile;
-                safeFileName += ".disabled-by-pocketmc";
+                File.Delete(destFile);
+                throw new InvalidOperationException("Client-side only mods cannot be installed on a server.");
             }
 
 

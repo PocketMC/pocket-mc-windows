@@ -37,8 +37,7 @@ namespace PocketMC.Desktop.Features.Mods
                     {
                         DisplayName = CleanJarName(Path.GetFileName(filePath)),
                         FileName = Path.GetFileName(filePath),
-                        LoaderType = "Unknown",
-                        Warnings = new List<string> { "File does not exist." }
+                        LoaderType = "Unknown"
                     };
                 }
 
@@ -53,14 +52,13 @@ namespace PocketMC.Desktop.Features.Mods
                 _cache[key] = metadata;
                 return metadata;
             }
-            catch (Exception ex)
+            catch
             {
                 return new JavaModMetadata
                 {
                     DisplayName = CleanJarName(Path.GetFileName(filePath)),
                     FileName = Path.GetFileName(filePath),
-                    LoaderType = "Unknown",
-                    Warnings = new List<string> { $"Failed to scan JAR: {ex.Message}" }
+                    LoaderType = "Unknown"
                 };
             }
         }
@@ -126,19 +124,16 @@ namespace PocketMC.Desktop.Features.Mods
                     if (isInModsFolder)
                     {
                         metadata.IsPluginInModsFolder = true;
-                        metadata.Warnings.Add("This looks like a plugin JAR, not a mod. Move it to plugins.");
                     }
                     return metadata;
                 }
 
                 // 6. Unknown
                 metadata.LoaderType = "Unknown";
-                metadata.Warnings.Add("Could not read mod metadata.");
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or NotSupportedException)
             {
                 metadata.LoaderType = "Unknown";
-                metadata.Warnings.Add("Could not read mod metadata.");
             }
 
             return metadata;
@@ -181,7 +176,6 @@ namespace PocketMC.Desktop.Features.Mods
                     {
                         metadata.SideSupport = ModSideSupport.ClientOnly;
                         metadata.SideLabel = "Client-only";
-                        metadata.Warnings.Add("Fabric metadata marks this mod as client-only.");
                     }
                     else if (env.Equals("server", StringComparison.OrdinalIgnoreCase))
                     {
@@ -199,7 +193,39 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     foreach (var prop in dependsProp.EnumerateObject())
                     {
-                        metadata.Dependencies.Add(prop.Name);
+                        var depName = prop.Name;
+                        if (depName == "minecraft" && prop.Value.ValueKind == JsonValueKind.String)
+                        {
+                            metadata.RequiredMinecraftVersion = prop.Value.GetString();
+                        }
+                        else if (depName == "fabricloader" && prop.Value.ValueKind == JsonValueKind.String)
+                        {
+                            metadata.RequiredLoaderVersion = prop.Value.GetString();
+                        }
+                        else if (depName != "java" && depName != "fabric")
+                        {
+                            metadata.RequiredDependencies.Add(depName);
+                        }
+                    }
+                }
+
+                if (root.TryGetProperty("recommends", out var recommendsProp) && recommendsProp.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in recommendsProp.EnumerateObject())
+                    {
+                        metadata.OptionalDependencies.Add(prop.Name);
+                    }
+                }
+
+                if (root.TryGetProperty("suggests", out var suggestsProp) && suggestsProp.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in suggestsProp.EnumerateObject())
+                    {
+                        // Avoid duplicates if a mod is in both recommends and suggests for some reason
+                        if (!metadata.OptionalDependencies.Contains(prop.Name))
+                        {
+                            metadata.OptionalDependencies.Add(prop.Name);
+                        }
                     }
                 }
 
@@ -270,7 +296,6 @@ namespace PocketMC.Desktop.Features.Mods
                         {
                             metadata.SideSupport = ModSideSupport.ClientOnly;
                             metadata.SideLabel = "Client-only";
-                            metadata.Warnings.Add("Quilt metadata marks this mod as client-only.");
                         }
                         else if (env.Equals("server", StringComparison.OrdinalIgnoreCase))
                         {
@@ -441,7 +466,6 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     metadata.SideSupport = ModSideSupport.ClientOnly;
                     metadata.SideLabel = "Client-only";
-                    metadata.Warnings.Add("Forge metadata marks this mod as client-only.");
                 }
                 else if (hasDisplayTest)
                 {

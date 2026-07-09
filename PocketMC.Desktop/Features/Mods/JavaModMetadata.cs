@@ -24,6 +24,9 @@ namespace PocketMC.Desktop.Features.Mods
         public string? IconEntryPath { get; set; }
         public byte[]? IconBytes { get; set; }
 
+        public string? RequiredMinecraftVersion { get; set; }
+        public string? RequiredLoaderVersion { get; set; }
+
         public ModSideSupport SideSupport { get; set; } = ModSideSupport.Unknown;
         public string SideLabel { get; set; } = "Unknown";
 
@@ -45,6 +48,5 @@ namespace PocketMC.Desktop.Features.Mods
         public List<string> RequiredDependencies { get; set; } = new();
         public List<string> OptionalDependencies { get; set; } = new();
         public List<string> Dependencies => RequiredDependencies.Concat(OptionalDependencies).ToList();
-        public List<string> Warnings { get; set; } = new();
     }
 }

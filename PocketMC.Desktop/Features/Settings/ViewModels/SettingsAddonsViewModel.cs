@@ -487,11 +487,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
         private PluginItemViewModel CreatePluginViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
-            var warnings = new List<string>(item.Warnings);
-            if (!IsLoaderCompatible(item.LoaderType))
-            {
-                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
-            }
 
             return new PluginItemViewModel
             {
@@ -511,8 +506,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 SideSupport = item.SideSupport,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, "Plugin", item.IconBytes),
-                HasWarnings = warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, warnings),
                 IsDisabled = item.State == AddonState.Disabled,
                 State = item.State,
                 Kind = item.Kind,
@@ -527,11 +520,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
         private ModItemViewModel CreateModViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
-            var warnings = new List<string>(item.Warnings);
-            if (!IsLoaderCompatible(item.LoaderType))
-            {
-                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
-            }
 
             return new ModItemViewModel
             {
@@ -547,8 +535,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 LoaderType = item.LoaderType,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, item.LoaderType, item.IconBytes),
-                HasWarnings = warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, warnings),
                 SideSupport = item.SideSupport,
                 SideLabel = item.SideLabel,
                 IsClientOnly = item.SideSupport == ModSideSupport.ClientOnly,
@@ -824,7 +810,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                     SideSupport = ModSideSupport.Unknown,
                     SideLabel = "Side unknown",
                     Dependencies = Array.Empty<string>(),
-                    Warnings = Array.Empty<string>()
+
                 };
 
                 AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, inventoryItem);
@@ -911,7 +897,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                     Hash = updateInfo.Hash,
                     HashType = updateInfo.HashType,
                     ReleaseType = updateInfo.ReleaseType,
-                    Warnings = updateInfo.Warnings?.ToList() ?? new List<string>()
+
                 };
 
                 await _updateService.ApplyUpdateAsync(
@@ -975,7 +961,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 SideSupport = ModSideSupport.ServerOnly,
                 SideLabel = "Server-only",
                 Dependencies = Array.Empty<string>(),
-                Warnings = Array.Empty<string>()
+
             };
 
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);
@@ -1000,7 +986,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 SideSupport = mod.SideSupport,
                 SideLabel = mod.SideLabel,
                 Dependencies = Array.Empty<string>(),
-                Warnings = Array.Empty<string>()
+
             };
 
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);

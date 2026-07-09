@@ -85,11 +85,10 @@ namespace PocketMC.Desktop.Features.Settings
 
         public List<string> SortOptions { get; } = new()
         {
-            "Name", "Last Modified", "Size", "Loader Type", "Source", "Warnings First"
+            "Name", "Last Modified", "Size", "Loader Type", "Source"
         };
 
-        public int WarningsCount => _allMods.Count(m => m.HasWarnings) + _allPlugins.Count(p => p.HasWarnings);
-        public bool HasWarningsBanner => WarningsCount > 0;
+
         public bool IsServerRunning => _isRunningCheck();
         public bool ShowServerRunningAddonMessage => IsServerRunning && (_allMods.Count > 0 || _allPlugins.Count > 0);
         public string ServerRunningAddonMessage => "Stop the server before enabling or disabling mods/plugins.";
@@ -647,11 +646,6 @@ namespace PocketMC.Desktop.Features.Settings
         private PluginItemViewModel CreatePluginViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
-            var warnings = new List<string>(item.Warnings);
-            if (!IsLoaderCompatible(item.LoaderType))
-            {
-                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
-            }
 
             var vm = new PluginItemViewModel
             {
@@ -671,8 +665,6 @@ namespace PocketMC.Desktop.Features.Settings
                 SideSupport = item.SideSupport,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, "Plugin", item.IconBytes),
-                HasWarnings = warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, warnings),
                 IsDisabled = item.State == AddonState.Disabled,
                 State = item.State,
                 Kind = item.Kind,
@@ -701,11 +693,6 @@ namespace PocketMC.Desktop.Features.Settings
         private ModItemViewModel CreateModViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
-            var warnings = new List<string>(item.Warnings);
-            if (!IsLoaderCompatible(item.LoaderType))
-            {
-                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
-            }
 
             return new ModItemViewModel
             {
@@ -721,8 +708,6 @@ namespace PocketMC.Desktop.Features.Settings
                 LoaderType = item.LoaderType,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, item.LoaderType, item.IconBytes),
-                HasWarnings = warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, warnings),
                 SideSupport = item.SideSupport,
                 SideLabel = item.SideLabel,
                 IsClientOnly = item.SideSupport == ModSideSupport.ClientOnly,
@@ -752,18 +737,6 @@ namespace PocketMC.Desktop.Features.Settings
             foreach (var f in files)
             {
                 var fileName = System.IO.Path.GetFileName(f).ToLowerInvariant();
-
-                // Audit for common client-side only mods that crash servers
-                if (fileName.Contains("sodium") || fileName.Contains("iris") || fileName.Contains("canvas") || fileName.Contains("optifine"))
-                {
-                    var res = await _dialogService.ShowDialogAsync("Client-Side Mod Warning",
-                        $"The mod '{System.IO.Path.GetFileName(f)}' appears to be a client-side rendering mod. " +
-                        "Installing this on a server will almost certainly cause a crash.\n\n" +
-                        "Do you want to skip this mod?",
-                        DialogType.Question);
-
-                    if (res == DialogResult.Yes) continue;
-                }
 
                 PocketMC.Desktop.Features.Mods.JavaModMetadata? metadata = null;
 
@@ -812,15 +785,53 @@ namespace PocketMC.Desktop.Features.Settings
 
                 if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
                 {
+                    if (metadata.LoaderType == "Fabric")
+                    {
+                        if (metadata.IsClientOnly)
+                        {
+                            _dialogService.ShowMessage("Invalid Mod",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' is a client-side only mod and cannot be installed on a server.",
+                                DialogType.Error);
+                            continue;
+                        }
+
+                        if (!PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
+                        {
+                            _dialogService.ShowMessage("Incompatible Minecraft Version",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}. This mod cannot be installed.",
+                                DialogType.Error);
+                            continue;
+                        }
+
+                        if (!PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
+                        {
+                            _dialogService.ShowMessage("Incompatible Loader Version",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Fabric Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. This mod cannot be installed.",
+                                DialogType.Error);
+                            continue;
+                        }
+                    }
+
                     if (!IsLoaderCompatible(metadata.LoaderType))
                     {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Mod Warning",
-                            $"The mod '{System.IO.Path.GetFileName(f)}' is made for {metadata.LoaderType}, but this server is running {_metadata.ServerType}.\n" +
-                            "Installing incompatible mods can cause the server to crash or fail to start.\n\n" +
-                            "Do you want to skip this mod?",
-                            DialogType.Question);
+                        string requiredType = _metadata.ServerType == "Fabric" ? "Fabric mod" : "Plugin";
+                        _dialogService.ShowMessage("Invalid Mod",
+                            $"The file '{System.IO.Path.GetFileName(f)}' is not a valid {requiredType}.",
+                            DialogType.Error);
+                        continue;
+                    }
 
-                        if (res == DialogResult.Yes) continue;
+                    if (metadata.LoaderType == "Fabric" && (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0))
+                    {
+                        var depList = new List<string>();
+                        foreach (var dep in metadata.RequiredDependencies)
+                            depList.Add($"[Required] {dep}");
+                        foreach (var dep in metadata.OptionalDependencies)
+                            depList.Add($"[Optional] {dep}");
+
+                        _dialogService.ShowMessage("Mod Dependencies",
+                            $"The mod '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the mod to work properly:\n\n{string.Join("\n", depList)}",
+                            DialogType.Information);
                     }
                 }
 
@@ -1040,7 +1051,7 @@ namespace PocketMC.Desktop.Features.Settings
                     SideSupport = ModSideSupport.Unknown,
                     SideLabel = "Side unknown",
                     Dependencies = Array.Empty<string>(),
-                    Warnings = Array.Empty<string>()
+
                 };
 
                 AddonUpdateCheckResultModel result = null!;
@@ -1150,7 +1161,7 @@ namespace PocketMC.Desktop.Features.Settings
                     Hash = updateInfo.Hash,
                     HashType = updateInfo.HashType,
                     ReleaseType = updateInfo.ReleaseType,
-                    Warnings = updateInfo.Warnings?.ToList() ?? new List<string>()
+
                 };
 
                 await _updateService.ApplyUpdateAsync(
@@ -1211,7 +1222,7 @@ namespace PocketMC.Desktop.Features.Settings
                 SideSupport = ModSideSupport.ServerOnly,
                 SideLabel = "Server-only",
                 Dependencies = Array.Empty<string>(),
-                Warnings = Array.Empty<string>()
+
             };
 
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);
@@ -1236,7 +1247,7 @@ namespace PocketMC.Desktop.Features.Settings
                 SideSupport = mod.SideSupport,
                 SideLabel = mod.SideLabel,
                 Dependencies = Array.Empty<string>(),
-                Warnings = Array.Empty<string>()
+
             };
 
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);
@@ -1474,7 +1485,6 @@ namespace PocketMC.Desktop.Features.Settings
                     "Last Modified" => filteredPlugins.OrderByDescending(p => p.LastModified),
                     "Size" => filteredPlugins.OrderByDescending(p => p.SizeKb),
                     "Source" => filteredPlugins.OrderBy(p => p.SourceLabel).ThenBy(p => p.Name),
-                    "Warnings First" => filteredPlugins.OrderByDescending(p => p.HasWarnings).ThenBy(p => p.Name),
                     _ => filteredPlugins.OrderBy(p => p.Name)
                 };
 
@@ -1499,7 +1509,6 @@ namespace PocketMC.Desktop.Features.Settings
                     "Size" => filteredMods.OrderByDescending(m => m.SizeKb),
                     "Loader Type" => filteredMods.OrderBy(m => m.LoaderType).ThenBy(m => m.Name),
                     "Source" => filteredMods.OrderBy(m => m.SourceLabel).ThenBy(m => m.Name),
-                    "Warnings First" => filteredMods.OrderByDescending(m => m.HasWarnings).ThenBy(m => m.Name),
                     _ => filteredMods.OrderBy(m => m.Name)
                 };
 
@@ -1510,8 +1519,6 @@ namespace PocketMC.Desktop.Features.Settings
                 Mods.Clear();
                 foreach (var m in filteredMods) Mods.Add(m);
 
-                OnPropertyChanged(nameof(WarningsCount));
-                OnPropertyChanged(nameof(HasWarningsBanner));
                 OnPropertyChanged(nameof(IsServerRunning));
                 OnPropertyChanged(nameof(ShowServerRunningAddonMessage));
             });
@@ -1639,8 +1646,6 @@ namespace PocketMC.Desktop.Features.Settings
         public bool ShowSideBadge => SideSupport == ModSideSupport.ClientOnly;
         public string SourceLabel { get; set; } = "Manual";
         public ImageSource? Icon { get; set; }
-        public bool HasWarnings { get; set; }
-        public string WarningText { get; set; } = "";
         public bool IsDisabled { get; set; }
         public AddonKind Kind { get; set; } = AddonKind.Plugin;
         public AddonState State { get; set; } = AddonState.Enabled;
@@ -1697,8 +1702,6 @@ namespace PocketMC.Desktop.Features.Settings
         public string LoaderType { get; set; } = "Unknown";
         public string SourceLabel { get; set; } = "Manual";
         public ImageSource? Icon { get; set; }
-        public bool HasWarnings { get; set; }
-        public string WarningText { get; set; } = "";
         public bool IsClientOnly { get; set; }
         public bool IsMetadataUnknown { get; set; }
         public bool IsDisabled { get; set; }

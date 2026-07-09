@@ -837,21 +837,7 @@
                                         </Grid>
                                     </Grid>
 
-                                    <!-- Warning Summary Banner -->
-                                    <ui:Card Visibility="{Binding Addons.HasWarningsBanner, Converter={StaticResource VisibleIfTrue}}"
-                                             Background="#2D1E24" BorderBrush="#F38BA8" BorderThickness="1"
-                                             Margin="4,0,4,16" Padding="12">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Symbol="Warning24" Foreground="#F38BA8" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                            <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="#F38BA8">
-                                                <TextBlock.Text>
-                                                    <MultiBinding StringFormat="{}{0} suspicious or client-only add-on(s) detected. Server might crash or ignore them.">
-                                                        <Binding Path="Addons.WarningsCount"/>
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </ui:Card>
+
 
                                     <ui:Card Visibility="{Binding Addons.ShowServerRunningAddonMessage, Converter={StaticResource VisibleIfTrue}}"
                                              Background="#2A2535" BorderBrush="#CBA6F7" BorderThickness="1"
@@ -996,11 +982,7 @@
                                                                     </Border>
                                                                 </StackPanel>
                                                             </WrapPanel>
-                                                            
-                                                            <!-- Warning message if any -->
-                                                            <TextBlock Visibility="{Binding HasWarnings, Converter={StaticResource VisibleIfTrue}}"
-                                                                       Text="{Binding WarningText}" FontSize="11" Foreground="#F38BA8" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                                                            
+
 
                                                         </StackPanel>
                                                         
@@ -1163,17 +1145,11 @@
                                                                         Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
                                                                     <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
                                                                 </Border>
-
-                                                                <!-- Warning Icon -->
-                                                                <ui:SymbolIcon Symbol="Warning16" Foreground="#F38BA8" Margin="8,0,0,0" VerticalAlignment="Center"
-                                                                               Visibility="{Binding HasWarnings, Converter={StaticResource VisibleIfTrue}}"
-                                                                               ToolTip="{Binding WarningText}"/>
                                                             </StackPanel>
 
                                                             <!-- Subtitle: Filename · Loader · Version · Source -->
                                                             <WrapPanel Margin="0,4,0,0" VerticalAlignment="Center">
-                                                                <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+
                                                                 
                                                                 <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                                                     <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
