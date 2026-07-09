@@ -17,9 +17,26 @@ using PocketMC.Desktop.Core.Presentation;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Instances.ImportExport;
 
 namespace PocketMC.Desktop.Features.Mods
 {
+    public class ModpackImportResultReport
+    {
+        public bool Success { get; set; }
+        public List<ModpackImportModEntry> Mods { get; set; } = new();
+        public int ExtractedOverrideCount { get; set; }
+        public List<ModpackSkippedOverride> SkippedOverrides { get; set; } = new();
+    }
+
+    public class ModpackImportModEntry
+    {
+        public string Name { get; set; } = "";
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+
     /// <summary>
     /// Orchestrates modpack imports by coordinating parsing, 
     /// loader provisioning, and file downloads.
@@ -31,8 +48,11 @@ namespace PocketMC.Desktop.Features.Mods
         private readonly DownloaderService _downloader;
         private readonly FabricProvider _fabricProvider;
         private readonly ForgeProvider _forgeProvider;
+        private readonly NeoForgeProvider _neoForgeProvider;
         private readonly InstanceManager _instanceManager;
         private readonly ModpackParser _parser;
+        private readonly AddonManifestService _manifestService;
+        private readonly ApplicationState _appState;
         private readonly ILogger<ModpackService> _logger;
 
         public ModpackService(
@@ -40,16 +60,22 @@ namespace PocketMC.Desktop.Features.Mods
             DownloaderService downloader,
             FabricProvider fabricProvider,
             ForgeProvider forgeProvider,
+            NeoForgeProvider neoForgeProvider,
             InstanceManager instanceManager,
             ModpackParser parser,
+            AddonManifestService manifestService,
+            ApplicationState appState,
             ILogger<ModpackService> logger)
         {
             _httpClient = httpClient;
             _downloader = downloader;
             _fabricProvider = fabricProvider;
             _forgeProvider = forgeProvider;
+            _neoForgeProvider = neoForgeProvider;
             _instanceManager = instanceManager;
             _parser = parser;
+            _manifestService = manifestService;
+            _appState = appState;
             _logger = logger;
         }
 
@@ -58,57 +84,189 @@ namespace PocketMC.Desktop.Features.Mods
             return _parser.ParseZipAsync(zipPath);
         }
 
-        public async Task ImportToExistingInstanceAsync(ModpackImportResult pack, InstanceMetadata metadata, string instancePath, string zipPath)
+        public async Task<ModpackImportResultReport> ImportToExistingInstanceAsync(
+            ModpackImportResult pack,
+            InstanceMetadata metadata,
+            string instancePath,
+            string zipPath,
+            IProgress<InstanceTransferProgress>? progress = null)
         {
-            // 1. Update Instance Metadata
-            metadata.MinecraftVersion = pack.MinecraftVersion;
-            if (!string.IsNullOrEmpty(pack.Loader))
-            {
-                metadata.ServerType = pack.Loader;
-                metadata.LoaderVersion = pack.LoaderVersion;
-            }
-            _instanceManager.SaveMetadata(metadata, instancePath);
+            var report = new ModpackImportResultReport();
+            
+            // Backup metadata in case of failure
+            string originalMinecraftVersion = metadata.MinecraftVersion;
+            string originalServerType = metadata.ServerType;
+            string originalLoaderVersion = metadata.LoaderVersion;
 
-            // 2. Download Loader JAR
-            string jarPath = Path.Combine(instancePath, "server.jar");
-            if (pack.Loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                await _fabricProvider.DownloadFabricJarAsync(pack.MinecraftVersion, pack.LoaderVersion, jarPath);
-            }
-            else if (pack.Loader.Equals("Forge", StringComparison.OrdinalIgnoreCase))
-            {
-                string forgeJarPath = Path.Combine(instancePath, "forge-installer.jar");
-                await _forgeProvider.DownloadForgeJarAsync(pack.MinecraftVersion, pack.LoaderVersion, forgeJarPath);
-            }
-
-            // 3. Resolve and Download Mods
-            await ResolveModUrlsAsync(pack);
-
-            foreach (var mod in pack.Mods)
-            {
-                if (string.IsNullOrEmpty(mod.DownloadUrl) || mod.DownloadUrl.StartsWith("CURSEFORGE:")) continue;
-
-                string? dest = PathSafety.ValidateContainedPath(instancePath, mod.DestinationPath);
-                if (dest == null)
+                // 1. Update Instance Metadata
+                progress?.Report(new InstanceTransferProgress
                 {
-                    _logger.LogWarning("Blocked mod download with path-traversal destination: {Path}", mod.DestinationPath);
-                    continue;
+                    CurrentStep = "Updating instance metadata...",
+                    OverallProgress = 1
+                });
+
+                metadata.MinecraftVersion = pack.MinecraftVersion;
+                if (!string.IsNullOrEmpty(pack.Loader))
+                {
+                    metadata.ServerType = pack.Loader;
+                    metadata.LoaderVersion = pack.LoaderVersion;
+                }
+                _instanceManager.SaveMetadata(metadata, instancePath);
+
+                // 2. Download Loader JAR
+                string jarPath = Path.Combine(instancePath, "server.jar");
+                if (pack.Loader.Equals("Fabric", StringComparison.OrdinalIgnoreCase))
+                {
+                    progress?.Report(new InstanceTransferProgress
+                    {
+                        CurrentStep = "Downloading Fabric loader...",
+                        OverallProgress = 3
+                    });
+                    await _fabricProvider.DownloadFabricJarAsync(pack.MinecraftVersion, pack.LoaderVersion, jarPath);
+                }
+                else if (pack.Loader.Equals("Forge", StringComparison.OrdinalIgnoreCase))
+                {
+                    progress?.Report(new InstanceTransferProgress
+                    {
+                        CurrentStep = "Downloading Forge installer...",
+                        OverallProgress = 3
+                    });
+                    string forgeJarPath = Path.Combine(instancePath, "forge-installer.jar");
+                    await _forgeProvider.DownloadForgeJarAsync(pack.MinecraftVersion, pack.LoaderVersion, forgeJarPath);
+                }
+                else if (pack.Loader.Equals("NeoForge", StringComparison.OrdinalIgnoreCase))
+                {
+                    progress?.Report(new InstanceTransferProgress
+                    {
+                        CurrentStep = "Downloading NeoForge installer...",
+                        OverallProgress = 3
+                    });
+                    string neoforgeJarPath = Path.Combine(instancePath, "neoforge-installer.jar");
+                    await _neoForgeProvider.DownloadNeoForgeJarAsync(pack.MinecraftVersion, pack.LoaderVersion, neoforgeJarPath);
                 }
 
-                Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+                // 3. Resolve and Download Mods
+                progress?.Report(new InstanceTransferProgress
+                {
+                    CurrentStep = "Resolving mod URLs...",
+                    OverallProgress = 8
+                });
+                await ResolveModUrlsAsync(pack);
 
-                try
+                int totalMods = pack.Mods.Count;
+                int currentModIndex = 0;
+
+                foreach (var mod in pack.Mods)
                 {
-                    await _downloader.DownloadFileAsync(mod.DownloadUrl, dest);
+                    currentModIndex++;
+                    double modProgressPercent = 10 + ((double)currentModIndex / totalMods) * 80;
+
+                    progress?.Report(new InstanceTransferProgress
+                    {
+                        CurrentStep = $"Downloading mods ({currentModIndex}/{totalMods})...",
+                        OverallProgress = modProgressPercent,
+                        CurrentItem = mod.Name
+                    });
+
+                    if (string.IsNullOrEmpty(mod.DownloadUrl) || mod.DownloadUrl.StartsWith("CURSEFORGE:"))
+                    {
+                        report.Mods.Add(new ModpackImportModEntry
+                        {
+                            Name = mod.Name,
+                            Success = false,
+                            ErrorMessage = "Download URL was not resolved."
+                        });
+                        continue;
+                    }
+
+                    string? dest = PathSafety.ValidateContainedPath(instancePath, mod.DestinationPath);
+                    if (dest == null)
+                    {
+                        string traversalMsg = $"Blocked mod download with path-traversal: {mod.DestinationPath}";
+                        _logger.LogWarning(traversalMsg);
+                        report.Mods.Add(new ModpackImportModEntry
+                        {
+                            Name = mod.Name,
+                            Success = false,
+                            ErrorMessage = traversalMsg
+                        });
+                        continue;
+                    }
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+
+                    try
+                    {
+                        await _downloader.DownloadFileAsync(mod.DownloadUrl, dest);
+                        
+                        // Register in AddonManifestService
+                        if (!string.IsNullOrEmpty(mod.Provider) && !string.IsNullOrEmpty(mod.ProjectId) && !string.IsNullOrEmpty(mod.VersionId))
+                        {
+                            await _manifestService.RegisterInstallAsync(
+                                instancePath,
+                                mod.Provider,
+                                mod.ProjectId,
+                                mod.VersionId,
+                                Path.GetFileName(dest),
+                                projectTitle: mod.Name,
+                                iconUrl: null,
+                                displayName: mod.Name,
+                                downloadUrl: mod.DownloadUrl
+                            );
+                        }
+
+                        report.Mods.Add(new ModpackImportModEntry
+                        {
+                            Name = mod.Name,
+                            Success = true
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to download mod: {ModName} from {Url}", mod.Name, mod.DownloadUrl);
+                        report.Mods.Add(new ModpackImportModEntry
+                        {
+                            Name = mod.Name,
+                            Success = false,
+                            ErrorMessage = ex.Message
+                        });
+                    }
                 }
-                catch (Exception ex)
+
+                // 4. Extract safe overrides only.
+                progress?.Report(new InstanceTransferProgress
                 {
-                    _logger.LogWarning(ex, "Failed to download mod: {ModName} from {Url}", mod.Name, mod.DownloadUrl);
-                }
+                    CurrentStep = "Extracting overrides...",
+                    OverallProgress = 95
+                });
+                pack.OverrideExtractionResult = await ExtractOverridesAsync(zipPath, instancePath);
+                
+                report.ExtractedOverrideCount = pack.OverrideExtractionResult.ExtractedOverrideCount;
+                report.SkippedOverrides.AddRange(pack.OverrideExtractionResult.SkippedOverrides);
+                
+                progress?.Report(new InstanceTransferProgress
+                {
+                    CurrentStep = "Completed",
+                    OverallProgress = 100
+                });
+
+                report.Success = true;
+                return report;
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Modpack import failed. Rolling back metadata.");
+                
+                // Rollback metadata on error
+                metadata.MinecraftVersion = originalMinecraftVersion;
+                metadata.ServerType = originalServerType;
+                metadata.LoaderVersion = originalLoaderVersion;
+                _instanceManager.SaveMetadata(metadata, instancePath);
 
-            // 4. Extract safe overrides only.
-            pack.OverrideExtractionResult = await ExtractOverridesAsync(zipPath, instancePath);
+                throw;
+            }
         }
 
         public async Task<ModpackOverrideExtractionResult> ExtractOverridesAsync(string zipPath, string instancePath)
@@ -157,6 +315,7 @@ namespace PocketMC.Desktop.Features.Mods
         private async Task ResolveModUrlsAsync(ModpackImportResult pack)
         {
             var cfTasks = new List<Task>();
+            string? apiKey = _appState.Settings?.CurseForgeApiKey;
 
             foreach (var mod in pack.Mods.Where(m => m.DownloadUrl.StartsWith("CURSEFORGE:")))
             {
@@ -170,7 +329,30 @@ namespace PocketMC.Desktop.Features.Mods
 
                     try
                     {
-                        var response = await _httpClient.GetFromJsonAsync<JsonObject>($"https://api.curse.tools/v1/cf/mods/{projectId}/files/{fileId}");
+                        JsonObject? response = null;
+                        if (!string.IsNullOrEmpty(apiKey))
+                        {
+                            try
+                            {
+                                var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.curseforge.com/v1/mods/{projectId}/files/{fileId}");
+                                request.Headers.Add("x-api-key", apiKey);
+                                var httpResponse = await _httpClient.SendAsync(request);
+                                if (httpResponse.IsSuccessStatusCode)
+                                {
+                                    response = await httpResponse.Content.ReadFromJsonAsync<JsonObject>();
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Official CurseForge API resolution failed for project {ProjectId} file {FileId}. Falling back to proxy.", projectId, fileId);
+                            }
+                        }
+
+                        if (response == null)
+                        {
+                            response = await _httpClient.GetFromJsonAsync<JsonObject>($"https://api.curse.tools/v1/cf/mods/{projectId}/files/{fileId}");
+                        }
+
                         string? downloadUrl = response?["data"]?["downloadUrl"]?.ToString();
                         string? fileName = response?["data"]?["fileName"]?.ToString();
 
@@ -198,4 +380,3 @@ namespace PocketMC.Desktop.Features.Mods
         }
     }
 }
-
