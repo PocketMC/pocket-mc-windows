@@ -104,14 +104,26 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? fileHashType = null,
             string? minecraftVersion = null,
             string? loader = null,
-            string? downloadUrl = null)
+            string? downloadUrl = null,
+            string? projectSlug = null)
         {
             var manifest = await LoadManifestAsync(serverDir);
             string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
 
             // Look up existing entry to preserve properties
             var existing = manifest.Entries.FirstOrDefault(e => e.ProjectId == projectId && e.Provider == provider);
-            string? projectSlug = existing?.ProjectSlug;
+            
+            if (existing == null && (!string.IsNullOrWhiteSpace(projectTitle) || !string.IsNullOrWhiteSpace(projectSlug)))
+            {
+                existing = manifest.Entries.FirstOrDefault(e =>
+                    (!string.IsNullOrWhiteSpace(projectTitle) && e.ProjectTitle != null && e.ProjectTitle.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(projectSlug) && e.ProjectSlug != null && e.ProjectSlug.Equals(projectSlug, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(projectTitle) && e.DisplayName != null && e.DisplayName.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
+                    e.FileName.Equals(safeFileName, StringComparison.OrdinalIgnoreCase)
+                );
+            }
+
+            projectSlug ??= existing?.ProjectSlug;
 
             projectTitle ??= existing?.ProjectTitle;
             iconUrl ??= existing?.IconUrl;
@@ -125,7 +137,13 @@ namespace PocketMC.Desktop.Features.Marketplace
             downloadUrl ??= existing?.DownloadUrl;
 
             // Remove any existing entry for this project to avoid duplicates (effectively an "update")
-            manifest.Entries.RemoveAll(e => e.ProjectId == projectId && e.Provider == provider);
+            manifest.Entries.RemoveAll(e =>
+                (e.ProjectId == projectId && e.Provider == provider) ||
+                e.FileName.Equals(safeFileName, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrWhiteSpace(projectTitle) && e.ProjectTitle != null && e.ProjectTitle.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(projectSlug) && e.ProjectSlug != null && e.ProjectSlug.Equals(projectSlug, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(projectTitle) && e.DisplayName != null && e.DisplayName.Equals(projectTitle, StringComparison.OrdinalIgnoreCase))
+            );
 
             manifest.Entries.Add(new AddonManifestEntry
             {
@@ -181,10 +199,20 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        public async Task<bool> IsInstalledAsync(string serverDir, string provider, string projectId, EngineCompatibility compat)
+        public async Task<bool> IsInstalledAsync(string serverDir, string provider, string projectId, EngineCompatibility compat, string? projectTitle = null, string? projectSlug = null)
         {
             var manifest = await LoadManifestAsync(serverDir);
             var entry = manifest.Entries.Find(e => e.ProjectId == projectId && e.Provider == provider);
+
+            if (entry == null && (!string.IsNullOrWhiteSpace(projectTitle) || !string.IsNullOrWhiteSpace(projectSlug)))
+            {
+                entry = manifest.Entries.Find(e =>
+                    (!string.IsNullOrWhiteSpace(projectTitle) && e.ProjectTitle != null && e.ProjectTitle.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(projectSlug) && e.ProjectSlug != null && e.ProjectSlug.Equals(projectSlug, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(projectTitle) && e.DisplayName != null && e.DisplayName.Equals(projectTitle, StringComparison.OrdinalIgnoreCase))
+                );
+            }
+
             if (entry == null) return false;
 
             // Verify file still exists on disk
@@ -193,7 +221,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             if (filePath == null || !File.Exists(filePath))
             {
                 // Auto-cleanup stale manifest entry
-                await UnregisterAsync(serverDir, provider, projectId);
+                await UnregisterAsync(serverDir, entry.Provider, entry.ProjectId);
                 return false;
             }
 

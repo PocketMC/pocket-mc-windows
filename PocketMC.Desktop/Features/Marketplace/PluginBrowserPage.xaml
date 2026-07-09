@@ -56,9 +56,8 @@
             </ui:Card>
         </Grid>
 
-        <!-- Content Area -->
         <Grid Grid.Row="2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent" Padding="0,0,16,0">
+            <ScrollViewer x:Name="ResultsScrollViewer" ScrollChanged="ResultsScrollViewer_ScrollChanged" VerticalScrollBarVisibility="Auto" Background="Transparent" Padding="0,0,16,0">
                 <StackPanel Background="Transparent">
                     <ItemsControl x:Name="ListResults">
                         <ItemsControl.ItemTemplate>
@@ -97,7 +96,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <ui:Button x:Name="BtnLoadMore" Content="Load More" Appearance="Secondary" HorizontalAlignment="Center" Margin="0,8,0,16" Click="BtnLoadMore_Click" Visibility="Collapsed"/>
+                    <ui:ProgressRing x:Name="ProgressLoadMore" IsIndeterminate="True" Width="24" Height="24" Visibility="Collapsed" HorizontalAlignment="Center" Margin="0,8,0,16"/>
                 </StackPanel>
             </ScrollViewer>
 

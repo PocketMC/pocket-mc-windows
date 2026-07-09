@@ -443,6 +443,8 @@ namespace PocketMC.Desktop.Features.Settings
             var files = await _dialogService.OpenFilesDialogAsync("Select Plugin(s)", filter);
             foreach (var f in files)
             {
+                PocketMC.Desktop.Features.Mods.JavaModMetadata? metadata = null;
+
                 if (!IsPocketmine)
                 {
                     // Step 1: Plugin presence check
@@ -455,8 +457,49 @@ namespace PocketMC.Desktop.Features.Settings
                     }
 
                     // Step 2: Scan metadata
-                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                }
+
+                // Step 2.5: Check for existing plugin
+                string newFileName = System.IO.Path.GetFileName(f);
+                string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
+                string modId = metadata?.ModId ?? "";
+
+                var existingPlugin = Plugins.FirstOrDefault(p =>
+                {
+                    if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
+                    {
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    }
+                    string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
+                    if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    return false;
+                });
+
+                if (existingPlugin != null)
+                {
+                    var overwriteRes = await _dialogService.ShowDialogAsync("Plugin Already Exists", 
+                        $"The plugin '{displayName}' appears to be already installed as '{existingPlugin.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
                     
+                    if (overwriteRes != DialogResult.Yes) continue;
+                    
+                    if (!string.Equals(existingPlugin.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var oldFilePath = System.IO.Path.Combine(_serverDir, "plugins", existingPlugin.FileName);
+                        if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
+                        
+                        await _manifestService.UnregisterByFileNameAsync(_serverDir, existingPlugin.FileName);
+                    }
+                }
+
+                if (!IsPocketmine && metadata != null)
+                {
                     // Step 3: API version check
                     if (!string.IsNullOrEmpty(metadata.ApiVersion) && !string.IsNullOrEmpty(_metadata.MinecraftVersion))
                     {
@@ -483,6 +526,7 @@ namespace PocketMC.Desktop.Features.Settings
                             DialogType.Information);
                     }
                 }
+
 
                 // Step 5: Copy file
                 var dir = System.IO.Path.Combine(_serverDir, "plugins");
@@ -686,9 +730,53 @@ namespace PocketMC.Desktop.Features.Settings
                     if (res == DialogResult.Yes) continue;
                 }
 
+                PocketMC.Desktop.Features.Mods.JavaModMetadata? metadata = null;
+
                 if (!IsBedrockDedicated && !IsPocketmine)
                 {
-                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                }
+
+                // Check for existing mod
+                string newFileName = System.IO.Path.GetFileName(f);
+                string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
+                string modId = metadata?.ModId ?? "";
+
+                var existingMod = Mods.FirstOrDefault(p =>
+                {
+                    if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
+                    {
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    }
+                    string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
+                    if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    return false;
+                });
+
+                if (existingMod != null)
+                {
+                    var overwriteRes = await _dialogService.ShowDialogAsync("Mod Already Exists", 
+                        $"The mod '{displayName}' appears to be already installed as '{existingMod.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
+                    
+                    if (overwriteRes != DialogResult.Yes) continue;
+                    
+                    if (!string.Equals(existingMod.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var oldFilePath = System.IO.Path.Combine(_serverDir, "mods", existingMod.FileName);
+                        if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
+                        
+                        await _manifestService.UnregisterByFileNameAsync(_serverDir, existingMod.FileName);
+                    }
+                }
+
+                if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
+                {
                     if (!IsLoaderCompatible(metadata.LoaderType))
                     {
                         var res = await _dialogService.ShowDialogAsync("Incompatible Mod Warning",

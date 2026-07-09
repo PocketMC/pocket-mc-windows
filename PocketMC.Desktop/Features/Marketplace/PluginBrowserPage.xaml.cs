@@ -40,6 +40,8 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly EngineCompatibility _compat;
         private readonly ObservableCollection<MarketplaceItemViewModel> _results = new();
         private int _currentOffset = 0;
+        private bool _isLoadingMore = false;
+        private bool _hasMoreResults = true;
         private System.Threading.CancellationTokenSource? _searchCts;
 
         public event Action<string>? OnModpackDownloaded;
@@ -185,7 +187,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                         if (_serverDir != null)
                         {
-                            bool installed = await _manifestService.IsInstalledAsync(_serverDir, vm.Provider, vm.ProjectId, _compat);
+                            bool installed = await _manifestService.IsInstalledAsync(_serverDir, vm.Provider, vm.ProjectId, _compat, vm.Title, vm.Slug);
                             vm.State = installed ? InstallState.Installed : InstallState.NotInstalled;
                         }
 
@@ -194,7 +196,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
 
                 _currentOffset += hits.Count;
-                BtnLoadMore.Visibility = hits.Count >= 20 ? Visibility.Visible : Visibility.Collapsed;
+                _hasMoreResults = hits.Count >= 20;
             }
             catch (Exception ex)
             {
@@ -204,30 +206,49 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 ProgressSearching.Visibility = Visibility.Collapsed;
                 ListResults.Visibility = Visibility.Visible;
+                if (append)
+                {
+                    ProgressLoadMore.Visibility = Visibility.Collapsed;
+                    _isLoadingMore = false;
+                }
             }
         }
 
         private async void TxtSearch_TextChanged(Wpf.Ui.Controls.AutoSuggestBox sender, Wpf.Ui.Controls.AutoSuggestBoxTextChangedEventArgs e)
         {
             if (!IsLoaded) return;
-
             _searchCts?.Cancel();
             _searchCts = new System.Threading.CancellationTokenSource();
-            var token = _searchCts.Token;
+            var ct = _searchCts.Token;
 
             try
             {
-                await Task.Delay(500, token);
-                await RefreshResultsAsync();
+                await Task.Delay(500, ct);
+                if (!ct.IsCancellationRequested)
+                {
+                    await RefreshResultsAsync();
+                }
             }
             catch (OperationCanceledException)
             {
             }
         }
 
-        private async void BtnLoadMore_Click(object sender, RoutedEventArgs e)
+        private async void ResultsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            await RefreshResultsAsync(append: true);
+            if (e.VerticalChange > 0)
+            {
+                var scrollViewer = (ScrollViewer)sender;
+                if (scrollViewer.VerticalOffset + scrollViewer.ViewportHeight >= scrollViewer.ExtentHeight - 50)
+                {
+                    if (!_isLoadingMore && _hasMoreResults)
+                    {
+                        _isLoadingMore = true;
+                        ProgressLoadMore.Visibility = Visibility.Visible;
+                        await RefreshResultsAsync(append: true);
+                    }
+                }
+            }
         }
 
         private void ShowCurseForgeApiKeyDialog()
@@ -318,7 +339,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     string? icon = isRoot ? vm.IconUrl : null;
                     string? disp = isRoot ? vm.Title : item.ProjectTitle;
 
-                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp, item.ClientSide, item.ServerSide, progress, ct);
+                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp, item.ClientSide, item.ServerSide, isRoot ? vm.Slug : null, progress, ct);
                 };
 
                 installDialog.OnAllInstallsCompleted = () =>
@@ -374,6 +395,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? displayName = null,
             string? clientSide = null,
             string? serverSide = null,
+            string? projectSlug = null,
             IProgress<DownloadProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
@@ -439,7 +461,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                     hashType,
                     _mcVersion,
                     _compat.LoaderName,
-                    downloadUrl: url);
+                    downloadUrl: url,
+                    projectSlug: projectSlug);
             }
         }
 

@@ -194,8 +194,14 @@ namespace PocketMC.Desktop.Features.Marketplace
                 return results;
             }
 
+            // Re-check installed status with title fallback if initially false
+            if (!alreadyInstalled && version != null && !string.IsNullOrWhiteSpace(version.ProjectTitle))
+            {
+                alreadyInstalled = await _manifestService.IsInstalledAsync(serverDir, provider.Name, projectId, compat, version.ProjectTitle, null);
+            }
+
             // Phase 2: Canonical ID Check
-            string canonicalId = version.ProjectId.ToLowerInvariant();
+            string canonicalId = version!.ProjectId.ToLowerInvariant();
             var canonicalExisting = results.FirstOrDefault(r => r.ProjectId.Equals(canonicalId, StringComparison.OrdinalIgnoreCase));
 
             if (canonicalExisting != null)
