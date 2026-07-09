@@ -35,6 +35,9 @@ namespace PocketMC.Desktop.Features.Mods
         public string Name { get; set; } = "";
         public string DownloadUrl { get; set; } = "";
         public string DestinationPath { get; set; } = "";
+        public string? Provider { get; set; }
+        public string? ProjectId { get; set; }
+        public string? VersionId { get; set; }
     }
 
     /// <summary>
@@ -93,6 +96,11 @@ namespace PocketMC.Desktop.Features.Mods
                 result.Loader = "Forge";
                 result.LoaderVersion = index?["dependencies"]?["forge"]?.ToString() ?? "";
             }
+            else if (index?["dependencies"]?["neoforge"] != null)
+            {
+                result.Loader = "NeoForge";
+                result.LoaderVersion = index?["dependencies"]?["neoforge"]?.ToString() ?? "";
+            }
             else if (index?["dependencies"]?["quilt-loader"] != null)
             {
                 result.Loader = "Quilt";
@@ -125,11 +133,29 @@ namespace PocketMC.Desktop.Features.Mods
                             continue;
                         }
 
+                        string? provider = null;
+                        string? projectId = null;
+                        string? versionId = null;
+
+                        if (downloadUrl.Contains("cdn.modrinth.com/data/"))
+                        {
+                            var parts = downloadUrl.Split('/');
+                            if (parts.Length >= 7)
+                            {
+                                provider = "Modrinth";
+                                projectId = parts[4];
+                                versionId = parts[6];
+                            }
+                        }
+
                         result.Mods.Add(new ModpackFile
                         {
                             Name = Path.GetFileName(destPath),
                             DownloadUrl = downloadUrl,
-                            DestinationPath = destPath
+                            DestinationPath = destPath,
+                            Provider = provider,
+                            ProjectId = projectId,
+                            VersionId = versionId
                         });
                     }
                 }
@@ -165,6 +191,11 @@ namespace PocketMC.Desktop.Features.Mods
                     result.Loader = "Forge";
                     result.LoaderVersion = loaderId.Substring(6);
                 }
+                else if (loaderId.StartsWith("neoforge-"))
+                {
+                    result.Loader = "NeoForge";
+                    result.LoaderVersion = loaderId.Substring(9);
+                }
             }
 
             // Extract Mod Files (CurseForge specific indices)
@@ -184,7 +215,10 @@ namespace PocketMC.Desktop.Features.Mods
                         {
                             Name = $"CF-{projectID}-{fileID}",
                             DestinationPath = $"mods/{projectID}-{fileID}.jar",
-                            DownloadUrl = $"CURSEFORGE:{projectID}:{fileID}"
+                            DownloadUrl = $"CURSEFORGE:{projectID}:{fileID}",
+                            Provider = "CurseForge",
+                            ProjectId = projectID,
+                            VersionId = fileID
                         });
                     }
                 }

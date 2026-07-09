@@ -77,21 +77,21 @@ namespace PocketMC.Desktop.Features.Mods
             {
                 using var archive = ZipFile.OpenRead(fi.FullName);
 
-                // 1. Quilt
-                var quiltEntry = archive.GetEntry("quilt.mod.json");
-                if (quiltEntry != null)
-                {
-                    metadata.LoaderType = "Quilt";
-                    ParseQuiltMetadata(archive, quiltEntry, metadata);
-                    return metadata;
-                }
-
-                // 2. Fabric
+                // 1. Fabric
                 var fabricEntry = archive.GetEntry("fabric.mod.json");
                 if (fabricEntry != null)
                 {
                     metadata.LoaderType = "Fabric";
                     ParseFabricMetadata(archive, fabricEntry, metadata);
+                    return metadata;
+                }
+
+                // 2. Quilt
+                var quiltEntry = archive.GetEntry("quilt.mod.json");
+                if (quiltEntry != null)
+                {
+                    metadata.LoaderType = "Quilt";
+                    ParseQuiltMetadata(archive, quiltEntry, metadata);
                     return metadata;
                 }
 

@@ -667,6 +667,30 @@ someOtherKey=""value"" # clientSideOnly=true was removed in v2
             Assert.False(metadata.IsClientOnly, "clientSideOnly in an inline comment should not flag the mod.");
             Assert.Equal(ModSideSupport.Unknown, metadata.SideSupport);
         }
+
+        [Fact]
+        public void ScanJar_HybridFabricQuiltMod_ShouldClassifyAsFabric()
+        {
+            string quiltJson = "{\"id\": \"quiltmod\", \"version\": \"1.0.0\"}";
+            string fabricJson = "{\"id\": \"fabricmod\", \"version\": \"1.0.0\"}";
+
+            string jarPath = CreateTempJar("hybrid-mod.jar", a =>
+            {
+                using (var w = new StreamWriter(a.CreateEntry("quilt.mod.json").Open()))
+                {
+                    w.Write(quiltJson);
+                }
+                using (var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open()))
+                {
+                    w.Write(fabricJson);
+                }
+            });
+
+            var metadata = JavaModMetadataService.ScanJar(jarPath);
+
+            Assert.Equal("Fabric", metadata.LoaderType);
+            Assert.Equal("fabricmod", metadata.ModId);
+        }
     }
 }
 
