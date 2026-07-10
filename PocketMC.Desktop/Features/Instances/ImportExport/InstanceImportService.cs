@@ -1372,18 +1372,23 @@ public sealed class InstanceImportService : IInstanceImportService
     }
 
     public async Task<InstanceImportResult> ImportLocalFolderAsync(
-        string sourceFolderPath,
-        string requestedName,
-        string serverType,
-        string minecraftVersion,
-        bool copyFiles,
+        LocalFolderImportRequest request,
         IProgress<InstanceTransferProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
+        string sourceFolderPath = request.SourceFolderPath;
+        string requestedName = request.RequestedName;
+        string serverType = request.ServerType;
+        string minecraftVersion = request.MinecraftVersion;
+        bool copyFiles = request.CopyFiles;
+
         if (string.IsNullOrWhiteSpace(sourceFolderPath))
-            throw new ArgumentException("Source folder path cannot be empty.", nameof(sourceFolderPath));
+            throw new ArgumentException("Source folder path cannot be empty.", nameof(request.SourceFolderPath));
         if (string.IsNullOrWhiteSpace(requestedName))
-            throw new ArgumentException("Requested name cannot be empty.", nameof(requestedName));
+            throw new ArgumentException("Requested name cannot be empty.", nameof(request.RequestedName));
 
         if (!Directory.Exists(sourceFolderPath))
         {
@@ -1391,7 +1396,8 @@ public sealed class InstanceImportService : IInstanceImportService
         }
 
         string serversRoot = _pathService.GetServersRoot();
-        if (Path.GetFullPath(sourceFolderPath).StartsWith(Path.GetFullPath(serversRoot), StringComparison.OrdinalIgnoreCase))
+        string relativePath = Path.GetRelativePath(serversRoot, sourceFolderPath);
+        if (PathSafety.ValidateContainedPath(serversRoot, relativePath) != null)
         {
             throw new InvalidOperationException("The source folder cannot be inside the PocketMC servers storage directory.");
         }
@@ -1401,6 +1407,7 @@ public sealed class InstanceImportService : IInstanceImportService
 
         string destinationPath = ResolveUniqueInstancePath(requestedName);
         bool success = false;
+        bool didMove = false;
 
         try
         {
@@ -1415,6 +1422,7 @@ public sealed class InstanceImportService : IInstanceImportService
             {
                 Report(progress, "Moving server files...", 10);
                 await MoveDirectoryAsync(sourceFolderPath, destinationPath, progress, linkedToken).ConfigureAwait(false);
+                didMove = true;
             }
 
             Report(progress, "Configuring instance settings...", 80);
@@ -1493,6 +1501,7 @@ public sealed class InstanceImportService : IInstanceImportService
             {
                 Id = Guid.NewGuid(),
                 Name = requestedName,
+                Description = request.Description ?? string.Empty,
                 ServerType = serverType,
                 MinecraftVersion = minecraftVersion,
                 LoaderVersion = string.Empty,
@@ -1545,9 +1554,28 @@ public sealed class InstanceImportService : IInstanceImportService
         }
         catch
         {
-            if (!success && Directory.Exists(destinationPath))
+            if (!success)
             {
-                try { Directory.Delete(destinationPath, true); } catch { }
+                if (didMove && !string.IsNullOrEmpty(sourceFolderPath) && Directory.Exists(destinationPath))
+                {
+                    try
+                    {
+                        if (Directory.Exists(sourceFolderPath))
+                        {
+                            Directory.Delete(sourceFolderPath, true);
+                        }
+                        await MoveDirectoryAsync(destinationPath, sourceFolderPath, null, CancellationToken.None).ConfigureAwait(false);
+                    }
+                    catch (Exception restoreEx)
+                    {
+                        _logger.LogError(restoreEx, "Failed to restore moved directory from '{DestinationPath}' to '{SourceFolderPath}'.", destinationPath, sourceFolderPath);
+                    }
+                }
+
+                if (Directory.Exists(destinationPath))
+                {
+                    try { Directory.Delete(destinationPath, true); } catch { }
+                }
             }
             throw;
         }

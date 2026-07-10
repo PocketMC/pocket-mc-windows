@@ -109,6 +109,57 @@ public sealed class InstanceImportViewModelTests
         Assert.Contains("Modrinth", viewModel.ErrorMessage);
     }
 
+    [Fact]
+    public void FolderImport_GatingAndCommands()
+    {
+        var service = new FakeImportService();
+        var viewModel = new InstanceImportViewModel(service);
+
+        // Initially package mode
+        Assert.True(viewModel.IsPackageImport);
+        Assert.False(viewModel.IsFolderImport);
+
+        // Switch mode to Folder
+        viewModel.Mode = ImportMode.Folder;
+        Assert.False(viewModel.IsPackageImport);
+        Assert.True(viewModel.IsFolderImport);
+
+        // CanImport gating constraints
+        Assert.False(viewModel.CanImport); // Empty folder path, version, eula
+
+        viewModel.FolderPath = @"C:\TestServer";
+        viewModel.MinecraftVersion = "1.20.4";
+        viewModel.AcceptEula = true;
+        Assert.True(viewModel.CanImport);
+    }
+
+    [Fact]
+    public async Task ImportCommand_FolderImport_ForwardsAllFieldsCorrectly()
+    {
+        var service = new FakeImportService();
+        var viewModel = new InstanceImportViewModel(service)
+        {
+            Mode = ImportMode.Folder,
+            FolderPath = @"C:\TestServer",
+            RequestedName = "My Custom Server",
+            SelectedServerType = "Fabric",
+            MinecraftVersion = "1.21.1",
+            ShouldCopyFiles = false,
+            Description = "A clean test server instance",
+            AcceptEula = true
+        };
+
+        await viewModel.ImportCommand.ExecuteAsync(null);
+
+        Assert.NotNull(service.LastFolderRequest);
+        Assert.Equal(@"C:\TestServer", service.LastFolderRequest.SourceFolderPath);
+        Assert.Equal("My Custom Server", service.LastFolderRequest.RequestedName);
+        Assert.Equal("Fabric", service.LastFolderRequest.ServerType);
+        Assert.Equal("1.21.1", service.LastFolderRequest.MinecraftVersion);
+        Assert.False(service.LastFolderRequest.CopyFiles);
+        Assert.Equal("A clean test server instance", service.LastFolderRequest.Description);
+    }
+
     private sealed class FakeImportService : IInstanceImportService
     {
         public Func<InstanceImportRequest, IProgress<InstanceTransferProgress>?, CancellationToken, Task<InstanceImportResult>>? ImportHandler { get; set; }
@@ -153,15 +204,14 @@ public sealed class InstanceImportViewModelTests
             return Task.FromResult(new InstanceImportResult());
         }
 
+        public LocalFolderImportRequest? LastFolderRequest { get; private set; }
+
         public Task<InstanceImportResult> ImportLocalFolderAsync(
-            string sourceFolderPath,
-            string requestedName,
-            string serverType,
-            string minecraftVersion,
-            bool copyFiles,
+            LocalFolderImportRequest request,
             IProgress<InstanceTransferProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
+            LastFolderRequest = request;
             return Task.FromResult(new InstanceImportResult());
         }
     }
