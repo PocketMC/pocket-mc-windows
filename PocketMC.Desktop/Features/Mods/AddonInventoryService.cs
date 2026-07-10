@@ -64,7 +64,42 @@ public sealed class AddonInventoryService
             var items = new List<AddonInventoryItem>();
             ScanKind(root, metadata, AddonKind.Mod, manifest, state, serverRunning, items, cancellationToken);
             ScanKind(root, metadata, AddonKind.Plugin, manifest, state, serverRunning, items, cancellationToken);
-            return (IReadOnlyList<AddonInventoryItem>)items
+            
+            var itemsToKeep = new List<AddonInventoryItem>();
+            
+            foreach (var kindGroup in items.GroupBy(i => i.Kind))
+            {
+                var groupedById = kindGroup.GroupBy(i => !string.IsNullOrEmpty(i.ModId) ? i.ModId.ToLowerInvariant() : i.DisplayName.ToLowerInvariant());
+                
+                foreach (var group in groupedById)
+                {
+                    if (group.Count() == 1)
+                    {
+                        itemsToKeep.Add(group.First());
+                        continue;
+                    }
+                    
+                    var sorted = group
+                        .OrderBy(i => i.Provenance == null ? 1 : 0) // Prefer tracked over manual
+                        .ThenByDescending(i => i.LastModifiedUtc) // Prefer newest file
+                        .ToList();
+                        
+                    var winner = sorted.First();
+                    itemsToKeep.Add(winner);
+                    
+                    foreach (var loser in sorted.Skip(1))
+                    {
+                        try
+                        {
+                            if (File.Exists(loser.FullPath)) File.Delete(loser.FullPath);
+                            if (!string.IsNullOrEmpty(loser.DisabledPath) && File.Exists(loser.DisabledPath)) File.Delete(loser.DisabledPath);
+                        }
+                        catch { /* Ignore locks */ }
+                    }
+                }
+            }
+
+            return (IReadOnlyList<AddonInventoryItem>)itemsToKeep
                 .OrderBy(item => item.Kind)
                 .ThenBy(item => item.State)
                 .ThenBy(item => item.DisplayName, StringComparer.OrdinalIgnoreCase)
