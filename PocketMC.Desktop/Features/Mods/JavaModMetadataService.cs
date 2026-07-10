@@ -74,7 +74,8 @@ namespace PocketMC.Desktop.Features.Mods
                 using var archive = ZipFile.OpenRead(fi.FullName);
 
                 bool isFabricExpected = string.Equals(expectedLoader, "Fabric", StringComparison.OrdinalIgnoreCase);
-                bool isForgeExpected = string.Equals(expectedLoader, "Forge", StringComparison.OrdinalIgnoreCase) || string.Equals(expectedLoader, "NeoForge", StringComparison.OrdinalIgnoreCase);
+                bool isForgeExpected = string.Equals(expectedLoader, "Forge", StringComparison.OrdinalIgnoreCase);
+                bool isNeoForgeExpected = string.Equals(expectedLoader, "NeoForge", StringComparison.OrdinalIgnoreCase);
                 bool isQuiltExpected = string.Equals(expectedLoader, "Quilt", StringComparison.OrdinalIgnoreCase);
 
                 var quiltEntry = archive.GetEntry("quilt.mod.json");
@@ -93,11 +94,28 @@ namespace PocketMC.Desktop.Features.Mods
                     return metadata;
                 }
 
-                if (isForgeExpected && (neoforgeEntry != null || forgeEntry != null))
+                if (isNeoForgeExpected)
                 {
-                    var entryToUse = neoforgeEntry ?? forgeEntry;
-                    metadata.LoaderType = neoforgeEntry != null ? "NeoForge" : "Forge";
-                    ParseForgeMetadata(archive, entryToUse!, metadata);
+                    if (neoforgeEntry != null)
+                    {
+                        metadata.LoaderType = "NeoForge";
+                        ParseForgeMetadata(archive, neoforgeEntry, metadata);
+                        metadata.SanitizeDependencies();
+                        return metadata;
+                    }
+                    if (forgeEntry != null)
+                    {
+                        metadata.LoaderType = "Forge";
+                        ParseForgeMetadata(archive, forgeEntry, metadata);
+                        metadata.SanitizeDependencies();
+                        return metadata;
+                    }
+                }
+
+                if (isForgeExpected && forgeEntry != null)
+                {
+                    metadata.LoaderType = "Forge";
+                    ParseForgeMetadata(archive, forgeEntry, metadata);
                     metadata.SanitizeDependencies();
                     return metadata;
                 }

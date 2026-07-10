@@ -264,10 +264,15 @@ namespace PocketMC.Desktop.Features.Settings
 
         private void LoadAddonsInternal(bool runSync)
         {
-            Action action = () =>
+            Func<Task> action = async () =>
             {
-                var manifest = _manifestService.LoadManifest(_serverDir);
+                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Desktop.Features.Marketplace.ModrinthService)) as PocketMC.Desktop.Features.Marketplace.ModrinthService;
+                if (modrinthService != null)
+                {
+                    await _manifestService.SyncManifestAsync(_serverDir, modrinthService, _metadata.Compatibility);
+                }
 
+                var manifest = _manifestService.LoadManifest(_serverDir);
                 if (IsBedrockDedicated)
                 {
                     var items = BuildBedrockAddonList();
@@ -284,7 +289,7 @@ namespace PocketMC.Desktop.Features.Settings
                 }
                 else
                 {
-                    var inventory = _inventoryService.ScanAsync(_metadata, _serverDir).GetAwaiter().GetResult();
+                    var inventory = await _inventoryService.ScanAsync(_metadata, _serverDir);
                     var pluginItems = inventory
                         .Where(item => item.Kind == AddonKind.Plugin)
                         .Select(CreatePluginViewModel)
@@ -301,7 +306,7 @@ namespace PocketMC.Desktop.Features.Settings
 
             if (runSync)
             {
-                action();
+                action().GetAwaiter().GetResult();
             }
             else
             {
