@@ -125,24 +125,8 @@
                                              Checked="ToggleTelemetry_Changed"
                                              Unchecked="ToggleTelemetry_Changed"/>
                         </Grid>
-                    </StackPanel>
-                </ui:CardExpander>
 
-                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Power24}" Margin="0,0,0,12">
-                    <ui:CardExpander.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="Power Management" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Control how PocketMC keeps running servers available." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Grid>
-                    </ui:CardExpander.Header>
-
-                    <StackPanel Margin="16,8,16,16">
-                        <Grid>
+                        <Grid Margin="0,12,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -160,6 +144,34 @@
                                              VerticalAlignment="Center"
                                              Checked="ToggleKeepComputerAwakeWhileServersRunning_Changed"
                                              Unchecked="ToggleKeepComputerAwakeWhileServersRunning_Changed"/>
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon FolderOpen24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Storage &amp; Root Directory" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Change or transfer the PocketMC root storage folder." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <TextBlock Text="PocketMC Root Folder Path" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="This folder holds your Minecraft server instances, Java/PHP runtimes, and network tunnel binaries." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:TextBox x:Name="RootDirectoryPathInput" IsReadOnly="True" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ui:Button Grid.Column="1" x:Name="BtnChangeRootDirectory" Content="Change Location" Icon="{ui:SymbolIcon FolderOpen24}" Click="ChangeRootDirectory_Click" VerticalAlignment="Center"/>
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
