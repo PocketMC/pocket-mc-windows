@@ -338,7 +338,7 @@
                                            Symbol="Checkmark24"
                                            Foreground="{DynamicResource SystemFillColorSuccessBrush}"
                                            Margin="0,0,10,0"
-                                           VerticalAlignment="Top"/>
+                                           VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1"
                                        Text="The imported instance is ready on the dashboard."
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"

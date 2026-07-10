@@ -1419,9 +1419,10 @@ public sealed class InstanceImportService : IInstanceImportService
 
             Report(progress, "Configuring instance settings...", 80);
 
-            // Rename the main server jar to server.jar if it doesn't exist (unless it's bedrock or pocketmine which don't run via server.jar)
-            if (!serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) && 
-                !serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
+            // Rename the main server jar to server.jar if it doesn't exist (only for Vanilla, Fabric, and Paper which run directly via server.jar)
+            if (serverType.Equals("Vanilla", StringComparison.OrdinalIgnoreCase) ||
+                serverType.Equals("Fabric", StringComparison.OrdinalIgnoreCase) ||
+                serverType.Equals("Paper", StringComparison.OrdinalIgnoreCase))
             {
                 string serverJarPath = Path.Combine(destinationPath, "server.jar");
                 if (!File.Exists(serverJarPath))
