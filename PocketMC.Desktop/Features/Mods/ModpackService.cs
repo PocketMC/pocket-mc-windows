@@ -285,6 +285,14 @@ namespace PocketMC.Desktop.Features.Mods
 
                             if (success)
                             {
+                                lock (lockObj)
+                                {
+                                    report.Mods.Add(new ModpackImportModEntry
+                                    {
+                                        Name = mod.Name,
+                                        Success = true
+                                    });
+                                }
                                 // Register in AddonManifestService
                                 if (!string.IsNullOrEmpty(mod.Provider) && !string.IsNullOrEmpty(mod.ProjectId) && !string.IsNullOrEmpty(mod.VersionId))
                                 {
@@ -377,8 +385,9 @@ namespace PocketMC.Desktop.Features.Mods
             InstanceMetadata metadata,
             string instancePath,
             string zipPath,
-            IProgress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress> importProgress)
+            IProgress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>? importProgress = null)
         {
+            await ResolveModUrlsAsync(pack);
             var report = await ExecuteImportAsync(pack, metadata, instancePath, zipPath, new List<PocketMC.Desktop.Features.Marketplace.Models.ModDownloadTaskViewModel>(), importProgress, CancellationToken.None);
             return report;
         }

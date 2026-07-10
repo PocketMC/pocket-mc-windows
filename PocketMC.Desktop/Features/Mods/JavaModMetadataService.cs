@@ -368,11 +368,33 @@ namespace PocketMC.Desktop.Features.Mods
                             {
                                 if (elem.ValueKind == JsonValueKind.Object && elem.TryGetProperty("id", out var depIdProp) && depIdProp.ValueKind == JsonValueKind.String)
                                 {
-                                    metadata.RequiredDependencies.Add(depIdProp.GetString()!);
+                                    string depId = depIdProp.GetString()!;
+                                    if (depId == "minecraft")
+                                    {
+                                        if (elem.TryGetProperty("versions", out var versionsProp) && versionsProp.ValueKind == JsonValueKind.String)
+                                        {
+                                            metadata.RequiredMinecraftVersion = versionsProp.GetString();
+                                        }
+                                    }
+                                    else if (depId == "quilt_loader" || depId == "quilt-loader")
+                                    {
+                                        if (elem.TryGetProperty("versions", out var versionsProp) && versionsProp.ValueKind == JsonValueKind.String)
+                                        {
+                                            metadata.RequiredLoaderVersion = versionsProp.GetString();
+                                        }
+                                    }
+                                    else if (depId != "java")
+                                    {
+                                        metadata.RequiredDependencies.Add(depId);
+                                    }
                                 }
                                 else if (elem.ValueKind == JsonValueKind.String)
                                 {
-                                    metadata.RequiredDependencies.Add(elem.GetString()!);
+                                    string depId = elem.GetString()!;
+                                    if (depId != "minecraft" && depId != "quilt_loader" && depId != "quilt-loader" && depId != "java")
+                                    {
+                                        metadata.RequiredDependencies.Add(depId);
+                                    }
                                 }
                             }
                         }
@@ -585,7 +607,7 @@ namespace PocketMC.Desktop.Features.Mods
                     if (displayTestMatch.Success)
                     {
                         var testVal = displayTestMatch.Groups[1].Value.Trim().ToUpperInvariant();
-                        if (testVal == "IGNORE_SERVER_VERSION") isClientOnly = true;
+                        if (testVal == "IGNORE_SERVER_VERSION" || testVal == "IGNORE_ALL_VERSION" || testVal == "NONE") hasDisplayTest = true;
                     }
                 }
                 

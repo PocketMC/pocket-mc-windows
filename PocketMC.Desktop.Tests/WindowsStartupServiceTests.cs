@@ -60,6 +60,16 @@ public sealed class WindowsStartupServiceTests
         Assert.Null(registry.Value);
     }
 
+    [Fact]
+    public void IsBootTaskRegistered_WhenNotExist_ReturnsFalse()
+    {
+        var service = new WindowsStartupService(new RecordingStartupRegistry(), @"C:\PocketMC\PocketMC.Desktop.exe");
+
+        bool isRegistered = service.IsBootTaskRegistered();
+
+        Assert.False(isRegistered);
+    }
+
     private sealed class RecordingStartupRegistry : IWindowsStartupRegistry
     {
         public string? Value { get; private set; }

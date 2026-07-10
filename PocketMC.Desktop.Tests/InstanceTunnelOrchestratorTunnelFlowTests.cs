@@ -197,7 +197,9 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
             bool showCancel = false,
             string? primaryButtonText = null,
             string? secondaryButtonText = null,
-            string? cancelButtonText = null)
+            string? cancelButtonText = null,
+            string? linkText = null,
+            string? linkUrl = null)
         {
             return Task.FromResult(DialogResult.No);
         }

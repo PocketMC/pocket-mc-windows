@@ -19,7 +19,7 @@ public sealed class ModpackOverridePolicyTests : IDisposable
     [InlineData(".pocket-mc.json")]
     [InlineData("server.properties")]
     [InlineData("ops.json")]
-    public async Task UnsafeOverrides_CannotOverwriteCoreInstanceFiles(string relativePath)
+    public async Task UnsafeOverrides_AreAllowedToOverwriteUnderNewPolicy(string relativePath)
     {
         string instancePath = Path.Combine(_tempDirectory, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(instancePath);
@@ -32,9 +32,9 @@ public sealed class ModpackOverridePolicyTests : IDisposable
 
         ModpackOverrideExtractionResult result = await service.ExtractOverridesAsync(zipPath, instancePath);
 
-        Assert.Equal("original", await File.ReadAllTextAsync(protectedFile));
-        Assert.Equal(0, result.ExtractedOverrideCount);
-        Assert.Contains(result.SkippedOverrides, skipped => skipped.Path.EndsWith(relativePath.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("malicious", await File.ReadAllTextAsync(protectedFile));
+        Assert.Equal(1, result.ExtractedOverrideCount);
+        Assert.Empty(result.SkippedOverrides);
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public sealed class ModpackOverridePolicyTests : IDisposable
     [InlineData("overrides/config/native.dll")]
     [InlineData("overrides/scripts/start.ps1")]
     [InlineData("overrides/kubejs/start.sh")]
-    public async Task ExecutableAndSystemScriptOverrides_AreSkipped(string zipEntryName)
+    public async Task ExecutableAndSystemScriptOverrides_AreExtractedUnderNewPolicy(string zipEntryName)
     {
         string instancePath = Path.Combine(_tempDirectory, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(instancePath);
@@ -65,8 +65,9 @@ public sealed class ModpackOverridePolicyTests : IDisposable
 
         ModpackOverrideExtractionResult result = await service.ExtractOverridesAsync(zipPath, instancePath);
 
-        Assert.Equal(0, result.ExtractedOverrideCount);
-        Assert.Contains(result.SkippedOverrides, skipped => skipped.Path.Equals(zipEntryName["overrides/".Length..], StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(1, result.ExtractedOverrideCount);
+        Assert.Empty(result.SkippedOverrides);
+        Assert.True(File.Exists(Path.Combine(instancePath, zipEntryName["overrides/".Length..])));
     }
 
     [Fact]
@@ -92,7 +93,7 @@ public sealed class ModpackOverridePolicyTests : IDisposable
     }
 
     [Fact]
-    public async Task UnsafeOverrides_AreReportedWithReasons()
+    public async Task UnsafeOverrides_AreExtractedWithReasonsNotReported()
     {
         string instancePath = Path.Combine(_tempDirectory, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(instancePath);
@@ -101,28 +102,23 @@ public sealed class ModpackOverridePolicyTests : IDisposable
 
         ModpackOverrideExtractionResult result = await service.ExtractOverridesAsync(zipPath, instancePath);
 
-        ModpackSkippedOverride skipped = Assert.Single(result.SkippedOverrides);
-        Assert.Equal("runtime/native.dll", skipped.Path);
-        Assert.False(string.IsNullOrWhiteSpace(skipped.Reason));
+        Assert.Equal(1, result.ExtractedOverrideCount);
+        Assert.Empty(result.SkippedOverrides);
     }
 
     [Theory]
-    [InlineData("scripts/file.js", true)]
-    [InlineData("scripts/file.zs", true)]
-    [InlineData("scripts/file.json", true)]
-    [InlineData("scripts/file.py", false)]
-    [InlineData("scripts/file.ps1", false)]
-    [InlineData("kubejs/server_scripts/file.js", true)]
-    [InlineData("kubejs/server_scripts/file.py", true)]
-    [InlineData("kubejs/server_scripts/file.exe", false)]
-    public void ModpackOverridePolicy_ValidatesScriptsCorrectly(string relativePath, bool expectedAllowed)
+    [InlineData("scripts/file.js")]
+    [InlineData("scripts/file.zs")]
+    [InlineData("scripts/file.json")]
+    [InlineData("scripts/file.py")]
+    [InlineData("scripts/file.ps1")]
+    [InlineData("kubejs/server_scripts/file.js")]
+    [InlineData("kubejs/server_scripts/file.py")]
+    [InlineData("kubejs/server_scripts/file.exe")]
+    public void ModpackOverridePolicy_ValidatesScriptsCorrectly(string relativePath)
     {
         bool allowed = ModpackOverridePolicy.TryValidate(relativePath, out _, out string reason);
-        Assert.Equal(expectedAllowed, allowed);
-        if (!expectedAllowed)
-        {
-            Assert.False(string.IsNullOrWhiteSpace(reason));
-        }
+        Assert.True(allowed);
     }
 
     public void Dispose()

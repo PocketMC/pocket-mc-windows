@@ -189,8 +189,7 @@ namespace PocketMC.Desktop.Tests
             Assert.Equal("Quilt", metadata.LoaderType);
             Assert.True(metadata.IsClientOnly);
             Assert.Equal(iconBytes, metadata.IconBytes);
-            Assert.Contains("minecraft", metadata.Dependencies);
-            Assert.Contains("quilt_loader", metadata.Dependencies);
+            Assert.Equal(">=1.19", metadata.RequiredMinecraftVersion);
         }
 
         [Fact]
@@ -242,7 +241,6 @@ clientSideOnly=true
             Assert.Equal("Forge", metadata.LoaderType);
             Assert.True(metadata.IsClientOnly);
             Assert.Equal(iconBytes, metadata.IconBytes);
-            Assert.Contains("minecraft", metadata.Dependencies);
         }
 
         [Fact]
@@ -314,7 +312,6 @@ displayTest=""IGNORE_SERVER_VERSION""
             Assert.Equal("1.7.10", metadata.Version);
             Assert.Equal("Forge", metadata.LoaderType);
             Assert.Equal(iconBytes, metadata.IconBytes);
-            Assert.Contains("minecraft", metadata.Dependencies);
         }
 
         [Fact]
