@@ -7,7 +7,7 @@ public static class RootDirectorySetupHelper
 {
     public const string SuggestedFolderName = "PocketMC";
 
-    public static string GetDefaultParentDirectory()
+    public static string? GetDefaultParentDirectory()
     {
         string documentsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         if (!string.IsNullOrWhiteSpace(documentsDirectory))
@@ -21,7 +21,7 @@ public static class RootDirectorySetupHelper
             return userProfileDirectory;
         }
 
-        return Environment.CurrentDirectory;
+        return null;
     }
 
     public static string ResolveRootPath(string selectedFolderPath)
