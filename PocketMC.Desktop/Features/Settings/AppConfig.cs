@@ -21,7 +21,8 @@ namespace PocketMC.Desktop.Features.Settings
         };
 
         public static string AppVersion { get; private set; } = "1.0.0";
-        public static string LinkDiscord { get; private set; } = "https://discord.gg/h27uNCaxPH";
+        public static string LinkDiscord { get; private set; } = "https://discord.gg/mWdMr8Mc2m";
+        public static string LinkInstagram { get; private set; } = "https://www.instagram.com/thepocketmc";
         public static string LinkFeedback { get; private set; } = "https://docs.google.com/forms/d/e/1FAIpQLSd6cNMawAbvoELxqIF_FobaC3DptKnjQxViDh9XLcyJdNbTAQ/viewform?usp=dialog";
         public static string LinkYouTube { get; private set; } = "https://www.youtube.com/@OfficialPocketMC";
         public static string LinkReddit { get; private set; } = "https://www.reddit.com/r/PocketMC/";
@@ -84,6 +85,9 @@ namespace PocketMC.Desktop.Features.Settings
 
                             var discordMatch = Regex.Match(trimmed, @"link_discord:\s*""?([^""\r\n]+)""?");
                             if (discordMatch.Success) LinkDiscord = discordMatch.Groups[1].Value;
+
+                            var instagramMatch = Regex.Match(trimmed, @"link_instagram:\s*""?([^""\r\n]+)""?");
+                            if (instagramMatch.Success) LinkInstagram = instagramMatch.Groups[1].Value;
 
                             var feedbackMatch = Regex.Match(trimmed, @"link_feedback:\s*""?([^""\r\n]+)""?");
                             if (feedbackMatch.Success) LinkFeedback = feedbackMatch.Groups[1].Value;
