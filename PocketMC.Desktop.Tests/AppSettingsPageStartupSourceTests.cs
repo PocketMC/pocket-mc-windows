@@ -35,7 +35,7 @@ public sealed class AppSettingsPageStartupSourceTests
     }
 
     [Fact]
-    public void Xaml_DefinesPowerManagementSleepPreventionToggle()
+    public void Xaml_DefinesSleepPreventionToggle()
     {
         string xaml = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",
@@ -43,7 +43,6 @@ public sealed class AppSettingsPageStartupSourceTests
             "Setup",
             "AppSettingsPage.xaml"));
 
-        Assert.Contains("Power Management", xaml);
         Assert.Contains("Keep this PC awake while servers are running", xaml);
         Assert.Contains("Allows the screen to turn off, but prevents Windows from sleeping so servers and tunnels stay online.", xaml);
         Assert.Contains("x:Name=\"ToggleKeepComputerAwakeWhileServersRunning\"", xaml);

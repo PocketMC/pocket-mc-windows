@@ -82,7 +82,9 @@ namespace PocketMC.Desktop.Features.Shell
             try
             {
                 AppSettings settings = _settingsManager.Load();
-                if (string.IsNullOrWhiteSpace(settings.AppRootPath))
+                if (string.IsNullOrWhiteSpace(settings.AppRootPath) || 
+                    !Directory.Exists(settings.AppRootPath) || 
+                    IsTemporaryPath(settings.AppRootPath))
                 {
                     _host!.ShowRootDirectorySetup();
                     return;
@@ -93,6 +95,44 @@ namespace PocketMC.Desktop.Features.Shell
             catch (Exception ex)
             {
                 HandleStartupFailure(ex);
+            }
+        }
+
+        private bool IsTemporaryPath(string path)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    return false;
+                }
+
+                string tempDir = Path.GetTempPath();
+                if (string.IsNullOrEmpty(tempDir))
+                {
+                    return false;
+                }
+
+                string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string fullTempDir = Path.GetFullPath(tempDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                if (fullPath.StartsWith(fullTempDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                // Fallback check: Check if the path contains standard Temp folders or test subfolders
+                if (fullPath.IndexOf(@"\AppData\Local\Temp", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fullPath.IndexOf(@"\Temp\PocketMC.Tests", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
             }
         }
 

@@ -26,18 +26,30 @@ namespace PocketMC.Desktop.Features.Setup
         {
             InitializeComponent();
 
-            string defaultParentDirectory = RootDirectorySetupHelper.GetDefaultParentDirectory();
-            _selectedRootPath = Path.Combine(defaultParentDirectory, RootDirectorySetupHelper.SuggestedFolderName);
+            string? defaultParentDirectory = RootDirectorySetupHelper.GetDefaultParentDirectory();
+            if (defaultParentDirectory != null)
+            {
+                _selectedRootPath = Path.Combine(defaultParentDirectory, RootDirectorySetupHelper.SuggestedFolderName);
+                TxtSuggestedPath.Text = _selectedRootPath;
+                ContinueButton.IsEnabled = true;
+            }
+            else
+            {
+                _selectedRootPath = null;
+                TxtSuggestedPath.Text = "Please click 'Select Directory' to select a home folder.";
+                ContinueButton.IsEnabled = false;
+            }
             TxtSuggestedFolderName.Text = RootDirectorySetupHelper.SuggestedFolderName;
-            TxtSuggestedPath.Text = _selectedRootPath;
         }
 
         private void BtnSelectDirectory_Click(object sender, RoutedEventArgs e)
         {
-            string defaultParentDirectory = RootDirectorySetupHelper.GetDefaultParentDirectory();
-            string suggestedFullPath = Path.Combine(defaultParentDirectory, RootDirectorySetupHelper.SuggestedFolderName);
+            string? defaultParentDirectory = RootDirectorySetupHelper.GetDefaultParentDirectory();
+            string? suggestedFullPath = defaultParentDirectory != null
+                ? Path.Combine(defaultParentDirectory, RootDirectorySetupHelper.SuggestedFolderName)
+                : null;
 
-            if (!Directory.Exists(suggestedFullPath))
+            if (suggestedFullPath != null && !Directory.Exists(suggestedFullPath))
             {
                 try
                 {

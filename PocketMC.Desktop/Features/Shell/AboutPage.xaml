@@ -82,6 +82,7 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                         <ui:Button Content="Join Discord" Appearance="Primary" Click="OpenDiscord_Click"/>
                         <ui:Button Content="Copy Invite" Appearance="Secondary" Margin="8,0,0,0" Click="CopyDiscordInvite_Click"/>
+                        <ui:Button Content="Instagram" Appearance="Secondary" Margin="8,0,0,0" Click="OpenInstagram_Click" Icon="{ui:SymbolIcon Camera24}"/>
                         <ui:Button Content="YouTube" Appearance="Secondary" Margin="8,0,0,0" Click="OpenYouTube_Click" Icon="{ui:SymbolIcon Video24}"/>
                         <ui:Button Content="Reddit" Appearance="Secondary" Margin="8,0,0,0" Click="OpenReddit_Click" Icon="{ui:SymbolIcon Chat24}"/>
                     </StackPanel>
@@ -95,15 +96,16 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBlock Text="Feedback &amp; Bug Reports" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="Help us improve PocketMC by reporting bugs, submitting feedback, or suggesting new features." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <TextBlock Text="Feedback &amp; Support" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="For bugs, support, and help, you can contact us directly on Discord or submit our feedback form." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </ui:CardExpander.Header>
 
                 <StackPanel Margin="16,8,16,16">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Content="Submit Feedback / Report Bug" Appearance="Primary" Click="OpenFeedbackForm_Click" Icon="{ui:SymbolIcon Open20}"/>
+                        <ui:Button Content="Submit Feedback Form" Appearance="Primary" Click="OpenFeedbackForm_Click" Icon="{ui:SymbolIcon Open20}"/>
+                        <ui:Button Content="Get Help on Discord" Appearance="Secondary" Margin="8,0,0,0" Click="OpenDiscord_Click" Icon="{ui:SymbolIcon People20}"/>
                     </StackPanel>
                 </StackPanel>
             </ui:CardExpander>

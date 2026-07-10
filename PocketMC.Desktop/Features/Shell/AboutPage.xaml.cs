@@ -103,6 +103,20 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
+        private void OpenInstagram_Click(object sender, RoutedEventArgs e)
+        {
+            var url = AppConfig.LinkInstagram;
+            try
+            {
+                var psi = new ProcessStartInfo(url) { UseShellExecute = true };
+                Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Unable to open link", ex.Message);
+            }
+        }
+
         private void OpenGitHub_Click(object sender, RoutedEventArgs e)
         {
             var repoUrl = AppConfig.LinkGitHub;

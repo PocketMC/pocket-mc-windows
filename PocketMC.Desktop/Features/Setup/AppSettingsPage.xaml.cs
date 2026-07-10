@@ -14,6 +14,7 @@ using PocketMC.Desktop.Features.Instances;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Settings;
+using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.RemoteControl.Services;
 using PocketMC.Desktop.Features.Shell.Interfaces;
@@ -58,6 +59,9 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly WindowsStartupService _windowsStartupService;
         private readonly ServerSleepPreventionCoordinator _sleepPreventionCoordinator;
         private readonly AccentColorService _accentColorService;
+        private readonly InstanceRegistry _registry;
+        private readonly IServerLifecycleService _serverLifecycleService;
+        private readonly PlayitAgentService _playitAgentService;
         private bool _isInitializing = true;
         private static readonly (string Name, string Hex)[] AccentColorPresets =
         {
@@ -93,7 +97,10 @@ namespace PocketMC.Desktop.Features.Setup
             WindowsStartupService windowsStartupService,
             IDiscordRpcService discordRpcService,
             ServerSleepPreventionCoordinator sleepPreventionCoordinator,
-            AccentColorService accentColorService)
+            AccentColorService accentColorService,
+            InstanceRegistry registry,
+            IServerLifecycleService serverLifecycleService,
+            PlayitAgentService playitAgentService)
         {
             InitializeComponent();
             _applicationState = applicationState;
@@ -107,6 +114,9 @@ namespace PocketMC.Desktop.Features.Setup
             _discordRpcService = discordRpcService;
             _sleepPreventionCoordinator = sleepPreventionCoordinator;
             _accentColorService = accentColorService;
+            _registry = registry;
+            _serverLifecycleService = serverLifecycleService;
+            _playitAgentService = playitAgentService;
             CloudBackups = cloudBackups;
 
             Loaded += AppSettingsPage_Loaded;
@@ -119,6 +129,7 @@ namespace PocketMC.Desktop.Features.Setup
             ScrollViewerHelper.DisableAncestorScrollViewers(this);
 
             _isInitializing = true;
+            RootDirectoryPathInput.Text = _applicationState.Settings.AppRootPath ?? "";
             CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
 
             // Setup Backdrop Combo
@@ -1226,6 +1237,136 @@ namespace PocketMC.Desktop.Features.Setup
             catch
             {
                 // Ignore
+            }
+        }
+
+        private async void ChangeRootDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            BtnChangeRootDirectory.IsEnabled = false;
+            try
+            {
+                string? selectedPath = await _dialogService.OpenFolderDialogAsync("Select a new PocketMC Root Directory");
+                if (string.IsNullOrWhiteSpace(selectedPath))
+                {
+                    return;
+                }
+
+                string currentRoot = _applicationState.Settings.AppRootPath ?? "";
+                string targetPath = RootDirectorySetupHelper.ResolveRootPath(selectedPath);
+
+                if (string.Equals(currentRoot, targetPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    _dialogService.ShowMessage("Invalid Directory", "The selected directory is the same as the current root folder.", DialogType.Warning);
+                    return;
+                }
+
+                // Check if targetPath is a subfolder of currentRoot
+                if (!string.IsNullOrEmpty(currentRoot) &&
+                    targetPath.StartsWith(currentRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                {
+                    _dialogService.ShowMessage("Invalid Directory", "The selected directory cannot be a subfolder of the current root directory.", DialogType.Error);
+                    return;
+                }
+
+                // Check if any server is running
+                var instances = _registry.GetAll();
+                bool anyRunning = instances.Any(i => _serverLifecycleService.IsRunning(i.Id));
+                if (anyRunning)
+                {
+                    _dialogService.ShowMessage("Active Servers Running", "All running servers must be stopped before changing the root directory.", DialogType.Error);
+                    return;
+                }
+
+                // Show confirmation dialog with Transfer vs Update options
+                var confirmResult = await _dialogService.ShowDialogAsync(
+                    "Change Location & Transfer Data",
+                    "Do you want to transfer (move) all your existing servers, runtimes, and playit binaries to the new location?\n\n" +
+                    "• Transfer Data: Moves everything to the new folder. (Recommended)\n" +
+                    "• Update Reference Only: Only updates the path settings, leaving your files in the old folder.",
+                    DialogType.Question,
+                    showCancel: true,
+                    primaryButtonText: "Transfer Data",
+                    secondaryButtonText: "Update Reference Only",
+                    cancelButtonText: "Cancel");
+
+                if (confirmResult == DialogResult.Cancel)
+                {
+                    return;
+                }
+
+                bool playitWasRunning = _playitAgentService.IsRunning;
+                if (playitWasRunning)
+                {
+                    await _playitAgentService.StopAsync();
+                }
+
+                if (confirmResult == DialogResult.Yes) // Transfer Data
+                {
+                    // Copy files to target path
+                    try
+                    {
+                        if (Directory.Exists(currentRoot))
+                        {
+                            await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CopyDirectoryAsync(currentRoot, targetPath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _dialogService.ShowMessage("Transfer Failed", $"Failed to copy data to the new folder:\n\n{ex.Message}", DialogType.Error);
+                        if (playitWasRunning) _playitAgentService.Start();
+                        return;
+                    }
+
+                    // Update Settings
+                    var settings = _settingsManager.Load();
+                    settings.AppRootPath = targetPath;
+                    _settingsManager.Save(settings);
+                    _applicationState.ApplySettings(settings);
+                    _registry.Refresh();
+
+                    // Try delete old directory
+                    try
+                    {
+                        if (Directory.Exists(currentRoot))
+                        {
+                            await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CleanDirectoryAsync(currentRoot);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _dialogService.ShowMessage("Cleanup Warning", $"The data was transferred successfully and settings updated, but some files in the old folder could not be deleted:\n\n{ex.Message}\n\nYou can safely delete the old folder manually.", DialogType.Warning);
+                        RootDirectoryPathInput.Text = targetPath;
+                        if (playitWasRunning) _playitAgentService.Start();
+                        return;
+                    }
+
+                    _dialogService.ShowMessage("Success", "The data has been successfully transferred and the root directory updated.", DialogType.Information);
+                }
+                else if (confirmResult == DialogResult.No) // Update Reference Only
+                {
+                    var settings = _settingsManager.Load();
+                    settings.AppRootPath = targetPath;
+                    _settingsManager.Save(settings);
+                    _applicationState.ApplySettings(settings);
+                    _registry.Refresh();
+
+                    _dialogService.ShowMessage("Success", "Root directory reference updated. No files were moved.", DialogType.Information);
+                }
+
+                RootDirectoryPathInput.Text = targetPath;
+
+                if (playitWasRunning)
+                {
+                    _playitAgentService.Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Error", $"An unexpected error occurred: {ex.Message}", DialogType.Error);
+            }
+            finally
+            {
+                BtnChangeRootDirectory.IsEnabled = true;
             }
         }
     }

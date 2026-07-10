@@ -43,7 +43,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
         Registry = new InstanceRegistry(PathService, NullLogger<InstanceRegistry>.Instance);
         InstanceManager = new InstanceManager(Registry, PathService, AppState, new EmptyAssetProvider(), NullLogger<InstanceManager>.Instance, new EmptyServiceProvider());
         ConfigurationService = new ServerConfigurationService(InstanceManager, new PocketMC.Desktop.Helpers.GeyserDetector());
-        SettingsManager = new SettingsManager();
+        SettingsManager = new SettingsManager(Path.Combine(RootPath, "settings.json"));
     }
 
     public string RootPath { get; }
