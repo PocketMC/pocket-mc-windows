@@ -72,6 +72,26 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Start at system boot (before login)" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Start PocketMC in the background when your computer boots, without requiring a logged-in user. Requires administrative privileges."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleStartOnSystemBoot"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             Checked="ToggleStartOnSystemBoot_Changed"
+                                             Unchecked="ToggleStartOnSystemBoot_Changed"/>
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="Start minimized to tray" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Text="When Windows starts PocketMC, keep the dashboard hidden and show the tray icon."
                                            TextWrapping="Wrap"

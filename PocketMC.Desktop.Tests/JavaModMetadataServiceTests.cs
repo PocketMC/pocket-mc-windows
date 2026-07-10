@@ -189,6 +189,7 @@ namespace PocketMC.Desktop.Tests
             Assert.Equal("Quilt", metadata.LoaderType);
             Assert.True(metadata.IsClientOnly);
             Assert.Equal(iconBytes, metadata.IconBytes);
+            Assert.Equal(">=1.19", metadata.RequiredMinecraftVersion);
             Assert.Empty(metadata.Dependencies);
         }
 

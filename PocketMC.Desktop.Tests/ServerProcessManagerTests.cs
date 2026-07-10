@@ -37,8 +37,22 @@ public class ServerProcessManagerTests
             processManager.KillProcess(metadata.Id);
             internalProcess?.WaitForExit(5000);
 
-            File.Delete(sessionLogPath);
-            Assert.False(File.Exists(sessionLogPath));
+            // Wait for the asynchronous exit handler to release the log handle
+            bool deleted = false;
+            for (int i = 0; i < 50; i++)
+            {
+                try
+                {
+                    File.Delete(sessionLogPath);
+                    deleted = true;
+                    break;
+                }
+                catch (IOException)
+                {
+                    await Task.Delay(100);
+                }
+            }
+            Assert.True(deleted, "Log file was still locked after 5 seconds.");
         }
         finally
         {

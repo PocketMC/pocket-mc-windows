@@ -17,6 +17,7 @@ public sealed class WindowsStartupService
     public const string RunValueName = "PocketMC";
     public const string WindowsStartupArgument = "--windows-startup";
     public const string MinimizedArgument = "--minimized";
+    public const string BootTaskName = "PocketMC_Boot_Startup";
 
     private readonly IWindowsStartupRegistry _registry;
     private readonly string _executablePath;
@@ -57,6 +58,105 @@ public sealed class WindowsStartupService
     {
         string? value = _registry.GetValue(RunValueName);
         return !string.IsNullOrWhiteSpace(value);
+    }
+
+    public void ApplyBootTask(AppSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        if (settings.StartOnSystemBoot)
+        {
+            RegisterBootTask(settings.StartMinimizedToTray);
+            return;
+        }
+
+        UnregisterBootTask();
+    }
+
+    private void RegisterBootTask(bool minimized)
+    {
+        string commandArgs = $"/create /tn \"{BootTaskName}\" /tr \"{QuoteArgument(_executablePath)} {WindowsStartupArgument} {(minimized ? MinimizedArgument : string.Empty)}\" /sc onstart /ru \"SYSTEM\" /rl HIGHEST /f";
+
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "schtasks.exe",
+            Arguments = commandArgs,
+            Verb = "runas",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+        };
+
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(psi);
+            process?.WaitForExit();
+            if (process != null && process.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"schtasks failed with exit code {process.ExitCode}.");
+            }
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            throw new UnauthorizedAccessException("The startup task creation was cancelled by the user (UAC prompt declined).", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to register the Windows Task Scheduler startup task. Make sure you run as Administrator.", ex);
+        }
+    }
+
+    private void UnregisterBootTask()
+    {
+        string commandArgs = $"/delete /tn \"{BootTaskName}\" /f";
+
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "schtasks.exe",
+            Arguments = commandArgs,
+            Verb = "runas",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+        };
+
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(psi);
+            process?.WaitForExit();
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            throw new UnauthorizedAccessException("The startup task deletion was cancelled by the user (UAC prompt declined).", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to delete the Windows Task Scheduler startup task. Make sure you run as Administrator.", ex);
+        }
+    }
+
+    public bool IsBootTaskRegistered()
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "schtasks.exe",
+            Arguments = $"/query /tn \"{BootTaskName}\"",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(psi);
+            process?.WaitForExit();
+            return process != null && process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string QuoteArgument(string value) =>

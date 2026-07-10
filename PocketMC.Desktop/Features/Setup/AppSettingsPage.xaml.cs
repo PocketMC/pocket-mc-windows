@@ -166,6 +166,7 @@ namespace PocketMC.Desktop.Features.Setup
             // Set initial state
             ExternalBackupPathInput.Text = _applicationState.Settings.ExternalBackupDirectory ?? "";
             ToggleStartWithWindows.IsChecked = _applicationState.Settings.StartWithWindows;
+            ToggleStartOnSystemBoot.IsChecked = _applicationState.Settings.StartOnSystemBoot;
             ToggleStartMinimizedToTray.IsChecked = _applicationState.Settings.StartMinimizedToTray;
             ToggleMinimizeToTrayOnClose.IsChecked = _applicationState.Settings.MinimizeToTrayOnClose;
             ToggleKeepComputerAwakeWhileServersRunning.IsChecked = _applicationState.Settings.KeepComputerAwakeWhileServersRunning;
@@ -228,6 +229,12 @@ namespace PocketMC.Desktop.Features.Setup
             SaveStartupBehaviorSettings();
         }
 
+        private void ToggleStartOnSystemBoot_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+            SaveStartupBehaviorSettings();
+        }
+
         private void ToggleStartMinimizedToTray_Changed(object sender, RoutedEventArgs e)
         {
             if (_isInitializing) return;
@@ -251,6 +258,7 @@ namespace PocketMC.Desktop.Features.Setup
                 settings.MinimizeToTrayOnClose = previousMinimizeToTrayOnClose;
                 RevertAppBehaviorToggles(
                     settings.StartWithWindows,
+                    settings.StartOnSystemBoot,
                     settings.StartMinimizedToTray,
                     previousMinimizeToTrayOnClose);
                 _dialogService.ShowMessage(
@@ -309,27 +317,32 @@ namespace PocketMC.Desktop.Features.Setup
         {
             var settings = _applicationState.Settings;
             bool previousStartWithWindows = settings.StartWithWindows;
+            bool previousStartOnSystemBoot = settings.StartOnSystemBoot;
             bool previousStartMinimizedToTray = settings.StartMinimizedToTray;
             bool previousMinimizeToTrayOnClose = settings.MinimizeToTrayOnClose;
 
             settings.StartWithWindows = ToggleStartWithWindows.IsChecked == true;
+            settings.StartOnSystemBoot = ToggleStartOnSystemBoot.IsChecked == true;
             settings.StartMinimizedToTray = ToggleStartMinimizedToTray.IsChecked == true;
             settings.MinimizeToTrayOnClose = ToggleMinimizeToTrayOnClose.IsChecked == true;
 
             try
             {
                 _windowsStartupService.Apply(settings);
+                _windowsStartupService.ApplyBootTask(settings);
                 _settingsManager.Save(settings);
             }
             catch (Exception ex)
             {
                 settings.StartWithWindows = previousStartWithWindows;
+                settings.StartOnSystemBoot = previousStartOnSystemBoot;
                 settings.StartMinimizedToTray = previousStartMinimizedToTray;
                 settings.MinimizeToTrayOnClose = previousMinimizeToTrayOnClose;
 
                 try
                 {
                     _windowsStartupService.Apply(settings);
+                    _windowsStartupService.ApplyBootTask(settings);
                 }
                 catch
                 {
@@ -338,6 +351,7 @@ namespace PocketMC.Desktop.Features.Setup
 
                 RevertAppBehaviorToggles(
                     previousStartWithWindows,
+                    previousStartOnSystemBoot,
                     previousStartMinimizedToTray,
                     previousMinimizeToTrayOnClose);
                 _dialogService.ShowMessage(
@@ -349,12 +363,14 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void RevertAppBehaviorToggles(
             bool startWithWindows,
+            bool startOnSystemBoot,
             bool startMinimizedToTray,
             bool minimizeToTrayOnClose)
         {
             bool wasInitializing = _isInitializing;
             _isInitializing = true;
             ToggleStartWithWindows.IsChecked = startWithWindows;
+            ToggleStartOnSystemBoot.IsChecked = startOnSystemBoot;
             ToggleStartMinimizedToTray.IsChecked = startMinimizedToTray;
             ToggleMinimizeToTrayOnClose.IsChecked = minimizeToTrayOnClose;
             _isInitializing = wasInitializing;
