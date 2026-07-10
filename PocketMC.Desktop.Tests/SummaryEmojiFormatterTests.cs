@@ -91,7 +91,9 @@ public sealed class SummaryEmojiFormatterTests
             bool showCancel = false,
             string? primaryButtonText = null,
             string? secondaryButtonText = null,
-            string? cancelButtonText = null)
+            string? cancelButtonText = null,
+            string? linkText = null,
+            string? linkUrl = null)
             => Task.FromResult(DialogResult.Ok);
 
         public void ShowMessage(string title, string message, DialogType type = DialogType.Information)

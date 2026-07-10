@@ -159,7 +159,7 @@ public class ModpackServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(async () =>
         {
-            await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, "dummy.zip");
+            await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, "dummy.zip", new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>());
         });
 
         // Verify the metadata reference has rolled back values
@@ -224,10 +224,11 @@ public class ModpackServiceTests : IDisposable
         using (var archive = System.IO.Compression.ZipFile.Open(zipPath, System.IO.Compression.ZipArchiveMode.Create)) { }
 
         // Act
+        await service.ResolveModUrlsAsync(pack);
         ModpackImportResultReport report;
         try
         {
-            report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath);
+            report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>());
         }
         catch (Exception ex)
         {
@@ -303,7 +304,8 @@ public class ModpackServiceTests : IDisposable
         using (var archive = System.IO.Compression.ZipFile.Open(zipPath, System.IO.Compression.ZipArchiveMode.Create)) { }
 
         // Act
-        var report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath);
+        await service.ResolveModUrlsAsync(pack);
+        var report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>());
 
         // Assert
         Assert.True(report.Success);
@@ -371,7 +373,8 @@ public class ModpackServiceTests : IDisposable
         using (var archive = System.IO.Compression.ZipFile.Open(zipPath, System.IO.Compression.ZipArchiveMode.Create)) { }
 
         // Act
-        var report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath);
+        await service.ResolveModUrlsAsync(pack);
+        var report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>());
 
         // Assert
         Assert.True(report.Success);
