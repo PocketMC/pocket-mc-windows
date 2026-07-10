@@ -585,7 +585,7 @@ namespace PocketMC.Desktop.Features.Mods
                     if (displayTestMatch.Success)
                     {
                         var testVal = displayTestMatch.Groups[1].Value.Trim().ToUpperInvariant();
-                        if (testVal == "IGNORE_SERVER_VERSION") isClientOnly = true;
+                        if (testVal == "IGNORE_SERVER_VERSION" || testVal == "NONE" || testVal == "IGNORE_ALL_VERSION") hasDisplayTest = true;
                     }
                 }
                 

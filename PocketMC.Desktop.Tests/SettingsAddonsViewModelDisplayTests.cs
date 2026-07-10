@@ -400,7 +400,7 @@ namespace PocketMC.Desktop.Tests
         public string? LastMessageTitle { get; set; }
         public string? LastMessageContent { get; set; }
 
-        public Task<DialogResult> ShowDialogAsync(string title, string message, DialogType type = DialogType.Information, bool showCancel = false, string? primaryButtonText = null, string? secondaryButtonText = null, string? cancelButtonText = null)
+        public Task<DialogResult> ShowDialogAsync(string title, string message, DialogType type = DialogType.Information, bool showCancel = false, string? primaryButtonText = null, string? secondaryButtonText = null, string? cancelButtonText = null, string? linkText = null, string? linkUrl = null)
         {
             return Task.FromResult(DialogResult.Ok);
         }
