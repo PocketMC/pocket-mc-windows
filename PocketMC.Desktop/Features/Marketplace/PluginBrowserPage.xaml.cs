@@ -256,7 +256,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             bool goToSettings = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
                 "CurseForge API Key Required",
                 "To search and install addons from CurseForge, you must configure a CurseForge API key in Settings.\n\n" +
-                "You can get a free API key at:\nhttps://console.curseforge.com/\n\n" +
+                "You can get a free API key at:\nhttps://console.curseforge.com/#/api-keys/\n\n" +
                 "Would you like to open Settings to configure it now?");
 
             if (goToSettings)
