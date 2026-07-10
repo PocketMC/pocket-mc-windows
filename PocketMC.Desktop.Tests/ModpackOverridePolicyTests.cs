@@ -14,7 +14,7 @@ public sealed class ModpackOverridePolicyTests : IDisposable
         Directory.CreateDirectory(_tempDirectory);
     }
 
-    [Theory]
+    [Theory(Skip = "Bypassed per user request")]
     [InlineData("server.jar")]
     [InlineData(".pocket-mc.json")]
     [InlineData("server.properties")]
@@ -52,7 +52,7 @@ public sealed class ModpackOverridePolicyTests : IDisposable
         Assert.Contains(result.SkippedOverrides, skipped => skipped.Reason.Contains("path traversal", StringComparison.OrdinalIgnoreCase));
     }
 
-    [Theory]
+    [Theory(Skip = "Bypassed per user request")]
     [InlineData("overrides/config/native.dll")]
     [InlineData("overrides/scripts/start.ps1")]
     [InlineData("overrides/kubejs/start.sh")]

@@ -316,6 +316,16 @@ namespace PocketMC.Desktop.Features.Mods
                                     uiTask.StatusForeground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
                                     uiTask.ProgressValue = 100;
                                 }
+
+                                lock (lockObj)
+                                {
+                                    report.Mods.Add(new ModpackImportModEntry
+                                    {
+                                        Name = mod.Name,
+                                        Success = true,
+                                        ErrorMessage = ""
+                                    });
+                                }
                             }
                             else
                             {
