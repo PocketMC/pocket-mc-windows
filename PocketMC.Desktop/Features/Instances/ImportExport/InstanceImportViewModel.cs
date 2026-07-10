@@ -24,8 +24,7 @@ public sealed class InstanceImportViewModel : ObservableObject
     private InstanceImportResult? _importResult;
     private AddonUnavailableException? _unavailableAddon;
 
-    private bool _isPackageImport = true;
-    private bool _isFolderImport = false;
+    private ImportMode _importMode = ImportMode.Package;
     private string _folderPath = string.Empty;
     private string _description = string.Empty;
     private string _selectedServerType = "Vanilla";
@@ -140,30 +139,41 @@ public sealed class InstanceImportViewModel : ObservableObject
         }
     }
 
-    public bool IsPackageImport
+    public ImportMode Mode
     {
-        get => _isPackageImport;
+        get => _importMode;
         set
         {
-            if (SetProperty(ref _isPackageImport, value))
+            if (SetProperty(ref _importMode, value))
             {
-                if (value) IsFolderImport = false;
+                OnPropertyChanged(nameof(IsPackageImport));
+                OnPropertyChanged(nameof(IsFolderImport));
                 OnPropertyChanged(nameof(CanImport));
                 ImportCommand.NotifyCanExecuteChanged();
             }
         }
     }
 
-    public bool IsFolderImport
+    public bool IsPackageImport
     {
-        get => _isFolderImport;
+        get => Mode == ImportMode.Package;
         set
         {
-            if (SetProperty(ref _isFolderImport, value))
+            if (value)
             {
-                if (value) IsPackageImport = false;
-                OnPropertyChanged(nameof(CanImport));
-                ImportCommand.NotifyCanExecuteChanged();
+                Mode = ImportMode.Package;
+            }
+        }
+    }
+
+    public bool IsFolderImport
+    {
+        get => Mode == ImportMode.Folder;
+        set
+        {
+            if (value)
+            {
+                Mode = ImportMode.Folder;
             }
         }
     }
@@ -269,11 +279,15 @@ public sealed class InstanceImportViewModel : ObservableObject
                 string defaultName = Path.GetFileName(FolderPath.Trim());
                 string importName = string.IsNullOrWhiteSpace(RequestedName) ? defaultName : RequestedName.Trim();
                 result = await _importService.ImportLocalFolderAsync(
-                        FolderPath.Trim(),
-                        importName,
-                        SelectedServerType,
-                        MinecraftVersion.Trim(),
-                        ShouldCopyFiles,
+                        new LocalFolderImportRequest
+                        {
+                            SourceFolderPath = FolderPath.Trim(),
+                            RequestedName = importName,
+                            ServerType = SelectedServerType,
+                            MinecraftVersion = MinecraftVersion.Trim(),
+                            CopyFiles = ShouldCopyFiles,
+                            Description = Description?.Trim()
+                        },
                         progress,
                         cancellation.Token);
             }
@@ -350,4 +364,10 @@ public sealed class InstanceImportViewModel : ObservableObject
     }
 
     private static double ClampPercent(double value) => Math.Clamp(value, 0, 100);
+}
+
+public enum ImportMode
+{
+    Package,
+    Folder
 }

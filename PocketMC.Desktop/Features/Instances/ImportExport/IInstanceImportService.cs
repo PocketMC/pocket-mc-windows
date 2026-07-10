@@ -24,11 +24,7 @@ public interface IInstanceImportService
         CancellationToken cancellationToken = default);
 
     Task<InstanceImportResult> ImportLocalFolderAsync(
-        string sourceFolderPath,
-        string requestedName,
-        string serverType,
-        string minecraftVersion,
-        bool copyFiles,
+        LocalFolderImportRequest request,
         IProgress<InstanceTransferProgress>? progress = null,
         CancellationToken cancellationToken = default);
 
@@ -67,6 +63,16 @@ public sealed class InstanceImportRequest
     public string ZipPath { get; set; } = string.Empty;
     public string? RequestedName { get; set; }
     public bool IncludeWorlds { get; set; } = true;
+}
+
+public sealed class LocalFolderImportRequest
+{
+    public string SourceFolderPath { get; set; } = string.Empty;
+    public string RequestedName { get; set; } = string.Empty;
+    public string ServerType { get; set; } = string.Empty;
+    public string MinecraftVersion { get; set; } = string.Empty;
+    public bool CopyFiles { get; set; }
+    public string? Description { get; set; }
 }
 
 public sealed class InstanceImportResult

@@ -38,12 +38,11 @@ namespace PocketMC.Desktop.Features.Shell
             ScrollViewerHelper.DisableMouseWheelScrolling(this);
         }
 
-        private void OpenDiscord_Click(object sender, RoutedEventArgs e)
+        private void OpenLink(string url)
         {
-            var invite = AppConfig.LinkDiscord;
             try
             {
-                var psi = new ProcessStartInfo(invite) { UseShellExecute = true };
+                var psi = new ProcessStartInfo(url) { UseShellExecute = true };
                 Process.Start(psi);
             }
             catch (Exception ex)
@@ -52,9 +51,14 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
+        private void OpenDiscord_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLink(AppConfig.LinkDiscord);
+        }
+
         private async void CopyDiscordInvite_Click(object sender, RoutedEventArgs e)
         {
-            bool ok = await Infrastructure.ClipboardHelper.TrySetTextAsync(AppConfig.LinkDiscord);
+            bool ok = await ClipboardHelper.TrySetTextAsync(AppConfig.LinkDiscord);
             if (ok)
                 _dialogService.ShowMessage("Copied", "Discord invite copied to clipboard.");
             else
@@ -63,86 +67,32 @@ namespace PocketMC.Desktop.Features.Shell
 
         private void OpenFeedbackForm_Click(object sender, RoutedEventArgs e)
         {
-            var formUrl = AppConfig.LinkFeedback;
-            try
-            {
-                var psi = new ProcessStartInfo(formUrl) { UseShellExecute = true };
-                Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowMessage("Unable to open link", ex.Message);
-            }
+            OpenLink(AppConfig.LinkFeedback);
         }
 
         private void OpenYouTube_Click(object sender, RoutedEventArgs e)
         {
-            var url = AppConfig.LinkYouTube;
-            try
-            {
-                var psi = new ProcessStartInfo(url) { UseShellExecute = true };
-                Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowMessage("Unable to open link", ex.Message);
-            }
+            OpenLink(AppConfig.LinkYouTube);
         }
 
         private void OpenReddit_Click(object sender, RoutedEventArgs e)
         {
-            var url = AppConfig.LinkReddit;
-            try
-            {
-                var psi = new ProcessStartInfo(url) { UseShellExecute = true };
-                Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowMessage("Unable to open link", ex.Message);
-            }
+            OpenLink(AppConfig.LinkReddit);
         }
 
         private void OpenInstagram_Click(object sender, RoutedEventArgs e)
         {
-            var url = AppConfig.LinkInstagram;
-            try
-            {
-                var psi = new ProcessStartInfo(url) { UseShellExecute = true };
-                Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowMessage("Unable to open link", ex.Message);
-            }
+            OpenLink(AppConfig.LinkInstagram);
         }
 
         private void OpenGitHub_Click(object sender, RoutedEventArgs e)
         {
-            var repoUrl = AppConfig.LinkGitHub;
-            try
-            {
-                var psi = new ProcessStartInfo(repoUrl) { UseShellExecute = true };
-                Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowMessage("Unable to open link", ex.Message);
-            }
+            OpenLink(AppConfig.LinkGitHub);
         }
 
         private void OpenDonationPage_Click(object sender, RoutedEventArgs e)
         {
-            var donationUrl = AppConfig.LinkDonation;
-            try
-            {
-                var psi = new ProcessStartInfo(donationUrl) { UseShellExecute = true };
-                Process.Start(psi);
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowMessage("Unable to open link", ex.Message);
-            }
+            OpenLink(AppConfig.LinkDonation);
         }
 
         private void WhatsNew_Click(object sender, RoutedEventArgs e)
