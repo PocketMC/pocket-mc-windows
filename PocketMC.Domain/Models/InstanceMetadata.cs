@@ -57,6 +57,9 @@ namespace PocketMC.Domain.Models
         /// <summary>When true, automatically check and update marketplace addons when the server starts.</summary>
         public bool AutoUpdateAddons { get; set; } = false;
 
+        /// <summary>When true, this instance was created from a Modpack. Addon lifecycle and instance updates are disabled.</summary>
+        public bool IsModpack { get; set; } = false;
+
         // Custom backup destination (added for local backup routing)
         public string? CustomBackupDirectory { get; set; } = null;
 

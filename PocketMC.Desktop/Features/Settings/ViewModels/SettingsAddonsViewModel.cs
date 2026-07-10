@@ -487,11 +487,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
         private PluginItemViewModel CreatePluginViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
-            var warnings = new List<string>(item.Warnings);
-            if (!IsLoaderCompatible(item.LoaderType))
-            {
-                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
-            }
 
             return new PluginItemViewModel
             {
@@ -511,8 +506,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 SideSupport = item.SideSupport,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, "Plugin", item.IconBytes),
-                HasWarnings = warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, warnings),
                 IsDisabled = item.State == AddonState.Disabled,
                 State = item.State,
                 Kind = item.Kind,
@@ -527,11 +520,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
         private ModItemViewModel CreateModViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
-            var warnings = new List<string>(item.Warnings);
-            if (!IsLoaderCompatible(item.LoaderType))
-            {
-                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
-            }
 
             return new ModItemViewModel
             {
@@ -547,8 +535,6 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 LoaderType = item.LoaderType,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, item.LoaderType, item.IconBytes),
-                HasWarnings = warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, warnings),
                 SideSupport = item.SideSupport,
                 SideLabel = item.SideLabel,
                 IsClientOnly = item.SideSupport == ModSideSupport.ClientOnly,
@@ -678,7 +664,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
 
         private async Task ImportModpackAsync()
         {
-            var file = await _dialogService.OpenFileDialogAsync("Select Modpack ZIP", "ZIP Files (*.zip)|*.zip");
+            var file = await _dialogService.OpenFileDialogAsync("Select Modpack Archive", "Modpack Files (*.zip;*.mrpack)|*.zip;*.mrpack|ZIP Files (*.zip)|*.zip|Modrinth Packs (*.mrpack)|*.mrpack");
             if (file != null) await ImportModpackActionAsync(file);
         }
 
@@ -689,11 +675,63 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 var result = await _modpackService.ParseModpackZipAsync(zipPath);
                 if (await _dialogService.ShowDialogAsync("Import Modpack", $"Import modpack '{result.Name}'?", DialogType.Question) == DialogResult.Yes)
                 {
-                    await _modpackService.ImportToExistingInstanceAsync(result, _metadata, _serverDir, zipPath);
-                    LoadAddons(); _onAddonChanged();
+                    var progress = new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>(p =>
+                    {
+                        UpdateAllStatusText = string.IsNullOrEmpty(p.CurrentItem) 
+                            ? p.CurrentStep 
+                            : $"{p.CurrentStep} ({p.CurrentItem})";
+                    });
+
+                    IsUpdatingAll = true;
+                    try
+                    {
+                        var report = await _modpackService.ImportToExistingInstanceAsync(result, _metadata, _serverDir, zipPath, progress);
+                        LoadAddons(); 
+                        _onAddonChanged();
+
+                        int successCount = report.Mods.Count(m => m.Success);
+                        int failCount = report.Mods.Count(m => !m.Success);
+
+                        string message = $"Successfully imported modpack '{result.Name}'.\n\n" +
+                                         $"Loader: {result.Loader} ({result.LoaderVersion})\n" +
+                                         $"Minecraft: {result.MinecraftVersion}\n" +
+                                         $"Mods Installed: {successCount}/{report.Mods.Count}\n" +
+                                         $"Overrides Extracted: {report.ExtractedOverrideCount}\n";
+
+                        if (report.SkippedOverrides.Count > 0)
+                        {
+                            message += $"Overrides Skipped (Unsafe): {report.SkippedOverrides.Count}\n";
+                        }
+
+                        if (failCount > 0)
+                        {
+                            message += $"\nWarning: {failCount} mods failed to download:\n";
+                            foreach (var fail in report.Mods.Where(m => !m.Success).Take(10))
+                            {
+                                message += $"- {fail.Name}: {fail.ErrorMessage}\n";
+                            }
+                            if (failCount > 10)
+                            {
+                                message += $"- and {failCount - 10} more...\n";
+                            }
+                            _dialogService.ShowMessage("Import Completed with Warnings", message, DialogType.Warning);
+                        }
+                        else
+                        {
+                            _dialogService.ShowMessage("Import Completed", message, DialogType.Information);
+                        }
+                    }
+                    finally
+                    {
+                        IsUpdatingAll = false;
+                        UpdateAllStatusText = "";
+                    }
                 }
             }
-            catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
+            catch (Exception ex) 
+            { 
+                _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); 
+            }
         }
 
         // ── Update addon logic ──────────────────────────────────────────────────
@@ -772,7 +810,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                     SideSupport = ModSideSupport.Unknown,
                     SideLabel = "Side unknown",
                     Dependencies = Array.Empty<string>(),
-                    Warnings = Array.Empty<string>()
+
                 };
 
                 AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, inventoryItem);
@@ -859,7 +897,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                     Hash = updateInfo.Hash,
                     HashType = updateInfo.HashType,
                     ReleaseType = updateInfo.ReleaseType,
-                    Warnings = updateInfo.Warnings?.ToList() ?? new List<string>()
+
                 };
 
                 await _updateService.ApplyUpdateAsync(
@@ -923,7 +961,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 SideSupport = ModSideSupport.ServerOnly,
                 SideLabel = "Server-only",
                 Dependencies = Array.Empty<string>(),
-                Warnings = Array.Empty<string>()
+
             };
 
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);
@@ -948,7 +986,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 SideSupport = mod.SideSupport,
                 SideLabel = mod.SideLabel,
                 Dependencies = Array.Empty<string>(),
-                Warnings = Array.Empty<string>()
+
             };
 
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);

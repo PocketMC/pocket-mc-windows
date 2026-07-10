@@ -353,7 +353,9 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
             bool showCancel = false,
             string? primaryButtonText = null,
             string? secondaryButtonText = null,
-            string? cancelButtonText = null)
+            string? cancelButtonText = null,
+            string? linkText = null,
+            string? linkUrl = null)
         {
             ShowCount++;
             return Task.FromResult(_result);

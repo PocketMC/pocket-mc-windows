@@ -123,10 +123,27 @@ namespace PocketMC.Desktop.Features.Marketplace
                 // Pass empty mcVersion/loader for engines that don't use them (Bedrock, Pocketmine).
                 string mcVersionArg = (compat.Family == EngineFamily.Bedrock || compat.Family == EngineFamily.Pocketmine)
                     ? "" : (mcVersion == "*" ? "" : mcVersion);
-                string loaderArg = (compat.Family == EngineFamily.Bedrock || compat.Family == EngineFamily.Pocketmine)
-                    ? "" : loader;
+                IReadOnlyList<string> loaderArgs = (compat.Family == EngineFamily.Bedrock || compat.Family == EngineFamily.Pocketmine)
+                    ? Array.Empty<string>() : compat.CompatibleLoaderNames;
 
-                var latestVersion = await provider.GetLatestVersionAsync(entry.ProjectId, mcVersionArg, loaderArg);
+                var latestVersion = await provider.GetLatestVersionAsync(entry.ProjectId, mcVersionArg, loaderArgs);
+
+                if (latestVersion == null && !string.IsNullOrEmpty(mcVersionArg))
+                {
+                    // Fallback: try retrieving the absolute latest version regardless of Minecraft version
+                    // since many server plugins are forward/backward compatible and authors may not tag every patch version.
+                    latestVersion = await provider.GetLatestVersionAsync(entry.ProjectId, "", loaderArgs);
+                    if (latestVersion != null)
+                    {
+                        // Add a warning that this update might not officially support the current server version
+                        var warningsList = latestVersion.Warnings?.ToList() ?? new List<string>();
+                        if (!warningsList.Contains("May not officially support current server version"))
+                        {
+                            warningsList.Add("May not officially support current server version");
+                            latestVersion.Warnings = warningsList;
+                        }
+                    }
+                }
 
                 if (latestVersion == null)
                 {
@@ -150,7 +167,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     Hash = latestVersion.Hash,
                     HashType = latestVersion.HashType,
                     ReleaseType = latestVersion.ReleaseType ?? "release",
-                    Warnings = latestVersion.Warnings.ToList()
+                    Warnings = latestVersion.Warnings?.ToList() ?? new List<string>()
                 };
             }
             catch (Exception ex)

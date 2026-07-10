@@ -11,9 +11,22 @@ namespace PocketMC.Desktop.Features.Mods
 {
     public static class JavaModMetadataService
     {
-        private static readonly ConcurrentDictionary<(string Path, long Length, DateTime LastWriteTime), JavaModMetadata> _cache = new();
+        public static bool IsPluginJar(string filePath)
+        {
+            try
+            {
+                using var archive = ZipFile.OpenRead(filePath);
+                return archive.GetEntry("plugin.yml") != null || archive.GetEntry("paper-plugin.yml") != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
-        public static JavaModMetadata ScanJar(string filePath)
+        private static readonly ConcurrentDictionary<(string Path, long Length, DateTime LastWriteTime, string ExpectedLoader), JavaModMetadata> _cache = new();
+
+        public static JavaModMetadata ScanJar(string filePath, string? expectedLoader = null)
         {
             try
             {
@@ -24,51 +37,34 @@ namespace PocketMC.Desktop.Features.Mods
                     {
                         DisplayName = CleanJarName(Path.GetFileName(filePath)),
                         FileName = Path.GetFileName(filePath),
-                        LoaderType = "Unknown",
-                        Warnings = new List<string> { "File does not exist." }
+                        LoaderType = "Unknown"
                     };
                 }
 
-                var key = (fi.FullName, fi.Length, fi.LastWriteTime);
+                var key = (fi.FullName, fi.Length, fi.LastWriteTime, expectedLoader ?? "");
                 if (_cache.TryGetValue(key, out var cached))
                 {
                     return cached;
                 }
 
-                var metadata = ScanJarInternal(fi);
+                var metadata = ScanJarInternal(fi, expectedLoader);
                 metadata.FileName = fi.Name;
-                ApplyFilenameHeuristics(fi.Name, metadata);
                 _cache[key] = metadata;
                 return metadata;
             }
-            catch (Exception ex)
+            catch
             {
                 return new JavaModMetadata
                 {
                     DisplayName = CleanJarName(Path.GetFileName(filePath)),
                     FileName = Path.GetFileName(filePath),
-                    LoaderType = "Unknown",
-                    Warnings = new List<string> { $"Failed to scan JAR: {ex.Message}" }
+                    LoaderType = "Unknown"
                 };
             }
         }
 
-        private static void ApplyFilenameHeuristics(string filename, JavaModMetadata metadata)
-        {
-            string lowerName = filename.ToLowerInvariant();
-            string[] suspiciousNames = { "sodium", "iris", "optifine", "canvas", "xaero", "journeymap", "minimap", "replaymod", "rubidium", "embeddium", "oculus" };
-            if (suspiciousNames.Any(n => lowerName.Contains(n)))
-            {
-                metadata.SideSupport = ModSideSupport.ClientOnly;
-                metadata.SideLabel = "Client-only";
-                if (!metadata.Warnings.Any(w => w.Contains("client-only")))
-                {
-                    metadata.Warnings.Add("This mod's filename suggests it is a client-side rendering or utility mod. It may crash the server.");
-                }
-            }
-        }
 
-        private static JavaModMetadata ScanJarInternal(FileInfo fi)
+        private static JavaModMetadata ScanJarInternal(FileInfo fi, string? expectedLoader)
         {
             var metadata = new JavaModMetadata();
             metadata.DisplayName = CleanJarName(fi.Name);
@@ -77,32 +73,84 @@ namespace PocketMC.Desktop.Features.Mods
             {
                 using var archive = ZipFile.OpenRead(fi.FullName);
 
-                // 1. Quilt
+                bool isFabricExpected = string.Equals(expectedLoader, "Fabric", StringComparison.OrdinalIgnoreCase);
+                bool isForgeExpected = string.Equals(expectedLoader, "Forge", StringComparison.OrdinalIgnoreCase);
+                bool isNeoForgeExpected = string.Equals(expectedLoader, "NeoForge", StringComparison.OrdinalIgnoreCase);
+                bool isQuiltExpected = string.Equals(expectedLoader, "Quilt", StringComparison.OrdinalIgnoreCase);
+
                 var quiltEntry = archive.GetEntry("quilt.mod.json");
+                var fabricEntry = archive.GetEntry("fabric.mod.json");
+                var neoforgeEntry = archive.GetEntry("META-INF/neoforge.mods.toml");
+                var forgeEntry = archive.GetEntry("META-INF/mods.toml");
+                var pluginEntry = archive.GetEntry("plugin.yml") ?? archive.GetEntry("paper-plugin.yml");
+                metadata.HasPluginMetadata = pluginEntry != null;
+
+                // 1. Try expected loader first to support multi-loader jars correctly
+                if (isFabricExpected && fabricEntry != null)
+                {
+                    metadata.LoaderType = "Fabric";
+                    ParseFabricMetadata(archive, fabricEntry, metadata);
+                    metadata.SanitizeDependencies();
+                    return metadata;
+                }
+
+                if (isNeoForgeExpected)
+                {
+                    if (neoforgeEntry != null)
+                    {
+                        metadata.LoaderType = "NeoForge";
+                        ParseForgeMetadata(archive, neoforgeEntry, metadata);
+                        metadata.SanitizeDependencies();
+                        return metadata;
+                    }
+                    if (forgeEntry != null)
+                    {
+                        metadata.LoaderType = "Forge";
+                        ParseForgeMetadata(archive, forgeEntry, metadata);
+                        metadata.SanitizeDependencies();
+                        return metadata;
+                    }
+                }
+
+                if (isForgeExpected && forgeEntry != null)
+                {
+                    metadata.LoaderType = "Forge";
+                    ParseForgeMetadata(archive, forgeEntry, metadata);
+                    metadata.SanitizeDependencies();
+                    return metadata;
+                }
+
+                if (isQuiltExpected && quiltEntry != null)
+                {
+                    metadata.LoaderType = "Quilt";
+                    ParseQuiltMetadata(archive, quiltEntry, metadata);
+                    metadata.SanitizeDependencies();
+                    return metadata;
+                }
+
+                // 2. Fallback to standard check order
                 if (quiltEntry != null)
                 {
                     metadata.LoaderType = "Quilt";
                     ParseQuiltMetadata(archive, quiltEntry, metadata);
+                    metadata.SanitizeDependencies();
                     return metadata;
                 }
 
-                // 2. Fabric
-                var fabricEntry = archive.GetEntry("fabric.mod.json");
                 if (fabricEntry != null)
                 {
                     metadata.LoaderType = "Fabric";
                     ParseFabricMetadata(archive, fabricEntry, metadata);
+                    metadata.SanitizeDependencies();
                     return metadata;
                 }
 
-                // 3. Forge / NeoForge TOML
-                var neoforgeEntry = archive.GetEntry("META-INF/neoforge.mods.toml");
-                var forgeEntry = archive.GetEntry("META-INF/mods.toml");
                 if (neoforgeEntry != null || forgeEntry != null)
                 {
                     var entryToUse = neoforgeEntry ?? forgeEntry;
                     metadata.LoaderType = neoforgeEntry != null ? "NeoForge" : "Forge";
                     ParseForgeMetadata(archive, entryToUse!, metadata);
+                    metadata.SanitizeDependencies();
                     return metadata;
                 }
 
@@ -112,11 +160,11 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     metadata.LoaderType = "Forge";
                     ParseMcModInfoMetadata(archive, mcmodEntry, metadata);
+                    metadata.SanitizeDependencies();
                     return metadata;
                 }
 
                 // 5. Bukkit/Paper Plugin
-                var pluginEntry = archive.GetEntry("plugin.yml") ?? archive.GetEntry("paper-plugin.yml");
                 if (pluginEntry != null)
                 {
                     metadata.LoaderType = "Plugin";
@@ -126,19 +174,17 @@ namespace PocketMC.Desktop.Features.Mods
                     if (isInModsFolder)
                     {
                         metadata.IsPluginInModsFolder = true;
-                        metadata.Warnings.Add("This looks like a plugin JAR, not a mod. Move it to plugins.");
                     }
+                    metadata.SanitizeDependencies();
                     return metadata;
                 }
 
                 // 6. Unknown
                 metadata.LoaderType = "Unknown";
-                metadata.Warnings.Add("Could not read mod metadata.");
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or NotSupportedException)
             {
                 metadata.LoaderType = "Unknown";
-                metadata.Warnings.Add("Could not read mod metadata.");
             }
 
             return metadata;
@@ -181,7 +227,6 @@ namespace PocketMC.Desktop.Features.Mods
                     {
                         metadata.SideSupport = ModSideSupport.ClientOnly;
                         metadata.SideLabel = "Client-only";
-                        metadata.Warnings.Add("Fabric metadata marks this mod as client-only.");
                     }
                     else if (env.Equals("server", StringComparison.OrdinalIgnoreCase))
                     {
@@ -199,7 +244,39 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     foreach (var prop in dependsProp.EnumerateObject())
                     {
-                        metadata.Dependencies.Add(prop.Name);
+                        var depName = prop.Name;
+                        if (depName == "minecraft" && prop.Value.ValueKind == JsonValueKind.String)
+                        {
+                            metadata.RequiredMinecraftVersion = prop.Value.GetString();
+                        }
+                        else if (depName == "fabricloader" && prop.Value.ValueKind == JsonValueKind.String)
+                        {
+                            metadata.RequiredLoaderVersion = prop.Value.GetString();
+                        }
+                        else if (depName != "java" && depName != "fabric")
+                        {
+                            metadata.RequiredDependencies.Add(depName);
+                        }
+                    }
+                }
+
+                if (root.TryGetProperty("recommends", out var recommendsProp) && recommendsProp.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in recommendsProp.EnumerateObject())
+                    {
+                        metadata.OptionalDependencies.Add(prop.Name);
+                    }
+                }
+
+                if (root.TryGetProperty("suggests", out var suggestsProp) && suggestsProp.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in suggestsProp.EnumerateObject())
+                    {
+                        // Avoid duplicates if a mod is in both recommends and suggests for some reason
+                        if (!metadata.OptionalDependencies.Contains(prop.Name))
+                        {
+                            metadata.OptionalDependencies.Add(prop.Name);
+                        }
                     }
                 }
 
@@ -270,7 +347,6 @@ namespace PocketMC.Desktop.Features.Mods
                         {
                             metadata.SideSupport = ModSideSupport.ClientOnly;
                             metadata.SideLabel = "Client-only";
-                            metadata.Warnings.Add("Quilt metadata marks this mod as client-only.");
                         }
                         else if (env.Equals("server", StringComparison.OrdinalIgnoreCase))
                         {
@@ -292,11 +368,11 @@ namespace PocketMC.Desktop.Features.Mods
                             {
                                 if (elem.ValueKind == JsonValueKind.Object && elem.TryGetProperty("id", out var depIdProp) && depIdProp.ValueKind == JsonValueKind.String)
                                 {
-                                    metadata.Dependencies.Add(depIdProp.GetString()!);
+                                    metadata.RequiredDependencies.Add(depIdProp.GetString()!);
                                 }
                                 else if (elem.ValueKind == JsonValueKind.String)
                                 {
-                                    metadata.Dependencies.Add(elem.GetString()!);
+                                    metadata.RequiredDependencies.Add(elem.GetString()!);
                                 }
                             }
                         }
@@ -304,7 +380,7 @@ namespace PocketMC.Desktop.Features.Mods
                         {
                             foreach (var prop in dependsProp.EnumerateObject())
                             {
-                                metadata.Dependencies.Add(prop.Name);
+                                metadata.RequiredDependencies.Add(prop.Name);
                             }
                         }
                     }
@@ -378,21 +454,17 @@ namespace PocketMC.Desktop.Features.Mods
                 }
 
                 var idMatches = Regex.Matches(toml, @"modId\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase, regexTimeout);
-                bool first = true;
                 foreach (Match m in idMatches)
                 {
                     if (m.Success)
                     {
                         string val = m.Groups[1].Value;
-                        if (first)
+                        if (string.IsNullOrEmpty(metadata.ModId))
                         {
                             metadata.ModId = val;
-                            first = false;
                         }
-                        else
-                        {
-                            metadata.Dependencies.Add(val);
-                        }
+                        // Stop after first match so we don't accidentally grab dependency modIds!
+                        break;
                     }
                 }
 
@@ -431,17 +503,123 @@ namespace PocketMC.Desktop.Features.Mods
                     ExtractIconBytes(archive, logo, metadata);
                 }
 
-                // Use a TOML-aware scan that skips comments, multi-line strings,
-                // and quoted values to avoid false-positive side detection.
-                bool isClientOnly = IsActiveTomlKeyTrue(toml, "clientSideOnly");
-                bool hasDisplayTest = HasActiveTomlKey(toml, "displayTest");
+                bool isClientOnly = false;
+                bool isServerOnly = false;
+                bool hasDisplayTest = false;
 
+                string lastSection = "";
+                string currentDepId = "";
+                bool currentDepMandatory = true;
+                bool currentDepIgnored = false;
+                string currentDepVersionRange = "";
+                string currentDepSide = "BOTH";
+
+                foreach (var (line, section) in EnumerateActiveTomlLines(toml))
+                {
+                    bool isNewSection = line.StartsWith("[");
+                    var cleanLastSection = lastSection.TrimStart('[', '"', '\'');
+                    if (isNewSection)
+                    {
+                        if (cleanLastSection.StartsWith("dependencies", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(currentDepId))
+                        {
+                            if (currentDepId.Equals("minecraft", StringComparison.OrdinalIgnoreCase))
+                            {
+                                metadata.RequiredMinecraftVersion = currentDepVersionRange;
+                                if (currentDepSide == "CLIENT") isClientOnly = true;
+                                if (currentDepSide == "SERVER") isServerOnly = true;
+                            }
+                            else if (currentDepId.Equals("forge", StringComparison.OrdinalIgnoreCase) || currentDepId.Equals("neoforge", StringComparison.OrdinalIgnoreCase))
+                            {
+                                metadata.RequiredLoaderVersion = currentDepVersionRange;
+                                if (currentDepSide == "CLIENT") isClientOnly = true;
+                                if (currentDepSide == "SERVER") isServerOnly = true;
+                            }
+                            else if (currentDepId != "java" && !currentDepIgnored)
+                            {
+                                if (currentDepMandatory) metadata.RequiredDependencies.Add(currentDepId);
+                                else metadata.OptionalDependencies.Add(currentDepId);
+                            }
+                        }
+                        
+                        currentDepId = "";
+                        currentDepMandatory = true;
+                        currentDepIgnored = false;
+                        currentDepVersionRange = "";
+                        currentDepSide = "BOTH";
+                        lastSection = section;
+                    }
+                    
+                    var cleanSection = section.TrimStart('[', '"', '\'');
+                    if (cleanSection.StartsWith("dependencies", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var idMatch = Regex.Match(line, @"^\s*modId\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (idMatch.Success) currentDepId = idMatch.Groups[1].Value.Trim();
+
+                        var mandatoryMatch = Regex.Match(line, @"^\s*mandatory\s*=\s*(true)", RegexOptions.IgnoreCase, regexTimeout);
+                        var typeMatch = Regex.Match(line, @"^\s*type\s*=\s*[""']required[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (mandatoryMatch.Success || typeMatch.Success) { currentDepMandatory = true; currentDepIgnored = false; }
+                        
+                        var mandatoryFalseMatch = Regex.Match(line, @"^\s*mandatory\s*=\s*(false)", RegexOptions.IgnoreCase, regexTimeout);
+                        var typeOptionalMatch = Regex.Match(line, @"^\s*type\s*=\s*[""']optional[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (mandatoryFalseMatch.Success || typeOptionalMatch.Success) { currentDepMandatory = false; currentDepIgnored = false; }
+
+                        var typeIncompatibleMatch = Regex.Match(line, @"^\s*type\s*=\s*[""'](incompatible|discouraged)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (typeIncompatibleMatch.Success) { currentDepIgnored = true; }
+
+                        var versionRangeMatch = Regex.Match(line, @"^\s*versionRange\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (versionRangeMatch.Success) currentDepVersionRange = versionRangeMatch.Groups[1].Value.Trim();
+
+                        var sideMatch = Regex.Match(line, @"^\s*side\s*=\s*[""'](CLIENT|SERVER|BOTH)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (sideMatch.Success) currentDepSide = sideMatch.Groups[1].Value.Trim().ToUpperInvariant();
+                    }
+                    else if (cleanSection.StartsWith("mods.", StringComparison.OrdinalIgnoreCase) || cleanSection.StartsWith("mods", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var idMatch = Regex.Match(line, @"^\s*modId\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                        if (idMatch.Success && string.IsNullOrEmpty(metadata.ModId)) metadata.ModId = idMatch.Groups[1].Value.Trim();
+                    }
+                    
+                    var clientOnlyMatch = Regex.Match(line, @"^\s*clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase, regexTimeout);
+                    if (clientOnlyMatch.Success) isClientOnly = true;
+
+                    var displayTestMatch = Regex.Match(line, @"^\s*displayTest\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase, regexTimeout);
+                    if (displayTestMatch.Success)
+                    {
+                        var testVal = displayTestMatch.Groups[1].Value.Trim().ToUpperInvariant();
+                        if (testVal == "IGNORE_SERVER_VERSION" || testVal == "NONE" || testVal == "IGNORE_ALL_VERSION") hasDisplayTest = true;
+                    }
+                }
+                
+                // Flush the last dependency if needed
+                var finalCleanLastSection = lastSection.TrimStart('[', '"', '\'');
+                if (finalCleanLastSection.StartsWith("dependencies", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(currentDepId))
+                {
+                    if (currentDepId.Equals("minecraft", StringComparison.OrdinalIgnoreCase))
+                    {
+                        metadata.RequiredMinecraftVersion = currentDepVersionRange;
+                        if (currentDepSide == "CLIENT") isClientOnly = true;
+                        if (currentDepSide == "SERVER") isServerOnly = true;
+                    }
+                    else if (currentDepId.Equals("forge", StringComparison.OrdinalIgnoreCase) || currentDepId.Equals("neoforge", StringComparison.OrdinalIgnoreCase))
+                    {
+                        metadata.RequiredLoaderVersion = currentDepVersionRange;
+                        if (currentDepSide == "CLIENT") isClientOnly = true;
+                        if (currentDepSide == "SERVER") isServerOnly = true;
+                    }
+                    else if (currentDepId != "java" && !currentDepIgnored)
+                    {
+                        if (currentDepMandatory) metadata.RequiredDependencies.Add(currentDepId);
+                        else metadata.OptionalDependencies.Add(currentDepId);
+                    }
+                }
 
                 if (isClientOnly)
                 {
                     metadata.SideSupport = ModSideSupport.ClientOnly;
                     metadata.SideLabel = "Client-only";
-                    metadata.Warnings.Add("Forge metadata marks this mod as client-only.");
+                }
+                else if (isServerOnly)
+                {
+                    metadata.SideSupport = ModSideSupport.ServerOnly;
                 }
                 else if (hasDisplayTest)
                 {
@@ -524,7 +702,7 @@ namespace PocketMC.Desktop.Features.Mods
                         {
                             if (dep.ValueKind == JsonValueKind.String)
                             {
-                                metadata.Dependencies.Add(dep.GetString()!);
+                                metadata.RequiredDependencies.Add(dep.GetString()!);
                             }
                         }
                     }
@@ -566,6 +744,46 @@ namespace PocketMC.Desktop.Features.Mods
                 if (descMatch.Success)
                 {
                     metadata.Description = descMatch.Groups[1].Value.Trim();
+                }
+
+                var apiVerMatch = Regex.Match(yaml, @"^api-version:\s*['""]?([^\r\n'""]+)['""]?", RegexOptions.Multiline | RegexOptions.IgnoreCase, regexTimeout);
+                if (apiVerMatch.Success)
+                {
+                    metadata.ApiVersion = apiVerMatch.Groups[1].Value.Trim();
+                }
+
+                var lines = yaml.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                string? currentList = null;
+                foreach(var line in lines)
+                {
+                    if (Regex.IsMatch(line, @"^\s*depend:\s*$")) { currentList = "depend"; continue; }
+                    if (Regex.IsMatch(line, @"^\s*softdepend:\s*$")) { currentList = "softdepend"; continue; }
+                    
+                    var listMatch = Regex.Match(line, @"^\s*-\s*['""]?([^'""]+)['""]?");
+                    if (listMatch.Success && currentList != null)
+                    {
+                        string dep = listMatch.Groups[1].Value.Trim();
+                        if (currentList == "depend") metadata.RequiredDependencies.Add(dep);
+                        else metadata.OptionalDependencies.Add(dep);
+                        continue;
+                    }
+
+                    var inlineDepend = Regex.Match(line, @"^\s*depend:\s*\[([^\]]+)\]");
+                    if (inlineDepend.Success) {
+                        foreach(var d in inlineDepend.Groups[1].Value.Split(',')) metadata.RequiredDependencies.Add(d.Trim(' ', '\'', '"'));
+                        currentList = null;
+                        continue;
+                    }
+                    var inlineSoftDepend = Regex.Match(line, @"^\s*softdepend:\s*\[([^\]]+)\]");
+                    if (inlineSoftDepend.Success) {
+                        foreach(var d in inlineSoftDepend.Groups[1].Value.Split(',')) metadata.OptionalDependencies.Add(d.Trim(' ', '\'', '"'));
+                        currentList = null;
+                        continue;
+                    }
+
+                    if (Regex.IsMatch(line, @"^\s*[a-zA-Z0-9_-]+:")) {
+                        currentList = null;
+                    }
                 }
             }
             catch

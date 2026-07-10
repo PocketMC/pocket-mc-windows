@@ -218,25 +218,54 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             await LoadVersionsAsync(GetSelectedServerType());
         }
 
-        private void CmbVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void CmbVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateCreateButtonState();
-            UpdateLoaderVersionSelector();
+            await UpdateLoaderVersionSelectorAsync();
         }
 
-        private void UpdateLoaderVersionSelector()
+        private async Task UpdateLoaderVersionSelectorAsync()
         {
-            if (CmbVersion.SelectedItem is GameVersionWithLoaders gvl && gvl.LoaderVersions.Any())
+            string serverType = GetSelectedServerType();
+            
+            if (TxtLoaderVersionLabel != null)
             {
-                LoaderVersionPanel.Visibility = Visibility.Visible;
-                CmbLoaderVersion.ItemsSource = gvl.LoaderVersions;
-                CmbLoaderVersion.SelectedIndex = 0;
+                TxtLoaderVersionLabel.Text = serverType == "Paper" ? "Paper Build" : "Loader Version";
             }
-            else
+
+            if (CmbVersion.SelectedItem is MinecraftVersion version)
             {
-                LoaderVersionPanel.Visibility = Visibility.Collapsed;
-                CmbLoaderVersion.ItemsSource = null;
+                if (version is GameVersionWithLoaders gvl && gvl.LoaderVersions.Any())
+                {
+                    LoaderVersionPanel.Visibility = Visibility.Visible;
+                    CmbLoaderVersion.ItemsSource = gvl.LoaderVersions;
+                    CmbLoaderVersion.SelectedIndex = 0;
+                    return;
+                }
+
+                if (serverType == "Paper")
+                {
+                    try
+                    {
+                        var provider = GetProvider(serverType);
+                        var builds = await provider.GetBuildsAsync(version.Id);
+                        if (builds.Any())
+                        {
+                            LoaderVersionPanel.Visibility = Visibility.Visible;
+                            CmbLoaderVersion.ItemsSource = builds;
+                            CmbLoaderVersion.SelectedIndex = 0;
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to fetch builds for {Version}", version.Id);
+                    }
+                }
             }
+
+            LoaderVersionPanel.Visibility = Visibility.Collapsed;
+            CmbLoaderVersion.ItemsSource = null;
         }
 
         private void ChkAcceptEula_Changed(object sender, RoutedEventArgs e)
@@ -389,6 +418,41 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
         }
 
+        private void BtnImportModpack_Click(object sender, RoutedEventArgs e)
+        {
+            var compat = new EngineCompatibility("Fabric"); // Dummy for Modpack Mode
+
+            var browserPage = (PluginBrowserPage)ActivatorUtilities.CreateInstance(
+                _serviceProvider,
+                typeof(PluginBrowserPage),
+                new object[]
+                {
+                    "", // serverDir
+                    "", // mcVersion
+                    "project_type:modpack", // projectType
+                    (Action)(() => {}), // onCompleted
+                    compat
+                });
+
+            browserPage.OnModpackDownloaded += (filePath) =>
+            {
+                var dialog = ActivatorUtilities.CreateInstance<ModpackInstallDialogWindow>(_serviceProvider, filePath);
+                var mainWindow = System.Windows.Application.Current?.MainWindow;
+                if (mainWindow != null && mainWindow.IsLoaded)
+                {
+                    dialog.Owner = mainWindow;
+                }
+                dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                dialog.ShowDialog();
+            };
+
+            _navigationService.NavigateToDetailPage(
+                browserPage,
+                "Marketplace - Modpacks",
+                DetailRouteKind.PluginBrowser,
+                DetailBackNavigation.PreviousDetail);
+        }
+
         private async void BtnCreate_Click(object sender, RoutedEventArgs e)
         {
             ClearError();
@@ -486,6 +550,10 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     }
                 }
 
+                else if (serverType == "Paper" && !string.IsNullOrEmpty(loaderVersion))
+                {
+                    await _paperProvider.DownloadPaperJarAsync(selectedVersion.Id, loaderVersion, jarPath, progress, ct);
+                }
                 else if (serverType == "Fabric" && !string.IsNullOrEmpty(loaderVersion))
                 {
                     await _fabricProvider.DownloadFabricJarAsync(selectedVersion.Id, loaderVersion, jarPath, progress, ct);

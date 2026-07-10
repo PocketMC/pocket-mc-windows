@@ -32,14 +32,23 @@
                               VerticalAlignment="Center"/>
             </StackPanel>
 
-            <ui:Button Grid.Column="1"
-                       Content="Import Instance"
-                       Appearance="Secondary"
-                       Icon="{ui:SymbolIcon ArrowUpload24}"
-                       MinWidth="136"
-                       HorizontalAlignment="Right"
-                       VerticalAlignment="Center"
-                       Click="BtnImportInstance_Click"/>
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <ui:Button x:Name="BtnImportModpack"
+                           Content="Import Modpack"
+                           Appearance="Secondary"
+                           Icon="{ui:SymbolIcon FolderZip24}"
+                           Margin="0,0,8,0"
+                           Click="BtnImportModpack_Click"/>
+                <ui:Button x:Name="BtnImportInstance"
+                           Content="Import Instance"
+                           Appearance="Secondary"
+                           Icon="{ui:SymbolIcon ArrowUpload24}"
+                           MinWidth="136"
+                           Click="BtnImportInstance_Click"/>
+            </StackPanel>
         </Grid>
 
         <!-- Footer Action Bar -->
@@ -142,6 +151,7 @@
                                Margin="0,0,8,0"
                                Click="BtnBack_Click"
                                IsCancel="True"/>
+
                     <ui:Button x:Name="BtnCreate"
                                Content="Create and Download"
                                Appearance="Primary"
@@ -212,7 +222,7 @@
 
                         <!-- Loader Version -->
                         <StackPanel x:Name="LoaderVersionPanel" Visibility="Collapsed" Margin="0,0,0,16">
-                            <TextBlock Text="Loader Version" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,6"/>
+                            <TextBlock x:Name="TxtLoaderVersionLabel" Text="Loader Version" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,6"/>
                             <ComboBox x:Name="CmbLoaderVersion" HorizontalAlignment="Stretch" MinHeight="40" DisplayMemberPath="Version"/>
                         </StackPanel>
 

@@ -129,7 +129,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (depType == DependencyType.Required && existing.Type == DependencyType.Optional)
                 {
                     existing.Type = DependencyType.Required;
-                    existing.IsSelected = true;
+                    if (!existing.IsAlreadyInstalled) existing.IsSelected = true;
                 }
                 return results;
             }
@@ -194,8 +194,14 @@ namespace PocketMC.Desktop.Features.Marketplace
                 return results;
             }
 
+            // Re-check installed status with title fallback if initially false
+            if (!alreadyInstalled && version != null && !string.IsNullOrWhiteSpace(version.ProjectTitle))
+            {
+                alreadyInstalled = await _manifestService.IsInstalledAsync(serverDir, provider.Name, projectId, compat, version.ProjectTitle, null);
+            }
+
             // Phase 2: Canonical ID Check
-            string canonicalId = version.ProjectId.ToLowerInvariant();
+            string canonicalId = version!.ProjectId.ToLowerInvariant();
             var canonicalExisting = results.FirstOrDefault(r => r.ProjectId.Equals(canonicalId, StringComparison.OrdinalIgnoreCase));
 
             if (canonicalExisting != null)
@@ -206,7 +212,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (depType == DependencyType.Required && canonicalExisting.Type == DependencyType.Optional)
                 {
                     canonicalExisting.Type = DependencyType.Required;
-                    canonicalExisting.IsSelected = true;
+                    if (!canonicalExisting.IsAlreadyInstalled) canonicalExisting.IsSelected = true;
                 }
                 return results;
             }

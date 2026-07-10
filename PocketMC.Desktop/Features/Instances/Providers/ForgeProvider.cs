@@ -59,7 +59,6 @@ public class ForgeProvider : IServerSoftwareProvider
                     }
 
                     if (string.IsNullOrEmpty(mcVersion)) continue;
-                    if (!mcVersion.StartsWith("1.")) continue;
                     if (!JavaRuntimeResolver.TryParseVersion(mcVersion, out var parsedVersion) || parsedVersion < minVersion)
                         continue;
 

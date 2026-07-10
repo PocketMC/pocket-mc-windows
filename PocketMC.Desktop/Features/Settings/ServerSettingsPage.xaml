@@ -143,7 +143,8 @@
                                    IsBackButtonVisible="Collapsed">
                     <ui:NavigationView.MenuItems>
                         <ui:NavigationViewItem Content="Identity &amp; Performance" Icon="{ui:SymbolIcon Settings24}" Click="NavItem_Click" IsActive="True"/>
-                        <ui:NavigationViewItem Content="Version &amp; Updates" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="Version &amp; Updates" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"
+                                               Visibility="{Binding VersionUpdates.IsUpdateSupported, Converter={StaticResource VisibleIfTrue}}"/>
                         <ui:NavigationViewItem Content="Gameplay Rules" Icon="{ui:SymbolIcon Globe24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="World &amp; Files" Icon="{ui:SymbolIcon Folder24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Addons (Plugins/Mods)" Icon="{ui:SymbolIcon Add24}" Click="NavItem_Click"/>
@@ -390,7 +391,7 @@
                         </TabItem>
 
                         <!-- TAB 2: VERSION & UPDATES -->
-                        <TabItem Header="VersionUpdates">
+                        <TabItem Header="VersionUpdates" Visibility="{Binding VersionUpdates.IsUpdateSupported, Converter={StaticResource VisibleIfTrue}}">
                             <ScrollViewer x:Name="VersionUpdatesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <!-- 1. Unified Version Selector -->
@@ -837,21 +838,7 @@
                                         </Grid>
                                     </Grid>
 
-                                    <!-- Warning Summary Banner -->
-                                    <ui:Card Visibility="{Binding Addons.HasWarningsBanner, Converter={StaticResource VisibleIfTrue}}"
-                                             Background="#2D1E24" BorderBrush="#F38BA8" BorderThickness="1"
-                                             Margin="4,0,4,16" Padding="12">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Symbol="Warning24" Foreground="#F38BA8" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                            <TextBlock VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="#F38BA8">
-                                                <TextBlock.Text>
-                                                    <MultiBinding StringFormat="{}{0} suspicious or client-only add-on(s) detected. Server might crash or ignore them.">
-                                                        <Binding Path="Addons.WarningsCount"/>
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </ui:Card>
+
 
                                     <ui:Card Visibility="{Binding Addons.ShowServerRunningAddonMessage, Converter={StaticResource VisibleIfTrue}}"
                                              Background="#2A2535" BorderBrush="#CBA6F7" BorderThickness="1"
@@ -913,18 +900,7 @@
                                                                ToolTip="Check all installed plugins for updates"/>
                                                 </StackPanel>
                                             </Grid>
-                                            <TextBlock Text="{Binding Addons.UpdateAllStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,8,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+
                                         </StackPanel>
                                     </ui:Card>
                                     <ItemsControl ItemsSource="{Binding Addons.Plugins}" Margin="0,0,0,24">
@@ -987,10 +963,8 @@
                                                                 </Border>
                                                             </StackPanel>
                                                             
-                                                            <!-- Subtitle: Filename · Loader · Version · Source · Side -->
+                                                            <!-- Subtitle: Loader · Version · Source · Side -->
                                                             <WrapPanel Margin="0,2,0,0" VerticalAlignment="Center">
-                                                                <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                                                 <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                                                     <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                                 </Border>
@@ -1009,14 +983,8 @@
                                                                     </Border>
                                                                 </StackPanel>
                                                             </WrapPanel>
-                                                            
-                                                            <!-- Warning message if any -->
-                                                            <TextBlock Visibility="{Binding HasWarnings, Converter={StaticResource VisibleIfTrue}}"
-                                                                       Text="{Binding WarningText}" FontSize="11" Foreground="#F38BA8" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                                                            
-                                                            <!-- Update status -->
-                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0"
-                                                                       Visibility="{Binding UpdateStatusText, Converter={StaticResource VisibleIfNotEmpty}}"/>
+
+
                                                         </StackPanel>
                                                         
                                                         <!-- Action buttons -->
@@ -1077,8 +1045,6 @@
                                                     <ui:Button Content="Add Mod JAR" Command="{Binding Addons.AddModCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
                                                     <ui:Button Content="Browse Marketplace" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"
                                                                Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
-                                                    <ui:Button Content="Import Pack" Command="{Binding Addons.ImportModpackCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon FolderZip20}"
-                                                               Visibility="{Binding Addons.SupportsModpacks, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
@@ -1105,18 +1071,7 @@
                                                                Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
                                             </Grid>
-                                            <TextBlock Text="{Binding Addons.UpdateAllStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,8,0,0">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+
                                         </StackPanel>
                                     </ui:Card>
                                     <ItemsControl ItemsSource="{Binding Addons.Mods}"
@@ -1189,17 +1144,11 @@
                                                                         Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
                                                                     <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
                                                                 </Border>
-
-                                                                <!-- Warning Icon -->
-                                                                <ui:SymbolIcon Symbol="Warning16" Foreground="#F38BA8" Margin="8,0,0,0" VerticalAlignment="Center"
-                                                                               Visibility="{Binding HasWarnings, Converter={StaticResource VisibleIfTrue}}"
-                                                                               ToolTip="{Binding WarningText}"/>
                                                             </StackPanel>
 
                                                             <!-- Subtitle: Filename · Loader · Version · Source -->
                                                             <WrapPanel Margin="0,4,0,0" VerticalAlignment="Center">
-                                                                <TextBlock Text="{Binding FileName}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+
                                                                 
                                                                 <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                                                     <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
@@ -1232,9 +1181,7 @@
                                                                 </StackPanel>
                                                             </Border>
 
-                                                            <!-- Update status -->
-                                                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="11" Foreground="#89B4FA" Margin="0,4,0,0"
-                                                                       Visibility="{Binding UpdateStatusText, Converter={StaticResource VisibleIfNotEmpty}}"/>
+
                                                         </StackPanel>
 
                                                         <!-- Actions -->

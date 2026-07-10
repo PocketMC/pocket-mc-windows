@@ -15,7 +15,9 @@ namespace PocketMC.Desktop.Infrastructure
             bool showCancel = false,
             string? primaryButtonText = null,
             string? secondaryButtonText = null,
-            string? cancelButtonText = null)
+            string? cancelButtonText = null,
+            string? linkText = null,
+            string? linkUrl = null)
         {
             var appType = type switch
             {
@@ -37,7 +39,9 @@ namespace PocketMC.Desktop.Infrastructure
                 buttons,
                 primaryButtonText,
                 secondaryButtonText,
-                cancelButtonText);
+                cancelButtonText,
+                linkText,
+                linkUrl);
 
             return Task.FromResult(result);
         }

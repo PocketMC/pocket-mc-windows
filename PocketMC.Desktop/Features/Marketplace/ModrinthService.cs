@@ -238,7 +238,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 var facetList = new List<List<string>>();
                 facetList.Add(new List<string> { type });
 
-                if (type == "project_type:mod")
+                if (type == "project_type:mod" || type == "project_type:modpack")
                 {
                     facetList.Add(new List<string> { "server_side:required", "server_side:optional" });
                 }
@@ -279,10 +279,10 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             foreach (var mcCand in mcCandidates)
             {
-                foreach (var loaderCand in loaderCandidates)
+                var mVersion = await GetLatestVersionAsync(projectSlug, mcCand, loaderCandidates).ConfigureAwait(false);
+                if (mVersion != null)
                 {
-                    var mVersion = await GetLatestVersionAsync(projectSlug, mcCand, loaderCand).ConfigureAwait(false);
-                    if (mVersion != null)
+                    foreach (var loaderCand in loaderCandidates)
                     {
                         var compatFile = SelectCompatibleFile(mVersion, loaderCand);
                         if (compatFile != null)
@@ -403,7 +403,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             return null;
         }
 
-        private async Task<Dictionary<string, ModrinthVersion>> GetVersionsByHashesAsync(
+        public async Task<Dictionary<string, ModrinthVersion>> GetVersionsByHashesAsync(
             IEnumerable<string> hashes,
             string algorithm)
         {
@@ -496,7 +496,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             return result;
         }
 
-        public async Task<ModrinthVersion?> GetLatestVersionAsync(string slug, string mcVersion, string? loader = null)
+        public async Task<ModrinthVersion?> GetLatestVersionAsync(string slug, string mcVersion, IReadOnlyList<string>? loaders = null)
         {
             try
             {
@@ -506,8 +506,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (!string.IsNullOrEmpty(mcVersion) && mcVersion != "*")
                     queryParams.Add($"game_versions={Uri.EscapeDataString(JsonSerializer.Serialize(new[] { mcVersion }))}");
 
-                if (!string.IsNullOrEmpty(loader))
-                    queryParams.Add($"loaders={Uri.EscapeDataString(JsonSerializer.Serialize(new[] { loader }))}");
+                if (loaders != null && loaders.Count > 0)
+                    queryParams.Add($"loaders={Uri.EscapeDataString(JsonSerializer.Serialize(loaders))}");
 
                 string url = queryParams.Count > 0 ? $"{baseUrl}?{string.Join("&", queryParams)}" : baseUrl;
                 var versions = await GetFromJsonWithRetryAsync<List<ModrinthVersion>>(url).ConfigureAwait(false);
@@ -515,7 +515,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (versions?.Count > 0)
                     return SelectPreferredVersion(versions);
 
-                if (!string.IsNullOrWhiteSpace(loader))
+                if (loaders != null && loaders.Count > 0)
                 {
                     // Fallback: some projects have inconsistent loader metadata in indexed filters.
                     string relaxedUrl = !string.IsNullOrEmpty(mcVersion) && mcVersion != "*"
@@ -525,7 +525,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     var relaxedVersions = await GetFromJsonWithRetryAsync<List<ModrinthVersion>>(relaxedUrl)
                         .ConfigureAwait(false) ?? new();
                     var loaderMatches = relaxedVersions
-                        .Where(v => v.Loaders.Any(l => l.Equals(loader, StringComparison.OrdinalIgnoreCase)))
+                        .Where(v => v.Loaders.Any(l => loaders.Contains(l, StringComparer.OrdinalIgnoreCase)))
                         .ToList();
                     if (loaderMatches.Count > 0) return SelectPreferredVersion(loaderMatches);
                     return null;

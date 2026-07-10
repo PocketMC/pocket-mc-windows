@@ -80,21 +80,16 @@ public sealed class AddonManagementServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task InventorySurfacesJavaMetadataDisplayVersionIconLoaderAndWarnings()
+    public async Task InventoryDeletesClientOnlyMod()
     {
         string serverDir = CreateServerDir();
         byte[] iconBytes = [1, 2, 3, 4, 5];
         CreateFabricJar(serverDir, "mods/rich.jar", "rich", "Rich Mod", "9.8.7", iconBytes, environment: "client");
 
-        AddonInventoryItem item = Assert.Single(await CreateInventoryService().ScanAsync(JavaMetadata(), serverDir));
+        var items = await CreateInventoryService().ScanAsync(JavaMetadata(), serverDir);
 
-        Assert.Equal("Rich Mod", item.DisplayName);
-        Assert.Equal("9.8.7", item.Version);
-        Assert.Equal("Fabric", item.LoaderType);
-        Assert.Equal(iconBytes, item.IconBytes);
-        Assert.Equal(ModSideSupport.ClientOnly, item.SideSupport);
-        Assert.Equal("Client-only", item.SideLabel);
-        Assert.Contains(item.Warnings, warning => warning.Contains("client-only", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(items);
+        Assert.False(File.Exists(Path.Combine(serverDir, "mods", "rich.jar")));
     }
 
     [Fact]
@@ -199,18 +194,17 @@ public sealed class AddonManagementServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task InventoryReturnsWarningItemForCorruptJar()
+    public async Task InventoryDeletesCorruptJar()
     {
         string serverDir = CreateServerDir();
         string jarPath = Path.Combine(serverDir, "mods", "corrupt.jar");
         Directory.CreateDirectory(Path.GetDirectoryName(jarPath)!);
         await File.WriteAllTextAsync(jarPath, "not a zip");
 
-        AddonInventoryItem item = Assert.Single(await CreateInventoryService().ScanAsync(JavaMetadata(), serverDir));
+        var items = await CreateInventoryService().ScanAsync(JavaMetadata(), serverDir);
 
-        Assert.Equal("corrupt.jar", item.FileName);
-        Assert.Equal("Unknown", item.LoaderType);
-        Assert.NotEmpty(item.Warnings);
+        Assert.Empty(items);
+        Assert.False(File.Exists(jarPath));
     }
 
     [Fact]
@@ -395,7 +389,7 @@ public sealed class AddonManagementServiceTests : IDisposable
             SideSupport = ModSideSupport.ClientAndServer,
             SideLabel = "Client + Server",
             Dependencies = Array.Empty<string>(),
-            Warnings = Array.Empty<string>(),
+
             UpdateStatus = AddonUpdateStatus.Unknown,
             CanDisable = true,
             RequiresServerStopped = true

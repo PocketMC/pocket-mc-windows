@@ -64,7 +64,49 @@ public sealed class AddonInventoryService
             var items = new List<AddonInventoryItem>();
             ScanKind(root, metadata, AddonKind.Mod, manifest, state, serverRunning, items, cancellationToken);
             ScanKind(root, metadata, AddonKind.Plugin, manifest, state, serverRunning, items, cancellationToken);
-            return (IReadOnlyList<AddonInventoryItem>)items
+            
+            var itemsToKeep = new List<AddonInventoryItem>();
+            
+            if (metadata.IsModpack)
+            {
+                itemsToKeep.AddRange(items);
+            }
+            else
+            {
+                foreach (var kindGroup in items.GroupBy(i => i.Kind))
+                {
+                    var groupedById = kindGroup.GroupBy(i => !string.IsNullOrEmpty(i.ModId) ? i.ModId.ToLowerInvariant() : i.DisplayName.ToLowerInvariant());
+                    
+                    foreach (var group in groupedById)
+                    {
+                        if (group.Count() == 1)
+                        {
+                            itemsToKeep.Add(group.First());
+                            continue;
+                        }
+                        
+                        var sorted = group
+                            .OrderBy(i => i.Provenance == null ? 1 : 0) // Prefer tracked over manual
+                            .ThenByDescending(i => i.LastModifiedUtc) // Prefer newest file
+                            .ToList();
+                            
+                        var winner = sorted.First();
+                        itemsToKeep.Add(winner);
+                        
+                        foreach (var loser in sorted.Skip(1))
+                        {
+                            try
+                            {
+                                if (File.Exists(loser.FullPath)) File.Delete(loser.FullPath);
+                                if (!string.IsNullOrEmpty(loser.DisabledPath) && File.Exists(loser.DisabledPath)) File.Delete(loser.DisabledPath);
+                            }
+                            catch { /* Ignore locks */ }
+                        }
+                    }
+                }
+            }
+
+            return (IReadOnlyList<AddonInventoryItem>)itemsToKeep
                 .OrderBy(item => item.Kind)
                 .ThenBy(item => item.State)
                 .ThenBy(item => item.DisplayName, StringComparer.OrdinalIgnoreCase)
@@ -91,7 +133,8 @@ public sealed class AddonInventoryService
             foreach (string file in Directory.EnumerateFiles(enabledDirectory, "*.jar", SearchOption.TopDirectoryOnly))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                items.Add(BuildItem(root, metadata, kind, AddonState.Enabled, file, manifest, state, serverRunning));
+                var item = BuildItem(root, metadata, kind, AddonState.Enabled, file, manifest, state, serverRunning);
+                if (item != null) items.Add(item);
             }
         }
 
@@ -100,12 +143,13 @@ public sealed class AddonInventoryService
             foreach (string file in Directory.EnumerateFiles(disabledDirectory, "*.jar.disabled-by-pocketmc", SearchOption.TopDirectoryOnly))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                items.Add(BuildItem(root, metadata, kind, AddonState.Disabled, file, manifest, state, serverRunning));
+                var item = BuildItem(root, metadata, kind, AddonState.Disabled, file, manifest, state, serverRunning);
+                if (item != null) items.Add(item);
             }
         }
     }
 
-    private AddonInventoryItem BuildItem(
+    private AddonInventoryItem? BuildItem(
         string root,
         InstanceMetadata metadata,
         AddonKind kind,
@@ -128,12 +172,73 @@ public sealed class AddonInventoryService
         }
 
         JavaModMetadata jarMetadata = JavaModMetadataService.ScanJar(fullPath);
+
+        // Treat hybrid JARs (e.g. ViaVersion) as plugins if the server supports plugins.
+        if (jarMetadata.HasPluginMetadata && metadata.Compatibility.SupportsPlugins)
+        {
+            jarMetadata.LoaderType = "Plugin";
+        }
         AddonManifestEntry? manifestEntry = FindManifestEntry(manifest, originalFileName, actualFileName);
+
+        // Determine compatibility
+        bool isCompatibleLoader = true;
+        if (jarMetadata.LoaderType != "Unknown")
+        {
+            if (jarMetadata.LoaderType.Equals("Plugin", StringComparison.OrdinalIgnoreCase))
+            {
+                isCompatibleLoader = metadata.Compatibility.SupportsPlugins;
+            }
+            else
+            {
+                isCompatibleLoader = metadata.Compatibility.CompatibleLoaderNames.Contains(jarMetadata.LoaderType, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        ModSideSupport sideSupport = ResolveSideSupport(jarMetadata, manifestEntry);
+
+        bool isMinecraftIncompatible = false;
+        if (!string.IsNullOrWhiteSpace(jarMetadata.RequiredMinecraftVersion) && !string.IsNullOrWhiteSpace(metadata.MinecraftVersion))
+        {
+            isMinecraftIncompatible = !PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(jarMetadata.RequiredMinecraftVersion, metadata.MinecraftVersion);
+        }
+
+        bool isLoaderVersionIncompatible = false;
+        if (!string.IsNullOrWhiteSpace(jarMetadata.RequiredLoaderVersion) && !string.IsNullOrWhiteSpace(metadata.LoaderVersion))
+        {
+            isLoaderVersionIncompatible = !PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(jarMetadata.RequiredLoaderVersion, metadata.LoaderVersion);
+        }
+
+        bool isInvalid = jarMetadata.LoaderType == "Unknown" ||
+                         jarMetadata.IsPluginInModsFolder ||
+                         sideSupport == ModSideSupport.ClientOnly ||
+                         !isCompatibleLoader ||
+                         isMinecraftIncompatible ||
+                         isLoaderVersionIncompatible;
+
+        if (metadata.IsModpack)
+        {
+            isInvalid = false;
+        }
+
+        if (isInvalid)
+        {
+            try
+            {
+                File.Delete(fullPath);
+                // Also clean up any disabled version if it exists
+                if (itemState == AddonState.Disabled)
+                {
+                    File.Delete(fullPath); 
+                }
+            }
+            catch { /* Ignore deletion errors if locked */ }
+            
+            return null; // Don't return an item so it doesn't show in UI
+        }
+
         AddonProvenance? provenance = BuildProvenance(manifestEntry, metadata);
         string displayName = ResolveDisplayName(jarMetadata, manifestEntry, stateEntry, originalFileName);
-        ModSideSupport sideSupport = ResolveSideSupport(jarMetadata, manifestEntry);
         string sideLabel = ResolveSideLabel(sideSupport, jarMetadata.SideLabel);
-        var warnings = new List<string>(jarMetadata.Warnings);
 
         FileInfo? fileInfo = TryGetFileInfo(fullPath);
         string disabledPath = itemState == AddonState.Disabled
@@ -157,7 +262,6 @@ public sealed class AddonInventoryService
             SideLabel = sideLabel,
             IconBytes = jarMetadata.IconBytes,
             Dependencies = jarMetadata.Dependencies.ToArray(),
-            Warnings = warnings,
             UpdateStatus = provenance == null ? AddonUpdateStatus.UnknownSource : AddonUpdateStatus.Unknown,
             CanEnable = itemState == AddonState.Disabled && !serverRunning,
             CanDisable = itemState == AddonState.Enabled && !serverRunning,
