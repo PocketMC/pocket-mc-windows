@@ -229,7 +229,7 @@
                                 <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
                                     <UniformGrid Columns="3">
                                         <StackPanel Margin="0,0,8,0">
-                                            <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Last played"/>
+                                            <TextBlock Style="{StaticResource MetadataItemLabel}" Text="{Binding LastPlayedLabelText}"/>
                                             <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding LastPlayedValueText}" ToolTip="{Binding LastPlayedTooltip}"/>
                                         </StackPanel>
 

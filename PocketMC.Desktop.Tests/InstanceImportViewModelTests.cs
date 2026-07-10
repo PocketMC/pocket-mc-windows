@@ -138,7 +138,6 @@ public sealed class InstanceImportViewModelTests
         {
             throw new NotSupportedException();
         }
-
         public Task<InstanceImportResult> ImportAsync(
             InstanceImportRequest request,
             IProgress<InstanceTransferProgress>? progress = null,
@@ -151,6 +150,18 @@ public sealed class InstanceImportViewModelTests
                 return ImportHandler(request, progress, cancellationToken);
             }
 
+            return Task.FromResult(new InstanceImportResult());
+        }
+
+        public Task<InstanceImportResult> ImportLocalFolderAsync(
+            string sourceFolderPath,
+            string requestedName,
+            string serverType,
+            string minecraftVersion,
+            bool copyFiles,
+            IProgress<InstanceTransferProgress>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
             return Task.FromResult(new InstanceImportResult());
         }
     }

@@ -187,6 +187,31 @@ public sealed class InstanceCardViewModelTests
         Assert.Equal("1 year ago", result);
     }
 
+    [Fact]
+    public void IsRunning_ShowsUptimeInsteadOfLastPlayed()
+    {
+        var metadata = new InstanceMetadata
+        {
+            Id = Guid.NewGuid(),
+            Name = "Running Server",
+            ServerType = "Paper"
+        };
+
+        using var workspace = new PortReliabilityTestWorkspace();
+        var vm = CreateViewModel(workspace, metadata);
+
+        // Transition state to Online
+        vm.UpdateState(ServerState.Online);
+
+        Assert.True(vm.IsRunning);
+        Assert.Equal("Uptime", vm.LastPlayedLabelText);
+        Assert.StartsWith("Uptime: ", vm.LastPlayedText);
+        
+        // Before starting it should be "Just started" because lifecycle service doesn't have a session start time recorded yet for a fake test process
+        Assert.Equal("Just started", vm.LastPlayedValueText);
+        Assert.Equal("Just started", vm.LastPlayedTooltip);
+    }
+
     private static InstanceCardViewModel CreateViewModel(PortReliabilityTestWorkspace workspace, InstanceMetadata metadata)
     {
         var processManager = workspace.CreateServerProcessManager();

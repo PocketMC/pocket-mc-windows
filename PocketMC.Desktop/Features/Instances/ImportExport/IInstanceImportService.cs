@@ -23,6 +23,15 @@ public interface IInstanceImportService
         IProgress<InstanceTransferProgress>? progress = null,
         CancellationToken cancellationToken = default);
 
+    Task<InstanceImportResult> ImportLocalFolderAsync(
+        string sourceFolderPath,
+        string requestedName,
+        string serverType,
+        string minecraftVersion,
+        bool copyFiles,
+        IProgress<InstanceTransferProgress>? progress = null,
+        CancellationToken cancellationToken = default);
+
     bool IsActive { get; }
     void Cancel();
 }
