@@ -66,21 +66,53 @@ namespace PocketMC.Desktop.Features.Instances.ImportExport
                 string detectedVersion = string.Empty;
                 try
                 {
-                    var files = Directory.GetFiles(folderPath, "*", SearchOption.TopDirectoryOnly);
-                    foreach (var file in files)
+                    var allFiles = Directory.GetFiles(folderPath, "*", SearchOption.TopDirectoryOnly)
+                        .Select(f => new { Path = f, Name = Path.GetFileName(f) })
+                        .Where(f => !f.Name.Equals("bedrock_server.exe", StringComparison.OrdinalIgnoreCase) &&
+                                    !f.Name.Equals("bedrock_server", StringComparison.OrdinalIgnoreCase) &&
+                                    !f.Name.Equals("PocketMine-MP.phar", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    bool IsPrimaryJar(string name)
                     {
-                        var name = Path.GetFileName(file);
-                        
-                        // Skip common non-version executable or launcher files
-                        if (name.Equals("bedrock_server.exe", StringComparison.OrdinalIgnoreCase) ||
-                            name.Equals("bedrock_server", StringComparison.OrdinalIgnoreCase) ||
-                            name.Equals("PocketMine-MP.phar", StringComparison.OrdinalIgnoreCase))
+                        if (!name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
+                            return false;
+
+                        string lowerName = name.ToLowerInvariant();
+                        if (lowerName.Contains("server") || 
+                            lowerName.Contains("minecraft") || 
+                            lowerName.Contains("launch") || 
+                            lowerName.Contains("loader"))
                         {
-                            continue;
+                            return true;
                         }
-                        
+
+                        if (!string.IsNullOrEmpty(detectedType))
+                        {
+                            string lowerType = detectedType.ToLowerInvariant();
+                            if (lowerName.Contains(lowerType))
+                            {
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    }
+
+                    var orderedFiles = allFiles
+                        .OrderBy(f =>
+                        {
+                            if (IsPrimaryJar(f.Name)) return 0;
+                            if (f.Name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)) return 1;
+                            return 2;
+                        })
+                        .ToList();
+
+                    // Pass 1: Look for strong matches (Rule A, Rule B, Rule D)
+                    foreach (var file in orderedFiles)
+                    {
                         // A. Try to find version immediately following "mc." or "mc-" or "mc_" (e.g. fabric-server-mc.26.2)
-                        var mcMatch = Regex.Match(name, @"mc[._-](\d+(?:\.\d+)+)", RegexOptions.IgnoreCase);
+                        var mcMatch = Regex.Match(file.Name, @"mc[._-](\d+(?:\.\d+)+)", RegexOptions.IgnoreCase);
                         if (mcMatch.Success)
                         {
                             detectedVersion = mcMatch.Groups[1].Value;
@@ -88,36 +120,19 @@ namespace PocketMC.Desktop.Features.Instances.ImportExport
                         }
 
                         // B. Try to find version following a known brand suffix (e.g. paper-26.1.2, bedrock-server-1.26.33.1.zip)
-                        var brandMatch = Regex.Match(name, @"(?:paper|forge|neoforge|spigot|purpur|vanilla|bds|bedrock|pocketmine)[._-](\d+(?:\.\d+)+)", RegexOptions.IgnoreCase);
+                        var brandMatch = Regex.Match(file.Name, @"(?:paper|forge|neoforge|spigot|purpur|vanilla|bds|bedrock|pocketmine)[._-](\d+(?:\.\d+)+)", RegexOptions.IgnoreCase);
                         if (brandMatch.Success)
                         {
                             detectedVersion = brandMatch.Groups[1].Value;
                             break;
                         }
 
-                        // C. Fallback: Find the first substring that matches a general version pattern but is not a loader version
-                        var matches = Regex.Matches(name, @"\d+(?:\.\d+)+");
-                        string? fallbackVersion = null;
-                        foreach (Match match in matches)
-                        {
-                            if (!match.Value.StartsWith("0."))
-                            {
-                                fallbackVersion = match.Value;
-                                break;
-                            }
-                        }
-                        if (fallbackVersion != null)
-                        {
-                            detectedVersion = fallbackVersion;
-                            break;
-                        }
-
                         // D. Try to inspect inside the jar for version.json (e.g. Vanilla server.jar)
-                        if (name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
+                        if (file.Name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
                         {
                             try
                             {
-                                using (var archive = ZipFile.OpenRead(file))
+                                using (var archive = ZipFile.OpenRead(file.Path))
                                 {
                                     var entry = archive.GetEntry("version.json");
                                     if (entry != null)
@@ -138,7 +153,30 @@ namespace PocketMC.Desktop.Features.Instances.ImportExport
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogDebug(ex, "Failed to read zip archive or parse version.json from file '{File}'", file);
+                                _logger.LogDebug(ex, "Failed to read zip archive or parse version.json from file '{File}'", file.Path);
+                            }
+                        }
+                    }
+
+                    // Pass 2: Fallback (Rule C) on ordered files (Primary jars, other jars, other files)
+                    if (string.IsNullOrWhiteSpace(detectedVersion))
+                    {
+                        foreach (var file in orderedFiles)
+                        {
+                            var matches = Regex.Matches(file.Name, @"\d+(?:\.\d+)+");
+                            string? fallbackVersion = null;
+                            foreach (Match match in matches)
+                            {
+                                if (!match.Value.StartsWith("0."))
+                                {
+                                    fallbackVersion = match.Value;
+                                    break;
+                                }
+                            }
+                            if (fallbackVersion != null)
+                            {
+                                detectedVersion = fallbackVersion;
+                                break;
                             }
                         }
                     }

@@ -238,7 +238,7 @@ public partial class InstanceImportPage : Page, ISupportsKeyboardBackNavigation
             return false;
         }
 
-        BtnBack_Click(BtnCancel, new RoutedEventArgs());
+        BtnBack_Click(this, new RoutedEventArgs());
         return true;
     }
 
