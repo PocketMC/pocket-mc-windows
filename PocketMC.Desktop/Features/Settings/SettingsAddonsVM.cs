@@ -477,10 +477,39 @@ namespace PocketMC.Desktop.Features.Settings
                     }
 
                     // Step 2: Scan metadata
-                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
                 }
 
-                // Step 2.5: Check for existing plugin
+                if (!IsPocketmine && metadata != null)
+                {
+                    // Step 3: API version check
+                    if (!string.IsNullOrEmpty(metadata.ApiVersion) && !string.IsNullOrEmpty(_metadata.MinecraftVersion))
+                    {
+                        if (IsApiVersionIncompatible(metadata.ApiVersion, _metadata.MinecraftVersion))
+                        {
+                            var res = await _dialogService.ShowDialogAsync("Incompatible API Version",
+                                $"'{System.IO.Path.GetFileName(f)}' requires api-version {metadata.ApiVersion}, but this server is running Minecraft {_metadata.MinecraftVersion}. The plugin may not load correctly.\n\nDo you want to install it anyway?",
+                                DialogType.Question);
+                            if (res != DialogResult.Yes) continue;
+                        }
+                    }
+
+                    // Step 4: Dependency display
+                    if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
+                    {
+                        var depList = new List<string>();
+                        foreach (var dep in metadata.RequiredDependencies)
+                            depList.Add($"[Required] {dep}");
+                        foreach (var dep in metadata.OptionalDependencies)
+                            depList.Add($"[Optional] {dep}");
+
+                        _dialogService.ShowMessage("Plugin Dependencies",
+                            $"The plugin '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the plugin to work properly:\n\n{string.Join("\n", depList)}",
+                            DialogType.Information);
+                    }
+                }
+
+                // Step 5: Check for existing plugin
                 string newFileName = System.IO.Path.GetFileName(f);
                 string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
                 string modId = metadata?.ModId ?? "";
@@ -515,35 +544,6 @@ namespace PocketMC.Desktop.Features.Settings
                         if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
                         
                         await _manifestService.UnregisterByFileNameAsync(_serverDir, existingPlugin.FileName);
-                    }
-                }
-
-                if (!IsPocketmine && metadata != null)
-                {
-                    // Step 3: API version check
-                    if (!string.IsNullOrEmpty(metadata.ApiVersion) && !string.IsNullOrEmpty(_metadata.MinecraftVersion))
-                    {
-                        if (IsApiVersionIncompatible(metadata.ApiVersion, _metadata.MinecraftVersion))
-                        {
-                            var res = await _dialogService.ShowDialogAsync("Incompatible API Version",
-                                $"'{System.IO.Path.GetFileName(f)}' requires api-version {metadata.ApiVersion}, but this server is running Minecraft {_metadata.MinecraftVersion}. The plugin may not load correctly.\n\nDo you want to install it anyway?",
-                                DialogType.Question);
-                            if (res != DialogResult.Yes) continue;
-                        }
-                    }
-
-                    // Step 4: Dependency display
-                    if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
-                    {
-                        var depList = new List<string>();
-                        foreach (var dep in metadata.RequiredDependencies)
-                            depList.Add($"[Required] {dep}");
-                        foreach (var dep in metadata.OptionalDependencies)
-                            depList.Add($"[Optional] {dep}");
-
-                        _dialogService.ShowMessage("Plugin Dependencies",
-                            $"The plugin '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the plugin to work properly:\n\n{string.Join("\n", depList)}",
-                            DialogType.Information);
                     }
                 }
 
@@ -742,45 +742,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                 if (!IsBedrockDedicated && !IsPocketmine)
                 {
-                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
-                }
-
-                // Check for existing mod
-                string newFileName = System.IO.Path.GetFileName(f);
-                string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
-                string modId = metadata?.ModId ?? "";
-
-                var existingMod = Mods.FirstOrDefault(p =>
-                {
-                    if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
-                    {
-                        if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                        if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
-                    }
-                    string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
-                    if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
-                    if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
-                    return false;
-                });
-
-                if (existingMod != null)
-                {
-                    var overwriteRes = await _dialogService.ShowDialogAsync("Mod Already Exists", 
-                        $"The mod '{displayName}' appears to be already installed as '{existingMod.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
-                    
-                    if (overwriteRes != DialogResult.Yes) continue;
-                    
-                    if (!string.Equals(existingMod.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var oldFilePath = System.IO.Path.Combine(_serverDir, "mods", existingMod.FileName);
-                        if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
-                        
-                        await _manifestService.UnregisterByFileNameAsync(_serverDir, existingMod.FileName);
-                    }
+                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
                 }
 
                 if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
@@ -839,6 +801,44 @@ namespace PocketMC.Desktop.Features.Settings
                         _dialogService.ShowMessage("Mod Dependencies",
                             $"The mod '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the mod to work properly:\n\n{string.Join("\n", depList)}",
                             DialogType.Information);
+                    }
+                }
+
+                // Check for existing mod
+                string newFileName = System.IO.Path.GetFileName(f);
+                string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
+                string modId = metadata?.ModId ?? "";
+
+                var existingMod = Mods.FirstOrDefault(p =>
+                {
+                    if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
+                    {
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    }
+                    string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
+                    if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    return false;
+                });
+
+                if (existingMod != null)
+                {
+                    var overwriteRes = await _dialogService.ShowDialogAsync("Mod Already Exists", 
+                        $"The mod '{displayName}' appears to be already installed as '{existingMod.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
+                    
+                    if (overwriteRes != DialogResult.Yes) continue;
+                    
+                    if (!string.Equals(existingMod.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var oldFilePath = System.IO.Path.Combine(_serverDir, "mods", existingMod.FileName);
+                        if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
+                        
+                        await _manifestService.UnregisterByFileNameAsync(_serverDir, existingMod.FileName);
                     }
                 }
 
