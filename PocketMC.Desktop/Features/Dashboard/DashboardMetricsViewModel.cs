@@ -20,8 +20,11 @@ namespace PocketMC.Desktop.Features.Dashboard
                 vm.CpuText = "\u00b7 \u00b7 \u00b7";
                 vm.RamText = "\u00b7 \u00b7 \u00b7";
                 vm.PlayerStatus = "\u00b7 \u00b7 \u00b7";
+                vm.NotifyUptimeChanged();
                 return;
             }
+
+            vm.NotifyUptimeChanged();
 
             if (_resourceMonitorService.Metrics.TryGetValue(vm.Id, out var metrics))
             {
