@@ -1411,17 +1411,29 @@ public sealed class InstanceImportService : IInstanceImportService
 
         try
         {
-            Directory.CreateDirectory(destinationPath);
-
             if (copyFiles)
             {
+                Directory.CreateDirectory(destinationPath);
                 Report(progress, "Copying server files...", 10);
                 await CopyDirectoryAsync(sourceFolderPath, destinationPath, progress, linkedToken).ConfigureAwait(false);
             }
             else
             {
+                string? parentDir = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrEmpty(parentDir))
+                {
+                    Directory.CreateDirectory(parentDir);
+                }
+
                 Report(progress, "Moving server files...", 10);
-                await MoveDirectoryAsync(sourceFolderPath, destinationPath, progress, linkedToken).ConfigureAwait(false);
+                try
+                {
+                    await MoveDirectoryAsync(sourceFolderPath, destinationPath, progress, linkedToken).ConfigureAwait(false);
+                }
+                catch (SourceDeletionException ex)
+                {
+                    _logger.LogWarning(ex, "Folder import move fallback copied files successfully, but failed to clean up source folder.");
+                }
                 didMove = true;
             }
 
@@ -1562,7 +1574,7 @@ public sealed class InstanceImportService : IInstanceImportService
                     {
                         if (Directory.Exists(sourceFolderPath))
                         {
-                            Directory.Delete(sourceFolderPath, true);
+                            await FileUtils.CleanDirectoryAsync(sourceFolderPath, CancellationToken.None).ConfigureAwait(false);
                         }
                         await MoveDirectoryAsync(destinationPath, sourceFolderPath, null, CancellationToken.None).ConfigureAwait(false);
                     }
@@ -1574,7 +1586,7 @@ public sealed class InstanceImportService : IInstanceImportService
 
                 if (Directory.Exists(destinationPath))
                 {
-                    try { Directory.Delete(destinationPath, true); } catch { }
+                    try { await FileUtils.CleanDirectoryAsync(destinationPath, CancellationToken.None).ConfigureAwait(false); } catch { }
                 }
             }
             throw;
@@ -1653,8 +1665,20 @@ public sealed class InstanceImportService : IInstanceImportService
         catch (IOException)
         {
             await CopyDirectoryAsync(sourceDir, targetDir, progress, cancellationToken).ConfigureAwait(false);
-            Directory.Delete(sourceDir, true);
+            try
+            {
+                await FileUtils.CleanDirectoryAsync(sourceDir, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                throw new SourceDeletionException("Server files were successfully copied, but the source directory could not be fully deleted.", ex);
+            }
         }
     }
+}
+
+public class SourceDeletionException : Exception
+{
+    public SourceDeletionException(string message, Exception innerException) : base(message, innerException) { }
 }
 

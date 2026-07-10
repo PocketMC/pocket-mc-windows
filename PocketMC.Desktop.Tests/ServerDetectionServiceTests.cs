@@ -93,5 +93,22 @@ namespace PocketMC.Desktop.Tests
 
             Assert.Equal("1.20.1", version);
         }
+
+        [Fact]
+        public async Task DetectVersion_ShouldNotBeHijackedByDependencyJars()
+        {
+            var detector = new ServerDetectionService(NullLogger<ServerDetectionService>.Instance);
+            string serverPath = Path.Combine(_tempDirectory, "HijackedDetection");
+            Directory.CreateDirectory(serverPath);
+            
+            // Create a dependency jar with alphabetical precedence (starts with 'l')
+            File.WriteAllText(Path.Combine(serverPath, "log4j-2.14.1.jar"), "");
+            // Create a valid server jar
+            File.WriteAllText(Path.Combine(serverPath, "paper-1.18.2.jar"), "");
+
+            var (_, version) = await detector.DetectServerTypeAndVersionAsync(serverPath);
+
+            Assert.Equal("1.18.2", version);
+        }
     }
 }

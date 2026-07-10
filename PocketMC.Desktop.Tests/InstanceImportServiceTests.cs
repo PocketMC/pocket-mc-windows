@@ -244,6 +244,69 @@ public sealed class InstanceImportServiceTests : IDisposable
         Assert.Equal(result.InstancePath, _lastRegistry!.GetPath(result.InstanceId));
     }
 
+    [Fact]
+    public async Task ImportLocalFolderAsync_CopyFiles_CopiesFilesAndRegistersInstance()
+    {
+        string sourceDir = Path.Combine(_root, "source-folder-copy");
+        Directory.CreateDirectory(sourceDir);
+        File.WriteAllText(Path.Combine(sourceDir, "eula.txt"), "eula=false");
+        File.WriteAllText(Path.Combine(sourceDir, "server.properties"), "max-players=20");
+        File.WriteAllText(Path.Combine(sourceDir, "some-mod.jar"), "mod-content");
+
+        InstanceImportService service = CreateService();
+
+        var result = await service.ImportLocalFolderAsync(new LocalFolderImportRequest
+        {
+            SourceFolderPath = sourceDir,
+            RequestedName = "imported-folder-copy",
+            ServerType = "Vanilla",
+            MinecraftVersion = "1.20.1",
+            CopyFiles = true,
+            Description = "Copied folder description"
+        });
+
+        Assert.Equal(Path.Combine(_root, "servers", "imported-folder-copy"), result.InstancePath);
+        Assert.True(File.Exists(Path.Combine(result.InstancePath, "eula.txt")));
+        Assert.Equal("eula=true", File.ReadAllText(Path.Combine(result.InstancePath, "eula.txt")));
+        Assert.True(File.Exists(Path.Combine(result.InstancePath, "server.jar")));
+        Assert.True(File.Exists(Path.Combine(sourceDir, "some-mod.jar")));
+
+        var metadata = result.Metadata;
+        Assert.Equal("imported-folder-copy", metadata.Name);
+        Assert.Equal("Vanilla", metadata.ServerType);
+        Assert.Equal("1.20.1", metadata.MinecraftVersion);
+        Assert.Equal(20, metadata.MaxPlayers);
+    }
+
+    [Fact]
+    public async Task ImportLocalFolderAsync_MoveFiles_MovesFilesAndRegistersInstance()
+    {
+        string sourceDir = Path.Combine(_root, "source-folder-move");
+        Directory.CreateDirectory(sourceDir);
+        File.WriteAllText(Path.Combine(sourceDir, "eula.txt"), "eula=false");
+        File.WriteAllText(Path.Combine(sourceDir, "server.properties"), "max-players=10");
+        File.WriteAllText(Path.Combine(sourceDir, "some-mod.jar"), "mod-content");
+
+        InstanceImportService service = CreateService();
+
+        var result = await service.ImportLocalFolderAsync(new LocalFolderImportRequest
+        {
+            SourceFolderPath = sourceDir,
+            RequestedName = "imported-folder-move",
+            ServerType = "Vanilla",
+            MinecraftVersion = "1.20.1",
+            CopyFiles = false,
+            Description = "Moved folder description"
+        });
+
+        Assert.Equal(Path.Combine(_root, "servers", "imported-folder-move"), result.InstancePath);
+        Assert.True(File.Exists(Path.Combine(result.InstancePath, "eula.txt")));
+        Assert.True(File.Exists(Path.Combine(result.InstancePath, "server.jar")));
+
+        Assert.False(File.Exists(Path.Combine(sourceDir, "some-mod.jar")));
+        Assert.False(File.Exists(Path.Combine(sourceDir, "server.properties")));
+    }
+
     private InstanceImportService CreateService(
         IReadOnlyList<IServerSoftwareProvider>? softwareProviders = null,
         IReadOnlyDictionary<string, byte[]>? httpResponses = null)
