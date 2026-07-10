@@ -163,9 +163,57 @@ public partial class InstanceImportPage : Page, ISupportsKeyboardBackNavigation
                     ViewModel.MinecraftVersion = fallbackVersion;
                     break;
                 }
+
+                // D. Try to inspect inside the jar for version.json (e.g. Vanilla server.jar)
+                try
+                {
+                    using (var archive = System.IO.Compression.ZipFile.OpenRead(jar))
+                    {
+                        var entry = archive.GetEntry("version.json");
+                        if (entry != null)
+                        {
+                            using (var stream = entry.Open())
+                            using (var reader = new StreamReader(stream))
+                            {
+                                var content = reader.ReadToEnd();
+                                var idMatch = System.Text.RegularExpressions.Regex.Match(content, @"""id""\s*:\s*""([^""]+)""", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                if (idMatch.Success)
+                                {
+                                    ViewModel.MinecraftVersion = idMatch.Groups[1].Value;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
             }
         }
         catch { }
+
+        // 3. Fallback: Try scanning the "versions" subfolder
+        if (string.IsNullOrWhiteSpace(ViewModel.MinecraftVersion))
+        {
+            try
+            {
+                string versionsPath = Path.Combine(folderPath, "versions");
+                if (Directory.Exists(versionsPath))
+                {
+                    var subDirs = Directory.GetDirectories(versionsPath);
+                    foreach (var dir in subDirs)
+                    {
+                        string dirName = Path.GetFileName(dir);
+                        var match = System.Text.RegularExpressions.Regex.Match(dirName, @"\d+\.\d+(\.\d+)?");
+                        if (match.Success)
+                        {
+                            ViewModel.MinecraftVersion = match.Value;
+                            break;
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
     }
 
     private void BtnBack_Click(object sender, RoutedEventArgs e)
