@@ -85,11 +85,10 @@ namespace PocketMC.Desktop.Features.Settings
 
         public List<string> SortOptions { get; } = new()
         {
-            "Name", "Last Modified", "Size", "Loader Type", "Source", "Warnings First"
+            "Name", "Last Modified", "Size", "Loader Type", "Source"
         };
 
-        public int WarningsCount => _allMods.Count(m => m.HasWarnings) + _allPlugins.Count(p => p.HasWarnings);
-        public bool HasWarningsBanner => WarningsCount > 0;
+
         public bool IsServerRunning => _isRunningCheck();
         public bool ShowServerRunningAddonMessage => IsServerRunning && (_allMods.Count > 0 || _allPlugins.Count > 0);
         public string ServerRunningAddonMessage => "Stop the server before enabling or disabling mods/plugins.";
@@ -119,7 +118,6 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand AddModCommand { get; }
         public ICommand DeleteModCommand { get; }
         public ICommand BrowseModrinthModsCommand { get; }
-        public ICommand ImportModpackCommand { get; }
         public ICommand BrowseModpacksCommand { get; }
 
         // Bedrock-specific
@@ -154,6 +152,8 @@ namespace PocketMC.Desktop.Features.Settings
             get => _updateAllStatusText;
             set => SetProperty(ref _updateAllStatusText, value);
         }
+
+
 
         public SettingsAddonsVM(
             InstanceMetadata metadata,
@@ -208,7 +208,6 @@ namespace PocketMC.Desktop.Features.Settings
             BrowseModrinthModsCommand = new RelayCommand(
                 _ => { if (IsBedrockDedicated) ImportBedrockAddonCommand?.Execute(null); else BrowseModrinth("project_type:mod"); },
                 _ => _metadata.Compatibility.SupportsMods && _metadata.Compatibility.SupportsModrinth);
-            ImportModpackCommand = new RelayCommand(async _ => await ImportModpackAsync(), _ => _metadata.Compatibility.SupportsModpacks);
             BrowseModpacksCommand = new RelayCommand(_ => BrowseModrinth("project_type:modpack"), _ => _metadata.Compatibility.SupportsModpacks);
 
             // ── Bedrock-specific commands (also reachable via unified commands above) ─
@@ -263,10 +262,15 @@ namespace PocketMC.Desktop.Features.Settings
 
         private void LoadAddonsInternal(bool runSync)
         {
-            Action action = () =>
+            Func<Task> action = async () =>
             {
-                var manifest = _manifestService.LoadManifest(_serverDir);
+                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Desktop.Features.Marketplace.ModrinthService)) as PocketMC.Desktop.Features.Marketplace.ModrinthService;
+                if (modrinthService != null)
+                {
+                    await _manifestService.SyncManifestAsync(_serverDir, modrinthService, _metadata.Compatibility);
+                }
 
+                var manifest = _manifestService.LoadManifest(_serverDir);
                 if (IsBedrockDedicated)
                 {
                     var items = BuildBedrockAddonList();
@@ -283,7 +287,7 @@ namespace PocketMC.Desktop.Features.Settings
                 }
                 else
                 {
-                    var inventory = _inventoryService.ScanAsync(_metadata, _serverDir).GetAwaiter().GetResult();
+                    var inventory = await _inventoryService.ScanAsync(_metadata, _serverDir);
                     var pluginItems = inventory
                         .Where(item => item.Kind == AddonKind.Plugin)
                         .Select(CreatePluginViewModel)
@@ -300,7 +304,7 @@ namespace PocketMC.Desktop.Features.Settings
 
             if (runSync)
             {
-                action();
+                action().GetAwaiter().GetResult();
             }
             else
             {
@@ -421,7 +425,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                 string sourceLabel = entry != null ? (entry.Provider ?? "Manual") : "Manual";
 
-                result.Add(new PluginItemViewModel
+                var vm = new PluginItemViewModel
                 {
                     Name = entry?.DisplayName ?? entry?.ProjectTitle ?? fi.Name,
                     FileName = fi.Name,
@@ -433,7 +437,21 @@ namespace PocketMC.Desktop.Features.Settings
                     ManifestEntry = entry,
                     SourceLabel = sourceLabel,
                     Icon = AddonIconService.PluginFallback
-                });
+                };
+
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.IconUrl))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        var remoteIcon = await AddonIconService.GetCachedRemoteIconAsync(entry.IconUrl);
+                        if (remoteIcon != null)
+                        {
+                            System.Windows.Application.Current.Dispatcher.Invoke(() => vm.Icon = remoteIcon);
+                        }
+                    });
+                }
+
+                result.Add(vm);
             }
             return result;
         }
@@ -448,26 +466,169 @@ namespace PocketMC.Desktop.Features.Settings
             var files = await _dialogService.OpenFilesDialogAsync("Select Plugin(s)", filter);
             foreach (var f in files)
             {
+                PocketMC.Desktop.Features.Mods.JavaModMetadata? metadata = null;
+
                 if (!IsPocketmine)
                 {
-                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
-                    if (!IsLoaderCompatible(metadata.LoaderType))
+                    // Step 1: Plugin presence check
+                    if (!PocketMC.Desktop.Features.Mods.JavaModMetadataService.IsPluginJar(f))
                     {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Plugin Warning",
-                            $"The file '{System.IO.Path.GetFileName(f)}' is made for {metadata.LoaderType}, but this server is running {_metadata.ServerType}.\n" +
-                            "Installing incompatible plugins can cause the server to crash or fail to start.\n\n" +
-                            "Do you want to skip this plugin?",
-                            DialogType.Question);
+                        _dialogService.ShowMessage("Invalid Plugin",
+                            $"'{System.IO.Path.GetFileName(f)}' does not appear to be a valid Paper/Bukkit plugin.",
+                            DialogType.Error);
+                        continue;
+                    }
 
-                        if (res == DialogResult.Yes) continue;
+                    // Step 2: Scan metadata
+                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
+                }
+
+                if (!IsPocketmine && metadata != null)
+                {
+                    // Step 3: API version check
+                    if (!string.IsNullOrEmpty(metadata.ApiVersion) && !string.IsNullOrEmpty(_metadata.MinecraftVersion))
+                    {
+                        if (IsApiVersionIncompatible(metadata.ApiVersion, _metadata.MinecraftVersion))
+                        {
+                            var res = await _dialogService.ShowDialogAsync("Incompatible API Version",
+                                $"'{System.IO.Path.GetFileName(f)}' requires api-version {metadata.ApiVersion}, but this server is running Minecraft {_metadata.MinecraftVersion}. The plugin may not load correctly.\n\nDo you want to install it anyway?",
+                                DialogType.Question);
+                            if (res != DialogResult.Yes) continue;
+                        }
+                    }
+
+                    // Step 4: Dependency display
+                    if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
+                    {
+                        var depList = new List<string>();
+                        foreach (var dep in metadata.RequiredDependencies)
+                            depList.Add($"[Required] {dep}");
+                        foreach (var dep in metadata.OptionalDependencies)
+                            depList.Add($"[Optional] {dep}");
+
+                        _dialogService.ShowMessage("Plugin Dependencies",
+                            $"The plugin '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the plugin to work properly:\n\n{string.Join("\n", depList)}",
+                            DialogType.Information);
                     }
                 }
 
+                // Step 5: Check for existing plugin
+                string newFileName = System.IO.Path.GetFileName(f);
+                string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
+                string modId = metadata?.ModId ?? "";
+
+                var existingPlugin = Plugins.FirstOrDefault(p =>
+                {
+                    if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
+                    {
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    }
+                    string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
+                    if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    return false;
+                });
+
+                if (existingPlugin != null)
+                {
+                    var overwriteRes = await _dialogService.ShowDialogAsync("Plugin Already Exists", 
+                        $"The plugin '{displayName}' appears to be already installed as '{existingPlugin.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
+                    
+                    if (overwriteRes != DialogResult.Yes) continue;
+                    
+                    if (!string.Equals(existingPlugin.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var oldFilePath = System.IO.Path.Combine(_serverDir, "plugins", existingPlugin.FileName);
+                        if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
+                        
+                        await _manifestService.UnregisterByFileNameAsync(_serverDir, existingPlugin.FileName);
+                    }
+                }
+
+
+                // Step 5: Copy file
                 var dir = System.IO.Path.Combine(_serverDir, "plugins");
                 Directory.CreateDirectory(dir);
-                await FileUtils.CopyFileAsync(f, System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f)), true);
+                string targetFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f));
+                await FileUtils.CopyFileAsync(f, targetFile, true);
+                
+                await TryLinkModrinthByHashAsync(targetFile);
             }
             LoadAddons(); _onAddonChanged();
+        }
+
+        private async Task TryLinkModrinthByHashAsync(string filePath)
+        {
+            try
+            {
+                using var sha1 = System.Security.Cryptography.SHA1.Create();
+                using var stream = File.OpenRead(filePath);
+                var hashBytes = await sha1.ComputeHashAsync(stream);
+                var hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+
+                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Desktop.Features.Marketplace.ModrinthService)) as PocketMC.Desktop.Features.Marketplace.ModrinthService;
+                if (modrinthService == null) return;
+
+                var match = await modrinthService.GetVersionsByHashesAsync(new[] { hash }, "sha1");
+                if (match != null && match.TryGetValue(hash, out var version) && !string.IsNullOrEmpty(version.ProjectId))
+                {
+                    var projectInfo = await modrinthService.GetProjectInfoAsync(version.ProjectId);
+                    await _manifestService.RegisterInstallAsync(
+                        _serverDir,
+                        "Modrinth",
+                        version.ProjectId,
+                        version.Id,
+                        System.IO.Path.GetFileName(filePath),
+                        projectInfo?.Title ?? System.IO.Path.GetFileNameWithoutExtension(filePath),
+                        projectInfo?.IconUrl,
+                        projectInfo?.Title ?? System.IO.Path.GetFileNameWithoutExtension(filePath)
+                    );
+                }
+            }
+            catch
+            {
+                // Gracefully fallback to manual on any error (hashing, API, network, etc.)
+            }
+        }
+
+        private static bool IsApiVersionIncompatible(string? pluginApiVersion, string? serverMinecraftVersion)
+        {
+            if (string.IsNullOrEmpty(pluginApiVersion) || string.IsNullOrEmpty(serverMinecraftVersion))
+                return false;
+
+            try
+            {
+                var pluginVer = ParseMajorMinor(pluginApiVersion);
+                var serverVer = ParseMajorMinor(serverMinecraftVersion);
+
+                if (pluginVer == null || serverVer == null)
+                    return false;
+
+                return pluginVer.Value.major > serverVer.Value.major ||
+                       (pluginVer.Value.major == serverVer.Value.major && pluginVer.Value.minor > serverVer.Value.minor);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static (int major, int minor)? ParseMajorMinor(string version)
+        {
+            version = version.Trim().Trim('\'', '"');
+
+            var parts = version.Split('.');
+            if (parts.Length < 2) return null;
+
+            if (int.TryParse(parts[0], out int major) && int.TryParse(parts[1], out int minor))
+                return (major, minor);
+
+            return null;
         }
 
         private async Task DeletePluginAsync(string? path)
@@ -488,13 +649,8 @@ namespace PocketMC.Desktop.Features.Settings
         private PluginItemViewModel CreatePluginViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
-            var warnings = new List<string>(item.Warnings);
-            if (!IsLoaderCompatible(item.LoaderType))
-            {
-                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
-            }
 
-            return new PluginItemViewModel
+            var vm = new PluginItemViewModel
             {
                 Name = item.DisplayName,
                 DisplayName = item.DisplayName,
@@ -512,8 +668,6 @@ namespace PocketMC.Desktop.Features.Settings
                 SideSupport = item.SideSupport,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, "Plugin", item.IconBytes),
-                HasWarnings = warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, warnings),
                 IsDisabled = item.State == AddonState.Disabled,
                 State = item.State,
                 Kind = item.Kind,
@@ -523,16 +677,25 @@ namespace PocketMC.Desktop.Features.Settings
                 CanDisable = item.CanDisable,
                 RequiresServerStopped = item.RequiresServerStopped
             };
+
+            if (item.IconBytes == null && entry != null && !string.IsNullOrWhiteSpace(entry.IconUrl))
+            {
+                _ = Task.Run(async () =>
+                {
+                    var remoteIcon = await AddonIconService.GetCachedRemoteIconAsync(entry.IconUrl);
+                    if (remoteIcon != null)
+                    {
+                        System.Windows.Application.Current.Dispatcher.Invoke(() => vm.Icon = remoteIcon);
+                    }
+                });
+            }
+
+            return vm;
         }
 
         private ModItemViewModel CreateModViewModel(AddonInventoryItem item)
         {
             AddonManifestEntry? entry = FindManifestEntry(item);
-            var warnings = new List<string>(item.Warnings);
-            if (!IsLoaderCompatible(item.LoaderType))
-            {
-                warnings.Add($"Incompatible server type mod: This addon is for {item.LoaderType}, but your server is running {_metadata.ServerType}.");
-            }
 
             return new ModItemViewModel
             {
@@ -548,8 +711,6 @@ namespace PocketMC.Desktop.Features.Settings
                 LoaderType = item.LoaderType,
                 SourceLabel = item.Provenance?.Provider ?? "Manual",
                 Icon = AddonIconService.GetIcon(item.FullPath, item.LoaderType, item.IconBytes),
-                HasWarnings = warnings.Count > 0,
-                WarningText = string.Join(Environment.NewLine, warnings),
                 SideSupport = item.SideSupport,
                 SideLabel = item.SideLabel,
                 IsClientOnly = item.SideSupport == ModSideSupport.ClientOnly,
@@ -580,36 +741,116 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 var fileName = System.IO.Path.GetFileName(f).ToLowerInvariant();
 
-                // Audit for common client-side only mods that crash servers
-                if (fileName.Contains("sodium") || fileName.Contains("iris") || fileName.Contains("canvas") || fileName.Contains("optifine"))
-                {
-                    var res = await _dialogService.ShowDialogAsync("Client-Side Mod Warning",
-                        $"The mod '{System.IO.Path.GetFileName(f)}' appears to be a client-side rendering mod. " +
-                        "Installing this on a server will almost certainly cause a crash.\n\n" +
-                        "Do you want to skip this mod?",
-                        DialogType.Question);
-
-                    if (res == DialogResult.Yes) continue;
-                }
+                PocketMC.Desktop.Features.Mods.JavaModMetadata? metadata = null;
 
                 if (!IsBedrockDedicated && !IsPocketmine)
                 {
-                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
+                }
+
+                if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
+                {
+                    bool isFabric = metadata.LoaderType == "Fabric";
+                    bool isForgeOrNeo = metadata.LoaderType == "Forge" || metadata.LoaderType == "NeoForge";
                     if (!IsLoaderCompatible(metadata.LoaderType))
                     {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Mod Warning",
-                            $"The mod '{System.IO.Path.GetFileName(f)}' is made for {metadata.LoaderType}, but this server is running {_metadata.ServerType}.\n" +
-                            "Installing incompatible mods can cause the server to crash or fail to start.\n\n" +
-                            "Do you want to skip this mod?",
-                            DialogType.Question);
+                        string requiredType = _metadata.ServerType;
+                        if (requiredType == "NeoForge") requiredType = "NeoForge mod";
+                        else if (requiredType == "Forge") requiredType = "Forge mod";
+                        else if (requiredType == "Fabric") requiredType = "Fabric mod";
+                        else requiredType = "Plugin";
+                        
+                        _dialogService.ShowMessage("Invalid Mod",
+                            $"The file '{System.IO.Path.GetFileName(f)}' is not a valid {requiredType}.",
+                            DialogType.Error);
+                        continue;
+                    }
 
-                        if (res == DialogResult.Yes) continue;
+                    if (isFabric || isForgeOrNeo)
+                    {
+                        if (metadata.IsClientOnly)
+                        {
+                            _dialogService.ShowMessage("Invalid Mod",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' is a client-side only mod and cannot be installed on a server.",
+                                DialogType.Error);
+                            continue;
+                        }
+
+                        if (!PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
+                        {
+                            _dialogService.ShowMessage("Incompatible Minecraft Version",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}. This mod cannot be installed.",
+                                DialogType.Error);
+                            continue;
+                        }
+
+                        if (!PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
+                        {
+                            _dialogService.ShowMessage("Incompatible Loader Version",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. This mod cannot be installed.",
+                                DialogType.Error);
+                            continue;
+                        }
+                    }
+
+                    if ((isFabric || isForgeOrNeo) && (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0))
+                    {
+                        var depList = new List<string>();
+                        foreach (var dep in metadata.RequiredDependencies)
+                            depList.Add($"[Required] {dep}");
+                        foreach (var dep in metadata.OptionalDependencies)
+                            depList.Add($"[Optional] {dep}");
+
+                        _dialogService.ShowMessage("Mod Dependencies",
+                            $"The mod '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the mod to work properly:\n\n{string.Join("\n", depList)}",
+                            DialogType.Information);
+                    }
+                }
+
+                // Check for existing mod
+                string newFileName = System.IO.Path.GetFileName(f);
+                string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
+                string modId = metadata?.ModId ?? "";
+
+                var existingMod = Mods.FirstOrDefault(p =>
+                {
+                    if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
+                    {
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                        if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    }
+                    string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
+                    if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                    return false;
+                });
+
+                if (existingMod != null)
+                {
+                    var overwriteRes = await _dialogService.ShowDialogAsync("Mod Already Exists", 
+                        $"The mod '{displayName}' appears to be already installed as '{existingMod.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
+                    
+                    if (overwriteRes != DialogResult.Yes) continue;
+                    
+                    if (!string.Equals(existingMod.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var oldFilePath = System.IO.Path.Combine(_serverDir, "mods", existingMod.FileName);
+                        if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
+                        
+                        await _manifestService.UnregisterByFileNameAsync(_serverDir, existingMod.FileName);
                     }
                 }
 
                 var dir = System.IO.Path.Combine(_serverDir, "mods");
                 Directory.CreateDirectory(dir);
-                await FileUtils.CopyFileAsync(f, System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f)), true);
+                string targetFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f));
+                await FileUtils.CopyFileAsync(f, targetFile, true);
+                
+                await TryLinkModrinthByHashAsync(targetFile);
             }
             LoadAddons(); _onAddonChanged();
         }
@@ -659,12 +900,7 @@ namespace PocketMC.Desktop.Features.Settings
                         _metadata.Compatibility
                     });
 
-                if (projectType == "project_type:modpack")
-                    browserPage.OnModpackDownloaded += async tempZip =>
-                    {
-                        await ImportModpackActionAsync(tempZip);
-                        try { File.Delete(tempZip); } catch { }
-                    };
+
 
                 _navigationService.NavigateToDetailPage(
                     browserPage, "Marketplace",
@@ -677,27 +913,6 @@ namespace PocketMC.Desktop.Features.Settings
             }
         }
 
-        private async Task ImportModpackAsync()
-        {
-            var file = await _dialogService.OpenFileDialogAsync("Select Modpack ZIP", "ZIP Files (*.zip)|*.zip");
-            if (file != null) await ImportModpackActionAsync(file);
-        }
-
-        private async Task ImportModpackActionAsync(string zipPath)
-        {
-            try
-            {
-                var result = await _modpackService.ParseModpackZipAsync(zipPath);
-                if (await _dialogService.ShowDialogAsync("Import Modpack", $"Import modpack '{result.Name}'?", DialogType.Question) == DialogResult.Yes)
-                {
-                    await _modpackService.ImportToExistingInstanceAsync(result, _metadata, _serverDir, zipPath);
-                    LoadAddons(); _onAddonChanged();
-                }
-            }
-            catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
-        }
-
-        // ── Update addon logic ──────────────────────────────────────────────────
 
         private async Task UpdateAddonAsync(PluginItemViewModel? vm)
         {
@@ -710,7 +925,6 @@ namespace PocketMC.Desktop.Features.Settings
                 vm.LoaderTypeForUpdate,
                 vm.Version,
                 vm.Name,
-                s => vm.UpdateStatusText = s,
                 b => vm.IsUpdating = b,
                 status => vm.UpdateStatus = status,
                 info => vm.UpdateInfo = info,
@@ -728,7 +942,6 @@ namespace PocketMC.Desktop.Features.Settings
                 vm.LoaderType,
                 vm.Version,
                 vm.Name,
-                s => vm.UpdateStatusText = s,
                 b => vm.IsUpdating = b,
                 status => vm.UpdateStatus = status,
                 info => vm.UpdateInfo = info,
@@ -747,15 +960,12 @@ namespace PocketMC.Desktop.Features.Settings
             string loaderType,
             string? version,
             string displayName,
-            Action<string> setStatus,
             Action<bool> setUpdating,
             Action<AddonUpdateStatus> setUpdateStatus,
             Action<AddonUpdateInfo?> setUpdateInfo,
             AddonManifestEntry? manifestEntry = null)
         {
             setUpdating(true);
-            setStatus("Checking for updates...");
-            setUpdateStatus(AddonUpdateStatus.Checking);
 
             try
             {
@@ -773,13 +983,40 @@ namespace PocketMC.Desktop.Features.Settings
                     SideSupport = ModSideSupport.Unknown,
                     SideLabel = "Side unknown",
                     Dependencies = Array.Empty<string>(),
-                    Warnings = Array.Empty<string>()
+
                 };
 
-                AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, inventoryItem);
-                setUpdateStatus(result.Status);
-                setUpdateInfo(result.UpdateInfo);
-                setStatus(FormatPassiveUpdateStatus(result, displayName));
+                AddonUpdateCheckResultModel result = null!;
+
+                var checkViewModel = new AddonUpdateCheckRowViewModel
+                {
+                    DisplayName = displayName,
+                    OriginalVM = new object(), // Not used for single check
+                    CheckAction = async () =>
+                    {
+                        result = await _updateCheckService.CheckAsync(_metadata, _serverDir, inventoryItem);
+                        setUpdateStatus(result.Status);
+                        setUpdateInfo(result.UpdateInfo);
+                        return result.Status == AddonUpdateStatus.UpdateAvailable;
+                    }
+                };
+
+                var checkDialog = new AddonUpdateCheckDialogWindow();
+                checkDialog.SetItems(new[] { checkViewModel });
+                checkDialog.Owner = System.Windows.Application.Current.MainWindow;
+                checkDialog.ShowDialog();
+
+                if (!checkDialog.ProceedToUpdate)
+                {
+                    setUpdating(false);
+                    
+                    if (!checkDialog.UpdatesFound && !checkDialog.IsCancelled)
+                    {
+                        _dialogService.ShowMessage("Up to Date", $"{displayName} is already up to date.", DialogType.Information);
+                    }
+                    
+                    return; // User cancelled or closed the dialog without proceeding, or it was auto-closed due to being up-to-date
+                }
 
                 // Prompt user to install when an update is found
                 if (result.Status == AddonUpdateStatus.UpdateAvailable && result.UpdateInfo != null && manifestEntry != null)
@@ -793,7 +1030,6 @@ namespace PocketMC.Desktop.Features.Settings
                     var dialogResult = await _dialogService.ShowDialogAsync("Update Available", message, DialogType.Question);
                     if (dialogResult == DialogResult.Yes)
                     {
-                        setStatus("Installing update...");
                         setUpdating(true);
                         try
                         {
@@ -803,7 +1039,6 @@ namespace PocketMC.Desktop.Features.Settings
                                 manifestEntry.Provider,
                                 manifestEntry.ProjectId,
                                 displayName,
-                                setStatus,
                                 setUpdateStatus);
                             _dialogService.ShowMessage("Update Installed",
                                 $"'{displayName}' has been updated to {result.UpdateInfo.LatestVersionName ?? result.UpdateInfo.LatestVersionId ?? "the latest version"}.",
@@ -823,7 +1058,6 @@ namespace PocketMC.Desktop.Features.Settings
             catch (Exception ex)
             {
                 setUpdateStatus(AddonUpdateStatus.ProviderError);
-                setStatus("Update check failed");
                 _dialogService.ShowMessage("Update Check Failed", ex.Message, DialogType.Error);
             }
             finally
@@ -842,7 +1076,6 @@ namespace PocketMC.Desktop.Features.Settings
             string provider,
             string projectId,
             string displayName,
-            Action<string> setStatus,
             Action<AddonUpdateStatus> setUpdateStatus,
             IProgress<DownloadProgress>? progress = null,
             CancellationToken cancellationToken = default)
@@ -860,7 +1093,7 @@ namespace PocketMC.Desktop.Features.Settings
                     Hash = updateInfo.Hash,
                     HashType = updateInfo.HashType,
                     ReleaseType = updateInfo.ReleaseType,
-                    Warnings = updateInfo.Warnings?.ToList() ?? new List<string>()
+
                 };
 
                 await _updateService.ApplyUpdateAsync(
@@ -874,17 +1107,14 @@ namespace PocketMC.Desktop.Features.Settings
                     cancellationToken);
 
                 setUpdateStatus(AddonUpdateStatus.UpToDate);
-                setStatus($"Updated to {updateInfo.LatestVersionName ?? updateInfo.LatestVersionId ?? "latest"}");
             }
             catch (OperationCanceledException)
             {
-                setStatus("Update cancelled");
                 throw;
             }
             catch (Exception)
             {
                 setUpdateStatus(AddonUpdateStatus.ProviderError);
-                setStatus("Update install failed");
                 throw;
             }
         }
@@ -924,7 +1154,7 @@ namespace PocketMC.Desktop.Features.Settings
                 SideSupport = ModSideSupport.ServerOnly,
                 SideLabel = "Server-only",
                 Dependencies = Array.Empty<string>(),
-                Warnings = Array.Empty<string>()
+
             };
 
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);
@@ -949,7 +1179,7 @@ namespace PocketMC.Desktop.Features.Settings
                 SideSupport = mod.SideSupport,
                 SideLabel = mod.SideLabel,
                 Dependencies = Array.Empty<string>(),
-                Warnings = Array.Empty<string>()
+
             };
 
             AddonUpdateCheckResultModel result = await _updateCheckService.CheckAsync(_metadata, _serverDir, item);
@@ -964,7 +1194,6 @@ namespace PocketMC.Desktop.Features.Settings
         private async Task UpdateAllAddonsAsync(bool isPlugins)
         {
             IsUpdatingAll = true;
-            UpdateAllStatusText = "Scanning for updates...";
 
             try
             {
@@ -978,49 +1207,34 @@ namespace PocketMC.Desktop.Features.Settings
 
                 if (trackedItems.Count == 0)
                 {
-                    UpdateAllStatusText = "";
                     _dialogService.ShowMessage("No Tracked Addons",
                         "No addons were installed from a marketplace. Update checking is only available for marketplace-installed items.",
                         DialogType.Information);
                     return;
                 }
 
-                int available = 0;
-                int failed = 0;
-                int checked_count = 0;
-
-                foreach (var item in trackedItems)
+                var checkViewModels = trackedItems.Select(item => new AddonUpdateCheckRowViewModel
                 {
-                    checked_count++;
-                    UpdateAllStatusText = $"Checking {checked_count}/{trackedItems.Count}: {item.Name}...";
-                    SetItemStatus(item.VM, "Checking...", true);
-
-                    AddonUpdateCheckResultModel result = item.VM switch
+                    DisplayName = item.Name,
+                    OriginalVM = item.VM,
+                    CheckAction = async () =>
                     {
-                        PluginItemViewModel plugin => await CheckPassiveUpdateAsync(plugin),
-                        ModItemViewModel mod => await CheckPassiveUpdateAsync(mod),
-                        _ => new AddonUpdateCheckResultModel { Status = AddonUpdateStatus.Unknown }
-                    };
-
-                    if (result.Status == AddonUpdateStatus.UpdateAvailable)
-                    {
-                        available++;
+                        AddonUpdateCheckResultModel result = item.VM switch
+                        {
+                            PluginItemViewModel plugin => await CheckPassiveUpdateAsync(plugin),
+                            ModItemViewModel mod => await CheckPassiveUpdateAsync(mod),
+                            _ => new AddonUpdateCheckResultModel { Status = AddonUpdateStatus.Unknown }
+                        };
+                        return result.Status == AddonUpdateStatus.UpdateAvailable;
                     }
-                    else if (result.Status == AddonUpdateStatus.ProviderError ||
-                             result.Status == AddonUpdateStatus.UnsupportedProvider)
-                    {
-                        failed++;
-                    }
+                }).ToList();
 
-                    SetItemStatus(item.VM, FormatPassiveUpdateStatus(result, item.Name), false);
-                }
+                var checkDialog = new AddonUpdateCheckDialogWindow();
+                checkDialog.SetItems(checkViewModels);
+                checkDialog.Owner = System.Windows.Application.Current.MainWindow;
+                checkDialog.ShowDialog();
 
-                UpdateAllStatusText = failed > 0
-                    ? $"{available} update(s) available, {failed} check(s) failed"
-                    : $"{available} update(s) available";
-
-                // Prompt user to batch-install all available updates via the update dialog
-                if (available > 0)
+                if (checkDialog.ProceedToUpdate)
                 {
                     var updatableItems = trackedItems
                         .Where(t => t.VM switch
@@ -1036,10 +1250,13 @@ namespace PocketMC.Desktop.Features.Settings
                         ShowUpdateDialog(updatableItems);
                     }
                 }
+                else if (!checkDialog.UpdatesFound && !checkDialog.IsCancelled)
+                {
+                    _dialogService.ShowMessage("Up to Date", "All checked addons are already up to date.", DialogType.Information);
+                }
             }
             catch (Exception ex)
             {
-                UpdateAllStatusText = "Update checks failed";
                 _dialogService.ShowMessage("Update Checks Failed", ex.Message, DialogType.Error);
             }
             finally
@@ -1090,7 +1307,6 @@ namespace PocketMC.Desktop.Features.Settings
                     row.Provider,
                     row.ProjectId,
                     row.DisplayName,
-                    s => { }, // status is handled by the dialog
                     status =>
                     {
                         // Update the original VM's status
@@ -1107,9 +1323,6 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 LoadAddons();
                 _onAddonChanged();
-                UpdateAllStatusText = dialog.FailedCount > 0
-                    ? $"{dialog.InstalledCount} updated, {dialog.FailedCount} failed"
-                    : $"All {dialog.InstalledCount} addon(s) updated successfully";
             };
 
             try
@@ -1125,29 +1338,27 @@ namespace PocketMC.Desktop.Features.Settings
             dialog.ShowDialog();
         }
 
-        private static void SetItemStatus(object vm, string status, bool isUpdating)
+        private static void SetItemIsUpdating(object vm, bool isUpdating)
         {
             if (vm is PluginItemViewModel pvm)
             {
-                pvm.UpdateStatusText = status;
                 pvm.IsUpdating = isUpdating;
             }
             else if (vm is ModItemViewModel mvm)
             {
-                mvm.UpdateStatusText = status;
                 mvm.IsUpdating = isUpdating;
             }
         }
 
-        private void ClearAllItemStatus(bool isPlugins)
+        private void ClearAllItemIsUpdating(bool isPlugins)
         {
             if (isPlugins)
             {
-                foreach (var p in Plugins) { p.UpdateStatusText = ""; p.IsUpdating = false; }
+                foreach (var p in Plugins) { p.IsUpdating = false; }
             }
             else
             {
-                foreach (var m in Mods) { m.UpdateStatusText = ""; m.IsUpdating = false; }
+                foreach (var m in Mods) { m.IsUpdating = false; }
             }
         }
 
@@ -1206,7 +1417,6 @@ namespace PocketMC.Desktop.Features.Settings
                     "Last Modified" => filteredPlugins.OrderByDescending(p => p.LastModified),
                     "Size" => filteredPlugins.OrderByDescending(p => p.SizeKb),
                     "Source" => filteredPlugins.OrderBy(p => p.SourceLabel).ThenBy(p => p.Name),
-                    "Warnings First" => filteredPlugins.OrderByDescending(p => p.HasWarnings).ThenBy(p => p.Name),
                     _ => filteredPlugins.OrderBy(p => p.Name)
                 };
 
@@ -1231,7 +1441,6 @@ namespace PocketMC.Desktop.Features.Settings
                     "Size" => filteredMods.OrderByDescending(m => m.SizeKb),
                     "Loader Type" => filteredMods.OrderBy(m => m.LoaderType).ThenBy(m => m.Name),
                     "Source" => filteredMods.OrderBy(m => m.SourceLabel).ThenBy(m => m.Name),
-                    "Warnings First" => filteredMods.OrderByDescending(m => m.HasWarnings).ThenBy(m => m.Name),
                     _ => filteredMods.OrderBy(m => m.Name)
                 };
 
@@ -1242,8 +1451,6 @@ namespace PocketMC.Desktop.Features.Settings
                 Mods.Clear();
                 foreach (var m in filteredMods) Mods.Add(m);
 
-                OnPropertyChanged(nameof(WarningsCount));
-                OnPropertyChanged(nameof(HasWarningsBanner));
                 OnPropertyChanged(nameof(IsServerRunning));
                 OnPropertyChanged(nameof(ShowServerRunningAddonMessage));
             });
@@ -1338,7 +1545,6 @@ namespace PocketMC.Desktop.Features.Settings
     public class PluginItemViewModel : Core.Mvvm.ViewModelBase
     {
         private bool _isUpdating;
-        private string _updateStatusText = "";
 
         public string Name { get; set; } = "";
         public string Path { get; set; } = "";
@@ -1356,11 +1562,7 @@ namespace PocketMC.Desktop.Features.Settings
             set => SetProperty(ref _isUpdating, value);
         }
 
-        public string UpdateStatusText
-        {
-            get => _updateStatusText;
-            set => SetProperty(ref _updateStatusText, value);
-        }
+
 
         /// <summary>True when this addon is tracked in the manifest (marketplace-installed).</summary>
         public bool IsTracked => ManifestEntry != null;
@@ -1376,8 +1578,6 @@ namespace PocketMC.Desktop.Features.Settings
         public bool ShowSideBadge => SideSupport == ModSideSupport.ClientOnly;
         public string SourceLabel { get; set; } = "Manual";
         public ImageSource? Icon { get; set; }
-        public bool HasWarnings { get; set; }
-        public string WarningText { get; set; } = "";
         public bool IsDisabled { get; set; }
         public AddonKind Kind { get; set; } = AddonKind.Plugin;
         public AddonState State { get; set; } = AddonState.Enabled;
@@ -1404,7 +1604,6 @@ namespace PocketMC.Desktop.Features.Settings
     public class ModItemViewModel : Core.Mvvm.ViewModelBase
     {
         private bool _isUpdating;
-        private string _updateStatusText = "";
 
         public string Name { get; set; } = "";
         public string Path { get; set; } = "";
@@ -1422,11 +1621,7 @@ namespace PocketMC.Desktop.Features.Settings
             set => SetProperty(ref _isUpdating, value);
         }
 
-        public string UpdateStatusText
-        {
-            get => _updateStatusText;
-            set => SetProperty(ref _updateStatusText, value);
-        }
+
 
         /// <summary>True when this addon is tracked in the manifest (marketplace-installed).</summary>
         public bool IsTracked => ManifestEntry != null;
@@ -1439,8 +1634,6 @@ namespace PocketMC.Desktop.Features.Settings
         public string LoaderType { get; set; } = "Unknown";
         public string SourceLabel { get; set; } = "Manual";
         public ImageSource? Icon { get; set; }
-        public bool HasWarnings { get; set; }
-        public string WarningText { get; set; } = "";
         public bool IsClientOnly { get; set; }
         public bool IsMetadataUnknown { get; set; }
         public bool IsDisabled { get; set; }

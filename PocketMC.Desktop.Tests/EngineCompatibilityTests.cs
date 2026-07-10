@@ -58,6 +58,19 @@ namespace PocketMC.Desktop.Tests.Models
             var compat = new EngineCompatibility(serverType);
             Assert.Equal(expectedLoaders, compat.CompatibleLoaderNames);
         }
+        [Theory]
+        [InlineData("Fabric", true, true)]
+        [InlineData("Quilt", true, true)]
+        [InlineData("Forge", true, true)]
+        [InlineData("NeoForge", true, true)]
+        [InlineData("Vanilla", false, false)]
+        [InlineData("Paper", false, true)]
+        public void SupportsModpacks_ShouldMatchExpected(string serverType, bool expectedSupportsModpacks, bool expectedSupportsCurseForge)
+        {
+            var compat = new EngineCompatibility(serverType);
+            Assert.Equal(expectedSupportsModpacks, compat.SupportsModpacks);
+            Assert.Equal(expectedSupportsCurseForge, compat.SupportsCurseForge);
+        }
     }
 }
 

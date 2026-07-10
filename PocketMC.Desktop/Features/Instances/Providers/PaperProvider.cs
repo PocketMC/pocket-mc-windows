@@ -82,6 +82,25 @@ public class PaperProvider : IServerSoftwareProvider
         return versions;
     }
 
+    public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
+    {
+        string versionJson = await _httpClient.GetStringAsync($"https://fill.papermc.io/v3/projects/paper/versions/{versionId}");
+        var root = JsonNode.Parse(versionJson);
+        var buildsArray = root?["builds"]?.AsArray();
+
+        var builds = new List<ModLoaderVersion>();
+        if (buildsArray != null)
+        {
+            foreach (var buildNode in buildsArray)
+            {
+                if (buildNode == null) continue;
+                builds.Add(new ModLoaderVersion { Version = buildNode.ToString(), IsStable = true });
+            }
+        }
+        
+        return builds;
+    }
+
     public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // Get latest build using the v3 API
@@ -95,19 +114,31 @@ public class PaperProvider : IServerSoftwareProvider
         // Take the highest integer build number
         int maxBuild = buildsArray.Max(b => (int)b!);
 
+        await DownloadPaperJarAsync(mcVersion, maxBuild.ToString(), destinationPath, progress, cancellationToken);
+    }
+
+    public async Task DownloadPaperJarAsync(string mcVersion, string build, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
         // Fetch the detailed build information to get download URL and SHA256 checksum
-        string buildJson = await _httpClient.GetStringAsync($"https://fill.papermc.io/v3/projects/paper/versions/{mcVersion}/builds/{maxBuild}");
+        string buildJson = await _httpClient.GetStringAsync($"https://fill.papermc.io/v3/projects/paper/versions/{mcVersion}/builds/{build}");
         var buildRoot = JsonNode.Parse(buildJson);
 
         var downloadNode = buildRoot?["downloads"]?["server:default"] ?? buildRoot?["downloads"]?["application"];
         if (downloadNode == null)
-            throw new Exception($"No download details found for Paper version {mcVersion} build {maxBuild}.");
+            throw new Exception($"No download details found for Paper version {mcVersion} build {build}.");
 
         string? downloadUrl = downloadNode["url"]?.ToString();
         string? expectedSha256 = downloadNode["checksums"]?["sha256"]?.ToString() ?? downloadNode["sha256"]?.ToString();
 
         if (string.IsNullOrEmpty(downloadUrl))
-            throw new Exception($"No download URL found for Paper version {mcVersion} build {maxBuild}.");
+            throw new Exception($"No download URL found for Paper version {mcVersion} build {build}.");
+
+        string finalUrl = $"https://api.papermc.io/v2/projects/paper/versions/{mcVersion}/builds/{build}/downloads/{downloadNode["name"]?.ToString()}";
+        // Wait, the v3 API might provide the full URL or just the name. 
+        // Let's check what the original code did.
+        // The original code used:
+        // string? downloadUrl = downloadNode["url"]?.ToString();
+        // Wait, v3 api gives `url`. So `downloadUrl` is probably correct.
 
         await _downloader.DownloadFileAsync(downloadUrl, destinationPath, expectedSha256, progress, cancellationToken);
     }

@@ -14,7 +14,9 @@ namespace PocketMC.Desktop.Core.Interfaces
             bool showCancel = false,
             string? primaryButtonText = null,
             string? secondaryButtonText = null,
-            string? cancelButtonText = null);
+            string? cancelButtonText = null,
+            string? linkText = null,
+            string? linkUrl = null);
         void ShowMessage(string title, string message, DialogType type = DialogType.Information);
         Task<string?> OpenFolderDialogAsync(string title);
         Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*");

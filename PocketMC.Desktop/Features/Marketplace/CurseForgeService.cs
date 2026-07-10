@@ -54,6 +54,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 "neoforge" => Regex.IsMatch(normalized, @"(^|[-_.])neoforge($|[-_.])", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)),
                 "fabric" => Regex.IsMatch(normalized, @"(^|[-_.])fabric($|[-_.])", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)),
                 "quilt" => Regex.IsMatch(normalized, @"(^|[-_.])quilt($|[-_.])", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)),
+                "bukkit" or "spigot" or "paper" or "purpur" or "folia" or "bungeecord" or "velocity" or "waterfall" => true,
                 _ => false
             };
         }
@@ -254,22 +255,31 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string projectId, string mcVersion, IReadOnlyList<string> loaderCandidates)
         {
+            var mcCandidates = ModrinthService.BuildMinecraftVersionCandidates(mcVersion);
+            if (mcCandidates.Count == 0) mcCandidates = new List<string> { "" };
+
             if (loaderCandidates == null || loaderCandidates.Count == 0)
             {
-                var res = await GetLatestVersionWithProjectInfoAsync(projectId, mcVersion, "");
-                if (res != null) return MapToMarketplaceVersion(res.Value.File, res.Value.Project);
+                foreach (var candidate in mcCandidates)
+                {
+                    var res = await GetLatestVersionWithProjectInfoAsync(projectId, candidate, "");
+                    if (res != null) return MapToMarketplaceVersion(res.Value.File, res.Value.Project);
+                }
                 return null;
             }
 
-            foreach (var loader in loaderCandidates)
+            foreach (var candidate in mcCandidates)
             {
-                var res = await GetLatestVersionWithProjectInfoAsync(projectId, mcVersion, loader);
-                if (res != null)
+                foreach (var loader in loaderCandidates)
                 {
-                    var mv = MapToMarketplaceVersion(res.Value.File, res.Value.Project);
-                    mv.SelectedLoader = loader;
-                    mv.MatchedMinecraftVersion = mcVersion;
-                    return mv;
+                    var res = await GetLatestVersionWithProjectInfoAsync(projectId, candidate, loader);
+                    if (res != null)
+                    {
+                        var mv = MapToMarketplaceVersion(res.Value.File, res.Value.Project);
+                        mv.SelectedLoader = loader;
+                        mv.MatchedMinecraftVersion = candidate;
+                        return mv;
+                    }
                 }
             }
 
@@ -278,10 +288,15 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         async Task<MarketplaceVersion?> IAddonProvider.GetLatestVersionAsync(string projectId, string mcVersion, string loader)
         {
-            var result = await GetLatestVersionWithProjectInfoAsync(projectId, mcVersion, loader);
-            if (result == null) return null;
+            var mcCandidates = ModrinthService.BuildMinecraftVersionCandidates(mcVersion);
+            if (mcCandidates.Count == 0) mcCandidates = new List<string> { "" };
 
-            return MapToMarketplaceVersion(result.Value.File, result.Value.Project);
+            foreach (var candidate in mcCandidates)
+            {
+                var result = await GetLatestVersionWithProjectInfoAsync(projectId, candidate, loader);
+                if (result != null) return MapToMarketplaceVersion(result.Value.File, result.Value.Project);
+            }
+            return null;
         }
 
         public async Task<MarketplaceVersion?> GetVersionByIdAsync(string versionId)
@@ -363,13 +378,6 @@ namespace PocketMC.Desktop.Features.Marketplace
             long fileId = long.Parse(fileNode["id"]!.ToString());
             string fileName = fileNode["fileName"]?.ToString() ?? "mod.jar";
             string downloadUrl = fileNode["downloadUrl"]?.ToString() ?? "";
-
-            if (string.IsNullOrEmpty(downloadUrl))
-            {
-                string part1 = (fileId / 1000).ToString();
-                string part2 = (fileId % 1000).ToString("D3");
-                downloadUrl = $"https://edge.forgecdn.net/files/{part1}/{part2}/{Uri.EscapeDataString(fileName)}";
-            }
 
             var v = new MarketplaceVersion
             {

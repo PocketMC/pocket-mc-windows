@@ -99,6 +99,8 @@ public sealed class SettingsVersionUpdatesViewModel : ViewModelBase
     public string CurrentServerVersion => _metadata.MinecraftVersion;
     public string CurrentServerType => _metadata.ServerType;
 
+    public bool IsUpdateSupported => !_metadata.IsModpack;
+
     public string TargetMinecraftVersion => SelectedTargetVersion?.Id ?? string.Empty;
     public bool HasTargetVersions => TargetVersions.Count > 0;
 

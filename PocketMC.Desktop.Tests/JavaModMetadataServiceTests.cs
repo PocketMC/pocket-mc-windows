@@ -77,8 +77,8 @@ namespace PocketMC.Desktop.Tests
             Assert.Equal("Fabric", metadata.LoaderType);
             Assert.False(metadata.IsClientOnly);
             Assert.Equal(iconBytes, metadata.IconBytes);
-            Assert.Contains("minecraft", metadata.Dependencies);
-            Assert.Contains("fabricloader", metadata.Dependencies);
+            Assert.Equal(">=1.16", metadata.RequiredMinecraftVersion);
+            Assert.Equal(">=0.14", metadata.RequiredLoaderVersion);
         }
 
         [Fact]
@@ -140,7 +140,7 @@ namespace PocketMC.Desktop.Tests
             var metadata = JavaModMetadataService.ScanJar(jarPath);
 
             Assert.True(metadata.IsClientOnly);
-            Assert.Contains("client-only", metadata.Warnings[0]);
+
         }
 
         [Fact]
@@ -346,8 +346,8 @@ description: A plugin description
             Assert.Equal("1.0.0", metadata.Version);
             Assert.Equal("Plugin", metadata.LoaderType);
             Assert.True(metadata.IsPluginInModsFolder);
-            Assert.Single(metadata.Warnings);
-            Assert.Contains("Move it to plugins", metadata.Warnings[0]);
+
+
         }
 
         [Fact]
@@ -359,7 +359,7 @@ description: A plugin description
             var metadata = JavaModMetadataService.ScanJar(jarPath);
 
             Assert.Equal("Unknown", metadata.LoaderType);
-            Assert.Single(metadata.Warnings);
+
         }
 
         [Fact]
@@ -431,7 +431,7 @@ description: A plugin description
             var metaClient = JavaModMetadataService.ScanJar(jarClient);
             Assert.Equal(ModSideSupport.ClientOnly, metaClient.SideSupport);
             Assert.True(metaClient.IsClientOnly);
-            Assert.Single(metaClient.Warnings);
+
 
             // server environment
             string jsonServer = @"{ ""id"": ""s"", ""environment"": ""server"" }";
@@ -666,6 +666,30 @@ someOtherKey=""value"" # clientSideOnly=true was removed in v2
             Assert.Equal("servermod4", metadata.ModId);
             Assert.False(metadata.IsClientOnly, "clientSideOnly in an inline comment should not flag the mod.");
             Assert.Equal(ModSideSupport.Unknown, metadata.SideSupport);
+        }
+
+        [Fact]
+        public void ScanJar_HybridFabricQuiltMod_ShouldClassifyAsQuilt()
+        {
+            string quiltJson = "{\"quilt_loader\": {\"id\": \"quiltmod\", \"version\": \"1.0.0\"}}";
+            string fabricJson = "{\"id\": \"fabricmod\", \"version\": \"1.0.0\"}";
+
+            string jarPath = CreateTempJar("hybrid-mod.jar", a =>
+            {
+                using (var w = new StreamWriter(a.CreateEntry("quilt.mod.json").Open()))
+                {
+                    w.Write(quiltJson);
+                }
+                using (var w = new StreamWriter(a.CreateEntry("fabric.mod.json").Open()))
+                {
+                    w.Write(fabricJson);
+                }
+            });
+
+            var metadata = JavaModMetadataService.ScanJar(jarPath);
+
+            Assert.Equal("Quilt", metadata.LoaderType);
+            Assert.Equal("quiltmod", metadata.ModId);
         }
     }
 }

@@ -206,7 +206,7 @@ namespace PocketMC.Desktop.Infrastructure
 
             bool validParent = routeKind switch
             {
-                DetailRouteKind.PluginBrowser => current.RouteKind == DetailRouteKind.ServerSettings,
+                DetailRouteKind.PluginBrowser => current.RouteKind == DetailRouteKind.ServerSettings || current.RouteKind == DetailRouteKind.NewInstance,
                 DetailRouteKind.ImageCrop => current.RouteKind == DetailRouteKind.ServerSettings,
                 _ => true
             };

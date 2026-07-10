@@ -562,7 +562,7 @@
                                 <TextBlock Text="CurseForge API Key" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap">
                                     <Run Text="Obtain a free key from the "/>
-                                    <Hyperlink NavigateUri="https://console.curseforge.com/" RequestNavigate="Hyperlink_RequestNavigate">
+                                    <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate">
                                         <Run Text="CurseForge Console"/>
                                     </Hyperlink>
                                     <Run Text=" to access CurseForge addons."/>

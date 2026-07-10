@@ -27,6 +27,14 @@
                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                               VerticalAlignment="Center"/>
             </StackPanel>
+
+            <ui:Button x:Name="BtnLocalImport"
+                       Content="Local Import (.zip, .mrpack)"
+                       Appearance="Secondary"
+                       Icon="{ui:SymbolIcon FolderZip24}"
+                       HorizontalAlignment="Right"
+                       Visibility="Collapsed"
+                       Click="BtnLocalImport_Click"/>
         </Grid>
 
         <!-- Search and Filters -->
@@ -50,15 +58,27 @@
                         <ComboBoxItem Content="Newest" Tag="newest"/>
                     </ComboBox>
 
-                    <ui:SymbolIcon Symbol="Info24" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ui:SymbolIcon x:Name="IconMcVersion" Symbol="Info24" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <TextBlock x:Name="TxtMcVersion" Text="Minecraft 1.20.1" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    
+                    <!-- Modpack Mode Specific Filters -->
+                    <TextBlock x:Name="TxtLoaderLabel" Text="Loader:" VerticalAlignment="Center" Margin="16,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
+                    <ComboBox x:Name="CmbLoader" Width="130" Margin="0,0,16,0" Visibility="Collapsed" SelectionChanged="CmbLoader_SelectionChanged">
+                        <ComboBoxItem Content="Any" Tag="" IsSelected="True"/>
+                        <ComboBoxItem Content="Fabric" Tag="fabric"/>
+                        <ComboBoxItem Content="Forge" Tag="forge"/>
+                        <ComboBoxItem Content="NeoForge" Tag="neoforge"/>
+                    </ComboBox>
+
+                    <TextBlock x:Name="TxtMcVersionLabel" Text="Version:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
+                    <ComboBox x:Name="CmbMcVersion" Width="110" Visibility="Collapsed" DisplayMemberPath="Id" SelectionChanged="RefreshList_SelectionChanged"/>
+
                 </StackPanel>
             </ui:Card>
         </Grid>
 
-        <!-- Content Area -->
         <Grid Grid.Row="2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent" Padding="0,0,16,0">
+            <ScrollViewer x:Name="ResultsScrollViewer" ScrollChanged="ResultsScrollViewer_ScrollChanged" VerticalScrollBarVisibility="Auto" Background="Transparent" Padding="0,0,16,0">
                 <StackPanel Background="Transparent">
                     <ItemsControl x:Name="ListResults">
                         <ItemsControl.ItemTemplate>
@@ -97,7 +117,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <ui:Button x:Name="BtnLoadMore" Content="Load More" Appearance="Secondary" HorizontalAlignment="Center" Margin="0,8,0,16" Click="BtnLoadMore_Click" Visibility="Collapsed"/>
+                    <ui:ProgressRing x:Name="ProgressLoadMore" IsIndeterminate="True" Width="24" Height="24" Visibility="Collapsed" HorizontalAlignment="Center" Margin="0,8,0,16"/>
                 </StackPanel>
             </ScrollViewer>
 

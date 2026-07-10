@@ -67,7 +67,7 @@ public class GeyserProvisioningService
 
             // --- Geyser ---
             ReportStatus(progress, $"Checking Geyser compatibility for {serverType} {minecraftVersion}...");
-            var geyserVersion = await _modrinth.GetLatestVersionAsync("geyser", minecraftVersion, loader);
+            var geyserVersion = await _modrinth.GetLatestVersionAsync("geyser", minecraftVersion, new[] { loader });
 
             if (geyserVersion == null)
             {
@@ -89,7 +89,7 @@ public class GeyserProvisioningService
             if (loader == "fabric")
             {
                 ReportStatus(progress, "Checking Fabric API compatibility...");
-                var fabricApiVersion = await _modrinth.GetLatestVersionAsync("fabric-api", minecraftVersion, loader);
+                var fabricApiVersion = await _modrinth.GetLatestVersionAsync("fabric-api", minecraftVersion, new[] { loader });
 
                 if (fabricApiVersion != null)
                 {
@@ -127,7 +127,7 @@ public class GeyserProvisioningService
             else
             {
                 ReportStatus(progress, "Checking Floodgate compatibility...");
-                var floodgateVersion = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, loader);
+                var floodgateVersion = await _modrinth.GetLatestVersionAsync("floodgate", minecraftVersion, new[] { loader });
 
                 if (floodgateVersion == null)
                 {

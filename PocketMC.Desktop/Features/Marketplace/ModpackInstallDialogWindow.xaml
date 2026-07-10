@@ -1,0 +1,112 @@
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Marketplace.ModpackInstallDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Installing Modpack"
+        Width="640" Height="550"
+        MinWidth="480" MaxWidth="720"
+        MinHeight="0" MaxHeight="720"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowCornerPreference="Round"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="None"
+        Background="{DynamicResource ApplicationBackgroundBrush}"
+        ContentRendered="FluentWindow_ContentRendered">
+
+    <ui:FluentWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="VisibleIfTrue"/>
+    </ui:FluentWindow.Resources>
+
+    <Grid Margin="20" MaxWidth="680">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+            <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"
+                       Foreground="#89B4FA"/>
+            <TextBlock x:Name="TxtTitle" Text="Installing Modpack..."
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="#89B4FA"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Summary text -->
+        <TextBlock Grid.Row="1" x:Name="TxtSummary"
+                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Margin="0,0,0,10" TextWrapping="Wrap"
+                   Text="Parsing modpack and downloading components concurrently."/>
+                   
+        <!-- Errors/Warnings Area -->
+        <Border Grid.Row="2" x:Name="AlertBorder" Background="#2B1A1A" BorderBrush="#F38BA8" BorderThickness="1" CornerRadius="4" Margin="0,0,0,10" Visibility="Collapsed">
+            <TextBlock x:Name="TxtAlert" Foreground="#F38BA8" TextWrapping="Wrap" Margin="10"/>
+        </Border>
+
+        <!-- List of items to install -->
+        <ScrollViewer x:Name="ItemsScrollViewer" Grid.Row="3" VerticalScrollBarVisibility="Auto" MaxHeight="400" Margin="0,0,0,15">
+            <ItemsControl x:Name="ItemsList" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                BorderThickness="1" CornerRadius="4"
+                                Margin="0,0,0,8" Padding="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Title and file name -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Vertical">
+                                    <TextBlock Text="{Binding ProjectTitle}" FontWeight="SemiBold" FontSize="14"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding FileName}" FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                </StackPanel>
+
+                                <!-- Status indicator -->
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0"
+                                                     Visibility="{Binding IsDownloading, Converter={StaticResource VisibleIfTrue}}"/>
+                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusForeground}"
+                                               FontSize="12" FontWeight="Medium" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- Per-item progress bar -->
+                                <ProgressBar Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                             Minimum="0" Maximum="100" Value="{Binding ProgressValue}"
+                                             Height="4" Margin="0,8,0,0"
+                                             Visibility="{Binding IsDownloading, Converter={StaticResource VisibleIfTrue}}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Overall progress section -->
+        <StackPanel x:Name="ProgressPanel" Grid.Row="4" Margin="0,0,0,16">
+            <TextBlock x:Name="TxtOverallStatus" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,6"/>
+            <ProgressBar x:Name="OverallProgressBar" Minimum="0" Maximum="100" Height="6"/>
+        </StackPanel>
+
+        <!-- Actions -->
+        <StackPanel x:Name="ActionsPanel" Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <ui:Button x:Name="BtnCancel" Content="Cancel" Appearance="Primary" Click="BtnCancel_Click"/>
+        </StackPanel>
+
+    </Grid>
+</ui:FluentWindow>

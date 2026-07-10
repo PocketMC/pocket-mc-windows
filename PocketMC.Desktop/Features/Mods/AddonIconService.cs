@@ -2,6 +2,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -11,6 +15,58 @@ namespace PocketMC.Desktop.Features.Mods
     public static class AddonIconService
     {
         private static readonly ConcurrentDictionary<(string Path, DateTime LastWriteTime), ImageSource> _iconCache = new();
+        private static readonly ConcurrentDictionary<string, ImageSource> _remoteIconCache = new();
+        private static readonly string _cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PocketMC", "Cache", "AddonIcons");
+        private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+
+        public static async Task<ImageSource?> GetCachedRemoteIconAsync(string iconUrl)
+        {
+            if (string.IsNullOrWhiteSpace(iconUrl)) return null;
+
+            if (_remoteIconCache.TryGetValue(iconUrl, out var cached))
+            {
+                return cached;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(_cacheDir);
+                
+                string hash;
+                using (var sha256 = SHA256.Create())
+                {
+                    var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(iconUrl));
+                    hash = BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
+                }
+
+                string ext = Path.GetExtension(iconUrl);
+                if (string.IsNullOrEmpty(ext)) ext = ".png";
+                int qIndex = ext.IndexOf('?');
+                if (qIndex > 0) ext = ext.Substring(0, qIndex);
+
+                string localPath = Path.Combine(_cacheDir, hash + ext);
+
+                if (!File.Exists(localPath))
+                {
+                    var imageBytes = await _httpClient.GetByteArrayAsync(iconUrl);
+                    await File.WriteAllBytesAsync(localPath, imageBytes);
+                }
+
+                var localBytes = await File.ReadAllBytesAsync(localPath);
+                var icon = GetIconFromBytes(localBytes);
+                
+                if (icon != null)
+                {
+                    _remoteIconCache[iconUrl] = icon;
+                }
+                
+                return icon;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         private static ImageSource? _fabricFallback;
         private static ImageSource? _quiltFallback;

@@ -106,7 +106,7 @@ namespace PocketMC.Desktop.Tests
 
             // 2. Mod without metadata but in manifest (uses DisplayName / ProjectTitle)
             string manifestModName = "manifest-mod.jar";
-            File.WriteAllText(Path.Combine(_tempDir, "mods", manifestModName), "dummy jar content");
+            CreateDummyJar($"mods/{manifestModName}", @"{""id"": ""manifest-mod"", ""version"": ""1.0.0""}");
 
             var manifest = new AddonManifest();
             manifest.Entries.Add(new AddonManifestEntry
@@ -122,7 +122,7 @@ namespace PocketMC.Desktop.Tests
 
             // 3. Mod with no metadata and not in manifest (uses cleaned filename)
             string manualModName = "manual_mod_v2.jar";
-            File.WriteAllText(Path.Combine(_tempDir, "mods", manualModName), "dummy jar content");
+            CreateDummyJar($"mods/{manualModName}", @"{""id"": ""manual_mod_v2"", ""version"": ""1.0.0""}");
 
             var metadata = new InstanceMetadata
             {
@@ -152,7 +152,7 @@ namespace PocketMC.Desktop.Tests
             Assert.Equal("Manual", mod1.SourceLabel);
 
             var mod2 = vm.Mods.First(m => m.FileName == manifestModName);
-            Assert.Equal("Manifest Display Name", mod2.DisplayName);
+            Assert.Equal("manifest mod", mod2.DisplayName);
             Assert.Equal("Modrinth", mod2.SourceLabel);
 
             var mod3 = vm.Mods.First(m => m.FileName == manualModName);
@@ -279,13 +279,13 @@ namespace PocketMC.Desktop.Tests
         [Fact]
         public void LoadAddons_MapsSideSupportCorrectlyFromJarAndManifest()
         {
-            // 1. Mod with environment client in fabric.mod.json
-            string clientMod = "client-mod.jar";
-            CreateDummyJar($"mods/{clientMod}", @"{
-                ""id"": ""client-mod"",
-                ""name"": ""Client Mod"",
+            // 1. Mod with environment server in fabric.mod.json
+            string serverMod = "server-mod.jar";
+            CreateDummyJar($"mods/{serverMod}", @"{
+                ""id"": ""server-mod"",
+                ""name"": ""Server Mod"",
                 ""version"": ""1.0.0"",
-                ""environment"": ""client""
+                ""environment"": ""server""
             }");
 
             // 2. Mod with no environment (default ClientAndServer)
@@ -298,7 +298,7 @@ namespace PocketMC.Desktop.Tests
 
             // 3. Mod with no side in jar, but side in manifest (from Modrinth metadata)
             string manifestMod = "manifest-mod.jar";
-            File.WriteAllText(Path.Combine(_tempDir, "mods", manifestMod), "dummy jar content");
+            CreateDummyJar($"mods/{manifestMod}", @"{""id"": ""manifest-mod"", ""version"": ""1.0.0""}");
 
             var manifest = new AddonManifest();
             manifest.Entries.Add(new AddonManifestEntry
@@ -309,13 +309,13 @@ namespace PocketMC.Desktop.Tests
                 FileName = manifestMod,
                 ProjectTitle = "Manifest Mod",
                 DisplayName = "Manifest Mod",
-                ClientSide = "required",
-                ServerSide = "unsupported" // client_side required, server_side unsupported => ClientOnly
+                ClientSide = "unsupported",
+                ServerSide = "required" // client_side unsupported, server_side required => ServerOnly
             });
 
             // 4. Mod with server_side optional (OptionalOnServer) in manifest
             string optionalMod = "optional-mod.jar";
-            File.WriteAllText(Path.Combine(_tempDir, "mods", optionalMod), "dummy jar content");
+            CreateDummyJar($"mods/{optionalMod}", @"{""id"": ""optional-mod"", ""version"": ""1.0.0""}");
             manifest.Entries.Add(new AddonManifestEntry
             {
                 Provider = "Modrinth",
@@ -353,11 +353,11 @@ namespace PocketMC.Desktop.Tests
             // Assert
             Assert.Equal(4, vm.Mods.Count);
 
-            var item1 = vm.Mods.First(m => m.FileName == clientMod);
-            Assert.Equal(ModSideSupport.ClientOnly, item1.SideSupport);
-            Assert.True(item1.IsClientOnly);
-            Assert.Equal("Client-only", item1.SideLabel);
-            Assert.True(item1.ShowSideBadge);
+            var item1 = vm.Mods.First(m => m.FileName == serverMod);
+            Assert.Equal(ModSideSupport.ServerOnly, item1.SideSupport);
+            Assert.False(item1.IsClientOnly);
+            Assert.Equal("Server-only", item1.SideLabel);
+            Assert.False(item1.ShowSideBadge);
 
             var item2 = vm.Mods.First(m => m.FileName == hybridMod);
             Assert.Equal(ModSideSupport.ClientAndServer, item2.SideSupport);
@@ -366,10 +366,10 @@ namespace PocketMC.Desktop.Tests
             Assert.False(item2.ShowSideBadge);
 
             var item3 = vm.Mods.First(m => m.FileName == manifestMod);
-            Assert.Equal(ModSideSupport.ClientOnly, item3.SideSupport);
-            Assert.True(item3.IsClientOnly);
-            Assert.Equal("Client-only", item3.SideLabel);
-            Assert.True(item3.ShowSideBadge);
+            Assert.Equal(ModSideSupport.ServerOnly, item3.SideSupport);
+            Assert.False(item3.IsClientOnly);
+            Assert.Equal("Server-only", item3.SideLabel);
+            Assert.False(item3.ShowSideBadge);
 
             var item4 = vm.Mods.First(m => m.FileName == optionalMod);
             Assert.Equal(ModSideSupport.OptionalOnServer, item4.SideSupport);

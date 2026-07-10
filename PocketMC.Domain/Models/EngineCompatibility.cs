@@ -78,9 +78,9 @@ namespace PocketMC.Domain.Models
             {
                 Family = EngineFamily.Forge;
                 SupportsMods = true;
-                SupportsModpacks = false;
+                SupportsModpacks = true;
                 SupportsModrinth = true;
-                SupportsCurseForge = false;
+                SupportsCurseForge = true;
                 PrimaryAddonSubDir = "mods";
                 LoaderName = "forge";
                 CompatibleLoaderNames = new[] { "forge" };
@@ -89,9 +89,9 @@ namespace PocketMC.Domain.Models
             {
                 Family = EngineFamily.NeoForge;
                 SupportsMods = true;
-                SupportsModpacks = false;
+                SupportsModpacks = true;
                 SupportsModrinth = true;
-                SupportsCurseForge = false;
+                SupportsCurseForge = true;
                 PrimaryAddonSubDir = "mods";
                 LoaderName = "neoforge";
                 CompatibleLoaderNames = new[] { "neoforge" };

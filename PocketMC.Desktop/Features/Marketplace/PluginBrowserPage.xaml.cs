@@ -16,7 +16,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Instances.Providers;
 using Wpf.Ui.Controls;
 using System.Collections.ObjectModel;
 using PocketMC.Desktop.Infrastructure.Security;
@@ -40,6 +40,8 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly EngineCompatibility _compat;
         private readonly ObservableCollection<MarketplaceItemViewModel> _results = new();
         private int _currentOffset = 0;
+        private bool _isLoadingMore = false;
+        private bool _hasMoreResults = true;
         private System.Threading.CancellationTokenSource? _searchCts;
 
         public event Action<string>? OnModpackDownloaded;
@@ -97,13 +99,35 @@ namespace PocketMC.Desktop.Features.Marketplace
                 TxtSearch.PlaceholderText = $"Search {loaderLabel}...";
             }
             else TxtSearch.PlaceholderText = "Search mods...";
+
+            if (_isModpackMode)
+            {
+                TxtMcVersion.Visibility = Visibility.Collapsed;
+                IconMcVersion.Visibility = Visibility.Collapsed;
+                
+                BtnLocalImport.Visibility = Visibility.Visible;
+                TxtLoaderLabel.Visibility = Visibility.Visible;
+                CmbLoader.Visibility = Visibility.Visible;
+                TxtMcVersionLabel.Visibility = Visibility.Visible;
+                CmbMcVersion.Visibility = Visibility.Visible;
+            }
+
             Loaded += async (s, e) =>
             {
                 if (_serverDir != null)
                 {
-                    await _manifestService.SyncManifestAsync(_serverDir, _modrinth, _compat);
+                    // Run sync in the background so it doesn't block the UI loading
+                    _ = Task.Run(() => _manifestService.SyncManifestAsync(_serverDir, _modrinth, _compat));
                 }
-                await RefreshResultsAsync();
+                
+                if (_isModpackMode)
+                {
+                    await LoadVersionsForLoaderAsync();
+                }
+                else
+                {
+                    await RefreshResultsAsync();
+                }
             };
             KeyDown += PluginBrowserPage_KeyDown;
         }
@@ -138,6 +162,48 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
+        private async void CmbLoader_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsLoaded)
+            {
+                await LoadVersionsForLoaderAsync();
+            }
+        }
+
+        private async Task LoadVersionsForLoaderAsync()
+        {
+            if (CmbLoader.SelectedItem is not ComboBoxItem item) return;
+            string loader = item.Tag?.ToString() ?? "";
+            var services = ((App)System.Windows.Application.Current).Services;
+            
+            IServerSoftwareProvider provider = loader switch
+            {
+                "fabric" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.FabricProvider>(services),
+                "forge" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.ForgeProvider>(services),
+                "neoforge" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.NeoForgeProvider>(services),
+                _ => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.VanillaProvider>(services)
+            };
+
+            var versions = await provider.GetAvailableVersionsAsync();
+            var list = new List<MinecraftVersion> { new MinecraftVersion { Id = "Any" } };
+            list.AddRange(versions.Where(v => v.Type == "release"));
+            
+            CmbMcVersion.ItemsSource = list;
+            CmbMcVersion.SelectedIndex = 0;
+            // Setting SelectedIndex = 0 will trigger RefreshList_SelectionChanged, so we don't need to call RefreshResultsAsync here manually.
+        }
+
+        private async void BtnLocalImport_Click(object sender, RoutedEventArgs e)
+        {
+            var dialogService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Core.Interfaces.IDialogService>(((App)System.Windows.Application.Current).Services);
+            var file = await dialogService.OpenFileDialogAsync("Select Modpack Archive", "Modpack Files (*.zip;*.mrpack)|*.zip;*.mrpack|ZIP Files (*.zip)|*.zip|Modrinth Packs (*.mrpack)|*.mrpack");
+            if (file != null)
+            {
+                OnModpackDownloaded?.Invoke(file);
+                _navigationService.NavigateBack();
+            }
+        }
+
         private async Task RefreshResultsAsync(bool append = false)
         {
             if (!append)
@@ -156,15 +222,35 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                 List<ModrinthHit> hits;
                 string mcVersionArg = (_compat.Family == EngineFamily.Bedrock || _compat.Family == EngineFamily.Pocketmine) ? "" : _mcVersion;
+                IReadOnlyList<string> loaderNames = _compat.CompatibleLoaderNames;
+                string loaderArg = _compat.LoaderName;
+
+                if (_isModpackMode)
+                {
+                    var selectedMc = CmbMcVersion.SelectedItem as MinecraftVersion;
+                    mcVersionArg = (selectedMc != null && selectedMc.Id != "Any") ? selectedMc.Id : "";
+
+                    string selectedLoader = (CmbLoader.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(selectedLoader))
+                    {
+                        loaderNames = new List<string> { selectedLoader };
+                        loaderArg = selectedLoader;
+                    }
+                    else
+                    {
+                        loaderNames = new List<string>();
+                        loaderArg = "";
+                    }
+                }
 
                 if (isCurseForge)
                 {
                     // Standard CurseForge uses 432 for Java. If it's bedrock, we override type to '6945' inside the CurseForgeService search...
-                    hits = await _curseForge.SearchAsync(_compat.Family == EngineFamily.Bedrock ? "6945" : _projectType, mcVersionArg, _compat.LoaderName, query, _currentOffset);
+                    hits = await _curseForge.SearchAsync(_compat.Family == EngineFamily.Bedrock ? "6945" : _projectType, mcVersionArg, loaderArg, query, _currentOffset);
                 }
                 else
                 {
-                    hits = await _modrinth.SearchAsync(_projectType, mcVersionArg, _compat.CompatibleLoaderNames, sort, query, _currentOffset);
+                    hits = await _modrinth.SearchAsync(_projectType, mcVersionArg, loaderNames, sort, query, _currentOffset);
                 }
 
                 foreach (var hit in hits)
@@ -184,7 +270,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                         if (_serverDir != null)
                         {
-                            bool installed = await _manifestService.IsInstalledAsync(_serverDir, vm.Provider, vm.ProjectId, _compat);
+                            bool installed = await _manifestService.IsInstalledAsync(_serverDir, vm.Provider, vm.ProjectId, _compat, vm.Title, vm.Slug);
                             vm.State = installed ? InstallState.Installed : InstallState.NotInstalled;
                         }
 
@@ -193,7 +279,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
 
                 _currentOffset += hits.Count;
-                BtnLoadMore.Visibility = hits.Count >= 20 ? Visibility.Visible : Visibility.Collapsed;
+                _hasMoreResults = hits.Count >= 20;
             }
             catch (Exception ex)
             {
@@ -203,30 +289,49 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 ProgressSearching.Visibility = Visibility.Collapsed;
                 ListResults.Visibility = Visibility.Visible;
+                if (append)
+                {
+                    ProgressLoadMore.Visibility = Visibility.Collapsed;
+                    _isLoadingMore = false;
+                }
             }
         }
 
         private async void TxtSearch_TextChanged(Wpf.Ui.Controls.AutoSuggestBox sender, Wpf.Ui.Controls.AutoSuggestBoxTextChangedEventArgs e)
         {
             if (!IsLoaded) return;
-
             _searchCts?.Cancel();
             _searchCts = new System.Threading.CancellationTokenSource();
-            var token = _searchCts.Token;
+            var ct = _searchCts.Token;
 
             try
             {
-                await Task.Delay(500, token);
-                await RefreshResultsAsync();
+                await Task.Delay(500, ct);
+                if (!ct.IsCancellationRequested)
+                {
+                    await RefreshResultsAsync();
+                }
             }
             catch (OperationCanceledException)
             {
             }
         }
 
-        private async void BtnLoadMore_Click(object sender, RoutedEventArgs e)
+        private async void ResultsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            await RefreshResultsAsync(append: true);
+            if (e.VerticalChange > 0)
+            {
+                var scrollViewer = (ScrollViewer)sender;
+                if (scrollViewer.VerticalOffset + scrollViewer.ViewportHeight >= scrollViewer.ExtentHeight - 50)
+                {
+                    if (!_isLoadingMore && _hasMoreResults)
+                    {
+                        _isLoadingMore = true;
+                        ProgressLoadMore.Visibility = Visibility.Visible;
+                        await RefreshResultsAsync(append: true);
+                    }
+                }
+            }
         }
 
         private void ShowCurseForgeApiKeyDialog()
@@ -234,7 +339,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             bool goToSettings = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
                 "CurseForge API Key Required",
                 "To search and install addons from CurseForge, you must configure a CurseForge API key in Settings.\n\n" +
-                "You can get a free API key at:\nhttps://console.curseforge.com/\n\n" +
+                "You can get a free API key at:\nhttps://console.curseforge.com/#/api-keys/\n\n" +
                 "Would you like to open Settings to configure it now?");
 
             if (goToSettings)
@@ -284,12 +389,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     return;
                 }
 
-                if (vm.Provider == "CurseForge" && !ConfirmMarketplaceRisk(vm.Title, rootResolved.FileName ?? vm.Title))
-                {
-                    vm.IsActionEnabled = true;
-                    vm.State = InstallState.NotInstalled;
-                    return;
-                }
+
 
                 // --- 2. User Confirmation ---
                 var confVm = new DependencyConfirmationViewModel(resolved);
@@ -302,19 +402,44 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
 
                 // --- 3. Batch Installation ---
-                foreach (var item in resolved.Where(d => d.IsSelected))
+                var itemsToInstall = resolved.Where(d => d.IsSelected).Select(item => new AddonInstallRowViewModel
                 {
+                    ResolvedItem = item
+                }).ToList();
+
+                var installDialog = new AddonInstallDialogWindow();
+                installDialog.SetItems(itemsToInstall);
+                installDialog.InstallAction = async (row, progress, ct) =>
+                {
+                    var item = row.ResolvedItem;
                     bool isRoot = item.ProjectId.Equals(projectId, StringComparison.OrdinalIgnoreCase);
                     string? title = isRoot ? vm.Title : item.ProjectTitle;
                     string? icon = isRoot ? vm.IconUrl : null;
                     string? disp = isRoot ? vm.Title : item.ProjectTitle;
 
-                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp, item.ClientSide, item.ServerSide);
-                }
+                    await InstallSingleFileAsync(item.DownloadUrl, item.FileName, vm.Provider, item.ProjectId, item.VersionId ?? "", item.Hash, item.HashType, title, icon, disp, item.ClientSide, item.ServerSide, isRoot ? vm.Slug : null, progress, ct);
+                };
 
-                vm.State = InstallState.Installed;
-                vm.IsActionEnabled = true;
-                _onCompleted?.Invoke();
+                installDialog.OnAllInstallsCompleted = () =>
+                {
+                    if (installDialog.AnyInstalled)
+                    {
+                        vm.State = InstallState.Installed;
+                        _onCompleted?.Invoke();
+                    }
+                    else
+                    {
+                        vm.State = InstallState.NotInstalled;
+                    }
+                    vm.IsActionEnabled = true;
+                    if (_isModpackMode)
+                    {
+                        installDialog.Close();
+                    }
+                };
+
+                installDialog.Owner = Window.GetWindow(this);
+                installDialog.ShowDialog();
             }
             catch (Exception ex)
             {
@@ -324,20 +449,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        private bool ConfirmMarketplaceRisk(string projectTitle, string fileName)
-        {
-            MarketplaceInstallRisk risk = MarketplaceInstallRiskAnalyzer.Analyze(providerName: "CurseForge", _projectType, projectTitle, fileName);
-            if (!risk.RequiresConfirmation)
-            {
-                return true;
-            }
 
-            return PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
-                "CurseForge Compatibility Warning",
-                string.Join(Environment.NewLine + Environment.NewLine, risk.Warnings) +
-                Environment.NewLine + Environment.NewLine +
-                "Install anyway?");
-        }
 
         private async Task InstallSingleFileAsync(
             string url,
@@ -351,7 +463,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? iconUrl = null,
             string? displayName = null,
             string? clientSide = null,
-            string? serverSide = null)
+            string? serverSide = null,
+            string? projectSlug = null,
+            IProgress<DownloadProgress>? progress = null,
+            CancellationToken cancellationToken = default)
         {
             if (_serverDir == null && !_isModpackMode) return;
             string safeFileName = MarketplaceDownloadPolicy.RequireCompatibleFileName(fileName, _compat, _isModpackMode);
@@ -371,29 +486,32 @@ namespace PocketMC.Desktop.Features.Marketplace
                     ?? throw new InvalidOperationException($"Invalid marketplace add-on file name '{safeFileName}'.");
             }
 
-            await _fileInstaller.InstallAsync(url, destFile, hash, hashType);
-            IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile, isPlugin: _projectType.Contains("plugin"));
-            if (metadataWarnings.Count > 0)
+            await _fileInstaller.InstallAsync(url, destFile, hash, hashType, progress, cancellationToken);
+            
+            if (!_isModpackMode)
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
-                    "Marketplace Compatibility Warning",
-                    string.Join(Environment.NewLine + Environment.NewLine, metadataWarnings));
-            }
+                IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile, isPlugin: _projectType.Contains("plugin"));
+                if (metadataWarnings.Count > 0)
+                {
+                    File.Delete(destFile);
+                    throw new InvalidOperationException(metadataWarnings[0]);
+                }
 
-            if (!_isModpackMode && MarketplaceArchiveInspector.IsClientOnlyAddon(destFile))
-            {
-                string disabledDestFile = destFile + ".disabled-by-pocketmc";
-                if (File.Exists(disabledDestFile)) File.Delete(disabledDestFile);
-                File.Move(destFile, disabledDestFile);
-                destFile = disabledDestFile;
-                safeFileName += ".disabled-by-pocketmc";
+                if (MarketplaceArchiveInspector.IsClientOnlyAddon(destFile))
+                {
+                    File.Delete(destFile);
+                    throw new InvalidOperationException("Client-side only mods cannot be installed on a server.");
+                }
             }
-
 
             if (_isModpackMode)
             {
-                OnModpackDownloaded?.Invoke(destFile);
-                _navigationService.NavigateBack();
+                // Dispatch to UI thread to safely show Modpack Dialog
+                _ = System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    OnModpackDownloaded?.Invoke(destFile);
+                    _navigationService.NavigateBack();
+                });
                 return;
             }
 
@@ -415,7 +533,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                     hashType,
                     _mcVersion,
                     _compat.LoaderName,
-                    downloadUrl: url);
+                    downloadUrl: url,
+                    projectSlug: projectSlug);
             }
         }
 
