@@ -116,7 +116,9 @@ namespace PocketMC.Desktop.Features.Shell
                 string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                 string fullTempDir = Path.GetFullPath(tempDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-                if (fullPath.StartsWith(fullTempDir, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(fullPath, fullTempDir, StringComparison.OrdinalIgnoreCase) ||
+                    fullPath.StartsWith(fullTempDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                    fullPath.StartsWith(fullTempDir + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

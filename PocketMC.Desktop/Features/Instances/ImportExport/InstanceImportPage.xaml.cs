@@ -13,17 +13,20 @@ namespace PocketMC.Desktop.Features.Instances.ImportExport;
 public partial class InstanceImportPage : Page, ISupportsKeyboardBackNavigation
 {
     private readonly IAppNavigationService _navigationService;
+    private readonly IServerDetectionService _serverDetectionService;
     private readonly MouseWheelEventHandler _previewMouseWheelHandler;
     private bool _isForwardingMouseWheel;
 
     public InstanceImportPage(
         IAppNavigationService navigationService,
-        InstanceImportViewModel viewModel)
+        InstanceImportViewModel viewModel,
+        IServerDetectionService serverDetectionService)
     {
         InitializeComponent();
         _navigationService = navigationService;
         ViewModel = viewModel;
         DataContext = ViewModel;
+        _serverDetectionService = serverDetectionService;
         _previewMouseWheelHandler = OnPagePreviewMouseWheel;
 
         Loaded += OnLoaded;
@@ -62,6 +65,29 @@ public partial class InstanceImportPage : Page, ISupportsKeyboardBackNavigation
         {
             ViewModel.RequestedName = Path.GetFileNameWithoutExtension(dialog.FileName);
         }
+    }
+
+    private async void BtnBrowseFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Select Existing Minecraft Server Folder"
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        ViewModel.FolderPath = dialog.FolderName;
+        if (string.IsNullOrWhiteSpace(ViewModel.RequestedName))
+        {
+            ViewModel.RequestedName = Path.GetFileName(dialog.FolderName);
+        }
+
+        var (detectedType, detectedVersion) = await _serverDetectionService.DetectServerTypeAndVersionAsync(dialog.FolderName);
+        ViewModel.SelectedServerType = detectedType;
+        ViewModel.MinecraftVersion = detectedVersion;
     }
 
     private void BtnBack_Click(object sender, RoutedEventArgs e)

@@ -14,7 +14,7 @@ public sealed class DashboardPageXamlTests
         string metadataXaml = ExtractMetadataSection(xaml);
 
         Assert.Contains("MetadataItemLabel", metadataXaml);
-        Assert.Contains("Text=\"Last played\"", metadataXaml);
+        Assert.Contains("Text=\"{Binding LastPlayedLabelText}\"", metadataXaml);
         Assert.Contains("{Binding LastPlayedValueText}", metadataXaml);
         Assert.DoesNotContain("{Binding LastPlayedText}\" FontSize=\"11\"", metadataXaml);
     }

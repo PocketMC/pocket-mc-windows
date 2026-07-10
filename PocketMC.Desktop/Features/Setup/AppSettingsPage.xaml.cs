@@ -1260,12 +1260,18 @@ namespace PocketMC.Desktop.Features.Setup
                     return;
                 }
 
-                // Check if targetPath is a subfolder of currentRoot
-                if (!string.IsNullOrEmpty(currentRoot) &&
-                    targetPath.StartsWith(currentRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                // Check bi-directional nesting/containment
+                if (!string.IsNullOrEmpty(currentRoot) && !string.IsNullOrEmpty(targetPath))
                 {
-                    _dialogService.ShowMessage("Invalid Directory", "The selected directory cannot be a subfolder of the current root directory.", DialogType.Error);
-                    return;
+                    string normCurrent = Path.GetFullPath(currentRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                    string normTarget = Path.GetFullPath(targetPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+                    if (normTarget.StartsWith(normCurrent, StringComparison.OrdinalIgnoreCase) ||
+                        normCurrent.StartsWith(normTarget, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _dialogService.ShowMessage("Invalid Directory", "The selected directory cannot be nested within or overlap with the current root directory.", DialogType.Error);
+                        return;
+                    }
                 }
 
                 // Check if any server is running
@@ -1289,7 +1295,7 @@ namespace PocketMC.Desktop.Features.Setup
                     secondaryButtonText: "Update Reference Only",
                     cancelButtonText: "Cancel");
 
-                if (confirmResult == DialogResult.Cancel)
+                if (confirmResult == DialogResult.Cancel || confirmResult == DialogResult.Dismiss)
                 {
                     return;
                 }
@@ -1300,64 +1306,67 @@ namespace PocketMC.Desktop.Features.Setup
                     await _playitAgentService.StopAsync();
                 }
 
-                if (confirmResult == DialogResult.Yes) // Transfer Data
+                try
                 {
-                    // Copy files to target path
-                    try
+                    if (confirmResult == DialogResult.Yes) // Transfer Data
                     {
-                        if (Directory.Exists(currentRoot))
+                        // Copy files to target path
+                        try
                         {
-                            await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CopyDirectoryAsync(currentRoot, targetPath);
+                            if (Directory.Exists(currentRoot))
+                            {
+                                await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CopyDirectoryAsync(currentRoot, targetPath);
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _dialogService.ShowMessage("Transfer Failed", $"Failed to copy data to the new folder:\n\n{ex.Message}", DialogType.Error);
-                        if (playitWasRunning) _playitAgentService.Start();
-                        return;
-                    }
-
-                    // Update Settings
-                    var settings = _settingsManager.Load();
-                    settings.AppRootPath = targetPath;
-                    _settingsManager.Save(settings);
-                    _applicationState.ApplySettings(settings);
-                    _registry.Refresh();
-
-                    // Try delete old directory
-                    try
-                    {
-                        if (Directory.Exists(currentRoot))
+                        catch (Exception ex)
                         {
-                            await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CleanDirectoryAsync(currentRoot);
+                            _dialogService.ShowMessage("Transfer Failed", $"Failed to copy data to the new folder:\n\n{ex.Message}", DialogType.Error);
+                            return;
                         }
+
+                        // Update Settings
+                        var settings = _settingsManager.Load();
+                        settings.AppRootPath = targetPath;
+                        _settingsManager.Save(settings);
+                        _applicationState.ApplySettings(settings);
+                        _registry.Refresh();
+
+                        // Try delete old directory
+                        try
+                        {
+                            if (Directory.Exists(currentRoot))
+                            {
+                                await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CleanDirectoryAsync(currentRoot);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _dialogService.ShowMessage("Cleanup Warning", $"The data was transferred successfully and settings updated, but some files in the old folder could not be deleted:\n\n{ex.Message}\n\nYou can safely delete the old folder manually.", DialogType.Warning);
+                            RootDirectoryPathInput.Text = targetPath;
+                            return;
+                        }
+
+                        _dialogService.ShowMessage("Success", "The data has been successfully transferred and the root directory updated.", DialogType.Information);
                     }
-                    catch (Exception ex)
+                    else if (confirmResult == DialogResult.No) // Update Reference Only
                     {
-                        _dialogService.ShowMessage("Cleanup Warning", $"The data was transferred successfully and settings updated, but some files in the old folder could not be deleted:\n\n{ex.Message}\n\nYou can safely delete the old folder manually.", DialogType.Warning);
-                        RootDirectoryPathInput.Text = targetPath;
-                        if (playitWasRunning) _playitAgentService.Start();
-                        return;
+                        var settings = _settingsManager.Load();
+                        settings.AppRootPath = targetPath;
+                        _settingsManager.Save(settings);
+                        _applicationState.ApplySettings(settings);
+                        _registry.Refresh();
+
+                        _dialogService.ShowMessage("Success", "Root directory reference updated. No files were moved.", DialogType.Information);
                     }
 
-                    _dialogService.ShowMessage("Success", "The data has been successfully transferred and the root directory updated.", DialogType.Information);
+                    RootDirectoryPathInput.Text = targetPath;
                 }
-                else if (confirmResult == DialogResult.No) // Update Reference Only
+                finally
                 {
-                    var settings = _settingsManager.Load();
-                    settings.AppRootPath = targetPath;
-                    _settingsManager.Save(settings);
-                    _applicationState.ApplySettings(settings);
-                    _registry.Refresh();
-
-                    _dialogService.ShowMessage("Success", "Root directory reference updated. No files were moved.", DialogType.Information);
-                }
-
-                RootDirectoryPathInput.Text = targetPath;
-
-                if (playitWasRunning)
-                {
-                    _playitAgentService.Start();
+                    if (playitWasRunning)
+                    {
+                        _playitAgentService.Start();
+                    }
                 }
             }
             catch (Exception ex)
