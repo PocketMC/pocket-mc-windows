@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 
 namespace PocketMC.Desktop.Infrastructure
 {
@@ -45,10 +45,24 @@ namespace PocketMC.Desktop.Infrastructure
             AppDialogButtons buttons,
             string? primaryButtonText = null,
             string? secondaryButtonText = null,
-            string? tertiaryButtonText = null)
+            string? tertiaryButtonText = null,
+            string? linkText = null,
+            string? linkUrl = null)
         {
             TxtTitle.Text = title;
             TxtMessage.Text = message;
+
+            if (!string.IsNullOrEmpty(linkText) && !string.IsNullOrEmpty(linkUrl))
+            {
+                TxtLinkBlock.Visibility = Visibility.Visible;
+                TxtLink.NavigateUri = new Uri(linkUrl);
+                TxtLink.Inlines.Clear();
+                TxtLink.Inlines.Add(linkText);
+            }
+            else
+            {
+                TxtLinkBlock.Visibility = Visibility.Collapsed;
+            }
 
             // Icon + accent color by type
             switch (type)
@@ -161,6 +175,23 @@ namespace PocketMC.Desktop.Infrastructure
                 e.Handled = true;
             }
             base.OnKeyDown(e);
+        }
+
+        private void TxtLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = e.Uri.AbsoluteUri,
+                    UseShellExecute = true
+                });
+                e.Handled = true;
+            }
+            catch
+            {
+                // Best effort
+            }
         }
     }
 

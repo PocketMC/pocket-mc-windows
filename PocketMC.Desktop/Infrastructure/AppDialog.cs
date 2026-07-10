@@ -45,10 +45,12 @@ namespace PocketMC.Desktop.Infrastructure
             AppDialogButtons buttons,
             string? primaryButtonText = null,
             string? secondaryButtonText = null,
-            string? tertiaryButtonText = null)
+            string? tertiaryButtonText = null,
+            string? linkText = null,
+            string? linkUrl = null)
         {
             var dialog = new AppDialogWindow();
-            dialog.Configure(title, message, type, buttons, primaryButtonText, secondaryButtonText, tertiaryButtonText);
+            dialog.Configure(title, message, type, buttons, primaryButtonText, secondaryButtonText, tertiaryButtonText, linkText, linkUrl);
 
             // Try to set owner to the main window for proper modality
             try

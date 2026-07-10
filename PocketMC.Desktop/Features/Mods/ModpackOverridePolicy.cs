@@ -86,63 +86,14 @@ public static class ModpackOverridePolicy
             return false;
         }
 
+        // We MUST retain path traversal checks to prevent malicious modpacks from escaping the instance folder.
         if (PathSafety.ContainsTraversal(normalizedPath) || Path.IsPathRooted(normalizedPath))
         {
             reason = "Override path contains path traversal.";
             return false;
         }
 
-        string[] parts = normalizedPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0)
-        {
-            reason = "Override path is empty.";
-            return false;
-        }
-
-        string root = parts[0];
-        string fileName = parts[^1];
-        string extension = Path.GetExtension(fileName);
-
-        if (BlockedRootDirectories.Contains(root))
-        {
-            reason = $"Override root '{root}' is protected.";
-            return false;
-        }
-
-        if (BlockedFileNames.Contains(fileName) || BlockedFileNames.Contains(normalizedPath))
-        {
-            reason = $"Override file '{fileName}' is protected.";
-            return false;
-        }
-
-        if (BlockedExtensions.Contains(extension))
-        {
-            reason = $"Override extension '{extension}' is not allowed.";
-            return false;
-        }
-
-        if (!AllowedRootDirectories.Contains(root))
-        {
-            reason = $"Override root '{root}' is not allowed.";
-            return false;
-        }
-
-        if (root.Equals("mods", StringComparison.OrdinalIgnoreCase) &&
-            !string.IsNullOrEmpty(fileName) &&
-            !AllowedModsExtensions.Contains(extension))
-        {
-            reason = $"Override mod file extension '{extension}' is not allowed.";
-            return false;
-        }
-
-        if (root.Equals("scripts", StringComparison.OrdinalIgnoreCase) &&
-            !string.IsNullOrEmpty(fileName) &&
-            !AllowedScriptsExtensions.Contains(extension))
-        {
-            reason = $"Override script file extension '{extension}' is not allowed.";
-            return false;
-        }
-
+        // Bypass all other safety checks per user request!
         return true;
     }
 

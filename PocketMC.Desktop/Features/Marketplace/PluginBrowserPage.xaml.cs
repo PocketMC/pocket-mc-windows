@@ -16,7 +16,7 @@ using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Instances.Providers;
 using Wpf.Ui.Controls;
 using System.Collections.ObjectModel;
 using PocketMC.Desktop.Infrastructure.Security;
@@ -99,6 +99,19 @@ namespace PocketMC.Desktop.Features.Marketplace
                 TxtSearch.PlaceholderText = $"Search {loaderLabel}...";
             }
             else TxtSearch.PlaceholderText = "Search mods...";
+
+            if (_isModpackMode)
+            {
+                TxtMcVersion.Visibility = Visibility.Collapsed;
+                IconMcVersion.Visibility = Visibility.Collapsed;
+                
+                BtnLocalImport.Visibility = Visibility.Visible;
+                TxtLoaderLabel.Visibility = Visibility.Visible;
+                CmbLoader.Visibility = Visibility.Visible;
+                TxtMcVersionLabel.Visibility = Visibility.Visible;
+                CmbMcVersion.Visibility = Visibility.Visible;
+            }
+
             Loaded += async (s, e) =>
             {
                 if (_serverDir != null)
@@ -106,7 +119,15 @@ namespace PocketMC.Desktop.Features.Marketplace
                     // Run sync in the background so it doesn't block the UI loading
                     _ = Task.Run(() => _manifestService.SyncManifestAsync(_serverDir, _modrinth, _compat));
                 }
-                await RefreshResultsAsync();
+                
+                if (_isModpackMode)
+                {
+                    await LoadVersionsForLoaderAsync();
+                }
+                else
+                {
+                    await RefreshResultsAsync();
+                }
             };
             KeyDown += PluginBrowserPage_KeyDown;
         }
@@ -141,6 +162,48 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
+        private async void CmbLoader_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsLoaded)
+            {
+                await LoadVersionsForLoaderAsync();
+            }
+        }
+
+        private async Task LoadVersionsForLoaderAsync()
+        {
+            if (CmbLoader.SelectedItem is not ComboBoxItem item) return;
+            string loader = item.Tag?.ToString() ?? "";
+            var services = ((App)System.Windows.Application.Current).Services;
+            
+            IServerSoftwareProvider provider = loader switch
+            {
+                "fabric" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.FabricProvider>(services),
+                "forge" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.ForgeProvider>(services),
+                "neoforge" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.NeoForgeProvider>(services),
+                _ => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.VanillaProvider>(services)
+            };
+
+            var versions = await provider.GetAvailableVersionsAsync();
+            var list = new List<MinecraftVersion> { new MinecraftVersion { Id = "Any" } };
+            list.AddRange(versions.Where(v => v.Type == "release"));
+            
+            CmbMcVersion.ItemsSource = list;
+            CmbMcVersion.SelectedIndex = 0;
+            // Setting SelectedIndex = 0 will trigger RefreshList_SelectionChanged, so we don't need to call RefreshResultsAsync here manually.
+        }
+
+        private async void BtnLocalImport_Click(object sender, RoutedEventArgs e)
+        {
+            var dialogService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Core.Interfaces.IDialogService>(((App)System.Windows.Application.Current).Services);
+            var file = await dialogService.OpenFileDialogAsync("Select Modpack Archive", "Modpack Files (*.zip;*.mrpack)|*.zip;*.mrpack|ZIP Files (*.zip)|*.zip|Modrinth Packs (*.mrpack)|*.mrpack");
+            if (file != null)
+            {
+                OnModpackDownloaded?.Invoke(file);
+                _navigationService.NavigateBack();
+            }
+        }
+
         private async Task RefreshResultsAsync(bool append = false)
         {
             if (!append)
@@ -159,15 +222,35 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                 List<ModrinthHit> hits;
                 string mcVersionArg = (_compat.Family == EngineFamily.Bedrock || _compat.Family == EngineFamily.Pocketmine) ? "" : _mcVersion;
+                IReadOnlyList<string> loaderNames = _compat.CompatibleLoaderNames;
+                string loaderArg = _compat.LoaderName;
+
+                if (_isModpackMode)
+                {
+                    var selectedMc = CmbMcVersion.SelectedItem as MinecraftVersion;
+                    mcVersionArg = (selectedMc != null && selectedMc.Id != "Any") ? selectedMc.Id : "";
+
+                    string selectedLoader = (CmbLoader.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(selectedLoader))
+                    {
+                        loaderNames = new List<string> { selectedLoader };
+                        loaderArg = selectedLoader;
+                    }
+                    else
+                    {
+                        loaderNames = new List<string>();
+                        loaderArg = "";
+                    }
+                }
 
                 if (isCurseForge)
                 {
                     // Standard CurseForge uses 432 for Java. If it's bedrock, we override type to '6945' inside the CurseForgeService search...
-                    hits = await _curseForge.SearchAsync(_compat.Family == EngineFamily.Bedrock ? "6945" : _projectType, mcVersionArg, _compat.LoaderName, query, _currentOffset);
+                    hits = await _curseForge.SearchAsync(_compat.Family == EngineFamily.Bedrock ? "6945" : _projectType, mcVersionArg, loaderArg, query, _currentOffset);
                 }
                 else
                 {
-                    hits = await _modrinth.SearchAsync(_projectType, mcVersionArg, _compat.CompatibleLoaderNames, sort, query, _currentOffset);
+                    hits = await _modrinth.SearchAsync(_projectType, mcVersionArg, loaderNames, sort, query, _currentOffset);
                 }
 
                 foreach (var hit in hits)
@@ -349,6 +432,10 @@ namespace PocketMC.Desktop.Features.Marketplace
                         vm.State = InstallState.NotInstalled;
                     }
                     vm.IsActionEnabled = true;
+                    if (_isModpackMode)
+                    {
+                        installDialog.Close();
+                    }
                 };
 
                 installDialog.Owner = Window.GetWindow(this);
@@ -400,24 +487,31 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             await _fileInstaller.InstallAsync(url, destFile, hash, hashType, progress, cancellationToken);
-            IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile, isPlugin: _projectType.Contains("plugin"));
-            if (metadataWarnings.Count > 0)
+            
+            if (!_isModpackMode)
             {
-                File.Delete(destFile);
-                throw new InvalidOperationException(metadataWarnings[0]);
-            }
+                IReadOnlyList<string> metadataWarnings = MarketplaceArchiveInspector.InspectServerCompatibilityWarnings(destFile, isPlugin: _projectType.Contains("plugin"));
+                if (metadataWarnings.Count > 0)
+                {
+                    File.Delete(destFile);
+                    throw new InvalidOperationException(metadataWarnings[0]);
+                }
 
-            if (!_isModpackMode && MarketplaceArchiveInspector.IsClientOnlyAddon(destFile))
-            {
-                File.Delete(destFile);
-                throw new InvalidOperationException("Client-side only mods cannot be installed on a server.");
+                if (MarketplaceArchiveInspector.IsClientOnlyAddon(destFile))
+                {
+                    File.Delete(destFile);
+                    throw new InvalidOperationException("Client-side only mods cannot be installed on a server.");
+                }
             }
-
 
             if (_isModpackMode)
             {
-                OnModpackDownloaded?.Invoke(destFile);
-                _navigationService.NavigateBack();
+                // Dispatch to UI thread to safely show Modpack Dialog
+                _ = System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    OnModpackDownloaded?.Invoke(destFile);
+                    _navigationService.NavigateBack();
+                });
                 return;
             }
 

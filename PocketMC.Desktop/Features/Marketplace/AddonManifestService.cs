@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using PocketMC.Desktop.Infrastructure.FileSystem;
 using PocketMC.Desktop.Infrastructure.Security;
 using PocketMC.Domain.Models;
+using System.Threading;
+using System.Collections.Concurrent;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -40,6 +42,12 @@ namespace PocketMC.Desktop.Features.Marketplace
     public class AddonManifestService
     {
         private const string ManifestFileName = "addon_manifest.json";
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new(StringComparer.OrdinalIgnoreCase);
+
+        private SemaphoreSlim GetLock(string serverDir)
+        {
+            return _locks.GetOrAdd(serverDir, _ => new SemaphoreSlim(1, 1));
+        }
 
         public async Task<AddonManifest> LoadManifestAsync(string serverDir)
         {
@@ -107,95 +115,131 @@ namespace PocketMC.Desktop.Features.Marketplace
             string? downloadUrl = null,
             string? projectSlug = null)
         {
-            var manifest = await LoadManifestAsync(serverDir);
-            string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
-
-            // Look up existing entry to preserve properties
-            var existing = manifest.Entries.FirstOrDefault(e => e.ProjectId == projectId && e.Provider == provider);
-            
-            if (existing == null && (!string.IsNullOrWhiteSpace(projectTitle) || !string.IsNullOrWhiteSpace(projectSlug)))
+            var sem = GetLock(serverDir);
+            await sem.WaitAsync();
+            try
             {
-                existing = manifest.Entries.FirstOrDefault(e =>
+                var manifest = await LoadManifestAsync(serverDir);
+                string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(fileName);
+
+                // Look up existing entry to preserve properties
+                var existing = manifest.Entries.FirstOrDefault(e => e.ProjectId == projectId && e.Provider == provider);
+                
+                if (existing == null && (!string.IsNullOrWhiteSpace(projectTitle) || !string.IsNullOrWhiteSpace(projectSlug)))
+                {
+                    existing = manifest.Entries.FirstOrDefault(e =>
+                        (!string.IsNullOrWhiteSpace(projectTitle) && e.ProjectTitle != null && e.ProjectTitle.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(projectSlug) && e.ProjectSlug != null && e.ProjectSlug.Equals(projectSlug, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(projectTitle) && e.DisplayName != null && e.DisplayName.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
+                        e.FileName.Equals(safeFileName, StringComparison.OrdinalIgnoreCase)
+                    );
+                }
+
+                projectSlug ??= existing?.ProjectSlug;
+
+                projectTitle ??= existing?.ProjectTitle;
+                iconUrl ??= existing?.IconUrl;
+                displayName ??= existing?.DisplayName;
+                clientSide ??= existing?.ClientSide;
+                serverSide ??= existing?.ServerSide;
+                fileHash ??= existing?.FileHash;
+                fileHashType ??= existing?.FileHashType;
+                minecraftVersion ??= existing?.MinecraftVersion;
+                loader ??= existing?.Loader;
+                downloadUrl ??= existing?.DownloadUrl;
+
+                // Remove any existing entry for this project to avoid duplicates (effectively an "update")
+                manifest.Entries.RemoveAll(e =>
+                    (e.ProjectId == projectId && e.Provider == provider) ||
+                    e.FileName.Equals(safeFileName, StringComparison.OrdinalIgnoreCase) ||
                     (!string.IsNullOrWhiteSpace(projectTitle) && e.ProjectTitle != null && e.ProjectTitle.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
                     (!string.IsNullOrWhiteSpace(projectSlug) && e.ProjectSlug != null && e.ProjectSlug.Equals(projectSlug, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrWhiteSpace(projectTitle) && e.DisplayName != null && e.DisplayName.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
-                    e.FileName.Equals(safeFileName, StringComparison.OrdinalIgnoreCase)
+                    (!string.IsNullOrWhiteSpace(projectTitle) && e.DisplayName != null && e.DisplayName.Equals(projectTitle, StringComparison.OrdinalIgnoreCase))
                 );
+
+                manifest.Entries.Add(new AddonManifestEntry
+                {
+                    Provider = provider,
+                    ProjectId = projectId,
+                    VersionId = versionId,
+                    FileName = safeFileName,
+                    InstalledAt = DateTime.UtcNow,
+                    ProjectTitle = projectTitle,
+                    ProjectSlug = projectSlug,
+                    IconUrl = iconUrl,
+                    DisplayName = displayName,
+                    ClientSide = clientSide,
+                    ServerSide = serverSide,
+                    FileHash = fileHash,
+                    FileHashType = fileHashType,
+                    MinecraftVersion = minecraftVersion,
+                    Loader = loader,
+                    DownloadUrl = downloadUrl
+                });
+
+                await SaveManifestAsync(serverDir, manifest);
             }
-
-            projectSlug ??= existing?.ProjectSlug;
-
-            projectTitle ??= existing?.ProjectTitle;
-            iconUrl ??= existing?.IconUrl;
-            displayName ??= existing?.DisplayName;
-            clientSide ??= existing?.ClientSide;
-            serverSide ??= existing?.ServerSide;
-            fileHash ??= existing?.FileHash;
-            fileHashType ??= existing?.FileHashType;
-            minecraftVersion ??= existing?.MinecraftVersion;
-            loader ??= existing?.Loader;
-            downloadUrl ??= existing?.DownloadUrl;
-
-            // Remove any existing entry for this project to avoid duplicates (effectively an "update")
-            manifest.Entries.RemoveAll(e =>
-                (e.ProjectId == projectId && e.Provider == provider) ||
-                e.FileName.Equals(safeFileName, StringComparison.OrdinalIgnoreCase) ||
-                (!string.IsNullOrWhiteSpace(projectTitle) && e.ProjectTitle != null && e.ProjectTitle.Equals(projectTitle, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrWhiteSpace(projectSlug) && e.ProjectSlug != null && e.ProjectSlug.Equals(projectSlug, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrWhiteSpace(projectTitle) && e.DisplayName != null && e.DisplayName.Equals(projectTitle, StringComparison.OrdinalIgnoreCase))
-            );
-
-            manifest.Entries.Add(new AddonManifestEntry
+            finally
             {
-                Provider = provider,
-                ProjectId = projectId,
-                VersionId = versionId,
-                FileName = safeFileName,
-                InstalledAt = DateTime.UtcNow,
-                ProjectTitle = projectTitle,
-                ProjectSlug = projectSlug,
-                IconUrl = iconUrl,
-                DisplayName = displayName,
-                ClientSide = clientSide,
-                ServerSide = serverSide,
-                FileHash = fileHash,
-                FileHashType = fileHashType,
-                MinecraftVersion = minecraftVersion,
-                Loader = loader,
-                DownloadUrl = downloadUrl
-            });
-
-            await SaveManifestAsync(serverDir, manifest);
+                sem.Release();
+            }
         }
 
         public async Task UpdateManifestFileNameAsync(string serverDir, string oldFileName, string newFileName)
         {
-            var manifest = await LoadManifestAsync(serverDir);
-            var entry = manifest.Entries.FirstOrDefault(e => e.FileName.Equals(oldFileName, StringComparison.OrdinalIgnoreCase));
-            if (entry != null)
+            var sem = GetLock(serverDir);
+            await sem.WaitAsync();
+            try
             {
-                entry.FileName = newFileName;
-                await SaveManifestAsync(serverDir, manifest);
+                var manifest = await LoadManifestAsync(serverDir);
+                var entry = manifest.Entries.FirstOrDefault(e => e.FileName.Equals(oldFileName, StringComparison.OrdinalIgnoreCase));
+                if (entry != null)
+                {
+                    entry.FileName = newFileName;
+                    await SaveManifestAsync(serverDir, manifest);
+                }
+            }
+            finally
+            {
+                sem.Release();
             }
         }
 
         public async Task UnregisterAsync(string serverDir, string provider, string projectId)
         {
-            var manifest = await LoadManifestAsync(serverDir);
-            int count = manifest.Entries.RemoveAll(e => e.ProjectId == projectId && e.Provider == provider);
-            if (count > 0)
+            var sem = GetLock(serverDir);
+            await sem.WaitAsync();
+            try
             {
-                await SaveManifestAsync(serverDir, manifest);
+                var manifest = await LoadManifestAsync(serverDir);
+                int count = manifest.Entries.RemoveAll(e => e.ProjectId == projectId && e.Provider == provider);
+                if (count > 0)
+                {
+                    await SaveManifestAsync(serverDir, manifest);
+                }
+            }
+            finally
+            {
+                sem.Release();
             }
         }
 
         public async Task UnregisterByFileNameAsync(string serverDir, string fileName)
         {
-            var manifest = await LoadManifestAsync(serverDir);
-            int count = manifest.Entries.RemoveAll(e => e.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
-            if (count > 0)
+            var sem = GetLock(serverDir);
+            await sem.WaitAsync();
+            try
             {
-                await SaveManifestAsync(serverDir, manifest);
+                var manifest = await LoadManifestAsync(serverDir);
+                int count = manifest.Entries.RemoveAll(e => e.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+                if (count > 0)
+                {
+                    await SaveManifestAsync(serverDir, manifest);
+                }
+            }
+            finally
+            {
+                sem.Release();
             }
         }
 
@@ -338,29 +382,38 @@ namespace PocketMC.Desktop.Features.Marketplace
             // 3. Re-load manifest to apply changes (avoids race condition if user installs addons while this was running)
             if (entriesToRemove.Count > 0 || newEntries.Count > 0)
             {
-                var latestManifest = await LoadManifestAsync(serverDir);
-                bool modified = false;
-
-                foreach (var entry in entriesToRemove)
+                var sem = GetLock(serverDir);
+                await sem.WaitAsync();
+                try
                 {
-                    if (latestManifest.Entries.RemoveAll(e => e.FileName == entry.FileName && e.ProjectId == entry.ProjectId) > 0)
+                    var latestManifest = await LoadManifestAsync(serverDir);
+                    bool modified = false;
+
+                    foreach (var entry in entriesToRemove)
                     {
-                        modified = true;
+                        if (latestManifest.Entries.RemoveAll(e => e.FileName == entry.FileName && e.ProjectId == entry.ProjectId) > 0)
+                        {
+                            modified = true;
+                        }
+                    }
+
+                    foreach (var entry in newEntries)
+                    {
+                        if (!latestManifest.Entries.Any(e => e.FileName == entry.FileName))
+                        {
+                            latestManifest.Entries.Add(entry);
+                            modified = true;
+                        }
+                    }
+
+                    if (modified)
+                    {
+                        await SaveManifestAsync(serverDir, latestManifest);
                     }
                 }
-
-                foreach (var entry in newEntries)
+                finally
                 {
-                    if (!latestManifest.Entries.Any(e => e.FileName == entry.FileName))
-                    {
-                        latestManifest.Entries.Add(entry);
-                        modified = true;
-                    }
-                }
-
-                if (modified)
-                {
-                    await SaveManifestAsync(serverDir, latestManifest);
+                    sem.Release();
                 }
             }
         }

@@ -67,34 +67,41 @@ public sealed class AddonInventoryService
             
             var itemsToKeep = new List<AddonInventoryItem>();
             
-            foreach (var kindGroup in items.GroupBy(i => i.Kind))
+            if (metadata.IsModpack)
             {
-                var groupedById = kindGroup.GroupBy(i => !string.IsNullOrEmpty(i.ModId) ? i.ModId.ToLowerInvariant() : i.DisplayName.ToLowerInvariant());
-                
-                foreach (var group in groupedById)
+                itemsToKeep.AddRange(items);
+            }
+            else
+            {
+                foreach (var kindGroup in items.GroupBy(i => i.Kind))
                 {
-                    if (group.Count() == 1)
-                    {
-                        itemsToKeep.Add(group.First());
-                        continue;
-                    }
+                    var groupedById = kindGroup.GroupBy(i => !string.IsNullOrEmpty(i.ModId) ? i.ModId.ToLowerInvariant() : i.DisplayName.ToLowerInvariant());
                     
-                    var sorted = group
-                        .OrderBy(i => i.Provenance == null ? 1 : 0) // Prefer tracked over manual
-                        .ThenByDescending(i => i.LastModifiedUtc) // Prefer newest file
-                        .ToList();
-                        
-                    var winner = sorted.First();
-                    itemsToKeep.Add(winner);
-                    
-                    foreach (var loser in sorted.Skip(1))
+                    foreach (var group in groupedById)
                     {
-                        try
+                        if (group.Count() == 1)
                         {
-                            if (File.Exists(loser.FullPath)) File.Delete(loser.FullPath);
-                            if (!string.IsNullOrEmpty(loser.DisabledPath) && File.Exists(loser.DisabledPath)) File.Delete(loser.DisabledPath);
+                            itemsToKeep.Add(group.First());
+                            continue;
                         }
-                        catch { /* Ignore locks */ }
+                        
+                        var sorted = group
+                            .OrderBy(i => i.Provenance == null ? 1 : 0) // Prefer tracked over manual
+                            .ThenByDescending(i => i.LastModifiedUtc) // Prefer newest file
+                            .ToList();
+                            
+                        var winner = sorted.First();
+                        itemsToKeep.Add(winner);
+                        
+                        foreach (var loser in sorted.Skip(1))
+                        {
+                            try
+                            {
+                                if (File.Exists(loser.FullPath)) File.Delete(loser.FullPath);
+                                if (!string.IsNullOrEmpty(loser.DisabledPath) && File.Exists(loser.DisabledPath)) File.Delete(loser.DisabledPath);
+                            }
+                            catch { /* Ignore locks */ }
+                        }
                     }
                 }
             }
@@ -207,6 +214,11 @@ public sealed class AddonInventoryService
                          !isCompatibleLoader ||
                          isMinecraftIncompatible ||
                          isLoaderVersionIncompatible;
+
+        if (metadata.IsModpack)
+        {
+            isInvalid = false;
+        }
 
         if (isInvalid)
         {

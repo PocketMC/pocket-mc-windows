@@ -418,6 +418,41 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
         }
 
+        private void BtnImportModpack_Click(object sender, RoutedEventArgs e)
+        {
+            var compat = new EngineCompatibility("Fabric"); // Dummy for Modpack Mode
+
+            var browserPage = (PluginBrowserPage)ActivatorUtilities.CreateInstance(
+                _serviceProvider,
+                typeof(PluginBrowserPage),
+                new object[]
+                {
+                    "", // serverDir
+                    "", // mcVersion
+                    "project_type:modpack", // projectType
+                    (Action)(() => {}), // onCompleted
+                    compat
+                });
+
+            browserPage.OnModpackDownloaded += (filePath) =>
+            {
+                var dialog = ActivatorUtilities.CreateInstance<ModpackInstallDialogWindow>(_serviceProvider, filePath);
+                var mainWindow = System.Windows.Application.Current?.MainWindow;
+                if (mainWindow != null && mainWindow.IsLoaded)
+                {
+                    dialog.Owner = mainWindow;
+                }
+                dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                dialog.ShowDialog();
+            };
+
+            _navigationService.NavigateToDetailPage(
+                browserPage,
+                "Marketplace - Modpacks",
+                DetailRouteKind.PluginBrowser,
+                DetailBackNavigation.PreviousDetail);
+        }
+
         private async void BtnCreate_Click(object sender, RoutedEventArgs e)
         {
             ClearError();

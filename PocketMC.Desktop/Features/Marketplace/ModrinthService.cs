@@ -238,7 +238,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 var facetList = new List<List<string>>();
                 facetList.Add(new List<string> { type });
 
-                if (type == "project_type:mod")
+                if (type == "project_type:mod" || type == "project_type:modpack")
                 {
                     facetList.Add(new List<string> { "server_side:required", "server_side:optional" });
                 }
