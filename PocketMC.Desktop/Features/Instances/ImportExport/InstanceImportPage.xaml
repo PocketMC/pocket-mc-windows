@@ -86,49 +86,172 @@
                           CanContentScroll="False"
                           PanningMode="VerticalOnly">
                 <StackPanel MaxWidth="1040" HorizontalAlignment="Stretch">
+                    <!-- Selection RadioButtons styled as ToggleButtons -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <RadioButton x:Name="RadioPackage"
+                                     Grid.Column="0"
+                                     Content="Import PocketMC Package (.zip)"
+                                     IsChecked="{Binding IsPackageImport, Mode=TwoWay}"
+                                     GroupName="ImportType"
+                                     Style="{StaticResource {x:Type ToggleButton}}"
+                                     MinHeight="40"
+                                     Margin="0,0,8,0"
+                                     HorizontalAlignment="Stretch"
+                                     HorizontalContentAlignment="Center"/>
+                        <RadioButton x:Name="RadioFolder"
+                                     Grid.Column="1"
+                                     Content="Import Existing Server Folder"
+                                     IsChecked="{Binding IsFolderImport, Mode=TwoWay}"
+                                     GroupName="ImportType"
+                                     Style="{StaticResource {x:Type ToggleButton}}"
+                                     MinHeight="40"
+                                     Margin="8,0,0,0"
+                                     HorizontalAlignment="Stretch"
+                                     HorizontalContentAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Card 1: Package Import (.zip) -->
                     <Border Padding="22"
                             CornerRadius="8"
                             BorderThickness="1"
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                             Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                            Margin="0,0,0,16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                            Margin="0,0,0,16"
+                            Visibility="{Binding IsPackageImport, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Text="Import package"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBox Grid.Column="0"
+                                            Text="{Binding ZipPath, UpdateSourceTrigger=PropertyChanged}"
+                                            PlaceholderText="Select a .zip exported from Pocket MC"
+                                            MinHeight="40"
+                                            Margin="0,0,8,0"/>
+                                <ui:Button Grid.Column="1"
+                                           Content="Browse"
+                                           Icon="{ui:SymbolIcon FolderOpen20}"
+                                           Appearance="Secondary"
+                                           MinHeight="40"
+                                           Click="BtnBrowse_Click"/>
+                            </Grid>
 
-                            <StackPanel>
-                                <TextBlock Text="Import package"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                           Margin="0,0,0,8"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <ui:TextBox Grid.Column="0"
-                                                Text="{Binding ZipPath, UpdateSourceTrigger=PropertyChanged}"
-                                                PlaceholderText="Select a .zip exported from Pocket MC"
-                                                MinHeight="40"
-                                                Margin="0,0,8,0"/>
-                                    <ui:Button Grid.Column="1"
-                                               Content="Browse"
-                                               Icon="{ui:SymbolIcon FolderOpen20}"
-                                               Appearance="Secondary"
-                                               MinHeight="40"
-                                               Click="BtnBrowse_Click"/>
-                                </Grid>
+                            <TextBlock Text="Instance name override"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Margin="0,18,0,8"/>
+                            <ui:TextBox Text="{Binding RequestedName, UpdateSourceTrigger=PropertyChanged}"
+                                        PlaceholderText="Optional. Leave blank to use the exported name."
+                                        MinHeight="40"/>
+                        </StackPanel>
+                    </Border>
 
-                                <TextBlock Text="Instance name override"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                           Margin="0,18,0,8"/>
-                                <ui:TextBox Text="{Binding RequestedName, UpdateSourceTrigger=PropertyChanged}"
-                                            PlaceholderText="Optional. Leave blank to use the exported name."
-                                            MinHeight="40"/>
+                    <!-- Card 2: Folder Import (Existing Server) -->
+                    <Border Padding="22"
+                            CornerRadius="8"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            Margin="0,0,0,16"
+                            Visibility="{Binding IsFolderImport, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <!-- Folder Path -->
+                            <TextBlock Text="Server Folder Path"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBox Grid.Column="0"
+                                            Text="{Binding FolderPath, UpdateSourceTrigger=PropertyChanged}"
+                                            PlaceholderText="Select the root folder of your existing Minecraft server"
+                                            MinHeight="40"
+                                            Margin="0,0,8,0"/>
+                                <ui:Button Grid.Column="1"
+                                           Content="Browse Folder"
+                                           Icon="{ui:SymbolIcon FolderOpen20}"
+                                           Appearance="Secondary"
+                                           MinHeight="40"
+                                           Click="BtnBrowseFolder_Click"/>
+                            </Grid>
+
+                            <!-- Server Identity -->
+                            <TextBlock Text="Server Name"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Margin="0,18,0,8"/>
+                            <ui:TextBox Text="{Binding RequestedName, UpdateSourceTrigger=PropertyChanged}"
+                                        PlaceholderText="My Imported Server"
+                                        MinHeight="40"/>
+
+                            <TextBlock Text="Description"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Margin="0,18,0,8"/>
+                            <ui:TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                                        PlaceholderText="Optional. What this instance is for"
+                                        MinHeight="40"/>
+
+                            <!-- Grid for Type & Version side-by-side -->
+                            <Grid Margin="0,18,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Server Type"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                               Margin="0,0,0,8"/>
+                                    <ComboBox SelectedValue="{Binding SelectedServerType, Mode=TwoWay}"
+                                              SelectedValuePath="Tag"
+                                              MinHeight="40"
+                                              HorizontalAlignment="Stretch">
+                                        <ComboBoxItem Tag="Vanilla" Content="Vanilla"/>
+                                        <ComboBoxItem Tag="Paper" Content="Paper"/>
+                                        <ComboBoxItem Tag="Fabric" Content="Fabric"/>
+                                        <ComboBoxItem Tag="Forge" Content="Forge"/>
+                                        <ComboBoxItem Tag="NeoForge" Content="NeoForge"/>
+                                        <ComboBoxItem Tag="Bedrock" Content="Bedrock (BDS)"/>
+                                        <ComboBoxItem Tag="Pocketmine" Content="Pocketmine (PHP)"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Minecraft Version"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                               Margin="0,0,0,8"/>
+                                    <ui:TextBox Text="{Binding MinecraftVersion, UpdateSourceTrigger=PropertyChanged}"
+                                                PlaceholderText="e.g. 1.20.4"
+                                                MinHeight="40"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Options -->
+                            <StackPanel Margin="0,18,0,0">
+                                <CheckBox IsChecked="{Binding ShouldCopyFiles, Mode=TwoWay}"
+                                          Content="Copy files to PocketMC storage instead of moving them (Recommended)"
+                                          Margin="0,0,0,8"/>
+                                <CheckBox IsChecked="{Binding AcceptEula, Mode=TwoWay}"
+                                          Content="Accept the Minecraft End User License Agreement (Eula)"
+                                          Margin="0,0,0,0"/>
                             </StackPanel>
-                        </Grid>
+                        </StackPanel>
                     </Border>
 
                     <Border Margin="0,0,0,16"

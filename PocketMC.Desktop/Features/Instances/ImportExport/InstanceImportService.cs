@@ -1371,8 +1371,261 @@ public sealed class InstanceImportService : IInstanceImportService
         });
     }
 
+    public async Task<InstanceImportResult> ImportLocalFolderAsync(
+        string sourceFolderPath,
+        string requestedName,
+        string serverType,
+        string minecraftVersion,
+        bool copyFiles,
+        IProgress<InstanceTransferProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceFolderPath))
+            throw new ArgumentException("Source folder path cannot be empty.", nameof(sourceFolderPath));
+        if (string.IsNullOrWhiteSpace(requestedName))
+            throw new ArgumentException("Requested name cannot be empty.", nameof(requestedName));
 
+        if (!Directory.Exists(sourceFolderPath))
+        {
+            throw new DirectoryNotFoundException($"Source folder '{sourceFolderPath}' does not exist.");
+        }
 
+        string serversRoot = _pathService.GetServersRoot();
+        if (Path.GetFullPath(sourceFolderPath).StartsWith(Path.GetFullPath(serversRoot), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("The source folder cannot be inside the PocketMC servers storage directory.");
+        }
 
+        _activeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        CancellationToken linkedToken = _activeCts.Token;
+
+        string destinationPath = ResolveUniqueInstancePath(requestedName);
+        bool success = false;
+
+        try
+        {
+            Directory.CreateDirectory(destinationPath);
+
+            if (copyFiles)
+            {
+                Report(progress, "Copying server files...", 10);
+                await CopyDirectoryAsync(sourceFolderPath, destinationPath, progress, linkedToken).ConfigureAwait(false);
+            }
+            else
+            {
+                Report(progress, "Moving server files...", 10);
+                await MoveDirectoryAsync(sourceFolderPath, destinationPath, progress, linkedToken).ConfigureAwait(false);
+            }
+
+            Report(progress, "Configuring instance settings...", 80);
+
+            // Rename the main server jar to server.jar if it doesn't exist (unless it's bedrock or pocketmine which don't run via server.jar)
+            if (!serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) && 
+                !serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
+            {
+                string serverJarPath = Path.Combine(destinationPath, "server.jar");
+                if (!File.Exists(serverJarPath))
+                {
+                    var rootJars = Directory.GetFiles(destinationPath, "*.jar", SearchOption.TopDirectoryOnly);
+                    
+                    // Filter out installers
+                    var candidateJars = rootJars
+                        .Where(f => !Path.GetFileName(f).Contains("installer", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    if (candidateJars.Count > 0)
+                    {
+                        string? targetJar = null;
+
+                        // Prioritize by server type keywords
+                        if (serverType.Equals("Paper", StringComparison.OrdinalIgnoreCase))
+                        {
+                            targetJar = candidateJars.FirstOrDefault(f => Path.GetFileName(f).Contains("paper", StringComparison.OrdinalIgnoreCase));
+                        }
+                        else if (serverType.Equals("Fabric", StringComparison.OrdinalIgnoreCase))
+                        {
+                            targetJar = candidateJars.FirstOrDefault(f => Path.GetFileName(f).Contains("fabric", StringComparison.OrdinalIgnoreCase));
+                        }
+                        else if (serverType.Equals("Vanilla", StringComparison.OrdinalIgnoreCase))
+                        {
+                            targetJar = candidateJars.FirstOrDefault(f => Path.GetFileName(f).Contains("vanilla", StringComparison.OrdinalIgnoreCase) || 
+                                                                         Path.GetFileName(f).Contains("minecraft_server", StringComparison.OrdinalIgnoreCase));
+                        }
+
+                        // Fallback: If no keyword matched, or if we have candidate jars
+                        if (targetJar == null)
+                        {
+                            if (candidateJars.Count == 1)
+                            {
+                                targetJar = candidateJars[0];
+                            }
+                            else
+                            {
+                                // Select the largest jar file (as server jars are typically larger than libraries/configs)
+                                targetJar = candidateJars
+                                    .OrderByDescending(f => new FileInfo(f).Length)
+                                    .FirstOrDefault();
+                            }
+                        }
+
+                        if (targetJar != null && File.Exists(targetJar))
+                        {
+                            try
+                            {
+                                File.Move(targetJar, serverJarPath);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to rename server jar {TargetJar} to server.jar.", targetJar);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Accept EULA
+            string eulaPath = Path.Combine(destinationPath, "eula.txt");
+            await File.WriteAllTextAsync(eulaPath, "eula=true", linkedToken).ConfigureAwait(false);
+
+            // Create metadata
+            var metadata = new InstanceMetadata
+            {
+                Id = Guid.NewGuid(),
+                Name = requestedName,
+                ServerType = serverType,
+                MinecraftVersion = minecraftVersion,
+                LoaderVersion = string.Empty,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // Read max-players from server.properties if available
+            string propsFile = Path.Combine(destinationPath, "server.properties");
+            if (File.Exists(propsFile))
+            {
+                try
+                {
+                    var props = ServerPropertiesParser.Read(propsFile);
+                    if (props.TryGetValue("max-players", out string? maxPlayersStr) && int.TryParse(maxPlayersStr, out int maxPlayers))
+                    {
+                        metadata.MaxPlayers = maxPlayers;
+                    }
+                }
+                catch { }
+            }
+
+            // Check if Geyser is installed
+            bool hasGeyser = false;
+            string[] pluginsDirs = { "plugins", "mods" };
+            foreach (string dir in pluginsDirs)
+            {
+                string dirPath = Path.Combine(destinationPath, dir);
+                if (Directory.Exists(dirPath) && Directory.GetFiles(dirPath, "*Geyser*.jar", SearchOption.AllDirectories).Any())
+                {
+                    hasGeyser = true;
+                    break;
+                }
+            }
+            metadata.HasGeyser = hasGeyser;
+
+            await WriteMetadataAsync(Path.Combine(destinationPath, InstancePathService.MetadataFileName), metadata, linkedToken).ConfigureAwait(false);
+
+            Report(progress, "Registering instance...", 95);
+            _registry.Register(metadata, destinationPath);
+
+            success = true;
+            Report(progress, "Import complete.", 100);
+
+            return new InstanceImportResult
+            {
+                InstanceId = metadata.Id,
+                InstancePath = destinationPath,
+                Metadata = metadata
+            };
+        }
+        catch
+        {
+            if (!success && Directory.Exists(destinationPath))
+            {
+                try { Directory.Delete(destinationPath, true); } catch { }
+            }
+            throw;
+        }
+        finally
+        {
+            _activeCts?.Dispose();
+            _activeCts = null;
+        }
+    }
+
+    private static async Task CopyDirectoryAsync(
+        string sourceDir,
+        string targetDir,
+        IProgress<InstanceTransferProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        var allDirectories = Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories);
+        var allFiles = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
+
+        int totalItems = allDirectories.Length + allFiles.Length;
+        int completedItems = 0;
+
+        foreach (string dirPath in allDirectories)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string relativePath = Path.GetRelativePath(sourceDir, dirPath);
+            Directory.CreateDirectory(Path.Combine(targetDir, relativePath));
+            
+            completedItems++;
+            if (totalItems > 0 && progress != null)
+            {
+                double pct = 10 + (completedItems * 70d / totalItems);
+                Report(progress, "Copying server directories...", pct, relativePath);
+            }
+        }
+
+        foreach (string filePath in allFiles)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string relativePath = Path.GetRelativePath(sourceDir, filePath);
+            string destFilePath = Path.Combine(targetDir, relativePath);
+
+            string? destDir = Path.GetDirectoryName(destFilePath);
+            if (destDir != null)
+            {
+                Directory.CreateDirectory(destDir);
+            }
+
+            await using (var sourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, useAsync: true))
+            await using (var destStream = new FileStream(destFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+            {
+                await sourceStream.CopyToAsync(destStream, cancellationToken).ConfigureAwait(false);
+            }
+
+            completedItems++;
+            if (totalItems > 0 && progress != null)
+            {
+                double pct = 10 + (completedItems * 70d / totalItems);
+                Report(progress, "Copying server files...", pct, relativePath);
+            }
+        }
+    }
+
+    private static async Task MoveDirectoryAsync(
+        string sourceDir,
+        string targetDir,
+        IProgress<InstanceTransferProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            Directory.Move(sourceDir, targetDir);
+            Report(progress, "Moved server files.", 80);
+        }
+        catch (IOException)
+        {
+            await CopyDirectoryAsync(sourceDir, targetDir, progress, cancellationToken).ConfigureAwait(false);
+            Directory.Delete(sourceDir, true);
+        }
+    }
 }
 

@@ -150,6 +150,7 @@ public class ServerProcess : IDisposable
         }
         catch
         {
+            SetState(ServerState.Stopped);
             CloseSessionLog();
             throw;
         }

@@ -1,3 +1,7 @@
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -19,6 +23,15 @@ public sealed class InstanceImportViewModel : ObservableObject
     private bool _isComplete;
     private InstanceImportResult? _importResult;
     private AddonUnavailableException? _unavailableAddon;
+
+    private bool _isPackageImport = true;
+    private bool _isFolderImport = false;
+    private string _folderPath = string.Empty;
+    private string _description = string.Empty;
+    private string _selectedServerType = "Vanilla";
+    private string _minecraftVersion = string.Empty;
+    private bool _shouldCopyFiles = true;
+    private bool _acceptEula = true;
 
     public InstanceImportViewModel(IInstanceImportService importService)
     {
@@ -127,7 +140,95 @@ public sealed class InstanceImportViewModel : ObservableObject
         }
     }
 
-    public bool CanImport => !IsImporting && !string.IsNullOrWhiteSpace(ZipPath);
+    public bool IsPackageImport
+    {
+        get => _isPackageImport;
+        set
+        {
+            if (SetProperty(ref _isPackageImport, value))
+            {
+                if (value) IsFolderImport = false;
+                OnPropertyChanged(nameof(CanImport));
+                ImportCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool IsFolderImport
+    {
+        get => _isFolderImport;
+        set
+        {
+            if (SetProperty(ref _isFolderImport, value))
+            {
+                if (value) IsPackageImport = false;
+                OnPropertyChanged(nameof(CanImport));
+                ImportCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public string FolderPath
+    {
+        get => _folderPath;
+        set
+        {
+            if (SetProperty(ref _folderPath, value))
+            {
+                OnPropertyChanged(nameof(CanImport));
+                ImportCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public string Description
+    {
+        get => _description;
+        set => SetProperty(ref _description, value);
+    }
+
+    public string SelectedServerType
+    {
+        get => _selectedServerType;
+        set => SetProperty(ref _selectedServerType, value);
+    }
+
+    public string MinecraftVersion
+    {
+        get => _minecraftVersion;
+        set
+        {
+            if (SetProperty(ref _minecraftVersion, value))
+            {
+                OnPropertyChanged(nameof(CanImport));
+                ImportCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool ShouldCopyFiles
+    {
+        get => _shouldCopyFiles;
+        set => SetProperty(ref _shouldCopyFiles, value);
+    }
+
+    public bool AcceptEula
+    {
+        get => _acceptEula;
+        set
+        {
+            if (SetProperty(ref _acceptEula, value))
+            {
+                OnPropertyChanged(nameof(CanImport));
+                ImportCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool CanImport => !IsImporting && (
+        (IsPackageImport && !string.IsNullOrWhiteSpace(ZipPath)) ||
+        (IsFolderImport && !string.IsNullOrWhiteSpace(FolderPath) && !string.IsNullOrWhiteSpace(MinecraftVersion) && AcceptEula)
+    );
     public bool HasUnavailableAddon => UnavailableAddon is not null;
     public string? UnavailableAddonDetails => UnavailableAddon is null
         ? null
@@ -147,16 +248,35 @@ public sealed class InstanceImportViewModel : ObservableObject
 
         try
         {
-            CurrentStep = "Starting import...";
-            var progress = new Progress<InstanceTransferProgress>(ApplyProgress);
-            InstanceImportResult result = await _importService.ImportAsync(
-                    new InstanceImportRequest
-                    {
-                        ZipPath = ZipPath.Trim(),
-                        RequestedName = string.IsNullOrWhiteSpace(RequestedName) ? null : RequestedName.Trim()
-                    },
-                    progress,
-                    cancellation.Token);
+            InstanceImportResult result;
+            if (IsPackageImport)
+            {
+                CurrentStep = "Starting import...";
+                var progress = new Progress<InstanceTransferProgress>(ApplyProgress);
+                result = await _importService.ImportAsync(
+                        new InstanceImportRequest
+                        {
+                            ZipPath = ZipPath.Trim(),
+                            RequestedName = string.IsNullOrWhiteSpace(RequestedName) ? null : RequestedName.Trim()
+                        },
+                        progress,
+                        cancellation.Token);
+            }
+            else
+            {
+                CurrentStep = "Starting folder import...";
+                var progress = new Progress<InstanceTransferProgress>(ApplyProgress);
+                string defaultName = Path.GetFileName(FolderPath.Trim());
+                string importName = string.IsNullOrWhiteSpace(RequestedName) ? defaultName : RequestedName.Trim();
+                result = await _importService.ImportLocalFolderAsync(
+                        FolderPath.Trim(),
+                        importName,
+                        SelectedServerType,
+                        MinecraftVersion.Trim(),
+                        ShouldCopyFiles,
+                        progress,
+                        cancellation.Token);
+            }
 
             ImportResult = result;
             IsComplete = true;
