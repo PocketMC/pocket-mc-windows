@@ -187,7 +187,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     "https://aka.ms/MinecraftEULA"
                 );
 
-                if (result == PocketMC.Desktop.Core.Interfaces.DialogResult.Ok)
+                if (result == PocketMC.Desktop.Core.Interfaces.DialogResult.Yes)
                 {
                     if (_createdInstanceMetadata != null && _instancePath != null)
                     {
