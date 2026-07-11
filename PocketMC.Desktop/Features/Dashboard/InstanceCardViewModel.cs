@@ -1,3 +1,4 @@
+﻿using PocketMC.Application.Services.Networking;
 using System;
 using System.IO;
 using System.Linq;
@@ -7,10 +8,11 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Features.Networking;
+using PocketMC.Infrastructure.Networking;
 
 namespace PocketMC.Desktop.Features.Dashboard;
 
@@ -19,7 +21,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private InstanceMetadata _metadata;
     private readonly ServerProcessManager _serverProcessManager;
     private readonly IServerLifecycleService _lifecycleService;
-    private readonly PocketMC.Desktop.Features.Shell.ApplicationState _appState;
+    private readonly PocketMC.Application.Services.Shell.ApplicationState _appState;
     private ServerState _state = ServerState.Stopped;
     private string? _countdownText;
     private string _cpuText = "· · ·";
@@ -40,10 +42,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private bool _isTunnelResolving;
 
     private readonly InstanceRegistry _registry;
-    private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
+    private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
     private readonly ISimpleVoiceChatDetector _voiceChatDetector;
 
-    public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager, IServerLifecycleService lifecycleService, PocketMC.Desktop.Features.Shell.ApplicationState appState, InstanceRegistry registry, PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector, ISimpleVoiceChatDetector voiceChatDetector)
+    public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager, IServerLifecycleService lifecycleService, PocketMC.Application.Services.Shell.ApplicationState appState, InstanceRegistry registry, PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector, ISimpleVoiceChatDetector voiceChatDetector)
     {
         _metadata = metadata;
         _serverProcessManager = serverProcessManager;

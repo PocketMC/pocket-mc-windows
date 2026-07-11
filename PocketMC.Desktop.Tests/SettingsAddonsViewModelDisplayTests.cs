@@ -1,10 +1,11 @@
 using PocketMC.Desktop.Features.Settings.ViewModels;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
@@ -431,9 +432,8 @@ namespace PocketMC.Desktop.Tests
         public bool IsWaitingToRestart(Guid instanceId) => false;
         public void AbortRestartDelay(Guid instanceId) { }
         public Task RestartAsync(Guid instanceId) => Task.CompletedTask;
-        public ServerProcess? GetProcess(Guid instanceId) => null;
+        public IServerProcess? GetProcess(Guid instanceId) => null;
         public DateTime? GetSessionStartTime(Guid instanceId) => null;
         public Task ReleaseInstanceAsync(Guid instanceId) => Task.CompletedTask;
     }
 }
-

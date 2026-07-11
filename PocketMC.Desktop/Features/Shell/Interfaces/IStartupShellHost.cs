@@ -11,7 +11,7 @@ namespace PocketMC.Desktop.Features.Shell.Interfaces
 
         void ShowError(string title, string message);
         void ShutdownApplication();
-        void ShowWhatsNewDialog(PocketMC.Desktop.Features.WhatsNew.ChangelogEntry? changelog, string version);
+        void ShowWhatsNewDialog(PocketMC.Infrastructure.WhatsNew.ChangelogEntry? changelog, string version);
     }
 }
 

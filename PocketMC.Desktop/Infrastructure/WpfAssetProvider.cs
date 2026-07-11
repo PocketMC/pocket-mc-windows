@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Windows;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 
 namespace PocketMC.Desktop.Infrastructure
 {

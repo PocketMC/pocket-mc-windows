@@ -1,3 +1,6 @@
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Mods;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Settings.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -7,23 +10,28 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Setup;
+using PocketMC.Infrastructure.Security;
+using PocketMC.Infrastructure.Backups;
+using PocketMC.Application.Services.Setup;
+using PocketMC.Infrastructure.Java;
 using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Infrastructure.Process;
-using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Infrastructure.FileSystem;
-using PocketMC.Desktop.Features.Settings;
+using PocketMC.Infrastructure.Networking;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Core.Presentation;
-using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
+using PocketMC.Infrastructure.Marketplace;
 using System.Windows.Media;
+using PocketMC.Infrastructure;
+using PocketMC.Infrastructure.OS;
 using PocketMC.Desktop.Infrastructure;
 using System.Threading;
 
@@ -449,7 +457,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
             {
                 if (!IsPocketmine)
                 {
-                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    var metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f);
                     if (!IsLoaderCompatible(metadata.LoaderType))
                     {
                         var res = await _dialogService.ShowDialogAsync("Incompatible Plugin Warning",
@@ -579,7 +587,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
 
                 if (!IsBedrockDedicated && !IsPocketmine)
                 {
-                    var metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f);
+                    var metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f);
                     if (!IsLoaderCompatible(metadata.LoaderType))
                     {
                         var res = await _dialogService.ShowDialogAsync("Incompatible Mod Warning",
@@ -675,7 +683,7 @@ namespace PocketMC.Desktop.Features.Settings.ViewModels
                 var result = await _modpackService.ParseModpackZipAsync(zipPath);
                 if (await _dialogService.ShowDialogAsync("Import Modpack", $"Import modpack '{result.Name}'?", DialogType.Question) == DialogResult.Yes)
                 {
-                    var progress = new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>(p =>
+                    var progress = new Progress<PocketMC.Application.Interfaces.Instances.InstanceTransferProgress>(p =>
                     {
                         UpdateAllStatusText = string.IsNullOrEmpty(p.CurrentItem) 
                             ? p.CurrentStep 

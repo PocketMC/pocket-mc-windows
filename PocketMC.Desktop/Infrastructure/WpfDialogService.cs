@@ -1,7 +1,8 @@
+﻿using PocketMC.Desktop.Core.Interfaces;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 
 namespace PocketMC.Desktop.Infrastructure

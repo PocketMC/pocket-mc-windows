@@ -1,11 +1,16 @@
-﻿using System;
+﻿using PocketMC.Desktop.Infrastructure;
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.OS;
+using PocketMC.Infrastructure.Tunnel;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {

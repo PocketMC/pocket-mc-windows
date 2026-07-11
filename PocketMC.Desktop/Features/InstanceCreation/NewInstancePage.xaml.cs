@@ -1,3 +1,6 @@
+﻿using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Instances.ImportExport;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -11,21 +14,23 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 
-using PocketMC.Desktop.Features.Instances.Providers;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Mods;
+using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Infrastructure.Instances.Providers;
+using PocketMC.Infrastructure.Marketplace;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
-using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Features.Instances.ImportExport;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.OS;
 
 namespace PocketMC.Desktop.Features.InstanceCreation
 {
@@ -788,7 +793,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
                 if (!string.IsNullOrWhiteSpace(instancePath) && Directory.Exists(instancePath))
                 {
-                    await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CleanDirectoryAsync(instancePath);
+                    await PocketMC.Domain.Storage.FileUtils.CleanDirectoryAsync(instancePath);
                 }
             }
             catch (Exception cleanupEx)

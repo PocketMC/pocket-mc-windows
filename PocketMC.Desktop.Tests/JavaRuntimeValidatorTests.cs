@@ -6,8 +6,7 @@ public sealed class JavaRuntimeValidatorTests
     public void ValidateRuntimeAsync_KillsJavaProcessTreeWhenValidationIsCanceled()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Features",
+            "PocketMC.Infrastructure",
             "Java",
             "JavaRuntimeValidator.cs"));
 

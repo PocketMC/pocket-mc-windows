@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Features.Players.Services;
+using PocketMC.Application.Services.Players;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests;

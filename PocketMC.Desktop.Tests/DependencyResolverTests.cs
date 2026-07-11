@@ -1,5 +1,5 @@
-using PocketMC.Desktop.Features.Marketplace.Models;
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Domain.Models;
+using PocketMC.Domain.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

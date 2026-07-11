@@ -1,10 +1,8 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
-using PocketMC.Desktop.Features.CloudBackups;
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Infrastructure.Backups;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Networking;
-using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
 
 namespace PocketMC.Desktop.Tests;
@@ -29,8 +27,7 @@ public sealed class RegexTimeoutSecurityTests
     public void PlayitAgentService_UsesBoundedRegexForLegacyTomlImport()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Features",
+            "PocketMC.Infrastructure",
             "Tunnel",
             "PlayitAgentService.cs"));
 

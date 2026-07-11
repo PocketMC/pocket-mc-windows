@@ -1,3 +1,7 @@
+using PocketMC.Infrastructure.Instances.Providers;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Marketplace;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,15 +15,15 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Infrastructure.FileSystem;
-using PocketMC.Desktop.Features.Settings;
+using PocketMC.Domain.Security;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Telemetry;
 using PocketMC.Desktop.Core.Presentation;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Instances.Providers;
-using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Application.Services.Shell;
+
+using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Desktop.Features.Marketplace.Models;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 
 namespace PocketMC.Desktop.Features.Mods
@@ -91,8 +95,8 @@ namespace PocketMC.Desktop.Features.Mods
             InstanceMetadata metadata,
             string instancePath,
             string zipPath,
-            IEnumerable<PocketMC.Desktop.Features.Marketplace.Models.ModDownloadTaskViewModel> uiTaskList,
-            IProgress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>? progress = null,
+            IEnumerable<ModDownloadTaskViewModel> uiTaskList,
+            IProgress<InstanceTransferProgress>? progress = null,
             CancellationToken ct = default)
         {
             var report = new ModpackImportResultReport();
@@ -129,7 +133,7 @@ namespace PocketMC.Desktop.Features.Mods
                 }
 
                 string jarPath = Path.Combine(instancePath, "server.jar");
-                var coreProgress = new Progress<PocketMC.Desktop.Features.Instances.Services.DownloadProgress>(p =>
+                var coreProgress = new Progress<DownloadProgress>(p =>
                 {
                     if (coreTask != null)
                     {
@@ -244,7 +248,7 @@ namespace PocketMC.Desktop.Features.Mods
                             {
                                 try
                                 {
-                                    var progressHandler = new Progress<PocketMC.Desktop.Features.Instances.Services.DownloadProgress>(p =>
+                                    var progressHandler = new Progress<DownloadProgress>(p =>
                                     {
                                         if (uiTask != null)
                                         {
@@ -341,7 +345,7 @@ namespace PocketMC.Desktop.Features.Mods
                             var currentCompleted = Interlocked.Increment(ref completedMods);
                             if (totalMods > 0)
                             {
-                                progress?.Report(new PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress
+                                progress?.Report(new InstanceTransferProgress
                                 {
                                     CurrentStep = $"Downloading mods ({currentCompleted}/{totalMods})...",
                                     OverallProgress = (double)currentCompleted / totalMods * 100.0
@@ -385,10 +389,10 @@ namespace PocketMC.Desktop.Features.Mods
             InstanceMetadata metadata,
             string instancePath,
             string zipPath,
-            IProgress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>? importProgress = null)
+            IProgress<InstanceTransferProgress>? importProgress = null)
         {
             await ResolveModUrlsAsync(pack);
-            var report = await ExecuteImportAsync(pack, metadata, instancePath, zipPath, new List<PocketMC.Desktop.Features.Marketplace.Models.ModDownloadTaskViewModel>(), importProgress, CancellationToken.None);
+            var report = await ExecuteImportAsync(pack, metadata, instancePath, zipPath, new List<ModDownloadTaskViewModel>(), importProgress, CancellationToken.None);
             return report;
         }
 

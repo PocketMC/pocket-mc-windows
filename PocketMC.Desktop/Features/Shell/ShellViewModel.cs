@@ -1,15 +1,22 @@
+﻿using PocketMC.Application.Services.Shell;
+using PocketMC.Desktop.Core.Interfaces;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.OS;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Shell
 {

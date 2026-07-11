@@ -1,17 +1,25 @@
+﻿using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Settings;
+using PocketMC.Desktop.Features.Setup;
+using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces.Instances;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Navigation;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.Setup;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Settings;
+using PocketMC.Application.Services.Setup;
+using PocketMC.Infrastructure.Java;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Infrastructure.Telemetry;
 using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Infrastructure.Marketplace;
+using PocketMC.Application.Services.Mods;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Players;
 
@@ -22,14 +30,14 @@ namespace PocketMC.Desktop.Infrastructure
         private readonly ControlledNavigationStack _detailStack = new();
         private readonly List<DetailPageEntry> _detailPages = new();
         private readonly IShellUIStateService _uiStateService;
-        private readonly Features.Instances.ImportExport.IInstanceImportService _importService;
-        private readonly Features.Instances.ImportExport.IInstanceExportService _exportService;
+        private readonly IInstanceImportService _importService;
+        private readonly IInstanceExportService _exportService;
         private IShellHost? _shellHost;
 
         public AppNavigationService(
             IShellUIStateService uiStateService,
-            Features.Instances.ImportExport.IInstanceImportService importService,
-            Features.Instances.ImportExport.IInstanceExportService exportService)
+            IInstanceImportService importService,
+            IInstanceExportService exportService)
         {
             _uiStateService = uiStateService;
             _importService = importService;

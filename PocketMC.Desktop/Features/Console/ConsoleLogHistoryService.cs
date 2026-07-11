@@ -24,9 +24,9 @@ public sealed record ConsoleLogReadResult(
 
 public sealed class ConsoleLogHistoryService
 {
-    public const string CurrentSessionLogName = "pocketmc-current-session.log";
-    public const string LastSessionLogName = "pocketmc-last-session.log";
-    public const string LegacySessionLogName = "pocketmc-session.log";
+    public const string CurrentSessionLogName = PocketMC.Domain.Models.LogConstants.CurrentSessionLogName;
+    public const string LastSessionLogName = PocketMC.Domain.Models.LogConstants.LastSessionLogName;
+    public const string LegacySessionLogName = PocketMC.Domain.Models.LogConstants.LegacySessionLogName;
 
     private readonly ILogger<ConsoleLogHistoryService> _logger;
 

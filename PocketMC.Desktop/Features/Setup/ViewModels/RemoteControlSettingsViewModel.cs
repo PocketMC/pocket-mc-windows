@@ -1,13 +1,15 @@
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.RemoteControl.Models;
 using System.IO;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PocketMC.Desktop.Features.RemoteControl.Hosting;
+using PocketMC.RemoteControl.Hosting;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.RemoteControl.Services;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.RemoteControl.Services;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Interfaces;
+using System;
 using PocketMC.Desktop.Core.Interfaces;
 
 namespace PocketMC.Desktop.Features.Setup.ViewModels;
@@ -63,7 +65,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         {
             try
             {
-                _password = PocketMC.Desktop.Infrastructure.Security.DataProtector.Unprotect(remote.ProtectedPassword) ?? string.Empty;
+                _password = PocketMC.Infrastructure.Security.DataProtector.Unprotect(remote.ProtectedPassword) ?? string.Empty;
             }
             catch (Exception)
             {
@@ -284,7 +286,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         if (!string.IsNullOrEmpty(Password))
         {
             settings.RemoteControl.PasswordHash = _authenticationService.HashPassword(Password);
-            settings.RemoteControl.ProtectedPassword = PocketMC.Desktop.Infrastructure.Security.DataProtector.Protect(Password);
+            settings.RemoteControl.ProtectedPassword = PocketMC.Infrastructure.Security.DataProtector.Protect(Password);
         }
         else
         {

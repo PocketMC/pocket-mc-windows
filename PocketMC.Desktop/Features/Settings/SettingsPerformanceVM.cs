@@ -1,8 +1,10 @@
+﻿using PocketMC.Infrastructure.OS;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Windows.Input;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Infrastructure.Process;
+using PocketMC.Infrastructure.Networking;
 
 namespace PocketMC.Desktop.Features.Settings
 {

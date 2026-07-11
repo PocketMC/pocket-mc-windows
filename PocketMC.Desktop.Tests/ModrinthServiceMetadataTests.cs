@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Domain.Models;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;

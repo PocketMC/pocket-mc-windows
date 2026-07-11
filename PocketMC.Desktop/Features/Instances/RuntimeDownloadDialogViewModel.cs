@@ -1,6 +1,8 @@
+﻿using PocketMC.Domain.Models;
 using System;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 
 namespace PocketMC.Desktop.Features.Instances
 {

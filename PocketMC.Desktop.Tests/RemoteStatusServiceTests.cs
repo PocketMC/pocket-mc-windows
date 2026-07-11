@@ -1,12 +1,13 @@
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.RemoteControl;
+using PocketMC.Desktop.Core.Interfaces;
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.RemoteControl.Services;
+using PocketMC.RemoteControl;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Players.Services;
+using PocketMC.Application.Services.Players;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
 
@@ -120,7 +121,7 @@ public sealed class RemoteStatusServiceTests : IDisposable
         var logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<ServerStateFileService>();
         var serverStateFileService = new ServerStateFileService(registry, logger);
 
-        return new RemoteStatusService(registry, lifecycle, monitor, new LocalNetworkAddressService(), state, serverStateFileService, new PocketMC.Desktop.Helpers.GeyserDetector());
+        return new RemoteStatusService(registry, lifecycle, monitor, new LocalNetworkAddressService(), state, serverStateFileService, new PocketMC.Infrastructure.Instances.GeyserDetector());
     }
 
     public void Dispose()
@@ -147,7 +148,7 @@ public sealed class RemoteStatusServiceTests : IDisposable
         public bool IsWaitingToRestart(Guid instanceId) => false;
         public void AbortRestartDelay(Guid instanceId) { }
         public Task RestartAsync(Guid instanceId) => Task.CompletedTask;
-        public ServerProcess? GetProcess(Guid instanceId) => null;
+        public IServerProcess? GetProcess(Guid instanceId) => null;
         public DateTime? GetSessionStartTime(Guid instanceId) =>
             SessionStartTimes.TryGetValue(instanceId, out DateTime start) ? start : null;
         public Task ReleaseInstanceAsync(Guid instanceId) => Task.CompletedTask;
@@ -163,6 +164,5 @@ public sealed class RemoteStatusServiceTests : IDisposable
     }
 }
 #pragma warning restore CS0067
-
 
 

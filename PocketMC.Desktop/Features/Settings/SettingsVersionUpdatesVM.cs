@@ -1,11 +1,14 @@
+﻿using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Java;
-using PocketMC.Desktop.Features.Instances.Updates;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.Java;
+
+using PocketMC.Infrastructure.Instances.Updates;
 
 namespace PocketMC.Desktop.Features.Settings;
 

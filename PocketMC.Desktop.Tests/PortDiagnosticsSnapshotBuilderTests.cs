@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Diagnostics;
+using PocketMC.Infrastructure.Diagnostics;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Tunnel;

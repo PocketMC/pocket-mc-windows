@@ -1,3 +1,4 @@
+﻿using PocketMC.Domain.Models;
 using System;
 using PocketMC.Desktop.Core.Mvvm;
 

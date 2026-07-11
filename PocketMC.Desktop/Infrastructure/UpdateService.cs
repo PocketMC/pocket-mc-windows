@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Velopack;
 using Velopack.Sources;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Application.Services.Shell;
 
 namespace PocketMC.Desktop.Infrastructure
 {

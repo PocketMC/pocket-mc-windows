@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,11 +10,14 @@ using System.Windows;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Interfaces;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Desktop.Features.Marketplace.Models;
-using PocketMC.Desktop.Features.Mods;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
 using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Mods;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -138,7 +142,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             // 5. Execute Import via ModpackService
             UpdateOverallStatus($"Downloading {parsedPack.Mods.Count} mods...", 30);
             
-            var importProgress = new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>(p =>
+            var importProgress = new Progress<PocketMC.Application.Interfaces.Instances.InstanceTransferProgress>(p =>
             {
                 Dispatcher.Invoke(() => UpdateOverallStatus(p.CurrentStep, p.OverallProgress));
             });

@@ -1,10 +1,11 @@
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.RemoteControl;
+using PocketMC.Desktop.Core.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.RemoteControl.Services;
+using PocketMC.RemoteControl;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
@@ -40,7 +41,7 @@ public sealed class RemotePlayerActionServiceTests : IDisposable
         _registry.Register(new InstanceMetadata { Id = _bedrockInstanceId, ServerType = "bedrock", Name = "Bedrock Server" }, bedrockPath);
 
         _lifecycleMock = new Mock<IServerLifecycleService>();
-        _lifecycleMock.Setup(l => l.GetProcess(It.IsAny<Guid>())).Returns((PocketMC.Domain.Models.ServerProcess?)null);
+        _lifecycleMock.Setup(l => l.GetProcess(It.IsAny<Guid>())).Returns((IServerProcess?)null);
         _lifecycleMock.Setup(l => l.IsRunning(It.IsAny<Guid>())).Returns(false);
 
         _auditLogService = new RemoteAuditLogService();
@@ -122,6 +123,5 @@ public sealed class RemotePlayerActionServiceTests : IDisposable
         Assert.Equal(RemoteControlActionFailure.Disabled, result.Failure);
     }
 }
-
 
 

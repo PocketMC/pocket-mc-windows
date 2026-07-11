@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Players.Services;
+using PocketMC.Application.Services.Players;
 
 namespace PocketMC.Desktop.Tests;
 

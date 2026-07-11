@@ -1,7 +1,10 @@
+using PocketMC.Infrastructure.Marketplace;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
 using PocketMC.Desktop.Core.Mvvm;
+
+using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -17,7 +20,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         public bool? Result { get; private set; }
 
-        public bool HasFailedRequiredDependency => Dependencies.Any(d => d.Type == Models.DependencyType.Required && !string.IsNullOrEmpty(d.Error));
+        public bool HasFailedRequiredDependency => Dependencies.Any(d => d.Type == DependencyType.Required && !string.IsNullOrEmpty(d.Error));
 
         public bool CanInstall => !HasIncompatible && !HasFailedRequiredDependency && Dependencies.Any(d => d.IsSelected);
 
@@ -30,7 +33,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 dep.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(ResolvedDependency.IsSelected)) OnPropertyChanged(nameof(CanInstall)); };
             }
 
-            HasIncompatible = Dependencies.Any(d => d.Type == Models.DependencyType.Incompatible);
+            HasIncompatible = Dependencies.Any(d => d.Type == DependencyType.Incompatible);
             HasErrors = Dependencies.Any(d => !string.IsNullOrEmpty(d.Error) || !string.IsNullOrEmpty(d.Warning));
 
             ConfirmCommand = new RelayCommand(_ => { Result = true; CloseRequested?.Invoke(); });

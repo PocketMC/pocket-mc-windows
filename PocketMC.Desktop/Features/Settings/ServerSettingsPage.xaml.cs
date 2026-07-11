@@ -1,3 +1,4 @@
+﻿using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Views.Behaviors;
 using System;
 using System.Windows;
@@ -6,7 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Controls.Primitives;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Application.Services.Shell;
 
 namespace PocketMC.Desktop.Features.Settings
 {

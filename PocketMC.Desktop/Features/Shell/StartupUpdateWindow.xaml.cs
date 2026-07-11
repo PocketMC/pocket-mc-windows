@@ -3,6 +3,10 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.OS;
 using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Shell

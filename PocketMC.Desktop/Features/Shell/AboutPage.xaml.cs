@@ -1,13 +1,20 @@
+﻿using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.WhatsNew;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure.WhatsNew;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.OS;
 
 namespace PocketMC.Desktop.Features.Shell
 {

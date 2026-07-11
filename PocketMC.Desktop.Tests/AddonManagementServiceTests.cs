@@ -1,9 +1,9 @@
 using System.IO.Compression;
-using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
+using Microsoft.Extensions.Logging.Abstractions;
+using PocketMC.Application.Interfaces;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
 
@@ -241,8 +241,7 @@ public sealed class AddonManagementServiceTests : IDisposable
     public void AddonStateStoreUsesAtomicWriteForSidecarState()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Features",
+            "PocketMC.Infrastructure",
             "Mods",
             "AddonStateStore.cs"));
 
@@ -488,11 +487,10 @@ public sealed class AddonManagementServiceTests : IDisposable
         public bool IsWaitingToRestart(Guid instanceId) => false;
         public void AbortRestartDelay(Guid instanceId) { }
         public Task RestartAsync(Guid instanceId) => Task.CompletedTask;
-        public ServerProcess? GetProcess(Guid instanceId) => null;
+        public IServerProcess? GetProcess(Guid instanceId) => null;
         public DateTime? GetSessionStartTime(Guid instanceId) => null;
         public Task ReleaseInstanceAsync(Guid instanceId) => Task.CompletedTask;
     }
 }
-
 
 

@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Domain.Models;
 using System.IO.Compression;
 using System.Net;
@@ -6,7 +6,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;

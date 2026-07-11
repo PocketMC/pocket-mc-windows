@@ -1,3 +1,4 @@
+﻿using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -7,8 +8,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Mods;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
 
 namespace PocketMC.Desktop.Infrastructure
 {

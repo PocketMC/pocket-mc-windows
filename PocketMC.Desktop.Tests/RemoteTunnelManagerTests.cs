@@ -1,5 +1,5 @@
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.RemoteControl.Tunnels;
+using PocketMC.RemoteControl.Tunnels;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;

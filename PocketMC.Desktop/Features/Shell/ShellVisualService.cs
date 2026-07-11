@@ -3,9 +3,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using Wpf.Ui.Controls;
+
+using PocketMC.Application.Services.Shell;
 
 namespace PocketMC.Desktop.Features.Shell
 {

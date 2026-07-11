@@ -1,3 +1,6 @@
+using PocketMC.Application.Services.Networking;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Models;
 using System;
 using System.Collections.Concurrent;
@@ -7,8 +10,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Networking;
+using PocketMC.Application.Interfaces;
+using PocketMC.Infrastructure.Networking;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
@@ -23,9 +26,9 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
     private readonly PortRecoveryService _portRecoveryService;
     private readonly INotificationService _notificationService;
     private readonly ILogger<ServerLifecycleService> _logger;
-    private readonly PocketMC.Desktop.Features.Shell.ApplicationState _appState;
+    private readonly PocketMC.Application.Services.Shell.ApplicationState _appState;
     private readonly GeyserProvisioningService _geyserProvisioningService;
-    private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
+    private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
     private string _appRootPath => _appState.GetRequiredAppRootPath();
 
     private readonly ConcurrentDictionary<Guid, int> _consecutiveRestarts = new();
@@ -46,9 +49,9 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         PortRecoveryService portRecoveryService,
         INotificationService notificationService,
         ILogger<ServerLifecycleService> logger,
-        PocketMC.Desktop.Features.Shell.ApplicationState appState,
+        PocketMC.Application.Services.Shell.ApplicationState appState,
         GeyserProvisioningService geyserProvisioningService,
-        PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector)
+        PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector)
     {
         _processManager = processManager;
         _registry = registry;
@@ -211,7 +214,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         CleanupInstanceNetworking(instanceId);
     }
 
-    public ServerProcess? GetProcess(Guid instanceId) => _processManager.GetProcess(instanceId);
+    public IServerProcess? GetProcess(Guid instanceId) => _processManager.GetProcess(instanceId);
 
     /// <summary>
     /// Gets the UTC timestamp of when the current/last session started, or null if never started.

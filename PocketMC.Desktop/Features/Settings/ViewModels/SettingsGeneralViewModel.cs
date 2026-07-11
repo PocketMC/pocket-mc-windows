@@ -1,12 +1,17 @@
+﻿using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Settings.ViewModels;
 using System;
 using System.Windows.Input;
 using System.IO;
 using System.Windows.Media.Imaging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.OS;
 
 namespace PocketMC.Desktop.Features.Settings.ViewModels
 {

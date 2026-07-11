@@ -1,3 +1,5 @@
+using PocketMC.Application.Services.Setup;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.IO;
 using System.Linq;
@@ -9,20 +11,26 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Settings;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.RemoteControl.Services;
+using PocketMC.Application.Interfaces;
+using PocketMC.RemoteControl.Services;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Application.Interfaces.AI;
-using PocketMC.Domain.Models;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.OS;
+using PocketMC.Infrastructure.Power;
+using PocketMC.Desktop.Features.Settings;
+using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Infrastructure.Power;
+using PocketMC.Infrastructure.Diagnostics;
 
 namespace PocketMC.Desktop.Features.Setup
 {
@@ -53,8 +61,8 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly IDialogService _dialogService;
         private readonly ILlmProviderFactory _aiProviderFactory;
         private readonly UpdateService _updateService;
-        private readonly PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService _diagnosticService;
-        private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
+        private readonly PocketMC.Infrastructure.Diagnostics.DiagnosticReportingService _diagnosticService;
+        private readonly PocketMC.Infrastructure.Diagnostics.DependencyHealthMonitor _healthMonitor;
         private readonly IDiscordRpcService _discordRpcService;
         private readonly WindowsStartupService _windowsStartupService;
         private readonly ServerSleepPreventionCoordinator _sleepPreventionCoordinator;
@@ -91,8 +99,8 @@ namespace PocketMC.Desktop.Features.Setup
             IDialogService dialogService,
             ILlmProviderFactory aiProviderFactory,
             UpdateService updateService,
-            PocketMC.Desktop.Features.Diagnostics.DiagnosticReportingService diagnosticService,
-            PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
+            PocketMC.Infrastructure.Diagnostics.DiagnosticReportingService diagnosticService,
+            PocketMC.Infrastructure.Diagnostics.DependencyHealthMonitor healthMonitor,
             CloudBackupSettingsViewModel cloudBackups,
             WindowsStartupService windowsStartupService,
             IDiscordRpcService discordRpcService,
@@ -397,14 +405,14 @@ namespace PocketMC.Desktop.Features.Setup
             {
                 var brush = health.Status switch
                 {
-                    PocketMC.Desktop.Features.Diagnostics.DependencyHealthStatus.Healthy => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1)),
-                    PocketMC.Desktop.Features.Diagnostics.DependencyHealthStatus.Degraded => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF9, 0xE2, 0xAF)),
-                    PocketMC.Desktop.Features.Diagnostics.DependencyHealthStatus.Down => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8)),
+                    PocketMC.Domain.Models.DependencyHealthStatus.Healthy => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1)),
+                    PocketMC.Domain.Models.DependencyHealthStatus.Degraded => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF9, 0xE2, 0xAF)),
+                    PocketMC.Domain.Models.DependencyHealthStatus.Down => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8)),
                     _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xCD, 0xD6, 0xF4))
                 };
 
                 string details = health.ErrorMessage ?? $"{health.Latency.TotalMilliseconds:F0}ms";
-                if (health.Status == PocketMC.Desktop.Features.Diagnostics.DependencyHealthStatus.Unknown) details = "Pending check...";
+                if (health.Status == PocketMC.Domain.Models.DependencyHealthStatus.Unknown) details = "Pending check...";
 
                 items.Add(new DependencyHealthItem
                 {
@@ -1189,7 +1197,7 @@ namespace PocketMC.Desktop.Features.Setup
             try
             {
                 // Fast-path: already exempt — no need for another UAC prompt.
-                if (PocketMC.Desktop.Infrastructure.UwpLoopbackHelper.IsExemptionPresent())
+                if (UwpLoopbackHelper.IsExemptionPresent())
                 {
                     if (statusText != null)
                     {
@@ -1207,7 +1215,7 @@ namespace PocketMC.Desktop.Features.Setup
                     statusText.Visibility = Visibility.Visible;
                 }
 
-                bool success = await PocketMC.Desktop.Infrastructure.UwpLoopbackHelper.ApplyExemptionAsync();
+                bool success = await UwpLoopbackHelper.ApplyExemptionAsync();
 
                 if (statusText != null)
                 {
@@ -1331,7 +1339,7 @@ namespace PocketMC.Desktop.Features.Setup
                         {
                             if (Directory.Exists(currentRoot))
                             {
-                                await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CopyDirectoryAsync(currentRoot, targetPath);
+                                await PocketMC.Domain.Storage.FileUtils.CopyDirectoryAsync(currentRoot, targetPath);
                             }
                         }
                         catch (Exception ex)
@@ -1352,7 +1360,7 @@ namespace PocketMC.Desktop.Features.Setup
                         {
                             if (Directory.Exists(currentRoot))
                             {
-                                await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CleanDirectoryAsync(currentRoot);
+                                await PocketMC.Domain.Storage.FileUtils.CleanDirectoryAsync(currentRoot);
                             }
                         }
                         catch (Exception ex)

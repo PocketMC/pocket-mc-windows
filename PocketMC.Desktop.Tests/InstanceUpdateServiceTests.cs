@@ -1,11 +1,12 @@
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Domain.Models;
+using PocketMC.Desktop.Core.Interfaces;
 using System.IO.Compression;
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Application.Interfaces;
+using PocketMC.Infrastructure.Backups;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Updates;
+using PocketMC.Infrastructure.Instances.Updates;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
 
@@ -722,11 +723,10 @@ public sealed class InstanceUpdateServiceTests : IDisposable
         public bool IsWaitingToRestart(Guid instanceId) => false;
         public void AbortRestartDelay(Guid instanceId) { }
         public Task RestartAsync(Guid instanceId) => Task.CompletedTask;
-        public ServerProcess? GetProcess(Guid instanceId) => null;
+        public IServerProcess? GetProcess(Guid instanceId) => null;
         public DateTime? GetSessionStartTime(Guid instanceId) => null;
         public Task ReleaseInstanceAsync(Guid instanceId) => Task.CompletedTask;
     }
 }
-
 
 

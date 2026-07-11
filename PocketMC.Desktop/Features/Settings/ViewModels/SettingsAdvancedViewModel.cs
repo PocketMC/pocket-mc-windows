@@ -5,7 +5,8 @@ using System.Collections.Specialized;
 using System.Windows.Input;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 
 namespace PocketMC.Desktop.Features.Settings.ViewModels
 {

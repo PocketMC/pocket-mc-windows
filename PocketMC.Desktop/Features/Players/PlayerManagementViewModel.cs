@@ -1,3 +1,4 @@
+﻿using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Console;
 using System;
 using System.Collections.Concurrent;
@@ -11,14 +12,16 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Helpers;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Application.Services.Players;
+using PocketMC.Infrastructure.Players;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
+
 
 namespace PocketMC.Desktop.Features.Players;
 

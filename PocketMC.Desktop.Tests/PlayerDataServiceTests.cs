@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
-using PocketMC.Desktop.Features.Players.Services;
+using PocketMC.Application.Services.Players;
 
 namespace PocketMC.Desktop.Tests;
 

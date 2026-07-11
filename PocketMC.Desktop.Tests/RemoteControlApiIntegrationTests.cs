@@ -1,14 +1,15 @@
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.RemoteControl;
+using PocketMC.Desktop.Core.Interfaces;
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.RemoteControl.Hosting;
+using PocketMC.Application.Interfaces;
+using PocketMC.RemoteControl;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.RemoteControl.Services;
-using PocketMC.Desktop.Features.RemoteControl.Tunnels;
+using PocketMC.RemoteControl;
+using PocketMC.RemoteControl.Tunnels;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 
@@ -36,7 +37,7 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         _lifecycleMock = new Mock<IServerLifecycleService>();
         _lifecycleMock.Setup(x => x.IsRunning(It.IsAny<Guid>())).Returns(true);
 
-        var statusService = new RemoteStatusService(null!, _lifecycleMock.Object, null!, null!, _state, null!, new PocketMC.Desktop.Helpers.GeyserDetector());
+        var statusService = new RemoteStatusService(null!, _lifecycleMock.Object, null!, null!, _state, null!, new PocketMC.Infrastructure.Instances.GeyserDetector());
         var instanceControlService = new RemoteInstanceControlService(null!, _lifecycleMock.Object);
         var auditLogService = new RemoteAuditLogService();
         var playerActionService = new RemotePlayerActionService(_state, null!, _lifecycleMock.Object, auditLogService);
@@ -127,6 +128,5 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.TooManyRequests, rateLimitedResponse.StatusCode);
     }
 }
-
 
 

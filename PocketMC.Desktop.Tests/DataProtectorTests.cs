@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using PocketMC.Desktop.Infrastructure.Security;
+using PocketMC.Infrastructure;
 
 namespace PocketMC.Desktop.Tests;
 

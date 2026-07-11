@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.RemoteControl.Tunnels;
+using PocketMC.RemoteControl.Tunnels;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
 

@@ -77,7 +77,7 @@ public sealed class InstanceManagerTests : IDisposable
         Assert.True(Directory.Exists(newPath));
     }
 
-    private class MockAssetProvider : PocketMC.Desktop.Core.Interfaces.IAssetProvider
+    private class MockAssetProvider : PocketMC.Application.Interfaces.IAssetProvider
     {
         public Stream? GetAssetStream(string assetName) => null;
     }

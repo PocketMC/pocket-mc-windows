@@ -1,3 +1,4 @@
+﻿using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Settings.ViewModels;
 using System;
 using System.Collections.ObjectModel;
@@ -5,11 +6,11 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Infrastructure.Backups;
 
 namespace PocketMC.Desktop.Features.Settings.ViewModels
 {

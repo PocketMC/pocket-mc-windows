@@ -1,3 +1,4 @@
+﻿using PocketMC.Desktop.Infrastructure;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -9,13 +10,15 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Java;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.OS;
 
 namespace PocketMC.Desktop.Features.Setup
 {
@@ -206,7 +209,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly ApplicationState _applicationState;
         private readonly JavaProvisioningService _javaProvisioning;
         private readonly ILogger<JavaSetupPage> _logger;
-        private readonly PocketMC.Desktop.Features.Settings.SettingsManager _settingsManager;
+        private readonly PocketMC.Infrastructure.Telemetry.SettingsManager _settingsManager;
         private readonly InstanceRegistry _instanceRegistry;
         private readonly ServerProcessManager _processManager;
         private bool _isSubscribedToProvisioning;
@@ -215,7 +218,7 @@ namespace PocketMC.Desktop.Features.Setup
         public JavaSetupPage(
             ApplicationState applicationState,
             JavaProvisioningService javaProvisioning,
-            PocketMC.Desktop.Features.Settings.SettingsManager settingsManager,
+            PocketMC.Infrastructure.Telemetry.SettingsManager settingsManager,
             InstanceRegistry instanceRegistry,
             ServerProcessManager processManager,
             ILogger<JavaSetupPage> logger)

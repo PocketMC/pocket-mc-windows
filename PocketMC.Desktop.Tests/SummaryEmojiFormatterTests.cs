@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Settings.ViewModels;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Domain.Models;
@@ -109,5 +110,4 @@ public sealed class SummaryEmojiFormatterTests
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(Array.Empty<string>());
     }
 }
-
 

@@ -1,16 +1,17 @@
 using System.Net;
+using PocketMC.Desktop.Core.Interfaces;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Linq;
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Features.Diagnostics;
+using PocketMC.Infrastructure.Diagnostics;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Providers;
-using PocketMC.Desktop.Features.Java;
+using PocketMC.Infrastructure.Instances.Providers;
+using PocketMC.Infrastructure.Java;
 using PocketMC.Desktop.Features.Networking;
-using PocketMC.Desktop.Features.Players.Services;
+using PocketMC.Application.Services.Players;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Tunnel;
@@ -42,7 +43,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
         PathService = new InstancePathService(AppState);
         Registry = new InstanceRegistry(PathService, NullLogger<InstanceRegistry>.Instance);
         InstanceManager = new InstanceManager(Registry, PathService, AppState, new EmptyAssetProvider(), NullLogger<InstanceManager>.Instance, new EmptyServiceProvider());
-        ConfigurationService = new ServerConfigurationService(InstanceManager, new PocketMC.Desktop.Helpers.GeyserDetector());
+        ConfigurationService = new ServerConfigurationService(InstanceManager, new PocketMC.Infrastructure.Instances.GeyserDetector());
         SettingsManager = new SettingsManager(Path.Combine(RootPath, "settings.json"));
     }
 
@@ -143,7 +144,6 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             Registry,
             CreateServerLaunchConfigurator(),
             new PlayerListParser(),
-            new ConsoleLogHistoryService(NullLogger<ConsoleLogHistoryService>.Instance),
             NullLogger<ServerProcessManager>.Instance,
             NullLoggerFactory.Instance);
     }
@@ -155,8 +155,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             ConfigurationService,
             processManager ?? CreateServerProcessManager(),
             AppState,
-            new PocketMC.Desktop.Helpers.GeyserDetector(),
-            new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector(),
+            new PocketMC.Infrastructure.Instances.GeyserDetector(),
+            new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector(),
             NullLogger<PortPreflightService>.Instance);
     }
 
@@ -253,8 +253,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             playitApiClient,
             dependencyHealthMonitor,
             NullLogger<PortDiagnosticsSnapshotBuilder>.Instance,
-            new PocketMC.Desktop.Helpers.GeyserDetector(),
-            new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector());
+            new PocketMC.Infrastructure.Instances.GeyserDetector(),
+            new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector());
     }
 
     public ServerLifecycleService CreateServerLifecycleService(
@@ -275,8 +275,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             notificationService ?? new RecordingNotificationService(),
             NullLogger<ServerLifecycleService>.Instance,
             AppState,
-            new PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Desktop.Features.Instances.Services.GeyserProvisioningService>.Instance),
-            new PocketMC.Desktop.Helpers.GeyserDetector());
+            new PocketMC.Infrastructure.Instances.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Infrastructure.Instances.GeyserProvisioningService>.Instance),
+            new PocketMC.Infrastructure.Instances.GeyserDetector());
     }
 
     public int GetAvailableTcpPort()

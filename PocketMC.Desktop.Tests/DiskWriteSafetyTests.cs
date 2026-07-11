@@ -8,15 +8,15 @@ public sealed class DiskWriteSafetyTests
         "File.WriteAllText(filePath",
         "FileUtils.AtomicWriteAllText(filePath")]
     [InlineData(
-        new[] { "PocketMC.Desktop", "Features", "Instances", "Backups", "BackupMetadata.cs" },
+        new[] { "PocketMC.Domain", "Models", "BackupMetadata.cs" },
         "File.WriteAllText(path",
         "FileUtils.AtomicWriteAllText(path")]
     [InlineData(
-        new[] { "PocketMC.Desktop", "Features", "Marketplace", "AddonManifestService.cs" },
+        new[] { "PocketMC.Infrastructure", "Marketplace", "AddonManifestService.cs" },
         "File.WriteAllTextAsync(path",
         "FileUtils.AtomicWriteAllTextAsync(path")]
     [InlineData(
-        new[] { "PocketMC.Desktop", "Features", "Tunnel", "PlayitAgentService.cs" },
+        new[] { "PocketMC.Infrastructure", "Tunnel", "PlayitAgentService.cs" },
         "File.WriteAllText(tomlPath",
         "FileUtils.AtomicWriteAllText(tomlPath")]
     public void PersistentStateWriters_UseAtomicFileReplacement(
