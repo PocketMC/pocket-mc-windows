@@ -8,6 +8,8 @@ namespace PocketMC.Infrastructure.Telemetry
 {
     public static class AppConfig
     {
+        private const string ConfigResourceName = "PocketMC.Desktop.pocketmc.yml";
+
         public static IReadOnlyList<string> AuthProxies { get; } = new List<string>
         {
             "https://pocket-mc-proxy-20d5.onrender.com",
@@ -33,8 +35,7 @@ namespace PocketMC.Infrastructure.Telemetry
         {
             try
             {
-                var assembly = Assembly.GetExecutingAssembly();
-                using var stream = assembly.GetManifestResourceStream("PocketMC.Desktop.pocketmc.yml");
+                using var stream = OpenConfigStream();
                 if (stream != null)
                 {
                     using var reader = new StreamReader(stream);
@@ -111,6 +112,48 @@ namespace PocketMC.Infrastructure.Telemetry
                 }
             }
             catch { }
+        }
+
+        private static Stream? OpenConfigStream()
+        {
+            var candidates = new List<Assembly?>();
+            candidates.Add(Assembly.GetEntryAssembly());
+            candidates.Add(typeof(AppConfig).Assembly);
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                candidates.Add(assembly);
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var assembly in candidates)
+            {
+                if (assembly == null || assembly.IsDynamic)
+                {
+                    continue;
+                }
+
+                string? assemblyKey = assembly.FullName;
+                if (string.IsNullOrWhiteSpace(assemblyKey) || !seen.Add(assemblyKey))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var stream = assembly.GetManifestResourceStream(ConfigResourceName);
+                    if (stream != null)
+                    {
+                        return stream;
+                    }
+                }
+                catch
+                {
+                    // Some runtime-generated assemblies cannot expose manifest resources.
+                }
+            }
+
+            return null;
         }
     }
 }
