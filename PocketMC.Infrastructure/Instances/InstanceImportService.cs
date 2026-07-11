@@ -1410,15 +1410,17 @@ public sealed class InstanceImportService : IInstanceImportService
 
         string destinationPath = ResolveUniqueInstancePath(requestedName);
         bool success = false;
-        bool didMove = false;
+        LocalFolderTransferState transferState = LocalFolderTransferState.NotStarted;
 
         try
         {
             if (copyFiles)
             {
                 Directory.CreateDirectory(destinationPath);
+                transferState = LocalFolderTransferState.DestinationCreated;
                 Report(progress, "Copying server files...", 10);
                 await CopyDirectoryAsync(sourceFolderPath, destinationPath, progress, linkedToken).ConfigureAwait(false);
+                transferState = LocalFolderTransferState.CopiedForCopyRequest;
             }
             else
             {
@@ -1429,15 +1431,19 @@ public sealed class InstanceImportService : IInstanceImportService
                 }
 
                 Report(progress, "Moving server files...", 10);
-                try
+                transferState = await MoveDirectoryForImportAsync(sourceFolderPath, destinationPath, progress, linkedToken)
+                    .ConfigureAwait(false);
+
+                if (transferState == LocalFolderTransferState.MovedSourceRemoved)
                 {
-                    await MoveDirectoryAsync(sourceFolderPath, destinationPath, progress, linkedToken).ConfigureAwait(false);
+                    Report(progress, "Moved server files.", 80);
                 }
-                catch (SourceDeletionException ex)
+                else if (transferState == LocalFolderTransferState.MoveFallbackCopiedSourceRetained)
                 {
-                    _logger.LogWarning(ex, "Folder import move fallback copied files successfully, but failed to clean up source folder.");
+                    _logger.LogWarning(
+                        "Folder import move fallback copied files successfully, but failed to clean up the original source folder at '{SourceFolderPath}'.",
+                        sourceFolderPath);
                 }
-                didMove = true;
             }
 
             Report(progress, "Configuring instance settings...", 80);
@@ -1571,26 +1577,8 @@ public sealed class InstanceImportService : IInstanceImportService
         {
             if (!success)
             {
-                if (didMove && !string.IsNullOrEmpty(sourceFolderPath) && Directory.Exists(destinationPath))
-                {
-                    try
-                    {
-                        if (Directory.Exists(sourceFolderPath))
-                        {
-                            await FileUtils.CleanDirectoryAsync(sourceFolderPath, CancellationToken.None).ConfigureAwait(false);
-                        }
-                        await MoveDirectoryAsync(destinationPath, sourceFolderPath, null, CancellationToken.None).ConfigureAwait(false);
-                    }
-                    catch (Exception restoreEx)
-                    {
-                        _logger.LogError(restoreEx, "Failed to restore moved directory from '{DestinationPath}' to '{SourceFolderPath}'.", destinationPath, sourceFolderPath);
-                    }
-                }
-
-                if (Directory.Exists(destinationPath))
-                {
-                    try { await FileUtils.CleanDirectoryAsync(destinationPath, CancellationToken.None).ConfigureAwait(false); } catch { }
-                }
+                await CleanupFailedLocalFolderImportAsync(sourceFolderPath, destinationPath, transferState)
+                    .ConfigureAwait(false);
             }
             throw;
         }
@@ -1654,7 +1642,7 @@ public sealed class InstanceImportService : IInstanceImportService
         }
     }
 
-    private static async Task MoveDirectoryAsync(
+    private async Task<LocalFolderTransferState> MoveDirectoryForImportAsync(
         string sourceDir,
         string targetDir,
         IProgress<InstanceTransferProgress>? progress,
@@ -1663,25 +1651,125 @@ public sealed class InstanceImportService : IInstanceImportService
         try
         {
             Directory.Move(sourceDir, targetDir);
-            Report(progress, "Moved server files.", 80);
+            return LocalFolderTransferState.MovedSourceRemoved;
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             await CopyDirectoryAsync(sourceDir, targetDir, progress, cancellationToken).ConfigureAwait(false);
+            await VerifyDirectoryCopyAsync(sourceDir, targetDir, cancellationToken).ConfigureAwait(false);
+
             try
             {
                 await FileUtils.CleanDirectoryAsync(sourceDir, cancellationToken).ConfigureAwait(false);
+                return LocalFolderTransferState.CopiedSourceDeleted;
             }
-            catch (Exception ex)
+            catch (Exception cleanupEx)
             {
-                throw new SourceDeletionException("Server files were successfully copied, but the source directory could not be fully deleted.", ex);
+                _logger.LogWarning(
+                    cleanupEx,
+                    "Server files were copied to '{TargetDir}', but the source directory '{SourceDir}' could not be fully deleted.",
+                    targetDir,
+                    sourceDir);
+                return LocalFolderTransferState.MoveFallbackCopiedSourceRetained;
             }
         }
     }
-}
 
-public class SourceDeletionException : Exception
-{
-    public SourceDeletionException(string message, Exception innerException) : base(message, innerException) { }
+    private async Task CleanupFailedLocalFolderImportAsync(
+        string sourceFolderPath,
+        string destinationPath,
+        LocalFolderTransferState transferState)
+    {
+        if (!Directory.Exists(destinationPath))
+        {
+            return;
+        }
+
+        if (transferState is LocalFolderTransferState.MovedSourceRemoved or LocalFolderTransferState.CopiedSourceDeleted)
+        {
+            if (Directory.Exists(sourceFolderPath))
+            {
+                _logger.LogWarning(
+                    "Local folder import failed after moving files, but source path '{SourceFolderPath}' exists. Preserving destination '{DestinationPath}' to avoid data loss.",
+                    sourceFolderPath,
+                    destinationPath);
+                return;
+            }
+
+            try
+            {
+                Directory.Move(destinationPath, sourceFolderPath);
+                return;
+            }
+            catch (Exception restoreEx)
+            {
+                _logger.LogError(
+                    restoreEx,
+                    "Failed to restore moved directory from '{DestinationPath}' to '{SourceFolderPath}'. Preserving destination to avoid data loss.",
+                    destinationPath,
+                    sourceFolderPath);
+                return;
+            }
+        }
+
+        if (transferState == LocalFolderTransferState.MoveFallbackCopiedSourceRetained)
+        {
+            _logger.LogWarning(
+                "Local folder import failed after copying files while the source may still exist at '{SourceFolderPath}'. Preserving destination '{DestinationPath}' to avoid data loss.",
+                sourceFolderPath,
+                destinationPath);
+            return;
+        }
+
+        try
+        {
+            await FileUtils.CleanDirectoryAsync(destinationPath, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception cleanupEx)
+        {
+            _logger.LogWarning(
+                cleanupEx,
+                "Failed to clean up incomplete local folder import destination '{DestinationPath}'.",
+                destinationPath);
+        }
+    }
+
+    private static async Task VerifyDirectoryCopyAsync(
+        string sourceDir,
+        string targetDir,
+        CancellationToken cancellationToken)
+    {
+        await Task.Run(() =>
+        {
+            foreach (string sourceFile in Directory.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string relativePath = Path.GetRelativePath(sourceDir, sourceFile);
+                string targetFile = Path.Combine(targetDir, relativePath);
+                if (!File.Exists(targetFile))
+                {
+                    throw new IOException($"Copied server folder is missing '{relativePath}'.");
+                }
+
+                long sourceLength = new FileInfo(sourceFile).Length;
+                long targetLength = new FileInfo(targetFile).Length;
+                if (sourceLength != targetLength)
+                {
+                    throw new IOException($"Copied server folder file '{relativePath}' has an unexpected size.");
+                }
+            }
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private enum LocalFolderTransferState
+    {
+        NotStarted,
+        DestinationCreated,
+        CopiedForCopyRequest,
+        MoveFallbackCopiedSourceRetained,
+        CopiedSourceDeleted,
+        MovedSourceRemoved
+    }
 }
 
