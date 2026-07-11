@@ -29,7 +29,7 @@ public sealed class SettingsManagerSecurityTests : IDisposable
         string persisted = File.ReadAllText(settingsPath);
         Assert.DoesNotContain("access-token-plain", persisted, StringComparison.Ordinal);
         Assert.DoesNotContain("refresh-token-plain", persisted, StringComparison.Ordinal);
-        Assert.Contains("dpapi:v1:", persisted, StringComparison.Ordinal);
+        Assert.Contains("dpapi:v2:", persisted, StringComparison.Ordinal);
 
         AppSettings loaded = manager.Load();
         Assert.Equal("access-token-plain", loaded.CloudTokens["GoogleDrive"].AccessToken);
