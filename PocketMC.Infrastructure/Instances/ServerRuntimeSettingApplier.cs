@@ -61,26 +61,32 @@ public sealed class ServerRuntimeSettingApplier
     /// <summary>
     /// Add a player to the whitelist/allowlist by name. Requires server online.
     /// Java/PocketMine: "whitelist add". BDS: "allowlist add".
-    /// Player name is quoted only for Bedrock to handle spaces (e.g., gamertags).
+    /// Player name is validated before being sent to the live command channel.
     /// </summary>
     public Task ApplyWhitelistAddAsync(Guid instanceId, string playerName)
     {
-        bool isBedrock = IsBedrock(instanceId);
-        string prefix = isBedrock ? "allowlist" : "whitelist";
-        string formattedName = isBedrock ? QuotePlayerName(playerName) : playerName;
+        if (!TryFormatCommandPlayerName(instanceId, playerName, out string formattedName))
+        {
+            return Task.CompletedTask;
+        }
+
+        string prefix = GetWhitelistCommandPrefix(instanceId);
         return SendIfOnlineAsync(instanceId, $"{prefix} add {formattedName}");
     }
 
     /// <summary>
     /// Remove a player from the whitelist/allowlist by name. Requires server online.
     /// Java/PocketMine: "whitelist remove". BDS: "allowlist remove".
-    /// Player name is quoted only for Bedrock to handle spaces (e.g., gamertags).
+    /// Player name is validated before being sent to the live command channel.
     /// </summary>
     public Task ApplyWhitelistRemoveAsync(Guid instanceId, string playerName)
     {
-        bool isBedrock = IsBedrock(instanceId);
-        string prefix = isBedrock ? "allowlist" : "whitelist";
-        string formattedName = isBedrock ? QuotePlayerName(playerName) : playerName;
+        if (!TryFormatCommandPlayerName(instanceId, playerName, out string formattedName))
+        {
+            return Task.CompletedTask;
+        }
+
+        string prefix = GetWhitelistCommandPrefix(instanceId);
         return SendIfOnlineAsync(instanceId, $"{prefix} remove {formattedName}");
     }
 
@@ -106,16 +112,27 @@ public sealed class ServerRuntimeSettingApplier
         return IsBedrock(instanceId) ? "allowlist" : "whitelist";
     }
 
-    /// <summary>
-    /// Wraps a player name in double quotes, escaping any embedded quotes or backslashes.
-    /// Safe for all server types — Minecraft servers universally accept quoted names.
-    /// </summary>
-    private static string QuotePlayerName(string playerName)
+    private bool TryFormatCommandPlayerName(Guid instanceId, string playerName, out string formattedName)
     {
-        string escaped = playerName
-            .Replace("\\", "\\\\", StringComparison.Ordinal)
-            .Replace("\"", "\\\"", StringComparison.Ordinal);
-        return $"\"{escaped}\"";
+        InstanceMetadata? metadata = _instanceRegistry.GetById(instanceId);
+        if (metadata == null)
+        {
+            formattedName = string.Empty;
+            _logger.LogWarning("Skipping live player command for unknown instance {InstanceId}.", instanceId);
+            return false;
+        }
+
+        if (!CommandFormatter.TryFormatPlayerName(playerName, metadata.ServerType, out formattedName))
+        {
+            _logger.LogWarning(
+                "Skipping live player command for instance {InstanceId} because player name '{PlayerName}' is not valid for server type {ServerType}.",
+                instanceId,
+                playerName,
+                metadata.ServerType);
+            return false;
+        }
+
+        return true;
     }
 
     private async Task SendIfOnlineAsync(Guid instanceId, string command)

@@ -94,12 +94,28 @@ public sealed class RemotePlayerActionServiceTests : IDisposable
     [InlineData("name\nstop")]
     [InlineData("name\"")]
     [InlineData("name\'")]
+    [InlineData("name\\slash")]
     public async Task ExecuteAsync_Bedrock_RejectsControlCharactersAndQuotes(string name)
     {
         var result = await _service.ExecuteAsync(_bedrockInstanceId, name, "kick", null, "test-device");
         Assert.False(result.Success);
         Assert.Equal(RemoteControlActionFailure.Failed, result.Failure);
         Assert.Equal("Invalid player name.", result.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_InvalidName_DoesNotDispatchCommandEvenWhenServerIsOnline()
+    {
+        var processMock = new Mock<IServerProcess>();
+        processMock.SetupGet(process => process.State).Returns(ServerState.Online);
+        processMock.Setup(process => process.WriteInputAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+        _lifecycleMock.Setup(lifecycle => lifecycle.GetProcess(_javaInstanceId)).Returns(processMock.Object);
+
+        var result = await _service.ExecuteAsync(_javaInstanceId, "Steve;stop", "kick", null, "test-device");
+
+        Assert.False(result.Success);
+        Assert.Equal(RemoteControlActionFailure.Failed, result.Failure);
+        processMock.Verify(process => process.WriteInputAsync(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
