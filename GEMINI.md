@@ -64,3 +64,7 @@ This project strictly follows Clean Architecture principles, separated into spec
 
 ## 9. HTTP Resilience & Proxies
 - **Proxy Fallback Loops**: When writing custom fallback loops across multiple backend proxy URLs, DO NOT attach global Polly Circuit Breaker policies (like `.AddStandardResilience()`) to the `HttpClient`. If the first proxy times out or returns a 5xx, the circuit breaker will open and immediately block the fallback attempt to the second proxy with a `BrokenCircuitException`. Instead, rely on your explicit application logic to discard the error and move to the next URL.
+
+---
+
+*This document is maintained alongside the codebase. Always refer to the latest version in the repository.*
