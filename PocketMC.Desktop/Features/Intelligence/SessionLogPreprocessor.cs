@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -83,12 +84,26 @@ public static class SessionLogPreprocessor
         if (string.IsNullOrWhiteSpace(rawLog))
             return null;
 
-        var lines = rawLog.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        using var ms = new MemoryStream(Encoding.UTF8.GetBytes(rawLog));
+        return Preprocess(ms);
+    }
+
+    /// <summary>
+    /// Process raw log stream into a cleaner, AI-friendly format.
+    /// Returns null if the session is too short to summarize.
+    /// </summary>
+    public static string? Preprocess(Stream logStream)
+    {
+        if (logStream == null)
+            return null;
+
+        using var reader = new StreamReader(logStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
         var result = new List<string>();
 
-        foreach (var raw in lines)
+        string? rawLine;
+        while ((rawLine = reader.ReadLine()) != null)
         {
-            var line = raw.TrimEnd('\r');
+            var line = rawLine.TrimEnd('\r');
 
             // Redact IPs early
             line = IpRegex.Replace(line, "[REDACTED_IP]");

@@ -69,19 +69,15 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
             if (logPath == null || !File.Exists(logPath))
                 return SummarizationResult.Fail("No session log found. The server may not have generated any output.");
 
-            string rawLog;
+            // 1 & 2. Read and Preprocess log directly via Stream (use FileShare.ReadWrite since the log writer may still hold the file)
+            string? processedLog;
             using (var fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var reader = new StreamReader(fs, Encoding.UTF8))
             {
-                rawLog = await reader.ReadToEndAsync(ct);
+                processedLog = SessionLogPreprocessor.Preprocess(fs);
             }
-            if (string.IsNullOrWhiteSpace(rawLog))
-                return SummarizationResult.Fail("Session log is empty.");
 
-            // 2. Preprocess
-            var processedLog = SessionLogPreprocessor.Preprocess(rawLog);
-            if (processedLog == null)
-                return SummarizationResult.Fail("Session was too short to summarize (fewer than 5 meaningful events).");
+            if (string.IsNullOrWhiteSpace(processedLog))
+                return SummarizationResult.Fail("Session was too short to summarize (fewer than 5 meaningful events) or log is empty.");
 
             // 3. Chunk if necessary and summarize
             var chunks = SessionLogPreprocessor.ChunkLog(processedLog);

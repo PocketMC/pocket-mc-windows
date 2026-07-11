@@ -164,11 +164,86 @@ public sealed class ConsoleLogHistoryService
         int maxLines,
         CancellationToken cancellationToken)
     {
-        var lines = new Queue<string>(maxLines);
-
+        maxLines = Math.Max(1, maxLines);
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, useAsync: true);
-        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
+        long fileLength = stream.Length;
+        if (fileLength == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        // If the file is small (e.g. < 64KB), read it sequentially
+        const int InitialBufferSize = 65536;
+        if (fileLength <= InitialBufferSize)
+        {
+            return await ReadAllLinesSequentialAsync(stream, maxLines, cancellationToken);
+        }
+
+        var lines = new List<string>();
+        long offset = InitialBufferSize;
+
+        while (offset < fileLength && lines.Count < maxLines)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            long seekPosition = fileLength - offset;
+            if (seekPosition < 0)
+            {
+                seekPosition = 0;
+            }
+
+            stream.Position = seekPosition;
+
+            // Read from seek position to the end of the file
+            using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true))
+            {
+                string block = await reader.ReadToEndAsync(cancellationToken);
+
+                // Split by newline and count lines
+                // Note: we might have a partial line at the beginning of the block since we seeked arbitrarily
+                var blockLines = block.Split('\n');
+
+                // If we didn't seek to the beginning of the file, the first line is likely partial, so skip it
+                int startIdx = (seekPosition > 0) ? 1 : 0;
+
+                lines.Clear();
+                for (int i = startIdx; i < blockLines.Length; i++)
+                {
+                    string trimmed = blockLines[i].TrimEnd('\r');
+                    // Skip the last trailing empty line if it ends with a newline
+                    if (i == blockLines.Length - 1 && string.IsNullOrEmpty(trimmed))
+                    {
+                        continue;
+                    }
+                    lines.Add(trimmed);
+                }
+            }
+
+            if (lines.Count >= maxLines || seekPosition == 0)
+            {
+                break;
+            }
+
+            // Increase offset exponentially to locate lines faster in large files
+            offset *= 2;
+        }
+
+        // Return the last maxLines
+        if (lines.Count > maxLines)
+        {
+            return lines.GetRange(lines.Count - maxLines, maxLines);
+        }
+
+        return lines;
+    }
+
+    private static async Task<IReadOnlyList<string>> ReadAllLinesSequentialAsync(
+        FileStream stream,
+        int maxLines,
+        CancellationToken cancellationToken)
+    {
+        var lines = new Queue<string>(maxLines);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
         while (!reader.EndOfStream)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -177,15 +252,12 @@ public sealed class ConsoleLogHistoryService
             {
                 break;
             }
-
             if (lines.Count == maxLines)
             {
                 lines.Dequeue();
             }
-
             lines.Enqueue(line);
         }
-
         return lines.ToArray();
     }
 }
