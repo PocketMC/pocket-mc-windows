@@ -57,7 +57,6 @@
     <Using Include="PocketMC.Desktop.Features.Console" />
     <Using Include="PocketMC.Desktop.Features.Players" />
     <Using Include="PocketMC.Desktop.Features.Settings" />
-    <Using Include="PocketMC.Desktop.Features.Settings.ViewModels" />
     <Using Include="PocketMC.Desktop.Infrastructure" />
     <Using Include="PocketMC.Desktop.Core.Interfaces" />
     <Using Include="PocketMC.RemoteControl" />

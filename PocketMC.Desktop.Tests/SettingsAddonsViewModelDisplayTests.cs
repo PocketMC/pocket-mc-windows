@@ -1,4 +1,3 @@
-using PocketMC.Desktop.Features.Settings.ViewModels;
 using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.IO;
@@ -131,7 +130,7 @@ namespace PocketMC.Desktop.Tests
                 MinecraftVersion = "1.20.4"
             };
 
-            var vm = new SettingsAddonsViewModel(
+            var vm = new SettingsAddonsVM(
                 metadata,
                 _tempDir,
                 null!, // ModpackService
@@ -190,7 +189,7 @@ namespace PocketMC.Desktop.Tests
                 MinecraftVersion = "1.20.4"
             };
 
-            var vm = new SettingsAddonsViewModel(
+            var vm = new SettingsAddonsVM(
                 metadata,
                 _tempDir,
                 null!,
@@ -251,7 +250,7 @@ namespace PocketMC.Desktop.Tests
                 MinecraftVersion = "1.20.4"
             };
 
-            var vm = new SettingsAddonsViewModel(
+            var vm = new SettingsAddonsVM(
                 metadata,
                 _tempDir,
                 null!,
@@ -337,7 +336,7 @@ namespace PocketMC.Desktop.Tests
                 MinecraftVersion = "1.20.4"
             };
 
-            var vm = new SettingsAddonsViewModel(
+            var vm = new SettingsAddonsVM(
                 metadata,
                 _tempDir,
                 null!,

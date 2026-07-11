@@ -1,4 +1,3 @@
-using PocketMC.Desktop.Features.Settings.ViewModels;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Intelligence;
@@ -68,7 +67,7 @@ public sealed class SummaryEmojiFormatterTests
             };
             storage.Save(serverDir, summary);
 
-            var viewModel = new SettingsSummariesViewModel(serverDir, storage, new SilentDialogService());
+            var viewModel = new SettingsSummariesVM(serverDir, storage, new SilentDialogService());
             viewModel.Load(hasApiKey: true);
             viewModel.ViewSummaryCommand.Execute(viewModel.Summaries.Single());
 
