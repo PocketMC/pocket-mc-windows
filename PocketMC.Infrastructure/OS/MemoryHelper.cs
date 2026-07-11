@@ -45,7 +45,10 @@ namespace PocketMC.Infrastructure.OS
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"PocketMC failed to read Windows physical memory status: {ex}");
+            }
 
             var gcMemoryInfo = GC.GetGCMemoryInfo();
             // Fallback: This is not quite "System available", but it's the best we have cross-platform

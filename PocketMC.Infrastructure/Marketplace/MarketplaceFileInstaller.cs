@@ -45,13 +45,13 @@ public sealed class MarketplaceFileInstaller
         {
             await _downloader.DownloadFileAsync(url, stagingPath, expectedHash, expectedHashType, progress, cancellationToken);
             ValidateDownloadedFile(stagingPath);
-            await PromoteAsync(stagingPath, destinationPath, cancellationToken);
+            await PromoteAsync(stagingPath, destinationPath, _logger, cancellationToken);
         }
         finally
         {
-            TryDeleteFile(stagingPath);
-            TryDeleteFile(stagingPath + ".partial");
-            TryDeleteDirectory(stagingDir);
+            TryDeleteFile(stagingPath, _logger);
+            TryDeleteFile(stagingPath + ".partial", _logger);
+            TryDeleteDirectory(stagingDir, _logger);
         }
     }
 
@@ -64,7 +64,11 @@ public sealed class MarketplaceFileInstaller
         }
     }
 
-    private static async Task PromoteAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken)
+    private static async Task PromoteAsync(
+        string sourcePath,
+        string destinationPath,
+        ILogger logger,
+        CancellationToken cancellationToken)
     {
         const int maxAttempts = 5;
 
@@ -78,7 +82,7 @@ public sealed class MarketplaceFileInstaller
                 {
                     string backupPath = destinationPath + $".replace-{Guid.NewGuid():N}.bak";
                     File.Replace(sourcePath, destinationPath, backupPath, ignoreMetadataErrors: true);
-                    TryDeleteFile(backupPath);
+                    TryDeleteFile(backupPath, logger);
                 }
                 else
                 {
@@ -89,6 +93,11 @@ public sealed class MarketplaceFileInstaller
             }
             catch (Exception ex) when (attempt < maxAttempts && ex is IOException or UnauthorizedAccessException)
             {
+                logger.LogDebug(
+                    ex,
+                    "Marketplace file promotion attempt {Attempt} failed for {DestinationPath}; retrying.",
+                    attempt,
+                    destinationPath);
                 await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt), cancellationToken);
             }
         }
@@ -97,7 +106,7 @@ public sealed class MarketplaceFileInstaller
         {
             string backupPath = destinationPath + $".replace-{Guid.NewGuid():N}.bak";
             File.Replace(sourcePath, destinationPath, backupPath, ignoreMetadataErrors: true);
-            TryDeleteFile(backupPath);
+            TryDeleteFile(backupPath, logger);
         }
         else
         {
@@ -105,7 +114,7 @@ public sealed class MarketplaceFileInstaller
         }
     }
 
-    private static void TryDeleteFile(string path)
+    private static void TryDeleteFile(string path, ILogger logger)
     {
         try
         {
@@ -114,13 +123,13 @@ public sealed class MarketplaceFileInstaller
                 File.Delete(path);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Best effort cleanup only.
+            logger.LogDebug(ex, "Best-effort cleanup could not delete file {Path}.", path);
         }
     }
 
-    private static void TryDeleteDirectory(string path)
+    private static void TryDeleteDirectory(string path, ILogger logger)
     {
         try
         {
@@ -129,9 +138,9 @@ public sealed class MarketplaceFileInstaller
                 Directory.Delete(path);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Best effort cleanup only.
+            logger.LogDebug(ex, "Best-effort cleanup could not delete directory {Path}.", path);
         }
     }
 }

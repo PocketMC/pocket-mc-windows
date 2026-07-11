@@ -268,8 +268,35 @@ namespace PocketMC.Infrastructure.Java
             if (!keepFinalIfValid) TryDeleteDirectory(finalPath);
         }
 
-        private void TryDeleteFile(string path) { try { if (File.Exists(path)) File.Delete(path); } catch { } }
-        private void TryDeleteDirectory(string path) { try { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); } catch { } }
+        private void TryDeleteFile(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Best-effort Java provisioning cleanup could not delete file {Path}.", path);
+            }
+        }
+
+        private void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, recursive: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Best-effort Java provisioning cleanup could not delete directory {Path}.", path);
+            }
+        }
         private static string FormatSize(long bytes) => bytes < 1048576 ? $"{bytes / 1024.0:F1} KB" : $"{bytes / 1048576.0:F1} MB";
     }
 }

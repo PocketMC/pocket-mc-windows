@@ -134,7 +134,10 @@ namespace PocketMC.Infrastructure.Tunnel
         {
             string timestamped = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] {message}";
             try { _logWriter?.WriteLine(timestamped); }
-            catch { /* Best effort */ }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to write line to playit.exe agent log file.");
+            }
         }
 
         private async Task ReadStreamAsync(StreamReader reader, Action<string>? onLine)

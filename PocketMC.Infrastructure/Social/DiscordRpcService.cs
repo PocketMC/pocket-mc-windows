@@ -375,7 +375,10 @@ public sealed class DiscordRpcService : IDiscordRpcService
         {
             _client?.Dispose();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to dispose Discord RPC client.");
+        }
         _client = null;
     }
 

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Infrastructure.Marketplace
@@ -55,10 +57,14 @@ namespace PocketMC.Infrastructure.Marketplace
     public class DependencyResolverService
     {
         private readonly AddonManifestService _manifestService;
+        private readonly ILogger<DependencyResolverService> _logger;
 
-        public DependencyResolverService(AddonManifestService manifestService)
+        public DependencyResolverService(
+            AddonManifestService manifestService,
+            ILogger<DependencyResolverService>? logger = null)
         {
             _manifestService = manifestService;
+            _logger = logger ?? NullLogger<DependencyResolverService>.Instance;
         }
 
         public async Task<List<ResolvedDependency>> ResolveAsync(
@@ -171,8 +177,13 @@ namespace PocketMC.Infrastructure.Marketplace
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger.LogDebug(
+                        ex,
+                        "Failed to resolve dependency version {VersionId} for project {ProjectId}; falling back to latest compatible version.",
+                        versionId,
+                        projectId);
                     // Fallback to latest compat version below
                 }
             }

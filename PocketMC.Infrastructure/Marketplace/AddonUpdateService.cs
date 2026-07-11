@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Application.Services.Instances;
 using PocketMC.Infrastructure.Instances;
@@ -27,18 +28,22 @@ namespace PocketMC.Infrastructure.Marketplace
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly DownloaderService _downloader;
         private readonly MarketplaceFileInstaller _fileInstaller;
+        private readonly ILogger<AddonUpdateService> _logger;
+
         public AddonUpdateService(
             AddonManifestService manifestService,
             ModrinthService modrinth,
             CurseForgeService curseForge,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            ILogger<AddonUpdateService>? logger = null)
             : this(
                 manifestService,
                 modrinth,
                 curseForge,
                 httpClientFactory,
                 new DownloaderService(httpClientFactory, NullLogger<DownloaderService>.Instance),
-                null)
+                null,
+                logger)
         {
         }
 
@@ -48,7 +53,8 @@ namespace PocketMC.Infrastructure.Marketplace
             CurseForgeService curseForge,
             IHttpClientFactory httpClientFactory,
             DownloaderService downloader,
-            MarketplaceFileInstaller? fileInstaller)
+            MarketplaceFileInstaller? fileInstaller,
+            ILogger<AddonUpdateService>? logger = null)
         {
             _manifestService = manifestService;
             _modrinth = modrinth;
@@ -56,6 +62,7 @@ namespace PocketMC.Infrastructure.Marketplace
             _httpClientFactory = httpClientFactory;
             _downloader = downloader;
             _fileInstaller = fileInstaller ?? new MarketplaceFileInstaller(downloader, NullLogger<MarketplaceFileInstaller>.Instance);
+            _logger = logger ?? NullLogger<AddonUpdateService>.Instance;
         }
 
         /// <summary>
@@ -203,7 +210,11 @@ namespace PocketMC.Infrastructure.Marketplace
                 string? oldFilePath = PathSafety.ValidateContainedPath(destDir, safeOldFileName);
                 if (File.Exists(oldFilePath))
                 {
-                    try { File.Delete(oldFilePath); } catch { /* Best-effort cleanup */ }
+                    try { File.Delete(oldFilePath); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Best-effort cleanup could not delete old add-on file {OldFilePath}.", oldFilePath);
+                    }
                 }
             }
 

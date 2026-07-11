@@ -291,7 +291,7 @@ public sealed class InstanceImportService : IInstanceImportService
         await CopyIconIntoStagedServerAsync(stagingResult, cancellationToken).ConfigureAwait(false);
     }
 
-    private static string? RestorePortablePath(string? relativePath, string appRoot, bool isFile)
+    private string? RestorePortablePath(string? relativePath, string appRoot, bool isFile)
     {
         if (string.IsNullOrWhiteSpace(relativePath))
         {
@@ -317,15 +317,15 @@ public sealed class InstanceImportService : IInstanceImportService
             if (isFile && File.Exists(fullPath)) return fullPath;
             if (!isFile && Directory.Exists(fullPath)) return fullPath;
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore parsing errors
+            _logger.LogDebug(ex, "Could not restore portable path {RelativePath} relative to {AppRoot}.", relativePath, appRoot);
         }
 
         return null;
     }
 
-    private static async Task ScrubStagedBackupStateAsync(
+    private async Task ScrubStagedBackupStateAsync(
         string stagingDirectory,
         CancellationToken cancellationToken)
     {

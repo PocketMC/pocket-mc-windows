@@ -106,7 +106,10 @@ public class PhpProvisioningService
                 {
                     File.Delete(tempZipPath);
                 }
-                catch { }
+                catch (Exception cleanupEx)
+                {
+                    _logger.LogDebug(cleanupEx, "Best-effort PHP provisioning cleanup could not delete file {Path}.", tempZipPath);
+                }
             }
         }
     }

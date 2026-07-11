@@ -1,5 +1,7 @@
 using System.IO;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Domain.Storage;
 using PocketMC.Domain.Security;
 using PocketMC.Domain.Models;
@@ -9,10 +11,14 @@ namespace PocketMC.Infrastructure.Instances.Updates;
 public sealed class InstanceRollbackService
 {
     private readonly InstanceUpdateJournalStore _journalStore;
+    private readonly ILogger<InstanceRollbackService> _logger;
 
-    public InstanceRollbackService(InstanceUpdateJournalStore journalStore)
+    public InstanceRollbackService(
+        InstanceUpdateJournalStore journalStore,
+        ILogger<InstanceRollbackService>? logger = null)
     {
         _journalStore = journalStore;
+        _logger = logger ?? NullLogger<InstanceRollbackService>.Instance;
     }
 
     private static string GetRollbackDirectory(string serverDir)
@@ -66,9 +72,13 @@ public sealed class InstanceRollbackService
                 await FileUtils.CleanDirectoryAsync(tempDeleteDir, cancellationToken);
                 Directory.Delete(tempDeleteDir, recursive: true);
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore background cleanup errors
+                _logger.LogWarning(
+                    ex,
+                    "Rollback restored {ServerDir}, but failed to clean up temporary directory {TempDeleteDir}.",
+                    serverDir,
+                    tempDeleteDir);
             }
         }
         else
