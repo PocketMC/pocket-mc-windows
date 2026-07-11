@@ -7,7 +7,6 @@ using PocketMC.Infrastructure.Instances;
 using PocketMC.Infrastructure.Players;
 using PocketMC.Domain.Models;
 using PocketMC.Application.Services.Shell;
-using System.Text.RegularExpressions;
 
 namespace PocketMC.RemoteControl.Services;
 
@@ -48,7 +47,7 @@ public sealed class RemotePlayerActionService
             return RemoteControlActionResult.Failed(RemoteControlActionFailure.NotFound, "Instance was not found.");
         }
 
-        if (!IsValidPlayerName(playerName, metadata.ServerType))
+        if (!CommandFormatter.TryFormatPlayerName(playerName, metadata.ServerType, out string formattedName))
         {
             return RemoteControlActionResult.Failed(RemoteControlActionFailure.Failed, "Invalid player name.");
         }
@@ -64,7 +63,6 @@ public sealed class RemotePlayerActionService
             return RemoteControlActionResult.Failed(RemoteControlActionFailure.NotRunning, "Instance is not fully online.");
         }
 
-        string formattedName = CommandFormatter.FormatPlayerName(playerName, metadata.ServerType);
         IReadOnlyList<string> commands = BuildCommands(action, formattedName, metadata.ServerType, request?.Reason);
         if (commands.Count == 0)
         {
@@ -99,24 +97,5 @@ public sealed class RemotePlayerActionService
             _ => Array.Empty<string>()
         };
 
-    private static bool IsValidPlayerName(string name, string? serverType)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return false;
-        if (name.Length > 100) return false;
-
-        if (name.Any(c => char.IsControl(c) || c == '\r' || c == '\n' || c == '\t' || c == '"' || c == '\''))
-        {
-            return false;
-        }
-
-        if (CommandFormatter.IsBedrock(serverType))
-        {
-            return true;
-        }
-        else
-        {
-            return Regex.IsMatch(name, @"^[A-Za-z0-9_]{1,16}$");
-        }
-    }
 }
 
