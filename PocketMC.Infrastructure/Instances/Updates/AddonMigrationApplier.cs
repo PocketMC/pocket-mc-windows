@@ -1,5 +1,7 @@
 ﻿using PocketMC.Domain.Models;
 using System.IO;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Infrastructure.Marketplace;
 using PocketMC.Domain.Storage;
 using PocketMC.Domain.Security;
@@ -9,10 +11,14 @@ namespace PocketMC.Infrastructure.Instances.Updates;
 public sealed class AddonMigrationApplier
 {
     private readonly AddonManifestService _manifestService;
+    private readonly ILogger<AddonMigrationApplier> _logger;
 
-    public AddonMigrationApplier(AddonManifestService manifestService)
+    public AddonMigrationApplier(
+        AddonManifestService manifestService,
+        ILogger<AddonMigrationApplier>? logger = null)
     {
         _manifestService = manifestService;
+        _logger = logger ?? NullLogger<AddonMigrationApplier>.Instance;
     }
 
     public async Task ApplyAsync(
@@ -60,22 +66,22 @@ public sealed class AddonMigrationApplier
                     {
                         File.Replace(tempPath, targetPath, backupPath, ignoreMetadataErrors: true);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        try { File.Delete(tempPath); } catch { }
+                        TryDeleteFile(tempPath, "temporary addon migration file", ex);
                         throw;
                     }
 
-                    try { File.Delete(backupPath); } catch { }
+                    TryDeleteFile(backupPath, "addon migration backup file");
                 }
                 else
                 {
                     File.Move(tempPath, targetPath);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+                TryDeleteFile(tempPath, "temporary addon migration file", ex);
                 throw;
             }
 
@@ -170,5 +176,31 @@ public sealed class AddonMigrationApplier
 
         return PathSafety.ValidateContainedPath(targetDirectory, safeFileName)
             ?? throw new InvalidOperationException($"Addon target file '{safeFileName}' is invalid.");
+    }
+
+    private void TryDeleteFile(string path, string description, Exception? parentException = null)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (parentException == null)
+            {
+                _logger.LogDebug(ex, "Best-effort cleanup could not delete {Description} at {Path}.", description, path);
+                return;
+            }
+
+            _logger.LogWarning(
+                ex,
+                "Addon migration failed with {ParentExceptionType} and cleanup could not delete {Description} at {Path}.",
+                parentException.GetType().Name,
+                description,
+                path);
+        }
     }
 }

@@ -67,8 +67,9 @@ public class DropboxBackupProvider : ICloudBackupProvider
                 settings.CloudTokens["Dropbox"] = tokens;
                 _settingsManager.Save(settings);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Failed to refresh Dropbox OAuth token.");
                 return null;
             }
         }
@@ -90,8 +91,9 @@ public class DropboxBackupProvider : ICloudBackupProvider
         {
             return CloudBackupConnectionStatus.Expired;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to check Dropbox backup provider status.");
             return CloudBackupConnectionStatus.Error;
         }
     }
@@ -167,7 +169,11 @@ public class DropboxBackupProvider : ICloudBackupProvider
         var client = await GetClientAsync(ct);
         if (client != null)
         {
-            try { await client.Auth.TokenRevokeAsync(); } catch { }
+            try { await client.Auth.TokenRevokeAsync(); }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to revoke Dropbox token during disconnect.");
+            }
         }
 
         var settings = _settingsManager.Load();

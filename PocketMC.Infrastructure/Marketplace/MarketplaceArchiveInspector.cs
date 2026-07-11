@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.IO.Compression;
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
@@ -62,8 +63,9 @@ public static class MarketplaceArchiveInspector
 
             return warnings.Any(w => w.Contains("client only", StringComparison.OrdinalIgnoreCase));
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"PocketMC could not inspect add-on archive {filePath}: {ex}");
             return false;
         }
     }
@@ -111,9 +113,10 @@ public static class MarketplaceArchiveInspector
                 warnings.Add("client only mod");
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Do not crash on unreadable mods.toml
+            Debug.WriteLine($"PocketMC could not inspect mods.toml in add-on archive: {ex}");
         }
     }
 

@@ -1,6 +1,8 @@
 using PocketMC.Domain.Models;
 using System.IO;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Domain.Storage;
 using PocketMC.Domain.Security;
 
@@ -15,6 +17,13 @@ public sealed class InstanceUpdateJournalStore
     {
         WriteIndented = true
     };
+
+    private readonly ILogger<InstanceUpdateJournalStore> _logger;
+
+    public InstanceUpdateJournalStore(ILogger<InstanceUpdateJournalStore>? logger = null)
+    {
+        _logger = logger ?? NullLogger<InstanceUpdateJournalStore>.Instance;
+    }
 
     public async Task SaveAsync(InstanceUpdateJournal journal, CancellationToken cancellationToken = default)
     {
@@ -64,9 +73,9 @@ public sealed class InstanceUpdateJournalStore
                     results.Add(journal);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore corrupt journal files; callers can still inspect the directory manually.
+                _logger.LogWarning(ex, "Skipping corrupt or unreadable update journal {JournalPath}.", file);
             }
         }
 

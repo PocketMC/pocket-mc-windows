@@ -370,7 +370,14 @@ public class ServerLaunchConfigurator
                     catch (OperationCanceledException)
                     {
                         onLog?.Invoke($"[PocketMC] Installer cancelled. Cleaning up...");
-                        try { proc.Kill(true); } catch { }
+                        try
+                        {
+                            proc.Kill(true);
+                        }
+                        catch (Exception killEx)
+                        {
+                            _logger.LogWarning(killEx, "Failed to kill cancelled {ServerType} installer process.", meta.ServerType);
+                        }
                         throw;
                     }
                     await Task.WhenAll(outputTask, errorTask);
@@ -379,7 +386,14 @@ public class ServerLaunchConfigurator
                     {
                         onLog?.Invoke($"[PocketMC] {meta.ServerType} installation successful.");
                         // Clean up installer to prevent re-runs
-                        try { File.Delete(installerPath); } catch { }
+                        try
+                        {
+                            File.Delete(installerPath);
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            _logger.LogWarning(deleteEx, "Failed to remove installer jar {InstallerPath} after successful installation.", installerPath);
+                        }
                     }
                     else
                     {
@@ -406,12 +420,26 @@ public class ServerLaunchConfigurator
         string libDir = Path.Combine(workingDir, "libraries");
         if (Directory.Exists(libDir))
         {
-            try { Directory.Delete(libDir, true); } catch { }
+            try
+            {
+                Directory.Delete(libDir, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to clean installer libraries directory {LibraryDirectory}.", libDir);
+            }
         }
         string verDir = Path.Combine(workingDir, "versions");
         if (Directory.Exists(verDir))
         {
-            try { Directory.Delete(verDir, true); } catch { }
+            try
+            {
+                Directory.Delete(verDir, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to clean installer versions directory {VersionsDirectory}.", verDir);
+            }
         }
     }
 

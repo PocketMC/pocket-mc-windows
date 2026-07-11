@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -19,8 +20,9 @@ namespace PocketMC.Infrastructure.Mods
                 using var archive = ZipFile.OpenRead(filePath);
                 return archive.GetEntry("plugin.yml") != null || archive.GetEntry("paper-plugin.yml") != null;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"PocketMC failed to inspect plugin metadata for {filePath}: {ex}");
                 return false;
             }
         }
@@ -53,8 +55,9 @@ namespace PocketMC.Infrastructure.Mods
                 _cache[key] = metadata;
                 return metadata;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"PocketMC failed to scan Java add-on metadata for {filePath}: {ex}");
                 return new JavaModMetadata
                 {
                     DisplayName = CleanJarName(Path.GetFileName(filePath)),
@@ -311,9 +314,10 @@ namespace PocketMC.Infrastructure.Mods
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore parsing errors
+                Debug.WriteLine($"PocketMC ignored Java add-on metadata parsing error: {ex}");
             }
         }
 
@@ -450,9 +454,10 @@ namespace PocketMC.Infrastructure.Mods
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore parsing errors
+                Debug.WriteLine($"PocketMC ignored Java add-on metadata parsing error: {ex}");
             }
         }
 
@@ -655,9 +660,10 @@ namespace PocketMC.Infrastructure.Mods
                     metadata.SideLabel = "Unknown";
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore parsing errors
+                Debug.WriteLine($"PocketMC ignored Java add-on metadata parsing error: {ex}");
             }
         }
 
@@ -731,9 +737,10 @@ namespace PocketMC.Infrastructure.Mods
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore parsing errors
+                Debug.WriteLine($"PocketMC ignored Java add-on metadata parsing error: {ex}");
             }
         }
 
@@ -809,9 +816,10 @@ namespace PocketMC.Infrastructure.Mods
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore parsing errors
+                Debug.WriteLine($"PocketMC ignored Java add-on metadata parsing error: {ex}");
             }
         }
 
@@ -846,9 +854,10 @@ namespace PocketMC.Infrastructure.Mods
                     stream.CopyTo(ms);
                     metadata.IconBytes = ms.ToArray();
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Ignore extraction failures
+                    Debug.WriteLine($"PocketMC ignored Java add-on icon extraction failure: {ex}");
                 }
             }
         }

@@ -162,7 +162,7 @@ public class BackupService
         }
     }
 
-    private static string? ComputeSha256(string filePath)
+    private string? ComputeSha256(string filePath)
     {
         try
         {
@@ -171,8 +171,9 @@ public class BackupService
             var hash = sha.ComputeHash(stream);
             return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(ex, "Could not compute backup checksum for {FilePath}.", filePath);
             return null;
         }
     }
@@ -220,9 +221,9 @@ public class BackupService
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore and fallback
+            _logger.LogDebug(ex, "Could not resolve custom backup directory for {ServerDir}; falling back to default backups directory.", serverDir);
         }
         return Path.Combine(serverDir, "backups");
     }
@@ -329,7 +330,7 @@ public class BackupService
         {
             if (File.Exists(zipPath))
             {
-                try { File.Delete(zipPath); } catch { }
+                TryDeleteFile(zipPath, "partial backup ZIP");
             }
             _logger.LogError(ex, "Backup failed for server {ServerName}.", metadata.Name);
             return new LocalBackupResult { Success = false, Error = ex };
@@ -549,21 +550,21 @@ public class BackupService
         }
         catch (Exception ex)
         {
-            try { await FileUtils.CleanDirectoryAsync(stageDir); } catch { }
+            await TryCleanDirectoryAsync(stageDir, "restore staging directory");
             throw new InvalidDataException($"Failed to extract backup ZIP: {ex.Message}", ex);
         }
 
         onProgress?.Invoke("Validating world structure...");
         if (!HasLevelDat(stageDir))
         {
-            try { await FileUtils.CleanDirectoryAsync(stageDir); } catch { }
+            await TryCleanDirectoryAsync(stageDir, "restore staging directory");
             throw new InvalidDataException("Could not find level.dat in the backup. This doesn't appear to be a valid Minecraft world backup.");
         }
 
         var backupWorldDir = Path.Combine(serverDir, $".restore-backup-{DateTime.Now:yyyyMMddHHmmss}");
         if (Directory.Exists(backupWorldDir))
         {
-            try { await FileUtils.CleanDirectoryAsync(backupWorldDir); } catch { }
+            await TryCleanDirectoryAsync(backupWorldDir, "pre-existing restore backup directory");
         }
 
         bool oldWorldExisted = Directory.Exists(worldDir);
@@ -576,7 +577,7 @@ public class BackupService
             }
             catch (Exception ex)
             {
-                try { await FileUtils.CleanDirectoryAsync(stageDir); } catch { }
+                await TryCleanDirectoryAsync(stageDir, "restore staging directory");
                 throw new IOException($"Failed to backup current world: {ex.Message}", ex);
             }
         }
@@ -595,7 +596,7 @@ public class BackupService
                 {
                     if (Directory.Exists(worldDir))
                     {
-                        try { await FileUtils.CleanDirectoryAsync(worldDir); } catch { }
+                        await TryCleanDirectoryAsync(worldDir, "failed restore world directory");
                     }
                     Directory.Move(backupWorldDir, worldDir);
                 }
@@ -604,7 +605,7 @@ public class BackupService
                     _logger.LogCritical(rollbackEx, "CRITICAL: Failed to roll back original world after restore failure.");
                 }
             }
-            try { await FileUtils.CleanDirectoryAsync(stageDir); } catch { }
+            await TryCleanDirectoryAsync(stageDir, "restore staging directory");
             throw new IOException($"Failed to move restored world into place: {ex.Message}", ex);
         }
 
@@ -655,6 +656,36 @@ public class BackupService
             {
                 _logger.LogWarning(ex, "Failed to prune old backup {BackupFile}.", files[i].FullName);
             }
+        }
+    }
+
+    private async Task TryCleanDirectoryAsync(string directory, string description)
+    {
+        try
+        {
+            if (Directory.Exists(directory))
+            {
+                await FileUtils.CleanDirectoryAsync(directory);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Best-effort cleanup could not clean {Description} at {Directory}.", description, directory);
+        }
+    }
+
+    private void TryDeleteFile(string path, string description)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Best-effort cleanup could not delete {Description} at {Path}.", description, path);
         }
     }
 

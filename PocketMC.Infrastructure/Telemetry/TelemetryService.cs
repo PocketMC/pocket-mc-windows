@@ -77,13 +77,19 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
                 Task.Run(() => SendHeartbeatAsync(settings, isAppClosed: true)).Wait(TimeSpan.FromSeconds(2));
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to send final telemetry heartbeat: {ex}");
+        }
 
         try
         {
             _cts.Cancel();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to cancel telemetry background task: {ex}");
+        }
 
         WaitForBackgroundTaskToStop();
     }

@@ -184,13 +184,15 @@ public sealed class PortProbeService
             {
                 socket.DualMode = false;
             }
-            catch (SocketException)
+            catch (SocketException ex)
             {
                 // Best effort only. Unsupported stacks will be classified during bind.
+                System.Diagnostics.Debug.WriteLine($"PocketMC could not configure socket dual mode: {ex}");
             }
-            catch (NotSupportedException)
+            catch (NotSupportedException ex)
             {
                 // Best effort only. Unsupported stacks will be classified during bind.
+                System.Diagnostics.Debug.WriteLine($"PocketMC socket dual mode is not supported: {ex}");
             }
         }
 
@@ -369,8 +371,9 @@ public sealed class PortProbeService
                 processName: null,
                 details: $"An active {protocol} listener is already present at {match.Address}:{match.Port}.");
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"PocketMC could not inspect active listeners for port {port}: {ex}");
             return null;
         }
     }

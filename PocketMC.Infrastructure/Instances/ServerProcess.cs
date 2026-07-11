@@ -328,7 +328,10 @@ public class ServerProcess : IServerProcess, IDisposable
         if (_outputBuffer.Count > MAX_BUFFER_LINES) _outputBuffer.TryDequeue(out _);
 
         try { _sessionLogWriter?.WriteLine(sanitizedLine); }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to append to session log for instance {InstanceId}.", InstanceId);
+        }
 
         if (isError) OnErrorLine?.Invoke(sanitizedLine);
         else
@@ -505,7 +508,10 @@ public class ServerProcess : IServerProcess, IDisposable
     private void CloseSessionLog()
     {
         try { _sessionLogWriter?.Dispose(); }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to close session log for instance {InstanceId}.", InstanceId);
+        }
         finally { _sessionLogWriter = null; }
     }
 

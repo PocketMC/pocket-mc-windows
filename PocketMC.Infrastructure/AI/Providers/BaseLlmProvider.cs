@@ -79,7 +79,7 @@ public abstract class BaseLlmProvider : ILlmProvider
         return await GenerateCompletionAsync(apiKey, model, endpoint, "Reply with exactly the word OK and nothing else.", "Connectivity test.", ct);
     }
 
-    private static string ParseApiErrorMessage(string responseBody, int statusCode)
+    private string ParseApiErrorMessage(string responseBody, int statusCode)
     {
         try
         {
@@ -95,7 +95,10 @@ public abstract class BaseLlmProvider : ILlmProvider
             if (root.TryGetProperty("message", out var topMsg))
                 return topMsg.GetString() ?? $"API error ({statusCode})";
         }
-        catch { }
+        catch (JsonException ex)
+        {
+            _logger.LogDebug(ex, "Failed to parse AI API error response body as JSON.");
+        }
 
         return $"API returned HTTP {statusCode}. {(responseBody.Length > 150 ? responseBody.Substring(0, 150) + "..." : responseBody)}";
     }

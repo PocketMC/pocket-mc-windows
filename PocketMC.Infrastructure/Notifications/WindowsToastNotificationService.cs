@@ -39,9 +39,10 @@ public sealed class WindowsToastNotificationService : INotificationService
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore activation errors
+                System.Diagnostics.Debug.WriteLine($"PocketMC toast activation handler failed: {ex}");
             }
         };
         _isRegistered = true;

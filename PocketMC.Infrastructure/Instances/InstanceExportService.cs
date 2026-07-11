@@ -643,7 +643,7 @@ public sealed class InstanceExportService : IInstanceExportService
             cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task AddMetadataEntryAsync(
+    private async Task AddMetadataEntryAsync(
         ZipArchive archive,
         InstanceMetadata metadata,
         string instanceRoot,
@@ -655,7 +655,7 @@ public sealed class InstanceExportService : IInstanceExportService
         await AddJsonEntryAsync(archive, ExportedMetadataFileName, portableMetadata, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<InstanceMetadata> CreatePortableMetadataSnapshotAsync(
+    private async Task<InstanceMetadata> CreatePortableMetadataSnapshotAsync(
         InstanceMetadata requestMetadata,
         string instanceRoot,
         ApplicationState applicationState,

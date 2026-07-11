@@ -49,7 +49,11 @@ public class OneDriveBackupProvider : ICloudBackupProvider
                 var settings = _settingsManager.Load();
                 if (settings.CloudTokens.TryGetValue("OneDrive", out var tokens) && !string.IsNullOrEmpty(tokens.RefreshToken))
                 {
-                    try { args.TokenCache.DeserializeMsalV3(Convert.FromBase64String(tokens.RefreshToken)); } catch { }
+                    try { args.TokenCache.DeserializeMsalV3(Convert.FromBase64String(tokens.RefreshToken)); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize OneDrive token cache.");
+                    }
                 }
             });
 

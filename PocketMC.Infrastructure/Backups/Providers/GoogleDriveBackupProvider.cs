@@ -112,8 +112,9 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
             await req.ExecuteAsync(ct);
             return CloudBackupConnectionStatus.Connected;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to check Google Drive backup provider status.");
             return CloudBackupConnectionStatus.Expired;
         }
     }
@@ -197,7 +198,10 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
                 var content = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("token", tokens.AccessToken) });
                 await _httpClient.PostAsync("https://oauth2.googleapis.com/revoke", content, ct);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to revoke Google Drive token during disconnect.");
+            }
         }
 
         settings.CloudTokens.Remove("GoogleDrive");

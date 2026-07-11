@@ -55,7 +55,14 @@ public class DiagnosticReportingService
         }
         finally
         {
-            try { Directory.Delete(tempFolder, true); } catch { }
+            try
+            {
+                Directory.Delete(tempFolder, true);
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogWarning(cleanupEx, "Failed to clean diagnostics temp folder {TempFolder}.", tempFolder);
+            }
         }
     }
 

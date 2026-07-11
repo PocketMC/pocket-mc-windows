@@ -393,7 +393,7 @@ public sealed class BedrockAddonInstaller : IAddonManager
         return preferred;
     }
 
-    private static void CollectAddons(string dir, string addonType, List<AddonInfo> output)
+    private void CollectAddons(string dir, string addonType, List<AddonInfo> output)
     {
         if (!Directory.Exists(dir)) return;
 

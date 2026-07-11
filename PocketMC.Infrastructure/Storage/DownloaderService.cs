@@ -328,8 +328,9 @@ public class DownloaderService
         {
             return File.Exists(partialPath) ? new FileInfo(partialPath).Length : 0;
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"PocketMC failed to check existing partial length for {partialPath}: {ex}");
             return 0;
         }
     }
@@ -432,9 +433,9 @@ public class DownloaderService
                 File.Delete(path);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Best effort cleanup only.
+            Debug.WriteLine($"PocketMC failed to delete file {path}: {ex}");
         }
     }
 }

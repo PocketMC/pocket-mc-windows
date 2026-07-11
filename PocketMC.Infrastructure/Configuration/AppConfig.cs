@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -111,7 +112,10 @@ namespace PocketMC.Infrastructure.Telemetry
                     if (telemetryProxies.Count > 0) TelemetryProxies = telemetryProxies;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"PocketMC AppConfig failed to load embedded configuration: {ex}");
+            }
         }
 
         private static Stream? OpenConfigStream()
@@ -147,9 +151,10 @@ namespace PocketMC.Infrastructure.Telemetry
                         return stream;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Some runtime-generated assemblies cannot expose manifest resources.
+                    Debug.WriteLine($"PocketMC AppConfig skipped assembly resource lookup for {assembly.FullName}: {ex}");
                 }
             }
 

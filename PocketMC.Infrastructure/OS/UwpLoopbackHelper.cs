@@ -33,8 +33,9 @@ public static class UwpLoopbackHelper
         {
             return IsExemptionPresentAsync().GetAwaiter().GetResult();
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"PocketMC failed to check UWP loopback exemption: {ex}");
             return false;
         }
     }
@@ -76,8 +77,9 @@ public static class UwpLoopbackHelper
             // ERROR_CANCELLED â€” user declined the UAC prompt; not an error per se.
             return false;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"PocketMC failed to apply UWP loopback exemption: {ex}");
             return false;
         }
     }
@@ -125,9 +127,10 @@ public static class UwpLoopbackHelper
                 proc.Kill(entireProcessTree: true);
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Best-effort timeout cleanup; callers already receive false.
+            System.Diagnostics.Debug.WriteLine($"PocketMC failed to kill timed-out CheckNetIsolation process: {ex}");
         }
     }
 }

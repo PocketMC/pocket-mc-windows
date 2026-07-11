@@ -12,6 +12,8 @@ using PocketMC.Domain.Security;
 using PocketMC.Domain.Models;
 using System.Threading;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace PocketMC.Infrastructure.Marketplace
 {
@@ -44,6 +46,12 @@ namespace PocketMC.Infrastructure.Marketplace
     {
         private const string ManifestFileName = "addon_manifest.json";
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ILogger<AddonManifestService> _logger;
+
+        public AddonManifestService(ILogger<AddonManifestService>? logger = null)
+        {
+            _logger = logger ?? NullLogger<AddonManifestService>.Instance;
+        }
 
         private SemaphoreSlim GetLock(string serverDir)
         {
@@ -60,8 +68,9 @@ namespace PocketMC.Infrastructure.Marketplace
                 string json = await File.ReadAllTextAsync(path);
                 return JsonSerializer.Deserialize<AddonManifest>(json) ?? new AddonManifest();
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Failed to load add-on manifest at {ManifestPath}; returning an empty manifest.", path);
                 return new AddonManifest();
             }
         }
@@ -80,8 +89,9 @@ namespace PocketMC.Infrastructure.Marketplace
                 string json = File.ReadAllText(path);
                 return JsonSerializer.Deserialize<AddonManifest>(json) ?? new AddonManifest();
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Failed to load add-on manifest at {ManifestPath}; returning an empty manifest.", path);
                 return new AddonManifest();
             }
         }
@@ -324,7 +334,10 @@ namespace PocketMC.Infrastructure.Marketplace
                         string hash = await CalculateSha1Async(file);
                         hashToLocalPath[hash] = file;
                     }
-                    catch { /* Skip unreadable files */ }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Skipping unreadable add-on file {FilePath} while syncing manifest.", file);
+                    }
                 }
 
                 if (hashToLocalPath.Count > 0)

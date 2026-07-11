@@ -101,7 +101,10 @@ public sealed class AddonInventoryService
                                 if (File.Exists(loser.FullPath)) File.Delete(loser.FullPath);
                                 if (!string.IsNullOrEmpty(loser.DisabledPath) && File.Exists(loser.DisabledPath)) File.Delete(loser.DisabledPath);
                             }
-                            catch { /* Ignore locks */ }
+                            catch (Exception ex)
+                            {
+                                _logger.LogDebug(ex, "Could not remove duplicate add-on file {AddonPath}.", loser.FullPath);
+                            }
                         }
                     }
                 }
@@ -232,7 +235,10 @@ public sealed class AddonInventoryService
                     File.Delete(fullPath); 
                 }
             }
-            catch { /* Ignore deletion errors if locked */ }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not remove incompatible add-on file {AddonPath}.", fullPath);
+            }
             
             return null; // Don't return an item so it doesn't show in UI
         }
@@ -418,6 +424,7 @@ public sealed class AddonInventoryService
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {
+            System.Diagnostics.Debug.WriteLine($"PocketMC could not inspect add-on file info for {fullPath}: {ex}");
             return null;
         }
     }
