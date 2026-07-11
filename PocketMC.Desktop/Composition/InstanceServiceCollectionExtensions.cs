@@ -53,6 +53,10 @@ namespace PocketMC.Application.Services.Instances
             services.AddSingleton<WhitelistService>();
             services.AddSingleton<ServerLifecycleService>();
             services.AddSingleton<IServerLifecycleService>(provider => provider.GetRequiredService<ServerLifecycleService>());
+            services.AddSingleton<ForgeInstaller>();
+            services.AddSingleton<JavaLaunchConfigurator>();
+            services.AddSingleton<BedrockLaunchConfigurator>();
+            services.AddSingleton<PocketMineLaunchConfigurator>();
             services.AddSingleton<ServerLaunchConfigurator>();
             services.AddSingleton<PortPreflightService>();
             services.AddSingleton<PortProbeService>();
@@ -63,6 +67,10 @@ namespace PocketMC.Application.Services.Instances
             services.AddSingleton<IResourceMonitorService, ResourceMonitorService>();
             services.AddSingleton<BackupService>();
             services.AddSingleton<BackupSchedulerService>();
+            services.AddSingleton<AddonExportService>();
+            services.AddSingleton<ExportManifestBuilder>();
+            services.AddSingleton<ExportFileEnumerator>();
+            services.AddSingleton<ExportZipWriter>();
             services.AddSingleton<IInstanceExportService, InstanceExportService>();
             services.AddSingleton<IInstanceImportService, InstanceImportService>();
             services.AddSingleton<IServerDetectionService, ServerDetectionService>();
