@@ -1,4 +1,4 @@
-﻿using PocketMC.RemoteControl.Models;
+using PocketMC.RemoteControl.Models;
 using System.IO;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
@@ -167,7 +167,7 @@ public sealed class RemoteDashboardHost
 
     private void MapStaticFiles(WebApplication app)
     {
-        string webRoot = Path.Combine(AppContext.BaseDirectory, "Features", "RemoteControl", "Web");
+        string webRoot = Path.Combine(AppContext.BaseDirectory, "Web");
         if (Directory.Exists(webRoot))
         {
             app.UseStaticFiles(new StaticFileOptions
