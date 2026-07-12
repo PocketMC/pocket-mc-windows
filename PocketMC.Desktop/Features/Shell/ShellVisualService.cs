@@ -248,6 +248,15 @@ namespace PocketMC.Desktop.Features.Shell
             {
                 ApplyDwmDarkMode(dialog);
 
+                // ApplyDwmDarkMode silently skips when the window is not loaded
+                // (no HWND yet). Hook SourceInitialized to apply it as soon as
+                // the native handle is created — this eliminates the white DWM
+                // border that would otherwise flash on every dialog.
+                if (!dialog.IsLoaded)
+                {
+                    dialog.SourceInitialized += (_, _) => ApplyDwmDarkMode(dialog);
+                }
+
                 string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 
                 if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&

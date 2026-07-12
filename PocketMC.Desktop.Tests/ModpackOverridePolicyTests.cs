@@ -156,8 +156,11 @@ public sealed class ModpackOverridePolicyTests : IDisposable
             new ModpackParser(NullLogger<ModpackParser>.Instance),
             null!,
             null!,
-            NullLogger<ModpackService>.Instance);
+            NullLogger<ModpackService>.Instance,
+            null!);
     }
 }
+
+
 
 

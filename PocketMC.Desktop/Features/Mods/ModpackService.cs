@@ -19,6 +19,8 @@ using PocketMC.Domain.Security;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Infrastructure.Power;
+using PocketMC.Application.Interfaces.Mods;
 using PocketMC.Desktop.Core.Presentation;
 using PocketMC.Application.Services.Shell;
 
@@ -60,6 +62,7 @@ namespace PocketMC.Desktop.Features.Mods
         private readonly AddonManifestService _manifestService;
         private readonly ApplicationState _appState;
         private readonly ILogger<ModpackService> _logger;
+        private readonly ICurseForgeApiKeyDialogService _dialogService;
 
         public ModpackService(
             HttpClient httpClient,
@@ -71,7 +74,8 @@ namespace PocketMC.Desktop.Features.Mods
             ModpackParser parser,
             AddonManifestService manifestService,
             ApplicationState appState,
-            ILogger<ModpackService> logger)
+            ILogger<ModpackService> logger,
+            ICurseForgeApiKeyDialogService dialogService)
         {
             _httpClient = httpClient;
             _downloader = downloader;
@@ -83,6 +87,7 @@ namespace PocketMC.Desktop.Features.Mods
             _manifestService = manifestService;
             _appState = appState;
             _logger = logger;
+            _dialogService = dialogService;
         }
 
         public Task<ModpackImportResult> ParseModpackZipAsync(string zipPath)
@@ -502,6 +507,13 @@ namespace PocketMC.Desktop.Features.Mods
         {
             var cfTasks = new List<Task>();
             string? apiKey = _appState.Settings?.CurseForgeApiKey;
+            
+            // Wait to resolve API Key if it's not present and we have CurseForge mods
+            if (string.IsNullOrEmpty(apiKey) && pack.Mods.Any(m => m.DownloadUrl.StartsWith("CURSEFORGE:")))
+            {
+                apiKey = await _dialogService.PromptForApiKeyAsync();
+            }
+
             var semaphore = new SemaphoreSlim(10); // Throttle API calls
 
             foreach (var mod in pack.Mods.Where(m => m.DownloadUrl.StartsWith("CURSEFORGE:")))
@@ -536,13 +548,8 @@ namespace PocketMC.Desktop.Features.Mods
                                     }
                                     catch (Exception ex)
                                     {
-                                        _logger.LogWarning(ex, "Official CurseForge API resolution failed for project {ProjectId} file {FileId}. Falling back to proxy.", projectId, fileId);
+                                        _logger.LogWarning(ex, "Official CurseForge API resolution failed for project {ProjectId} file {FileId}.", projectId, fileId);
                                     }
-                                }
-
-                                if (response == null)
-                                {
-                                    response = await _httpClient.GetFromJsonAsync<JsonObject>($"https://api.curse.tools/v1/cf/mods/{projectId}/files/{fileId}");
                                 }
 
                                 string? downloadUrl = response?["data"]?["downloadUrl"]?.ToString();

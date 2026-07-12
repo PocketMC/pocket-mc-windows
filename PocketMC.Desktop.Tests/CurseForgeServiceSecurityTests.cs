@@ -5,6 +5,7 @@ using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Shell;
+using PocketMC.Application.Interfaces.Mods;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -242,9 +243,11 @@ public sealed class CurseForgeServiceSecurityTests
             BaseAddress = new Uri("https://api.curseforge.com")
         };
 
-        return new CurseForgeService(appState, client);
+        return new CurseForgeService(appState, client, new Moq.Mock<ICurseForgeApiKeyDialogService>().Object);
     }
 }
+
+
 
 
 

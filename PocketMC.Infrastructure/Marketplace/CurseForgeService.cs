@@ -11,27 +11,34 @@ using System.Threading.Tasks;
 
 using System.Linq;
 
+using PocketMC.Application.Interfaces.Mods;
+
 namespace PocketMC.Infrastructure.Marketplace
 {
     public class CurseForgeService : IAddonProvider
     {
         private readonly HttpClient _httpClient;
         private readonly ApplicationState _appState;
+        private readonly ICurseForgeApiKeyDialogService _dialogService;
         private const string ApiBase = "https://api.curseforge.com/v1";
 
-        public CurseForgeService(ApplicationState appState, HttpClient httpClient)
+        public CurseForgeService(ApplicationState appState, HttpClient httpClient, ICurseForgeApiKeyDialogService dialogService)
         {
             _appState = appState;
             _httpClient = httpClient;
+            _dialogService = dialogService;
         }
 
         public string Name => "CurseForge";
 
-        private string? GetActiveApiKey()
+        private async Task<string?> GetActiveApiKeyAsync()
         {
-            return !string.IsNullOrWhiteSpace(_appState.Settings.CurseForgeApiKey)
-                ? _appState.Settings.CurseForgeApiKey
-                : null;
+            if (!string.IsNullOrWhiteSpace(_appState.Settings.CurseForgeApiKey))
+            {
+                return _appState.Settings.CurseForgeApiKey;
+            }
+
+            return await _dialogService.PromptForApiKeyAsync();
         }
 
         private static int MapLoaderType(string loader) => loader.ToLowerInvariant() switch
@@ -129,7 +136,7 @@ namespace PocketMC.Infrastructure.Marketplace
         {
             try
             {
-                string? apiKey = GetActiveApiKey();
+                string? apiKey = await GetActiveApiKeyAsync();
                 if (string.IsNullOrEmpty(apiKey))
                 {
                     return new List<ModrinthHit>
@@ -306,7 +313,7 @@ namespace PocketMC.Infrastructure.Marketplace
             // CurseForge API allows fetching a single file by ID.
             try
             {
-                string? apiKey = GetActiveApiKey();
+                string? apiKey = await GetActiveApiKeyAsync();
                 if (string.IsNullOrEmpty(apiKey)) return null;
 
                 // We don't have project ID easily if we only have file ID, unless we search or use another endpoint.
@@ -345,7 +352,7 @@ namespace PocketMC.Infrastructure.Marketplace
         {
             try
             {
-                string? apiKey = GetActiveApiKey();
+                string? apiKey = await GetActiveApiKeyAsync();
                 if (string.IsNullOrEmpty(apiKey)) return null;
 
                 string url = $"{ApiBase}/mods/{projectId}";
@@ -429,7 +436,7 @@ namespace PocketMC.Infrastructure.Marketplace
             {
                 if (string.IsNullOrEmpty(projectId)) return null;
 
-                string? apiKey = GetActiveApiKey();
+                string? apiKey = await GetActiveApiKeyAsync();
                 if (string.IsNullOrEmpty(apiKey)) return null;
 
                 var projectInfo = await GetProjectInfoAsync(projectId);

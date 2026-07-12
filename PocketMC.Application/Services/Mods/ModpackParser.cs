@@ -66,7 +66,7 @@ namespace PocketMC.Application.Services.Mods
                 return await ParseCurseForgePackAsync(curseManifest);
             }
 
-            throw new InvalidDataException("Unsupported modpack format. Could not find manifest.json or modrinth.index.json.");
+            throw new InvalidDataException("invalid modpack not supported");
         }
 
         private async Task<ModpackImportResult> ParseModrinthPackAsync(ZipArchiveEntry entry)

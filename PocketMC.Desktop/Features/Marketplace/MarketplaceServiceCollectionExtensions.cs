@@ -41,12 +41,15 @@ using PocketMC.Infrastructure.Power;
 using PocketMC.Infrastructure.Http;
 
 
+using PocketMC.Application.Interfaces.Mods;
+
 namespace PocketMC.Desktop.Features.Marketplace
 {
     public static class MarketplaceServiceCollectionExtensions
     {
         public static IServiceCollection AddMarketplace(this IServiceCollection services)
         {
+            services.AddSingleton<ICurseForgeApiKeyDialogService, CurseForgeApiKeyDialogService>();
             services.AddSingleton<ModpackParser>();
             services.AddSingleton<ModpackService>();
 

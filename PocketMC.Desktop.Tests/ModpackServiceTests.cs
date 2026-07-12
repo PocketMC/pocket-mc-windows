@@ -127,7 +127,8 @@ public class ModpackServiceTests : IDisposable
             _parser,
             manifestService,
             _appState,
-            NullLogger<ModpackService>.Instance
+            NullLogger<ModpackService>.Instance,
+            null!
         );
 
         var pack = new ModpackImportResult
@@ -192,7 +193,8 @@ public class ModpackServiceTests : IDisposable
             _parser,
             manifestService,
             _appState,
-            NullLogger<ModpackService>.Instance
+            NullLogger<ModpackService>.Instance,
+            null!
         );
 
         var pack = new ModpackImportResult
@@ -282,7 +284,8 @@ public class ModpackServiceTests : IDisposable
             _parser,
             manifestService,
             _appState,
-            NullLogger<ModpackService>.Instance
+            NullLogger<ModpackService>.Instance,
+            null!
         );
 
         var pack = new ModpackImportResult();
@@ -351,7 +354,8 @@ public class ModpackServiceTests : IDisposable
             _parser,
             manifestService,
             _appState,
-            NullLogger<ModpackService>.Instance
+            NullLogger<ModpackService>.Instance,
+            null!
         );
 
         var pack = new ModpackImportResult();
@@ -389,3 +393,5 @@ public class ModpackServiceTests : IDisposable
         }
     }
 }
+
+

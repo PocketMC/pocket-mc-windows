@@ -71,15 +71,29 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (OperationCanceledException)
             {
-                Dispatcher.Invoke(() =>
+                if (_createdInstanceMetadata != null)
                 {
-                    ShowAlert("Installation was cancelled.");
-                });
+                    try
+                    {
+                        await _instanceManager.DeleteInstanceAsync(_createdInstanceMetadata.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to clean up cancelled modpack instance");
+                    }
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to install modpack");
-                ShowAlert($"Failed to install modpack: {ex.Message}");
+                if (ex.Message == "invalid modpack not supported")
+                {
+                    ShowAlert(ex.Message);
+                }
+                else
+                {
+                    ShowAlert($"Failed to install modpack: {ex.Message}");
+                }
             }
             finally
             {
@@ -216,7 +230,15 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             if (_isRunning)
             {
+                var result = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
+                    "Cancel Installation?",
+                    "Are you sure you want to cancel the modpack installation? The partially downloaded server will be deleted."
+                );
+
+                if (!result) return;
+
                 _cts?.Cancel();
+                Close();
             }
             else
             {
