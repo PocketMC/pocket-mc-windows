@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Core.Interfaces;
 using System.Threading.Tasks;
 
 namespace PocketMC.Desktop.Core.Interfaces
@@ -23,5 +23,6 @@ namespace PocketMC.Desktop.Core.Interfaces
         Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*");
         Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*");
         Task<string?> PromptPasswordAsync(string title, string message);
+        Task ShowProgressDialogAsync(string title, string message, System.Func<System.IProgress<double>, Task> action);
     }
 }

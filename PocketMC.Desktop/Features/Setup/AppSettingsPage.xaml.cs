@@ -1339,7 +1339,13 @@ namespace PocketMC.Desktop.Features.Setup
                         {
                             if (Directory.Exists(currentRoot))
                             {
-                                await PocketMC.Domain.Storage.FileUtils.CopyDirectoryAsync(currentRoot, targetPath);
+                                await _dialogService.ShowProgressDialogAsync(
+                                    "Transferring Data",
+                                    "Transferring files to the new root directory... Do not close PocketMC.",
+                                    async (progress) =>
+                                    {
+                                        await PocketMC.Domain.Storage.FileUtils.CopyDirectoryAsync(currentRoot, targetPath, progress);
+                                    });
                             }
                         }
                         catch (Exception ex)

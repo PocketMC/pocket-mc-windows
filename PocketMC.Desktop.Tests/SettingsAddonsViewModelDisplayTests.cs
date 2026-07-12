@@ -416,6 +416,7 @@ namespace PocketMC.Desktop.Tests
         public Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult<string?>(null);
         public Task<string?> PromptPasswordAsync(string title, string message) => Task.FromResult<string?>(null);
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(new string[0]);
+        public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<double>, Task> action) => action(new Progress<double>());
     }
 
     public class FakeLifecycleService : IServerLifecycleService

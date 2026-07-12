@@ -15,13 +15,39 @@ namespace PocketMC.Domain.Storage
         /// <summary>
         /// Recursively copies a directory tree. Safe across drive boundaries
         /// (unlike Directory.Move which fails cross-volume).
+        /// Reports progress as a percentage (0.0 to 100.0).
         /// </summary>
-        public static async Task CopyDirectoryAsync(string sourceDir, string destDir)
+        public static async Task CopyDirectoryAsync(string sourceDir, string destDir, IProgress<double>? progress = null)
         {
-            await Task.Run(() =>
+            if (progress != null)
             {
-                CopyDirectoryRecursive(sourceDir, destDir);
-            });
+                long totalBytes = GetDirectorySize(sourceDir);
+                long[] copiedBytes = new long[1];
+                await CopyDirectoryRecursiveAsync(sourceDir, destDir, totalBytes, copiedBytes, progress);
+            }
+            else
+            {
+                await Task.Run(() => CopyDirectoryRecursive(sourceDir, destDir));
+            }
+        }
+
+        private static long GetDirectorySize(string dirPath)
+        {
+            if (!Directory.Exists(dirPath)) return 0;
+            long size = 0;
+            var dirInfo = new DirectoryInfo(dirPath);
+            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    size += file.Length;
+                }
+                catch
+                {
+                    // Ignore inaccessible files
+                }
+            }
+            return size;
         }
 
         private static void CopyDirectoryRecursive(string source, string dest)
@@ -38,6 +64,41 @@ namespace PocketMC.Domain.Storage
             {
                 var destSubDir = Path.Combine(dest, Path.GetFileName(dir));
                 CopyDirectoryRecursive(dir, destSubDir);
+            }
+        }
+
+        private static async Task CopyDirectoryRecursiveAsync(string source, string dest, long totalBytes, long[] copiedBytes, IProgress<double> progress)
+        {
+            Directory.CreateDirectory(dest);
+
+            foreach (var file in Directory.GetFiles(source))
+            {
+                var destFile = Path.Combine(dest, Path.GetFileName(file));
+                
+                // Using Stream for fine-grained progress tracking
+                await using var sourceStream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+                await using var destinationStream = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+                
+                var buffer = new byte[81920];
+                int bytesRead;
+                while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await destinationStream.WriteAsync(buffer, 0, bytesRead);
+                    Interlocked.Add(ref copiedBytes[0], bytesRead);
+                    
+                    if (totalBytes > 0)
+                    {
+                        double percentage = ((double)Interlocked.Read(ref copiedBytes[0]) / totalBytes) * 100.0;
+                        progress.Report(Math.Min(100.0, Math.Max(0.0, percentage)));
+                    }
+                }
+            }
+
+            foreach (var dir in Directory.GetDirectories(source))
+            {
+                var destSubDir = Path.Combine(dest, Path.GetFileName(dir));
+                // Awaiting recursive call
+                await CopyDirectoryRecursiveAsync(dir, destSubDir, totalBytes, copiedBytes, progress);
             }
         }
 
