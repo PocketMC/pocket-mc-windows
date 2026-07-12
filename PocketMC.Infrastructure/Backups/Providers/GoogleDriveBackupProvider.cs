@@ -379,13 +379,39 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         await service.Files.Delete(providerFileId).ExecuteAsync(ct);
     }
 
-    public async Task DownloadBackupAsync(string providerFileId, string localDestinationPath, CancellationToken ct)
+    public async Task DownloadBackupAsync(string providerFileId, string localDestinationPath, CancellationToken ct, IProgress<double>? progress = null)
     {
         var service = await GetServiceAsync(ct);
         if (service == null) throw new UnauthorizedAccessException("Google Drive token is expired or missing.");
 
-        using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
         var request = service.Files.Get(providerFileId);
+        
+        long totalSize = 0;
+        try
+        {
+            var metaRequest = service.Files.Get(providerFileId);
+            metaRequest.Fields = "size";
+            var meta = await metaRequest.ExecuteAsync(ct);
+            if (meta.Size.HasValue) totalSize = meta.Size.Value;
+        }
+        catch { }
+
+        request.MediaDownloader.ProgressChanged += (downloadProgress) =>
+        {
+            if (progress != null)
+            {
+                if (downloadProgress.Status == Google.Apis.Download.DownloadStatus.Downloading)
+                {
+                    if (totalSize > 0)
+                    {
+                        double percent = (double)downloadProgress.BytesDownloaded / totalSize * 100.0;
+                        progress.Report(percent);
+                    }
+                }
+            }
+        };
+
+        using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
         await request.DownloadAsync(stream, ct);
     }
 

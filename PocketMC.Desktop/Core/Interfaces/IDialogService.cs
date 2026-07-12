@@ -6,6 +6,12 @@ namespace PocketMC.Desktop.Core.Interfaces
     public enum DialogResult { Ok, Cancel, Yes, No, Dismiss }
     public enum DialogType { Information, Warning, Error, Question }
 
+    public struct ProgressDialogUpdate
+    {
+        public double Percentage { get; set; }
+        public string? Message { get; set; }
+    }
+
     public interface IDialogService
     {
         Task<DialogResult> ShowDialogAsync(
@@ -24,5 +30,6 @@ namespace PocketMC.Desktop.Core.Interfaces
         Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*");
         Task<string?> PromptPasswordAsync(string title, string message);
         Task ShowProgressDialogAsync(string title, string message, System.Func<System.IProgress<double>, Task> action);
+        Task ShowProgressDialogAsync(string title, string message, System.Func<System.IProgress<ProgressDialogUpdate>, Task> action);
     }
 }

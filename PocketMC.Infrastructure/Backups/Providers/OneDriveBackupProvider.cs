@@ -280,7 +280,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DownloadBackupAsync(string providerFileId, string localDestinationPath, CancellationToken ct)
+    public async Task DownloadBackupAsync(string providerFileId, string localDestinationPath, CancellationToken ct, IProgress<double>? progress = null)
     {
         string? token = await GetValidAccessTokenAsync(ct);
         if (token == null) throw new UnauthorizedAccessException("OneDrive token is expired or missing.");
@@ -292,8 +292,23 @@ public class OneDriveBackupProvider : ICloudBackupProvider
         var response = await _httpClient.SendAsync(requestMsg, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
 
-        using var remoteStream = await response.Content.ReadAsStreamAsync(ct);
-        using var localStream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
-        await remoteStream.CopyToAsync(localStream, ct);
+        long totalSize = response.Content.Headers.ContentLength ?? 0;
+
+        using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
+        using var downloadStream = await response.Content.ReadAsStreamAsync(ct);
+        
+        var buffer = new byte[81920];
+        int bytesRead;
+        long totalRead = 0;
+        
+        while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+        {
+            await stream.WriteAsync(buffer, 0, bytesRead, ct);
+            totalRead += bytesRead;
+            if (totalSize > 0 && progress != null)
+            {
+                progress.Report((double)totalRead / totalSize * 100.0);
+            }
+        }
     }
 }
