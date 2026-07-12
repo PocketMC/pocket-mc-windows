@@ -132,7 +132,7 @@ namespace PocketMC.Infrastructure.Marketplace
             return false;
         }
 
-        public async Task<List<ModrinthHit>> SearchAsync(string type, string mcVersion, string loader, string query = "", int offset = 0)
+        public async Task<List<ModrinthHit>> SearchAsync(string type, string mcVersion, string loader, string query = "", int offset = 0, int sortField = 2, string sortOrder = "desc", int? categoryId = null)
         {
             try
             {
@@ -162,10 +162,15 @@ namespace PocketMC.Infrastructure.Marketplace
                     _ => "6"
                 };
 
-                string url = $"{ApiBase}/mods/search?gameId=432&classId={classId}&sortField=2&sortOrder=desc&pageSize=20&index={offset}";
+                string url = $"{ApiBase}/mods/search?gameId=432&classId={classId}&sortField={sortField}&sortOrder={sortOrder}&pageSize=20&index={offset}";
                 if (classId == "6")
                 {
                     url += $"&modLoaderType={MapLoaderType(loader)}";
+                }
+
+                if (categoryId.HasValue)
+                {
+                    url += $"&categoryId={categoryId.Value}";
                 }
 
                 if (!string.IsNullOrEmpty(mcVersion) && mcVersion != "*")
