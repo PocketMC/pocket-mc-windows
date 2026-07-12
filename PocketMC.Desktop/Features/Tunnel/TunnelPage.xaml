@@ -220,6 +220,14 @@
                            Margin="0,0,0,12"
                            TextWrapping="Wrap"/>
 
+                <ui:Card x:Name="EmptyStateCard" Grid.Row="1" Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}" Visibility="Collapsed" Margin="0,0,0,24">
+                    <StackPanel HorizontalAlignment="Center">
+                        <ui:SymbolIcon Symbol="GlobeSearch24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                        <TextBlock Text="No tunnels created" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock x:Name="TxtEmptyStateMessage" Text="Click 'Create Tunnel' to expose your server to the internet." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
+                    </StackPanel>
+                </ui:Card>
+
                 <!-- Tunnel cards with management controls -->
                 <ItemsControl x:Name="TunnelList"
                               Grid.Row="2"

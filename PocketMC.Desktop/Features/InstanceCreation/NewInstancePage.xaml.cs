@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Core.Interfaces;
 using System;
@@ -497,11 +497,14 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
             try
             {
+                string loaderVersion = (CmbLoaderVersion.SelectedItem as ModLoaderVersion)?.Version ?? "";
+
                 var metadata = _instanceManager.CreateInstance(
                     TxtName.Text.Trim(),
                     TxtDescription.Text.Trim(),
                     serverType,
-                    selectedVersion.Id);
+                    selectedVersion.Id,
+                    loaderVersion);
 
                 createdInstancePath = _registry.GetPath(metadata.Id);
                 if (createdInstancePath == null)
@@ -529,8 +532,6 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 });
 
                 TxtProgress.Text = "Downloading server software...";
-
-                string loaderVersion = (CmbLoaderVersion.SelectedItem as ModLoaderVersion)?.Version ?? "";
 
                 bool isBedrock = serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase);
 

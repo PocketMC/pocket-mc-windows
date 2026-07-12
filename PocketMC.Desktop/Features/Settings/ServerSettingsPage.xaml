@@ -1033,6 +1033,29 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
+                                    <!-- Plugins Empty State -->
+                                    <StackPanel Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}">
+                                        <Grid Margin="0,-8,0,24">
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Addons.Plugins.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <ui:Card Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <ui:SymbolIcon Symbol="Cube24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                                    <TextBlock Text="No plugins installed" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    <TextBlock Text="Click 'Plugin Marketplace' to discover and install new plugins." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}"/>
+                                                </StackPanel>
+                                            </ui:Card>
+                                        </Grid>
+                                    </StackPanel>
+
                                     <!-- Server Mods — hidden for PocketMine (not applicable) -->
                                     <TextBlock Text="Server Mods" Style="{StaticResource SettingsHeader}" Margin="4,20,0,12"
                                                Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}"/>
@@ -1243,6 +1266,29 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
+                                    <!-- Mods Empty State -->
+                                    <StackPanel Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}">
+                                        <Grid Margin="0,-8,0,24">
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Addons.Mods.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <ui:Card Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <ui:SymbolIcon Symbol="Cube24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                                    <TextBlock Text="No mods installed" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    <TextBlock Text="Click 'Browse Marketplace' to discover and install new mods." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                </StackPanel>
+                                            </ui:Card>
+                                        </Grid>
+                                    </StackPanel>
+
                                     <!-- BDS: Add-on import section (replaces mods for Bedrock) -->
                                     <TextBlock Text="Bedrock Add-ons" Style="{StaticResource SettingsHeader}" Margin="4,20,0,12"
                                                Visibility="{Binding Addons.SupportsBedrockAddons, Converter={StaticResource VisibleIfTrue}}"/>
@@ -1273,6 +1319,29 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+
+                                    <!-- Bedrock Addons Empty State -->
+                                    <StackPanel Visibility="{Binding Addons.SupportsBedrockAddons, Converter={StaticResource VisibleIfTrue}}">
+                                        <Grid Margin="0,-8,0,24">
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Addons.Mods.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <ui:Card Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
+                                                <StackPanel HorizontalAlignment="Center">
+                                                    <ui:SymbolIcon Symbol="Cube24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                                    <TextBlock Text="No add-ons installed" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    <TextBlock Text="Click 'Import Add-on' to add an .mcpack or .mcaddon file." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                </StackPanel>
+                                            </ui:Card>
+                                        </Grid>
+                                    </StackPanel>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
@@ -1585,6 +1654,27 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+
+                                    <!-- Backups Empty State -->
+                                    <Grid Margin="0,-8,0,24">
+                                        <Grid.Style>
+                                            <Style TargetType="Grid">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Backups.BackupList.Count}" Value="0">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
+                                        <ui:Card Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="FolderZip24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                                <TextBlock Text="No backups found" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="Click 'Create Backup Now' or enable automated backups to protect your server data." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                            </StackPanel>
+                                        </ui:Card>
+                                    </Grid>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
