@@ -658,7 +658,7 @@ namespace PocketMC.Infrastructure.Tunnel
                 fields = new[]
                 {
                     new { name = "http_port", value = localPort.ToString() },
-                    new { name = "https_port", value = localPort.ToString() }
+                    new { name = "https_port", value = "443" }
                 };
             }
             else

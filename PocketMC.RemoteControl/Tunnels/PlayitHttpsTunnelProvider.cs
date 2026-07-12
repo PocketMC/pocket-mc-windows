@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
 using PocketMC.Infrastructure.Telemetry;
 using PocketMC.Application.Services.Shell;
@@ -65,7 +65,7 @@ public sealed class PlayitHttpsTunnelProvider : IRemoteTunnelProvider
             }
 
             RemoteControlSettings settings = _applicationState.Settings.RemoteControl;
-            TunnelData? tunnel = FindOwnedTunnel(listResult.Tunnels, settings.PlayitTunnelId);
+            TunnelData? tunnel = FindOwnedTunnel(listResult.Tunnels, settings.PlayitTunnelId, request.LocalPort);
             string? tunnelId = tunnel?.Id;
 
             if (tunnel == null)
@@ -149,7 +149,7 @@ public sealed class PlayitHttpsTunnelProvider : IRemoteTunnelProvider
                 return;
             }
 
-            TunnelData? tunnel = FindOwnedTunnel(listResult.Tunnels, tunnelId);
+            TunnelData? tunnel = FindOwnedTunnel(listResult.Tunnels, tunnelId, null);
             if (tunnel == null)
             {
                 SetStopError("Could not find the dedicated PocketMC Remote Control PlayIt HTTPS tunnel to disable.");
@@ -204,7 +204,7 @@ public sealed class PlayitHttpsTunnelProvider : IRemoteTunnelProvider
                 return new ReadyTunnelResult(null, listResult.ErrorMessage ?? "Could not list PlayIt tunnels.");
             }
 
-            TunnelData? tunnel = FindOwnedTunnel(listResult.Tunnels, preferredTunnelId);
+            TunnelData? tunnel = FindOwnedTunnel(listResult.Tunnels, preferredTunnelId, localPort);
             if (tunnel != null)
             {
                 SaveTunnelId(tunnel.Id);
@@ -254,34 +254,35 @@ public sealed class PlayitHttpsTunnelProvider : IRemoteTunnelProvider
         return await _apiClient.EnableTunnelAsync(tunnelId, enabled: true);
     }
 
-    private static TunnelData? FindOwnedTunnel(IEnumerable<TunnelData> tunnels, string? savedTunnelId)
+    private static TunnelData? FindOwnedTunnel(IEnumerable<TunnelData> tunnels, string? savedTunnelId, int? localPort)
     {
         List<TunnelData> tunnelList = tunnels.ToList();
         if (!string.IsNullOrWhiteSpace(savedTunnelId))
         {
             TunnelData? byId = tunnelList.FirstOrDefault(tunnel =>
                 string.Equals(tunnel.Id, savedTunnelId, StringComparison.OrdinalIgnoreCase) &&
-                IsRemoteControlHttpsTunnel(tunnel, allowAnyName: false));
+                string.Equals(tunnel.TunnelType, "https", StringComparison.OrdinalIgnoreCase));
             if (byId != null)
             {
                 return byId;
             }
         }
 
-        return tunnelList.FirstOrDefault(tunnel =>
-            string.Equals(tunnel.Name, DedicatedTunnelName, StringComparison.OrdinalIgnoreCase) &&
-            IsRemoteControlHttpsTunnel(tunnel, allowAnyName: false));
-    }
-
-    private static bool IsRemoteControlHttpsTunnel(TunnelData tunnel, bool allowAnyName)
-    {
-        if (!string.Equals(tunnel.TunnelType, "https", StringComparison.OrdinalIgnoreCase))
+        if (localPort.HasValue)
         {
-            return false;
+            TunnelData? byPort = tunnelList.FirstOrDefault(tunnel =>
+                string.Equals(tunnel.TunnelType, "https", StringComparison.OrdinalIgnoreCase) &&
+                tunnel.Port == localPort.Value);
+            
+            if (byPort != null)
+            {
+                return byPort;
+            }
         }
 
-        return allowAnyName ||
-               string.Equals(tunnel.Name, DedicatedTunnelName, StringComparison.OrdinalIgnoreCase);
+        return tunnelList.FirstOrDefault(tunnel =>
+            string.Equals(tunnel.Name, DedicatedTunnelName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(tunnel.TunnelType, "https", StringComparison.OrdinalIgnoreCase));
     }
 
     private static string? FormatPublicUrl(string? publicAddress)
