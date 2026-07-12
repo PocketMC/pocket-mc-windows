@@ -215,14 +215,7 @@ public sealed class AddonInventoryService
         bool isInvalid = jarMetadata.LoaderType == "Unknown" ||
                          jarMetadata.IsPluginInModsFolder ||
                          sideSupport == ModSideSupport.ClientOnly ||
-                         !isCompatibleLoader ||
-                         isMinecraftIncompatible ||
-                         isLoaderVersionIncompatible;
-
-        if (metadata.IsModpack)
-        {
-            isInvalid = false;
-        }
+                         !isCompatibleLoader;
 
         if (isInvalid)
         {

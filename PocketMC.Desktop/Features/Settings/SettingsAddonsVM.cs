@@ -786,18 +786,18 @@ namespace PocketMC.Desktop.Features.Settings
 
                         if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
                         {
-                            _dialogService.ShowMessage("Incompatible Minecraft Version",
-                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}. This mod cannot be installed.",
-                                DialogType.Error);
-                            continue;
+                            var res = await _dialogService.ShowDialogAsync("Incompatible Minecraft Version",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}. Do you want to install it anyway?",
+                                DialogType.Warning);
+                            if (res != DialogResult.Yes) continue;
                         }
 
                         if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
                         {
-                            _dialogService.ShowMessage("Incompatible Loader Version",
-                                $"The mod '{System.IO.Path.GetFileName(f)}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. This mod cannot be installed.",
-                                DialogType.Error);
-                            continue;
+                            var res = await _dialogService.ShowDialogAsync("Incompatible Loader Version",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. Do you want to install it anyway?",
+                                DialogType.Warning);
+                            if (res != DialogResult.Yes) continue;
                         }
                     }
 
