@@ -87,14 +87,9 @@ namespace PocketMC.Desktop.Features.Marketplace
             services.AddSingleton<AddonUpdateCheckService>();
             services.AddSingleton<AddonAutoUpdateService>();
 
-            services.AddSingleton<AddonMigrationPlanner>();
-            services.AddSingleton<AddonMigrationStager>();
-            services.AddSingleton<AddonMigrationApplier>();
             services.AddSingleton<InstanceUpdatePlanner>();
             services.AddSingleton<InstanceVersionTargetService>();
             services.AddSingleton<InstanceArtifactStager>();
-            services.AddSingleton<InstanceRollbackService>();
-            services.AddSingleton<InstanceUpdateJournalStore>();
             services.AddSingleton<InstanceUpdateLockService>();
             services.AddSingleton<InstanceUpdateApplier>();
             services.AddSingleton<InstanceUpdateService>();
