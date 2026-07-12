@@ -7,22 +7,14 @@ namespace PocketMC.Infrastructure.Instances.Updates;
 
 public sealed class InstanceUpdatePlanner
 {
-    private readonly AddonMigrationPlanner _addonMigrationPlanner;
-    private readonly InstanceUpdateJournalStore _journalStore;
-
-    public InstanceUpdatePlanner(
-        AddonMigrationPlanner addonMigrationPlanner,
-        InstanceUpdateJournalStore journalStore)
+    public InstanceUpdatePlanner()
     {
-        _addonMigrationPlanner = addonMigrationPlanner;
-        _journalStore = journalStore;
     }
 
-    public async Task<InstanceUpdatePlan> BuildPlanAsync(
+    public Task<InstanceUpdatePlan> BuildPlanAsync(
         string serverDir,
         InstanceMetadata currentMetadata,
         string targetMinecraftVersion,
-        InstanceUpdateMode updateMode = InstanceUpdateMode.ServerAndCompatibleMarketplaceAddons,
         string? targetLoaderVersion = null,
         CancellationToken cancellationToken = default)
     {
@@ -33,7 +25,14 @@ public sealed class InstanceUpdatePlanner
         }
 
         InstanceMetadata targetMetadata = CloneMetadata(currentMetadata);
+        bool mcVersionChanged = !string.Equals(targetMetadata.MinecraftVersion, targetMinecraftVersion.Trim(), StringComparison.OrdinalIgnoreCase);
+        
         targetMetadata.MinecraftVersion = targetMinecraftVersion.Trim();
+        if (mcVersionChanged)
+        {
+            targetMetadata.LoaderVersion = string.Empty;
+        }
+        
         if (targetLoaderVersion != null)
         {
             targetMetadata.LoaderVersion = targetLoaderVersion;
@@ -43,17 +42,7 @@ public sealed class InstanceUpdatePlanner
         int currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(currentMetadata);
         int targetJava = JavaRuntimeResolver.GetRequiredJavaVersion(targetMetadata);
 
-        AddonMigrationPlan addonPlan = await _addonMigrationPlanner.BuildPlanAsync(
-            serverDir,
-            currentMetadata,
-            targetMetadata.MinecraftVersion,
-            targetCompatibility,
-            updateMode,
-            cancellationToken);
-
-        InstanceUpdateJournal? recoverableJournal = await _journalStore.GetLatestRecoverableJournalAsync(serverDir, cancellationToken);
-
-        return new InstanceUpdatePlan
+        var plan = new InstanceUpdatePlan
         {
             OperationId = Guid.NewGuid(),
             InstanceId = currentMetadata.Id,
@@ -63,17 +52,15 @@ public sealed class InstanceUpdatePlanner
             CurrentMinecraftVersion = currentMetadata.MinecraftVersion,
             TargetMinecraftVersion = targetMetadata.MinecraftVersion,
             TargetCompatibility = targetCompatibility,
-            UpdateMode = updateMode,
             CurrentRequiredJavaVersion = currentJava,
             TargetRequiredJavaVersion = targetJava,
             RequiredJavaVersionChangeText = currentJava == targetJava
                 ? $"Java {targetJava} remains required"
                 : $"Java {currentJava} -> Java {targetJava}",
-            ServerArtifactFileName = ResolveServerArtifactFileName(targetMetadata.ServerType),
-            ChangelogPreview = $"Update {targetMetadata.ServerType} from {currentMetadata.MinecraftVersion} to {targetMetadata.MinecraftVersion}.",
-            RollbackAvailable = recoverableJournal != null,
-            AddonMigrationPlan = addonPlan
+            ServerArtifactFileName = ResolveServerArtifactFileName(targetMetadata.ServerType)
         };
+
+        return Task.FromResult(plan);
     }
 
     public static string ResolveServerArtifactFileName(string serverType)

@@ -84,14 +84,14 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Non-update footer content (toggle, warnings) -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center"
+                                Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource InvertedVisibilityConverter}}">
                         <!-- Auto-Start Toggle -->
                         <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" 
                                          Content="Auto-start server at PocketMC startup" 
                                          Margin="0,0,24,0"
                                          VerticalAlignment="Center"/>
-
-
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                     Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,24,0">
@@ -114,13 +114,34 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal"
-                                    Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource VisibleIfTrue}}">
-                            <ui:Button Content="Preview Update" Appearance="Secondary" Command="{Binding VersionUpdates.PlanCommand}" Margin="0,0,10,0" Icon="{ui:SymbolIcon Search20}"/>
-                            <ui:Button Content="Apply Update" Appearance="Primary" Command="{Binding VersionUpdates.ApplyCommand}" Margin="0,0,10,0" Icon="{ui:SymbolIcon ArrowSync20}"/>
-                            <ui:Button Content="Rollback" Appearance="Secondary" Command="{Binding VersionUpdates.RollbackCommand}" Margin="0,0,16,0" Icon="{ui:SymbolIcon ArrowUndo20}"/>
+                    <!-- Update Status & Progress (stretches full width) -->
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,24,0"
+                                Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource VisibleIfTrue}}">
+                        <StackPanel Visibility="{Binding VersionUpdates.StatusText, Converter={StaticResource VisibleIfNotEmpty}}">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <ui:SymbolIcon Symbol="ArrowSync24" FontSize="16" Margin="0,0,10,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" VerticalAlignment="Center"/>
+                                <ui:TextBlock Text="{Binding VersionUpdates.StatusText}"
+                                           FontTypography="BodyStrong"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                            </StackPanel>
+                            
+                            <Grid Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
+                                             Maximum="100" Height="4" HorizontalAlignment="Stretch"
+                                             IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding VersionUpdates.ProgressDetailText}"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="11" Margin="8,0,0,0"/>
+                            </Grid>
                         </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+
                         <ui:Button Content="Discard" Appearance="Secondary" Margin="0,0,12,0" Command="{Binding CancelCommand}"/>
                         <ui:Button Content="Save Changes" Appearance="Primary" Command="{Binding SaveCommand}" MinWidth="140"/>
                     </StackPanel>
@@ -390,10 +411,11 @@
                             </ScrollViewer>
                         </TabItem>
 
-                        <!-- TAB 2: VERSION & UPDATES -->
                         <TabItem Header="VersionUpdates" Visibility="{Binding VersionUpdates.IsUpdateSupported, Converter={StaticResource VisibleIfTrue}}">
-                            <ScrollViewer x:Name="VersionUpdatesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
-                                <StackPanel>
+                            <Grid>
+                                <ScrollViewer x:Name="VersionUpdatesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0"
+                                              Visibility="{Binding VersionUpdates.IsMainContentVisible, Converter={StaticResource VisibleIfTrue}}">
+                                    <StackPanel>
                                     <!-- 1. Unified Version Selector -->
                                     <ui:Card Padding="24" Margin="0,0,0,16">
                                         <StackPanel>
@@ -454,135 +476,28 @@
                                                                Margin="0,6,0,0"/>
                                                 </StackPanel>
 
-                                                <!-- Addon Update Mode -->
-                                                <StackPanel Grid.Column="4" VerticalAlignment="Top">
-                                                    <TextBlock Text="Addon update mode" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ComboBox Margin="0,4,0,0"
-                                                              ItemsSource="{Binding VersionUpdates.UpdateModes}"
-                                                              SelectedItem="{Binding VersionUpdates.SelectedUpdateMode, Mode=TwoWay}"
-                                                              DisplayMemberPath="DisplayName"
-                                                              HorizontalAlignment="Stretch"
-                                                              MinHeight="36"/>
-                                                    <TextBlock Text="Configure how addons are migrated."
-                                                               FontSize="11"
-                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                               TextWrapping="Wrap"
-                                                               Margin="0,6,0,0"/>
+                                                <!-- Update Button Area -->
+                                                <StackPanel Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                                    <ui:Button Content="Update Server" Appearance="Primary" Command="{Binding VersionUpdates.ApplyCommand}" Icon="{ui:SymbolIcon ArrowSync20}"/>
                                                 </StackPanel>
+
                                             </Grid>
 
-                                            <!-- Required Java Change Alert -->
-                                            <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" 
-                                                    BorderBrush="{DynamicResource SystemFillColorCautionBrush}"
-                                                    BorderThickness="1" CornerRadius="4" Padding="12,8" Margin="0,20,0,0"
-                                                    Visibility="{Binding VersionUpdates.RequiredJavaVersionChange, Converter={StaticResource VisibleIfNotEmpty}}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:SymbolIcon Symbol="Info24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,8,0"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.RequiredJavaVersionChange}" 
-                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
-                                                               VerticalAlignment="Center" FontSize="12"/>
-                                                </StackPanel>
-                                            </Border>
                                         </StackPanel>
                                     </ui:Card>
 
 
-                                    <!-- 3. Migration Summary Ribbon -->
-                                    <ui:CardExpander Header="Addon Migration Summary" Icon="{ui:SymbolIcon DocumentData24}" Margin="0,0,0,16" IsExpanded="True">
-                                        <UniformGrid Columns="5" Margin="16,8,16,16">
-                                            <StackPanel>
-                                                <TextBlock Text="Tracked" Style="{StaticResource SettingsSubtext}" FontSize="12"/>
-                                                <TextBlock Text="{Binding VersionUpdates.TrackedAddonCount}" FontSize="24" FontWeight="SemiBold"/>
-                                            </StackPanel>
-                                            <StackPanel>
-                                                <TextBlock Text="Untracked" Style="{StaticResource SettingsSubtext}" FontSize="12"/>
-                                                <TextBlock Text="{Binding VersionUpdates.ManualUntrackedAddonCount}" FontSize="24" FontWeight="SemiBold"/>
-                                            </StackPanel>
-                                            <StackPanel>
-                                                <TextBlock Text="Updates" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
-                                                <TextBlock Text="{Binding VersionUpdates.CompatibleUpdateCount}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
-                                            </StackPanel>
-                                            <StackPanel>
-                                                <TextBlock Text="Incompatible" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
-                                                <TextBlock Text="{Binding VersionUpdates.IncompatibleAddonCount}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
-                                            </StackPanel>
-                                            <StackPanel>
-                                                <TextBlock Text="Dependencies" Style="{StaticResource SettingsSubtext}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
-                                                <TextBlock Text="{Binding VersionUpdates.DependencyAdditionCount}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
-                                            </StackPanel>
-                                        </UniformGrid>
-                                    </ui:CardExpander>
 
-                                    <!-- 4. Rollback & Recovery -->
-                                    <ui:CardAction Margin="0,0,0,16" Icon="{ui:SymbolIcon ArrowUndo24}" Command="{Binding VersionUpdates.RollbackCommand}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0">
-                                                <TextBlock Text="Rollback Recovery" Style="{StaticResource SettingsHeader}" FontSize="15" Margin="0,0,0,2"/>
-                                                <TextBlock Text="{Binding VersionUpdates.RollbackAvailabilityText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            </StackPanel>
-                                            <ui:Button Grid.Column="1" Content="Delete Backup"
-                                                       Command="{Binding VersionUpdates.DeleteRollbackCommand}"
-                                                       Icon="{ui:SymbolIcon Delete24}"
-                                                       Appearance="Danger" 
-                                                       VerticalAlignment="Center"/>
-                                        </Grid>
-                                    </ui:CardAction>
-
-                                    <!-- 5. Changelog & Warnings -->
-                                    <ui:CardExpander Header="Changelog Preview" Icon="{ui:SymbolIcon DocumentBulletList24}" Margin="0,0,0,16" 
-                                                     Visibility="{Binding VersionUpdates.ChangelogPreview, Converter={StaticResource VisibleIfNotEmpty}}">
-                                        <TextBlock Text="{Binding VersionUpdates.ChangelogPreview}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="16,8,16,16"/>
-                                    </ui:CardExpander>
-
-                                    <!-- 6. Update Status & Progress -->
-                                    <ui:Card Margin="0,0,0,16" Padding="24" 
-                                             Visibility="{Binding VersionUpdates.StatusText, Converter={StaticResource VisibleIfNotEmpty}}">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                                                <ui:SymbolIcon Symbol="ArrowSync24" FontSize="20" Margin="0,0,12,0" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
-                                                <ui:TextBlock Text="{Binding VersionUpdates.StatusText}"
-                                                           FontTypography="BodyStrong"
-                                                           FontSize="16"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
-                                            </StackPanel>
-
-                                            <StackPanel Visibility="{Binding VersionUpdates.IsUpdateProgressVisible, Converter={StaticResource VisibleIfTrue}}">
-                                                <ProgressBar Value="{Binding VersionUpdates.UpdateProgressValue}"
-                                                             Maximum="100"
-                                                             Height="6"
-                                                             HorizontalAlignment="Stretch"
-                                                             IsIndeterminate="{Binding VersionUpdates.IsUpdateProgressIndeterminate}"/>
-                                                <TextBlock Text="{Binding VersionUpdates.ProgressDetailText}"
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                           FontSize="12"
-                                                           Margin="0,8,0,0"
-                                                           HorizontalAlignment="Right"
-                                                           TextWrapping="Wrap"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </ui:Card>
-
-                                    <ItemsControl ItemsSource="{Binding VersionUpdates.Warnings}" Margin="0,0,0,16">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}"
-                                                        BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
-                                                        BorderThickness="1" CornerRadius="4" Padding="12,12" Margin="0,0,0,8">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,12,0"/>
-                                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="13" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                    </StackPanel>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
                                 </StackPanel>
-                            </ScrollViewer>
+                                </ScrollViewer>
+                                
+                                <StackPanel Visibility="{Binding VersionUpdates.IsEmptyStateVisible, Converter={StaticResource VisibleIfTrue}}"
+                                            VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-80,0,0">
+                                    <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="48" Foreground="{DynamicResource SystemFillColorSuccessBrush}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="You're up to date!" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,8" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    <TextBlock Text="{Binding VersionUpdates.TargetVersionStatusText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
                         </TabItem>
 
                         <!-- TAB 3: GAMEPLAY RULES -->

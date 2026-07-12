@@ -34,49 +34,18 @@ public sealed class InstanceUpdateApplier
         WriteIndented = true
     };
 
-    private readonly InstanceRollbackService _rollbackService;
-    private readonly AddonMigrationApplier _addonApplier;
-    private readonly InstanceUpdateJournalStore _journalStore;
     private readonly IServerLifecycleService _lifecycleService;
-    private readonly Func<InstanceMetadata, string, Action<string>?, Task> _backupRunner;
     private readonly ILogger<InstanceUpdateApplier> _logger;
     private readonly InstanceManager? _instanceManager;
 
     public InstanceUpdateApplier(
-        InstanceRollbackService rollbackService,
-        AddonMigrationApplier addonApplier,
-        InstanceUpdateJournalStore journalStore,
         IServerLifecycleService lifecycleService,
         InstanceManager instanceManager,
-        BackupService backupService,
         ILogger<InstanceUpdateApplier> logger)
-        : this(
-            rollbackService,
-            addonApplier,
-            journalStore,
-            lifecycleService,
-            (metadata, serverDir, progress) => backupService.RunBackupAsync(metadata, serverDir, isManualBackup: false, onProgress: progress),
-            logger,
-            instanceManager)
     {
-    }
-
-    public InstanceUpdateApplier(
-        InstanceRollbackService rollbackService,
-        AddonMigrationApplier addonApplier,
-        InstanceUpdateJournalStore journalStore,
-        IServerLifecycleService lifecycleService,
-        Func<InstanceMetadata, string, Action<string>?, Task> backupRunner,
-        ILogger<InstanceUpdateApplier> logger,
-        InstanceManager? instanceManager = null)
-    {
-        _rollbackService = rollbackService;
-        _addonApplier = addonApplier;
-        _journalStore = journalStore;
         _lifecycleService = lifecycleService;
-        _backupRunner = backupRunner;
-        _logger = logger;
         _instanceManager = instanceManager;
+        _logger = logger;
     }
 
     public async Task<InstanceUpdateApplyResult> ApplyAsync(
@@ -88,76 +57,23 @@ public sealed class InstanceUpdateApplier
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(stagedArtifacts);
 
-        var journal = new InstanceUpdateJournal
+        if (_lifecycleService.IsRunning(plan.InstanceId))
         {
-            OperationId = plan.OperationId,
-            InstanceId = plan.InstanceId,
-            ServerDir = Path.GetFullPath(plan.ServerDir),
-            StagingDirectory = stagedArtifacts.StagingDirectory,
-            State = InstanceUpdateJournalState.Planned
+            onProgress?.Invoke("Stopping server...");
+            await _lifecycleService.StopAsync(plan.InstanceId);
+        }
+
+        onProgress?.Invoke("Applying server update...");
+        await ApplyServerArtifactAsync(plan, stagedArtifacts.ServerArtifactPath, cancellationToken);
+
+        SaveMetadata(plan.TargetMetadata, plan.ServerDir);
+
+        await CleanStagingAsync(stagedArtifacts, cancellationToken);
+
+        return new InstanceUpdateApplyResult
+        {
+            OperationId = plan.OperationId
         };
-
-        await _journalStore.SaveAsync(journal, cancellationToken);
-
-        try
-        {
-            await UpdateJournalAsync(journal, InstanceUpdateJournalState.StoppingServer, cancellationToken);
-            if (_lifecycleService.IsRunning(plan.InstanceId))
-            {
-                onProgress?.Invoke("Stopping server...");
-                await _lifecycleService.StopAsync(plan.InstanceId);
-            }
-
-            await UpdateJournalAsync(journal, InstanceUpdateJournalState.Snapshotting, cancellationToken);
-            onProgress?.Invoke("Creating update snapshot...");
-            journal.SnapshotDirectory = await _rollbackService.CreateSnapshotAsync(plan, cancellationToken);
-            await _journalStore.SaveAsync(journal, cancellationToken);
-
-            await UpdateJournalAsync(journal, InstanceUpdateJournalState.RunningWorldBackup, cancellationToken);
-            onProgress?.Invoke("Running world backup...");
-            await _backupRunner(plan.CurrentMetadata, plan.ServerDir, onProgress);
-
-            await UpdateJournalAsync(journal, InstanceUpdateJournalState.ApplyingServer, cancellationToken);
-            onProgress?.Invoke("Applying server update...");
-            await ApplyServerArtifactAsync(plan, stagedArtifacts.ServerArtifactPath, cancellationToken);
-
-            await UpdateJournalAsync(journal, InstanceUpdateJournalState.UpdatingMetadata, cancellationToken);
-            SaveMetadata(plan.TargetMetadata, plan.ServerDir);
-
-            if (plan.AddonMigrationPlan.Items.Any(item => item.Action is AddonMigrationAction.Update or AddonMigrationAction.AddDependency))
-            {
-                await UpdateJournalAsync(journal, InstanceUpdateJournalState.ApplyingAddons, cancellationToken);
-                onProgress?.Invoke("Applying addon updates...");
-                await _addonApplier.ApplyFileSwapsAsync(plan.AddonMigrationPlan, cancellationToken);
-
-                await UpdateJournalAsync(journal, InstanceUpdateJournalState.UpdatingAddonManifest, cancellationToken);
-                await _addonApplier.UpdateManifestAsync(plan.AddonMigrationPlan, cancellationToken);
-            }
-
-            await UpdateJournalAsync(journal, InstanceUpdateJournalState.Completed, cancellationToken);
-            await CleanStagingAsync(stagedArtifacts, cancellationToken);
-
-            return new InstanceUpdateApplyResult
-            {
-                OperationId = plan.OperationId,
-                SnapshotDirectory = journal.SnapshotDirectory,
-                RolledBack = false
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Instance update {OperationId} failed; attempting rollback.", plan.OperationId);
-            journal.State = InstanceUpdateJournalState.Failed;
-            journal.FailureMessage = ex.Message;
-            await _journalStore.SaveAsync(journal, CancellationToken.None);
-
-            if (_rollbackService.HasRollbackBackup(plan.ServerDir))
-            {
-                await _rollbackService.RollbackAsync(plan.ServerDir, restoreWorldBackup: false, CancellationToken.None);
-            }
-
-            throw;
-        }
     }
 
     private async Task ApplyServerArtifactAsync(
@@ -278,15 +194,6 @@ public sealed class InstanceUpdateApplier
         string metadataPath = PathSafety.ValidateContainedPath(serverDir, ".pocket-mc.json")
             ?? throw new InvalidOperationException("Metadata path is invalid.");
         FileUtils.AtomicWriteAllText(metadataPath, JsonSerializer.Serialize(metadata, MetadataJsonOptions));
-    }
-
-    private async Task UpdateJournalAsync(
-        InstanceUpdateJournal journal,
-        InstanceUpdateJournalState state,
-        CancellationToken cancellationToken)
-    {
-        journal.State = state;
-        await _journalStore.SaveAsync(journal, cancellationToken);
     }
 
     private static async Task CleanStagingAsync(

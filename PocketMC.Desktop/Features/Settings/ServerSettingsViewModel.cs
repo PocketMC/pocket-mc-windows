@@ -165,12 +165,10 @@ namespace PocketMC.Desktop.Features.Settings
                 ServerDir,
                 serviceProvider.GetRequiredService<InstanceUpdateService>(),
                 serviceProvider.GetRequiredService<InstanceVersionTargetService>(),
-                serviceProvider.GetRequiredService<InstanceUpdateJournalStore>(),
-                serviceProvider.GetRequiredService<InstanceRollbackService>(),
                 dialogService,
                 () => IsRunning,
-                () => ReloadCurrentInstance(serviceProvider),
-                serviceProvider.GetRequiredService<PocketMC.Infrastructure.Java.JavaProvisioningService>());
+                serviceProvider.GetRequiredService<PocketMC.Infrastructure.Java.JavaProvisioningService>(),
+                () => Addons.UpdateAllAddonsAsync(null, true));
             Advanced = new SettingsAdvancedVM(ServerDir, serverConfigurationService, MarkChanged);
 
             var summaryStorage = (SummaryStorageService)serviceProvider.GetService(typeof(SummaryStorageService))!;

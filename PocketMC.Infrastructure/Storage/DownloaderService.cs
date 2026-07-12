@@ -128,7 +128,7 @@ public class DownloaderService
             }
         }
 
-        throw new InvalidOperationException($"Failed to download '{url}' after {maxAttempts} attempts.", lastException);
+        throw new InvalidOperationException($"Failed to download '{url}'. The download was aborted.", lastException);
     }
 
     private static string NormalizeHashType(string expectedHash, string? expectedHashType)

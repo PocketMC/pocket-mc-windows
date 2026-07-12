@@ -18,8 +18,6 @@ public sealed class InstanceArtifactStager
     private readonly PaperProvider _paperProvider;
     private readonly PocketmineProvider _pocketmineProvider;
     private readonly BedrockBdsProvider _bedrockProvider;
-    private readonly AddonMigrationStager _addonStager;
-    private readonly InstanceUpdateJournalStore _journalStore;
 
     public InstanceArtifactStager(
         VanillaProvider vanillaProvider,
@@ -28,9 +26,7 @@ public sealed class InstanceArtifactStager
         NeoForgeProvider neoForgeProvider,
         PaperProvider paperProvider,
         PocketmineProvider pocketmineProvider,
-        BedrockBdsProvider bedrockProvider,
-        AddonMigrationStager addonStager,
-        InstanceUpdateJournalStore journalStore)
+        BedrockBdsProvider bedrockProvider)
     {
         _vanillaProvider = vanillaProvider;
         _fabricProvider = fabricProvider;
@@ -39,8 +35,6 @@ public sealed class InstanceArtifactStager
         _paperProvider = paperProvider;
         _pocketmineProvider = pocketmineProvider;
         _bedrockProvider = bedrockProvider;
-        _addonStager = addonStager;
-        _journalStore = journalStore;
     }
 
     public async Task<InstanceUpdateStagedArtifacts> StageAsync(
@@ -50,16 +44,15 @@ public sealed class InstanceArtifactStager
     {
         ArgumentNullException.ThrowIfNull(plan);
 
-        string stagingDirectory = _journalStore.GetOperationRoot(plan.ServerDir, "staging", plan.OperationId);
+        // Simple staging directory inside server dir
+        string stagingDirectory = Path.Combine(plan.ServerDir, "pocketmc-staging");
         if (Directory.Exists(stagingDirectory))
         {
             await FileUtils.CleanDirectoryAsync(stagingDirectory, cancellationToken);
         }
 
         string serverStagingDirectory = ResolveStagingDirectory(stagingDirectory, "server");
-        string addonStagingDirectory = ResolveStagingDirectory(stagingDirectory, "addons");
         Directory.CreateDirectory(serverStagingDirectory);
-        Directory.CreateDirectory(addonStagingDirectory);
 
         string serverArtifactPath = PathSafety.ValidateContainedPath(serverStagingDirectory, plan.ServerArtifactFileName)
             ?? throw new InvalidOperationException($"Server artifact file name '{plan.ServerArtifactFileName}' is invalid.");
@@ -67,13 +60,10 @@ public sealed class InstanceArtifactStager
         await DownloadServerArtifactAsync(plan, serverArtifactPath, progress, cancellationToken);
         ValidateNonEmptyFile(serverArtifactPath);
 
-        await _addonStager.StageAsync(plan.AddonMigrationPlan, addonStagingDirectory, progress, cancellationToken);
-
         return new InstanceUpdateStagedArtifacts
         {
             StagingDirectory = stagingDirectory,
-            ServerArtifactPath = serverArtifactPath,
-            AddonStagingDirectory = addonStagingDirectory
+            ServerArtifactPath = serverArtifactPath
         };
     }
 

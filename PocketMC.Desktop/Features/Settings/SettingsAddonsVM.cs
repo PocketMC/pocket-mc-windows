@@ -1199,25 +1199,34 @@ namespace PocketMC.Desktop.Features.Settings
         /// <summary>
         /// Batch-checks marketplace-tracked add-ons and reports passive status only.
         /// </summary>
-        private async Task UpdateAllAddonsAsync(bool isPlugins)
+        public async Task UpdateAllAddonsAsync(bool? isPlugins = null, bool suppressEmptyMessage = false)
         {
             IsUpdatingAll = true;
 
             try
             {
-                var trackedItems = isPlugins
-                    ? Plugins.Where(p => p.ManifestEntry != null && !p.IsDisabled)
-                             .Select(p => (Name: p.Name, VM: (object)p))
-                             .ToList()
-                    : Mods.Where(m => m.ManifestEntry != null && !m.IsDisabled)
-                          .Select(m => (Name: m.Name, VM: (object)m))
-                          .ToList();
+                List<(string Name, object VM)> trackedItems = new();
+                
+                if (isPlugins == true || isPlugins == null)
+                {
+                    trackedItems.AddRange(Plugins.Where(p => p.ManifestEntry != null && !p.IsDisabled)
+                                                 .Select(p => (Name: p.Name, VM: (object)p)));
+                }
+                
+                if (isPlugins == false || isPlugins == null)
+                {
+                    trackedItems.AddRange(Mods.Where(m => m.ManifestEntry != null && !m.IsDisabled)
+                                              .Select(m => (Name: m.Name, VM: (object)m)));
+                }
 
                 if (trackedItems.Count == 0)
                 {
-                    _dialogService.ShowMessage("No Tracked Addons",
-                        "No addons were installed from a marketplace. Update checking is only available for marketplace-installed items.",
-                        DialogType.Information);
+                    if (!suppressEmptyMessage)
+                    {
+                        _dialogService.ShowMessage("No Tracked Addons",
+                            "No addons were installed from a marketplace. Update checking is only available for marketplace-installed items.",
+                            DialogType.Information);
+                    }
                     return;
                 }
 
