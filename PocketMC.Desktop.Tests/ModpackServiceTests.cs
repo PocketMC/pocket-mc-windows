@@ -328,7 +328,7 @@ public class ModpackServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ResolveModUrls_ShouldFallbackToProxyIfKeyIsNotSet()
+    public async Task ResolveModUrls_ShouldPromptForApiKeyIfKeyIsNotSet()
     {
         // Arrange
         var httpClient = CreateMockHttpClient();
@@ -341,8 +341,11 @@ public class ModpackServiceTests : IDisposable
         var neoforge = new NeoForgeProvider(httpClient, downloader);
         var manifestService = new AddonManifestService();
 
-        // No key set in app settings, but preserve AppRootPath
+        // No key set in app settings
         _appState.ApplySettings(new AppSettings { AppRootPath = _tempDir, CurseForgeApiKey = null });
+
+        var mockDialogService = new Mock<PocketMC.Application.Interfaces.Mods.ICurseForgeApiKeyDialogService>();
+        mockDialogService.Setup(d => d.PromptForApiKeyAsync()).ReturnsAsync("prompted-key");
 
         var service = new ModpackService(
             httpClient,
@@ -355,7 +358,7 @@ public class ModpackServiceTests : IDisposable
             manifestService,
             _appState,
             NullLogger<ModpackService>.Instance,
-            null!
+            mockDialogService.Object
         );
 
         var pack = new ModpackImportResult();
@@ -383,13 +386,19 @@ public class ModpackServiceTests : IDisposable
         // Assert
         Assert.True(report.Success);
 
+        mockDialogService.Verify(d => d.PromptForApiKeyAsync(), Times.Once);
+
         lock (_sentRequests)
         {
-            // Verify official request was NOT made
-            Assert.DoesNotContain(_sentRequests, r => r.RequestUri != null && r.RequestUri.AbsoluteUri.Contains("api.curseforge.com"));
+            // Verify official request WAS made with the prompted key
+            var cfRequest = _sentRequests.Find(r => r.RequestUri != null && r.RequestUri.AbsoluteUri.Contains("api.curseforge.com"));
+            Assert.NotNull(cfRequest);
+            Assert.True(cfRequest.Headers.Contains("x-api-key"));
+            var keyVal = cfRequest.Headers.GetValues("x-api-key");
+            Assert.Contains("prompted-key", keyVal);
 
-            // Verify proxy request WAS made
-            Assert.Contains(_sentRequests, r => r.RequestUri != null && r.RequestUri.AbsoluteUri.Contains("api.curse.tools"));
+            // Verify proxy request was NOT made
+            Assert.DoesNotContain(_sentRequests, r => r.RequestUri != null && r.RequestUri.AbsoluteUri.Contains("api.curse.tools"));
         }
     }
 }
