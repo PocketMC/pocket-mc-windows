@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +15,7 @@ using PocketMC.Infrastructure.Marketplace;
 using PocketMC.Application.Services.Mods;
 using System.Collections.ObjectModel;
 using PocketMC.Domain.Storage;
+using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -88,9 +89,21 @@ namespace PocketMC.Desktop.Features.Marketplace
             try
             {
                 string query = TxtSearch.Text ?? "";
+                
+                int sortField = 2; // Popularity default
+                if (CmbSort.SelectedItem is System.Windows.Controls.ComboBoxItem sortItem && sortItem.Tag is string sortStr && int.TryParse(sortStr, out int sortVal))
+                {
+                    sortField = sortVal;
+                }
+
+                int? categoryId = null;
+                if (CmbCategory.SelectedItem is System.Windows.Controls.ComboBoxItem catItem && catItem.Tag is string catStr && int.TryParse(catStr, out int catVal))
+                {
+                    categoryId = catVal;
+                }
 
                 // Maps/Worlds class ID is 17 in CurseForge API
-                var hits = await _curseForge.SearchAsync("project_type:world", _mcVersion, "", query, _currentOffset);
+                var hits = await _curseForge.SearchAsync("project_type:world", _mcVersion, "", query, _currentOffset, sortField, "desc", categoryId);
 
                 foreach (var hit in hits)
                 {
@@ -163,6 +176,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             btn.IsEnabled = false;
             btn.Content = "Downloading...";
 
+            var cts = new System.Threading.CancellationTokenSource();
+            string? destFile = null;
+            bool success = false;
+
             try
             {
                 var version = await _curseForge.GetLatestVersionAsync(slug, _mcVersion == "*" ? "" : _mcVersion, "");
@@ -176,25 +193,85 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
 
                 var file = version.Files.FirstOrDefault(f => f.IsPrimary) ?? version.Files[0];
-                using var httpClient = _httpClientFactory.CreateClient("PocketMC.Downloads");
-                using var response = await httpClient.GetAsync(file.Url, HttpCompletionOption.ResponseHeadersRead);
-                response.EnsureSuccessStatusCode();
-
                 string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(file.FileName);
-                string destFile = Path.Combine(Path.GetTempPath(), safeFileName);
+                destFile = Path.Combine(Path.GetTempPath(), safeFileName);
 
-                await using (var contentStream = await response.Content.ReadAsStreamAsync())
-                await using (var fileStream = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+                var dialog = new ProgressDialogWindow(
+                    "Downloading Map",
+                    $"Downloading {file.FileName}...",
+                    async (progress, ct) =>
+                    {
+                        using var httpClient = _httpClientFactory.CreateClient("PocketMC.Downloads");
+                        using var response = await httpClient.GetAsync(file.Url, HttpCompletionOption.ResponseHeadersRead, ct);
+                        response.EnsureSuccessStatusCode();
+
+                        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                        var lastReportTime = DateTime.UtcNow;
+
+                        await using (var contentStream = await response.Content.ReadAsStreamAsync(ct))
+                        await using (var fileStream = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+                        {
+                            var buffer = new byte[81920];
+                            long totalRead = 0;
+                            int read;
+                            while ((read = await contentStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+                            {
+                                await fileStream.WriteAsync(buffer, 0, read, ct);
+                                totalRead += read;
+
+                                var now = DateTime.UtcNow;
+                                var elapsed = now - lastReportTime;
+                                if (elapsed.TotalMilliseconds >= 500 || totalRead == totalBytes)
+                                {
+                                    string sizeText = totalBytes > 0
+                                        ? $"{FormatBytes(totalRead)} / {FormatBytes(totalBytes)}"
+                                        : $"{FormatBytes(totalRead)}";
+
+                                    double percentage = totalBytes > 0
+                                        ? (double)totalRead / totalBytes * 100.0
+                                        : -1.0;
+
+                                    progress.Report(new ProgressDialogUpdate
+                                    {
+                                        Percentage = percentage,
+                                        Message = sizeText
+                                    });
+
+                                    lastReportTime = now;
+                                }
+                            }
+                        }
+                        success = true;
+                    },
+                    cts)
                 {
-                    await contentStream.CopyToAsync(fileStream);
-                }
+                    Owner = Window.GetWindow(this)
+                };
 
-                OnMapDownloaded?.Invoke(destFile);
-                _navigationService.NavigateBack();
+                dialog.ShowDialog();
+
+                if (success)
+                {
+                    OnMapDownloaded?.Invoke(destFile);
+                    _navigationService.NavigateBack();
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(destFile) && File.Exists(destFile))
+                    {
+                        try { File.Delete(destFile); } catch { }
+                    }
+                    btn.IsEnabled = true;
+                    btn.Content = "Import";
+                }
             }
             catch (Exception ex)
             {
                 PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Download failed: " + ex.Message);
+                if (!string.IsNullOrEmpty(destFile) && File.Exists(destFile))
+                {
+                    try { File.Delete(destFile); } catch { }
+                }
                 btn.IsEnabled = true;
                 btn.Content = "Import";
             }
@@ -228,6 +305,19 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
                 e.Handled = true;
             }
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int counter = 0;
+            decimal number = bytes;
+            while (Math.Round(number / 1024) >= 1)
+            {
+                number /= 1024;
+                counter++;
+            }
+            return $"{number:n1} {suffixes[counter]}";
         }
     }
 }

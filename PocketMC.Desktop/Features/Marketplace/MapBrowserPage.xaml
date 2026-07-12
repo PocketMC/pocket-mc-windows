@@ -39,7 +39,7 @@
         <!-- Search and Filters -->
         <Grid Grid.Row="1" Margin="0,0,0,16">
             <ui:Card Padding="16">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <ui:AutoSuggestBox x:Name="TxtSearch" PlaceholderText="Search maps..." Width="260" Margin="0,0,16,0"
                                        Icon="{ui:SymbolIcon Search24}" TextChanged="TxtSearch_TextChanged"
                                        KeyDown="TxtSearch_KeyDown"/>
@@ -49,9 +49,25 @@
                         <ComboBoxItem Content="CurseForge" IsSelected="True"/>
                     </ComboBox>
 
-                    <TextBlock Text="Sort By:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    <ComboBox x:Name="CmbSort" Width="130" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged" Visibility="Hidden">
-                        <ComboBoxItem Content="Trending" Tag="relevance" IsSelected="True"/>
+                    <TextBlock Text="Sort by:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ComboBox x:Name="CmbSort" Width="160" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged" SelectedIndex="0">
+                        <ComboBoxItem Content="Relevancy" Tag="1"/>
+                        <ComboBoxItem Content="Popularity" Tag="2"/>
+                        <ComboBoxItem Content="Latest Update" Tag="3"/>
+                        <ComboBoxItem Content="Name" Tag="4"/>
+                        <ComboBoxItem Content="Total Downloads" Tag="6"/>
+                    </ComboBox>
+
+                    <TextBlock Text="Category:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ComboBox x:Name="CmbCategory" Width="160" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged" SelectedIndex="0">
+                        <ComboBoxItem Content="All Categories" Tag=""/>
+                        <ComboBoxItem Content="Adventure" Tag="248"/>
+                        <ComboBoxItem Content="Creation" Tag="249"/>
+                        <ComboBoxItem Content="Game Map" Tag="250"/>
+                        <ComboBoxItem Content="Modded World" Tag="4464"/>
+                        <ComboBoxItem Content="Parkour" Tag="251"/>
+                        <ComboBoxItem Content="Puzzle" Tag="252"/>
+                        <ComboBoxItem Content="Survival" Tag="253"/>
                     </ComboBox>
 
                     <ui:SymbolIcon Symbol="Info24" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>

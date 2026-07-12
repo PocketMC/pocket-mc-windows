@@ -20,14 +20,20 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <ui:SymbolIcon Grid.Row="0" Symbol="ArrowSync24" FontSize="48" Margin="0,0,0,16" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
 
-            <TextBlock Grid.Row="1" x:Name="MessageText" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,24" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <TextBlock Grid.Row="1" x:Name="MessageText" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,8" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 
-            <ProgressBar Grid.Row="2" x:Name="DialogProgressBar" Minimum="0" Maximum="100" Value="0" Height="4" HorizontalAlignment="Stretch" />
+            <TextBlock Grid.Row="2" x:Name="DetailText" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,24" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+
+            <ProgressBar Grid.Row="3" x:Name="DialogProgressBar" Minimum="0" Maximum="100" Value="0" Height="4" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
+
+            <ui:Button Grid.Row="4" x:Name="BtnCancel" Content="Cancel" Click="BtnCancel_Click" HorizontalAlignment="Center" Appearance="Secondary" Visibility="Collapsed"/>
         </Grid>
     </Grid>
 </ui:FluentWindow>
