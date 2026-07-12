@@ -349,17 +349,41 @@ public class ServerCloudBackupViewModel : ViewModelBase
 
                 string tempZipPath = Path.Combine(backupsDir, "temp_cloud_restore.zip");
 
-                // 1. Download from cloud
-                await provider.DownloadBackupAsync(vm.ProviderFileId, tempZipPath, CancellationToken.None);
-
-                // 2. Restore using BackupService
-                await _backupService.RestoreBackupAsync(_metadata, tempZipPath, serverDir);
-
-                // 3. Clean up the downloaded zip
-                if (File.Exists(tempZipPath))
+                await _dialogService.ShowProgressDialogAsync("Restore Cloud Backup", "Preparing to download cloud backup...", async (progressUpdate) =>
                 {
-                    File.Delete(tempZipPath);
-                }
+                    double lastPercentage = -1;
+                    var doubleProgress = new Progress<double>(p => 
+                    {
+                        lastPercentage = p;
+                        progressUpdate.Report(new ProgressDialogUpdate { Percentage = p, Message = null });
+                    });
+
+                    // 1. Download from cloud
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = "Downloading from cloud..." }));
+                    await provider.DownloadBackupAsync(vm.ProviderFileId, tempZipPath, CancellationToken.None, doubleProgress);
+
+                    // 2. Restore using BackupService
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = "Restoring backup..." }));
+                    await _backupService.RestoreBackupAsync(
+                        _metadata, 
+                        tempZipPath, 
+                        serverDir,
+                        onProgress: status => 
+                        {
+                            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                            {
+                                progressUpdate.Report(new ProgressDialogUpdate { Percentage = lastPercentage, Message = status });
+                            });
+                        },
+                        progress: doubleProgress);
+
+                    // 3. Clean up the downloaded zip
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = "Cleaning up..." }));
+                    if (File.Exists(tempZipPath))
+                    {
+                        File.Delete(tempZipPath);
+                    }
+                });
 
                 _dialogService.ShowMessage("Success", "Backup downloaded and restored successfully from the cloud.");
             }

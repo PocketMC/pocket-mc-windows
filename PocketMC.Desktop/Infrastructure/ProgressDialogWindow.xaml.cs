@@ -5,15 +5,10 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Core.Interfaces;
 
 namespace PocketMC.Desktop.Infrastructure
 {
-    public struct ProgressDialogUpdate
-    {
-        public double Percentage { get; set; }
-        public string? Message { get; set; }
-    }
-
     public partial class ProgressDialogWindow : Wpf.Ui.Controls.FluentWindow
     {
         private readonly Func<IProgress<ProgressDialogUpdate>, CancellationToken, Task> _action;
@@ -27,22 +22,22 @@ namespace PocketMC.Desktop.Infrastructure
             Init(title, message);
         }
 
-        public ProgressDialogWindow(string title, string message, Func<IProgress<double>, CancellationToken, Task> action, CancellationTokenSource cts)
+        public ProgressDialogWindow(string title, string message, Func<IProgress<double>, CancellationToken, Task> action, CancellationTokenSource? cts)
         {
             InitializeComponent();
             _action = (prog, ct) => action(new Progress<double>(val => prog.Report(new ProgressDialogUpdate { Percentage = val })), ct);
             _cts = cts;
             Init(title, message);
-            BtnCancel.Visibility = Visibility.Visible;
+            if (cts != null) BtnCancel.Visibility = Visibility.Visible;
         }
 
-        public ProgressDialogWindow(string title, string message, Func<IProgress<ProgressDialogUpdate>, CancellationToken, Task> action, CancellationTokenSource cts)
+        public ProgressDialogWindow(string title, string message, Func<IProgress<ProgressDialogUpdate>, CancellationToken, Task> action, CancellationTokenSource? cts)
         {
             InitializeComponent();
             _action = action;
             _cts = cts;
             Init(title, message);
-            BtnCancel.Visibility = Visibility.Visible;
+            if (cts != null) BtnCancel.Visibility = Visibility.Visible;
         }
 
         private void Init(string title, string message)
@@ -67,12 +62,17 @@ namespace PocketMC.Desktop.Infrastructure
                 // Non-critical
             }
 
-            Loaded += ProgressDialogWindow_Loaded;
+            ContentRendered += ProgressDialogWindow_ContentRendered;
             Closing += ProgressDialogWindow_Closing;
         }
 
-        private async void ProgressDialogWindow_Loaded(object? sender, RoutedEventArgs e)
+        public Exception? Error { get; private set; }
+
+        private async void ProgressDialogWindow_ContentRendered(object? sender, EventArgs e)
         {
+            // Unsubscribe to ensure it only runs once
+            ContentRendered -= ProgressDialogWindow_ContentRendered;
+
             var progress = new Progress<ProgressDialogUpdate>(update =>
             {
                 if (update.Percentage < 0)
@@ -93,6 +93,12 @@ namespace PocketMC.Desktop.Infrastructure
 
             try
             {
+                // Yield the UI thread to ensure all WPF/Wpf.Ui window lifecycle events 
+                // and rendering (like TitleBar hooks) have 100% completed before we 
+                // attempt to run the action. This prevents instant-failures from calling
+                // Close() during the window render pass, which crashes the HWND.
+                await Task.Delay(150);
+                
                 await _action(progress, _cts?.Token ?? CancellationToken.None);
             }
             catch (OperationCanceledException)
@@ -101,7 +107,7 @@ namespace PocketMC.Desktop.Infrastructure
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred during operation:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Error = ex;
             }
             finally
             {

@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System;
 using System.Collections.ObjectModel;
@@ -315,25 +315,43 @@ namespace PocketMC.Desktop.Features.Settings
             IsBackingUp = true;
             IsBackupProgressIndeterminate = true;
             BackupProgressValue = 0;
-            BackupStatusText = "Preparing backup...";
-
-            var progress = new Progress<double>(p => 
-            {
-                IsBackupProgressIndeterminate = false;
-                BackupProgressValue = p;
-            });
+            BackupStatusText = "Starting backup...";
 
             try
             {
                 _metadata.CustomBackupDirectory = CustomBackupDirectory;
-                await _backupService.RunBackupAsync(
-                    _metadata, 
-                    _serverDir, 
-                    onProgress: status => BackupStatusText = status,
-                    progress: progress);
+                
+                await _dialogService.ShowProgressDialogAsync("Backup in Progress", "Please wait while the backup is being created and uploaded...", async (progressUpdate) =>
+                {
+                    double lastPercentage = -1;
+                    var doubleProgress = new Progress<double>(p => 
+                    {
+                        lastPercentage = p;
+                        progressUpdate.Report(new ProgressDialogUpdate { Percentage = p, Message = null });
+                    });
+
+                    await _backupService.RunBackupAsync(
+                        _metadata, 
+                        _serverDir, 
+                        onProgress: status => 
+                        {
+                            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                            {
+                                BackupStatusText = status;
+                                progressUpdate.Report(new ProgressDialogUpdate { Percentage = lastPercentage, Message = status });
+                                if (status.Contains("Uploading", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    IsBackupProgressIndeterminate = false;
+                                }
+                            });
+                        },
+                        progress: doubleProgress);
+                });
+                
+                BackupStatusText = "Backup completed successfully!";
                 LoadBackups();
             }
-            catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
+            catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); BackupStatusText = "Backup failed."; }
             finally { IsBackingUp = false; }
         }
 
@@ -342,8 +360,35 @@ namespace PocketMC.Desktop.Features.Settings
             if (path != null && await _dialogService.ShowDialogAsync("Restore Backup", "This will COMPLETELY OVERWRITE current server files. Continue?", DialogType.Warning) == DialogResult.Yes)
             {
                 IsBackingUp = true;
-                try { await _backupService.RestoreBackupAsync(_metadata, path, _serverDir); _dialogService.ShowMessage("Success", "Backup restored successfully."); }
-                catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
+                try 
+                {
+                    await _dialogService.ShowProgressDialogAsync("Restore Backup", "Restoring local backup...", async (progressUpdate) =>
+                    {
+                        double lastPercentage = -1;
+                        var doubleProgress = new Progress<double>(p => 
+                        {
+                            lastPercentage = p;
+                            progressUpdate.Report(new ProgressDialogUpdate { Percentage = p, Message = null });
+                        });
+
+                        await _backupService.RestoreBackupAsync(
+                            _metadata, 
+                            path, 
+                            _serverDir,
+                            onProgress: status => 
+                            {
+                                System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                                {
+                                    BackupStatusText = status;
+                                    progressUpdate.Report(new ProgressDialogUpdate { Percentage = lastPercentage, Message = status });
+                                });
+                            },
+                            progress: doubleProgress);
+                    });
+                    
+                    _dialogService.ShowMessage("Success", "Backup restored successfully."); 
+                }
+                catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); BackupStatusText = "Restore failed."; }
                 finally { IsBackingUp = false; }
             }
         }

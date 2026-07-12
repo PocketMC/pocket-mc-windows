@@ -290,14 +290,29 @@ public class DropboxBackupProvider : ICloudBackupProvider
         await client.Files.DeleteV2Async(providerFileId);
     }
 
-    public async Task DownloadBackupAsync(string providerFileId, string localDestinationPath, CancellationToken ct)
+    public async Task DownloadBackupAsync(string providerFileId, string localDestinationPath, CancellationToken ct, IProgress<double>? progress = null)
     {
         var client = await GetClientAsync(ct);
         if (client == null) throw new UnauthorizedAccessException("Dropbox token is expired or missing.");
 
         using var response = await client.Files.DownloadAsync(providerFileId);
+        long totalSize = (long)response.Response.Size;
+        
         using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
-        var downloadStream = await response.GetContentAsStreamAsync();
-        await downloadStream.CopyToAsync(stream, ct);
+        using var downloadStream = await response.GetContentAsStreamAsync();
+        
+        var buffer = new byte[81920];
+        int bytesRead;
+        long totalRead = 0;
+        
+        while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+        {
+            await stream.WriteAsync(buffer, 0, bytesRead, ct);
+            totalRead += bytesRead;
+            if (totalSize > 0 && progress != null)
+            {
+                progress.Report((double)totalRead / totalSize * 100.0);
+            }
+        }
     }
 }

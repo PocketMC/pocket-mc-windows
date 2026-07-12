@@ -110,7 +110,45 @@ namespace PocketMC.Desktop.Infrastructure
                         Owner = System.Windows.Application.Current.MainWindow
                     };
                     dialog.ShowDialog(); // This blocks the UI thread until the action is complete and closes itself
-                    tcs.SetResult();
+                    
+                    if (dialog.Error != null)
+                    {
+                        tcs.SetException(dialog.Error);
+                    }
+                    else
+                    {
+                        tcs.SetResult();
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            });
+            return tcs.Task;
+        }
+
+        public Task ShowProgressDialogAsync(string title, string message, System.Func<System.IProgress<ProgressDialogUpdate>, Task> action)
+        {
+            var tcs = new TaskCompletionSource();
+            System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    var dialog = new ProgressDialogWindow(title, message, (prog, ct) => action(prog), null)
+                    {
+                        Owner = System.Windows.Application.Current.MainWindow
+                    };
+                    dialog.ShowDialog();
+                    
+                    if (dialog.Error != null)
+                    {
+                        tcs.SetException(dialog.Error);
+                    }
+                    else
+                    {
+                        tcs.SetResult();
+                    }
                 }
                 catch (System.Exception ex)
                 {

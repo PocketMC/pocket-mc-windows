@@ -85,7 +85,8 @@ public class BackupService
             metadata.Name,
             localResult.ZipPath,
             isManualBackup,
-            onProgress);
+            onProgress,
+            progress);
 
         // Update metadata
         metadata.LastBackupTime = DateTime.UtcNow;
@@ -510,13 +511,13 @@ public class BackupService
         }
     }
 
-    public async Task RestoreBackupAsync(InstanceMetadata metadata, string backupZipPath, string serverDir, Action<string>? onProgress = null)
+    public async Task RestoreBackupAsync(InstanceMetadata metadata, string backupZipPath, string serverDir, Action<string>? onProgress = null, IProgress<double>? progress = null)
     {
         string worldDir = ResolveWorldDirectory(metadata, serverDir);
 
         if (string.IsNullOrWhiteSpace(backupZipPath) || !File.Exists(backupZipPath))
         {
-            throw new FileNotFoundException($"Backup ZIP file not found at '{backupZipPath}'");
+            throw new FileNotFoundException("Backup file not found.", backupZipPath);
         }
 
         onProgress?.Invoke("Verifying backup integrity...");
@@ -546,7 +547,14 @@ public class BackupService
         onProgress?.Invoke("Extracting backup to staging area...");
         try
         {
-            await SafeZipExtractor.ExtractAsync(backupZipPath, stageDir);
+            await SafeZipExtractor.ExtractAsync(backupZipPath, stageDir, (current, total) =>
+            {
+                if (total > 0)
+                {
+                    double percent = (double)current / total * 100.0;
+                    progress?.Report(percent);
+                }
+            });
         }
         catch (Exception ex)
         {
