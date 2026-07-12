@@ -413,60 +413,72 @@
 
                         <TabItem Header="VersionUpdates" Visibility="{Binding VersionUpdates.IsUpdateSupported, Converter={StaticResource VisibleIfTrue}}">
                             <Grid>
-                                <ScrollViewer x:Name="VersionUpdatesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0"
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,16,0"
                                               Visibility="{Binding VersionUpdates.IsMainContentVisible, Converter={StaticResource VisibleIfTrue}}">
                                     <StackPanel>
-                                    <!-- 1. Unified Version Selector -->
-                                    <ui:Card Padding="24" Margin="0,0,0,16">
-                                        <StackPanel>
-                                            <TextBlock Text="Version &amp; Updates" Style="{StaticResource SettingsHeader}" FontSize="18"/>
-                                            <Grid Margin="0,16,0,0">
+
+                                        <!-- Version Update Card -->
+                                        <ui:Card Padding="24" Margin="0,0,0,16">
+                                            <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" MinWidth="120"/>
+                                                    <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="1.5*"/>
-                                                    <ColumnDefinition Width="16"/>
-                                                    <ColumnDefinition Width="1.5*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <!-- Current Version -->
+                                                <!-- Current Version Info -->
                                                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                    <TextBlock Text="Current server version" Style="{StaticResource SettingsSubtext}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.CurrentServerVersion}" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                    <TextBlock Text="{Binding VersionUpdates.CurrentServerType}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                                    <TextBlock Text="Current Version" FontSize="12" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding VersionUpdates.CurrentServerVersion}" 
+                                                                   FontSize="22" FontWeight="SemiBold" 
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                                   VerticalAlignment="Bottom"/>
+                                                        <TextBlock Text="{Binding VersionUpdates.CurrentServerType}" 
+                                                                   FontSize="12" 
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                                   VerticalAlignment="Bottom" Margin="8,0,0,2"/>
+                                                    </StackPanel>
                                                 </StackPanel>
 
-                                                <!-- Arrow Divider -->
-                                                <Grid Grid.Column="1" Margin="24,0,32,0" VerticalAlignment="Center">
-                                                    <Rectangle Height="1.5" Fill="{DynamicResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" Margin="0,0,1,0"/>
-                                                    <Path Data="M 0 0 L 8 5 L 0 10" 
+                                                <!-- Dotted Arrow -->
+                                                <Grid Grid.Column="1" Margin="24,0,24,0" VerticalAlignment="Center">
+                                                    <Line X1="0" Y1="0" X2="1" Y2="0" Stretch="Fill"
+                                                          Stroke="{DynamicResource TextFillColorTertiaryBrush}" 
+                                                          StrokeThickness="1.5"
+                                                          StrokeDashArray="3 2"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,8,0"/>
+                                                    <Path Data="M 0 0 L 6 4 L 0 8" 
                                                           Stroke="{DynamicResource TextFillColorTertiaryBrush}" 
                                                           StrokeThickness="1.5" 
                                                           HorizontalAlignment="Right" 
                                                           VerticalAlignment="Center"
                                                           StrokeEndLineCap="Round" 
                                                           StrokeStartLineCap="Round" 
-                                                          StrokeLineJoin="Round" />
+                                                          StrokeLineJoin="Round"/>
                                                 </Grid>
 
-                                                <!-- Target Version -->
-                                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                                    <TextBlock Text="Target server version" Style="{StaticResource SettingsSubtext}"/>
-                                                    <Grid Margin="0,4,0,0">
+                                                <!-- Target Version Selector -->
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,24,0">
+                                                    <TextBlock Text="Update to" FontSize="12" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                                    <Grid>
                                                         <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="*" MaxWidth="240"/>
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
                                                         <ComboBox ItemsSource="{Binding VersionUpdates.TargetVersions}"
                                                                   SelectedItem="{Binding VersionUpdates.SelectedTargetVersion, Mode=TwoWay}"
                                                                   DisplayMemberPath="Id"
-                                                                  IsEnabled="{Binding VersionUpdates.HasTargetVersions}"
-                                                                  MinHeight="36"/>
+                                                                  IsEnabled="{Binding VersionUpdates.HasTargetVersions}"/>
                                                         <ui:Button Grid.Column="1"
-                                                                   Icon="{ui:SymbolIcon ArrowClockwise24}"
+                                                                   Icon="{ui:SymbolIcon ArrowClockwise20}"
                                                                    Appearance="Secondary"
                                                                    Command="{Binding VersionUpdates.LoadTargetVersionsCommand}"
-                                                                   Margin="8,0,0,0"
+                                                                   Margin="6,0,0,0"
                                                                    ToolTip="Refresh available versions"/>
                                                     </Grid>
                                                     <TextBlock Text="{Binding VersionUpdates.TargetVersionStatusText}"
@@ -476,21 +488,20 @@
                                                                Margin="0,6,0,0"/>
                                                 </StackPanel>
 
-                                                <!-- Update Button Area -->
-                                                <StackPanel Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                                    <ui:Button Content="Update Server" Appearance="Primary" Command="{Binding VersionUpdates.ApplyCommand}" Icon="{ui:SymbolIcon ArrowSync20}"/>
+                                                <!-- Update Button -->
+                                                <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                                    <ui:Button Content="Update Server" 
+                                                               Appearance="Primary" 
+                                                               Command="{Binding VersionUpdates.ApplyCommand}" 
+                                                               Icon="{ui:SymbolIcon ArrowSync20}"/>
                                                 </StackPanel>
-
                                             </Grid>
+                                        </ui:Card>
 
-                                        </StackPanel>
-                                    </ui:Card>
-
-
-
-                                </StackPanel>
+                                    </StackPanel>
                                 </ScrollViewer>
                                 
+                                <!-- Empty state: already up to date -->
                                 <StackPanel Visibility="{Binding VersionUpdates.IsEmptyStateVisible, Converter={StaticResource VisibleIfTrue}}"
                                             VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-80,0,0">
                                     <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="48" Foreground="{DynamicResource SystemFillColorSuccessBrush}" HorizontalAlignment="Center"/>

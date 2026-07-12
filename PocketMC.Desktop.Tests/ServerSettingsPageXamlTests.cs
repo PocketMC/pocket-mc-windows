@@ -40,12 +40,12 @@ public sealed class ServerSettingsPageXamlTests
 
         int bottomActionBarIndex = xaml.IndexOf("<!-- Bottom Action Bar -->", StringComparison.Ordinal);
         int mainLayoutIndex = xaml.IndexOf("<!-- Main Layout Grid -->", StringComparison.Ordinal);
-        int planCommandIndex = xaml.IndexOf("Command=\"{Binding VersionUpdates.PlanCommand}\"", StringComparison.Ordinal);
         int applyCommandIndex = xaml.IndexOf("Command=\"{Binding VersionUpdates.ApplyCommand}\"", StringComparison.Ordinal);
         int progressIndex = xaml.IndexOf("Value=\"{Binding VersionUpdates.UpdateProgressValue}\"", StringComparison.Ordinal);
 
-        Assert.InRange(planCommandIndex, bottomActionBarIndex, mainLayoutIndex);
-        Assert.InRange(applyCommandIndex, bottomActionBarIndex, mainLayoutIndex);
-        Assert.True(progressIndex > mainLayoutIndex);
+        // ApplyCommand is now inside the Version Updates card (after Main Layout)
+        Assert.True(applyCommandIndex > mainLayoutIndex, "ApplyCommand should be in the Version Updates tab content");
+        // Progress bar should be in the bottom action bar
+        Assert.InRange(progressIndex, bottomActionBarIndex, mainLayoutIndex);
     }
 }

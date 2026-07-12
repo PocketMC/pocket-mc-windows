@@ -269,7 +269,7 @@ namespace PocketMC.Desktop.Features.Settings
             return MainTabControl.SelectedIndex switch
             {
                 0 => GeneralScrollViewer,
-                1 => VersionUpdatesScrollViewer,
+                1 => null,
                 2 => GameplayScrollViewer,
                 3 => WorldScrollViewer,
                 4 => AddonsScrollViewer,
