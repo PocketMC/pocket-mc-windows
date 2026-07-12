@@ -44,7 +44,7 @@ public sealed class InstanceManager
         _serviceProvider = serviceProvider;
     }
 
-    public InstanceMetadata CreateInstance(string name, string description, string serverType = "Vanilla", string minecraftVersion = "1.20.4")
+    public InstanceMetadata CreateInstance(string name, string description, string serverType = "Vanilla", string minecraftVersion = "1.20.4", string loaderVersion = "")
     {
         _pathService.EnsureServersRootExists();
 
@@ -71,6 +71,7 @@ public sealed class InstanceManager
             Description = description,
             ServerType = serverType,
             MinecraftVersion = minecraftVersion,
+            LoaderVersion = loaderVersion,
             CreatedAt = DateTime.UtcNow
         };
 

@@ -241,6 +241,13 @@
                                                 MinHeight="40"/>
                                 </StackPanel>
                             </Grid>
+                            
+                            <ui:InfoBar Title="Warning"
+                                        Message="Please select the correct server type and version or your server will break and not work in PocketMC."
+                                        Severity="Warning"
+                                        IsOpen="True"
+                                        IsClosable="False"
+                                        Margin="0,12,0,0" />
 
                             <!-- Options -->
                             <StackPanel Margin="0,18,0,0">

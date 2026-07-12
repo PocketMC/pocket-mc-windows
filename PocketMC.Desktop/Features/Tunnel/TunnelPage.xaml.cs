@@ -336,7 +336,9 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             _currentTunnels.Clear();
             TunnelList.Visibility = Visibility.Collapsed;
-            TxtTunnelListStatus.Text = message;
+            TxtTunnelListStatus.Visibility = Visibility.Collapsed;
+            EmptyStateCard.Visibility = Visibility.Visible;
+            TxtEmptyStateMessage.Text = string.IsNullOrEmpty(message) ? "Click 'Create Tunnel' to expose your server to the internet." : message;
         }
 
         private void ShowTunnels(IReadOnlyCollection<TunnelData> tunnels, string message)
@@ -379,6 +381,8 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
 
             TunnelList.Visibility = Visibility.Visible;
+            EmptyStateCard.Visibility = Visibility.Collapsed;
+            TxtTunnelListStatus.Visibility = string.IsNullOrEmpty(message) ? Visibility.Collapsed : Visibility.Visible;
             TxtTunnelListStatus.Text = message;
 
             if (_currentTunnels.Any(t => !t.HasPublicAddress))
