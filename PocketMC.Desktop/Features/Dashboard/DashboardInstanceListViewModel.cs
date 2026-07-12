@@ -3,10 +3,11 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Application.Services.Shell;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -16,8 +17,8 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly ServerProcessManager _serverProcessManager;
         private readonly IServerLifecycleService _lifecycleService;
         private readonly ApplicationState _applicationState;
-        private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
-        private readonly PocketMC.Desktop.Features.Networking.ISimpleVoiceChatDetector _voiceChatDetector;
+        private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
+        private readonly PocketMC.Application.Services.Networking.ISimpleVoiceChatDetector _voiceChatDetector;
 
         public ObservableCollection<InstanceCardViewModel> Instances { get; } = new();
 
@@ -26,8 +27,8 @@ namespace PocketMC.Desktop.Features.Dashboard
             ServerProcessManager serverProcessManager,
             IServerLifecycleService lifecycleService,
             ApplicationState applicationState,
-            PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector,
-            PocketMC.Desktop.Features.Networking.ISimpleVoiceChatDetector voiceChatDetector)
+            PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector,
+            PocketMC.Application.Services.Networking.ISimpleVoiceChatDetector voiceChatDetector)
         {
             _registry = registry;
             _serverProcessManager = serverProcessManager;
@@ -56,7 +57,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                     if (!string.IsNullOrEmpty(path))
                     {
                         string propsFile = System.IO.Path.Combine(path, "server.properties");
-                        var props = PocketMC.Desktop.Features.Instances.ServerPropertiesParser.Read(propsFile);
+                        var props = PocketMC.Application.Services.Instances.ServerPropertiesParser.Read(propsFile);
                         if (props.TryGetValue("server-port", out var pPort) && int.TryParse(pPort, out int parsedPort))
                         {
                             meta.ServerPort = parsedPort;

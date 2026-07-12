@@ -1,3 +1,4 @@
+using PocketMC.Domain.Exceptions;
 using System;
 using System.IO;
 using System.Threading;
@@ -5,7 +6,11 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace PocketMC.Desktop.Features.Instances.ImportExport;
+using PocketMC.Application.Interfaces;
+using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Domain.Models;
+
+namespace PocketMC.Infrastructure.Instances;
 
 public sealed class InstanceImportViewModel : ObservableObject
 {

@@ -1,3 +1,4 @@
+﻿using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Console;
 using System;
 using System.Collections.Concurrent;
@@ -11,14 +12,16 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Helpers;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Application.Services.Players;
+using PocketMC.Infrastructure.Players;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
+
 
 namespace PocketMC.Desktop.Features.Players;
 
@@ -766,7 +769,14 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         player.RefreshOpBinding();
 
         string command = targetState ? "op" : "deop";
-        await DispatchCommandAsync($"{command} {CommandFormatter.FormatPlayerName(player.Name, _metadata.ServerType)}");
+        if (!TryFormatPlayerCommandTarget(player.Name, out string formattedName))
+        {
+            player.IsOpUpdating = false;
+            player.RefreshOpBinding();
+            return;
+        }
+
+        await DispatchCommandAsync($"{command} {formattedName}");
         _ = RefreshOpAfterDelayAsync(player);
     }
 
@@ -792,6 +802,11 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        if (!TryFormatPlayerCommandTarget(player.Name, out string formattedName))
+        {
+            return;
+        }
+
         if (_pendingGamemodePlayers.TryRemove(player.Name, out PendingGamemodeChange? previousPending))
         {
             previousPending.Cancel();
@@ -805,7 +820,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         var pending = new PendingGamemodeChange(mode, player.ConfirmedGameMode, shouldRevertPersistedGamemode: UsesSidecarGamemode);
         _pendingGamemodePlayers[player.Name] = pending;
-        await DispatchCommandAsync($"gamemode {mode} {CommandFormatter.FormatPlayerName(player.Name, _metadata.ServerType)}");
+        await DispatchCommandAsync($"gamemode {mode} {formattedName}");
         _ = RevertGamemodeAfterDelayAsync(player.Name, pending);
     }
 
@@ -867,7 +882,11 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             }
         }
 
-        string formattedName = CommandFormatter.FormatPlayerName(player.Name, _metadata.ServerType);
+        if (!TryFormatPlayerCommandTarget(player.Name, out string formattedName))
+        {
+            return false;
+        }
+
         string sanitizedReason = CommandFormatter.SanitizeReason(reason);
         string commandName = action.Equals("Kick", StringComparison.OrdinalIgnoreCase) ? "kick" : "ban";
 
@@ -909,8 +928,13 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        if (!TryFormatPlayerCommandTarget(bannedPlayer.Name, out string formattedName))
+        {
+            return;
+        }
+
         foreach (string command in PlayerActionCommandBuilder.BuildPardonCommands(
-                     CommandFormatter.FormatPlayerName(bannedPlayer.Name, _metadata.ServerType),
+                     formattedName,
                      _metadata.ServerType))
         {
             await DispatchCommandAsync(command);
@@ -944,6 +968,29 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             _logger.LogWarning(ex, "Failed to dispatch command '{Command}' for instance {InstanceId}.", command, _metadata.Id);
             _dialogService.ShowMessage("Command Failed", ex.Message, DialogType.Error);
         }
+    }
+
+    private bool TryFormatPlayerCommandTarget(string playerName, out string formattedName, bool showDialog = true)
+    {
+        if (CommandFormatter.TryFormatPlayerName(playerName, _metadata.ServerType, out formattedName))
+        {
+            return true;
+        }
+
+        _logger.LogWarning(
+            "Blocked player command for invalid player name '{PlayerName}' on instance {InstanceId} with server type {ServerType}.",
+            playerName,
+            _metadata.Id,
+            _metadata.ServerType);
+        if (showDialog)
+        {
+            _dialogService.ShowMessage(
+                "Invalid Player Name",
+                "PocketMC blocked this command because the player name contains characters that cannot be safely used in server commands.",
+                DialogType.Error);
+        }
+
+        return false;
     }
 
     private void OnOutputLine(string line)
@@ -1024,7 +1071,11 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
     private async Task KickBedrockBannedPlayerAsync(string playerName, BedrockBanEntry ban)
     {
-        string formattedName = CommandFormatter.FormatPlayerName(playerName, _metadata.ServerType);
+        if (!TryFormatPlayerCommandTarget(playerName, out string formattedName, showDialog: false))
+        {
+            return;
+        }
+
         string command = CommandFormatter.AppendOptionalReason($"kick {formattedName}", ban.Reason);
         await DispatchCommandAsync(command);
     }
@@ -1181,15 +1232,13 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
     private bool IsValidUsernameForCommand(string username)
     {
-        if (string.IsNullOrWhiteSpace(username)) return false;
-        if (IsBedrock)
+        string trimmed = username.Trim();
+        if (!CommandFormatter.IsValidPlayerName(trimmed, _metadata.ServerType))
         {
-            return !username.Any(c => char.IsControl(c) || c == '"' || c == '\\' || c == '\n' || c == '\r');
+            return false;
         }
-        else
-        {
-            return Regex.IsMatch(username, @"^[A-Za-z0-9_]{3,16}$");
-        }
+
+        return IsBedrock || IsPocketMine || trimmed.Length >= 3;
     }
 
     private async Task AddToWhitelistAsync()

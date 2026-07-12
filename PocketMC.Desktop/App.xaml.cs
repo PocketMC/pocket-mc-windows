@@ -1,32 +1,40 @@
+﻿using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Settings;
+using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Core.Interfaces;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.OS;
+using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Settings;
+using PocketMC.Infrastructure.Telemetry;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Infrastructure.Marketplace;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.RemoteControl;
-using PocketMC.Desktop.Features.Setup;
-using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.RemoteControl;
+using PocketMC.Application.Services.Setup;
+using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure.Mods;
+using PocketMC.Application.Services.Instances;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Providers;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Java;
+using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Infrastructure.Instances.Providers;
+using PocketMC.Infrastructure.Backups;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Desktop.Composition;
-using PocketMC.Desktop.Infrastructure.Power;
+using PocketMC.Infrastructure.Power;
 
 using System.Net.Http;
 using System.Net;
@@ -78,7 +86,7 @@ public partial class App : System.Windows.Application
         Services.GetRequiredService<WindowsCornerService>().RegisterGlobalWindowHook();
         Services.GetRequiredService<ServerSleepPreventionCoordinator>().Refresh();
 
-        var appState = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.ApplicationState>();
+        var appState = Services.GetRequiredService<PocketMC.Application.Services.Shell.ApplicationState>();
         var updateService = Services.GetRequiredService<PocketMC.Desktop.Infrastructure.UpdateService>();
 
         if (!System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
@@ -209,7 +217,7 @@ public partial class App : System.Windows.Application
 
                     if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(apiUrl))
                     {
-                        var applicationState = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.ApplicationState>();
+                        var applicationState = Services.GetRequiredService<PocketMC.Application.Services.Shell.ApplicationState>();
                         var currentApiUrl = applicationState.Settings.DiscordApiUrl;
                         bool isSameUrl = string.Equals(currentApiUrl?.TrimEnd('/'), apiUrl?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
 
@@ -238,7 +246,7 @@ public partial class App : System.Windows.Application
                             }
                         }
 
-                        var settingsManager = Services.GetRequiredService<PocketMC.Desktop.Features.Settings.SettingsManager>();
+                        var settingsManager = Services.GetRequiredService<PocketMC.Infrastructure.Telemetry.SettingsManager>();
 
                         applicationState.Settings.DiscordUserId = userId;
                         applicationState.Settings.DiscordApiUrl = apiUrl;

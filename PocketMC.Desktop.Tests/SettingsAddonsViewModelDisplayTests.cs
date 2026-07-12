@@ -1,10 +1,10 @@
-using PocketMC.Desktop.Features.Settings.ViewModels;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
@@ -130,7 +130,7 @@ namespace PocketMC.Desktop.Tests
                 MinecraftVersion = "1.20.4"
             };
 
-            var vm = new SettingsAddonsViewModel(
+            var vm = new SettingsAddonsVM(
                 metadata,
                 _tempDir,
                 null!, // ModpackService
@@ -189,7 +189,7 @@ namespace PocketMC.Desktop.Tests
                 MinecraftVersion = "1.20.4"
             };
 
-            var vm = new SettingsAddonsViewModel(
+            var vm = new SettingsAddonsVM(
                 metadata,
                 _tempDir,
                 null!,
@@ -250,7 +250,7 @@ namespace PocketMC.Desktop.Tests
                 MinecraftVersion = "1.20.4"
             };
 
-            var vm = new SettingsAddonsViewModel(
+            var vm = new SettingsAddonsVM(
                 metadata,
                 _tempDir,
                 null!,
@@ -336,7 +336,7 @@ namespace PocketMC.Desktop.Tests
                 MinecraftVersion = "1.20.4"
             };
 
-            var vm = new SettingsAddonsViewModel(
+            var vm = new SettingsAddonsVM(
                 metadata,
                 _tempDir,
                 null!,
@@ -416,6 +416,7 @@ namespace PocketMC.Desktop.Tests
         public Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult<string?>(null);
         public Task<string?> PromptPasswordAsync(string title, string message) => Task.FromResult<string?>(null);
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(new string[0]);
+        public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<double>, Task> action) => action(new Progress<double>());
     }
 
     public class FakeLifecycleService : IServerLifecycleService
@@ -431,9 +432,8 @@ namespace PocketMC.Desktop.Tests
         public bool IsWaitingToRestart(Guid instanceId) => false;
         public void AbortRestartDelay(Guid instanceId) { }
         public Task RestartAsync(Guid instanceId) => Task.CompletedTask;
-        public ServerProcess? GetProcess(Guid instanceId) => null;
+        public IServerProcess? GetProcess(Guid instanceId) => null;
         public DateTime? GetSessionStartTime(Guid instanceId) => null;
         public Task ReleaseInstanceAsync(Guid instanceId) => Task.CompletedTask;
     }
 }
-

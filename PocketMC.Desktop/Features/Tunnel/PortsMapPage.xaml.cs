@@ -1,3 +1,6 @@
+using PocketMC.Desktop.Features.Settings;
+using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,14 +12,19 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Interfaces;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Networking;
+using PocketMC.Infrastructure.Networking;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.OS;
+using PocketMC.Infrastructure.Tunnel;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {
@@ -32,7 +40,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         private readonly InstanceManager _instanceManager;
         private readonly ServerConfigurationService _serverConfigurationService;
         private readonly ILogger<PortsMapPage> _logger;
-        private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
+        private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
 
         private static readonly SolidColorBrush ActiveGreenBrush = CreateFrozenBrush(Color.FromRgb(0x00, 0xE6, 0x76));
         private static readonly SolidColorBrush WarningYellowBrush = CreateFrozenBrush(Color.FromRgb(0xFF, 0xB3, 0x00));
@@ -62,7 +70,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             InstanceManager instanceManager,
             ServerConfigurationService serverConfigurationService,
             ILogger<PortsMapPage> logger,
-            PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector)
+            PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector)
         {
             InitializeComponent();
             _instanceRegistry = instanceRegistry;
@@ -266,7 +274,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 foreach (var server in servers)
                 {
                     bool isRunning = _lifecycleService.IsRunning(server.Id);
-                    ServerProcess? process = _lifecycleService.GetProcess(server.Id);
+                    IServerProcess? process = _lifecycleService.GetProcess(server.Id);
                     ServerState state = process?.State ?? (isRunning ? ServerState.Online : ServerState.Stopped);
 
                     string serverInfo;

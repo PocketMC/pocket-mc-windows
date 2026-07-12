@@ -1,5 +1,5 @@
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Java;
+using PocketMC.Infrastructure.Java;
 
 namespace PocketMC.Desktop.Tests;
 

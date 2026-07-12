@@ -1,3 +1,6 @@
+using PocketMC.Domain.Security;
+using PocketMC.Domain.Storage;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Marketplace.Models;
 using System;
 using System.Collections.Generic;
@@ -8,18 +11,20 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Infrastructure.Marketplace;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Infrastructure.Instances.Providers;
 using Wpf.Ui.Controls;
 using System.Collections.ObjectModel;
-using PocketMC.Desktop.Infrastructure.Security;
+using PocketMC.Infrastructure.Security;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxImage = System.Windows.MessageBoxImage;
 
@@ -178,10 +183,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             
             IServerSoftwareProvider provider = loader switch
             {
-                "fabric" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.FabricProvider>(services),
-                "forge" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.ForgeProvider>(services),
-                "neoforge" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.NeoForgeProvider>(services),
-                _ => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Instances.Providers.VanillaProvider>(services)
+                "fabric" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Infrastructure.Instances.Providers.FabricProvider>(services),
+                "forge" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Infrastructure.Instances.Providers.ForgeProvider>(services),
+                "neoforge" => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Infrastructure.Instances.Providers.NeoForgeProvider>(services),
+                _ => Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Infrastructure.Instances.Providers.VanillaProvider>(services)
             };
 
             var versions = await provider.GetAvailableVersionsAsync();
@@ -334,31 +339,10 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        private void ShowCurseForgeApiKeyDialog()
-        {
-            bool goToSettings = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
-                "CurseForge API Key Required",
-                "To search and install addons from CurseForge, you must configure a CurseForge API key in Settings.\n\n" +
-                "You can get a free API key at:\nhttps://console.curseforge.com/#/api-keys/\n\n" +
-                "Would you like to open Settings to configure it now?");
-
-            if (goToSettings)
-            {
-                _navigationService.NavigateToShellPage(typeof(PocketMC.Desktop.Features.Setup.AppSettingsPage));
-            }
-        }
-
         private async void BtnInstall_Click(object sender, RoutedEventArgs e)
         {
             var btn = (System.Windows.Controls.Button)sender;
             var vm = (MarketplaceItemViewModel)btn.DataContext;
-
-            if (vm.Provider == "CurseForge" && (string.IsNullOrEmpty(vm.ProjectId) && string.IsNullOrEmpty(vm.Slug) || vm.Title.Contains("API Error") || vm.Title.Contains("Key Required")))
-            {
-                ShowCurseForgeApiKeyDialog();
-                vm.State = InstallState.NotInstalled;
-                return;
-            }
 
             vm.IsActionEnabled = false;
             vm.State = InstallState.Installing;

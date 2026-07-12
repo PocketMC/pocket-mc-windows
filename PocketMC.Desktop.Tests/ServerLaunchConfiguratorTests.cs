@@ -2,8 +2,8 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.Providers;
-using PocketMC.Desktop.Features.Java;
+using PocketMC.Infrastructure.Instances.Providers;
+using PocketMC.Infrastructure.Java;
 using System.Diagnostics;
 
 namespace PocketMC.Desktop.Tests;

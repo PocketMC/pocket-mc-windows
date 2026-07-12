@@ -26,7 +26,7 @@ public sealed class TelemetryServiceTests : IDisposable
         var settingsManager = new SettingsManager(settingsPath);
 
         var processManager = new ServerProcessManager(
-            null!, null!, null!, null!, null!, null!, null!, null!);
+            null!, null!, null!, null!, null!, null!, null!);
         var instanceRegistry = new InstanceRegistry(null!, null!);
         var mockHttpClientFactory = new Mock<IHttpClientFactory>();
         var mockLogger = new Mock<ILogger<TelemetryService>>();

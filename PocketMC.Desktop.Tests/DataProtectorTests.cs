@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
-using PocketMC.Desktop.Infrastructure.Security;
+using System.Text;
+using PocketMC.Infrastructure.Security;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -10,8 +11,17 @@ public sealed class DataProtectorTests
     {
         string protectedValue = DataProtector.Protect("secret-value");
 
-        Assert.StartsWith("dpapi:v1:", protectedValue, StringComparison.Ordinal);
+        Assert.StartsWith("dpapi:v2:", protectedValue, StringComparison.Ordinal);
         Assert.Equal("secret-value", DataProtector.Unprotect(protectedValue));
+    }
+
+    [Fact]
+    public void Unprotect_RoundTrips_LegacyStaticEntropyPayload()
+    {
+        string protectedValue = ProtectWithLegacyEntropy("legacy-protected-secret");
+
+        Assert.StartsWith("dpapi:v1:", protectedValue, StringComparison.Ordinal);
+        Assert.Equal("legacy-protected-secret", DataProtector.Unprotect(protectedValue));
     }
 
     [Fact]
@@ -34,5 +44,21 @@ public sealed class DataProtectorTests
         string corruptedPayload = "dpapi:v1:" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
         Assert.Throws<CryptographicException>(() => DataProtector.Unprotect(corruptedPayload));
+    }
+
+    [Fact]
+    public void Unprotect_Throws_WhenV2PrefixedBase64PayloadCannotBeDecrypted()
+    {
+        string corruptedPayload = "dpapi:v2:" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+
+        Assert.Throws<CryptographicException>(() => DataProtector.Unprotect(corruptedPayload));
+    }
+
+    private static string ProtectWithLegacyEntropy(string plainText)
+    {
+        byte[] entropy = Encoding.UTF8.GetBytes("PocketMC-LocalSettings");
+        byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+        byte[] cipherBytes = ProtectedData.Protect(plainBytes, entropy, DataProtectionScope.CurrentUser);
+        return "dpapi:v1:" + Convert.ToBase64String(cipherBytes);
     }
 }

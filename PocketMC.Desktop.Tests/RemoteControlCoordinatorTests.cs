@@ -1,6 +1,6 @@
 using Moq;
-using PocketMC.Desktop.Features.RemoteControl.Hosting;
-using PocketMC.Desktop.Features.RemoteControl.Services;
+using PocketMC.RemoteControl;
+using PocketMC.RemoteControl;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Shell;
 

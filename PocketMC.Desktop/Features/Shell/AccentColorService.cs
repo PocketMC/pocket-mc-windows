@@ -4,8 +4,10 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.Win32;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using Wpf.Ui.Appearance;
+
+using PocketMC.Application.Services.Shell;
 
 namespace PocketMC.Desktop.Features.Shell;
 

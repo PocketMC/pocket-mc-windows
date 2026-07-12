@@ -1,6 +1,10 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.OS;
 using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Intelligence

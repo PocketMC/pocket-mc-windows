@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
-using PocketMC.Desktop.Infrastructure.Process;
+using PocketMC.Infrastructure.Networking;
 
 namespace PocketMC.Desktop.Tests;
 

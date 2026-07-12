@@ -1,3 +1,7 @@
+﻿using PocketMC.Application.Services.Shell;
+using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Features.Setup;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Views.Behaviors;
 using System;
 using System.Collections.Generic;
@@ -7,15 +11,20 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.Setup;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Instances.ImportExport;
+using PocketMC.Application.Services.Setup;
+using PocketMC.Infrastructure.Java;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Application.Interfaces.Instances;
 using PocketMC.Desktop.Features.RemoteControl.UI;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.OS;
 using Wpf.Ui.Controls;
 
 namespace PocketMC.Desktop.Features.Shell;
@@ -366,7 +375,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     public void ShowError(string title, string message) =>
         Infrastructure.AppDialog.ShowError(title, message);
 
-    public void ShowWhatsNewDialog(Features.WhatsNew.ChangelogEntry? changelog, string version)
+    public void ShowWhatsNewDialog(PocketMC.Infrastructure.WhatsNew.ChangelogEntry? changelog, string version)
     {
         if (!Dispatcher.CheckAccess())
         {

@@ -1,6 +1,7 @@
 using System.Net;
-using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
+using Microsoft.Extensions.Logging.Abstractions;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Networking;
@@ -116,7 +117,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
             workspace.CreatePortProbeService(),
             workspace.CreatePortLeaseRegistry(),
             workspace.CreatePortRecoveryService());
-        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry, new PocketMC.Desktop.Helpers.GeyserDetector(), new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector());
+        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry, new PocketMC.Infrastructure.Instances.GeyserDetector(), new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector());
     }
 
     private static InstanceTunnelOrchestrator CreateOrchestrator(
@@ -139,7 +140,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
             new SilentDialogService(),
             new ImmediateDispatcher(),
             NullLogger<InstanceTunnelOrchestrator>.Instance,
-            new PocketMC.Desktop.Features.Networking.SimpleVoiceChatDetector());
+            new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector());
     }
 
     private static HttpResponseMessage JsonResponse(string body)
@@ -212,8 +213,8 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
         public Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult<string?>(null);
         public Task<string?> PromptPasswordAsync(string title, string message) => Task.FromResult<string?>(null);
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(Array.Empty<string>());
+        public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<double>, Task> action) => action(new Progress<double>());
     }
 }
-
 
 

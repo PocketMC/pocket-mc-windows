@@ -1,3 +1,6 @@
+using PocketMC.Desktop.Features.Mods;
+using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -7,23 +10,31 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Instances.Updates;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.OS;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Networking;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
+using PocketMC.Infrastructure.Backups;
+using PocketMC.Infrastructure.Java;
+
+using PocketMC.Infrastructure.Instances.Updates;
 using PocketMC.Desktop.Features.Intelligence;
-using PocketMC.Desktop.Features.Networking;
-using PocketMC.Desktop.Features.CloudBackups;
+using PocketMC.Infrastructure.Networking;
+using PocketMC.Application.Interfaces.Backups;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -40,7 +51,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly Action<Guid, ServerState> _instanceStateChangedHandler;
         private readonly string _appRootPath;
         private readonly ApplicationState _applicationState;
-        private readonly PocketMC.Desktop.Helpers.IGeyserDetector _geyserDetector;
+        private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
 
         public InstanceMetadata Metadata { get; }
         public ServerSettingsProfile Profile { get; }
@@ -117,7 +128,7 @@ namespace PocketMC.Desktop.Features.Settings
             IAppNavigationService navigationService,
             IAppDispatcher dispatcher,
             IServiceProvider serviceProvider,
-            PocketMC.Desktop.Helpers.IGeyserDetector geyserDetector)
+            PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector)
         {
             Metadata = metadata;
             _instanceManager = instanceManager;
@@ -132,7 +143,7 @@ namespace PocketMC.Desktop.Features.Settings
             _appRootPath = _applicationState.GetRequiredAppRootPath();
             _geyserDetector = geyserDetector;
             ServerDir = _registry.GetPath(metadata.Id) ?? throw new InvalidOperationException();
-            Profile = ServerSettingsProfile.FromMetadata(metadata, ServerDir, _geyserDetector);
+            Profile = ServerSettingsProfile.FromMetadata(metadata, _geyserDetector.IsGeyserInstalled(ServerDir));
 
             _instanceStateChangedHandler = (id, state) => { if (id == Metadata.Id) dispatcher.Invoke(UpdateRunningState); };
             _lifecycleService.OnInstanceStateChanged += _instanceStateChangedHandler;
@@ -159,7 +170,7 @@ namespace PocketMC.Desktop.Features.Settings
                 dialogService,
                 () => IsRunning,
                 () => ReloadCurrentInstance(serviceProvider),
-                serviceProvider.GetRequiredService<PocketMC.Desktop.Features.Java.JavaProvisioningService>());
+                serviceProvider.GetRequiredService<PocketMC.Infrastructure.Java.JavaProvisioningService>());
             Advanced = new SettingsAdvancedVM(ServerDir, serverConfigurationService, MarkChanged);
 
             var summaryStorage = (SummaryStorageService)serviceProvider.GetService(typeof(SummaryStorageService))!;
@@ -267,8 +278,8 @@ namespace PocketMC.Desktop.Features.Settings
             string? initialJavaPath = cfg.CustomJavaPath;
             if (string.IsNullOrWhiteSpace(initialJavaPath))
             {
-                int requiredVersion = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetRequiredJavaVersion(Metadata);
-                initialJavaPath = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetExpectedBundledJavaPath(_appRootPath, requiredVersion);
+                int requiredVersion = JavaRuntimeResolver.GetRequiredJavaVersion(Metadata);
+                initialJavaPath = JavaRuntimeResolver.GetExpectedBundledJavaPath(_appRootPath, requiredVersion);
             }
             Performance.JavaPath = initialJavaPath;
             HasUnsavedChanges = false;
@@ -478,8 +489,8 @@ namespace PocketMC.Desktop.Features.Settings
             string? customJavaPathToSave = Performance.JavaPath;
             if (string.IsNullOrWhiteSpace(customJavaPathToSave))
             {
-                int requiredVersion = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetRequiredJavaVersion(Metadata);
-                customJavaPathToSave = PocketMC.Desktop.Features.Java.JavaRuntimeResolver.GetExpectedBundledJavaPath(_appRootPath, requiredVersion);
+                int requiredVersion = PocketMC.Infrastructure.Java.JavaRuntimeResolver.GetRequiredJavaVersion(Metadata);
+                customJavaPathToSave = PocketMC.Infrastructure.Java.JavaRuntimeResolver.GetExpectedBundledJavaPath(_appRootPath, requiredVersion);
             }
 
             var cfg = new ServerConfiguration

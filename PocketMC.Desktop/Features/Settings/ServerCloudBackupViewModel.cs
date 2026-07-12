@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,11 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.CloudBackups;
-using PocketMC.Desktop.Features.Instances.Backups;
+using PocketMC.Infrastructure.Backups;
+using PocketMC.Application.Interfaces.Backups;
+using PocketMC.Infrastructure.Telemetry;
 
 namespace PocketMC.Desktop.Features.Settings;
 

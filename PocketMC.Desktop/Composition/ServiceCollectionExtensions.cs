@@ -1,27 +1,39 @@
+using PocketMC.Desktop.Features.Instances.ImportExport;
+using PocketMC.Desktop.Features.Settings;
+using PocketMC.Desktop.Features.Setup;
+using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Features.Shell;
+using PocketMC.Infrastructure.WhatsNew;
 using System;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.InstanceCreation;
-using PocketMC.Desktop.Features.Java;
+using PocketMC.Infrastructure.Java;
 using PocketMC.Desktop.Features.Players;
-using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Features.Setup;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Application.Services.Players;
+using PocketMC.Infrastructure.Players;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Setup;
 using PocketMC.Desktop.Features.Shell.Interfaces;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure.Marketplace;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.OS;
 using PocketMC.Infrastructure.Http;
-using PocketMC.Desktop.Infrastructure.Power;
+using PocketMC.Infrastructure.Power;
 using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Marketplace;
 
 namespace PocketMC.Desktop.Composition
 {
@@ -86,7 +98,7 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
             // callers and cannot be started twice by accident.
             services.AddSingleton<UpdateService>();
             services.AddSingleton<IApplicationLifecycleService, ApplicationLifecycleService>();
-            services.AddSingleton<PocketMC.Desktop.Features.WhatsNew.WhatsNewService>();
+            services.AddSingleton<WhatsNewService>();
 
             return services;
         }
@@ -99,6 +111,8 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
             services.AddSingleton<ShellStartupCoordinator>();
             services.AddSingleton<ShellViewModel>();
             services.AddSingleton<TrayIconViewModel>();
+            services.AddSingleton<InstanceTunnelOrchestrator>();
+            services.AddSingleton<IPlayitDialogService, PlayitDialogService>();
 
             services.AddTransient<MainWindow>();
             services.AddTransient<StartupUpdateWindow>();
@@ -117,7 +131,7 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<ServerSettingsViewModel>();
             services.AddTransient<CloudBackupSettingsViewModel>();
-            services.AddTransient<PocketMC.Desktop.Features.Instances.ImportExport.InstanceImportViewModel>();
+            services.AddTransient<PocketMC.Infrastructure.Instances.InstanceImportViewModel>();
             services.AddTransient<PocketMC.Desktop.Features.Instances.ImportExport.InstanceImportPage>();
 
             services.AddTransient<DashboardPage>();

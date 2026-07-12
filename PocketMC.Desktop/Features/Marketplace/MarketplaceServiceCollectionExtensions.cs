@@ -4,36 +4,44 @@ using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.InstanceCreation;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Instances.ImportExport;
-using PocketMC.Desktop.Features.Instances.Providers;
-using PocketMC.Desktop.Features.Instances.Updates;
-using PocketMC.Desktop.Features.Java;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Marketplace;
-using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Features.Networking;
+using PocketMC.Infrastructure.Backups;
+using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Infrastructure.Instances.Providers;
+
+using PocketMC.Infrastructure.Instances.Updates;
+using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure.Marketplace;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
+using PocketMC.Infrastructure.Networking;
 using PocketMC.Desktop.Features.Players;
-using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Features.RemoteControl.Hosting;
-using PocketMC.Desktop.Features.RemoteControl.Services;
-using PocketMC.Desktop.Features.RemoteControl.Tunnels;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Features.Setup;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Mods;
+using PocketMC.Application.Services.Players;
+using PocketMC.Infrastructure.Players;
+using PocketMC.RemoteControl.Hosting;
+using PocketMC.RemoteControl.Services;
+using PocketMC.RemoteControl.Tunnels;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Setup;
 using PocketMC.Desktop.Features.Shell.Interfaces;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Infrastructure;
-using PocketMC.Desktop.Infrastructure.Power;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.OS;
+using PocketMC.Infrastructure.Power;
 using PocketMC.Infrastructure.Http;
 
+
+using PocketMC.Application.Interfaces.Mods;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -41,6 +49,7 @@ namespace PocketMC.Desktop.Features.Marketplace
     {
         public static IServiceCollection AddMarketplace(this IServiceCollection services)
         {
+            services.AddSingleton<ICurseForgeApiKeyDialogService, CurseForgeApiKeyDialogService>();
             services.AddSingleton<ModpackParser>();
             services.AddSingleton<ModpackService>();
 
@@ -64,9 +73,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                     DecompressionMethods.GZip | DecompressionMethods.Deflate
             });
 
-            services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
+            services.AddSingleton<IAddonProvider>(
                 provider => provider.GetRequiredService<ModrinthService>());
-            services.AddSingleton<PocketMC.Desktop.Features.Marketplace.Models.IAddonProvider>(
+            services.AddSingleton<IAddonProvider>(
                 provider => provider.GetRequiredService<CurseForgeService>());
             services.AddSingleton<AddonManifestService>();
             services.AddSingleton<MarketplaceFileInstaller>();
@@ -76,19 +85,19 @@ namespace PocketMC.Desktop.Features.Marketplace
             services.AddSingleton<AddonInventoryService>();
             services.AddSingleton<AddonToggleService>();
             services.AddSingleton<AddonUpdateCheckService>();
-            services.AddSingleton<PocketMC.Desktop.Features.Settings.AddonAutoUpdateService>();
+            services.AddSingleton<AddonAutoUpdateService>();
 
             services.AddSingleton<AddonMigrationPlanner>();
             services.AddSingleton<AddonMigrationStager>();
             services.AddSingleton<AddonMigrationApplier>();
-            services.AddSingleton<PocketMC.Desktop.Features.Instances.Updates.InstanceUpdatePlanner>();
-            services.AddSingleton<PocketMC.Desktop.Features.Instances.Updates.InstanceVersionTargetService>();
-            services.AddSingleton<PocketMC.Desktop.Features.Instances.Updates.InstanceArtifactStager>();
-            services.AddSingleton<PocketMC.Desktop.Features.Instances.Updates.InstanceRollbackService>();
-            services.AddSingleton<PocketMC.Desktop.Features.Instances.Updates.InstanceUpdateJournalStore>();
-            services.AddSingleton<PocketMC.Desktop.Features.Instances.Updates.InstanceUpdateLockService>();
-            services.AddSingleton<PocketMC.Desktop.Features.Instances.Updates.InstanceUpdateApplier>();
-            services.AddSingleton<PocketMC.Desktop.Features.Instances.Updates.InstanceUpdateService>();
+            services.AddSingleton<InstanceUpdatePlanner>();
+            services.AddSingleton<InstanceVersionTargetService>();
+            services.AddSingleton<InstanceArtifactStager>();
+            services.AddSingleton<InstanceRollbackService>();
+            services.AddSingleton<InstanceUpdateJournalStore>();
+            services.AddSingleton<InstanceUpdateLockService>();
+            services.AddSingleton<InstanceUpdateApplier>();
+            services.AddSingleton<InstanceUpdateService>();
 
             return services;
         }

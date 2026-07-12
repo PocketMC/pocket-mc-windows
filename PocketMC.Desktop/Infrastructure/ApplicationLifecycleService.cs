@@ -1,11 +1,14 @@
+﻿using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Interfaces;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Infrastructure.Power;
+using PocketMC.Infrastructure.Power;
 
 namespace PocketMC.Desktop.Infrastructure
 {

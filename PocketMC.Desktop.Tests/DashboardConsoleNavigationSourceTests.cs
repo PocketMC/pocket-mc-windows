@@ -3,6 +3,18 @@ namespace PocketMC.Desktop.Tests;
 public sealed class DashboardConsoleNavigationSourceTests
 {
     [Fact]
+    public void PresentationLayer_RegistersDesktopTunnelServices()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Composition",
+            "ServiceCollectionExtensions.cs"));
+
+        Assert.Contains("services.AddSingleton<InstanceTunnelOrchestrator>();", source);
+        Assert.Contains("services.AddSingleton<IPlayitDialogService, PlayitDialogService>();", source);
+    }
+
+    [Fact]
     public void OpenConsole_ResolvesInstancePathAndDoesNotRequireLiveProcess()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(

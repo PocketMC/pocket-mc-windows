@@ -258,8 +258,8 @@ public sealed class PortPreflightServiceTests
     public void SimpleVoiceChatConfigService_UsesAtomicWrites_ForConfigMutations()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Features",
+            "PocketMC.Application",
+            "Services",
             "Networking",
             "SimpleVoiceChatProperties.cs"));
 

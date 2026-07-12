@@ -12,7 +12,7 @@ public sealed class MarketplaceDownloadPathSafetyTests
         "Path.Combine(Path.GetTempPath(), file.FileName)",
         "MarketplaceFileNameSanitizer.RequireSafeFileName(file.FileName)")]
     [InlineData(
-        new[] { "PocketMC.Desktop", "Features", "Marketplace", "AddonUpdateService.cs" },
+        new[] { "PocketMC.Infrastructure", "Marketplace", "AddonUpdateService.cs" },
         "Path.Combine(destDir, updateInfo.LatestFileName)",
         "MarketplaceDownloadPolicy.RequireCompatibleFileName(updateInfo.LatestFileName")]
     public void MarketplaceDownloadWriters_NormalizeProviderFileNamesBeforeCombiningPaths(
@@ -31,11 +31,11 @@ public sealed class MarketplaceDownloadPathSafetyTests
     [InlineData("AddonUpdateService.cs")]
     public void MarketplaceInstallAndUpdatePaths_UseSafeInstallerInsteadOfDirectFileStream(string fileName)
     {
-        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Features",
-            "Marketplace",
-            fileName));
+        string[] sourcePath = fileName == "AddonUpdateService.cs"
+            ? new[] { "PocketMC.Infrastructure", "Marketplace", fileName }
+            : new[] { "PocketMC.Desktop", "Features", "Marketplace", fileName };
+
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(sourcePath));
 
         Assert.Contains("MarketplaceFileInstaller", source);
         Assert.DoesNotContain("new FileStream", source);

@@ -1,17 +1,23 @@
+﻿using PocketMC.Desktop.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Application.Services.Shell;
+
+using PocketMC.Application.Services.Instances;
+using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Application.Services.Networking;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.Networking;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.Networking;
+using PocketMC.Infrastructure.Tunnel;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {

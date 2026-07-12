@@ -6,8 +6,8 @@ public sealed class UwpLoopbackHelperTests
     public void IsExemptionPresent_UsesAsyncProcessWaitWithTimeout()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Infrastructure",
+            "PocketMC.Infrastructure",
+            "OS",
             "UwpLoopbackHelper.cs"));
 
         Assert.DoesNotContain("StandardOutput.ReadToEnd()", source);

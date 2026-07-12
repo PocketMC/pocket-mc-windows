@@ -1,10 +1,11 @@
-using PocketMC.Desktop.Features.RemoteControl.Models;
+using PocketMC.RemoteControl;
+using PocketMC.Desktop.Core.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.RemoteControl.Services;
+using PocketMC.RemoteControl;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
@@ -40,7 +41,7 @@ public sealed class RemotePlayerActionServiceTests : IDisposable
         _registry.Register(new InstanceMetadata { Id = _bedrockInstanceId, ServerType = "bedrock", Name = "Bedrock Server" }, bedrockPath);
 
         _lifecycleMock = new Mock<IServerLifecycleService>();
-        _lifecycleMock.Setup(l => l.GetProcess(It.IsAny<Guid>())).Returns((PocketMC.Domain.Models.ServerProcess?)null);
+        _lifecycleMock.Setup(l => l.GetProcess(It.IsAny<Guid>())).Returns((IServerProcess?)null);
         _lifecycleMock.Setup(l => l.IsRunning(It.IsAny<Guid>())).Returns(false);
 
         _auditLogService = new RemoteAuditLogService();
@@ -93,12 +94,28 @@ public sealed class RemotePlayerActionServiceTests : IDisposable
     [InlineData("name\nstop")]
     [InlineData("name\"")]
     [InlineData("name\'")]
+    [InlineData("name\\slash")]
     public async Task ExecuteAsync_Bedrock_RejectsControlCharactersAndQuotes(string name)
     {
         var result = await _service.ExecuteAsync(_bedrockInstanceId, name, "kick", null, "test-device");
         Assert.False(result.Success);
         Assert.Equal(RemoteControlActionFailure.Failed, result.Failure);
         Assert.Equal("Invalid player name.", result.Message);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_InvalidName_DoesNotDispatchCommandEvenWhenServerIsOnline()
+    {
+        var processMock = new Mock<IServerProcess>();
+        processMock.SetupGet(process => process.State).Returns(ServerState.Online);
+        processMock.Setup(process => process.WriteInputAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+        _lifecycleMock.Setup(lifecycle => lifecycle.GetProcess(_javaInstanceId)).Returns(processMock.Object);
+
+        var result = await _service.ExecuteAsync(_javaInstanceId, "Steve;stop", "kick", null, "test-device");
+
+        Assert.False(result.Success);
+        Assert.Equal(RemoteControlActionFailure.Failed, result.Failure);
+        processMock.Verify(process => process.WriteInputAsync(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -122,6 +139,5 @@ public sealed class RemotePlayerActionServiceTests : IDisposable
         Assert.Equal(RemoteControlActionFailure.Disabled, result.Failure);
     }
 }
-
 
 

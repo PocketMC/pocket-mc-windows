@@ -3,9 +3,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using Wpf.Ui.Controls;
+
+using PocketMC.Application.Services.Shell;
 
 namespace PocketMC.Desktop.Features.Shell
 {
@@ -245,6 +247,15 @@ namespace PocketMC.Desktop.Features.Shell
             try
             {
                 ApplyDwmDarkMode(dialog);
+
+                // ApplyDwmDarkMode silently skips when the window is not loaded
+                // (no HWND yet). Hook SourceInitialized to apply it as soon as
+                // the native handle is created — this eliminates the white DWM
+                // border that would otherwise flash on every dialog.
+                if (!dialog.IsLoaded)
+                {
+                    dialog.SourceInitialized += (_, _) => ApplyDwmDarkMode(dialog);
+                }
 
                 string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 

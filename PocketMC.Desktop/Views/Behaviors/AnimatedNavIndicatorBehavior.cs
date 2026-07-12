@@ -1,11 +1,12 @@
 using PocketMC.Desktop.Views.Behaviors;
+using PocketMC.Desktop.Features.Shell;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
-using PocketMC.Desktop.Features.Shell;
+using PocketMC.Application.Services.Shell;
 using Wpf.Ui.Controls;
 
 namespace PocketMC.Desktop.Views.Behaviors;

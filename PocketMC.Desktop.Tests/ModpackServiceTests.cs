@@ -12,12 +12,12 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Moq.Protected;
 using PocketMC.Desktop.Features.Instances.ImportExport;
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Infrastructure.FileSystem;
+using PocketMC.Infrastructure;
 using PocketMC.Domain.Models;
 using Xunit;
 
@@ -127,7 +127,8 @@ public class ModpackServiceTests : IDisposable
             _parser,
             manifestService,
             _appState,
-            NullLogger<ModpackService>.Instance
+            NullLogger<ModpackService>.Instance,
+            null!
         );
 
         var pack = new ModpackImportResult
@@ -159,7 +160,7 @@ public class ModpackServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(async () =>
         {
-            await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, "dummy.zip", new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>());
+            await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, "dummy.zip", new Progress<PocketMC.Application.Interfaces.Instances.InstanceTransferProgress>());
         });
 
         // Verify the metadata reference has rolled back values
@@ -192,7 +193,8 @@ public class ModpackServiceTests : IDisposable
             _parser,
             manifestService,
             _appState,
-            NullLogger<ModpackService>.Instance
+            NullLogger<ModpackService>.Instance,
+            null!
         );
 
         var pack = new ModpackImportResult
@@ -228,7 +230,7 @@ public class ModpackServiceTests : IDisposable
         ModpackImportResultReport report;
         try
         {
-            report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>());
+            report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Application.Interfaces.Instances.InstanceTransferProgress>());
         }
         catch (Exception ex)
         {
@@ -282,7 +284,8 @@ public class ModpackServiceTests : IDisposable
             _parser,
             manifestService,
             _appState,
-            NullLogger<ModpackService>.Instance
+            NullLogger<ModpackService>.Instance,
+            null!
         );
 
         var pack = new ModpackImportResult();
@@ -305,7 +308,7 @@ public class ModpackServiceTests : IDisposable
 
         // Act
         await service.ResolveModUrlsAsync(pack);
-        var report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>());
+        var report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Application.Interfaces.Instances.InstanceTransferProgress>());
 
         // Assert
         Assert.True(report.Success);
@@ -325,7 +328,7 @@ public class ModpackServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ResolveModUrls_ShouldFallbackToProxyIfKeyIsNotSet()
+    public async Task ResolveModUrls_ShouldPromptForApiKeyIfKeyIsNotSet()
     {
         // Arrange
         var httpClient = CreateMockHttpClient();
@@ -338,8 +341,11 @@ public class ModpackServiceTests : IDisposable
         var neoforge = new NeoForgeProvider(httpClient, downloader);
         var manifestService = new AddonManifestService();
 
-        // No key set in app settings, but preserve AppRootPath
+        // No key set in app settings
         _appState.ApplySettings(new AppSettings { AppRootPath = _tempDir, CurseForgeApiKey = null });
+
+        var mockDialogService = new Mock<PocketMC.Application.Interfaces.Mods.ICurseForgeApiKeyDialogService>();
+        mockDialogService.Setup(d => d.PromptForApiKeyAsync()).ReturnsAsync("prompted-key");
 
         var service = new ModpackService(
             httpClient,
@@ -351,7 +357,8 @@ public class ModpackServiceTests : IDisposable
             _parser,
             manifestService,
             _appState,
-            NullLogger<ModpackService>.Instance
+            NullLogger<ModpackService>.Instance,
+            mockDialogService.Object
         );
 
         var pack = new ModpackImportResult();
@@ -374,18 +381,26 @@ public class ModpackServiceTests : IDisposable
 
         // Act
         await service.ResolveModUrlsAsync(pack);
-        var report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>());
+        var report = await service.ImportToExistingInstanceAsync(pack, metadata, _tempDir, zipPath, new Progress<PocketMC.Application.Interfaces.Instances.InstanceTransferProgress>());
 
         // Assert
         Assert.True(report.Success);
 
+        mockDialogService.Verify(d => d.PromptForApiKeyAsync(), Times.Once);
+
         lock (_sentRequests)
         {
-            // Verify official request was NOT made
-            Assert.DoesNotContain(_sentRequests, r => r.RequestUri != null && r.RequestUri.AbsoluteUri.Contains("api.curseforge.com"));
+            // Verify official request WAS made with the prompted key
+            var cfRequest = _sentRequests.Find(r => r.RequestUri != null && r.RequestUri.AbsoluteUri.Contains("api.curseforge.com"));
+            Assert.NotNull(cfRequest);
+            Assert.True(cfRequest.Headers.Contains("x-api-key"));
+            var keyVal = cfRequest.Headers.GetValues("x-api-key");
+            Assert.Contains("prompted-key", keyVal);
 
-            // Verify proxy request WAS made
-            Assert.Contains(_sentRequests, r => r.RequestUri != null && r.RequestUri.AbsoluteUri.Contains("api.curse.tools"));
+            // Verify proxy request was NOT made
+            Assert.DoesNotContain(_sentRequests, r => r.RequestUri != null && r.RequestUri.AbsoluteUri.Contains("api.curse.tools"));
         }
     }
 }
+
+

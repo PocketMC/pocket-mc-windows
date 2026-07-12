@@ -1,4 +1,4 @@
-using PocketMC.Desktop.Features.Marketplace.Models;
+using PocketMC.Domain.Models;
 using PocketMC.Domain.Models;
 using System.IO.Compression;
 using System.Net;
@@ -6,7 +6,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Providers;
+using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Marketplace;
@@ -279,6 +279,35 @@ public sealed class InstanceImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ImportLocalFolderAsync_CopyFiles_WhenConfigurationFails_KeepsSourceAndCleansDestination()
+    {
+        string sourceDir = Path.Combine(_root, "source-folder-copy-failure");
+        Directory.CreateDirectory(sourceDir);
+        Directory.CreateDirectory(Path.Combine(sourceDir, ".pocket-mc.json"));
+        File.WriteAllText(Path.Combine(sourceDir, "eula.txt"), "eula=false");
+        File.WriteAllText(Path.Combine(sourceDir, "server.properties"), "max-players=20");
+        File.WriteAllText(Path.Combine(sourceDir, "some-mod.jar"), "mod-content");
+
+        InstanceImportService service = CreateService();
+
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            service.ImportLocalFolderAsync(new LocalFolderImportRequest
+            {
+                SourceFolderPath = sourceDir,
+                RequestedName = "imported-folder-copy-failure",
+                ServerType = "Vanilla",
+                MinecraftVersion = "1.20.1",
+                CopyFiles = true
+            }));
+
+        Assert.True(Directory.Exists(sourceDir));
+        Assert.True(Directory.Exists(Path.Combine(sourceDir, ".pocket-mc.json")));
+        Assert.True(File.Exists(Path.Combine(sourceDir, "server.properties")));
+        Assert.True(File.Exists(Path.Combine(sourceDir, "some-mod.jar")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "servers", "imported-folder-copy-failure")));
+    }
+
+    [Fact]
     public async Task ImportLocalFolderAsync_MoveFiles_MovesFilesAndRegistersInstance()
     {
         string sourceDir = Path.Combine(_root, "source-folder-move");
@@ -305,6 +334,36 @@ public sealed class InstanceImportServiceTests : IDisposable
 
         Assert.False(File.Exists(Path.Combine(sourceDir, "some-mod.jar")));
         Assert.False(File.Exists(Path.Combine(sourceDir, "server.properties")));
+    }
+
+    [Fact]
+    public async Task ImportLocalFolderAsync_MoveFiles_WhenProgressThrowsAfterMove_RestoresSourceFolder()
+    {
+        string sourceDir = Path.Combine(_root, "source-folder-progress-failure");
+        Directory.CreateDirectory(sourceDir);
+        File.WriteAllText(Path.Combine(sourceDir, "eula.txt"), "eula=false");
+        File.WriteAllText(Path.Combine(sourceDir, "server.properties"), "max-players=10");
+        File.WriteAllText(Path.Combine(sourceDir, "some-mod.jar"), "mod-content");
+
+        InstanceImportService service = CreateService();
+        var progress = new ThrowOnProgressStep("Moved server files.");
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.ImportLocalFolderAsync(new LocalFolderImportRequest
+            {
+                SourceFolderPath = sourceDir,
+                RequestedName = "imported-folder-progress-failure",
+                ServerType = "Vanilla",
+                MinecraftVersion = "1.20.1",
+                CopyFiles = false
+            }, progress));
+
+        Assert.Equal("progress failure", ex.Message);
+        Assert.True(Directory.Exists(sourceDir));
+        Assert.True(File.Exists(Path.Combine(sourceDir, "eula.txt")));
+        Assert.True(File.Exists(Path.Combine(sourceDir, "server.properties")));
+        Assert.True(File.Exists(Path.Combine(sourceDir, "some-mod.jar")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "servers", "imported-folder-progress-failure")));
     }
 
     private InstanceImportService CreateService(
@@ -547,6 +606,26 @@ public sealed class InstanceImportServiceTests : IDisposable
             {
                 Content = new ByteArrayContent(body)
             });
+        }
+    }
+
+    private sealed class ThrowOnProgressStep : IProgress<InstanceTransferProgress>
+    {
+        private readonly string _step;
+        private bool _hasThrown;
+
+        public ThrowOnProgressStep(string step)
+        {
+            _step = step;
+        }
+
+        public void Report(InstanceTransferProgress value)
+        {
+            if (!_hasThrown && string.Equals(value.CurrentStep, _step, StringComparison.Ordinal))
+            {
+                _hasThrown = true;
+                throw new InvalidOperationException("progress failure");
+            }
         }
     }
 

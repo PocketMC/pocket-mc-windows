@@ -1,7 +1,8 @@
+﻿using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Desktop.Features.Intelligence;
 

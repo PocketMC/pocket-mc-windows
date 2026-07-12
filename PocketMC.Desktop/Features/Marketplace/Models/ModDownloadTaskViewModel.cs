@@ -1,6 +1,7 @@
 using System.Windows.Media;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Mods;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
 
 namespace PocketMC.Desktop.Features.Marketplace.Models
 {

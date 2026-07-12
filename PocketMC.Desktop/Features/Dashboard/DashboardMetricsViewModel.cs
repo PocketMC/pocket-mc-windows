@@ -1,6 +1,6 @@
 using System;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {

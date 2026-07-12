@@ -1,3 +1,5 @@
+﻿using PocketMC.Domain.Storage;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Diagnostics;
 using System.Collections.Concurrent;
@@ -12,20 +14,21 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
 using Wpf.Ui.Controls;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Desktop.Features.Intelligence;
 using PocketMC.Application.Interfaces.AI;
-using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Settings;
-using PocketMC.Desktop.Features.Tunnel;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
 using Microsoft.Extensions.DependencyInjection;
-using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Players;
-using PocketMC.Desktop.Features.Players.Services;
+using PocketMC.Application.Services.Players;
+using PocketMC.Infrastructure.Players;
 
 
 namespace PocketMC.Desktop.Features.Console
@@ -235,7 +238,7 @@ namespace PocketMC.Desktop.Features.Console
             // We clear it because the log file already contains these lines (autoflush is on)
             if (_serverProcess != null)
             {
-                while (_serverProcess.OutputBuffer.TryDequeue(out _)) { }
+                if (_serverProcess.OutputBuffer is ConcurrentQueue<string> queue) { while (queue.TryDequeue(out _)) { } }
             }
 
             // 3. If in crashed state, show the crash banner immediately (NET-10)
@@ -762,7 +765,7 @@ namespace PocketMC.Desktop.Features.Console
             try
             {
                 var agentState = await _agentProvisioning.GetConnectionStateAsync();
-                if (agentState != PocketMC.Desktop.Features.Tunnel.AgentConnectionState.Connected && agentState != PocketMC.Desktop.Features.Tunnel.AgentConnectionState.Connecting)
+                if (agentState != PocketMC.Infrastructure.Tunnel.AgentConnectionState.Connected && agentState != PocketMC.Infrastructure.Tunnel.AgentConnectionState.Connecting)
                 {
                     var dialog = new PocketMC.Desktop.Features.Tunnel.PreStartAgentWarningWindow(_agentProvisioning)
                     {

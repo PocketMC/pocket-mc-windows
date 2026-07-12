@@ -2,17 +2,20 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Features.WhatsNew;
 using PocketMC.Domain.Models;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Java;
+using PocketMC.Infrastructure.Backups;
+using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
-using PocketMC.Desktop.Features.Settings;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Infrastructure.WhatsNew;
 
 namespace PocketMC.Desktop.Features.Shell
 {
@@ -25,7 +28,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly JavaProvisioningService _javaProvisioningService;
         private readonly PlayitAgentService _playitAgentService;
         private readonly IResourceMonitorService _resourceMonitorService;
-        private readonly PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor _healthMonitor;
+        private readonly PocketMC.Infrastructure.Diagnostics.DependencyHealthMonitor _healthMonitor;
         private readonly InstanceRegistry _registry;
         private readonly IDiscordRpcService _discordRpcService;
         private readonly ITelemetryService _telemetryService;
@@ -45,7 +48,7 @@ namespace PocketMC.Desktop.Features.Shell
             JavaProvisioningService javaProvisioningService,
             PlayitAgentService playitAgentService,
             IResourceMonitorService resourceMonitorService,
-            PocketMC.Desktop.Features.Diagnostics.DependencyHealthMonitor healthMonitor,
+            PocketMC.Infrastructure.Diagnostics.DependencyHealthMonitor healthMonitor,
             InstanceRegistry registry,
             IDiscordRpcService discordRpcService,
             ITelemetryService telemetryService,
@@ -287,8 +290,36 @@ namespace PocketMC.Desktop.Features.Shell
         private void HandleStartupFailure(Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize the PocketMC startup flow.");
-            _host?.ShowError("Initialization Error", "PocketMC could not initialize the main workflow. Check the debug log for details.");
+            string? logPath = WriteStartupFailureLog(ex);
+            string message = logPath == null
+                ? "PocketMC could not initialize the main workflow. Check the debug log for details."
+                : $"PocketMC could not initialize the main workflow. Details were written to:{Environment.NewLine}{logPath}";
+            _host?.ShowError("Initialization Error", message);
             _host?.ShutdownApplication();
+        }
+
+        private static string? WriteStartupFailureLog(Exception exception)
+        {
+            try
+            {
+                string logDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "PocketMC",
+                    "logs");
+
+                Directory.CreateDirectory(logDirectory);
+
+                string logPath = Path.Combine(
+                    logDirectory,
+                    $"startup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.log");
+
+                File.WriteAllText(logPath, exception.ToString());
+                return logPath;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private void ThrowIfNoHost()

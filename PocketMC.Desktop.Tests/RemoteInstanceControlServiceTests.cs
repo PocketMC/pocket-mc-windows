@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Instances.Services;
-using PocketMC.Desktop.Features.RemoteControl.Services;
+using PocketMC.RemoteControl;
 using PocketMC.Desktop.Features.Shell;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
@@ -93,12 +94,11 @@ public sealed class RemoteInstanceControlServiceTests : IDisposable
             return Task.CompletedTask;
         }
 
-        public ServerProcess? GetProcess(Guid instanceId) => null;
+        public IServerProcess? GetProcess(Guid instanceId) => null;
         public DateTime? GetSessionStartTime(Guid instanceId) => null;
         public Task ReleaseInstanceAsync(Guid instanceId) => Task.CompletedTask;
     }
 }
 #pragma warning restore CS0067
-
 
 

@@ -2,6 +2,8 @@ using System;
 using System.Diagnostics;
 using System.Windows;
 
+using PocketMC.Infrastructure.WhatsNew;
+
 namespace PocketMC.Desktop.Features.WhatsNew
 {
     /// <summary>

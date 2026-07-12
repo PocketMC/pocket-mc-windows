@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Core.Interfaces;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -12,12 +13,16 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Shell;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Interfaces;
+using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Models;
 using PocketMC.Desktop.Features.Dashboard;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Infrastructure;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.OS;
+using PocketMC.Infrastructure.Tunnel;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {

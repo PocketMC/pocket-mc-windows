@@ -1,7 +1,4 @@
-using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Features.Players.Services;
-using PocketMC.Desktop.Views.Behaviors;
-using PocketMC.Desktop.Infrastructure;
+using PocketMC.Application.Services.Players;
 
 namespace PocketMC.Desktop.Tests;
 
@@ -22,7 +19,7 @@ public sealed class PlayerActionCommandBuilderTests
     [Fact]
     public void BuildSubmitCommands_KicksAfterJavaBanSoOnlineCrossplayPlayersDisconnect()
     {
-        string formattedName = CommandFormatter.FormatPlayerName(".SahajItaliya", "Paper");
+        string formattedName = CommandFormatter.FormatPlayerName("Sahaj33", "Paper");
 
         IReadOnlyList<string> commands = PlayerActionCommandBuilder.BuildSubmitCommands(
             "Ban",
@@ -30,7 +27,7 @@ public sealed class PlayerActionCommandBuilderTests
             "Paper",
             "griefing");
 
-        Assert.Equal(new[] { "ban .SahajItaliya griefing", "kick .SahajItaliya griefing" }, commands);
+        Assert.Equal(new[] { "ban Sahaj33 griefing", "kick Sahaj33 griefing" }, commands);
     }
 
     [Fact]

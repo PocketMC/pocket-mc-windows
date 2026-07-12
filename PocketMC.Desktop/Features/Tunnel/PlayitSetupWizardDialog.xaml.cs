@@ -6,9 +6,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using Wpf.Ui.Controls;
-using TextBlock = System.Windows.Controls.TextBlock;
+using PocketMC.Domain.Models;
+using PocketMC.Infrastructure.Tunnel;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {
@@ -89,7 +90,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                         ? new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1))
                         : new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF));
 
-                if (_stepDots[i].Child is TextBlock label)
+                if (_stepDots[i].Child is System.Windows.Controls.TextBlock label)
                 {
                     label.Foreground = (isActive || isCompleted) ? Brushes.White : new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF));
                     label.Text = isCompleted ? "✓" : (i + 1).ToString();

@@ -1,0 +1,355 @@
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using PocketMC.Domain.Models;
+using PocketMC.Domain.Security;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Security;
+
+namespace PocketMC.Infrastructure.Telemetry
+{
+    public class SettingsManager
+    {
+        private static readonly JsonSerializerOptions SettingsJsonOptions = new() { WriteIndented = true };
+
+        private readonly string _settingsFilePath;
+        private readonly ILogger<SettingsManager>? _logger;
+        private readonly object _settingsLock = new();
+
+        public event EventHandler<AppSettings>? SettingsSaved;
+
+        public SettingsManager(ILogger<SettingsManager>? logger = null)
+        {
+            _logger = logger;
+            _settingsFilePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "PocketMC",
+                "settings.json");
+        }
+
+        public SettingsManager(string settingsFilePath, ILogger<SettingsManager>? logger = null)
+        {
+            if (string.IsNullOrWhiteSpace(settingsFilePath))
+            {
+                throw new ArgumentException("Settings file path cannot be empty.", nameof(settingsFilePath));
+            }
+
+            _logger = logger;
+            _settingsFilePath = settingsFilePath;
+        }
+
+        public AppSettings Load()
+        {
+            lock (_settingsLock)
+            {
+                if (!File.Exists(_settingsFilePath))
+                {
+                    return CreateDefaultSettings();
+                }
+
+                AppSettings? settings;
+                try
+                {
+                    var content = File.ReadAllText(_settingsFilePath);
+                    settings = JsonSerializer.Deserialize<AppSettings>(content);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "Failed to load settings from {SettingsFilePath}. Falling back to defaults.", _settingsFilePath);
+                    return CreateDefaultSettings();
+                }
+
+                var originalJson = JsonSerializer.Serialize(settings, SettingsJsonOptions);
+                settings = Normalize(settings);
+                var normalizedJson = JsonSerializer.Serialize(settings, SettingsJsonOptions);
+
+                if (originalJson != normalizedJson)
+                {
+                    try
+                    {
+                        var directory = Path.GetDirectoryName(_settingsFilePath);
+                        if (!Directory.Exists(directory) && directory != null)
+                        {
+                            Directory.CreateDirectory(directory);
+                        }
+                        FileUtils.AtomicWriteAllText(_settingsFilePath, normalizedJson);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "Failed to persist normalized settings to {SettingsFilePath}.", _settingsFilePath);
+                    }
+                }
+
+                UnprotectSecrets(settings);
+                return settings;
+            }
+        }
+
+        public void Save(AppSettings settings)
+        {
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
+            lock (_settingsLock)
+            {
+                var normalizedSettings = Normalize(CloneSettings(settings));
+                var directory = Path.GetDirectoryName(_settingsFilePath);
+                if (!Directory.Exists(directory) && directory != null)
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                ProtectSecrets(normalizedSettings);
+
+                var content = JsonSerializer.Serialize(normalizedSettings, SettingsJsonOptions);
+                FileUtils.AtomicWriteAllText(_settingsFilePath, content);
+            }
+
+            SettingsSaved?.Invoke(this, CloneSettings(settings));
+        }
+
+        public string GetPlayitTomlPath(AppSettings? settings = null)
+        {
+            var effectiveSettings = Normalize(settings == null ? Load() : CloneSettings(settings));
+            return Path.Combine(effectiveSettings.PlayitConfigDirectory!, "playit.toml");
+        }
+
+        public System.Collections.Generic.IReadOnlyList<string> GetPlayitPartnerBackendUrls(AppSettings? settings = null)
+        {
+            // Dev override only — never exposed to users
+            string? fromEnvironment = Environment.GetEnvironmentVariable("POCKETMC_PLAYIT_BACKEND_URL");
+            if (!string.IsNullOrWhiteSpace(fromEnvironment))
+            {
+                return new[] { fromEnvironment };
+            }
+            return AppConfig.AuthProxies;
+        }
+
+        private AppSettings CreateDefaultSettings()
+        {
+            return Normalize(new AppSettings());
+        }
+
+        private static AppSettings CloneSettings(AppSettings settings)
+        {
+            string json = JsonSerializer.Serialize(settings, SettingsJsonOptions);
+            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        }
+
+        private AppSettings Normalize(AppSettings? settings)
+        {
+            settings ??= new AppSettings();
+
+            if (!settings.HasMigratedToGreenWallpaperBlurTheme)
+            {
+                // Only overwrite settings if this is an existing installation being migrated.
+                // For new installations (!HasCompletedFirstLaunch), the defaults are already correct
+                // because of the property initializers in AppSettings.cs.
+                if (settings.HasCompletedFirstLaunch)
+                {
+                    settings.WindowBackdrop = "FakeMica";
+                    settings.AccentColorMode = "Custom";
+                    settings.CustomAccentColor = "#008B00";
+                }
+                settings.HasMigratedToGreenWallpaperBlurTheme = true;
+            }
+
+            if (!settings.HasMigratedToDefaultImageWallpaper)
+            {
+                if (settings.HasCompletedFirstLaunch)
+                {
+                    // Apply the new Pocket MC default wallpaper to existing users on this update
+                    settings.WindowBackdrop = "FakeMica";
+                    settings.AccentColorMode = "Custom";
+                    settings.CustomAccentColor = "#008B00";
+                }
+                // For new users, defaults are already provided via AppSettings.cs initializers,
+                // but we must set the dynamic image path here.
+                settings.CustomBackgroundImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
+                settings.HasMigratedToDefaultImageWallpaper = true;
+            }
+
+            settings.AiApiKeys ??= new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            settings.CloudTokens ??= new System.Collections.Generic.Dictionary<string, CloudOAuthTokenSet>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))
+            {
+                if (settings.CloudTokens[key] == null)
+                {
+                    settings.CloudTokens.Remove(key);
+                }
+            }
+            settings.UserRemovedJavaVersions ??= new System.Collections.Generic.HashSet<int>();
+            settings.CloudBackups ??= new CloudBackupSettings();
+            settings.RemoteControl ??= new RemoteControlSettings();
+            if (settings.RemoteControl.Port <= 0 || settings.RemoteControl.Port > 65535)
+            {
+                settings.RemoteControl.Port = 25580;
+            }
+
+            settings.RemoteControl.TunnelProviderId = settings.RemoteControl.AccessMode switch
+            {
+                RemoteAccessMode.CloudflaredQuickTunnel => "cloudflared-quick",
+                RemoteAccessMode.PlayitHttpsTunnel => "playit-https",
+                _ => "none"
+            };
+
+            settings.PlayitConfigDirectory ??= Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "playit_gg");
+
+            // Migration: Move old single API key to the dictionary under Gemini
+            if (!string.IsNullOrEmpty(settings.AiApiKey))
+            {
+                if (!settings.AiApiKeys.ContainsKey("Gemini"))
+                    settings.AiApiKeys["Gemini"] = settings.AiApiKey;
+
+                settings.AiApiKey = null; // Clear it out so it stops writing to JSON
+            }
+
+            return settings;
+        }
+
+        private void ProtectSecrets(AppSettings settings)
+        {
+            if (!string.IsNullOrEmpty(settings.CurseForgeApiKey))
+            {
+                settings.CurseForgeApiKey = DataProtector.Protect(settings.CurseForgeApiKey);
+            }
+
+            if (!string.IsNullOrEmpty(settings.PlayitPartnerConnection?.AgentSecretKey))
+            {
+                settings.PlayitPartnerConnection.AgentSecretKey =
+                    DataProtector.Protect(settings.PlayitPartnerConnection.AgentSecretKey);
+            }
+
+            if (!string.IsNullOrEmpty(settings.DiscordApiKey))
+            {
+                settings.DiscordApiKey = DataProtector.Protect(settings.DiscordApiKey);
+            }
+
+            foreach (var key in new System.Collections.Generic.List<string>(settings.AiApiKeys.Keys))
+            {
+                string value = settings.AiApiKeys[key];
+                if (!string.IsNullOrEmpty(value))
+                {
+                    settings.AiApiKeys[key] = DataProtector.Protect(value);
+                }
+            }
+
+            foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))
+            {
+                var tokenSet = settings.CloudTokens[key];
+                if (tokenSet == null)
+                {
+                    settings.CloudTokens.Remove(key);
+                    continue;
+                }
+
+                if (!string.IsNullOrEmpty(tokenSet.AccessToken))
+                {
+                    tokenSet.AccessToken = DataProtector.Protect(tokenSet.AccessToken);
+                }
+
+                if (!string.IsNullOrEmpty(tokenSet.RefreshToken))
+                {
+                    tokenSet.RefreshToken = DataProtector.Protect(tokenSet.RefreshToken);
+                }
+            }
+        }
+
+        private void UnprotectSecrets(AppSettings settings)
+        {
+            settings.CurseForgeApiKey = TryUnprotectSetting(settings.CurseForgeApiKey, nameof(settings.CurseForgeApiKey));
+            settings.DiscordApiKey = TryUnprotectSetting(settings.DiscordApiKey, nameof(settings.DiscordApiKey));
+
+            if (settings.PlayitPartnerConnection != null)
+            {
+                settings.PlayitPartnerConnection.AgentSecretKey = TryUnprotectSetting(
+                    settings.PlayitPartnerConnection.AgentSecretKey,
+                    $"{nameof(settings.PlayitPartnerConnection)}.{nameof(settings.PlayitPartnerConnection.AgentSecretKey)}");
+            }
+
+            foreach (var key in new System.Collections.Generic.List<string>(settings.AiApiKeys.Keys))
+            {
+                string? unprotected = TryUnprotectSetting(settings.AiApiKeys[key], $"AiApiKeys.{key}");
+                if (unprotected == null && !string.IsNullOrEmpty(settings.AiApiKeys[key]))
+                {
+                    settings.AiApiKeys.Remove(key);
+                    continue;
+                }
+
+                settings.AiApiKeys[key] = unprotected ?? string.Empty;
+            }
+
+            foreach (var key in new System.Collections.Generic.List<string>(settings.CloudTokens.Keys))
+            {
+                var tokenSet = settings.CloudTokens[key];
+                if (tokenSet == null || !TryUnprotectCloudTokenSet(tokenSet, key))
+                {
+                    settings.CloudTokens.Remove(key);
+                }
+            }
+        }
+
+        private string? TryUnprotectSetting(string? value, string settingName)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            try
+            {
+                return DataProtector.Unprotect(value);
+            }
+            catch (CryptographicException ex)
+            {
+                _logger?.LogWarning(ex, "Failed to decrypt protected setting {SettingName}. Clearing only that value.", settingName);
+                return null;
+            }
+        }
+
+        private bool TryUnprotectCloudTokenSet(CloudOAuthTokenSet tokenSet, string providerName)
+        {
+            if (!TryUnprotectCloudToken(tokenSet.AccessToken, $"{nameof(AppSettings.CloudTokens)}.{providerName}.{nameof(tokenSet.AccessToken)}", out var accessToken))
+            {
+                return false;
+            }
+
+            if (!TryUnprotectCloudToken(tokenSet.RefreshToken, $"{nameof(AppSettings.CloudTokens)}.{providerName}.{nameof(tokenSet.RefreshToken)}", out var refreshToken))
+            {
+                return false;
+            }
+
+            tokenSet.AccessToken = accessToken;
+            tokenSet.RefreshToken = refreshToken;
+            return true;
+        }
+
+        private bool TryUnprotectCloudToken(string? value, string settingName, out string? unprotected)
+        {
+            unprotected = value;
+            if (string.IsNullOrEmpty(value))
+            {
+                return true;
+            }
+
+            try
+            {
+                unprotected = DataProtector.Unprotect(value);
+                return true;
+            }
+            catch (CryptographicException ex)
+            {
+                _logger?.LogWarning(ex, "Failed to decrypt protected setting {SettingName}. Removing that cloud token provider.", settingName);
+                unprotected = null;
+                return false;
+            }
+        }
+    }
+}
+

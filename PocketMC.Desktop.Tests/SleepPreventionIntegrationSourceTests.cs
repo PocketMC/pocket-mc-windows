@@ -46,8 +46,7 @@ public sealed class SleepPreventionIntegrationSourceTests
     public void Coordinator_DefersRefreshFromProcessManagerStateChange()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Infrastructure",
+            "PocketMC.Infrastructure",
             "Power",
             "ServerSleepPreventionCoordinator.cs"));
 

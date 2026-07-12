@@ -1,3 +1,5 @@
+﻿using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System;
 using System.Diagnostics;
@@ -5,12 +7,14 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 
-using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Infrastructure.Marketplace;
+using PocketMC.Application.Services.Mods;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -153,7 +157,7 @@ namespace PocketMC.Desktop.Features.Settings
             if (Directory.Exists(worldDir))
             {
                 WorldStatusText = "✅ World folder exists";
-                WorldSizeText = $"Size: {PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.GetDirectorySizeMb(worldDir)} MB";
+                WorldSizeText = $"Size: {PocketMC.Domain.Storage.FileUtils.GetDirectorySizeMb(worldDir)} MB";
             }
             else
             {
@@ -187,7 +191,7 @@ namespace PocketMC.Desktop.Features.Settings
             if (!Directory.Exists(worldDir)) return;
             if (await _dialogService.ShowDialogAsync("Confirm", "Delete current world? Cannot be undone.", DialogType.Warning) == DialogResult.Yes)
             {
-                try { await PocketMC.Desktop.Infrastructure.FileSystem.FileUtils.CleanDirectoryAsync(worldDir); LoadWorldState(); }
+                try { await PocketMC.Domain.Storage.FileUtils.CleanDirectoryAsync(worldDir); LoadWorldState(); }
                 catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             }
         }

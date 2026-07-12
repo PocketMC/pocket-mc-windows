@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:local="clr-namespace:PocketMC.Desktop.Features.Marketplace"
-        xmlns:models="clr-namespace:PocketMC.Desktop.Features.Marketplace.Models"
+        xmlns:models="clr-namespace:PocketMC.Domain.Models;assembly=PocketMC.Domain"
         xmlns:pres="clr-namespace:PocketMC.Desktop.Core.Presentation"
         mc:Ignorable="d"
         Title="Confirm Installation" Height="500" Width="600"

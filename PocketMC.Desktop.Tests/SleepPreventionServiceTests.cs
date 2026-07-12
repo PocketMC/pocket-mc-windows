@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using PocketMC.Desktop.Infrastructure.Power;
+using PocketMC.Infrastructure.Power;
 
 namespace PocketMC.Desktop.Tests;
 

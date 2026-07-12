@@ -16,6 +16,53 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="PocketMC.Application.Services.Shell" />
+    <Using Include="PocketMC.Application.Services.Instances" />
+    <Using Include="PocketMC.Application.Services.Mods" />
+    <Using Include="PocketMC.Application.Services.Networking" />
+    <Using Include="PocketMC.Application.Services.Players" />
+    <Using Include="PocketMC.Application.Services.Setup" />
+    <Using Include="PocketMC.Application.Interfaces" />
+    <Using Include="PocketMC.Application.Interfaces.Instances" />
+    <Using Include="PocketMC.Application.Interfaces.Backups" />
+    <Using Include="PocketMC.Domain.Models" />
+    <Using Include="PocketMC.Domain.Security" />
+    <Using Include="PocketMC.Domain.Storage" />
+    <Using Include="PocketMC.Infrastructure" />
+    <Using Include="PocketMC.Infrastructure.Instances" />
+    <Using Include="PocketMC.Infrastructure.Instances.Updates" />
+    <Using Include="PocketMC.Infrastructure.Instances.Providers" />
+    <Using Include="PocketMC.Infrastructure.Backups" />
+    <Using Include="PocketMC.Infrastructure.Backups.Providers" />
+    <Using Include="PocketMC.Infrastructure.Mods" />
+    <Using Include="PocketMC.Infrastructure.Marketplace" />
+    <Using Include="PocketMC.Infrastructure.Java" />
+    <Using Include="PocketMC.Infrastructure.Telemetry" />
+    <Using Include="PocketMC.Infrastructure.Tunnel" />
+    <Using Include="PocketMC.Infrastructure.Networking" />
+    <Using Include="PocketMC.Infrastructure.Players" />
+    <Using Include="PocketMC.Infrastructure.Http" />
+    <Using Include="PocketMC.Infrastructure.OS" />
+    <Using Include="PocketMC.Infrastructure.Power" />
+    <Using Include="PocketMC.Infrastructure.Monitoring" />
+    <Using Include="PocketMC.Infrastructure.Diagnostics" />
+    <Using Include="PocketMC.Infrastructure.Security" />
+    <Using Include="PocketMC.Desktop.Features.Instances" />
+    <Using Include="PocketMC.Desktop.Features.Instances.Services" />
+    <Using Include="PocketMC.Desktop.Features.Mods" />
+    <Using Include="PocketMC.Desktop.Features.Marketplace" />
+    <Using Include="PocketMC.Desktop.Features.Shell" />
+    <Using Include="PocketMC.Desktop.Features.Tunnel" />
+    <Using Include="PocketMC.Desktop.Features.Networking" />
+    <Using Include="PocketMC.Desktop.Features.Console" />
+    <Using Include="PocketMC.Desktop.Features.Players" />
+    <Using Include="PocketMC.Desktop.Features.Settings" />
+    <Using Include="PocketMC.Desktop.Infrastructure" />
+    <Using Include="PocketMC.Desktop.Core.Interfaces" />
+    <Using Include="PocketMC.RemoteControl" />
+    <Using Include="PocketMC.RemoteControl.Hosting" />
+    <Using Include="PocketMC.RemoteControl.Models" />
+    <Using Include="PocketMC.RemoteControl.Services" />
   </ItemGroup>
 
   <ItemGroup>

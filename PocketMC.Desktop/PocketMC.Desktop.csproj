@@ -18,7 +18,6 @@
     <Resource Include="Assets\splash.png" />
     <Content Include="Assets\default_wallpaper.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\WhatsNew.txt" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Features\RemoteControl\Web\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

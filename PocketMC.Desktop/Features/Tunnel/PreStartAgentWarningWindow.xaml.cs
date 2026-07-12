@@ -1,7 +1,9 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using Wpf.Ui.Controls;
+
+using PocketMC.Infrastructure.Tunnel;
 
 namespace PocketMC.Desktop.Features.Tunnel
 {

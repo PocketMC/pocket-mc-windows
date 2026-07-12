@@ -1,3 +1,6 @@
+using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Mods;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -7,24 +10,29 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 
-using PocketMC.Desktop.Infrastructure.Security;
-using PocketMC.Desktop.Features.Instances.Backups;
-using PocketMC.Desktop.Features.Setup;
+using PocketMC.Infrastructure.Security;
+using PocketMC.Infrastructure.Backups;
+using PocketMC.Application.Services.Setup;
+using PocketMC.Infrastructure.Java;
 using PocketMC.Desktop.Features.Console;
-using PocketMC.Desktop.Infrastructure.Process;
-using PocketMC.Desktop.Features.Instances;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Infrastructure.Networking;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 
-using PocketMC.Desktop.Infrastructure.FileSystem;
-using PocketMC.Desktop.Features.Settings;
+using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Telemetry;
+using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Core.Presentation;
-using PocketMC.Desktop.Features.Mods;
-using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
+using PocketMC.Infrastructure.Marketplace;
 using System.Windows.Media;
+using PocketMC.Infrastructure;
+using PocketMC.Infrastructure.OS;
 using PocketMC.Desktop.Infrastructure;
 using System.Threading;
 
@@ -264,7 +272,7 @@ namespace PocketMC.Desktop.Features.Settings
         {
             Func<Task> action = async () =>
             {
-                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Desktop.Features.Marketplace.ModrinthService)) as PocketMC.Desktop.Features.Marketplace.ModrinthService;
+                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Infrastructure.Marketplace.ModrinthService)) as PocketMC.Infrastructure.Marketplace.ModrinthService;
                 if (modrinthService != null)
                 {
                     await _manifestService.SyncManifestAsync(_serverDir, modrinthService, _metadata.Compatibility);
@@ -466,12 +474,12 @@ namespace PocketMC.Desktop.Features.Settings
             var files = await _dialogService.OpenFilesDialogAsync("Select Plugin(s)", filter);
             foreach (var f in files)
             {
-                PocketMC.Desktop.Features.Mods.JavaModMetadata? metadata = null;
+                PocketMC.Domain.Models.JavaModMetadata? metadata = null;
 
                 if (!IsPocketmine)
                 {
                     // Step 1: Plugin presence check
-                    if (!PocketMC.Desktop.Features.Mods.JavaModMetadataService.IsPluginJar(f))
+                    if (!PocketMC.Infrastructure.Mods.JavaModMetadataService.IsPluginJar(f))
                     {
                         _dialogService.ShowMessage("Invalid Plugin",
                             $"'{System.IO.Path.GetFileName(f)}' does not appear to be a valid Paper/Bukkit plugin.",
@@ -480,7 +488,7 @@ namespace PocketMC.Desktop.Features.Settings
                     }
 
                     // Step 2: Scan metadata
-                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
+                    metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
                 }
 
                 if (!IsPocketmine && metadata != null)
@@ -571,7 +579,7 @@ namespace PocketMC.Desktop.Features.Settings
                 var hashBytes = await sha1.ComputeHashAsync(stream);
                 var hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
 
-                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Desktop.Features.Marketplace.ModrinthService)) as PocketMC.Desktop.Features.Marketplace.ModrinthService;
+                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Infrastructure.Marketplace.ModrinthService)) as PocketMC.Infrastructure.Marketplace.ModrinthService;
                 if (modrinthService == null) return;
 
                 var match = await modrinthService.GetVersionsByHashesAsync(new[] { hash }, "sha1");
@@ -741,11 +749,11 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 var fileName = System.IO.Path.GetFileName(f).ToLowerInvariant();
 
-                PocketMC.Desktop.Features.Mods.JavaModMetadata? metadata = null;
+                PocketMC.Domain.Models.JavaModMetadata? metadata = null;
 
                 if (!IsBedrockDedicated && !IsPocketmine)
                 {
-                    metadata = PocketMC.Desktop.Features.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
+                    metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
                 }
 
                 if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
@@ -776,20 +784,20 @@ namespace PocketMC.Desktop.Features.Settings
                             continue;
                         }
 
-                        if (!PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
+                        if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
                         {
-                            _dialogService.ShowMessage("Incompatible Minecraft Version",
-                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}. This mod cannot be installed.",
-                                DialogType.Error);
-                            continue;
+                            var res = await _dialogService.ShowDialogAsync("Incompatible Minecraft Version",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}. Do you want to install it anyway?",
+                                DialogType.Warning);
+                            if (res != DialogResult.Yes) continue;
                         }
 
-                        if (!PocketMC.Desktop.Helpers.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
+                        if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
                         {
-                            _dialogService.ShowMessage("Incompatible Loader Version",
-                                $"The mod '{System.IO.Path.GetFileName(f)}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. This mod cannot be installed.",
-                                DialogType.Error);
-                            continue;
+                            var res = await _dialogService.ShowDialogAsync("Incompatible Loader Version",
+                                $"The mod '{System.IO.Path.GetFileName(f)}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. Do you want to install it anyway?",
+                                DialogType.Warning);
+                            if (res != DialogResult.Yes) continue;
                         }
                     }
 

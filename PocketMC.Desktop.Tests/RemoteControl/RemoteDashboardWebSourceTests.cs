@@ -36,9 +36,7 @@ public sealed class RemoteDashboardWebSourceTests
 
     private static string ReadWebFile(string fileName) =>
         File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Features",
-            "RemoteControl",
+            "PocketMC.RemoteControl",
             "Web",
             fileName)).Replace("\r", "");
 }

@@ -1,7 +1,8 @@
+using PocketMC.Desktop.Core.Interfaces;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 
 namespace PocketMC.Desktop.Infrastructure
@@ -93,6 +94,27 @@ namespace PocketMC.Desktop.Infrastructure
                 else
                 {
                     tcs.SetResult(null);
+                }
+            });
+            return tcs.Task;
+        }
+        public Task ShowProgressDialogAsync(string title, string message, System.Func<System.IProgress<double>, Task> action)
+        {
+            var tcs = new TaskCompletionSource();
+            System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    var dialog = new ProgressDialogWindow(title, message, action)
+                    {
+                        Owner = System.Windows.Application.Current.MainWindow
+                    };
+                    dialog.ShowDialog(); // This blocks the UI thread until the action is complete and closes itself
+                    tcs.SetResult();
+                }
+                catch (System.Exception ex)
+                {
+                    tcs.SetException(ex);
                 }
             });
             return tcs.Task;

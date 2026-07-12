@@ -95,8 +95,7 @@ public sealed class BedrockAddonInstallerSecurityTests : IDisposable
     public void ProcessManifestAsync_ValidatesTargetPackRootBeforeCombiningPackName()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Features",
+            "PocketMC.Infrastructure",
             "Mods",
             "BedrockAddonInstaller.cs"));
 
@@ -108,8 +107,7 @@ public sealed class BedrockAddonInstallerSecurityTests : IDisposable
     public void TryReadUuidAsync_OnlySuppressesExpectedReadAndJsonFailures()
     {
         string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Features",
+            "PocketMC.Infrastructure",
             "Mods",
             "BedrockAddonInstaller.cs"));
 

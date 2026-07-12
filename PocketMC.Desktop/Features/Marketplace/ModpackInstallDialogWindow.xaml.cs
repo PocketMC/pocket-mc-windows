@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,11 +10,14 @@ using System.Windows;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Features.Instances.Services;
+using PocketMC.Application.Interfaces;
+using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Desktop.Features.Marketplace.Models;
-using PocketMC.Desktop.Features.Mods;
+using PocketMC.Application.Services.Mods;
+using PocketMC.Infrastructure.Mods;
 using PocketMC.Domain.Models;
+using PocketMC.Desktop.Features.Mods;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -67,15 +71,29 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (OperationCanceledException)
             {
-                Dispatcher.Invoke(() =>
+                if (_createdInstanceMetadata != null)
                 {
-                    ShowAlert("Installation was cancelled.");
-                });
+                    try
+                    {
+                        await _instanceManager.DeleteInstanceAsync(_createdInstanceMetadata.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to clean up cancelled modpack instance");
+                    }
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to install modpack");
-                ShowAlert($"Failed to install modpack: {ex.Message}");
+                if (ex.Message == "invalid modpack not supported")
+                {
+                    ShowAlert(ex.Message);
+                }
+                else
+                {
+                    ShowAlert($"Failed to install modpack: {ex.Message}");
+                }
             }
             finally
             {
@@ -138,7 +156,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             // 5. Execute Import via ModpackService
             UpdateOverallStatus($"Downloading {parsedPack.Mods.Count} mods...", 30);
             
-            var importProgress = new Progress<PocketMC.Desktop.Features.Instances.ImportExport.InstanceTransferProgress>(p =>
+            var importProgress = new Progress<PocketMC.Application.Interfaces.Instances.InstanceTransferProgress>(p =>
             {
                 Dispatcher.Invoke(() => UpdateOverallStatus(p.CurrentStep, p.OverallProgress));
             });
@@ -183,7 +201,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                     "https://aka.ms/MinecraftEULA"
                 );
 
-                if (result == PocketMC.Desktop.Core.Interfaces.DialogResult.Ok)
+                if (result == PocketMC.Desktop.Core.Interfaces.DialogResult.Yes)
                 {
                     if (_createdInstanceMetadata != null && _instancePath != null)
                     {
@@ -212,7 +230,15 @@ namespace PocketMC.Desktop.Features.Marketplace
         {
             if (_isRunning)
             {
+                var result = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
+                    "Cancel Installation?",
+                    "Are you sure you want to cancel the modpack installation? The partially downloaded server will be deleted."
+                );
+
+                if (!result) return;
+
                 _cts?.Cancel();
+                Close();
             }
             else
             {

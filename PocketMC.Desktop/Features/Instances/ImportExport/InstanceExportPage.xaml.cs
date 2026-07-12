@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Core.Interfaces;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -6,7 +7,8 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
-using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Application.Interfaces;
+using PocketMC.Infrastructure.Instances;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 
 namespace PocketMC.Desktop.Features.Instances.ImportExport;

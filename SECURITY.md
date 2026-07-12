@@ -16,7 +16,8 @@ This document serves as a guide for developers, moderators, and security-minded 
 To support automatic cloud backups, PocketMC securely stores OAuth access and refresh tokens for Google Drive, Dropbox, and OneDrive. 
 * **Mechanism:** Sensitive settings and authentication tokens are encrypted at rest using the **Windows Data Protection API (DPAPI)**.
 * **Security Boundary:** DPAPI encrypts credentials utilizing cryptographic keys managed directly by Windows. The ciphertext is bound to your specific Windows user account, meaning other users or processes running under a different user context cannot decrypt the data.
-* **Implementation:** See the [DataProtector.cs](PocketMC.Desktop/Infrastructure/Security/DataProtector.cs) file for the DPAPI encryption and decryption wrapper.
+* **Versioned Protection:** The encryption scheme supports legacy and current formats (`dpapi:v1:` and `dpapi:v2:`) to ensure smooth upgrades. All protected values are stored as Base64-encoded ciphertext.
+* **Implementation:** See the [DataProtector.cs](PocketMC.Infrastructure/Security/DataProtector.cs) file for the DPAPI encryption and decryption wrapper.
 
 ---
 
@@ -26,10 +27,11 @@ To run Minecraft Java, Bedrock Dedicated Server, and PocketMine-MP, PocketMC aut
 * **Playit Agent Verification:** The playit binary is validated via two verification levels:
   1. Validation against pinned SHA-256 checksums.
   2. Windows Authenticode digital signature checking. PocketMC verifies the executable signature using `X509Certificate.CreateFromSignedFile` to ensure the binary is signed by the trusted publisher.
+* **Cloudflared Verification:** Downloaded cloudflared binaries are validated against a known SHA-256 hash before being placed into the tunnel directory.
 * **Staged Execution:** All downloads are written to `.partial` files and fully validated *before* being promoted to their operational paths. If a validation step fails, the partial file is safely deleted, preventing corrupted or tampered executables from running.
 * **Implementation:** 
-  * Adoptium Java download and hash validation: [DownloaderService.cs](PocketMC.Desktop/Features/Instances/Services/DownloaderService.cs#L100-L111)
-  * Signature and checksum checking: [DownloaderService.cs](PocketMC.Desktop/Features/Instances/Services/DownloaderService.cs#L255-L291)
+  * Adoptium Java download and hash validation: [DownloaderService.cs](PocketMC.Infrastructure/Storage/DownloaderService.cs#L100-L111)
+  * Signature and checksum checking: [DownloaderService.cs](PocketMC.Infrastructure/Storage/DownloaderService.cs#L255-L291)
 
 ---
 
@@ -41,9 +43,9 @@ PocketMC allows managing your server instances on the go via a remote web dashbo
 * **Session Invalidations:** Active sessions validate a dynamic `SecurityStamp`. Changing the dashboard password updates this stamp, rejecting existing cookie principals immediately.
 * **Rate Limiting:** Web APIs and console logins are protected by an in-memory windowed rate limiter to mitigate brute-force guessing attacks.
 * **Implementation:**
-  * PBKDF2 hashing & verification: [RemoteAuthenticationService.cs](PocketMC.Desktop/Features/RemoteControl/Services/RemoteAuthenticationService.cs)
-  * Session cookie & WebSocket authentication: [RemoteDashboardHost.cs](PocketMC.Desktop/Features/RemoteControl/Hosting/RemoteDashboardHost.cs#L95-L137)
-  * API Rate limiter: [RemoteRequestLimiter.cs](PocketMC.Desktop/Features/RemoteControl/Services/RemoteRequestLimiter.cs)
+  * PBKDF2 hashing & verification: [RemoteAuthenticationService.cs](PocketMC.RemoteControl/Services/RemoteAuthenticationService.cs)
+  * Session cookie & WebSocket authentication: [RemoteDashboardHost.cs](PocketMC.RemoteControl/Hosting/RemoteDashboardHost.cs#L95-L137)
+  * API Rate limiter: [RemoteRequestLimiter.cs](PocketMC.RemoteControl/Services/RemoteRequestLimiter.cs)
 
 ---
 
@@ -52,10 +54,17 @@ PocketMC allows managing your server instances on the go via a remote web dashbo
 ### Zip Slip Protection (Directory Traversal)
 Extracting untrusted ZIP archives (such as Bedrock `.mcpack` files, mod packs, or external backup zip files) could expose an application to path traversal vulnerabilities.
 * PocketMC sanitizes and validates every entry's target path before writing to disk. The application checks that the resolved canonical path strictly starts within the designated extraction root directory.
-* **Implementation:** Check the path normalization and containment validation in [PathSafety.cs](PocketMC.Desktop/Infrastructure/Security/PathSafety.cs#L45-L56) and [SafeZipExtractor.cs](PocketMC.Desktop/Features/Instances/Backups/SafeZipExtractor.cs#L29-L33).
+* **Implementation:** Check the path normalization and containment validation in [PathSafety.cs](PocketMC.Domain/Security/PathSafety.cs#L45-L56) and [SafeZipExtractor.cs](PocketMC.Domain/Storage/SafeZipExtractor.cs#L29-L33).
 
-### Console & Command Injection
-To prevent RCON or process input command exploits, console inputs are sanitized and validated. Log files are processed dynamically using line-by-line buffers to prevent log injection.
+### Command Injection Prevention
+* **Player Name Validation:** Player names are validated against Java/Bedrock/PocketMine naming rules before being used in server commands. Invalid characters (e.g., spaces, quotes, semicolons) are rejected or properly escaped.
+* **Console Input:** Commands sent to the server console are sanitized and validated to prevent injection attacks.
+
+### Path Traversal in Modpack Overrides
+* Modpack overrides are extracted using `PathSafety.ValidateContainedPath` to ensure files do not escape the instance directory. However, as a conscious design choice to support modpacks that include scripts and native libraries, overrides are allowed to write executable files (`.exe`, `.dll`, `.ps1`, `.sh`) into the instance folder. This increases the attack surface and should be considered when importing modpacks from untrusted sources. PocketMC displays warnings when such overrides are present.
+
+### Privileged Port Avoidance
+* The application warns users when a server is configured to use a privileged port (<1024) and recommends using higher ports to avoid conflicts with system services.
 
 ---
 
@@ -63,7 +72,7 @@ To prevent RCON or process input command exploits, console inputs are sanitized 
 * **Anonymous Data:** Telemetry is strictly diagnostic (app startup, shutdown, install/upgrade actions, and server create/delete events) to help track app health. 
 * **Identifiability:** No personally identifiable information (PII), server console logs, file contents, IP addresses, or Minecraft player names are collected. A randomly generated GUID Client ID is used to differentiate installs.
 * **Opt-Out:** You can disable telemetry entirely at any time in **App Settings -> Enable Telemetry**.
-* **Implementation:** See [TelemetryService.cs](PocketMC.Desktop/Features/Settings/TelemetryService.cs).
+* **Implementation:** See [TelemetryService.cs](PocketMC.Infrastructure/Telemetry/TelemetryService.cs).
 
 ---
 
@@ -71,3 +80,7 @@ To prevent RCON or process input command exploits, console inputs are sanitized 
 If you discover a security vulnerability in PocketMC, please report it privately:
 * **Contact:** Open a confidential GitHub Security Advisory, or email the developer at [sahajitaliya33@gmail.com](mailto:sahajitaliya33@gmail.com).
 * Please do not report security issues via public GitHub issues, Discord chats, or YouTube comments. We will investigate and respond to all reports within 48 hours.
+
+---
+
+*Last updated: 2026-07-11*
