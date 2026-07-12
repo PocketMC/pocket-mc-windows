@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
@@ -112,6 +112,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
 
     public string CurrentServerVersion => _metadata.MinecraftVersion;
     public string CurrentServerType => _metadata.ServerType;
+    public bool IsUpdateSupported => !_metadata.IsModpack;
 
     public string TargetMinecraftVersion => SelectedTargetVersion?.Id ?? string.Empty;
     public bool HasTargetVersions => TargetVersions.Count > 0;

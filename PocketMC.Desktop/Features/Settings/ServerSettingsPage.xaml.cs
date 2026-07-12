@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Views.Behaviors;
 using System;
 using System.Windows;
@@ -42,6 +42,35 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 _isFirstLoad = false;
                 int targetIndex = ViewModel.InitialTabIndex;
+
+                if (!ViewModel.VersionUpdates.IsUpdateSupported)
+                {
+                    int idxToRemove = -1;
+                    for (int i = 0; i < SidebarList.MenuItems.Count; i++)
+                    {
+                        if (SidebarList.MenuItems[i] is Wpf.Ui.Controls.NavigationViewItem navItem && (navItem.Content as string)?.Contains("Version & Updates") == true)
+                        {
+                            idxToRemove = i;
+                            break;
+                        }
+                    }
+
+                    if (idxToRemove != -1 && idxToRemove < MainTabControl.Items.Count)
+                    {
+                        SidebarList.MenuItems.RemoveAt(idxToRemove);
+                        MainTabControl.Items.RemoveAt(idxToRemove);
+                        
+                        if (targetIndex == idxToRemove)
+                        {
+                            targetIndex = 0;
+                        }
+                        else if (targetIndex > idxToRemove)
+                        {
+                            targetIndex--;
+                        }
+                    }
+                }
+
                 if (targetIndex >= 0 && targetIndex < SidebarList.MenuItems.Count)
                 {
                     for (int i = 0; i < SidebarList.MenuItems.Count; i++)
