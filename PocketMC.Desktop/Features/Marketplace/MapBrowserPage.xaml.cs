@@ -27,6 +27,8 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly string _mcVersion;
         private readonly ObservableCollection<ModrinthHit> _results = new();
         private int _currentOffset = 0;
+        private bool _isLoadingMore = false;
+        private bool _hasMoreResults = true;
         private System.Threading.CancellationTokenSource? _searchCts;
 
         public event Action<string>? OnMapDownloaded;
@@ -112,7 +114,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
 
                 _currentOffset += hits.Count;
-                BtnLoadMore.Visibility = hits.Count >= 20 ? Visibility.Visible : Visibility.Collapsed;
+                _hasMoreResults = hits.Count >= 20;
+                ProgressLoadMore.Visibility = Visibility.Collapsed;
             }
             catch (Exception ex)
             {
@@ -122,6 +125,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             {
                 ProgressSearching.Visibility = Visibility.Collapsed;
                 ListResults.Visibility = Visibility.Visible;
+                _isLoadingMore = false;
             }
         }
 
@@ -143,9 +147,21 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
         }
 
-        private async void BtnLoadMore_Click(object sender, RoutedEventArgs e)
+        private async void ResultsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            await RefreshResultsAsync(append: true);
+            if (e.VerticalChange > 0)
+            {
+                var scrollViewer = (ScrollViewer)sender;
+                if (scrollViewer.VerticalOffset + scrollViewer.ViewportHeight >= scrollViewer.ExtentHeight - 50)
+                {
+                    if (!_isLoadingMore && _hasMoreResults)
+                    {
+                        _isLoadingMore = true;
+                        ProgressLoadMore.Visibility = Visibility.Visible;
+                        await RefreshResultsAsync(append: true);
+                    }
+                }
+            }
         }
 
         private void ShowCurseForgeApiKeyDialog()

@@ -78,12 +78,12 @@
 
         <!-- Content Area -->
         <Grid Grid.Row="2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent" Padding="0,0,16,0">
-                <StackPanel Background="Transparent">
-                    <ItemsControl x:Name="ListResults">
+            <ScrollViewer x:Name="ResultsScrollViewer" Grid.Row="2" Margin="0,12,0,0" ScrollChanged="ResultsScrollViewer_ScrollChanged">
+                <StackPanel>
+                    <ItemsControl x:Name="ListResults" ItemsSource="{Binding}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <ui:Card Margin="0,0,0,12" Padding="12">
+                                <ui:Card Margin="0,0,0,12" Padding="12" Background="{DynamicResource ControlFillColorDefaultBrush}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="64"/>
@@ -91,12 +91,12 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <Border Grid.Column="0" Width="64" Height="64" CornerRadius="8" ClipToBounds="True" VerticalAlignment="Top">
+                                        <Border Width="64" Height="64" CornerRadius="4" ClipToBounds="True" Background="{DynamicResource ControlFillColorSecondaryBrush}">
                                             <Image Source="{Binding IconUrl}" Stretch="UniformToFill"/>
                                         </Border>
 
-                                        <StackPanel Grid.Column="1" Margin="16,0">
-                                            <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+                                        <StackPanel Grid.Column="1" Margin="16,0,16,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                             <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" MaxHeight="40" Margin="0,0,0,8"/>
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,6,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
@@ -113,7 +113,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <ui:Button x:Name="BtnLoadMore" Content="Load More" Appearance="Secondary" HorizontalAlignment="Center" Margin="0,8,0,16" Click="BtnLoadMore_Click" Visibility="Collapsed"/>
+                    <ui:ProgressRing x:Name="ProgressLoadMore" IsIndeterminate="True" Width="24" Height="24" Visibility="Collapsed" HorizontalAlignment="Center" Margin="0,8,0,16"/>
                 </StackPanel>
             </ScrollViewer>
 
