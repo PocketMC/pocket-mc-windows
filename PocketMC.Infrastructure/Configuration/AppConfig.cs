@@ -10,6 +10,8 @@ namespace PocketMC.Infrastructure.Telemetry
     public static class AppConfig
     {
         private const string ConfigResourceName = "PocketMC.Desktop.pocketmc.yml";
+        // Strict 1-second timeout on all YAML-parsing regex calls to prevent ReDoS.
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
         public static IReadOnlyList<string> AuthProxies { get; } = new List<string>
         {
@@ -66,7 +68,7 @@ namespace PocketMC.Infrastructure.Telemetry
 
                         if (trimmed.StartsWith("-") && (inAuth || inTelemetry))
                         {
-                            var match = Regex.Match(trimmed, @"-\s*""?([^""\r\n]+)""?");
+                            var match = Regex.Match(trimmed, @"-\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (match.Success)
                             {
                                 var url = match.Groups[1].Value;
@@ -82,28 +84,28 @@ namespace PocketMC.Infrastructure.Telemetry
                                 inTelemetry = false;
                             }
 
-                            var versionMatch = Regex.Match(trimmed, @"version:\s*""?([^""\r\n]+)""?");
+                            var versionMatch = Regex.Match(trimmed, @"version:\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (versionMatch.Success) AppVersion = versionMatch.Groups[1].Value;
 
-                            var discordMatch = Regex.Match(trimmed, @"link_discord:\s*""?([^""\r\n]+)""?");
+                            var discordMatch = Regex.Match(trimmed, @"link_discord:\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (discordMatch.Success) LinkDiscord = discordMatch.Groups[1].Value;
 
-                            var instagramMatch = Regex.Match(trimmed, @"link_instagram:\s*""?([^""\r\n]+)""?");
+                            var instagramMatch = Regex.Match(trimmed, @"link_instagram:\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (instagramMatch.Success) LinkInstagram = instagramMatch.Groups[1].Value;
 
-                            var feedbackMatch = Regex.Match(trimmed, @"link_feedback:\s*""?([^""\r\n]+)""?");
+                            var feedbackMatch = Regex.Match(trimmed, @"link_feedback:\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (feedbackMatch.Success) LinkFeedback = feedbackMatch.Groups[1].Value;
 
-                            var youtubeMatch = Regex.Match(trimmed, @"link_youtube:\s*""?([^""\r\n]+)""?");
+                            var youtubeMatch = Regex.Match(trimmed, @"link_youtube:\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (youtubeMatch.Success) LinkYouTube = youtubeMatch.Groups[1].Value;
 
-                            var redditMatch = Regex.Match(trimmed, @"link_reddit:\s*""?([^""\r\n]+)""?");
+                            var redditMatch = Regex.Match(trimmed, @"link_reddit:\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (redditMatch.Success) LinkReddit = redditMatch.Groups[1].Value;
 
-                            var githubMatch = Regex.Match(trimmed, @"link_github:\s*""?([^""\r\n]+)""?");
+                            var githubMatch = Regex.Match(trimmed, @"link_github:\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (githubMatch.Success) LinkGitHub = githubMatch.Groups[1].Value;
 
-                            var donationMatch = Regex.Match(trimmed, @"link_donation:\s*""?([^""\r\n]+)""?");
+                            var donationMatch = Regex.Match(trimmed, @"link_donation:\s*""?([^""\r\n]+)""?", RegexOptions.None, RegexTimeout);
                             if (donationMatch.Success) LinkDonation = donationMatch.Groups[1].Value;
                         }
                     }

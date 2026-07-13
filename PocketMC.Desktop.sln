@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PocketMC.Infrastructure.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PocketMC.RemoteControl.Tests", "PocketMC.RemoteControl.Tests\PocketMC.RemoteControl.Tests.csproj", "{D4AFFAE5-0A87-46B0-92A2-51B822804C1D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PocketMC.E2E.Tests", "PocketMC.E2E.Tests\PocketMC.E2E.Tests.csproj", "{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -153,6 +155,18 @@ Global
 		{D4AFFAE5-0A87-46B0-92A2-51B822804C1D}.Release|x64.Build.0 = Release|Any CPU
 		{D4AFFAE5-0A87-46B0-92A2-51B822804C1D}.Release|x86.ActiveCfg = Release|Any CPU
 		{D4AFFAE5-0A87-46B0-92A2-51B822804C1D}.Release|x86.Build.0 = Release|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Debug|x64.Build.0 = Debug|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Debug|x86.Build.0 = Debug|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Release|x64.ActiveCfg = Release|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Release|x64.Build.0 = Release|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Release|x86.ActiveCfg = Release|Any CPU
+		{2D0B5C83-B03A-4C5B-BAAC-60387114CAEA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

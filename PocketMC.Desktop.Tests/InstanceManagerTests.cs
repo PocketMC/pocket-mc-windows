@@ -98,6 +98,55 @@ public sealed class InstanceManagerTests : IDisposable
         return new InstanceManager(registry, pathService, state, new MockAssetProvider(), NullLogger<InstanceManager>.Instance, new EmptyServiceProvider());
     }
 
+    private InstanceManager CreateManager(out InstanceRegistry registry, out InstancePathService pathService, bool isWindows)
+    {
+        var state = new ApplicationState();
+        state.ApplySettings(new AppSettings { AppRootPath = _tempDirectory });
+
+        pathService = new InstancePathService(state);
+        registry = new InstanceRegistry(pathService, NullLogger<InstanceRegistry>.Instance);
+
+        return new InstanceManager(registry, pathService, state, new MockAssetProvider(), NullLogger<InstanceManager>.Instance, new EmptyServiceProvider(), isWindows);
+    }
+
+    [Fact]
+    public void RenameInstance_UnixMode_DirectMoveOnNonWindows()
+    {
+        // Skip on Windows because Windows host filesystem prevents case-only moves
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows)) return;
+
+        var manager = CreateManager(out var registry, out var pathService, isWindows: false);
+        var metadata = manager.CreateInstance("my-server", "Desc");
+        string oldPath = registry.GetPath(metadata.Id)!;
+
+        // Perform case-only rename: "my-server" -> "My-Server" (should move directly)
+        string newPath = manager.RenameInstance(metadata.Id, "My-Server", "Desc");
+
+        Assert.Contains("My-Server", newPath);
+        Assert.True(Directory.Exists(newPath));
+        Assert.False(Directory.Exists(oldPath));
+    }
+
+    [Fact]
+    public void RenameInstance_UnixMode_Collision_AppendsSuffix()
+    {
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows)) return;
+
+        var manager = CreateManager(out var registry, out var pathService, isWindows: false);
+
+        // Pre-create conflicting directory on disk: "my-server-2"
+        string conflictPath = Path.Combine(_tempDirectory, "servers", "my-server-2");
+        Directory.CreateDirectory(conflictPath);
+
+        var metadata = manager.CreateInstance("my-server", "Desc");
+
+        // Rename "my-server" -> "my-server" (which matches case-insensitively, but should trigger conflict suffix because "my-server-2" exists)
+        // With isWindows: false and a case-sensitive collision check, this should resolve correctly.
+        string newPath = manager.RenameInstance(metadata.Id, "my-server", "Desc");
+
+        Assert.Contains("my-server-3", newPath);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))

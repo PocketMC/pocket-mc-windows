@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Application.Interfaces;
 using PocketMC.Infrastructure;
+using PocketMC.Infrastructure.OS;
 using PocketMC.Infrastructure.Players;
 
 namespace PocketMC.Infrastructure.Instances;
@@ -23,7 +24,8 @@ public class ServerProcessManager
         return (int)Math.Min(baseDelay * Math.Pow(2, attempt), 300);
     }
 
-    private readonly JobObject _jobObject;
+    private readonly JobObject? _jobObject;
+    private readonly ProcessSupervisor _processSupervisor;
     private readonly InstanceManager _instanceManager;
     private readonly InstanceRegistry _registry;
     private readonly ServerLaunchConfigurator _launchConfigurator;
@@ -34,14 +36,16 @@ public class ServerProcessManager
     private readonly ConcurrentDictionary<Guid, ServerProcess> _historicalProcesses = new();
 
     public ServerProcessManager(
-        JobObject jobObject,
+        ProcessSupervisor processSupervisor,
         InstanceManager instanceManager,
         InstanceRegistry registry,
         ServerLaunchConfigurator launchConfigurator,
         PlayerListParser playerListParser,
         ILogger<ServerProcessManager> logger,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        JobObject? jobObject = null)
     {
+        _processSupervisor = processSupervisor;
         _jobObject = jobObject;
         _instanceManager = instanceManager;
         _registry = registry;
@@ -63,10 +67,11 @@ public class ServerProcessManager
 
         var serverProcess = new ServerProcess(
             meta.Id,
-            _jobObject,
+            _processSupervisor,
             _launchConfigurator,
             _playerListParser,
-            _loggerFactory.CreateLogger<ServerProcess>());
+            _loggerFactory.CreateLogger<ServerProcess>(),
+            _jobObject);
 
         if (!_activeProcesses.TryAdd(meta.Id, serverProcess))
         {

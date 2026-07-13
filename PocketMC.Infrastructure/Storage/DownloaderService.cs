@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
+using PocketMC.Infrastructure.Storage;
 
 
 namespace PocketMC.Infrastructure.Instances;
@@ -305,6 +306,20 @@ public class DownloaderService
                     TotalBytes = totalEntries
                 });
             });
+    }
+
+    /// <summary>
+    /// Extracts a .tar.gz archive, setting execute bits on all extracted files on Unix.
+    /// </summary>
+    public Task ExtractTarGzAsync(
+        string archivePath,
+        string extractPath,
+        bool setExecutable = true,
+        IProgress<DownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        var extractor = new TarGzExtractor();
+        return extractor.ExtractAsync(archivePath, extractPath, setExecutable, cancellationToken);
     }
 
     private static bool IsRetryable(Exception ex)

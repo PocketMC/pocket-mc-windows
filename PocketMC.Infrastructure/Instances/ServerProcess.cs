@@ -23,6 +23,7 @@ using PocketMC.Application.Services.Players;
 using PocketMC.Infrastructure.Players;
 
 using PocketMC.Application.Interfaces;
+using PocketMC.Infrastructure.OS;
 
 namespace PocketMC.Infrastructure.Instances;
 
@@ -35,7 +36,9 @@ public class ServerProcess : IServerProcess, IDisposable
     private static readonly Regex PlayerCountRegex = new(@"There are (\d+) of a max", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
     private Process? _process;
-    private readonly JobObject _jobObject;
+    private readonly JobObject? _jobObject;
+    private readonly ProcessSupervisor _processSupervisor;
+    private int _supervisedPid = -1;
     private readonly ServerLaunchConfigurator _launchConfigurator;
     private readonly PlayerListParser _playerListParser;
     private readonly ILogger<ServerProcess> _logger;
@@ -97,12 +100,14 @@ public class ServerProcess : IServerProcess, IDisposable
 
     public ServerProcess(
         Guid instanceId,
-        JobObject jobObject,
+        ProcessSupervisor processSupervisor,
         ServerLaunchConfigurator launchConfigurator,
         PlayerListParser playerListParser,
-        ILogger<ServerProcess> logger)
+        ILogger<ServerProcess> logger,
+        JobObject? jobObject = null)
     {
         InstanceId = instanceId;
+        _processSupervisor = processSupervisor;
         _jobObject = jobObject;
         _launchConfigurator = launchConfigurator;
         _playerListParser = playerListParser;
@@ -139,9 +144,13 @@ public class ServerProcess : IServerProcess, IDisposable
             _process.Exited += OnProcessExited;
             _process.Start();
             StartTime = DateTime.UtcNow;
+            _supervisedPid = _process.Id;
 
-            try { _jobObject.AddProcess(_process.Handle); }
-            catch (Exception ex) { _logger.LogWarning(ex, "Failed to assign process to job object."); }
+            if (OperatingSystem.IsWindows() && _jobObject != null)
+            {
+                try { _jobObject.AddProcess(_process.Handle); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Failed to assign process to job object."); }
+            }
 
             _ = Task.Run(() => ReadStreamAsync(_process.StandardOutput, false));
             _ = Task.Run(() => ReadStreamAsync(_process.StandardError, true));
@@ -279,7 +288,13 @@ public class ServerProcess : IServerProcess, IDisposable
         if (_process != null && !_process.HasExited)
         {
             _intentionalStop = true;
-            try { _process.Kill(entireProcessTree: true); }
+            try
+            {
+                if (OperatingSystem.IsLinux() && _supervisedPid > 0)
+                    _processSupervisor.TerminateProcessGroup(_supervisedPid);
+                else
+                    _process.Kill(entireProcessTree: true);
+            }
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to kill process."); }
             CloseSessionLog();
             SetState(ServerState.Stopped);

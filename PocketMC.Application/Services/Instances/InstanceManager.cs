@@ -110,9 +110,10 @@ public sealed class InstanceManager
         string newSlug = baseSlug;
         int counter = 2;
 
-        // Collision detection (excluding the current directory even if case matches)
+        // Collision detection — exclude the current directory.
+        // On Linux the file system is case-sensitive, so "myserver" and "MyServer" are distinct.
         while (Directory.Exists(_pathService.GetInstancePath(newSlug)) &&
-               !string.Equals(newSlug, oldSlug, StringComparison.OrdinalIgnoreCase))
+               !string.Equals(newSlug, oldSlug, StringComparison.Ordinal))
         {
             newSlug = $"{baseSlug}-{counter}";
             counter++;
@@ -127,25 +128,9 @@ public sealed class InstanceManager
 
             try
             {
-                // Windows is case-insensitive. If it's a case-only rename, we need a 3-step move.
-                if (string.Equals(newSlug, oldSlug, StringComparison.OrdinalIgnoreCase))
-                {
-                    string tempPath = newPath + "_" + Guid.NewGuid().ToString("N").Substring(0, 8) + ".tmp";
-                    Directory.Move(oldPath, tempPath);
-                    try
-                    {
-                        Directory.Move(tempPath, newPath);
-                    }
-                    catch
-                    {
-                        Directory.Move(tempPath, oldPath);
-                        throw;
-                    }
-                }
-                else
-                {
-                    Directory.Move(oldPath, newPath);
-                }
+                // On Linux, the file system is case-sensitive — a direct rename is safe and atomic.
+                // On Windows, XdgPaths.AtomicMoveDirectory handles the 3-step intermediate move for case-only renames.
+                XdgPaths.AtomicMoveDirectory(oldPath, newPath);
                 finalPath = newPath;
                 _logger.LogInformation("Renamed instance folder from {OldPath} to {NewPath}", oldPath, newPath);
             }

@@ -166,7 +166,8 @@ namespace PocketMC.Infrastructure.Java
 
             string appRootPath = _applicationState.GetRequiredAppRootPath();
             string runtimeDir = Path.Combine(appRootPath, "runtime");
-            string tempZipPath = Path.Combine(runtimeDir, $"temp_java{version}.zip");
+            string archiveExt = OperatingSystem.IsLinux() ? ".tar.gz" : ".zip";
+            string tempArchivePath = Path.Combine(runtimeDir, $"temp_java{version}{archiveExt}");
             string extractPath = Path.Combine(runtimeDir, $"java{version}_ext");
             string finalPath = Path.Combine(runtimeDir, $"java{version}");
 
@@ -181,7 +182,7 @@ namespace PocketMC.Infrastructure.Java
 
                 try
                 {
-                    CleanupProvisioningPaths(tempZipPath, extractPath, finalPath, keepFinalIfValid: false);
+                    CleanupProvisioningPaths(tempArchivePath, extractPath, finalPath, keepFinalIfValid: false);
                     PublishStatus(version, JavaProvisioningStage.ResolvingPackage, "Resolving package metadata...", 0);
 
                     var package = await _adoptiumClient.ResolveRuntimePackageAsync(version, cancellationToken);
@@ -192,16 +193,27 @@ namespace PocketMC.Infrastructure.Java
                         progress?.Report(p);
                     });
 
-                    await _downloader.DownloadFileAsync(package.Url, tempZipPath, package.Sha256, downloadProgress, cancellationToken);
+                    await _downloader.DownloadFileAsync(package.Url, tempArchivePath, package.Sha256, downloadProgress, cancellationToken);
 
                     PublishStatus(version, JavaProvisioningStage.Extracting, "Extracting runtime archive...", 0);
-                    await _downloader.ExtractZipAsync(tempZipPath, extractPath, new Progress<DownloadProgress>(p =>
-                        PublishStatus(version, JavaProvisioningStage.Extracting, "Extracting...", p.Percentage)));
+
+                    var extractionProgress = new Progress<DownloadProgress>(p =>
+                        PublishStatus(version, JavaProvisioningStage.Extracting, "Extracting...", p.Percentage));
+
+                    if (OperatingSystem.IsLinux())
+                    {
+                        await _downloader.ExtractTarGzAsync(tempArchivePath, extractPath, setExecutable: true,
+                            progress: extractionProgress, cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        await _downloader.ExtractZipAsync(tempArchivePath, extractPath, extractionProgress);
+                    }
 
                     string extractedRoot = ResolveExtractedRuntimeRoot(version, extractPath);
                     TryDeleteDirectory(finalPath);
                     Directory.Move(extractedRoot, finalPath);
-                    CleanupProvisioningPaths(tempZipPath, extractPath, finalPath, keepFinalIfValid: true);
+                    CleanupProvisioningPaths(tempArchivePath, extractPath, finalPath, keepFinalIfValid: true);
 
                     PublishStatus(version, JavaProvisioningStage.Verifying, "Verifying installation...", 90);
                     await _validator.ValidateRuntimeAsync(finalPath, cancellationToken);
@@ -214,13 +226,13 @@ namespace PocketMC.Infrastructure.Java
                 {
                     lastException = ex;
                     _logger.LogWarning(ex, "Java {Version} provisioning attempt {Attempt} failed.", version, attempt);
-                    CleanupProvisioningPaths(tempZipPath, extractPath, finalPath, keepFinalIfValid: false);
+                    CleanupProvisioningPaths(tempArchivePath, extractPath, finalPath, keepFinalIfValid: false);
                     await Task.Delay(_adoptiumClient.GetRetryDelay(attempt), cancellationToken);
                 }
                 catch (Exception ex)
                 {
                     lastException = ex;
-                    CleanupProvisioningPaths(tempZipPath, extractPath, finalPath, keepFinalIfValid: false);
+                    CleanupProvisioningPaths(tempArchivePath, extractPath, finalPath, keepFinalIfValid: false);
                     break;
                 }
             }
@@ -261,9 +273,9 @@ namespace PocketMC.Infrastructure.Java
             OnProvisioningStatusChanged?.Invoke(status);
         }
 
-        private void CleanupProvisioningPaths(string tempZipPath, string extractPath, string finalPath, bool keepFinalIfValid)
+        private void CleanupProvisioningPaths(string tempArchivePath, string extractPath, string finalPath, bool keepFinalIfValid)
         {
-            TryDeleteFile(tempZipPath);
+            TryDeleteFile(tempArchivePath);
             TryDeleteDirectory(extractPath);
             if (!keepFinalIfValid) TryDeleteDirectory(finalPath);
         }

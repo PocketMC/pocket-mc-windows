@@ -64,7 +64,9 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<WindowsStartupService>();
             services.AddSingleton<WindowsCornerService>();
             services.AddSingleton<ApplicationState>();
-            services.AddSingleton<JobObject>();
+            services.AddSingleton<PocketMC.Infrastructure.OS.ProcessSupervisor>();
+            if (OperatingSystem.IsWindows())
+                services.AddSingleton<JobObject>();
             services.AddSingleton<WindowsToastNotificationService>();
             services.AddSingleton<INotificationService>(
                 provider => provider.GetRequiredService<WindowsToastNotificationService>());
