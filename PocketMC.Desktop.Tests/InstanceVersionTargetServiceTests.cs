@@ -59,7 +59,7 @@ public sealed class InstanceVersionTargetServiceTests
             return Task.FromResult(_versions);
         }
 
-        public Task DownloadSoftwareAsync(
+        public Task<string> DownloadSoftwareAsync(
             string versionId,
             string destinationPath,
             string? loaderVersion = null,

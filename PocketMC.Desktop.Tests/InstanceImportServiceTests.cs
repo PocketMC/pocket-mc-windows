@@ -538,7 +538,7 @@ public sealed class InstanceImportServiceTests : IDisposable
 
         public Task<List<MinecraftVersion>> GetAvailableVersionsAsync() => Task.FromResult(new List<MinecraftVersion>());
 
-        public async Task DownloadSoftwareAsync(
+        public async Task<string> DownloadSoftwareAsync(
             string versionId,
             string destinationPath,
             string? loaderVersion = null,
@@ -548,6 +548,7 @@ public sealed class InstanceImportServiceTests : IDisposable
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
             await File.WriteAllTextAsync(destinationPath, _contents, cancellationToken);
             progress?.Report(new DownloadProgress { BytesRead = _contents.Length, TotalBytes = _contents.Length });
+            return destinationPath;
         }
     }
 
@@ -557,7 +558,7 @@ public sealed class InstanceImportServiceTests : IDisposable
 
         public Task<List<MinecraftVersion>> GetAvailableVersionsAsync() => Task.FromResult(new List<MinecraftVersion>());
 
-        public Task DownloadSoftwareAsync(
+        public Task<string> DownloadSoftwareAsync(
             string versionId,
             string destinationPath,
             string? loaderVersion = null,
@@ -569,7 +570,7 @@ public sealed class InstanceImportServiceTests : IDisposable
             AddEntry(archive, "bedrock_server.exe", "bds exe");
             AddEntry(archive, "server.properties", "level-name=Default");
             progress?.Report(new DownloadProgress { BytesRead = 1, TotalBytes = 1 });
-            return Task.CompletedTask;
+            return Task.FromResult(destinationPath);
         }
     }
 
