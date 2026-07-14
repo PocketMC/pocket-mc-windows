@@ -541,6 +541,7 @@ public sealed class InstanceImportServiceTests : IDisposable
         public async Task DownloadSoftwareAsync(
             string versionId,
             string destinationPath,
+            string? loaderVersion = null,
             IProgress<DownloadProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
@@ -559,6 +560,7 @@ public sealed class InstanceImportServiceTests : IDisposable
         public Task DownloadSoftwareAsync(
             string versionId,
             string destinationPath,
+            string? loaderVersion = null,
             IProgress<DownloadProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {

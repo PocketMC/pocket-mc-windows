@@ -103,20 +103,31 @@ public class PaperProvider : IServerSoftwareProvider
         return builds;
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<string> DownloadSoftwareAsync(string mcVersion, string destinationPath, string? loaderVersion = null, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        // Get latest build using the v3 API
-        string versionJson = await _httpClient.GetStringAsync($"https://fill.papermc.io/v3/projects/paper/versions/{mcVersion}");
-        var root = JsonNode.Parse(versionJson);
-        var buildsArray = root?["builds"]?.AsArray();
+        string targetBuild;
+        if (!string.IsNullOrEmpty(loaderVersion))
+        {
+            targetBuild = loaderVersion;
+        }
+        else
+        {
+            // Get latest build using the v3 API
+            string versionJson = await _httpClient.GetStringAsync($"https://fill.papermc.io/v3/projects/paper/versions/{mcVersion}");
+            var root = JsonNode.Parse(versionJson);
+            var buildsArray = root?["builds"]?.AsArray();
 
-        if (buildsArray == null || buildsArray.Count == 0)
-            throw new Exception($"No builds found for Paper version {mcVersion}.");
+            if (buildsArray == null || buildsArray.Count == 0)
+                throw new Exception($"No builds found for Paper version {mcVersion}.");
 
-        // Take the highest integer build number
-        int maxBuild = buildsArray.Max(b => (int)b!);
+            // Take the highest integer build number
+            int maxBuild = buildsArray.Max(b => (int)b!);
+            targetBuild = maxBuild.ToString();
+        }
 
-        await DownloadPaperJarAsync(mcVersion, maxBuild.ToString(), destinationPath, progress, cancellationToken);
+        await DownloadPaperJarAsync(mcVersion, targetBuild, destinationPath, progress, cancellationToken);
+        
+        return targetBuild;
     }
 
     public async Task DownloadPaperJarAsync(string mcVersion, string build, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
@@ -135,7 +146,7 @@ public class PaperProvider : IServerSoftwareProvider
         if (string.IsNullOrEmpty(downloadUrl))
             throw new Exception($"No download URL found for Paper version {mcVersion} build {build}.");
 
-        string finalUrl = $"https://api.papermc.io/v2/projects/paper/versions/{mcVersion}/builds/{build}/downloads/{downloadNode["name"]?.ToString()}";
+        string finalUrl = $"https://fill.papermc.io/v3/projects/paper/versions/{mcVersion}/builds/{build}/downloads/{downloadNode["name"]?.ToString()}";
         // Wait, the v3 API might provide the full URL or just the name. 
         // Let's check what the original code did.
         // The original code used:

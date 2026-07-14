@@ -535,6 +535,9 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
                 bool isBedrock = serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase);
 
+                string? targetLoaderVersion = string.IsNullOrWhiteSpace(loaderVersion) ? null : loaderVersion;
+
+                string actualLoaderVersion = string.Empty;
                 if (isBedrock)
                 {
                     // Ensure the instance directory exists before writing anything into it.
@@ -545,7 +548,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     try
                     {
                         // DownloadSoftwareAsync writes the ZIP to tempZip, then we extract.
-                        await provider.DownloadSoftwareAsync(selectedVersion.Id, tempZip, progress, ct);
+                        actualLoaderVersion = await provider.DownloadSoftwareAsync(selectedVersion.Id, tempZip, targetLoaderVersion, progress, ct);
                         Dispatcher.Invoke(() => TxtProgress.Text = "Extracting Bedrock server files...");
                         await _downloader.ExtractZipAsync(tempZip, createdInstancePath, progress);
                     }
@@ -555,28 +558,15 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                         try { if (File.Exists(tempZip + ".partial")) File.Delete(tempZip + ".partial"); } catch { }
                     }
                 }
+                else
+                {
+                    actualLoaderVersion = await provider.DownloadSoftwareAsync(selectedVersion.Id, jarPath, targetLoaderVersion, progress, ct);
+                }
 
-                else if (serverType == "Paper" && !string.IsNullOrEmpty(loaderVersion))
+                if (!string.IsNullOrEmpty(actualLoaderVersion) && string.IsNullOrEmpty(metadata.LoaderVersion))
                 {
-                    await _paperProvider.DownloadPaperJarAsync(selectedVersion.Id, loaderVersion, jarPath, progress, ct);
-                }
-                else if (serverType == "Fabric" && !string.IsNullOrEmpty(loaderVersion))
-                {
-                    await _fabricProvider.DownloadFabricJarAsync(selectedVersion.Id, loaderVersion, jarPath, progress, ct);
-                }
-                else if (serverType == "Forge" && !string.IsNullOrEmpty(loaderVersion))
-                {
-                    string forgeJarPath = Path.Combine(createdInstancePath, "installer.jar");
-                    await _forgeProvider.DownloadForgeJarAsync(selectedVersion.Id, loaderVersion, forgeJarPath, progress, ct);
-                }
-                else if (serverType == "NeoForge" && !string.IsNullOrEmpty(loaderVersion))
-                {
-                    string neoForgeJarPath = Path.Combine(createdInstancePath, "installer.jar");
-                    await _neoForgeProvider.DownloadNeoForgeJarAsync(selectedVersion.Id, loaderVersion, neoForgeJarPath, progress, ct);
-                }
-                else if (!isBedrock)
-                {
-                    await provider.DownloadSoftwareAsync(selectedVersion.Id, jarPath, progress, ct);
+                    metadata.LoaderVersion = actualLoaderVersion;
+                    _instanceManager.SaveMetadata(metadata, createdInstancePath);
                 }
 
 

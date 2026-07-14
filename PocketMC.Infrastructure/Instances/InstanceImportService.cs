@@ -491,32 +491,13 @@ public sealed class InstanceImportService : IInstanceImportService
 
         var downloadProgress = CreateDownloadProgress(progress, "Downloading server software...", 0, 40, artifactFileName);
 
-        if (provider is FabricProvider fabricProvider &&
-            serverType.Equals("Fabric", StringComparison.OrdinalIgnoreCase) &&
-            !string.IsNullOrWhiteSpace(loaderVersion))
-        {
-            await fabricProvider.DownloadFabricJarAsync(minecraftVersion, loaderVersion, artifactPath, downloadProgress, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        else if (provider is ForgeProvider forgeProvider &&
-                 serverType.Equals("Forge", StringComparison.OrdinalIgnoreCase) &&
-                 !string.IsNullOrWhiteSpace(loaderVersion))
-        {
-            await forgeProvider.DownloadForgeJarAsync(minecraftVersion, loaderVersion, artifactPath, downloadProgress, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        else if (provider is NeoForgeProvider neoForgeProvider &&
-                 serverType.Equals("NeoForge", StringComparison.OrdinalIgnoreCase) &&
-                 !string.IsNullOrWhiteSpace(loaderVersion))
-        {
-            await neoForgeProvider.DownloadNeoForgeJarAsync(minecraftVersion, loaderVersion, artifactPath, downloadProgress, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        else
-        {
-            await provider.DownloadSoftwareAsync(minecraftVersion, artifactPath, downloadProgress, cancellationToken)
-                .ConfigureAwait(false);
-        }
+        await provider.DownloadSoftwareAsync(
+            minecraftVersion,
+            artifactPath,
+            string.IsNullOrWhiteSpace(loaderVersion) ? null : loaderVersion,
+            downloadProgress,
+            cancellationToken)
+            .ConfigureAwait(false);
 
         ValidateNonEmptyFile(artifactPath, "server software");
     }
@@ -542,7 +523,7 @@ public sealed class InstanceImportService : IInstanceImportService
         try
         {
             var downloadProgress = CreateDownloadProgress(progress, "Downloading Bedrock server...", 0, 25, "BDS");
-            await provider.DownloadSoftwareAsync(software.MinecraftVersion, bdsZipPath, downloadProgress, cancellationToken)
+            await provider.DownloadSoftwareAsync(software.MinecraftVersion, bdsZipPath, progress: downloadProgress, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
             ValidateNonEmptyFile(bdsZipPath, "Bedrock server archive");
 
@@ -578,8 +559,8 @@ public sealed class InstanceImportService : IInstanceImportService
         await provider.DownloadSoftwareAsync(
                 software.MinecraftVersion,
                 artifactPath,
-                CreateDownloadProgress(progress, "Downloading PocketMine-MP...", 0, 40, "PocketMine-MP.phar"),
-                cancellationToken)
+                progress: CreateDownloadProgress(progress, "Downloading PocketMine-MP...", 0, 40, "PocketMine-MP.phar"),
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         ValidateNonEmptyFile(artifactPath, "PocketMine-MP runtime");

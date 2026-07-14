@@ -72,7 +72,8 @@ public sealed class InstanceUpdateApplier
 
         return new InstanceUpdateApplyResult
         {
-            OperationId = plan.OperationId
+            OperationId = plan.OperationId,
+            UpdatedMetadata = plan.TargetMetadata
         };
     }
 

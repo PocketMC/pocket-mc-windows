@@ -98,18 +98,74 @@ public class NeoForgeProvider : IServerSoftwareProvider
             .ToList();
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
-        // This is a fallback if someone calls DownloadSoftwareAsync directly without a loader version.
-        // We'll try to find the latest stable version for the MC version.
-        var versions = await GetAvailableVersionsAsync();
-        var mcv = versions.FirstOrDefault(v => v.Id == mcVersion) as GameVersionWithLoaders;
-        var latest = mcv?.LoaderVersions.FirstOrDefault();
+        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.neoforged/index.json";
+        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
-        if (latest == null)
-            throw new Exception($"No NeoForge versions found for Minecraft {mcVersion}");
+        var loaders = new List<ModLoaderVersion>();
 
-        await DownloadNeoForgeJarAsync(mcVersion, latest.Version, destinationPath, progress, cancellationToken);
+        if (response != null && response.TryGetPropertyValue("versions", out var versionsNode) && versionsNode is JsonArray versionsArray)
+        {
+            foreach (var node in versionsArray)
+            {
+                if (node is JsonObject vObj)
+                {
+                    string? version = vObj["version"]?.ToString();
+                    bool isRecommended = vObj["recommended"]?.GetValue<bool>() ?? false;
+
+                    if (string.IsNullOrEmpty(version)) continue;
+
+                    string mcVersion = "";
+                    if (vObj.TryGetPropertyValue("requires", out var requiresNode) && requiresNode is JsonArray requiresArray)
+                    {
+                        foreach (var req in requiresArray)
+                        {
+                            if (req is JsonObject reqObj && reqObj["uid"]?.ToString() == "net.minecraft")
+                            {
+                                mcVersion = reqObj["equals"]?.ToString() ?? "";
+                                break;
+                            }
+                        }
+                    }
+
+                    if (string.Equals(mcVersion, versionId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        loaders.Add(new ModLoaderVersion
+                        {
+                            Version = version,
+                            IsStable = isRecommended
+                        });
+                    }
+                }
+            }
+        }
+
+        return loaders;
+    }
+
+    public async Task<string> DownloadSoftwareAsync(string mcVersion, string destinationPath, string? loaderVersion = null, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        string targetVersion;
+        if (!string.IsNullOrEmpty(loaderVersion))
+        {
+            targetVersion = loaderVersion;
+        }
+        else
+        {
+            var versions = await GetAvailableVersionsAsync();
+            var mcv = versions.FirstOrDefault(v => v.Id == mcVersion) as GameVersionWithLoaders;
+            var latest = mcv?.LoaderVersions.FirstOrDefault();
+
+            if (latest == null)
+                throw new Exception($"No NeoForge versions found for Minecraft {mcVersion}");
+                
+            targetVersion = latest.Version;
+        }
+
+        await DownloadNeoForgeJarAsync(mcVersion, targetVersion, destinationPath, progress, cancellationToken);
+        
+        return targetVersion;
     }
 
     public async Task DownloadNeoForgeJarAsync(string mcVersion, string neoforgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)

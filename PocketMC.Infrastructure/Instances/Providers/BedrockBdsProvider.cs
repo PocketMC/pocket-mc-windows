@@ -101,11 +101,7 @@ public class BedrockBdsProvider : IServerSoftwareProvider
     /// Downloads the BDS ZIP to <paramref name="destinationPath"/> (a file path, e.g. C:\Temp\bds.zip).
     /// Extraction is performed by the caller (NewInstancePage via DownloaderService.ExtractZipAsync).
     /// </summary>
-    public async Task DownloadSoftwareAsync(
-        string versionId,
-        string destinationPath,
-        IProgress<DownloadProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+    public async Task<string> DownloadSoftwareAsync(string versionId, string destinationPath, string? loaderVersion = null, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Preparing BDS download for version {Version}.", versionId);
         await EnsureCacheAsync();
@@ -136,13 +132,17 @@ public class BedrockBdsProvider : IServerSoftwareProvider
         }
 
         // Ensure parent directory exists (caller may pass a path like C:\Temp\bds-guid.zip)
-        string? dir = System.IO.Path.GetDirectoryName(destinationPath);
-        if (!string.IsNullOrEmpty(dir))
-            System.IO.Directory.CreateDirectory(dir);
+        string? parent = Path.GetDirectoryName(destinationPath);
+        if (!string.IsNullOrWhiteSpace(parent))
+        {
+            Directory.CreateDirectory(parent);
+        }
 
-        _logger.LogInformation("Downloading BDS {Version} from {Url}", versionId, url);
+        _logger.LogInformation("Downloading BDS from {Url}", url);
         await _downloader.DownloadFileAsync(url, destinationPath, null, progress, cancellationToken);
         _logger.LogInformation("BDS ZIP written to {Path}.", destinationPath);
+        
+        return string.Empty;
     }
 
 

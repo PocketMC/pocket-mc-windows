@@ -418,7 +418,7 @@
                                     <StackPanel>
 
                                         <!-- Version Update Card -->
-                                        <ui:Card Padding="24" Margin="0,0,0,16">
+                                        <ui:Card Padding="24" Margin="0,0,0,16" Visibility="{Binding VersionUpdates.HasTargetVersions, Converter={StaticResource VisibleIfTrue}}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
@@ -481,18 +481,89 @@
                                                                    Margin="6,0,0,0"
                                                                    ToolTip="Refresh available versions"/>
                                                     </Grid>
-                                                    <TextBlock Text="{Binding VersionUpdates.TargetVersionStatusText}"
-                                                               FontSize="11"
-                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                               TextWrapping="Wrap"
-                                                               Margin="0,6,0,0"/>
                                                 </StackPanel>
 
                                                 <!-- Update Button -->
                                                 <StackPanel Grid.Column="3" VerticalAlignment="Center">
                                                     <ui:Button Content="Update Server" 
                                                                Appearance="Primary" 
-                                                               Command="{Binding VersionUpdates.ApplyCommand}" 
+                                                               Command="{Binding VersionUpdates.ApplyMinecraftUpdateCommand}" 
+                                                               Icon="{ui:SymbolIcon ArrowSync20}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </ui:Card>
+
+                                        <!-- Loader Update Card -->
+                                        <ui:Card Padding="24" Margin="0,0,0,16" Visibility="{Binding VersionUpdates.HasTargetLoaderVersions, Converter={StaticResource VisibleIfTrue}}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Current Loader Info -->
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                    <TextBlock Text="Current Loader" FontSize="12" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding VersionUpdates.CurrentLoaderVersion}" 
+                                                                   FontSize="22" FontWeight="SemiBold" 
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                                   VerticalAlignment="Bottom"/>
+                                                        <TextBlock Text="Loader" 
+                                                                   FontSize="12" 
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                                   VerticalAlignment="Bottom" Margin="8,0,0,2"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <!-- Dotted Arrow -->
+                                                <Grid Grid.Column="1" Margin="24,0,24,0" VerticalAlignment="Center">
+                                                    <Line X1="0" Y1="0" X2="1" Y2="0" Stretch="Fill"
+                                                          Stroke="{DynamicResource TextFillColorTertiaryBrush}" 
+                                                          StrokeThickness="1.5"
+                                                          StrokeDashArray="3 2"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,8,0"/>
+                                                    <Path Data="M 0 0 L 6 4 L 0 8" 
+                                                          Stroke="{DynamicResource TextFillColorTertiaryBrush}" 
+                                                          StrokeThickness="1.5" 
+                                                          HorizontalAlignment="Right" 
+                                                          VerticalAlignment="Center"
+                                                          StrokeEndLineCap="Round" 
+                                                          StrokeStartLineCap="Round" 
+                                                          StrokeLineJoin="Round"/>
+                                                </Grid>
+
+                                                <!-- Target Loader Selector -->
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,24,0">
+                                                    <TextBlock Text="Update loader to" FontSize="12" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" MaxWidth="240"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <ComboBox ItemsSource="{Binding VersionUpdates.TargetLoaderVersions}"
+                                                                  SelectedItem="{Binding VersionUpdates.SelectedTargetLoaderVersion, Mode=TwoWay}"
+                                                                  DisplayMemberPath="Version"
+                                                                  IsEnabled="{Binding VersionUpdates.HasTargetLoaderVersions}"/>
+                                                        <ui:Button Grid.Column="1"
+                                                                   Icon="{ui:SymbolIcon ArrowClockwise20}"
+                                                                   Appearance="Secondary"
+                                                                   Command="{Binding VersionUpdates.LoadTargetVersionsCommand}"
+                                                                   Margin="6,0,0,0"
+                                                                   ToolTip="Refresh available versions"/>
+                                                    </Grid>
+                                                </StackPanel>
+
+                                                <!-- Update Button -->
+                                                <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                                    <ui:Button Content="Update Loader" 
+                                                               Appearance="Primary" 
+                                                               Command="{Binding VersionUpdates.ApplyLoaderUpdateCommand}" 
                                                                Icon="{ui:SymbolIcon ArrowSync20}"/>
                                                 </StackPanel>
                                             </Grid>

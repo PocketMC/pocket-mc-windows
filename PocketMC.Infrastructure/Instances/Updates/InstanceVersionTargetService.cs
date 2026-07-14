@@ -26,6 +26,35 @@ public sealed class InstanceVersionTargetService
         return SelectVersionsAfterCurrent(versions, metadata.MinecraftVersion);
     }
 
+    public async Task<IReadOnlyList<ModLoaderVersion>> GetAvailableLoaderVersionsAsync(
+        InstanceMetadata metadata,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(metadata);
+
+        IServerSoftwareProvider provider = ResolveProvider(metadata.ServerType);
+        List<ModLoaderVersion> builds = await provider.GetBuildsAsync(metadata.MinecraftVersion);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(metadata.LoaderVersion))
+        {
+            return builds.ToArray();
+        }
+
+        int currentIndex = builds.FindIndex(b => b.Version.Equals(metadata.LoaderVersion, StringComparison.OrdinalIgnoreCase));
+        
+        if (currentIndex > 0)
+        {
+            return builds.Take(currentIndex).ToArray();
+        }
+        else if (currentIndex == -1)
+        {
+            return builds.ToArray();
+        }
+
+        return Array.Empty<ModLoaderVersion>();
+    }
+
     private IServerSoftwareProvider ResolveProvider(string serverType)
     {
         string normalizedServerType = serverType ?? "Vanilla";

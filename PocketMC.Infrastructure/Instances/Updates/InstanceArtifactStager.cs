@@ -57,7 +57,13 @@ public sealed class InstanceArtifactStager
         string serverArtifactPath = PathSafety.ValidateContainedPath(serverStagingDirectory, plan.ServerArtifactFileName)
             ?? throw new InvalidOperationException($"Server artifact file name '{plan.ServerArtifactFileName}' is invalid.");
 
-        await DownloadServerArtifactAsync(plan, serverArtifactPath, progress, cancellationToken);
+        string actualLoaderVersion = await DownloadServerArtifactAsync(plan, serverArtifactPath, progress, cancellationToken);
+        
+        if (!string.IsNullOrEmpty(actualLoaderVersion) && string.IsNullOrEmpty(plan.TargetMetadata.LoaderVersion))
+        {
+            plan.TargetMetadata.LoaderVersion = actualLoaderVersion;
+        }
+
         ValidateNonEmptyFile(serverArtifactPath);
 
         return new InstanceUpdateStagedArtifacts
@@ -67,7 +73,7 @@ public sealed class InstanceArtifactStager
         };
     }
 
-    private async Task DownloadServerArtifactAsync(
+    private async Task<string> DownloadServerArtifactAsync(
         InstanceUpdatePlan plan,
         string serverArtifactPath,
         IProgress<DownloadProgress>? progress,
@@ -77,26 +83,16 @@ public sealed class InstanceArtifactStager
         string targetVersion = plan.TargetMinecraftVersion;
         string loaderVersion = plan.TargetMetadata.LoaderVersion;
 
+        string? targetLoaderVersion = string.IsNullOrWhiteSpace(loaderVersion) ? null : loaderVersion;
+
         if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase))
         {
-            await _bedrockProvider.DownloadSoftwareAsync(targetVersion, serverArtifactPath, progress, cancellationToken);
-        }
-        else if (serverType.Equals("Fabric", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(loaderVersion))
-        {
-            await _fabricProvider.DownloadFabricJarAsync(targetVersion, loaderVersion, serverArtifactPath, progress, cancellationToken);
-        }
-        else if (serverType.Equals("Forge", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(loaderVersion))
-        {
-            await _forgeProvider.DownloadForgeJarAsync(targetVersion, loaderVersion, serverArtifactPath, progress, cancellationToken);
-        }
-        else if (serverType.Equals("NeoForge", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(loaderVersion))
-        {
-            await _neoForgeProvider.DownloadNeoForgeJarAsync(targetVersion, loaderVersion, serverArtifactPath, progress, cancellationToken);
+            return await _bedrockProvider.DownloadSoftwareAsync(targetVersion, serverArtifactPath, targetLoaderVersion, progress, cancellationToken);
         }
         else
         {
             IServerSoftwareProvider provider = ResolveProvider(serverType);
-            await provider.DownloadSoftwareAsync(targetVersion, serverArtifactPath, progress, cancellationToken);
+            return await provider.DownloadSoftwareAsync(targetVersion, serverArtifactPath, targetLoaderVersion, progress, cancellationToken);
         }
     }
 

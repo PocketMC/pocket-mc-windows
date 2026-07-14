@@ -62,6 +62,7 @@ public sealed class InstanceVersionTargetServiceTests
         public Task DownloadSoftwareAsync(
             string versionId,
             string destinationPath,
+            string? loaderVersion = null,
             IProgress<DownloadProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
