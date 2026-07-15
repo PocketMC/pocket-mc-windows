@@ -28,16 +28,25 @@
                            TextWrapping="Wrap"
                            FontSize="13"/>
             </StackPanel>
-            <ui:Button Grid.Column="1"
-                       x:Name="BtnPortsMap"
-                       Content="Interactive Ports Map"
-                       Icon="{ui:SymbolIcon Grid24}"
-                       Appearance="Secondary"
-                       FontSize="12"
-                       Padding="12,6"
-                       Click="BtnPortsMap_Click"
-                       Cursor="Hand"
-                       VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:Button x:Name="BtnNetworkStatus"
+                           Content="Network Status"
+                           Icon="{ui:SymbolIcon Pulse24}"
+                           Appearance="Secondary"
+                           FontSize="12"
+                           Padding="12,6"
+                           Margin="0,0,8,0"
+                           Click="BtnNetworkStatus_Click"
+                           Cursor="Hand"/>
+                <ui:Button x:Name="BtnPortsMap"
+                           Content="Interactive Ports Map"
+                           Icon="{ui:SymbolIcon Grid24}"
+                           Appearance="Secondary"
+                           FontSize="12"
+                           Padding="12,6"
+                           Click="BtnPortsMap_Click"
+                           Cursor="Hand"/>
+            </StackPanel>
         </Grid>
 
         <Border Grid.Row="1"

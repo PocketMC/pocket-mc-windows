@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Core.Interfaces;
@@ -284,6 +284,7 @@ namespace PocketMC.Desktop.Infrastructure
             DetailRouteKind.PortsMap => NavigationRouteKind.PortsMap,
             DetailRouteKind.InstanceImport => NavigationRouteKind.InstanceImport,
             DetailRouteKind.InstanceExport => NavigationRouteKind.InstanceExport,
+            DetailRouteKind.PlayitNetworkStatus => NavigationRouteKind.PlayitNetworkStatus,
             _ => throw new ArgumentOutOfRangeException(nameof(routeKind), routeKind, null)
         };
 

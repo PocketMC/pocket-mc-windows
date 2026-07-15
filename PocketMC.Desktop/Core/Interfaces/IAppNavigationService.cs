@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Windows.Controls;
 using PocketMC.Desktop.Features.Shell.Interfaces;
@@ -15,7 +15,8 @@ namespace PocketMC.Desktop.Core.Interfaces
         ImageCrop,
         PortsMap,
         InstanceImport,
-        InstanceExport
+        InstanceExport,
+        PlayitNetworkStatus
     }
 
     public enum DetailBackNavigation

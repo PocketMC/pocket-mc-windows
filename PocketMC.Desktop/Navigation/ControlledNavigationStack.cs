@@ -18,7 +18,8 @@ public enum NavigationRouteKind
     ImageCrop,
     PortsMap,
     InstanceImport,
-    InstanceExport
+    InstanceExport,
+    PlayitNetworkStatus
 }
 
 public enum NavigationBackTargetKind
