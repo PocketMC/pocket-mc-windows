@@ -17,8 +17,9 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,24">
-            <TextBlock Text="🌐 Connect Playit Agent"
+        <StackPanel Grid.Row="0" Margin="0,0,0,24" Orientation="Horizontal">
+            <ui:SymbolIcon Symbol="Globe24" FontSize="22" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,10,0"/>
+            <TextBlock Text="Connect Playit Agent"
                        FontSize="22" FontWeight="Bold"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
         </StackPanel>

@@ -16,11 +16,12 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <TextBlock Grid.Row="0"
-                   Text="⚠ Agent Not Connected"
-                   FontSize="18" FontWeight="Bold"
-                   Foreground="#F38BA8"
-                   Margin="0,0,0,12"/>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+            <ui:SymbolIcon Symbol="Warning24" FontSize="18" Foreground="#F38BA8" Margin="0,0,8,0"/>
+            <TextBlock Text="Agent Not Connected"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="#F38BA8"/>
+        </StackPanel>
 
         <!-- Explanation -->
         <TextBlock Grid.Row="1"

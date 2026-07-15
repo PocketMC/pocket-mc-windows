@@ -270,8 +270,8 @@ public static class SimpleVoiceChatConfigService
 
     private static IEnumerable<string> EnumerateConfigPaths(string serverDir)
     {
-        yield return Path.Combine(serverDir, "config", "voicechat", "voicechat-server.properties");
         yield return Path.Combine(serverDir, "plugins", "voicechat", "voicechat-server.properties");
+        yield return Path.Combine(serverDir, "config", "voicechat", "voicechat-server.properties");
         yield return Path.Combine(serverDir, "config", "simplevoicechat", "voicechat-server.properties");
     }
 

@@ -863,8 +863,10 @@
                                     <ui:Card Margin="0,0,0,16" Padding="20"
                                              Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <TextBlock Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}"
-                                                       Text="ℹ PocketMine plugins are .phar files. Use the Add Plugin button to install them." Foreground="#89B4FA" Margin="0,0,0,10" FontSize="12" TextWrapping="Wrap"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}">
+                                                <ui:SymbolIcon Symbol="Info24" FontSize="12" Foreground="#89B4FA" Margin="0,0,8,0" VerticalAlignment="Top"/>
+                                                <TextBlock Text="PocketMine plugins are .phar files. Use the Add Plugin button to install them." Foreground="#89B4FA" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                                            </StackPanel>
                                             <Grid>
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                                 <StackPanel Orientation="Horizontal">
@@ -1292,8 +1294,11 @@
                                     <ui:Card Margin="0,0,0,16" Padding="20"
                                              Visibility="{Binding Addons.SupportsBedrockAddons, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <TextBlock Text="ℹ Import .mcpack or .mcaddon files. They will be automatically extracted and registered in your world's pack list."
-                                                       Foreground="#89B4FA" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                <ui:SymbolIcon Symbol="Info24" FontSize="12" Foreground="#89B4FA" Margin="0,0,8,0" VerticalAlignment="Top"/>
+                                                <TextBlock Text="Import .mcpack or .mcaddon files. They will be automatically extracted and registered in your world's pack list."
+                                                           Foreground="#89B4FA" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                                            </StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:Button Content="Import Add-on (.mcpack/.mcaddon)" Command="{Binding Addons.ImportBedrockAddonCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Add20}"/>
                                             </StackPanel>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using PocketMC.Domain.Models;
@@ -45,10 +46,22 @@ public class SimpleVoiceChatDetector : ISimpleVoiceChatDetector
         if (entry != null)
         {
             isDetected = true;
-            bool isPlugin = entry.Loader != null && (entry.Loader.Contains("bukkit", StringComparison.OrdinalIgnoreCase) || 
+            bool isPlugin = IsPluginServer(serverDir) || 
+                            (entry.Loader != null && (entry.Loader.Contains("bukkit", StringComparison.OrdinalIgnoreCase) || 
                                                      entry.Loader.Contains("spigot", StringComparison.OrdinalIgnoreCase) || 
-                                                     entry.Loader.Contains("paper", StringComparison.OrdinalIgnoreCase));
+                                                     entry.Loader.Contains("paper", StringComparison.OrdinalIgnoreCase) ||
+                                                     entry.Loader.Contains("purpur", StringComparison.OrdinalIgnoreCase) ||
+                                                     entry.Loader.Contains("folia", StringComparison.OrdinalIgnoreCase)));
             source = isPlugin ? SimpleVoiceChatDetectionSource.PluginJar : SimpleVoiceChatDetectionSource.ModJar;
+        }
+
+        // Safety net: If manifest thought it was a mod, but the jar is actually in plugins/, it's a plugin!
+        if (isDetected && source == SimpleVoiceChatDetectionSource.ModJar)
+        {
+            if (TryFindVoiceChatJar(Path.Combine(serverDir, "plugins"), out _))
+            {
+                source = SimpleVoiceChatDetectionSource.PluginJar;
+            }
         }
 
         // 2. Fallback to jar scan
@@ -146,6 +159,40 @@ public class SimpleVoiceChatDetector : ISimpleVoiceChatDetector
         return name.StartsWith("voicechat-", StringComparison.OrdinalIgnoreCase) ||
                name.StartsWith("simplevoicechat-", StringComparison.OrdinalIgnoreCase) ||
                name.StartsWith("simple-voice-chat-", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPluginServer(string serverDir)
+    {
+        string instanceJsonPath = Path.Combine(serverDir, "instance.json");
+        if (File.Exists(instanceJsonPath))
+        {
+            try
+            {
+                string json = File.ReadAllText(instanceJsonPath);
+                using var document = JsonDocument.Parse(json);
+                foreach (var prop in document.RootElement.EnumerateObject())
+                {
+                    if (prop.Name.Equals("ServerType", StringComparison.OrdinalIgnoreCase) && prop.Value.ValueKind == JsonValueKind.String)
+                    {
+                        string? type = prop.Value.GetString();
+                        if (type != null && (
+                            type.Equals("Paper", StringComparison.OrdinalIgnoreCase) ||
+                            type.Equals("Purpur", StringComparison.OrdinalIgnoreCase) ||
+                            type.Equals("Spigot", StringComparison.OrdinalIgnoreCase) ||
+                            type.Equals("Bukkit", StringComparison.OrdinalIgnoreCase) ||
+                            type.Equals("Folia", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore
+            }
+        }
+        return false;
     }
 
     private static bool TryFindVoiceChatLogPort(string serverDir, out int port)

@@ -77,9 +77,8 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" Margin="8,3,0,3">
-                                                <TextBlock Text="✓"
+                                                <ui:SymbolIcon Symbol="Checkmark24"
                                                            FontSize="13"
-                                                           FontWeight="SemiBold"
                                                            Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
                                                            Margin="0,0,10,0"
                                                            VerticalAlignment="Top"/>

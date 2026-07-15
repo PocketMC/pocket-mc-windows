@@ -607,6 +607,11 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     props["max-players"] = maxPlayers.ToString();
                     metadata.MaxPlayers = maxPlayers;
 
+                    // BDS defaults allow-list=true in its downloaded server.properties, which prevents joining.
+                    // PocketMC should default it to false upon creation (Java servers default false implicitly, but we set it anyway).
+                    props["allow-list"] = "false";
+                    props["white-list"] = "false";
+
                     ServerPropertiesParser.Write(propsFile, props);
 
                     // Import Custom World if selected

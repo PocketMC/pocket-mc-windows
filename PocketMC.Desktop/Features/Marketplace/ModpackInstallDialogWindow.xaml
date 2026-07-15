@@ -30,7 +30,7 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
-            <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"
+            <ui:SymbolIcon Symbol="Cube24" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"
                        Foreground="#89B4FA"/>
             <TextBlock x:Name="TxtTitle" Text="Installing Modpack..."
                        FontSize="16" FontWeight="Bold"
