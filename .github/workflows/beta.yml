@@ -72,6 +72,12 @@ jobs:
             -p:Version=${{ steps.config.outputs.version }} `
             -o "Beta Release/Portable"
 
+      - name: Zip Publish Output
+        if: steps.check_channel.outputs.skip == 'false'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "Beta Release/Portable/*" -DestinationPath "Beta Release/PocketMC-Beta-Portable-${{ steps.config.outputs.version }}.zip"
+
       - name: Upload Beta Artifact
         if: steps.check_channel.outputs.skip == 'false'
         id: upload-beta-portable
@@ -88,7 +94,7 @@ jobs:
           name: PocketMC v${{ steps.config.outputs.version }} (Beta)
           body: "This is an automated beta release for testing upcoming features."
           files: |
-            Beta Release/Portable/PocketMC.Desktop.exe
+            Beta Release/PocketMC-Beta-Portable-${{ steps.config.outputs.version }}.zip
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
