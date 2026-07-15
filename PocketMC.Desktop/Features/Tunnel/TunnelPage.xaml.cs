@@ -965,6 +965,16 @@ namespace PocketMC.Desktop.Features.Tunnel
             await RefreshStatusAsync();
         }
 
+        private void BtnNetworkStatus_Click(object sender, RoutedEventArgs e)
+        {
+            var playitStatusPage = _serviceProvider.GetRequiredService<PlayitStatusPage>();
+            _navigationService.NavigateToDetailPage(
+                playitStatusPage,
+                "Playit Network Status",
+                DetailRouteKind.PlayitNetworkStatus,
+                DetailBackNavigation.Tunnel);
+        }
+
         private void BtnPortsMap_Click(object sender, RoutedEventArgs e)
         {
             var portsMapPage = _serviceProvider.GetRequiredService<PortsMapPage>();

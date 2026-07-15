@@ -1,0 +1,128 @@
+<Page x:Class="PocketMC.Desktop.Features.Tunnel.PlayitStatusPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"
+      mc:Ignorable="d"
+      d:DesignHeight="800" d:DesignWidth="950"
+      Title="Playit Network Status"
+      Background="Transparent">
+
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="VisibleIfTrue"/>
+        <presentation:InverseBooleanToVisibilityConverter x:Key="VisibleIfFalse"/>
+    </Page.Resources>
+
+    <Grid Margin="36,20,36,24" VerticalAlignment="Stretch">
+        <DockPanel LastChildFill="True">
+
+            <!-- Title & Navigation Row -->
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,24">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <ui:Button Command="{Binding GoBackCommand}"
+                               Icon="{ui:SymbolIcon ArrowLeft24}"
+                               Appearance="Transparent"
+                               Margin="0,0,12,0"
+                               Padding="6"
+                               ToolTip="Back to Tunnels"/>
+                    <ui:TextBlock FontTypography="Title"
+                                  Text="Playit.gg Network Status"
+                                  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                  VerticalAlignment="Center"/>
+                </StackPanel>
+                <Grid Margin="48,0,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Text="Live monitoring of the global Playit.gg network and datacenter routing infrastructure."
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               FontSize="13"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center"/>
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding LastUpdated}" 
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,0,16,0"
+                                   VerticalAlignment="Center"/>
+                        <ui:Button Command="{Binding RefreshCommand}"
+                                   Content="Refresh"
+                                   Icon="{ui:SymbolIcon ArrowClockwise24}"
+                                   Appearance="Secondary"
+                                   Padding="16,6"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+
+            <Grid>
+                <!-- Loading Indicator -->
+                <Grid Visibility="{Binding IsLoading, Converter={StaticResource VisibleIfTrue}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" Margin="0,0,0,16"/>
+                        <TextBlock Text="Fetching network status..." 
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                   FontSize="14"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Status List -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                              HorizontalScrollBarVisibility="Disabled"
+                              Visibility="{Binding IsLoading, Converter={StaticResource VisibleIfFalse}}">
+                <ItemsControl ItemsSource="{Binding Monitors}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="300" 
+                                    Margin="0,0,16,16"
+                                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <Ellipse Grid.Column="0" 
+                                             Width="12" Height="12" 
+                                             Fill="{Binding IconColor}" 
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,12,0"/>
+                                             
+                                    <TextBlock Grid.Column="1" 
+                                               Text="{Binding Name}" 
+                                               FontSize="14" 
+                                               FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+                                               
+                                    <TextBlock Grid.Column="2" 
+                                               Text="{Binding StatusText}" 
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            </Grid>
+        </DockPanel>
+    </Grid>
+</Page>

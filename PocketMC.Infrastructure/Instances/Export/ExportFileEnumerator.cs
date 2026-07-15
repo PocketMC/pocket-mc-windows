@@ -24,7 +24,8 @@ public class ExportFileEnumerator
         "paper-global.yml",
         "paper-world-defaults.yml",
         "commands.yml",
-        "permissions.yml"
+        "permissions.yml",
+        "addon_manifest.json"
     ];
 
     private static readonly string[] BedrockRootFiles =
@@ -32,7 +33,8 @@ public class ExportFileEnumerator
         "server.properties",
         "allowlist.json",
         "permissions.json",
-        "valid_known_packs.json"
+        "valid_known_packs.json",
+        "addon_manifest.json"
     ];
 
     private static readonly string[] JavaDirectories =

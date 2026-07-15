@@ -41,6 +41,12 @@ namespace PocketMC.Infrastructure.Tunnel
             // Tunnel resolution is orchestrated from singleton services and keeps no
             // per-request state, so it should share the same app-wide lifetime.
             services.AddSingleton<TunnelService>();
+            
+            services.AddHttpClient<PocketMC.Application.Interfaces.Tunnels.IPlayitStatusService, PlayitStatusService>(client =>
+                client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0"))
+            .AddStandardResilience()
+            .AddHttpMessageHandler<PocketMC.Infrastructure.Http.LoggingHttpMessageHandler>();
+            
             return services;
         }
     }

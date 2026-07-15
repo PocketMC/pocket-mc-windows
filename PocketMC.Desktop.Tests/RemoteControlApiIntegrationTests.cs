@@ -37,7 +37,7 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         _lifecycleMock = new Mock<IServerLifecycleService>();
         _lifecycleMock.Setup(x => x.IsRunning(It.IsAny<Guid>())).Returns(true);
 
-        var statusService = new RemoteStatusService(null!, _lifecycleMock.Object, null!, null!, _state, null!, new PocketMC.Infrastructure.Instances.GeyserDetector());
+        var statusService = new RemoteStatusService(null!, _lifecycleMock.Object, null!, null!, _state, null!, new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
         var instanceControlService = new RemoteInstanceControlService(null!, _lifecycleMock.Object);
         var auditLogService = new RemoteAuditLogService();
         var playerActionService = new RemotePlayerActionService(_state, null!, _lifecycleMock.Object, auditLogService);
@@ -128,5 +128,6 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.TooManyRequests, rateLimitedResponse.StatusCode);
     }
 }
+
 
 

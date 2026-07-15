@@ -70,12 +70,37 @@ public class FabricProvider : IServerSoftwareProvider
         return versions;
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
+    {
+        var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/loader");
+        var loaders = new List<ModLoaderVersion>();
+        
+        if (loadersResponse != null)
+        {
+            foreach (var node in loadersResponse)
+            {
+                if (node == null) continue;
+                loaders.Add(new ModLoaderVersion
+                {
+                    Version = node["version"]?.ToString() ?? "",
+                    IsStable = (bool)(node["stable"] ?? false)
+                });
+            }
+        }
+        
+        return loaders;
+    }
+
+    public async Task<string> DownloadSoftwareAsync(string mcVersion, string destinationPath, string? loaderVersion = null, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // Get latest loader and installer versions
-        string loaderVersion = await GetLatestLoaderVersionAsync();
+        string targetLoaderVersion = string.IsNullOrEmpty(loaderVersion) 
+            ? await GetLatestLoaderVersionAsync() 
+            : loaderVersion;
         string installerVersion = await GetLatestInstallerVersionAsync();
-        await DownloadFabricJarAsync(mcVersion, loaderVersion, installerVersion, destinationPath, progress, cancellationToken);
+        await DownloadFabricJarAsync(mcVersion, targetLoaderVersion, installerVersion, destinationPath, progress, cancellationToken);
+        
+        return targetLoaderVersion;
     }
 
     public async Task DownloadFabricJarAsync(string mcVersion, string loaderVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)

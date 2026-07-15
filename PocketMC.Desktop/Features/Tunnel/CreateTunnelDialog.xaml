@@ -19,10 +19,12 @@
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="✦ Create Tunnel"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                       Margin="0,0,0,4"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                <ui:SymbolIcon Symbol="AddCircle24" FontSize="18" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,8,0"/>
+                <TextBlock Text="Create Tunnel"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            </StackPanel>
             <TextBlock Text="Configure a new PlayIt.gg tunnel for your Minecraft server."
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"
                        TextWrapping="Wrap"/>

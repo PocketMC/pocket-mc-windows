@@ -27,4 +27,5 @@ public sealed class InstanceUpdateStagedArtifacts
 public sealed class InstanceUpdateApplyResult
 {
     public Guid OperationId { get; set; }
+    public InstanceMetadata UpdatedMetadata { get; set; } = new();
 }

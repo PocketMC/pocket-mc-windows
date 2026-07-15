@@ -103,10 +103,60 @@ public class ForgeProvider : IServerSoftwareProvider
             .ToList();
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
-        string forgeVersion = await GetLatestForgeVersionAsync(mcVersion);
+        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.minecraftforge/index.json";
+        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
+
+        var loaders = new List<ModLoaderVersion>();
+
+        if (response != null && response.TryGetPropertyValue("versions", out var versionsNode) && versionsNode is JsonArray versionsArray)
+        {
+            foreach (var node in versionsArray)
+            {
+                if (node is JsonObject vObj)
+                {
+                    string? version = vObj["version"]?.ToString();
+                    bool isRecommended = vObj["recommended"]?.GetValue<bool>() ?? false;
+
+                    if (string.IsNullOrEmpty(version)) continue;
+
+                    string mcVersion = "";
+                    if (vObj.TryGetPropertyValue("requires", out var requiresNode) && requiresNode is JsonArray requiresArray)
+                    {
+                        foreach (var req in requiresArray)
+                        {
+                            if (req is JsonObject reqObj && reqObj["uid"]?.ToString() == "net.minecraft")
+                            {
+                                mcVersion = reqObj["equals"]?.ToString() ?? "";
+                                break;
+                            }
+                        }
+                    }
+
+                    if (string.Equals(mcVersion, versionId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        loaders.Add(new ModLoaderVersion
+                        {
+                            Version = version,
+                            IsStable = isRecommended
+                        });
+                    }
+                }
+            }
+        }
+
+        return loaders;
+    }
+
+    public async Task<string> DownloadSoftwareAsync(string mcVersion, string destinationPath, string? loaderVersion = null, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        string forgeVersion = string.IsNullOrEmpty(loaderVersion) 
+            ? await GetLatestForgeVersionAsync(mcVersion) 
+            : loaderVersion;
         await DownloadForgeJarAsync(mcVersion, forgeVersion, destinationPath, progress, cancellationToken);
+        
+        return forgeVersion;
     }
 
     public async Task DownloadForgeJarAsync(string mcVersion, string forgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)

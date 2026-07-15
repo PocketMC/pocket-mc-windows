@@ -149,7 +149,7 @@ namespace PocketMC.Desktop.Infrastructure
                 if (UpdatesFound)
                 {
                     TxtOverallStatus.Text = $"Done. {updatable} update(s) found.";
-                    TxtHeaderIcon.Text = "⬆";
+                    TxtHeaderIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowUp24;
                     TxtTitle.Text = "Updates Available";
                     BtnProceed.Visibility = Visibility.Visible;
                     
@@ -161,7 +161,7 @@ namespace PocketMC.Desktop.Infrastructure
                 else
                 {
                     TxtOverallStatus.Text = $"Done. All addons are up to date. ({failed} failed)";
-                    TxtHeaderIcon.Text = "✓";
+                    TxtHeaderIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.Checkmark24;
                     TxtTitle.Text = "Up to Date";
                     TxtHeaderIcon.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
                     TxtTitle.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));

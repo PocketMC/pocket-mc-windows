@@ -168,7 +168,14 @@ namespace PocketMC.Desktop.Features.Settings
                 dialogService,
                 () => IsRunning,
                 serviceProvider.GetRequiredService<PocketMC.Infrastructure.Java.JavaProvisioningService>(),
-                () => Addons.UpdateAllAddonsAsync(null, true));
+                async (bool isMinecraftUpdate) => 
+                {
+                    if (isMinecraftUpdate)
+                    {
+                        await Addons.UpdateAllAddonsAsync(null, true);
+                    }
+                    ReloadCurrentInstance(serviceProvider);
+                });
             Advanced = new SettingsAdvancedVM(ServerDir, serverConfigurationService, MarkChanged);
 
             var summaryStorage = (SummaryStorageService)serviceProvider.GetService(typeof(SummaryStorageService))!;
@@ -199,7 +206,7 @@ namespace PocketMC.Desktop.Features.Settings
             if (updatedMetadata == null) return;
 
             var settingsViewModel = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsViewModel>(serviceProvider, updatedMetadata);
-            settingsViewModel.InitialTabIndex = 6;
+            settingsViewModel.InitialTabIndex = CurrentTabIndex;
 
             var settingsPage = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsPage>(serviceProvider, settingsViewModel);
             _navigationService.NavigateToDetailPage(settingsPage, $"Settings: {updatedMetadata.Name}", DetailRouteKind.ServerSettings, DetailBackNavigation.Dashboard, true);
@@ -453,8 +460,11 @@ namespace PocketMC.Desktop.Features.Settings
             Summaries.UpdateServerDir(newDir);
         }
 
+        public int CurrentTabIndex { get; set; }
+
         public void SetActiveSettingsTab(int selectedIndex)
         {
+            CurrentTabIndex = selectedIndex;
             IsVersionUpdatesTabActive = selectedIndex == 1;
         }
 

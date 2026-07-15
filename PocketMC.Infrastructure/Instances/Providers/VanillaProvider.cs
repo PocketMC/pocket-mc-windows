@@ -59,7 +59,7 @@ public class VanillaProvider : IServerSoftwareProvider
         }
     }
 
-    public async Task DownloadSoftwareAsync(string mcVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<string> DownloadSoftwareAsync(string mcVersion, string destinationPath, string? loaderVersion = null, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Resolving download URL for Vanilla {Version}", mcVersion);
 
@@ -83,6 +83,8 @@ public class VanillaProvider : IServerSoftwareProvider
 
         // 3. Download
         await _downloader.DownloadFileAsync(serverDownloadUrl, destinationPath, serverSha1, progress, cancellationToken);
+        
+        return string.Empty;
     }
 
     private class VersionManifest

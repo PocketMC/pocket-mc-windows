@@ -268,7 +268,9 @@ function renderSelectionView(instances) {
 
     card.innerHTML = `
       <div class="instance-card-header">
-        <img src="${getServerIcon(inst.serverType)}" alt="" class="instance-card-icon" />
+        <div class="instance-card-icon-container">
+          <img src="${getServerIcon(inst.serverType)}" alt="" class="instance-card-icon" />
+        </div>
         <div class="instance-card-info">
           <h3>${escapeHtml(inst.name)}</h3>
           <p>${escapeHtml(inst.serverType)} ${escapeHtml(inst.minecraftVersion || "")}</p>
@@ -310,6 +312,7 @@ function getServerIcon(serverType) {
   if (!serverType) return "/remote/icon.png";
   const type = serverType.toLowerCase();
   if (type.includes("fabric")) return "/remote/icons/fabric.png";
+  if (type.includes("neoforge")) return "/remote/icons/neoforge.png";
   if (type.includes("forge")) return "/remote/icons/forge.png";
   if (type.includes("paper") || type.includes("purpur")) return "/remote/icons/papermc.png";
   if (type.includes("bedrock") || type.includes("bds")) return "/remote/icons/bds.png";

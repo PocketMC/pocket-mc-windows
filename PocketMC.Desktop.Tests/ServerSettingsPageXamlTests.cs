@@ -40,7 +40,7 @@ public sealed class ServerSettingsPageXamlTests
 
         int bottomActionBarIndex = xaml.IndexOf("<!-- Bottom Action Bar -->", StringComparison.Ordinal);
         int mainLayoutIndex = xaml.IndexOf("<!-- Main Layout Grid -->", StringComparison.Ordinal);
-        int applyCommandIndex = xaml.IndexOf("Command=\"{Binding VersionUpdates.ApplyCommand}\"", StringComparison.Ordinal);
+        int applyCommandIndex = xaml.IndexOf("Command=\"{Binding VersionUpdates.ApplyMinecraftUpdateCommand}\"", StringComparison.Ordinal);
         int progressIndex = xaml.IndexOf("Value=\"{Binding VersionUpdates.UpdateProgressValue}\"", StringComparison.Ordinal);
 
         // ApplyCommand is now inside the Version Updates card (after Main Layout)

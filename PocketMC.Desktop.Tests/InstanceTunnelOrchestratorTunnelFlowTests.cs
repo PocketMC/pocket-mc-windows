@@ -117,7 +117,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
             workspace.CreatePortProbeService(),
             workspace.CreatePortLeaseRegistry(),
             workspace.CreatePortRecoveryService());
-        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry, new PocketMC.Infrastructure.Instances.GeyserDetector(), new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector());
+        return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry, new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()), new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
     }
 
     private static InstanceTunnelOrchestrator CreateOrchestrator(
@@ -140,7 +140,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
             new SilentDialogService(),
             new ImmediateDispatcher(),
             NullLogger<InstanceTunnelOrchestrator>.Instance,
-            new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector());
+            new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
     }
 
     private static HttpResponseMessage JsonResponse(string body)
@@ -217,5 +217,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
         public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<ProgressDialogUpdate>, Task> action) => action(new Progress<ProgressDialogUpdate>());
     }
 }
+
+
 
 

@@ -72,7 +72,7 @@ public class PocketmineProvider : IServerSoftwareProvider
         return versions;
     }
 
-    public async Task DownloadSoftwareAsync(string versionId, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<string> DownloadSoftwareAsync(string versionId, string destinationPath, string? loaderVersion = null, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Resolving download URL for Pocketmine {Version}", versionId);
 
@@ -99,6 +99,8 @@ public class PocketmineProvider : IServerSoftwareProvider
         }
 
         await _downloader.DownloadFileAsync(downloadUrl, destinationPath, null, progress, cancellationToken);
+        
+        return string.Empty;
     }
 }
 
