@@ -259,8 +259,8 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
             lifecycleService,
             workspace.AppState,
             workspace.Registry,
-            new PocketMC.Infrastructure.Instances.GeyserDetector(),
-            new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector());
+            new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
+            new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
     }
 
     private static InstanceTunnelOrchestrator CreateOrchestrator(
@@ -292,7 +292,7 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
             dialogService,
             new ImmediateDispatcher(),
             NullLogger<InstanceTunnelOrchestrator>.Instance,
-            new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector());
+            new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
     }
 
     private static HttpResponseMessage JsonResponse(string body)
@@ -374,5 +374,7 @@ public sealed class SimpleVoiceChatFirstRunTunnelTests
         public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<ProgressDialogUpdate>, Task> action) => action(new Progress<ProgressDialogUpdate>());
     }
 }
+
+
 
 

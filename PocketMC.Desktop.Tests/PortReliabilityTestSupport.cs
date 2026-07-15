@@ -43,7 +43,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
         PathService = new InstancePathService(AppState);
         Registry = new InstanceRegistry(PathService, NullLogger<InstanceRegistry>.Instance);
         InstanceManager = new InstanceManager(Registry, PathService, AppState, new EmptyAssetProvider(), NullLogger<InstanceManager>.Instance, new EmptyServiceProvider());
-        ConfigurationService = new ServerConfigurationService(InstanceManager, new PocketMC.Infrastructure.Instances.GeyserDetector());
+        ConfigurationService = new ServerConfigurationService(InstanceManager, new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
         SettingsManager = new SettingsManager(Path.Combine(RootPath, "settings.json"));
     }
 
@@ -155,8 +155,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             ConfigurationService,
             processManager ?? CreateServerProcessManager(),
             AppState,
-            new PocketMC.Infrastructure.Instances.GeyserDetector(),
-            new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector(),
+            new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
+            new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
             NullLogger<PortPreflightService>.Instance);
     }
 
@@ -253,8 +253,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             playitApiClient,
             dependencyHealthMonitor,
             NullLogger<PortDiagnosticsSnapshotBuilder>.Instance,
-            new PocketMC.Infrastructure.Instances.GeyserDetector(),
-            new PocketMC.Application.Services.Networking.SimpleVoiceChatDetector());
+            new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
+            new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
     }
 
     public ServerLifecycleService CreateServerLifecycleService(
@@ -276,7 +276,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             NullLogger<ServerLifecycleService>.Instance,
             AppState,
             new PocketMC.Infrastructure.Instances.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Infrastructure.Instances.GeyserProvisioningService>.Instance),
-            new PocketMC.Infrastructure.Instances.GeyserDetector());
+            new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
     }
 
     public int GetAvailableTcpPort()
@@ -436,3 +436,4 @@ internal sealed class DelegateHttpMessageHandler : HttpMessageHandler
         return Task.FromResult(_handler(request, cancellationToken));
     }
 }
+
