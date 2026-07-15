@@ -85,6 +85,10 @@ namespace PocketMC.Desktop.Features.Shell
             try
             {
                 AppSettings settings = _settingsManager.Load();
+                
+                _settingsManager.SettingsSaved -= OnSettingsSaved;
+                _settingsManager.SettingsSaved += OnSettingsSaved;
+
                 if (string.IsNullOrWhiteSpace(settings.AppRootPath) || 
                     !Directory.Exists(settings.AppRootPath) || 
                     IsTemporaryPath(settings.AppRootPath))
@@ -99,6 +103,11 @@ namespace PocketMC.Desktop.Features.Shell
             {
                 HandleStartupFailure(ex);
             }
+        }
+
+        private void OnSettingsSaved(object? sender, AppSettings updatedSettings)
+        {
+            _applicationState.ApplySettings(updatedSettings);
         }
 
         private bool IsTemporaryPath(string path)
@@ -168,6 +177,7 @@ namespace PocketMC.Desktop.Features.Shell
                 return;
             }
 
+            _settingsManager.SettingsSaved -= OnSettingsSaved;
             _playitAgentService.OnTunnelRunning -= OnPlayitTunnelRunning;
             _backupScheduler.Stop();
             _healthMonitor.StopMonitoring();
