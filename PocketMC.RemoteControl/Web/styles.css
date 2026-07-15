@@ -843,15 +843,23 @@ button:disabled {
   gap: 12px;
 }
 
-.instance-card-icon {
+.instance-card-icon-container {
   width: 44px;
   height: 44px;
-  object-fit: contain;
   background: var(--surface-muted);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
   padding: 8px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instance-card-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   filter: grayscale(1);
   opacity: 0.7;
   transition: filter var(--transition), opacity var(--transition);
@@ -1583,4 +1591,17 @@ svg {
   .command-row button .button-icon {
     margin: 0;
   }
+}
+
+/* Fix white icons blending into light mode backgrounds */
+[data-theme="light"] .instance-card-icon[src*="forge.png"],
+[data-theme="light"] .instance-card-icon[src*="neoforge.png"],
+[data-theme="light"] .instance-card-icon[src*="fabric.png"] {
+  filter: invert(1) grayscale(1);
+}
+
+[data-theme="light"] .instance-card:hover .instance-card-icon[src*="forge.png"],
+[data-theme="light"] .instance-card:hover .instance-card-icon[src*="neoforge.png"],
+[data-theme="light"] .instance-card:hover .instance-card-icon[src*="fabric.png"] {
+  filter: invert(1) grayscale(0);
 }
