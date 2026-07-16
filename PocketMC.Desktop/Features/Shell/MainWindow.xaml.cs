@@ -1,4 +1,4 @@
-﻿using PocketMC.Application.Services.Shell;
+using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Core.Interfaces;
@@ -510,11 +510,30 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             return;
         }
 
-        RootNavigation.Navigating -= OnNavigating;
-        RootNavigation.Navigated -= OnNavigated;
-        DetachTitleBarContextSource();
-        _startupCoordinator.Shutdown();
-        System.Windows.Application.Current?.Shutdown();
+        e.Cancel = true;
+        HideToTray();
+        _serviceProvider.GetRequiredService<TrayIconViewModel>().TooltipText = "PocketMC is shutting down...";
+
+        System.Threading.Tasks.Task.Run(async () =>
+        {
+            try
+            {
+                var lifecycle = _serviceProvider.GetRequiredService<IApplicationLifecycleService>();
+                await lifecycle.GracefulShutdownAsync();
+            }
+            catch { }
+            finally
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    RootNavigation.Navigating -= OnNavigating;
+                    RootNavigation.Navigated -= OnNavigated;
+                    DetachTitleBarContextSource();
+                    _startupCoordinator.Shutdown();
+                    System.Windows.Application.Current?.Shutdown();
+                });
+            }
+        });
     }
 
     private void AppTrayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e) =>
@@ -644,12 +663,27 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         }
     }
 
-    private async void TrayExit_Click(object sender, RoutedEventArgs e)
+    private void TrayExit_Click(object sender, RoutedEventArgs e)
     {
         _explicitExitRequested = true;
-        var lifecycle = _serviceProvider.GetRequiredService<IApplicationLifecycleService>();
-        await lifecycle.GracefulShutdownAsync();
-        System.Windows.Application.Current.Shutdown();
+        _serviceProvider.GetRequiredService<TrayIconViewModel>().TooltipText = "PocketMC is shutting down...";
+
+        System.Threading.Tasks.Task.Run(async () =>
+        {
+            try
+            {
+                var lifecycle = _serviceProvider.GetRequiredService<IApplicationLifecycleService>();
+                await lifecycle.GracefulShutdownAsync();
+            }
+            catch { }
+            finally
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    System.Windows.Application.Current?.Shutdown();
+                });
+            }
+        });
     }
 }
 
