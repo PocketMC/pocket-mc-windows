@@ -167,13 +167,10 @@ public sealed class RemoteDashboardHost
 
     private void MapStaticFiles(WebApplication app)
     {
-        string webRoot = Path.Combine(AppContext.BaseDirectory, "Web");
-        if (Directory.Exists(webRoot))
+        app.UseStaticFiles(new StaticFileOptions
         {
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(webRoot),
-                RequestPath = "/remote",
+            FileProvider = new EmbeddedFileProvider(typeof(RemoteDashboardHost).Assembly, "PocketMC.RemoteControl.Web"),
+            RequestPath = "/remote",
                 ContentTypeProvider = new FileExtensionContentTypeProvider(),
                 OnPrepareResponse = ctx =>
                 {
@@ -190,7 +187,6 @@ public sealed class RemoteDashboardHost
                     }
                 }
             });
-        }
 
         app.MapGet("/", () => Results.Redirect("/remote/index.html"));
         app.MapGet("/health", () => Results.Ok(new { status = "ok" }));

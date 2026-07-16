@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Web\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Web\**\*.*" />
   </ItemGroup>
 
 </Project>
