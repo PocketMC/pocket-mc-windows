@@ -1,7 +1,23 @@
 VERSION=1.9.5.2
 
 [FEATURES]
+Modpack Marketplace
+Import Existing Server Folders
+Added Playit.gg Server Status Page
+Can Upgrade Server Loader Version
+Can Also Change/Transfer Your Root Directory From Setttings
+You Can Now Pin Your Fav Instances Cards
+Instance Card Now Show Live Server Uptime
+Added Feture To Start Pocket MC With System Boot
 
 [FIXES]
+Fixed Too Many Bugs in Mod/Plugin Management
+Fixed Cloud Backup Providers Connection Reset Issue
+Fixed Mica And Acrylic Theam Rendering Issue
 
 [IMPROVEMENTS]
+Improved UI
+Improved MOTD Editor
+Improved The World/Map Marketplace
+Improve Progress Bar For Better UX
+Improve App Startup Speed
