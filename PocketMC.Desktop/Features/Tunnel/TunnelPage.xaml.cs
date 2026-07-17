@@ -418,6 +418,22 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
         }
 
+        private void BtnManageAgents_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://playit.gg/account/agents",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to open playit.gg/account/agents in browser.");
+            }
+        }
+
         // ─── Clipboard ───────────────────────────────────────────────────
 
         private async void BtnCopyAddress_Click(object sender, RoutedEventArgs e)

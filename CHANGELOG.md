@@ -4,7 +4,8 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
-- `v1.9.4...v1.9.5`: 4 commits focused on Google Drive backup proxy reliability, telemetry proxy endpoint simplification, service registration, deprecated Playit setup cleanup, and dynamic instance port updates.
+- `v1.9.5...v1.9.6`: 90+ commits focused on system boot startup, importing existing server folders, advanced Playit HTTPS tunneling, modpack management overhaul (including .mrpack), and a massive UI/UX refactoring (splash screen, better console, progress bars).
+- `v1.9.4...v1.9.5`: 50+ commits focused on Clean Architecture refactoring, automatic update flow, Remote Control security, Geyser/VoiceChat detection, and Google Drive backup reliability.
 - `v1.9.3...v1.9.4`: 27 commits focused on custom accent colors, animated navigation, remote dashboard dark mode, Forge/NeoForge stabilization, and UI polish.
 - `v1.9.2...v1.9.3`: 58 commits focused on Forge and NeoForge server support, Remote Control web dashboard implementation, automated add-on updates, server update rollback safety, telemetry, and desktop shell polish.
 - `v1.9.1...v1.9.2`: 12 commits focused on desktop notifications, Discord linking polish, Remote Control permissions, Playit setup simplification, scroll reliability, export completeness, and release workflow stability.
@@ -16,6 +17,64 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
+
+---
+
+## v1.9.6 - Modpack Import, System Boot, Server Imports & Massive UI Refactoring
+
+### Summary
+
+v1.9.6 is a massive update introducing core quality-of-life features like importing existing server folders, transferring root directories, and configuring servers to start automatically on system boot. It overhauls the modpack import system (adding `.mrpack` and better NeoForge support), and brings a UI/UX redesign featuring a new splash screen, improved console logging, enhanced progress dialogs, and a refined new instance creation flow.
+
+### Diff Basis
+
+The `v1.9.5...v1.9.6` diff represents over 90 commits focused on major workflow improvements (importing, root transfer, system startup), Playit tunneling reliability (HTTPS remote control, automatic agent recovery), and extensive UI polishing across the entire desktop application.
+
+### Added
+
+- **Server Import & Transfer**
+  - Added support for importing existing Minecraft server folders directly into PocketMC.
+  - Added the ability to change or transfer the root directory of a server instance.
+- **System Boot Automation**
+  - Introduced the "System Boot Startup" feature to automatically launch the application and designated servers when Windows starts.
+- **Advanced Tunneling (Playit)**
+  - Added support for HTTPS tunnels for Playit remote control.
+  - Implemented automatic Playit agent ID recovery and removed the strict agent ID parameter requirement.
+- **Modpack & Plugin Overhaul**
+  - Added support for importing `.mrpack` (Modrinth) modpacks.
+  - Vastly improved Forge and NeoForge modpack parsing and management.
+  - Added fingerprint-based mod version lookups.
+  - Added a dedicated Paper build selection option on the instance creation page.
+- **UI/UX Enhancements**
+  - Added a Splash Screen before app launch to improve perceived startup time and UI responsiveness.
+  - Added dedicated progress bars for backup creation and instance updates.
+  - Added support for pinning instance cards and reorganized the dashboard order by instance creation date.
+  - Improved MOTD rendering and editing capabilities.
+  - Overhauled the console UI with new fonts, better filtering, and custom coloring.
+  - Improved the Identity & Performance, Version & Updates, Gameplay Rules, and World & Files tabs.
+- **Automation & CI/CD**
+  - Implemented GitHub Actions for Beta and Release workflows with interactive Discord alert embeds (buttons and banners).
+  - Adopted sequential beta versioning directly from git tags.
+
+### Changed
+
+- Completely refactored the file structure and resolved config resource loading across assemblies.
+- Refactored the New Instance page and the Addon Update dialog for better clarity and rendering.
+- Re-styled instance badges and adjusted the empty dashboard state.
+- Changed the CurseForge link to redirect directly to the API key settings page.
+- Re-ordered the DI service registrations for instance management.
+
+### Fixed
+
+- Fixed a critical file lock crash that could occur during server operations.
+- Fixed an issue where the temporary directory was incorrectly selected or assigned as the root directory.
+- Fixed vanilla server version parsing from the internal `version.json`.
+- Fixed NeoForge/Forge version string sorting bugs by introducing a custom `VersionStringComparer`.
+- Fixed UI rendering issues with mica/acrylic themes and warning/normal dialog windows.
+- Fixed emoji rendering issues in the "What's New" dialog.
+- Fixed scrolling behavior in the AI summary pages.
+- Restricted `.jar` renaming exclusively to Vanilla, Fabric, and Paper servers to prevent modloader corruption.
+- Resolved various test failures related to `PromptPasswordAsync` and `ModpackService`.
 
 ---
 

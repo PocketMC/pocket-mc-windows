@@ -171,14 +171,23 @@
                             </LinearGradientBrush>
                         </TextBlock.Foreground>
                     </TextBlock>
-                    <ui:Button Content="Visit Playit.gg"
-                               Icon="{ui:SymbolIcon Open24}"
-                               Appearance="Secondary"
-                               FontSize="11"
-                               Padding="10,5"
-                               HorizontalAlignment="Right"
-                               Click="BtnVisitPlayit_Click"
-                               Cursor="Hand"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <ui:Button Content="Manage Agents"
+                                   Icon="{ui:SymbolIcon Link24}"
+                                   Appearance="Secondary"
+                                   FontSize="11"
+                                   Padding="10,5"
+                                   Margin="0,0,8,0"
+                                   Click="BtnManageAgents_Click"
+                                   Cursor="Hand"/>
+                        <ui:Button Content="Visit Playit.gg"
+                                   Icon="{ui:SymbolIcon Open24}"
+                                   Appearance="Secondary"
+                                   FontSize="11"
+                                   Padding="10,5"
+                                   Click="BtnVisitPlayit_Click"
+                                   Cursor="Hand"/>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>

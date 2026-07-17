@@ -97,13 +97,9 @@ namespace PocketMC.Desktop.Features.Shell
         {
             if (window == null || wallpaperImageElement == null) return false;
 
-            // If the wallpaper file is missing or inaccessible, automatically fall back to the Pocket MC default wallpaper.
-            if (!string.IsNullOrWhiteSpace(customImagePath) && !File.Exists(customImagePath))
-            {
-                customImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
-            }
 
-            if (string.IsNullOrWhiteSpace(customImagePath) || !File.Exists(customImagePath))
+
+            if (string.IsNullOrWhiteSpace(customImagePath) || (!customImagePath.StartsWith("pack://") && !File.Exists(customImagePath)))
             {
                 // Unset custom image -> hide the layer
                 wallpaperImageElement.Visibility = Visibility.Collapsed;

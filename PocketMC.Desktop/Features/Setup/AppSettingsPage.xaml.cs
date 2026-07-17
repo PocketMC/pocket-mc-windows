@@ -479,8 +479,7 @@ namespace PocketMC.Desktop.Features.Setup
 
             var settings = _applicationState.Settings;
             bool useCustom = AccentColorService.IsCustomMode(settings.AccentColorMode);
-            AccentAutoRadio.IsChecked = !useCustom;
-            AccentCustomRadio.IsChecked = useCustom;
+            AccentModeCombo.SelectedIndex = useCustom ? 1 : 0;
 
             string selectedHex = useCustom && !string.IsNullOrWhiteSpace(settings.CustomAccentColor)
                 ? settings.CustomAccentColor
@@ -494,12 +493,14 @@ namespace PocketMC.Desktop.Features.Setup
             _isInitializing = wasInitializing;
         }
 
-        private void AccentModeChanged(object sender, RoutedEventArgs e)
+        private void AccentModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isInitializing) return;
 
             var settings = _applicationState.Settings;
-            if (AccentCustomRadio.IsChecked == true)
+            bool useCustom = AccentModeCombo.SelectedIndex == 1;
+
+            if (useCustom)
             {
                 string hex = GetCurrentCustomAccentHex();
                 if (!AccentColorService.TryParseHexColor(hex, out Color color, out string normalizedHex))
@@ -572,10 +573,7 @@ namespace PocketMC.Desktop.Features.Setup
             e.Handled = true;
         }
 
-        private void ResetAccentColor_Click(object sender, RoutedEventArgs e)
-        {
-            AccentAutoRadio.IsChecked = true;
-        }
+
 
         private void ApplyHexColorFromInput()
         {
@@ -601,7 +599,7 @@ namespace PocketMC.Desktop.Features.Setup
 
             bool wasInitializing = _isInitializing;
             _isInitializing = true;
-            AccentCustomRadio.IsChecked = true;
+            AccentModeCombo.SelectedIndex = 1;
             HexColorInput.Text = normalizedHex;
             _isInitializing = wasInitializing;
 
@@ -638,11 +636,8 @@ namespace PocketMC.Desktop.Features.Setup
         {
             if (CustomAccentPanel == null) return;
 
-            bool useCustom = AccentCustomRadio.IsChecked == true;
+            bool useCustom = AccentModeCombo.SelectedIndex == 1;
             CustomAccentPanel.Visibility = useCustom ? Visibility.Visible : Visibility.Collapsed;
-            AccentModeLabel.Text = useCustom
-                ? $"Using custom accent {GetCurrentCustomAccentHex()}"
-                : "Using Windows accent color";
         }
 
         private void UpdateAccentPreview(Color color)
@@ -715,12 +710,26 @@ namespace PocketMC.Desktop.Features.Setup
         private void ClearCustomBackground_Click(object sender, RoutedEventArgs e)
         {
             var settings = _applicationState.Settings;
+            settings.CustomBackgroundImagePath = "pack://application:,,,/Assets/default_wallpaper.png";
+            _settingsManager.Save(settings);
+
+            UpdateCustomBackgroundUI();
+
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                mainWin.ApplyTheme();
+                mainWin.RequestMicaUpdate();
+            }
+        }
+
+        private void UseDesktopBackground_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = _applicationState.Settings;
             settings.CustomBackgroundImagePath = null;
             _settingsManager.Save(settings);
 
             UpdateCustomBackgroundUI();
 
-            // Revert to wallpaper immediately
             if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
             {
                 mainWin.ApplyTheme();
@@ -728,21 +737,7 @@ namespace PocketMC.Desktop.Features.Setup
             }
         }
 
-        private void RestoreDefaultBackground_Click(object sender, RoutedEventArgs e)
-        {
-            var settings = _applicationState.Settings;
-            settings.CustomBackgroundImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
-            _settingsManager.Save(settings);
 
-            UpdateCustomBackgroundUI();
-
-            // Apply immediately
-            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
-            {
-                mainWin.ApplyTheme();
-                mainWin.RequestMicaUpdate();
-            }
-        }
 
         private void UpdateCustomBackgroundPanelVisibility()
         {
@@ -762,26 +757,27 @@ namespace PocketMC.Desktop.Features.Setup
             if (CustomBgPathLabel == null || CustomBgPreviewImage == null) return;
 
             string? customPath = _applicationState.Settings.CustomBackgroundImagePath;
-            bool hasCustomImage = !string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath);
+            bool isDesktop = string.IsNullOrWhiteSpace(customPath);
+            bool isOfficial = customPath == "pack://application:,,,/Assets/default_wallpaper.png";
+            bool isCustom = !isDesktop && !isOfficial && File.Exists(customPath);
 
-            string defaultWallpaper = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
-            bool isUsingDefault = hasCustomImage && string.Equals(customPath, defaultWallpaper, StringComparison.OrdinalIgnoreCase);
+            BtnClearCustomBg.Visibility = Visibility.Collapsed;
+            BtnUseDesktopBg.Visibility = Visibility.Collapsed;
 
-            if (hasCustomImage)
+            if (isCustom)
             {
                 CustomBgPathLabel.Text = Path.GetFileName(customPath);
                 BtnClearCustomBg.Visibility = Visibility.Visible;
-                BtnRestoreDefaultBg.Visibility = isUsingDefault ? Visibility.Collapsed : Visibility.Visible;
+                BtnUseDesktopBg.Visibility = Visibility.Visible;
                 CustomBgPlaceholderIcon.Visibility = Visibility.Collapsed;
 
-                // Load thumbnail preview
                 try
                 {
                     var bi = new System.Windows.Media.Imaging.BitmapImage();
                     bi.BeginInit();
                     bi.UriSource = new Uri(customPath!, UriKind.Absolute);
                     bi.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                    bi.DecodePixelWidth = 160; // Small thumbnail
+                    bi.DecodePixelWidth = 160;
                     bi.EndInit();
                     bi.Freeze();
 
@@ -794,11 +790,36 @@ namespace PocketMC.Desktop.Features.Setup
                     CustomBgPlaceholderIcon.Visibility = Visibility.Visible;
                 }
             }
+            else if (isOfficial)
+            {
+                CustomBgPathLabel.Text = "PocketMC Default Wallpaper";
+                BtnUseDesktopBg.Visibility = Visibility.Visible;
+                CustomBgPlaceholderIcon.Visibility = Visibility.Collapsed;
+                
+                try
+                {
+                    var bi = new System.Windows.Media.Imaging.BitmapImage();
+                    bi.BeginInit();
+                    bi.UriSource = new Uri("pack://application:,,,/Assets/default_wallpaper.png", UriKind.Absolute);
+                    bi.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bi.DecodePixelWidth = 160;
+                    bi.EndInit();
+                    bi.Freeze();
+
+                    CustomBgPreviewImage.Source = bi;
+                    CustomBgPreviewImage.Visibility = Visibility.Visible;
+                }
+                catch
+                {
+                    CustomBgPreviewImage.Source = null;
+                    CustomBgPreviewImage.Visibility = Visibility.Collapsed;
+                    CustomBgPlaceholderIcon.Visibility = Visibility.Visible;
+                }
+            }
             else
             {
-                CustomBgPathLabel.Text = "No custom image selected";
-                BtnClearCustomBg.Visibility = Visibility.Collapsed;
-                BtnRestoreDefaultBg.Visibility = Visibility.Visible;
+                CustomBgPathLabel.Text = "Windows Desktop Wallpaper";
+                BtnClearCustomBg.Visibility = Visibility.Visible;
                 CustomBgPreviewImage.Source = null;
                 CustomBgPreviewImage.Visibility = Visibility.Collapsed;
                 CustomBgPlaceholderIcon.Visibility = Visibility.Visible;

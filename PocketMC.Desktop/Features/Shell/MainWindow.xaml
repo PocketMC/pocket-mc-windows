@@ -12,7 +12,7 @@
         xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
         xmlns:helpers="clr-namespace:PocketMC.Desktop.Views.Behaviors"
         mc:Ignorable="d"
-        Title="PocketMC Desktop"
+        Title="Pocket MC"
         WindowBackdropType="None"
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
@@ -130,7 +130,7 @@
 
                 <!-- ─── Title Bar ─── -->
                 <ui:NavigationView.Header>
-                    <ui:TitleBar Title="PocketMC Desktop"
+                    <ui:TitleBar Title="Pocket MC"
                                  ShowMaximize="True"
                                  ShowMinimize="True"
                                  ShowClose="True">

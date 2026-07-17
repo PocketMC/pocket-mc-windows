@@ -19,6 +19,10 @@
     <PackageReference Include="fNbt" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\PocketMC.Desktop\Assets\WhatsNew.txt" LogicalName="PocketMC.Infrastructure.WhatsNew.txt" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

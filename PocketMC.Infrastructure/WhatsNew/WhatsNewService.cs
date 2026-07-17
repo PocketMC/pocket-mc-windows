@@ -66,15 +66,16 @@ namespace PocketMC.Infrastructure.WhatsNew
         {
             try
             {
-                string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", WhatsNewFileName);
+                using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("PocketMC.Infrastructure.WhatsNew.txt");
 
-                if (!File.Exists(filePath))
+                if (stream == null)
                 {
-                    _logger.LogWarning("WhatsNew.txt not found at {FilePath}. Fallback message will be shown.", filePath);
+                    _logger.LogWarning("WhatsNew.txt not found in embedded resources. Fallback message will be shown.");
                     return null;
                 }
 
-                string content = File.ReadAllText(filePath);
+                using var reader = new StreamReader(stream);
+                string content = reader.ReadToEnd();
                 var entry = ChangelogParser.Parse(content);
 
                 if (entry == null)

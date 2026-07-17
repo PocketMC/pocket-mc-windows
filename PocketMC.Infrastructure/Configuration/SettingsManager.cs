@@ -169,7 +169,7 @@ namespace PocketMC.Infrastructure.Telemetry
                 }
                 // For new users, defaults are already provided via AppSettings.cs initializers,
                 // but we must set the dynamic image path here.
-                settings.CustomBackgroundImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "default_wallpaper.png");
+                settings.CustomBackgroundImagePath = "pack://application:,,,/Assets/default_wallpaper.png";
                 settings.HasMigratedToDefaultImageWallpaper = true;
             }
 
