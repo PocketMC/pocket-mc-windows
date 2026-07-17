@@ -85,16 +85,14 @@ public sealed class AccentColorSourceTests
             "Setup",
             "AppSettingsPage.xaml"));
 
-        Assert.Contains("Accent Color", xaml);
+        Assert.Contains("Accent Color Mode", xaml);
         Assert.Contains("x:Name=\"AccentPreviewSwatch\"", xaml);
-        Assert.Contains("x:Name=\"AccentModeLabel\"", xaml);
-        Assert.Contains("x:Name=\"AccentAutoRadio\"", xaml);
-        Assert.Contains("Automatic (Windows Accent Color)", xaml);
-        Assert.Contains("x:Name=\"AccentCustomRadio\"", xaml);
+        Assert.Contains("x:Name=\"AccentModeCombo\"", xaml);
+        Assert.Contains("Automatic (Windows)", xaml);
+        Assert.Contains("Custom Color", xaml);
         Assert.Contains("x:Name=\"CustomAccentPanel\"", xaml);
         Assert.Contains("x:Name=\"ColorSwatchPanel\"", xaml);
         Assert.Contains("x:Name=\"HexColorInput\"", xaml);
-        Assert.Contains("Reset to Windows Accent", xaml);
     }
 
     [Fact]
@@ -108,11 +106,10 @@ public sealed class AccentColorSourceTests
 
         Assert.Contains("AccentColorService", source);
         Assert.Contains("InitializeAccentColorSection", source);
-        Assert.Contains("AccentModeChanged", source);
+        Assert.Contains("AccentModeCombo_SelectionChanged", source);
         Assert.Contains("ColorSwatch_Click", source);
         Assert.Contains("ApplyHexColor_Click", source);
         Assert.Contains("HexColorInput_KeyDown", source);
-        Assert.Contains("ResetAccentColor_Click", source);
         Assert.Contains("_accentColorService.ApplyCustomAccent", source);
         Assert.Contains("_accentColorService.ApplySystemAccent", source);
         Assert.Contains("settings.CustomAccentColor", source);
