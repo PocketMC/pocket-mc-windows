@@ -87,7 +87,7 @@ jobs:
           --packId ${{ env.APP_ID }}
           --packVersion ${{ steps.config.outputs.version }}
           --packDir publish
-          --mainExe PocketMC.Desktop.exe
+          --mainExe "Pocket MC.exe"
           --framework net8.0,net8.0-aspnetcore
           --runtime ${{ env.RUNTIME }}
           --outputDir Releases
