@@ -285,6 +285,12 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 | **Remote Control**<br><img src="docs/assets/screenshots/remote-control.png" width="420" alt="Remote Control" /> | **App Settings**<br><img src="docs/assets/screenshots/app-settings.png" width="420" alt="App Settings" /> |
 | **About Page**<br><img src="docs/assets/screenshots/about.png" width="420" alt="About Page" /> | |
 
+### Themes
+
+Custom background images and accent colors — mix and match to make PocketMC yours.
+
+<img src="docs/assets/screenshots/themes-showcase.png" width="880" alt="PocketMC themes showcase — different accent colors and custom background images" />
+
 ### Remote Web Dashboard
 
 | Welcome | Login | Instances |

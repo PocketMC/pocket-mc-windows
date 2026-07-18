@@ -10,6 +10,10 @@ PocketMC features a first-class, built-in integration with **Playit.gg**, allowi
 - **Port Matching & Discovery:** Discovers and binds existing tunnels or automatically registers fresh ones matching your Java (`25565`) or Bedrock (`19132`) listener ports.
 - **Real-Time Diagnostics:** The dashboard monitors the agent state and displays public numerical and custom domain addresses as clickable cards.
 - **Unclaimed Account Routing:** Generates and presents claims URLs dynamically to link provisioned agents safely to a personal Playit profile.
+- **Automatic Agent ID Recovery:** The provisioning flow automatically discovers and recovers the agent ID — no manual input required.
+- **HTTPS Tunnel for Remote Control:** PocketMC can expose the Remote Control web dashboard over the internet via a Playit.gg HTTPS tunnel, alongside the existing TCP/UDP game tunnels. **Requires a Playit.gg Premium subscription.**
+- **Playit Servers Status Page:** A dedicated in-app view shows the live status of Playit's regional relay servers.
+- **Manage Agent Button:** One-click access on the Tunnel page to open the Playit agent management panel directly from the app.
 
 ---
 
@@ -32,7 +36,7 @@ sequenceDiagram
     Client->>Client: Saves Secret Key locally & initiates background agent
 ```
 
-Once provisioned, the client runs `playit.exe` using standard input/output redirection. The output stream is parsed dynamically to extract domain bindings and verify connectivity.
+Once provisioned, the client runs `playit.exe` using standard input/output redirection. The output stream is parsed dynamically to extract domain bindings and verify connectivity. The agent ID is recovered automatically from the Playit API response, so no manual agent ID is required during provisioning.
 
 ---
 
@@ -65,3 +69,8 @@ When starting a Minecraft server instance:
 ### 3. "Unclaimed Agent"
 * **Cause:** An agent was provisioned on your PC but was never successfully linked to a registered Playit account.
 * **Solution:** Restart the tunnel flow in PocketMC, copy the claim link, and complete the activation process in your web browser.
+
+### 4. Remote Control HTTPS Tunnel Not Working
+* **Cause:** The Playit HTTPS tunnel for Remote Control requires your Playit agent to be online and claimed. If the agent is offline or unclaimed, the HTTPS tunnel cannot be established.
+* **Note:** HTTPS tunnels are a **Playit.gg Premium** feature. Ensure your account has an active Premium subscription before enabling this option.
+* **Solution:** Ensure the Playit agent is connected (green status on the Tunnel page) and your account is claimed. Then re-enable the Remote Control HTTPS tunnel from **Settings → Remote Control**.
