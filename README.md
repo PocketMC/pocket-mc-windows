@@ -287,7 +287,7 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 
 ### Themes
 
-Custom background images and accent colors — mix and match to make PocketMC yours.
+Custom background images and accent colors with different themes options, customise PocketMC like your imagination.
 
 <img src="docs/assets/screenshots/themes-showcase.png" width="880" alt="PocketMC themes showcase — different accent colors and custom background images" />
 
