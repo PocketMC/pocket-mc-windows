@@ -34,23 +34,9 @@
 
 ---
 
-PocketMC is a native WPF/.NET 8 desktop app for local Minecraft server hosting. It handles software downloads, isolated instances, app-managed Java and PHP runtimes, startup and shutdown, live metrics, logs, players, backups, cloud replication, add-ons, Playit.gg tunnels, and a remote web dashboard — all in one polished Windows UI.
+PocketMC is a native WPF/.NET 8 desktop app for hosting a local Minecraft server. It manages software downloads, isolated instances, app-managed Java and PHP runtimes, startup and shutdown, live metrics, logs, players, backups, cloud replication, add-ons, Playit.gg tunnels and a remote web dashboard all in one polished Windows UI.
 
-Your servers live on your machine, in the app root you choose. PocketMC is not a cloud host, not a Minecraft client launcher, and not a Linux web panel in a Windows costume.
-
-<br>
-
-## What changed without PocketMC vs. with it
-
-| Before | After |
-|--------|-------|
-| Hunt the right JAR. Guess the Java version. Edit configs by hand. | Server software and runtimes managed entirely by the app. |
-| Scattered terminal scripts and folders across the disk. | Isolated instances under one root — clean, auditable, portable. |
-| Manual Playit tunnel setup on every machine. | Built-in agent provisioning, tunnel creation, and live status. |
-| Backups when someone remembers to run a script. | Manual, scheduled, external-folder, and cloud backup flows. |
-| Replacing server files and hoping the update holds. | Staged updates with planning, snapshots, journals, and rollback. |
-| Staring at raw logs until something makes sense. | Persistent history, diagnostics, and optional AI session summaries. |
-| Managing servers only from the host machine. | Remote web dashboard accessible from any device via browser or QR code. |
+Your servers reside on your machine, in the app root you select. PocketMC is not a cloud host, a Minecraft client launcher or a Linux web panel masquerading as a Windows application.
 
 <br>
 
@@ -109,7 +95,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
   - 1.21.2+ → Java 25
 - Java 25 downloaded in the background automatically. Older versions pulled only when a selected Minecraft version requires them.
 - Custom Java path override for advanced users.
-- PocketMine-MP uses an app-managed PHP 8.2 PM5 runtime — nothing to install globally.
+- PocketMine-MP uses an app-managed PHP 8.2 PM5 runtime, nothing to install globally.
 - All downloads use retries, partial-file cleanup, safe promotion, and hash verification where upstream hashes exist.
 - Missing bundled runtimes prompt for user confirmation before download or repair.
 
@@ -123,7 +109,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 - Dynamic Geyser/Floodgate and Simple Voice Chat badges.
 - Console output is buffered, sanitized, classified, and persisted across sessions.
 - Stopped or crashed servers can still open a read-only last-session log view.
-- Large logs are tailed — no loading a 500 MB log file into the UI.
+- Large logs are tailed, no loading a 500 MB log file into the UI.
 - Console tools: filter, search, command input, session history.
 
 </details>
@@ -223,7 +209,7 @@ Your servers live on your machine, in the app root you choose. PocketMC is not a
 - Browser-based dashboard for managing servers from any device with light and dark mode support.
 - Start, stop, restart, view the live console, send commands, and manage players remotely.
 - Secure internet exposure via built-in **Cloudflare Quick Tunnels** or **Playit.gg HTTPS tunnels**, or restrict to LAN only.
-- QR code generated for both local and public URLs — scan to open on mobile instantly.
+- QR code generated for both local and public URLs, scan to open on mobile instantly.
 - Configurable host port (default: 25580) and per-feature access controls (console commands, player actions).
 - Password-protected sessions with token lifetime configuration and active session visibility.
 - **Discord integration:** link your Discord account and receive the public remote control URL directly in your DMs via the PocketMC Discord bot when a tunnel starts.
@@ -303,9 +289,9 @@ Custom background images and accent colors with different themes options, custom
 
 ## Installation
 
-Download [`Setup.exe`](https://github.com/PocketMC/pocket-mc-windows/releases/latest) from the latest release and run it.
+Download [`PocketMC-win-Setup.exe`](https://github.com/PocketMC/pocket-mc-windows/releases/latest) from the latest release and run it.
 
-- Installs per-user — no admin rights required.
+- Installs per-user, no admin rights required.
 - .NET 8 Desktop Runtime is required and prompted automatically if missing.
 - Java and PHP do not need to be globally installed. PocketMC provisions its own runtimes.
 - Updates are handled automatically through Velopack.
@@ -341,6 +327,10 @@ Download [`Setup.exe`](https://github.com/PocketMC/pocket-mc-windows/releases/la
 
 ## Build from source
 
+<details>
+<summary>Expand</summary>
+<br>
+
 **Prerequisites:** Windows 10 1809+ or Windows 11 · .NET 8 SDK · Visual Studio 2022 with *Desktop development with .NET*, or JetBrains Rider
 
 ```bash
@@ -355,6 +345,8 @@ dotnet run --project PocketMC.Desktop/PocketMC.Desktop.csproj
 
 For packaging, PocketMC uses Velopack. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the release packaging flow.
 
+
+</details>
 <br>
 
 ## Project structure
@@ -388,23 +380,6 @@ For packaging, PocketMC uses Velopack. See [`CONTRIBUTING.md`](CONTRIBUTING.md) 
 | `PocketMC.Desktop.Tests` | xUnit/Moq tests for lifecycle, process, settings, marketplace, tunnel, console, backups, cloud, add-ons, players, startup, and VM logic |
 
 </details>
-
-<br>
-
-## Contributing
-
-Fork the repo, branch off `master`, open a pull request with a clear explanation of what changed and why.
-
-Before opening a PR:
-
-```bash
-dotnet build
-dotnet test
-```
-
-For substantial changes touching process lifecycle, runtime provisioning, tunnel orchestration, update/rollback flows, backup safety, cloud uploads, marketplace installs, or filesystem security — open an issue first.
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full packaging and release flow.
 
 <br>
 
