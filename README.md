@@ -388,7 +388,7 @@ For packaging, PocketMC uses Velopack. See [`CONTRIBUTING.md`](CONTRIBUTING.md) 
 **Discord** — [discord.gg/mWdMr8Mc2m](https://discord.gg/mWdMr8Mc2m)  
 **Reddit** — [r/PocketMC](https://www.reddit.com/r/PocketMC/)  
 **YouTube** — [Watch Tutorials](https://www.youtube.com/@OfficialPocketMC)  
-**Instagram** - [Follow PocketMC](https://www.instagram.com/thepocketmc)
+**Instagram** - [Follow PocketMC](https://www.instagram.com/thepocketmc)   
 **MIT** © 2026 PocketMC Contributors — see [LICENSE](LICENSE)
 
 <br>
