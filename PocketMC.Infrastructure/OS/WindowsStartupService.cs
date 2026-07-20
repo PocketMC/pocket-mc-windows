@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Win32;
 using PocketMC.Domain.Models;
 
@@ -75,16 +75,14 @@ public sealed class WindowsStartupService
 
     private void RegisterBootTask(bool minimized)
     {
-        string commandArgs = $"/create /tn \"{BootTaskName}\" /tr \"{QuoteArgument(_executablePath)} {WindowsStartupArgument} {(minimized ? MinimizedArgument : string.Empty)}\" /sc onstart /ru \"SYSTEM\" /rl HIGHEST /f";
+        string commandArgs = $"/create /tn \"{BootTaskName}\" /tr \"\\\"{_executablePath}\\\" {WindowsStartupArgument} {(minimized ? MinimizedArgument : string.Empty)}\" /sc onstart /ru \"SYSTEM\" /rl HIGHEST /f";
 
         var psi = new System.Diagnostics.ProcessStartInfo
         {
             FileName = "schtasks.exe",
             Arguments = commandArgs,
             Verb = "runas",
-            UseShellExecute = true,
-            CreateNoWindow = true,
-            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            UseShellExecute = true
         };
 
         try
@@ -115,9 +113,7 @@ public sealed class WindowsStartupService
             FileName = "schtasks.exe",
             Arguments = commandArgs,
             Verb = "runas",
-            UseShellExecute = true,
-            CreateNoWindow = true,
-            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            UseShellExecute = true
         };
 
         try
