@@ -399,9 +399,7 @@ For packaging, PocketMC uses Velopack. See [`CONTRIBUTING.md`](CONTRIBUTING.md) 
   <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" height="38" />
 </a>
 <br><br>
-<a href="https://deepwiki.com/PocketMC/pocket-mc-windows">
-  <img src="https://deepwiki.com/badge.svg" alt="DeepWiki" />
-</a>
+<a href="https://deepwiki.com/PocketMC/pocket-mc-windows"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 
 <br><br>
 
