@@ -582,53 +582,74 @@
 
                     <StackPanel Margin="16,8,16,16">
                         <!-- Provider Selection -->
-                        <TextBlock Text="AI Provider" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Select the AI service you have an API key for." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
-                        <ComboBox x:Name="AiProviderCombo" Width="260" HorizontalAlignment="Left" SelectionChanged="AiProviderCombo_SelectionChanged">
-                            <ComboBoxItem Content="Google Gemini" IsSelected="True"/>
-                            <ComboBoxItem Content="OpenAI"/>
-                            <ComboBoxItem Content="Anthropic Claude"/>
-                            <ComboBoxItem Content="Mistral AI"/>
-                            <ComboBoxItem Content="Groq"/>
-                            <ComboBoxItem Content="Ollama"/>
-                        </ComboBox>
-
-                        <Separator Margin="0,16" Opacity="0.15"/>
-
-                        <!-- API Key Input -->
-                        <TextBlock Text="API Key" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Enter your API key for the selected provider. Keys are stored locally." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="AI Provider" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Select the AI service you have an API key for." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ComboBox x:Name="AiProviderCombo" Grid.Column="1" Width="200" VerticalAlignment="Center" SelectionChanged="AiProviderCombo_SelectionChanged">
+                                <ComboBoxItem Content="Google Gemini" IsSelected="True"/>
+                                <ComboBoxItem Content="OpenAI"/>
+                                <ComboBoxItem Content="Anthropic Claude"/>
+                                <ComboBoxItem Content="Mistral AI"/>
+                                <ComboBoxItem Content="Groq"/>
+                                <ComboBoxItem Content="Ollama"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- API Key Input -->
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <ui:TextBox x:Name="AiApiKeyInput" PlaceholderText="Paste your API key here..." Margin="0,0,8,0"/>
-                            <ui:Button Grid.Column="1" Content="Validate" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="Test the key with a small API call"/>
-                            <ui:Button Grid.Column="2" Content="Save" Appearance="Primary" Click="SaveAiKey_Click"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="API Key" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Enter your API key for the selected provider. Keys are stored locally." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="AiKeyStatus" Text="" FontSize="12" Margin="0,4,0,0" Foreground="#A6E3A1"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <ui:TextBox x:Name="AiApiKeyInput" PlaceholderText="Paste your API key here..." Width="250" Margin="0,0,8,0"/>
+                                <ui:Button Content="Validate" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="Test the key with a small API call"/>
+                                <ui:Button Content="Save" Appearance="Primary" Click="SaveAiKey_Click"/>
+                            </StackPanel>
                         </Grid>
-                        <TextBlock x:Name="AiKeyStatus" Text="" FontSize="12" Margin="0,6,0,0" Foreground="#A6E3A1"/>
-
-                        <Separator Margin="0,16" Opacity="0.15"/>
 
                         <!-- Advanced Model Configuration -->
-                        <TextBlock Text="Model Name" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Leave empty to use the recommended default model for this provider." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
-                        <ComboBox x:Name="AiModelCombo" 
-                                  IsEditable="True" 
-                                  Width="260" 
-                                  HorizontalAlignment="Left" 
-                                  Margin="0,0,0,12" 
-                                  SelectionChanged="AiModelCombo_SelectionChanged"
-                                  TextBoxBase.TextChanged="AiModelCombo_TextChanged"/>
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Model Name" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Leave empty to use the recommended default model for this provider." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ComboBox x:Name="AiModelCombo" 
+                                      Grid.Column="1"
+                                      IsEditable="True" 
+                                      Width="250" 
+                                      VerticalAlignment="Center"
+                                      SelectionChanged="AiModelCombo_SelectionChanged"
+                                      TextBoxBase.TextChanged="AiModelCombo_TextChanged"/>
+                        </Grid>
 
-
-                        <StackPanel x:Name="EndpointUrlPanel" Visibility="Collapsed">
-                            <TextBlock Text="Endpoint URL" FontSize="14" FontWeight="Medium"/>
-                            <TextBlock Text="Override the default API endpoint. Required for local models like Ollama." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
-                            <ui:TextBox x:Name="AiEndpointUrlInput" PlaceholderText="e.g. http://localhost:11434/api/chat" Margin="0,0,0,16"/>
-                        </StackPanel>
+                        <!-- Endpoint URL -->
+                        <Grid x:Name="EndpointUrlPanel" Margin="0,16,0,0" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Endpoint URL" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Override the default API endpoint. Required for local models like Ollama." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ui:TextBox x:Name="AiEndpointUrlInput" Grid.Column="1" PlaceholderText="e.g. http://localhost:11434/api/chat" Width="300" VerticalAlignment="Center"/>
+                        </Grid>
 
                         <Separator Margin="0,16" Opacity="0.15"/>
 

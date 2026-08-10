@@ -6,6 +6,9 @@ auth_proxies:
 telemetry_proxies:
   - "https://pocket-mc-proxy-3fqm.onrender.com/"
   - "https://pocket-mc-proxy.onrender.com/"
+discord_api_urls:
+  - "https://pocketmc-welcome-bot-k1gq.onrender.com"
+  - "https://pocketmc-welcome-bot-1e5d.onrender.com"
 
 link_discord: "https://discord.gg/mWdMr8Mc2m"
 link_instagram: "https://www.instagram.com/thepocketmc"
