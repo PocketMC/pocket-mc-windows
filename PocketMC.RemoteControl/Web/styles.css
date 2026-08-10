@@ -844,27 +844,20 @@ button:disabled {
   gap: 12px;
 }
 
-.title-with-pin {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.card-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: space-between;
-}
-
 .pinned-icon, .card-pinned-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
-  opacity: 0.85;
+  opacity: 0.75;
+  margin-left: 6px;
+  vertical-align: middle;
   transition: var(--transition);
+}
+
+.pinned-icon svg, .card-pinned-icon svg {
+  width: 11px;
+  height: 11px;
 }
 
 .instance-card:hover .card-pinned-icon {
@@ -1693,6 +1686,11 @@ svg {
   .tab-icon {
     width: 16px;
     height: 16px;
+  }
+
+  .pinned-icon svg, .card-pinned-icon svg {
+    width: 10px;
+    height: 10px;
   }
 }
 

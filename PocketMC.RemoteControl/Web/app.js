@@ -269,7 +269,7 @@ function renderSelectionView(instances) {
     const playerCount = inst.playerCount !== undefined ? inst.playerCount : 0;
     const maxPlayers = inst.maxPlayers !== undefined ? inst.maxPlayers : 20;
     const isPinned = !!inst.isPinned;
-    const pinBadgeHtml = isPinned ? `<span class="card-pinned-icon" title="Pinned to top"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg></span>` : '';
+    const pinBadgeHtml = isPinned ? `<span class="card-pinned-icon" title="Pinned to top"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg></span>` : '';
 
     card.innerHTML = `
       <div class="instance-card-header">
@@ -277,10 +277,7 @@ function renderSelectionView(instances) {
           <img src="${getServerIcon(inst.serverType)}" alt="" class="instance-card-icon" />
         </div>
         <div class="instance-card-info">
-          <div class="card-title-row">
-            <h3>${escapeHtml(inst.name)}</h3>
-            ${pinBadgeHtml}
-          </div>
+          <h3>${escapeHtml(inst.name)}${pinBadgeHtml}</h3>
           <p>${escapeHtml(inst.serverType)} ${escapeHtml(inst.minecraftVersion || "")}</p>
         </div>
       </div>
