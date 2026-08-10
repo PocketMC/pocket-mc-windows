@@ -22,6 +22,8 @@ namespace PocketMC.Infrastructure.Telemetry
             "https://pocket-mc-proxy-3fqm.onrender.com/",
             "https://pocket-mc-proxy.onrender.com/"
         };
+        
+        public static IReadOnlyList<string> DiscordApiUrls { get; private set; } = new List<string>();
 
         public static string AppVersion { get; private set; } = "1.0.0";
         public static string LinkDiscord { get; private set; } = "https://discord.gg/mWdMr8Mc2m";
@@ -44,9 +46,11 @@ namespace PocketMC.Infrastructure.Telemetry
 
                     var authProxies = new List<string>();
                     var telemetryProxies = new List<string>();
+                    var discordApiUrls = new List<string>();
 
                     bool inAuth = false;
                     bool inTelemetry = false;
+                    bool inDiscord = false;
 
                     foreach (var line in content.Split('\n'))
                     {
@@ -61,10 +65,18 @@ namespace PocketMC.Infrastructure.Telemetry
                         {
                             inTelemetry = true;
                             inAuth = false;
+                            inDiscord = false;
+                            continue;
+                        }
+                        if (trimmed.StartsWith("discord_api_urls:"))
+                        {
+                            inDiscord = true;
+                            inAuth = false;
+                            inTelemetry = false;
                             continue;
                         }
 
-                        if (trimmed.StartsWith("-") && (inAuth || inTelemetry))
+                        if (trimmed.StartsWith("-") && (inAuth || inTelemetry || inDiscord))
                         {
                             var match = Regex.Match(trimmed, @"-\s*""?([^""\r\n]+)""?");
                             if (match.Success)
@@ -72,14 +84,16 @@ namespace PocketMC.Infrastructure.Telemetry
                                 var url = match.Groups[1].Value;
                                 if (inAuth) authProxies.Add(url);
                                 if (inTelemetry) telemetryProxies.Add(url);
+                                if (inDiscord) discordApiUrls.Add(url);
                             }
                         }
                         else if (!string.IsNullOrWhiteSpace(trimmed) && !trimmed.StartsWith("#"))
                         {
-                            if (inAuth || inTelemetry)
+                            if (inAuth || inTelemetry || inDiscord)
                             {
                                 inAuth = false;
                                 inTelemetry = false;
+                                inDiscord = false;
                             }
 
                             var versionMatch = Regex.Match(trimmed, @"version:\s*""?([^""\r\n]+)""?");
@@ -110,6 +124,7 @@ namespace PocketMC.Infrastructure.Telemetry
 
                     if (authProxies.Count > 0) AuthProxies = authProxies;
                     if (telemetryProxies.Count > 0) TelemetryProxies = telemetryProxies;
+                    if (discordApiUrls.Count > 0) DiscordApiUrls = discordApiUrls;
                 }
             }
             catch (Exception ex)

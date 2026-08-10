@@ -1,4 +1,4 @@
-﻿using PocketMC.RemoteControl.Models;
+using PocketMC.RemoteControl.Models;
 using PocketMC.RemoteControl.Hosting;
 using PocketMC.Domain.Models;
 using PocketMC.RemoteControl.Tunnels;
@@ -123,7 +123,7 @@ public sealed class RemoteControlCoordinator
     private async Task NotifyDiscordOfRemoteControlUrlAsync(string publicUrl)
     {
         var settings = _applicationState.Settings;
-        if (!settings.EnableDiscordNotifications || string.IsNullOrEmpty(settings.DiscordUserId) || string.IsNullOrEmpty(settings.DiscordApiUrl) || string.IsNullOrEmpty(settings.DiscordApiKey))
+        if (!settings.EnableDiscordNotifications || string.IsNullOrEmpty(settings.DiscordUserId) || string.IsNullOrEmpty(settings.DiscordApiKey))
         {
             return;
         }
@@ -132,29 +132,46 @@ public sealed class RemoteControlCoordinator
         {
             return; // Avoid duplicate DMs
         }
-
-        try
+        
+        var candidateUrls = new List<string>();
+        if (!string.IsNullOrEmpty(settings.DiscordApiUrl))
         {
-            using var client = new System.Net.Http.HttpClient();
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", settings.DiscordApiKey);
-
-            var payload = new
-            {
-                user_id = settings.DiscordUserId,
-                message = $"Hey! Your PocketMC Remote Control Dashboard is now online at: {publicUrl}"
-            };
-
-            var content = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync($"{settings.DiscordApiUrl.TrimEnd('/')}/send-dm", content);
-            if (response.IsSuccessStatusCode)
-            {
-                _lastNotifiedUrl = publicUrl;
-            }
+            candidateUrls.Add(settings.DiscordApiUrl);
         }
-        catch (Exception)
+        candidateUrls.AddRange(PocketMC.Infrastructure.Telemetry.AppConfig.DiscordApiUrls);
+        
+        if (candidateUrls.Count == 0)
         {
-            // Ignore failure
+            return;
+        }
+
+        using var client = new System.Net.Http.HttpClient();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", settings.DiscordApiKey);
+
+        var payload = new
+        {
+            user_id = settings.DiscordUserId,
+            message = $"Hey! Your PocketMC Remote Control Dashboard is now online at: {publicUrl}"
+        };
+
+        var jsonString = System.Text.Json.JsonSerializer.Serialize(payload);
+
+        foreach (var url in candidateUrls)
+        {
+            try
+            {
+                using var content = new System.Net.Http.StringContent(jsonString, System.Text.Encoding.UTF8, "application/json");
+                var response = await client.PostAsync($"{url.TrimEnd('/')}/send-dm", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    _lastNotifiedUrl = publicUrl;
+                    break; // Success, stop trying fallbacks
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore failure and try the next fallback URL
+            }
         }
     }
 
