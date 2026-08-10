@@ -858,17 +858,18 @@ button:disabled {
   justify-content: space-between;
 }
 
-.pinned-badge, .card-pinned-badge {
+.pinned-icon, .card-pinned-icon {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-soft, rgba(16, 185, 129, 0.1));
-  border: 1px solid var(--primary);
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  transition: var(--transition);
+}
+
+.instance-card:hover .card-pinned-icon {
+  color: var(--text-primary);
+  opacity: 1;
 }
 
 .instance-card:hover {
