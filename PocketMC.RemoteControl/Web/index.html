@@ -436,7 +436,13 @@
           <div id="addonsGrid" class="addons-grid">
             <!-- Dynamically populated by JS -->
           </div>
-          <p id="noAddonsMsg" class="muted" hidden>No plugins or add-ons installed.</p>
+          <div id="noAddonsMsg" class="empty-state-card" hidden>
+            <div class="empty-state-icon">
+              <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <h4 class="empty-state-title">No Plugins or Add-ons Installed</h4>
+            <p class="empty-state-desc">Add .jar, .phar, or .mcpack files into your server's folder in PocketMC Desktop, then refresh.</p>
+          </div>
         </div>
       </section>
 
@@ -446,8 +452,8 @@
         </div>
         <div class="panel-copy">
           <p class="eyebrow">Dashboard ready</p>
-          <h2>No instances found</h2>
-          <p>Create or load a server in PocketMC Desktop, then refresh this dashboard.</p>
+          <h2>No servers found</h2>
+          <p>Create or start a Minecraft server instance in PocketMC Desktop to control it remotely.</p>
         </div>
         <button id="emptyRefreshButton" class="primary-button" type="button">
           <span class="button-icon" aria-hidden="true">

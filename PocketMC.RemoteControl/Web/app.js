@@ -136,7 +136,13 @@ async function api(path, options = {}) {
     try {
         const json = JSON.parse(text);
         if (json.error) msg = json.error;
-    } catch { msg = text || msg; }
+    } catch {
+        if (text && (text.trim().startsWith("<") || text.includes("Cloudflare"))) {
+          msg = `Remote tunnel is offline (HTTP ${response.status})`;
+        } else {
+          msg = text || msg;
+        }
+    }
     throw new Error(msg);
   }
 
@@ -170,12 +176,77 @@ async function start() {
 
 
 
+function formatFriendlyError(msg) {
+  if (!msg) return "An unexpected error occurred.";
+  const text = typeof msg === "string" ? msg : (msg.message || String(msg));
+  const lower = text.toLowerCase();
+
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("load failed") ||
+    lower.includes("typeerror") ||
+    lower.includes("connection refused") ||
+    lower.includes("net::err")
+  ) {
+    return "Connection lost. PocketMC Desktop or local network host is currently unreachable.";
+  }
+
+  if (
+    lower.includes("cloudflare") ||
+    lower.includes("tunnel") ||
+    lower.includes("<!doctype") ||
+    lower.includes("<html")
+  ) {
+    return "Remote tunnel connection closed. Remote Access was stopped or the tunnel URL expired.";
+  }
+
+  if (lower.includes("unauthorized") || lower.includes("401")) {
+    return "Session expired or invalid login. Please re-authenticate.";
+  }
+
+  if (lower.includes("404") || lower.includes("notfound")) {
+    return "The requested server instance was not found.";
+  }
+
+  return text;
+}
+
+function renderInstancesSkeleton() {
+  if (!els.instancesGrid) return;
+  els.instancesGrid.innerHTML = Array(3).fill(0).map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton-icon skeleton-box"></div>
+      <div class="skeleton-body">
+        <div class="skeleton-line title skeleton-box"></div>
+        <div class="skeleton-line sub skeleton-box"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderAddonsSkeleton() {
+  const grid = document.getElementById("addonsGrid");
+  if (!grid) return;
+  grid.innerHTML = Array(4).fill(0).map(() => `
+    <div class="addon-card" style="min-height: 100px;">
+      <div class="skeleton-body">
+        <div class="skeleton-line title skeleton-box" style="width: 60%;"></div>
+        <div class="skeleton-line sub skeleton-box" style="width: 35%;"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
 function showError(msg) {
   if (msg === "Unauthorized") return;
-  els.errorMessage.textContent = msg;
+  const friendlyMsg = formatFriendlyError(msg);
+  els.errorMessage.textContent = friendlyMsg;
   setVisible(els.errorView);
-  els.connectionLabel.textContent = "Disconnected";
-  els.connectionLabel.className = "connection-pill offline";
+  if (els.connectionLabel) {
+    els.connectionLabel.textContent = "Disconnected";
+    els.connectionLabel.className = "connection-pill offline";
+  }
 }
 
 async function openDashboard() {
@@ -1091,14 +1162,14 @@ async function loadAddons(instanceId) {
   if (!instanceId) return;
   const grid = document.getElementById("addonsGrid");
   if (!grid) return;
-  grid.innerHTML = `<p class="muted">Loading add-ons...</p>`;
+  renderAddonsSkeleton();
 
   try {
     cachedAddons = await api(`/api/instances/${instanceId}/addons`);
     renderAddons(cachedAddons);
   } catch (err) {
     grid.innerHTML = "";
-    showNotice(`Failed to load add-ons: ${err.message}`);
+    showNotice(formatFriendlyError(err));
   }
 }
 
