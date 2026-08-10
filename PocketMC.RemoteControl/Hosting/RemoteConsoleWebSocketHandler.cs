@@ -1,5 +1,6 @@
-﻿using System.Net.WebSockets;
+using System.Net.WebSockets;
 using System.Text.Json;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Http;
 using PocketMC.Application.Interfaces;
 using PocketMC.Application.Interfaces.Instances;
@@ -35,25 +36,60 @@ public sealed class RemoteConsoleWebSocketHandler
         }
 
         using WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
-        using var sendLock = new SemaphoreSlim(1, 1);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
 
+        var channel = Channel.CreateBounded<(string type, string line)>(new BoundedChannelOptions(500)
+        {
+            FullMode = BoundedChannelFullMode.DropOldest,
+            SingleReader = true,
+            SingleWriter = false
+        });
+
+        // Replay history directly to WebSocket first
         foreach (string line in process.OutputBuffer.ToArray())
         {
-            await SendLineAsync(socket, sendLock, "history", line, context.RequestAborted);
+            channel.Writer.TryWrite(("history", line));
         }
 
-        void OnOutput(string line) => _ = SendLineAsync(socket, sendLock, "stdout", line, CancellationToken.None);
-        void OnError(string line) => _ = SendLineAsync(socket, sendLock, "stderr", line, CancellationToken.None);
+        void OnOutput(string line) => channel.Writer.TryWrite(("stdout", line));
+        void OnError(string line) => channel.Writer.TryWrite(("stderr", line));
 
         process.OnOutputLine += OnOutput;
         process.OnErrorLine += OnError;
 
+        var sendTask = Task.Run(async () =>
+        {
+            try
+            {
+                while (await channel.Reader.WaitToReadAsync(cts.Token))
+                {
+                    while (channel.Reader.TryRead(out var msg))
+                    {
+                        if (socket.State != WebSocketState.Open) return;
+
+                        byte[] payload = JsonSerializer.SerializeToUtf8Bytes(
+                            new
+                            {
+                                type = msg.type,
+                                line = msg.line,
+                                timestampUtc = DateTimeOffset.UtcNow
+                            },
+                            JsonOptions);
+
+                        await socket.SendAsync(payload, WebSocketMessageType.Text, endOfMessage: true, cts.Token);
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch { }
+        });
+
         try
         {
             byte[] buffer = new byte[1024];
-            while (socket.State == WebSocketState.Open && !context.RequestAborted.IsCancellationRequested)
+            while (socket.State == WebSocketState.Open && !cts.IsCancellationRequested)
             {
-                WebSocketReceiveResult result = await socket.ReceiveAsync(buffer, context.RequestAborted);
+                WebSocketReceiveResult result = await socket.ReceiveAsync(buffer, cts.Token);
                 if (result.CloseStatus.HasValue)
                 {
                     break;
@@ -67,53 +103,14 @@ public sealed class RemoteConsoleWebSocketHandler
         {
             process.OnOutputLine -= OnOutput;
             process.OnErrorLine -= OnError;
+            channel.Writer.TryComplete();
+            cts.Cancel();
+            await sendTask;
 
             if (socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
             {
                 await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
             }
-        }
-    }
-
-    private static async Task SendLineAsync(
-        WebSocket socket,
-        SemaphoreSlim sendLock,
-        string type,
-        string line,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            if (socket.State != WebSocketState.Open)
-            {
-                return;
-            }
-
-            byte[] payload = JsonSerializer.SerializeToUtf8Bytes(
-                new
-                {
-                    type,
-                    line,
-                    timestampUtc = DateTimeOffset.UtcNow
-                },
-                JsonOptions);
-
-            await sendLock.WaitAsync(cancellationToken);
-            try
-            {
-                if (socket.State == WebSocketState.Open)
-                {
-                    await socket.SendAsync(payload, WebSocketMessageType.Text, endOfMessage: true, cancellationToken);
-                }
-            }
-            finally
-            {
-                sendLock.Release();
-            }
-        }
-        catch
-        {
-            // Ignore any socket/task cancellation exceptions to prevent unobserved task failures
         }
     }
 }

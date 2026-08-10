@@ -751,6 +751,10 @@ button:disabled {
   font-size: 10px;
 }
 
+.tab-content:not(.active) {
+  display: none !important;
+}
+
 /* Instance Selection Dashboard */
 .instance-selection-panel {
   background: transparent !important;
@@ -1690,6 +1694,20 @@ svg {
     width: 10px;
     height: 10px;
   }
+
+  .file-row, .backup-row {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .file-name, .backup-name {
+    font-size: 13px;
+  }
+
+  .file-actions button {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+  }
 }
 
 /* Fix white icons blending into light mode backgrounds */
@@ -2052,5 +2070,229 @@ svg {
   color: var(--text-secondary);
   max-width: 360px;
   margin: 0;
+}
+
+/* Files Manager Styles */
+.files-header-bar, .backups-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.files-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  cursor: pointer;
+  color: var(--primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.breadcrumb-item:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: var(--text-muted);
+}
+
+.files-list, .backups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-row, .backup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition);
+  flex-wrap: nowrap;
+}
+
+.file-row:hover, .backup-row:hover {
+  border-color: var(--text-primary);
+  background: var(--surface-raised);
+}
+
+.file-row.up-folder-row {
+  border-style: dashed;
+  opacity: 0.9;
+  background: var(--surface-muted);
+}
+
+.file-row.up-folder-row:hover {
+  border-color: var(--primary);
+  opacity: 1;
+}
+
+.file-info, .backup-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.file-icon, .backup-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--primary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-icon svg, .backup-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.file-name, .backup-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-meta, .backup-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 720px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--surface-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.code-editor {
+  width: 100%;
+  height: 360px;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--surface-border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .player-actions-row button,
+  .file-actions button,
+  .icon-button,
+  .tab-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .file-item-card,
+  .backup-item-card {
+    padding: 14px 12px;
+  }
+
+  .code-editor {
+    font-size: 12px;
+    height: 280px;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .modal-card {
+    max-height: 90vh;
+  }
 }
 

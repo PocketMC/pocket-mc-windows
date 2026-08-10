@@ -626,6 +626,8 @@ async function loadConsoleHistory() {
   }
 }
 
+let socketReconnectDelay = 1000;
+
 async function openConsoleSocket() {
   if (!selectedInstanceId) return;
   closeSocket();
@@ -635,11 +637,9 @@ async function openConsoleSocket() {
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   socket = new WebSocket(`${protocol}//${window.location.host}/ws/instances/${selectedInstanceId}/console`);
-  
-  els.consoleState.textContent = "Connecting";
-  els.consoleState.className = "state-label busy";
 
   socket.addEventListener("open", () => {
+    socketReconnectDelay = 1000;
     els.consoleState.textContent = "Live";
     els.consoleState.className = "state-label live";
   });
@@ -654,9 +654,16 @@ async function openConsoleSocket() {
     socket = null;
     if (lastInstanceStatus?.isRunning) {
       els.consoleState.textContent = "Reconnecting";
-      setTimeout(() => ensureConsoleConnection(lastInstanceStatus), 1200);
+      els.consoleState.className = "state-label busy";
+      setTimeout(() => {
+        if (lastInstanceStatus?.isRunning && !socket) {
+          openConsoleSocket();
+        }
+      }, socketReconnectDelay);
+      socketReconnectDelay = Math.min(Math.round(socketReconnectDelay * 1.5), 30000);
     } else {
       els.consoleState.textContent = "Offline";
+      els.consoleState.className = "state-label offline";
     }
   });
 }
@@ -835,6 +842,8 @@ els.tabs.forEach(tab => {
     if (tab.dataset.tab === "console") scrollConsole({ force: true });
     if (tab.dataset.tab === "settings") loadServerSettings(selectedInstanceId);
     if (tab.dataset.tab === "addons") loadAddons(selectedInstanceId);
+    if (tab.dataset.tab === "files") loadFiles(selectedInstanceId, currentFileDirectoryPath);
+    if (tab.dataset.tab === "backups") loadBackups(selectedInstanceId);
   });
 });
 
@@ -1243,6 +1252,311 @@ if (addonSearch) {
     const q = e.target.value.toLowerCase();
     const filtered = cachedAddons.filter(a => a.name.toLowerCase().includes(q) || a.addonType.toLowerCase().includes(q));
     renderAddons(filtered);
+  });
+}
+
+// ---------------------------------------------------------
+// Files Manager Logic
+// ---------------------------------------------------------
+let currentFileDirectoryPath = "";
+let currentEditingFilePath = null;
+
+async function loadFiles(instanceId, path = "") {
+  if (!instanceId) return;
+  currentFileDirectoryPath = path;
+  const container = document.getElementById("filesListContainer");
+  const noMsg = document.getElementById("noFilesMsg");
+  if (!container) return;
+
+  renderBreadcrumbs(path);
+  container.innerHTML = `<div class="skeleton-card" style="height: 60px;"><div class="skeleton-body"><div class="skeleton-line title skeleton-box"></div></div></div>`;
+
+  try {
+    const items = await api(`/api/instances/${instanceId}/files?path=${encodeURIComponent(path)}`);
+    renderFilesList(items);
+  } catch (err) {
+    container.innerHTML = "";
+    showNotice(formatFriendlyError(err));
+  }
+}
+
+function renderBreadcrumbs(path) {
+  const container = document.getElementById("filesBreadcrumb");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const rootItem = document.createElement("span");
+  rootItem.className = "breadcrumb-item";
+  rootItem.textContent = "root";
+  rootItem.addEventListener("click", () => loadFiles(selectedInstanceId, ""));
+  container.appendChild(rootItem);
+
+  if (!path) return;
+
+  const parts = path.split("/").filter(Boolean);
+  let acc = "";
+  parts.forEach(part => {
+    const sep = document.createElement("span");
+    sep.className = "breadcrumb-separator";
+    sep.textContent = " / ";
+    container.appendChild(sep);
+
+    acc = acc ? `${acc}/${part}` : part;
+    const currentAcc = acc;
+    const item = document.createElement("span");
+    item.className = "breadcrumb-item";
+    item.textContent = part;
+    item.addEventListener("click", () => loadFiles(selectedInstanceId, currentAcc));
+    container.appendChild(item);
+  });
+}
+
+function isTextFile(ext) {
+  if (!ext) return false;
+  const cleanExt = ext.toLowerCase();
+  const textExtensions = new Set([
+    ".json", ".txt", ".properties", ".yml", ".yaml", ".toml",
+    ".log", ".conf", ".config", ".ini", ".env", ".sh", ".bat",
+    ".cmd", ".ps1", ".md", ".mcfunction", ".sk", ".xml", ".html",
+    ".css", ".js", ".wlist"
+  ]);
+  return textExtensions.has(cleanExt);
+}
+
+function renderFilesList(items) {
+  const container = document.getElementById("filesListContainer");
+  const noMsg = document.getElementById("noFilesMsg");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (noMsg) noMsg.hidden = !!(items && items.length > 0) || !!currentFileDirectoryPath;
+
+  // Directory Back (..) Row
+  if (currentFileDirectoryPath) {
+    const upRow = document.createElement("div");
+    upRow.className = "file-row up-folder-row";
+    upRow.innerHTML = `
+      <div class="file-info">
+        <span class="file-icon">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </span>
+        <div>
+          <div class="file-name">..</div>
+          <div class="file-meta">Up one folder</div>
+        </div>
+      </div>
+    `;
+    upRow.addEventListener("click", () => {
+      const parentPath = currentFileDirectoryPath.includes("/")
+        ? currentFileDirectoryPath.substring(0, currentFileDirectoryPath.lastIndexOf("/"))
+        : "";
+      loadFiles(selectedInstanceId, parentPath);
+    });
+    container.appendChild(upRow);
+  }
+
+  if (!items || items.length === 0) return;
+
+  items.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "file-row";
+
+    const canEdit = !item.isDirectory && isTextFile(item.extension);
+    const iconSvg = item.isDirectory
+      ? `<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
+      : `<svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
+
+    row.innerHTML = `
+      <div class="file-info">
+        <span class="file-icon">${iconSvg}</span>
+        <div>
+          <div class="file-name">${escapeHtml(item.name)}</div>
+          <div class="file-meta">
+            ${item.isDirectory ? 'Folder' : formatFileSize(item.sizeBytes / 1024)}
+            ${!item.isDirectory && !canEdit ? ' &bull; Raw File' : ''}
+          </div>
+        </div>
+      </div>
+      <div class="file-actions">
+        ${canEdit ? `<button type="button" class="secondary-button btn-edit-file" style="padding: 4px 10px; font-size: 12px; margin-right: 6px;">Edit</button>` : ''}
+        <button type="button" class="danger-button btn-delete-file" style="padding: 4px 10px; font-size: 12px;">Delete</button>
+      </div>
+    `;
+
+    // Make card/row clickable
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".file-actions")) return;
+
+      if (item.isDirectory) {
+        loadFiles(selectedInstanceId, item.relativePath);
+      } else if (canEdit) {
+        openFileEditor(selectedInstanceId, item.relativePath);
+      } else {
+        showNotice(`Binary/raw file (${item.name}) cannot be edited in browser.`);
+      }
+    });
+
+    const editBtn = row.querySelector(".btn-edit-file");
+    if (editBtn) {
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openFileEditor(selectedInstanceId, item.relativePath);
+      });
+    }
+
+    row.querySelector(".btn-delete-file").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Are you sure you want to delete ${item.name}?`)) return;
+      try {
+        await api(`/api/instances/${selectedInstanceId}/files?path=${encodeURIComponent(item.relativePath)}`, { method: "DELETE" });
+        showNotice(`Deleted ${item.name}`);
+        loadFiles(selectedInstanceId, currentFileDirectoryPath);
+      } catch (err) {
+        showNotice(formatFriendlyError(err));
+      }
+    });
+
+    container.appendChild(row);
+  });
+}
+
+async function openFileEditor(instanceId, relativePath) {
+  const modal = document.getElementById("fileEditorModal");
+  const title = document.getElementById("editorFileName");
+  const textarea = document.getElementById("editorTextarea");
+  const saveBtn = document.getElementById("saveFileBtn");
+  if (!modal || !textarea) return;
+
+  currentEditingFilePath = relativePath;
+  title.textContent = relativePath;
+  textarea.value = "Loading content...";
+  modal.hidden = false;
+  if (saveBtn) saveBtn.hidden = false;
+
+  try {
+    const res = await api(`/api/instances/${instanceId}/files/content?path=${encodeURIComponent(relativePath)}`);
+    textarea.value = res.content || "";
+    const isReadOnly = !res.isText || res.isTruncated;
+    textarea.readOnly = isReadOnly;
+    if (saveBtn) saveBtn.hidden = isReadOnly;
+  } catch (err) {
+    textarea.value = `Error loading file content: ${err.message}`;
+    textarea.readOnly = true;
+    if (saveBtn) saveBtn.hidden = true;
+  }
+}
+
+const closeEditor = () => {
+  const modal = document.getElementById("fileEditorModal");
+  if (modal) modal.hidden = true;
+  currentEditingFilePath = null;
+};
+document.getElementById("closeEditorBtn")?.addEventListener("click", closeEditor);
+document.getElementById("cancelEditorBtn")?.addEventListener("click", closeEditor);
+
+document.getElementById("saveFileBtn")?.addEventListener("click", async () => {
+  if (!selectedInstanceId || !currentEditingFilePath) return;
+  const textarea = document.getElementById("editorTextarea");
+  const saveBtn = document.getElementById("saveFileBtn");
+  if (!textarea || !saveBtn) return;
+
+  try {
+    saveBtn.disabled = true;
+    await api(`/api/instances/${selectedInstanceId}/files/content`, {
+      method: "PUT",
+      body: JSON.stringify({
+        relativePath: currentEditingFilePath,
+        content: textarea.value
+      })
+    });
+    showNotice("File saved successfully.");
+    closeEditor();
+    loadFiles(selectedInstanceId, currentFileDirectoryPath);
+  } catch (err) {
+    showNotice(formatFriendlyError(err));
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+const refreshFilesBtn = document.getElementById("refreshFilesBtn");
+if (refreshFilesBtn) {
+  refreshFilesBtn.addEventListener("click", () => loadFiles(selectedInstanceId, currentFileDirectoryPath));
+}
+
+// ---------------------------------------------------------
+// Backups Manager Logic
+// ---------------------------------------------------------
+async function loadBackups(instanceId) {
+  if (!instanceId) return;
+  const container = document.getElementById("backupsListContainer");
+  const noMsg = document.getElementById("noBackupsMsg");
+  if (!container) return;
+
+  container.innerHTML = `<div class="skeleton-card" style="height: 70px;"><div class="skeleton-body"><div class="skeleton-line title skeleton-box"></div></div></div>`;
+
+  try {
+    const backups = await api(`/api/instances/${instanceId}/backups`);
+    renderBackupsList(backups);
+  } catch (err) {
+    container.innerHTML = "";
+    showNotice(formatFriendlyError(err));
+  }
+}
+
+function renderBackupsList(backups) {
+  const container = document.getElementById("backupsListContainer");
+  const noMsg = document.getElementById("noBackupsMsg");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (!backups || backups.length === 0) {
+    if (noMsg) noMsg.hidden = false;
+    return;
+  }
+  if (noMsg) noMsg.hidden = true;
+
+  backups.forEach(backup => {
+    const row = document.createElement("div");
+    row.className = "backup-row";
+
+    const dateStr = backup.createdAt ? new Date(backup.createdAt).toLocaleString() : "";
+    row.innerHTML = `
+      <div class="backup-info">
+        <span class="backup-icon">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+        </span>
+        <div>
+          <div class="backup-name">${escapeHtml(backup.fileName)}</div>
+          <div class="backup-meta">
+            <span>${formatFileSize(backup.sizeBytes / 1024)}</span>
+            <span>&bull;</span>
+            <span>${escapeHtml(dateStr)}</span>
+            ${backup.isAutomated ? '<span class="addon-badge" style="font-size: 9px; margin-left: 6px;">AUTO</span>' : ''}
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+const createBackupBtn = document.getElementById("createBackupBtn");
+if (createBackupBtn) {
+  createBackupBtn.addEventListener("click", async () => {
+    if (!selectedInstanceId) return;
+    try {
+      createBackupBtn.disabled = true;
+      showNotice("Creating server backup zip...");
+      const result = await api(`/api/instances/${selectedInstanceId}/backups`, { method: "POST" });
+      const nameStr = result?.fileName ? ` (${result.fileName})` : "";
+      showNotice(`Backup zip created successfully${nameStr}.`);
+      loadBackups(selectedInstanceId);
+    } catch (err) {
+      showNotice(formatFriendlyError(err));
+    } finally {
+      createBackupBtn.disabled = false;
+    }
   });
 }
 

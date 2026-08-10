@@ -465,10 +465,272 @@ public sealed class RemoteDashboardHost
             return Results.NotFound(new { error = "Addon target not found." });
         });
 
+        // ---------------------------------------------------------
+        // File Manager Endpoints
+        // ---------------------------------------------------------
+        api.MapGet("/instances/{instanceId:guid}/files", (Guid instanceId, string? path) =>
+        {
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+
+            string? targetPath = GetSanitizedPath(serverDir, path ?? string.Empty);
+            if (targetPath == null || (!Directory.Exists(targetPath) && !File.Exists(targetPath)))
+            {
+                return Results.BadRequest(new { error = "Invalid directory or file path." });
+            }
+
+            if (File.Exists(targetPath))
+            {
+                var fi = new FileInfo(targetPath);
+                return Results.Ok(new List<RemoteFileItemDto>
+                {
+                    new RemoteFileItemDto
+                    {
+                        Name = fi.Name,
+                        RelativePath = Path.GetRelativePath(serverDir, fi.FullName).Replace('\\', '/'),
+                        IsDirectory = false,
+                        SizeBytes = fi.Length,
+                        LastModified = fi.LastWriteTimeUtc,
+                        Extension = fi.Extension.ToLowerInvariant()
+                    }
+                });
+            }
+
+            var items = new List<RemoteFileItemDto>();
+            var dirInfo = new DirectoryInfo(targetPath);
+
+            foreach (var dir in dirInfo.GetDirectories())
+            {
+                if (dir.Name.StartsWith(".") && dir.Name != ".pocket-mc.json") continue;
+                items.Add(new RemoteFileItemDto
+                {
+                    Name = dir.Name,
+                    RelativePath = Path.GetRelativePath(serverDir, dir.FullName).Replace('\\', '/'),
+                    IsDirectory = true,
+                    SizeBytes = 0,
+                    LastModified = dir.LastWriteTimeUtc,
+                    Extension = string.Empty
+                });
+            }
+
+            foreach (var file in dirInfo.GetFiles())
+            {
+                items.Add(new RemoteFileItemDto
+                {
+                    Name = file.Name,
+                    RelativePath = Path.GetRelativePath(serverDir, file.FullName).Replace('\\', '/'),
+                    IsDirectory = false,
+                    SizeBytes = file.Length,
+                    LastModified = file.LastWriteTimeUtc,
+                    Extension = file.Extension.ToLowerInvariant()
+                });
+            }
+
+            return Results.Ok(items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase));
+        });
+
+        api.MapGet("/instances/{instanceId:guid}/files/content", (Guid instanceId, string? path) =>
+        {
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+
+            string? targetPath = GetSanitizedPath(serverDir, path ?? string.Empty);
+            if (targetPath == null || !File.Exists(targetPath)) return Results.BadRequest(new { error = "File not found." });
+
+            var fi = new FileInfo(targetPath);
+            if (fi.Length > 1 * 1024 * 1024)
+            {
+                return Results.Ok(new RemoteFileContentDto
+                {
+                    RelativePath = Path.GetRelativePath(serverDir, fi.FullName).Replace('\\', '/'),
+                    Content = "[File exceeds 1 MB limit for browser editing]",
+                    IsText = true,
+                    IsTruncated = true,
+                    SizeBytes = fi.Length
+                });
+            }
+
+            string ext = fi.Extension.ToLowerInvariant();
+            var binaryExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+                ".jar", ".zip", ".tar", ".gz", ".7z", ".rar",
+                ".png", ".jpg", ".jpeg", ".gif", ".ico",
+                ".dat", ".dat_old", ".mca", ".nbt", ".lock",
+                ".exe", ".dll", ".so", ".dylib", ".bin", ".db", ".sqlite", ".phar"
+            };
+            if (binaryExts.Contains(ext))
+            {
+                return Results.Ok(new RemoteFileContentDto
+                {
+                    RelativePath = Path.GetRelativePath(serverDir, fi.FullName).Replace('\\', '/'),
+                    Content = "[Binary file cannot be viewed in text editor]",
+                    IsText = false,
+                    SizeBytes = fi.Length
+                });
+            }
+
+            string text = File.ReadAllText(targetPath);
+            return Results.Ok(new RemoteFileContentDto
+            {
+                RelativePath = Path.GetRelativePath(serverDir, fi.FullName).Replace('\\', '/'),
+                Content = text,
+                IsText = true,
+                SizeBytes = fi.Length
+            });
+        });
+
+        api.MapPut("/instances/{instanceId:guid}/files/content", async (HttpContext context, Guid instanceId) =>
+        {
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+
+            var req = await ReadJsonAsync<SaveRemoteFileContentRequest>(context);
+            if (req == null || string.IsNullOrWhiteSpace(req.RelativePath)) return Results.BadRequest(new { error = "RelativePath is required." });
+
+            string? targetPath = GetSanitizedPath(serverDir, req.RelativePath);
+            if (targetPath == null) return Results.BadRequest(new { error = "Invalid file path." });
+
+            await File.WriteAllTextAsync(targetPath, req.Content ?? string.Empty);
+            _auditLogService.Log("remote", "file.save", instanceId, req.RelativePath);
+            return Results.Ok(new { success = true });
+        });
+
+        api.MapDelete("/instances/{instanceId:guid}/files", (Guid instanceId, string? path) =>
+        {
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+
+            if (string.IsNullOrWhiteSpace(path)) return Results.BadRequest(new { error = "Path is required." });
+
+            string? targetPath = GetSanitizedPath(serverDir, path);
+            if (targetPath == null || string.Equals(targetPath, Path.GetFullPath(serverDir), StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.BadRequest(new { error = "Cannot delete root instance folder." });
+            }
+
+            if (File.Exists(targetPath))
+            {
+                File.Delete(targetPath);
+                _auditLogService.Log("remote", "file.delete", instanceId, path);
+                return Results.Ok(new { success = true });
+            }
+            else if (Directory.Exists(targetPath))
+            {
+                Directory.Delete(targetPath, recursive: true);
+                _auditLogService.Log("remote", "file.delete_dir", instanceId, path);
+                return Results.Ok(new { success = true });
+            }
+
+            return Results.NotFound(new { error = "File or folder not found." });
+        });
+
+        // ---------------------------------------------------------
+        // Backups Endpoints
+        // ---------------------------------------------------------
+        api.MapGet("/instances/{instanceId:guid}/backups", (Guid instanceId) =>
+        {
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+
+            string backupDir = Path.Combine(serverDir, "backups");
+            var list = new List<RemoteBackupDto>();
+
+            if (Directory.Exists(backupDir))
+            {
+                var di = new DirectoryInfo(backupDir);
+                foreach (var zip in di.GetFiles("*.zip"))
+                {
+                    list.Add(new RemoteBackupDto
+                    {
+                        Id = zip.Name,
+                        FileName = zip.Name,
+                        SizeBytes = zip.Length,
+                        CreatedAt = zip.LastWriteTimeUtc,
+                        Type = "Local",
+                        IsAutomated = zip.Name.Contains("auto", StringComparison.OrdinalIgnoreCase)
+                    });
+                }
+            }
+
+            return Results.Ok(list.OrderByDescending(b => b.CreatedAt));
+        });
+
+        api.MapPost("/instances/{instanceId:guid}/backups", (Guid instanceId) =>
+        {
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+
+            string backupDir = Path.Combine(serverDir, "backups");
+            Directory.CreateDirectory(backupDir);
+            string backupName = $"manual-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip";
+            string zipPath = Path.Combine(backupDir, backupName);
+
+            try
+            {
+                CreateSafeBackupZip(serverDir, zipPath);
+                _auditLogService.Log("remote", "backup.create", instanceId, backupName);
+                return Results.Ok(new { success = true, fileName = backupName });
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { error = $"Failed to create backup zip: {ex.Message}" });
+            }
+        });
+
         app.Map("/ws/instances/{instanceId:guid}/console", async (HttpContext context, Guid instanceId) =>
         {
             await _webSocketHandler.HandleAsync(context, instanceId);
         });
+    }
+
+    private static void CreateSafeBackupZip(string serverDir, string destinationZipPath)
+    {
+        string tempZipPath = Path.Combine(Path.GetTempPath(), $"pocketmc-backup-{Guid.NewGuid():N}.tmp");
+        string fullServerDir = Path.GetFullPath(serverDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string backupsSubDir = Path.Combine(fullServerDir, "backups");
+
+        try
+        {
+            using (var zipStream = new FileStream(tempZipPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var archive = new System.IO.Compression.ZipArchive(zipStream, System.IO.Compression.ZipArchiveMode.Create))
+            {
+                var files = Directory.EnumerateFiles(fullServerDir, "*", SearchOption.AllDirectories);
+                foreach (var filePath in files)
+                {
+                    string fullFilePath = Path.GetFullPath(filePath);
+                    if (fullFilePath.StartsWith(backupsSubDir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    string relativePath = Path.GetRelativePath(fullServerDir, fullFilePath).Replace('\\', '/');
+                    var entry = archive.CreateEntry(relativePath, System.IO.Compression.CompressionLevel.Optimal);
+
+                    try
+                    {
+                        using var fileStream = new FileStream(fullFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var entryStream = entry.Open();
+                        fileStream.CopyTo(entryStream);
+                    }
+                    catch
+                    {
+                        // Safely skip unreadable locked files (e.g., active session locks)
+                    }
+                }
+            }
+
+            if (File.Exists(destinationZipPath))
+            {
+                File.Delete(destinationZipPath);
+            }
+            File.Move(tempZipPath, destinationZipPath);
+        }
+        finally
+        {
+            if (File.Exists(tempZipPath))
+            {
+                try { File.Delete(tempZipPath); } catch { }
+            }
+        }
     }
 
     private static IResult ToActionResult(RemoteControlActionResult result)
@@ -575,6 +837,20 @@ public sealed class RemoteDashboardHost
         }
 
         return result;
+    }
+
+    private static string? GetSanitizedPath(string baseDir, string relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(baseDir) || !Directory.Exists(baseDir)) return null;
+        string fullBase = Path.GetFullPath(baseDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        string combined = Path.GetFullPath(Path.Combine(fullBase, (relativePath ?? string.Empty).TrimStart('/', '\\')));
+        if (!combined.StartsWith(fullBase + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(combined, fullBase, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+        return combined;
     }
 }
 
