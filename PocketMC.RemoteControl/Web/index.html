@@ -115,6 +115,10 @@
             <svg viewBox="0 0 24 24" class="tab-icon"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
             <span class="tab-text">Overview</span>
           </button>
+          <button class="tab-button" data-tab="settings" type="button">
+            <svg viewBox="0 0 24 24" class="tab-icon"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="tab-text">Settings</span>
+          </button>
           <button class="tab-button" data-tab="console" type="button">
             <svg viewBox="0 0 24 24" class="tab-icon"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
             <span class="tab-text">Console</span>
@@ -122,6 +126,10 @@
           <button class="tab-button" data-tab="players" type="button">
             <svg viewBox="0 0 24 24" class="tab-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span class="tab-text">Players</span>
+          </button>
+          <button class="tab-button" data-tab="addons" type="button">
+            <svg viewBox="0 0 24 24" class="tab-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span class="tab-text">Add-ons</span>
           </button>
         </nav>
 
@@ -227,6 +235,123 @@
           </div>
         </div>
 
+        <div id="tab-settings" class="tab-content panel settings-panel" hidden>
+          <div class="section-head">
+            <div class="title-area">
+              <p class="eyebrow">Configuration</p>
+              <div class="title-row">
+                <h2>Server Settings</h2>
+              </div>
+            </div>
+          </div>
+
+          <form id="settingsForm" class="settings-form">
+            <div class="settings-grid">
+              <div class="settings-card">
+                <h3>General Settings</h3>
+                
+                <div class="form-group">
+                  <label for="settingMotd">Server MOTD / Name</label>
+                  <input type="text" id="settingMotd" class="form-input" placeholder="A Minecraft Server" />
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="settingGamemode">Gamemode</label>
+                    <select id="settingGamemode" class="form-input">
+                      <option value="survival">Survival</option>
+                      <option value="creative">Creative</option>
+                      <option value="adventure">Adventure</option>
+                      <option value="spectator">Spectator</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settingDifficulty">Difficulty</label>
+                    <select id="settingDifficulty" class="form-input">
+                      <option value="peaceful">Peaceful</option>
+                      <option value="easy">Easy</option>
+                      <option value="normal">Normal</option>
+                      <option value="hard">Hard</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="settingMaxPlayers">Max Players</label>
+                    <input type="number" id="settingMaxPlayers" class="form-input" min="1" max="1000" />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settingViewDistance">View Distance (Chunks)</label>
+                    <input type="number" id="settingViewDistance" class="form-input" min="2" max="32" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="settingSeed">World Seed</label>
+                  <input type="text" id="settingSeed" class="form-input" placeholder="Seed (optional)" />
+                </div>
+              </div>
+
+              <div class="settings-card">
+                <h3>Gameplay Rules & Toggles</h3>
+
+                <div class="toggle-list">
+                  <label class="toggle-item">
+                    <input type="checkbox" id="settingPvp" />
+                    <div class="toggle-info">
+                      <span class="toggle-title">Enable PVP</span>
+                      <span class="toggle-desc">Allow players to attack each other</span>
+                    </div>
+                  </label>
+
+                  <label class="toggle-item">
+                    <input type="checkbox" id="settingWhitelist" />
+                    <div class="toggle-info">
+                      <span class="toggle-title">Enforce Whitelist</span>
+                      <span class="toggle-desc">Only allowed players can join</span>
+                    </div>
+                  </label>
+
+                  <label class="toggle-item">
+                    <input type="checkbox" id="settingAllowFlight" />
+                    <div class="toggle-info">
+                      <span class="toggle-title">Allow Flight</span>
+                      <span class="toggle-desc">Allow flying in survival mode</span>
+                    </div>
+                  </label>
+
+                  <label class="toggle-item">
+                    <input type="checkbox" id="settingAllowCommandBlock" />
+                    <div class="toggle-info">
+                      <span class="toggle-title">Command Blocks</span>
+                      <span class="toggle-desc">Enable command blocks execution</span>
+                    </div>
+                  </label>
+
+                  <label class="toggle-item">
+                    <input type="checkbox" id="settingAllowNether" />
+                    <div class="toggle-info">
+                      <span class="toggle-title">Allow Nether</span>
+                      <span class="toggle-desc">Enable nether dimension portals</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-actions">
+              <button type="submit" class="primary-button" id="btnSaveSettings">
+                <span class="btn-spinner" hidden></span>
+                <span>Save Settings</span>
+              </button>
+              <span id="settingsSaveStatus" class="status-msg" hidden></span>
+            </div>
+          </form>
+        </div>
+
         <div id="tab-players" class="tab-content panel players-panel" hidden>
           <div class="section-head">
             <div class="title-area">
@@ -264,6 +389,14 @@
               <label class="filter-label"><input type="checkbox" id="filterError" checked> Error</label>
             </div>
           </div>
+          <div class="quick-commands-bar">
+            <span class="quick-cmd-title">Quick Actions:</span>
+            <button class="quick-cmd-btn" type="button" data-cmd="time set day">⚡ Day</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="time set night">⚡ Night</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="weather clear">⚡ Clear Weather</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="save-all">⚡ Save All</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="list">⚡ List Players</button>
+          </div>
           <div id="consoleOutput" class="console-output"></div>
           <form id="commandForm" class="command-row">
             <input id="commandInput" type="text" autocomplete="off" placeholder="Type a console command">
@@ -275,6 +408,30 @@
             </button>
           </form>
           <p id="commandDisabled" class="muted" hidden>Console commands are disabled in PocketMC Desktop.</p>
+        </div>
+
+        <div id="tab-addons" class="tab-content panel addons-panel" hidden>
+          <div class="section-head">
+            <div class="title-area">
+              <p class="eyebrow">Installed Add-ons</p>
+              <div class="title-row">
+                <h2>Plugins & Add-ons</h2>
+                <span id="addonsCountBadge" class="state-label">0 items</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="search-container addons-search">
+            <span class="search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input type="text" id="addonSearchInput" placeholder="Filter plugins & add-ons..." autocomplete="off" />
+          </div>
+
+          <div id="addonsGrid" class="addons-grid">
+            <!-- Dynamically populated by JS -->
+          </div>
+          <p id="noAddonsMsg" class="muted" hidden>No plugins or add-ons installed.</p>
         </div>
       </section>
 

@@ -744,12 +744,17 @@ async function performPlayerAction(action, reason = null) {
 els.tabs.forEach(tab => {
   tab.addEventListener("click", () => {
     els.tabs.forEach(t => t.classList.remove("active"));
-    els.tabContents.forEach(c => { c.classList.remove("active"); c.hidden = true; });
+    const allTabContents = document.querySelectorAll(".tab-content");
+    allTabContents.forEach(c => { c.classList.remove("active"); c.hidden = true; });
     tab.classList.add("active");
     const content = document.getElementById(`tab-${tab.dataset.tab}`);
-    content.classList.add("active");
-    content.hidden = false;
+    if (content) {
+      content.classList.add("active");
+      content.hidden = false;
+    }
     if (tab.dataset.tab === "console") scrollConsole({ force: true });
+    if (tab.dataset.tab === "settings") loadServerSettings(selectedInstanceId);
+    if (tab.dataset.tab === "addons") loadAddons(selectedInstanceId);
   });
 });
 
@@ -968,3 +973,185 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+// ---------------------------------------------------------
+// Quick Commands Shortcuts
+// ---------------------------------------------------------
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".quick-cmd-btn");
+  if (!btn) return;
+  const cmd = btn.dataset.cmd;
+  if (!cmd || !selectedInstanceId) return;
+
+  btn.disabled = true;
+  try {
+    await api(`/api/instances/${selectedInstanceId}/console/command`, {
+      method: "POST",
+      body: JSON.stringify({ command: cmd })
+    });
+    showNotice(`Sent command: /${cmd}`);
+  } catch (err) {
+    showNotice(`Failed to send command: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------------------------------------------------------
+// Settings Logic
+// ---------------------------------------------------------
+async function loadServerSettings(instanceId) {
+  if (!instanceId) return;
+  try {
+    const props = await api(`/api/instances/${instanceId}/properties`);
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : ""; };
+    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+    setVal("settingMotd", props.motd);
+    setVal("settingGamemode", props.gamemode);
+    setVal("settingDifficulty", props.difficulty);
+    setVal("settingMaxPlayers", props.maxPlayers);
+    setVal("settingViewDistance", props.viewDistance);
+    setVal("settingSeed", props.seed);
+    setChk("settingPvp", props.pvp);
+    setChk("settingWhitelist", props.whitelist);
+    setChk("settingAllowFlight", props.allowFlight);
+    setChk("settingAllowCommandBlock", props.allowCommandBlock);
+    setChk("settingAllowNether", props.allowNether);
+  } catch (err) {
+    showNotice(`Failed to load server settings: ${err.message}`);
+  }
+}
+
+const settingsForm = document.getElementById("settingsForm");
+if (settingsForm) {
+  settingsForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!selectedInstanceId) return;
+    const saveBtn = document.getElementById("btnSaveSettings");
+    const statusMsg = document.getElementById("settingsSaveStatus");
+    if (saveBtn) saveBtn.disabled = true;
+    if (statusMsg) {
+      statusMsg.hidden = false;
+      statusMsg.className = "status-msg";
+      statusMsg.textContent = "Saving settings...";
+    }
+
+    try {
+      const payload = {
+        motd: document.getElementById("settingMotd")?.value || "",
+        gamemode: document.getElementById("settingGamemode")?.value || "survival",
+        difficulty: document.getElementById("settingDifficulty")?.value || "easy",
+        maxPlayers: parseInt(document.getElementById("settingMaxPlayers")?.value) || 20,
+        viewDistance: document.getElementById("settingViewDistance")?.value || "10",
+        seed: document.getElementById("settingSeed")?.value || "",
+        pvp: document.getElementById("settingPvp")?.checked ?? true,
+        whitelist: document.getElementById("settingWhitelist")?.checked ?? false,
+        allowFlight: document.getElementById("settingAllowFlight")?.checked ?? false,
+        allowCommandBlock: document.getElementById("settingAllowCommandBlock")?.checked ?? false,
+        allowNether: document.getElementById("settingAllowNether")?.checked ?? true
+      };
+
+      await api(`/api/instances/${selectedInstanceId}/properties`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+
+      if (statusMsg) {
+        statusMsg.textContent = "Settings saved successfully!";
+        setTimeout(() => { statusMsg.hidden = true; }, 3000);
+      }
+      showNotice("Server properties updated.");
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.className = "status-msg error";
+        statusMsg.textContent = `Error: ${err.message}`;
+      }
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  });
+}
+
+// ---------------------------------------------------------
+// Addons Logic
+// ---------------------------------------------------------
+let cachedAddons = [];
+
+async function loadAddons(instanceId) {
+  if (!instanceId) return;
+  const grid = document.getElementById("addonsGrid");
+  if (!grid) return;
+  grid.innerHTML = `<p class="muted">Loading add-ons...</p>`;
+
+  try {
+    cachedAddons = await api(`/api/instances/${instanceId}/addons`);
+    renderAddons(cachedAddons);
+  } catch (err) {
+    grid.innerHTML = "";
+    showNotice(`Failed to load add-ons: ${err.message}`);
+  }
+}
+
+function renderAddons(addons) {
+  const grid = document.getElementById("addonsGrid");
+  const noMsg = document.getElementById("noAddonsMsg");
+  const countBadge = document.getElementById("addonsCountBadge");
+  if (!grid) return;
+  grid.innerHTML = "";
+  if (countBadge) countBadge.textContent = `${addons.length} item${addons.length === 1 ? "" : "s"}`;
+
+  if (!addons || addons.length === 0) {
+    if (noMsg) noMsg.hidden = false;
+    return;
+  }
+  if (noMsg) noMsg.hidden = true;
+
+  addons.forEach(addon => {
+    const card = document.createElement("div");
+    card.className = "addon-card";
+    const badgeClass = addon.addonType === "plugin" ? "plugin" : "pack";
+    
+    card.innerHTML = `
+      <div class="addon-header">
+        <div class="addon-title-group">
+          <h4 class="addon-name">${escapeHtml(addon.name)}</h4>
+          <span class="addon-meta">${addon.sizeKb > 0 ? addon.sizeKb + ' KB' : 'Folder'}</span>
+        </div>
+        <span class="addon-badge ${badgeClass}">${escapeHtml(addon.addonType)}</span>
+      </div>
+      <div class="addon-actions">
+        <button type="button" class="danger-button action-btn btn-uninstall-addon" data-path="${escapeHtml(addon.filePath)}">
+          Uninstall
+        </button>
+      </div>
+    `;
+
+    card.querySelector(".btn-uninstall-addon").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Are you sure you want to uninstall ${addon.name}?`)) return;
+      try {
+        await api(`/api/instances/${selectedInstanceId}/addons/uninstall`, {
+          method: "POST",
+          body: JSON.stringify({ addonPathOrId: addon.filePath })
+        });
+        showNotice(`Uninstalled ${addon.name}`);
+        loadAddons(selectedInstanceId);
+      } catch (err) {
+        showNotice(`Failed to uninstall: ${err.message}`);
+      }
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+const addonSearch = document.getElementById("addonSearchInput");
+if (addonSearch) {
+  addonSearch.addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    const filtered = cachedAddons.filter(a => a.name.toLowerCase().includes(q) || a.addonType.toLowerCase().includes(q));
+    renderAddons(filtered);
+  });
+}
+
