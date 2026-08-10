@@ -13,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PocketMC.Application.Interfaces;
 using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Application.Services.Instances;
 using PocketMC.Domain.Models;
 using PocketMC.RemoteControl.Services;
 using PocketMC.RemoteControl.Tunnels;
@@ -37,6 +38,8 @@ public sealed class RemoteDashboardHost
     private readonly LocalNetworkAddressService _localNetworkAddressService;
     private readonly RemoteAuthenticationService _authenticationService;
     private readonly ILogger<RemoteDashboardHost> _logger;
+    private readonly InstanceRegistry? _instanceRegistry;
+    private readonly ServerConfigurationService? _serverConfigurationService;
     private readonly SemaphoreSlim _startGate = new(1, 1);
     private WebApplication? _app;
 
@@ -52,7 +55,9 @@ public sealed class RemoteDashboardHost
         RemoteTunnelManager tunnelManager,
         LocalNetworkAddressService localNetworkAddressService,
         RemoteAuthenticationService authenticationService,
-        ILogger<RemoteDashboardHost> logger)
+        ILogger<RemoteDashboardHost> logger,
+        InstanceRegistry? instanceRegistry = null,
+        ServerConfigurationService? serverConfigurationService = null)
     {
         _applicationState = applicationState;
         _statusService = statusService;
@@ -66,6 +71,8 @@ public sealed class RemoteDashboardHost
         _localNetworkAddressService = localNetworkAddressService;
         _authenticationService = authenticationService;
         _logger = logger;
+        _instanceRegistry = instanceRegistry;
+        _serverConfigurationService = serverConfigurationService;
     }
 
     public bool IsRunning => _app != null;
@@ -340,6 +347,123 @@ public sealed class RemoteDashboardHost
             });
         }
 
+        api.MapGet("/instances/{instanceId:guid}/properties", (Guid instanceId) =>
+        {
+            var metadata = _instanceRegistry?.GetById(instanceId);
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (metadata == null || string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
+            {
+                return Results.NotFound();
+            }
+
+            var config = _serverConfigurationService?.Load(metadata, serverDir);
+            if (config == null)
+            {
+                return Results.NotFound();
+            }
+
+            var dto = new RemoteServerPropertiesDto
+            {
+                Motd = config.Motd ?? string.Empty,
+                Gamemode = config.Gamemode ?? "survival",
+                Difficulty = config.Difficulty ?? "easy",
+                MaxPlayers = int.TryParse(config.MaxPlayers, out int mp) ? mp : 20,
+                Pvp = config.Pvp,
+                Whitelist = config.WhiteList,
+                AllowFlight = config.AllowFlight,
+                AllowCommandBlock = config.AllowCommandBlock,
+                AllowNether = config.AllowNether,
+                ViewDistance = config.ViewDistance ?? "10",
+                Seed = config.Seed ?? string.Empty
+            };
+
+            return Results.Ok(dto);
+        });
+
+        api.MapPut("/instances/{instanceId:guid}/properties", async (HttpContext context, Guid instanceId) =>
+        {
+            var metadata = _instanceRegistry?.GetById(instanceId);
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (metadata == null || string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
+            {
+                return Results.NotFound();
+            }
+
+            var request = await ReadJsonAsync<RemoteServerPropertiesDto>(context);
+            if (request == null)
+            {
+                return Results.BadRequest(new { error = "Invalid properties payload" });
+            }
+
+            var config = _serverConfigurationService?.Load(metadata, serverDir) ?? new ServerConfiguration();
+            config.Motd = request.Motd ?? config.Motd;
+            config.Gamemode = request.Gamemode ?? config.Gamemode;
+            config.Difficulty = request.Difficulty ?? config.Difficulty;
+            config.MaxPlayers = request.MaxPlayers > 0 ? request.MaxPlayers.ToString() : config.MaxPlayers;
+            config.Pvp = request.Pvp;
+            config.WhiteList = request.Whitelist;
+            config.AllowFlight = request.AllowFlight;
+            config.AllowCommandBlock = request.AllowCommandBlock;
+            config.AllowNether = request.AllowNether;
+            if (!string.IsNullOrWhiteSpace(request.ViewDistance)) config.ViewDistance = request.ViewDistance;
+            if (!string.IsNullOrWhiteSpace(request.Seed)) config.Seed = request.Seed;
+
+            _serverConfigurationService?.Save(metadata, serverDir, config);
+            _auditLogService.Log("remote", "instance.properties_update", instanceId);
+
+            return Results.Ok(new { success = true });
+        });
+
+        api.MapGet("/instances/{instanceId:guid}/addons", (Guid instanceId) =>
+        {
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
+            {
+                return Results.NotFound();
+            }
+
+            var addons = GetInstalledAddonsForInstance(serverDir);
+            return Results.Ok(addons);
+        });
+
+        api.MapPost("/instances/{instanceId:guid}/addons/uninstall", async (HttpContext context, Guid instanceId) =>
+        {
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
+            {
+                return Results.NotFound();
+            }
+
+            var request = await ReadJsonAsync<RemoteUninstallAddonRequest>(context);
+            if (string.IsNullOrWhiteSpace(request?.AddonPathOrId))
+            {
+                return Results.BadRequest(new { error = "Addon path is required." });
+            }
+
+            string fullServerDir = Path.GetFullPath(serverDir);
+            string targetPath = Path.GetFullPath(Path.Combine(serverDir, request.AddonPathOrId.TrimStart('/', '\\')));
+
+            if (!targetPath.StartsWith(fullServerDir, StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.BadRequest(new { error = "Path is outside instance folder." });
+            }
+
+            if (File.Exists(targetPath))
+            {
+                File.Delete(targetPath);
+                _auditLogService.Log("remote", "addon.uninstall", instanceId, request.AddonPathOrId);
+                return Results.Ok(new { success = true });
+            }
+            else if (Directory.Exists(targetPath))
+            {
+                Directory.Delete(targetPath, recursive: true);
+                _auditLogService.Log("remote", "addon.uninstall", instanceId, request.AddonPathOrId);
+                return Results.Ok(new { success = true });
+            }
+
+            return Results.NotFound(new { error = "Addon target not found." });
+        });
+
         app.Map("/ws/instances/{instanceId:guid}/console", async (HttpContext context, Guid instanceId) =>
         {
             await _webSocketHandler.HandleAsync(context, instanceId);
@@ -391,6 +515,51 @@ public sealed class RemoteDashboardHost
         }
 
         return await JsonSerializer.DeserializeAsync<T>(context.Request.Body, JsonOptions);
+    }
+
+    private static List<RemoteAddonDto> GetInstalledAddonsForInstance(string serverDir)
+    {
+        var result = new List<RemoteAddonDto>();
+        string[] subdirs = new[] { "plugins", "mods", "behavior_packs", "resource_packs" };
+
+        foreach (var dirName in subdirs)
+        {
+            string dirPath = Path.Combine(serverDir, dirName);
+            if (!Directory.Exists(dirPath)) continue;
+
+            var dirInfo = new DirectoryInfo(dirPath);
+            foreach (var file in dirInfo.GetFiles("*.*", SearchOption.TopDirectoryOnly))
+            {
+                string ext = file.Extension.ToLowerInvariant();
+                if (ext == ".jar" || ext == ".phar" || ext == ".mcpack" || ext == ".zip")
+                {
+                    string relPath = Path.Combine(dirName, file.Name).Replace('\\', '/');
+                    result.Add(new RemoteAddonDto
+                    {
+                        Name = file.Name,
+                        FilePath = relPath,
+                        SizeKb = Math.Round(file.Length / 1024.0, 1),
+                        LastModified = file.LastWriteTimeUtc.ToString("o"),
+                        AddonType = ext == ".jar" || ext == ".phar" ? "plugin" : "pack"
+                    });
+                }
+            }
+
+            foreach (var subDir in dirInfo.GetDirectories())
+            {
+                string relPath = Path.Combine(dirName, subDir.Name).Replace('\\', '/');
+                result.Add(new RemoteAddonDto
+                {
+                    Name = subDir.Name,
+                    FilePath = relPath,
+                    SizeKb = 0,
+                    LastModified = subDir.LastWriteTimeUtc.ToString("o"),
+                    AddonType = "pack"
+                });
+            }
+        }
+
+        return result;
     }
 }
 
