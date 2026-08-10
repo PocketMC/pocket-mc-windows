@@ -788,18 +788,30 @@ button:disabled {
 
 .search-icon {
   position: absolute;
-  left: 14px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted);
+  color: var(--text-secondary);
   pointer-events: none;
   display: flex;
   align-items: center;
+  justify-content: center;
+  z-index: 2;
 }
 
-#instanceSearchInput {
+.search-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.search-container input {
   width: 100%;
-  padding: 10px 12px 10px 38px;
+  padding: 10px 12px 10px 36px !important;
   background: var(--surface-muted);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-sm);
@@ -809,7 +821,7 @@ button:disabled {
   transition: var(--transition);
 }
 
-#instanceSearchInput:focus {
+.search-container input:focus {
   outline: none;
   border-color: var(--text-primary);
 }
@@ -830,6 +842,33 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.title-with-pin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.pinned-badge, .card-pinned-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-soft, rgba(16, 185, 129, 0.1));
+  border: 1px solid var(--primary);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
 }
 
 .instance-card:hover {
@@ -1567,6 +1606,43 @@ svg {
   .console-output {
     height: 300px;
   }
+
+  .tabs-nav {
+    padding: 4px 8px;
+    gap: 2px;
+  }
+  
+  .tab-button {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    padding: 4px 2px;
+    font-size: 10px;
+  }
+
+  .tab-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .form-row-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .addons-search {
+    max-width: 100%;
+  }
+
+  .addons-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1590,6 +1666,32 @@ svg {
   
   .command-row button .button-icon {
     margin: 0;
+  }
+
+  .quick-commands-bar {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .quick-cmd-btn {
+    padding: 6px 8px;
+    font-size: 11px;
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .quick-cmd-title {
+    width: 100%;
+    margin-bottom: 2px;
+  }
+
+  .tab-button {
+    font-size: 9px;
+  }
+
+  .tab-icon {
+    width: 16px;
+    height: 16px;
   }
 }
 

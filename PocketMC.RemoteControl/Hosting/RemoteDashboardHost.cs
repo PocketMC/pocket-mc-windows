@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Application.Interfaces;
 using PocketMC.Application.Interfaces.Instances;
 using PocketMC.Application.Services.Instances;
+using PocketMC.Infrastructure.Mods;
 using PocketMC.Domain.Models;
 using PocketMC.RemoteControl.Services;
 using PocketMC.RemoteControl.Tunnels;
@@ -533,10 +534,24 @@ public sealed class RemoteDashboardHost
                 string ext = file.Extension.ToLowerInvariant();
                 if (ext == ".jar" || ext == ".phar" || ext == ".mcpack" || ext == ".zip")
                 {
+                    string name = file.Name;
+                    if (ext == ".jar")
+                    {
+                        try
+                        {
+                            var meta = JavaModMetadataService.ScanJar(file.FullName);
+                            if (!string.IsNullOrWhiteSpace(meta?.DisplayName))
+                            {
+                                name = meta.DisplayName;
+                            }
+                        }
+                        catch { }
+                    }
+
                     string relPath = Path.Combine(dirName, file.Name).Replace('\\', '/');
                     result.Add(new RemoteAddonDto
                     {
-                        Name = file.Name,
+                        Name = name,
                         FilePath = relPath,
                         SizeKb = Math.Round(file.Length / 1024.0, 1),
                         LastModified = file.LastWriteTimeUtc.ToString("o"),

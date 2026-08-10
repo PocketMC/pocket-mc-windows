@@ -11,4 +11,5 @@ public sealed class RemoteInstanceDto
     public string MinecraftVersion { get; set; } = string.Empty;
     public int PlayerCount { get; set; }
     public int MaxPlayers { get; set; }
+    public bool IsPinned { get; set; }
 }

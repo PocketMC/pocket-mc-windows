@@ -100,7 +100,13 @@
 
         <div class="server-info-card">
           <div class="server-title-row-detail">
-            <h2 id="serverName">Select a server</h2>
+            <div class="title-with-pin">
+              <h2 id="serverName">Select a server</h2>
+              <span id="pinnedBadge" class="pinned-badge" title="Pinned Instance" hidden>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+                Pinned
+              </span>
+            </div>
             <div class="server-badges-row">
               <span id="statusPill" class="status-pill offline">Offline</span>
               <span id="serverVersionBadge" class="meta-badge">v1.20.1</span>
@@ -391,11 +397,11 @@
           </div>
           <div class="quick-commands-bar">
             <span class="quick-cmd-title">Quick Actions:</span>
-            <button class="quick-cmd-btn" type="button" data-cmd="time set day">⚡ Day</button>
-            <button class="quick-cmd-btn" type="button" data-cmd="time set night">⚡ Night</button>
-            <button class="quick-cmd-btn" type="button" data-cmd="weather clear">⚡ Clear Weather</button>
-            <button class="quick-cmd-btn" type="button" data-cmd="save-all">⚡ Save All</button>
-            <button class="quick-cmd-btn" type="button" data-cmd="list">⚡ List Players</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="time set day">Day</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="time set night">Night</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="weather clear">Clear Weather</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="save-all">Save All</button>
+            <button class="quick-cmd-btn" type="button" data-cmd="list">List Players</button>
           </div>
           <div id="consoleOutput" class="console-output"></div>
           <form id="commandForm" class="command-row">

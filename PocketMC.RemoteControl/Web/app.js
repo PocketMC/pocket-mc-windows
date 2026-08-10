@@ -83,7 +83,8 @@ const els = {
   cpuProgressBar: document.querySelector("#cpuProgressBar"),
   ramProgressBar: document.querySelector("#ramProgressBar"),
   playersAvatarList: document.querySelector("#playersAvatarList"),
-  themeToggle: document.querySelector("#themeToggle")
+  themeToggle: document.querySelector("#themeToggle"),
+  pinnedBadge: document.querySelector("#pinnedBadge")
 };
 
 let selectedInstanceId = localStorage.getItem(instanceKey);
@@ -232,6 +233,8 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
     if (reconnectConsole) {
       historyLoadedForInstance = null;
       closeSocket();
+      loadServerSettings(selectedInstanceId);
+      loadAddons(selectedInstanceId);
     }
     await ensureConsoleConnection(instanceStatus);
   }
@@ -263,8 +266,8 @@ function renderSelectionView(instances) {
     const statusClass = isOnline ? "online" : (isBusy ? "busy" : "offline");
     const statusText = isBusy ? (inst.state || "").toUpperCase() : (isOnline ? "ONLINE" : "OFFLINE");
 
-    const playerCount = inst.playerCount !== undefined ? inst.playerCount : 0;
-    const maxPlayers = inst.maxPlayers !== undefined ? inst.maxPlayers : 20;
+    const isPinned = !!inst.isPinned;
+    const pinBadgeHtml = isPinned ? `<span class="card-pinned-badge" title="Pinned to top"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg> Pinned</span>` : '';
 
     card.innerHTML = `
       <div class="instance-card-header">
@@ -272,7 +275,10 @@ function renderSelectionView(instances) {
           <img src="${getServerIcon(inst.serverType)}" alt="" class="instance-card-icon" />
         </div>
         <div class="instance-card-info">
-          <h3>${escapeHtml(inst.name)}</h3>
+          <div class="card-title-row">
+            <h3>${escapeHtml(inst.name)}</h3>
+            ${pinBadgeHtml}
+          </div>
           <p>${escapeHtml(inst.serverType)} ${escapeHtml(inst.minecraftVersion || "")}</p>
         </div>
       </div>
@@ -324,6 +330,10 @@ function renderStatus(remoteStatus, instanceStatus) {
   els.serverName.textContent = instanceStatus.name;
   els.serverType.textContent = instanceStatus.serverType;
   
+  if (els.pinnedBadge) {
+    els.pinnedBadge.hidden = !instanceStatus.isPinned;
+  }
+
   if (els.serverVersionBadge) {
     els.serverVersionBadge.textContent = instanceStatus.minecraftVersion ? `v${instanceStatus.minecraftVersion}` : "v1.20.1";
   }
@@ -1093,6 +1103,17 @@ async function loadAddons(instanceId) {
   }
 }
 
+function formatFileSize(sizeKb) {
+  if (!sizeKb || sizeKb <= 0) return 'Folder';
+  if (sizeKb >= 1024 * 1024) {
+    return (sizeKb / (1024 * 1024)).toFixed(1) + ' GB';
+  }
+  if (sizeKb >= 1024) {
+    return (sizeKb / 1024).toFixed(1) + ' MB';
+  }
+  return sizeKb.toFixed(1) + ' KB';
+}
+
 function renderAddons(addons) {
   const grid = document.getElementById("addonsGrid");
   const noMsg = document.getElementById("noAddonsMsg");
@@ -1116,7 +1137,7 @@ function renderAddons(addons) {
       <div class="addon-header">
         <div class="addon-title-group">
           <h4 class="addon-name">${escapeHtml(addon.name)}</h4>
-          <span class="addon-meta">${addon.sizeKb > 0 ? addon.sizeKb + ' KB' : 'Folder'}</span>
+          <span class="addon-meta">${formatFileSize(addon.sizeKb)}</span>
         </div>
         <span class="addon-badge ${badgeClass}">${escapeHtml(addon.addonType)}</span>
       </div>
