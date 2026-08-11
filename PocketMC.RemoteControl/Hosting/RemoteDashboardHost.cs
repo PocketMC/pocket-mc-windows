@@ -41,6 +41,8 @@ public sealed class RemoteDashboardHost
     private readonly ILogger<RemoteDashboardHost> _logger;
     private readonly InstanceRegistry? _instanceRegistry;
     private readonly ServerConfigurationService? _serverConfigurationService;
+    private readonly PocketMC.Infrastructure.Backups.BackupService? _backupService;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, bool> _activeBackups = new();
     private readonly SemaphoreSlim _startGate = new(1, 1);
     private WebApplication? _app;
 
@@ -58,7 +60,8 @@ public sealed class RemoteDashboardHost
         RemoteAuthenticationService authenticationService,
         ILogger<RemoteDashboardHost> logger,
         InstanceRegistry? instanceRegistry = null,
-        ServerConfigurationService? serverConfigurationService = null)
+        ServerConfigurationService? serverConfigurationService = null,
+        PocketMC.Infrastructure.Backups.BackupService? backupService = null)
     {
         _applicationState = applicationState;
         _statusService = statusService;
@@ -74,6 +77,7 @@ public sealed class RemoteDashboardHost
         _logger = logger;
         _instanceRegistry = instanceRegistry;
         _serverConfigurationService = serverConfigurationService;
+        _backupService = backupService;
     }
 
     public bool IsRunning => _app != null;
@@ -629,51 +633,106 @@ public sealed class RemoteDashboardHost
         api.MapGet("/instances/{instanceId:guid}/backups", (Guid instanceId) =>
         {
             var serverDir = _instanceRegistry?.GetPath(instanceId);
-            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+            var metadata = _instanceRegistry?.GetById(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || metadata == null || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
 
-            string backupDir = Path.Combine(serverDir, "backups");
             var list = new List<RemoteBackupDto>();
+            var defaultDir = Path.Combine(serverDir, "backups");
+            var customDir = metadata.CustomBackupDirectory;
 
-            if (Directory.Exists(backupDir))
+            var directoriesToScan = new List<string> { defaultDir };
+            if (!string.IsNullOrWhiteSpace(customDir) && customDir != defaultDir && Directory.Exists(customDir))
             {
-                var di = new DirectoryInfo(backupDir);
-                foreach (var zip in di.GetFiles("*.zip"))
+                directoriesToScan.Add(customDir);
+            }
+
+            var zipFiles = new List<string>();
+            foreach (var dir in directoriesToScan)
+            {
+                if (Directory.Exists(dir))
                 {
-                    list.Add(new RemoteBackupDto
-                    {
-                        Id = zip.Name,
-                        FileName = zip.Name,
-                        SizeBytes = zip.Length,
-                        CreatedAt = zip.LastWriteTimeUtc,
-                        Type = "Local",
-                        IsAutomated = zip.Name.Contains("auto", StringComparison.OrdinalIgnoreCase)
-                    });
+                    try { zipFiles.AddRange(Directory.GetFiles(dir, "*.zip")); } catch { }
                 }
             }
 
-            return Results.Ok(list.OrderByDescending(b => b.CreatedAt));
+            var uniqueZips = zipFiles
+                .Select(f => new FileInfo(f))
+                .GroupBy(fi => fi.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(fi => !string.IsNullOrWhiteSpace(customDir) && fi.FullName.StartsWith(customDir, StringComparison.OrdinalIgnoreCase)).First())
+                .OrderByDescending(fi => fi.CreationTime)
+                .ToList();
+
+            var manifest = PocketMC.Domain.Models.BackupManifest.Load(serverDir);
+            bool isRunning = _activeBackups.TryGetValue(instanceId, out bool r) && r;
+
+            foreach (var fi in uniqueZips)
+            {
+                var metaEntry = manifest.Entries.FirstOrDefault(e =>
+                    string.Equals(e.FileName, fi.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (isRunning && metaEntry == null && (DateTime.Now - fi.CreationTime).TotalMinutes < 5)
+                {
+                    continue; // Skip the partial backup file currently being generated
+                }
+
+                bool isDefault = fi.FullName.StartsWith(defaultDir, StringComparison.OrdinalIgnoreCase);
+
+                var dto = new RemoteBackupDto
+                {
+                    Id = fi.Name,
+                    FileName = fi.Name,
+                    SizeBytes = fi.Length,
+                    CreatedAt = fi.CreationTime,
+                    Type = isDefault ? "Local" : "Custom",
+                    IsAutomated = fi.Name.Contains("auto", StringComparison.OrdinalIgnoreCase)
+                };
+
+                if (metaEntry != null)
+                {
+                    dto.Version = metaEntry.Version.ToString();
+                    dto.TriggerText = metaEntry.Trigger == PocketMC.Domain.Models.BackupTrigger.Manual ? "Manual" : "Scheduled";
+                    dto.Label = metaEntry.Label ?? string.Empty;
+                    dto.ServerVersion = metaEntry.MinecraftVersion;
+                    dto.ServerType = metaEntry.ServerType;
+                    dto.HasChecksum = metaEntry.Sha256Checksum != null;
+                    dto.IntegrityVerified = metaEntry.IntegrityVerified;
+                    dto.SizeDeltaBytes = metaEntry.SizeDeltaBytes;
+                }
+
+                list.Add(dto);
+            }
+
+            return Results.Ok(new { isBackupRunning = isRunning, backups = list });
         });
 
         api.MapPost("/instances/{instanceId:guid}/backups", (Guid instanceId) =>
         {
             var serverDir = _instanceRegistry?.GetPath(instanceId);
-            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+            var metadata = _instanceRegistry?.GetById(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || metadata == null || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+            
+            if (_backupService == null) return Results.BadRequest(new { error = "Backup service is unavailable" });
 
-            string backupDir = Path.Combine(serverDir, "backups");
-            Directory.CreateDirectory(backupDir);
-            string backupName = $"manual-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip";
-            string zipPath = Path.Combine(backupDir, backupName);
+            _auditLogService.Log("remote", "backup.create", instanceId, "Background Backup");
+            
+            _activeBackups[instanceId] = true;
+            _ = Task.Run(async () => 
+            {
+                try
+                {
+                    await _backupService.RunBackupAsync(metadata, serverDir, isManualBackup: true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Background backup failed for instance {InstanceId}", instanceId);
+                }
+                finally
+                {
+                    _activeBackups.TryRemove(instanceId, out _);
+                }
+            });
 
-            try
-            {
-                CreateSafeBackupZip(serverDir, zipPath);
-                _auditLogService.Log("remote", "backup.create", instanceId, backupName);
-                return Results.Ok(new { success = true, fileName = backupName });
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { error = $"Failed to create backup zip: {ex.Message}" });
-            }
+            return Results.Ok(new { success = true, fileName = "Started in background" });
         });
 
         app.Map("/ws/instances/{instanceId:guid}/console", async (HttpContext context, Guid instanceId) =>
@@ -682,56 +741,6 @@ public sealed class RemoteDashboardHost
         });
     }
 
-    private static void CreateSafeBackupZip(string serverDir, string destinationZipPath)
-    {
-        string tempZipPath = Path.Combine(Path.GetTempPath(), $"pocketmc-backup-{Guid.NewGuid():N}.tmp");
-        string fullServerDir = Path.GetFullPath(serverDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        string backupsSubDir = Path.Combine(fullServerDir, "backups");
-
-        try
-        {
-            using (var zipStream = new FileStream(tempZipPath, FileMode.Create, FileAccess.Write, FileShare.None))
-            using (var archive = new System.IO.Compression.ZipArchive(zipStream, System.IO.Compression.ZipArchiveMode.Create))
-            {
-                var files = Directory.EnumerateFiles(fullServerDir, "*", SearchOption.AllDirectories);
-                foreach (var filePath in files)
-                {
-                    string fullFilePath = Path.GetFullPath(filePath);
-                    if (fullFilePath.StartsWith(backupsSubDir, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    string relativePath = Path.GetRelativePath(fullServerDir, fullFilePath).Replace('\\', '/');
-                    var entry = archive.CreateEntry(relativePath, System.IO.Compression.CompressionLevel.Optimal);
-
-                    try
-                    {
-                        using var fileStream = new FileStream(fullFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        using var entryStream = entry.Open();
-                        fileStream.CopyTo(entryStream);
-                    }
-                    catch
-                    {
-                        // Safely skip unreadable locked files (e.g., active session locks)
-                    }
-                }
-            }
-
-            if (File.Exists(destinationZipPath))
-            {
-                File.Delete(destinationZipPath);
-            }
-            File.Move(tempZipPath, destinationZipPath);
-        }
-        finally
-        {
-            if (File.Exists(tempZipPath))
-            {
-                try { File.Delete(tempZipPath); } catch { }
-            }
-        }
-    }
 
     private static IResult ToActionResult(RemoteControlActionResult result)
     {

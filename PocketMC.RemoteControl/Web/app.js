@@ -5,22 +5,22 @@ const els = {
   connectionLabel: document.querySelector("#connectionLabel"),
   refreshButton: document.querySelector("#refreshButton"),
   notice: document.querySelector("#notice"),
-  
+
   appView: document.querySelector("#appView"),
   emptyView: document.querySelector("#emptyView"),
   emptyRefreshButton: document.querySelector("#emptyRefreshButton"),
   errorView: document.querySelector("#errorView"),
   errorMessage: document.querySelector("#errorMessage"),
   retryButton: document.querySelector("#retryButton"),
-  
+
   loginView: document.querySelector("#loginView"),
   loginForm: document.querySelector("#loginForm"),
   loginPasswordInput: document.querySelector("#loginPasswordInput"),
   loginSubmitButton: document.querySelector("#loginSubmitButton"),
   loginError: document.querySelector("#loginError"),
-  
+
   instanceListSidebar: document.querySelector("#instanceListSidebar"),
-  
+
   serverName: document.querySelector("#serverName"),
   serverType: document.querySelector("#serverType"),
   serverIconImage: document.querySelector("#serverIconImage"),
@@ -29,11 +29,11 @@ const els = {
   ramUsage: document.querySelector("#ramUsage"),
   cpuUsage: document.querySelector("#cpuUsage"),
   uptime: document.querySelector("#uptime"),
-  
+
   startButton: document.querySelector("#startButton"),
   stopButton: document.querySelector("#stopButton"),
   restartButton: document.querySelector("#restartButton"),
-  
+
   consoleState: document.querySelector("#consoleState"),
   consoleOutput: document.getElementById("consoleOutput"),
   filterInfo: document.getElementById("filterInfo"),
@@ -42,17 +42,17 @@ const els = {
   commandForm: document.getElementById("commandForm"),
   commandInput: document.querySelector("#commandInput"),
   commandDisabled: document.querySelector("#commandDisabled"),
-  
+
   playersState: document.querySelector("#playersState"),
   playerList: document.querySelector("#playerList"),
   offlinePlayerManage: document.querySelector("#offlinePlayerManage"),
   playersDisabled: document.querySelector("#playersDisabled"),
-  
+
   tabs: document.querySelectorAll(".tab-button"),
   tabContents: document.querySelectorAll(".tab-content"),
   serverIpsContainer: document.querySelector("#serverIpsContainer"),
   serverIpsList: document.querySelector("#serverIpsList"),
-  
+
   playerActionModal: document.querySelector("#playerActionModal"),
   playerActionModalTitle: document.querySelector("#playerActionModalTitle"),
   playerActionModalName: document.querySelector("#playerActionModalName"),
@@ -68,7 +68,7 @@ const els = {
   btnKick: document.querySelector("#btnKick"),
   btnBan: document.querySelector("#btnBan"),
   btnUnban: document.querySelector("#btnUnban"),
-  
+
   offlinePlayerInput: document.querySelector("#offlinePlayerInput"),
   btnOfflineManage: document.querySelector("#btnOfflineManage"),
   offlinePlayerForm: document.querySelector("#offlinePlayerForm"),
@@ -87,7 +87,17 @@ const els = {
   pinnedBadge: document.querySelector("#pinnedBadge")
 };
 
-let selectedInstanceId = localStorage.getItem(instanceKey);
+
+// Global UI initialization based on current page
+const isLoginPage = window.location.pathname.includes('login.html');
+const isServerPage = window.location.pathname.includes('server.html');
+const urlParams = new URLSearchParams(window.location.search);
+let selectedInstanceId = isServerPage ? urlParams.get('id') : localStorage.getItem(instanceKey);
+
+if (isServerPage && !selectedInstanceId) {
+  window.location.href = '/remote/index.html';
+}
+
 let currentView = selectedInstanceId ? "details" : "selection";
 let searchQuery = "";
 let cachedInstances = [];
@@ -130,18 +140,18 @@ async function api(path, options = {}) {
       setVisible(els.loginView);
       throw new Error("Unauthorized");
     }
-    
+
     const text = await response.text();
     let msg = `Request failed (${response.status})`;
     try {
-        const json = JSON.parse(text);
-        if (json.error) msg = json.error;
+      const json = JSON.parse(text);
+      if (json.error) msg = json.error;
     } catch {
-        if (text && (text.trim().startsWith("<") || text.includes("Cloudflare"))) {
-          msg = `Remote tunnel is offline (HTTP ${response.status})`;
-        } else {
-          msg = text || msg;
-        }
+      if (text && (text.trim().startsWith("<") || text.includes("Cloudflare"))) {
+        msg = `Remote tunnel is offline (HTTP ${response.status})`;
+      } else {
+        msg = text || msg;
+      }
     }
     throw new Error(msg);
   }
@@ -152,7 +162,7 @@ async function api(path, options = {}) {
 
 
 if (els.getStartedButton && els.welcomeScreen) {
-  els.getStartedButton.addEventListener("click", () => {
+  if (els.getStartedButton) els.getStartedButton.addEventListener("click", () => {
     localStorage.setItem("pocketmc.remote.welcomeSeen", "true");
     els.welcomeScreen.classList.add("welcome-fade-out");
     setTimeout(() => {
@@ -167,7 +177,7 @@ async function start() {
   if (welcomeSeen !== "true" && els.welcomeScreen) {
     els.welcomeScreen.hidden = false;
   }
-  
+
   clearInterval(statusTimer);
   closeSocket();
   await openDashboard();
@@ -269,7 +279,7 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
     showError(error.message);
     throw error;
   }
-  
+
   cachedInstances = instances;
 
   if (els.connectionLabel) {
@@ -298,7 +308,7 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
 
     const instanceStatus = await api(`/api/instances/${selectedInstanceId}/status`);
     lastInstanceStatus = instanceStatus;
-    
+
     renderStatus(remoteStatusGlobal, instanceStatus);
 
     if (reconnectConsole) {
@@ -317,8 +327,8 @@ function renderSelectionView(instances) {
 
   const query = (searchQuery || "").toLowerCase().trim();
   const filtered = instances.filter(inst => {
-    return inst.name.toLowerCase().includes(query) || 
-           inst.serverType.toLowerCase().includes(query);
+    return inst.name.toLowerCase().includes(query) ||
+      inst.serverType.toLowerCase().includes(query);
   });
 
   if (filtered.length === 0) {
@@ -399,7 +409,7 @@ function getServerIcon(serverType) {
 function renderStatus(remoteStatus, instanceStatus) {
   els.serverName.textContent = instanceStatus.name;
   els.serverType.textContent = instanceStatus.serverType;
-  
+
   if (els.pinnedBadge) {
     els.pinnedBadge.hidden = !instanceStatus.isPinned;
   }
@@ -421,16 +431,16 @@ function renderStatus(remoteStatus, instanceStatus) {
   }
 
   if (els.serverIconImage) {
-      els.serverIconImage.src = getServerIcon(instanceStatus.serverType);
+    els.serverIconImage.src = getServerIcon(instanceStatus.serverType);
   }
 
   setStatusPill(instanceStatus);
   els.playerCount.textContent = `${instanceStatus.playerCount} / ${instanceStatus.maxPlayers}`;
-  
+
   const ramUsageGb = (instanceStatus.ramUsageMb / 1024).toFixed(1);
   const maxRamGb = instanceStatus.maxRamMb ? (instanceStatus.maxRamMb / 1024).toFixed(0) : "4";
   els.ramUsage.innerHTML = `${ramUsageGb} <span class="metric-tile-unit">/ ${maxRamGb} GB</span>`;
-  
+
   els.cpuUsage.textContent = `${instanceStatus.cpuUsage.toFixed(0)}`;
   els.uptime.textContent = formatUptime(instanceStatus.uptimeSeconds);
 
@@ -459,7 +469,7 @@ function renderStatus(remoteStatus, instanceStatus) {
       els.playersAvatarList.innerHTML = `<span class="muted" style="font-size: 12px; font-weight: normal;">No players online</span>`;
     }
   }
-  
+
   const state = (instanceStatus.state || "").toLowerCase();
   const isBusy = ["starting", "stopping", "restarting", "settingup", "installing"].includes(state);
 
@@ -474,7 +484,7 @@ function renderStatus(remoteStatus, instanceStatus) {
     const icon = btn.querySelector(".button-icon");
     const spinner = btn.querySelector(".btn-spinner");
     const textEl = btn.querySelector(".btn-text");
-    
+
     if (isTransitioning) {
       if (icon) icon.hidden = true;
       if (spinner) spinner.hidden = false;
@@ -495,30 +505,30 @@ function renderStatus(remoteStatus, instanceStatus) {
   els.restartButton.disabled = !instanceStatus.isRunning || isBusy;
 
 
-  
+
   const canSendCommands = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
   els.commandForm.hidden = !canSendCommands;
   els.commandDisabled.hidden = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
-  
+
   if (els.offlinePlayerManage) {
-      els.offlinePlayerManage.hidden = !remoteStatus.allowRemotePlayerActions;
+    els.offlinePlayerManage.hidden = !remoteStatus.allowRemotePlayerActions;
   }
   if (els.playersDisabled) {
-      els.playersDisabled.hidden = remoteStatus.allowRemotePlayerActions;
+    els.playersDisabled.hidden = remoteStatus.allowRemotePlayerActions;
   }
-  
+
   renderPlayers(instanceStatus.onlinePlayers || [], remoteStatus.allowRemotePlayerActions);
 
   let filteredIps = [];
   if (state === "online") {
     filteredIps = (instanceStatus.serverIps || []).filter(ip => {
       const label = (ip.label || "").toLowerCase();
-      
+
       // Keep Playit public IPs (excluding Voice)
       if (label.includes("playit") && !label.includes("voice")) {
         return true;
       }
-      
+
       return false;
     });
   }
@@ -526,7 +536,7 @@ function renderStatus(remoteStatus, instanceStatus) {
   if (filteredIps.length > 0) {
     els.serverIpsContainer.hidden = false;
     els.serverIpsList.innerHTML = "";
-    
+
     for (const ip of filteredIps) {
       const badge = document.createElement("div");
       badge.className = "ip-item";
@@ -536,7 +546,7 @@ function renderStatus(remoteStatus, instanceStatus) {
           <span class="ip-value">${escapeHtml(ip.address)}</span>
         </div>
       `;
-      
+
       const copyBtn = document.createElement("button");
       copyBtn.className = "icon-button copy-btn";
       copyBtn.type = "button";
@@ -557,14 +567,14 @@ function renderStatus(remoteStatus, instanceStatus) {
 function setStatusPill(instanceStatus) {
   const state = (instanceStatus.state || "").toLowerCase();
   const isBusy = ["starting", "stopping", "restarting", "settingup", "installing"].includes(state);
-  
+
   let statusText = "Offline";
   if (isBusy) {
     statusText = instanceStatus.state;
   } else if (instanceStatus.isRunning) {
     statusText = "Online";
   }
-  
+
   els.statusPill.textContent = statusText;
   els.statusPill.className = "status-pill";
   els.statusPill.classList.add(isBusy ? "busy" : (instanceStatus.isRunning ? "online" : "offline"));
@@ -575,7 +585,7 @@ function formatUptime(seconds) {
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  
+
   if (d > 0) return `${d}d ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
@@ -631,7 +641,7 @@ let socketReconnectDelay = 1000;
 async function openConsoleSocket() {
   if (!selectedInstanceId) return;
   closeSocket();
-  
+
   els.consoleState.textContent = "Connecting";
   els.consoleState.className = "state-label busy";
 
@@ -682,12 +692,12 @@ function appendConsole(line) {
   }
 
   const p = document.createElement("p");
-  
+
   let level = "info";
   if (line.includes("WARN")) level = "warn";
   if (line.includes("ERROR") || line.includes("Exception") || line.includes("Failed")) level = "error";
   p.classList.add(`log-${level}`);
-  
+
   let formatted = escapeHtml(line);
   // Colorize log pieces
   formatted = formatted.replace(/^(\[[0-9:]+\])\s*/, '<span class="log-time">$1</span> ');
@@ -700,7 +710,7 @@ function appendConsole(line) {
   while (els.consoleOutput.childNodes.length > 500) {
     els.consoleOutput.firstChild.remove();
   }
-  
+
   applyConsoleFiltersToLine(p);
   scrollConsole();
 }
@@ -709,7 +719,7 @@ function applyConsoleFilters() {
   const showInfo = els.filterInfo.checked;
   const showWarn = els.filterWarn.checked;
   const showError = els.filterError.checked;
-  
+
   for (const lineEl of els.consoleOutput.children) {
     applyConsoleFiltersToLine(lineEl);
   }
@@ -731,9 +741,9 @@ function applyConsoleFiltersToLine(lineEl) {
 function scrollConsole({ force = false } = {}) {
   const container = els.consoleOutput;
   if (!container) return;
-  
+
   const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 120;
-  
+
   if (force || isNearBottom) {
     container.scrollTop = container.scrollHeight;
     requestAnimationFrame(() => {
@@ -767,62 +777,62 @@ function renderPlayers(players, allowActions) {
     `;
 
     if (allowActions) {
-        const manageBtn = document.createElement("button");
-        manageBtn.className = "secondary-button";
-        manageBtn.innerHTML = `<span>Manage</span>`;
-        manageBtn.addEventListener("click", () => openPlayerModal(player.name));
-        item.appendChild(manageBtn);
+      const manageBtn = document.createElement("button");
+      manageBtn.className = "secondary-button";
+      manageBtn.innerHTML = `<span>Manage</span>`;
+      manageBtn.addEventListener("click", () => openPlayerModal(player.name));
+      item.appendChild(manageBtn);
     }
-    
+
     els.playerList.append(item);
   }
 }
 
 function openPlayerModal(playerName) {
-    els.playerActionModalName.textContent = playerName;
+  els.playerActionModalName.textContent = playerName;
 
-    let isOp = false;
-    let isBanned = false;
-    let isOnline = false;
+  let isOp = false;
+  let isBanned = false;
+  let isOnline = false;
 
-    if (lastInstanceStatus) {
-        if (lastInstanceStatus.oppedPlayers) {
-            isOp = lastInstanceStatus.oppedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
-        }
-        if (lastInstanceStatus.bannedPlayers) {
-            isBanned = lastInstanceStatus.bannedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
-        }
-        if (lastInstanceStatus.onlinePlayers) {
-            isOnline = lastInstanceStatus.onlinePlayers.some(p => p.name.toLowerCase() === playerName.toLowerCase());
-        }
+  if (lastInstanceStatus) {
+    if (lastInstanceStatus.oppedPlayers) {
+      isOp = lastInstanceStatus.oppedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
     }
+    if (lastInstanceStatus.bannedPlayers) {
+      isBanned = lastInstanceStatus.bannedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
+    }
+    if (lastInstanceStatus.onlinePlayers) {
+      isOnline = lastInstanceStatus.onlinePlayers.some(p => p.name.toLowerCase() === playerName.toLowerCase());
+    }
+  }
 
-    els.btnMakeOp.hidden = isOp;
-    els.btnDeop.hidden = !isOp;
-    els.btnBan.hidden = isBanned;
-    els.btnUnban.hidden = !isBanned;
-    els.btnKick.hidden = !isOnline || isBanned;
+  els.btnMakeOp.hidden = isOp;
+  els.btnDeop.hidden = !isOp;
+  els.btnBan.hidden = isBanned;
+  els.btnUnban.hidden = !isBanned;
+  els.btnKick.hidden = !isOnline || isBanned;
 
-    els.playerActionButtons.hidden = false;
-    els.reasonModalForm.hidden = true;
-    els.playerActionModal.hidden = false;
-    modalActionTarget = { name: playerName, action: null };
+  els.playerActionButtons.hidden = false;
+  els.reasonModalForm.hidden = true;
+  els.playerActionModal.hidden = false;
+  modalActionTarget = { name: playerName, action: null };
 }
 
 async function performPlayerAction(action, reason = null) {
-    if (!modalActionTarget || !modalActionTarget.name) return;
-    try {
-        const body = reason ? JSON.stringify({ reason }) : "{}";
-        await api(`/api/instances/${selectedInstanceId}/players/${encodeURIComponent(modalActionTarget.name)}/${action}`, {
-            method: "POST",
-            body
-        });
-        showNotice(`Action '${action}' successful on ${modalActionTarget.name}`);
-        els.playerActionModal.hidden = true;
-        refreshEverything();
-    } catch(err) {
-        showNotice(err.message);
-    }
+  if (!modalActionTarget || !modalActionTarget.name) return;
+  try {
+    const body = reason ? JSON.stringify({ reason }) : "{}";
+    await api(`/api/instances/${selectedInstanceId}/players/${encodeURIComponent(modalActionTarget.name)}/${action}`, {
+      method: "POST",
+      body
+    });
+    showNotice(`Action '${action}' successful on ${modalActionTarget.name}`);
+    els.playerActionModal.hidden = true;
+    refreshEverything();
+  } catch (err) {
+    showNotice(err.message);
+  }
 }
 
 // ---------------------------------------------------------
@@ -847,14 +857,14 @@ els.tabs.forEach(tab => {
   });
 });
 
-els.refreshButton.addEventListener("click", () => refreshEverything());
-els.emptyRefreshButton.addEventListener("click", () => refreshEverything());
-els.retryButton.addEventListener("click", () => refreshEverything());
+if (els.refreshButton) els.refreshButton.addEventListener("click", () => refreshEverything());
+if (els.emptyRefreshButton) els.emptyRefreshButton.addEventListener("click", () => refreshEverything());
+if (els.retryButton) els.retryButton.addEventListener("click", () => refreshEverything());
 
 
 
 if (els.backToSelectorButton) {
-  els.backToSelectorButton.addEventListener("click", () => {
+  if (els.backToSelectorButton) els.backToSelectorButton.addEventListener("click", () => {
     localStorage.removeItem(instanceKey);
     selectedInstanceId = null;
     currentView = "selection";
@@ -863,7 +873,7 @@ if (els.backToSelectorButton) {
 }
 
 if (els.instanceSearchInput) {
-  els.instanceSearchInput.addEventListener("input", (e) => {
+  if (els.instanceSearchInput) els.instanceSearchInput.addEventListener("input", (e) => {
     searchQuery = e.target.value;
     renderSelectionView(cachedInstances);
   });
@@ -891,7 +901,7 @@ bindInstanceAction(els.restartButton, "restart");
 
 [els.filterInfo, els.filterWarn, els.filterError].forEach(cb => cb.addEventListener("change", applyConsoleFilters));
 
-els.commandForm.addEventListener("submit", async (e) => {
+if (els.commandForm) els.commandForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const command = els.commandInput.value.trim();
   if (!command || !selectedInstanceId) return;
@@ -911,54 +921,54 @@ els.commandForm.addEventListener("submit", async (e) => {
 });
 
 function escapeHtml(unsafe) {
-  return (unsafe||"").replace(/&/g, "&amp;")
+  return (unsafe || "").replace(/&/g, "&amp;")
     .replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 // Modal events
-els.playerActionButtons.addEventListener("click", (e) => {
-    if (e.target.tagName === "BUTTON") {
-        const action = e.target.dataset.action;
-        modalActionTarget.action = action;
-        
-        if (action === "kick" || action === "ban") {
-            els.playerActionButtons.hidden = true;
-            els.playerActionCloseRow.hidden = true;
-            els.reasonModalForm.hidden = false;
-            els.reasonModalInput.value = "";
-            els.reasonModalInput.focus();
-        } else {
-            performPlayerAction(action, null);
-        }
+if (els.playerActionButtons) els.playerActionButtons.addEventListener("click", (e) => {
+  if (e.target.tagName === "BUTTON") {
+    const action = e.target.dataset.action;
+    modalActionTarget.action = action;
+
+    if (action === "kick" || action === "ban") {
+      els.playerActionButtons.hidden = true;
+      els.playerActionCloseRow.hidden = true;
+      els.reasonModalForm.hidden = false;
+      els.reasonModalInput.value = "";
+      els.reasonModalInput.focus();
+    } else {
+      performPlayerAction(action, null);
     }
+  }
 });
-els.playerActionModalClose.addEventListener("click", () => {
-    els.playerActionModal.hidden = true;
+if (els.playerActionModalClose) els.playerActionModalClose.addEventListener("click", () => {
+  els.playerActionModal.hidden = true;
 });
-els.reasonModalCancel.addEventListener("click", () => {
-    els.reasonModalForm.hidden = true;
-    els.playerActionButtons.hidden = false;
-    els.playerActionCloseRow.hidden = false;
+if (els.reasonModalCancel) els.reasonModalCancel.addEventListener("click", () => {
+  els.reasonModalForm.hidden = true;
+  els.playerActionButtons.hidden = false;
+  els.playerActionCloseRow.hidden = false;
 });
-els.reasonModalForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    performPlayerAction(modalActionTarget.action, els.reasonModalInput.value.trim() || null);
+if (els.reasonModalForm) els.reasonModalForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  performPlayerAction(modalActionTarget.action, els.reasonModalInput.value.trim() || null);
 });
-els.offlinePlayerForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const name = els.offlinePlayerInput.value.trim();
-    if (!name) return;
-    openPlayerModal(name);
-    els.offlinePlayerInput.value = "";
+if (els.offlinePlayerForm) els.offlinePlayerForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = els.offlinePlayerInput.value.trim();
+  if (!name) return;
+  openPlayerModal(name);
+  els.offlinePlayerInput.value = "";
 });
 
 if (els.loginForm) {
-  els.loginForm.addEventListener("submit", async (e) => {
+  if (els.loginForm) els.loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const password = els.loginPasswordInput.value;
     els.loginError.hidden = true;
-    
+
     const btn = els.loginSubmitButton;
     const spinner = btn.querySelector(".btn-spinner");
     const icon = btn.querySelector(".button-icon");
@@ -972,7 +982,7 @@ if (els.loginForm) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password })
       });
-      
+
       if (res.ok) {
         els.loginPasswordInput.value = "";
         await openDashboard();
@@ -1015,7 +1025,7 @@ function initTheme() {
   applyTheme(initialTheme);
 
   if (els.themeToggle) {
-    els.themeToggle.addEventListener("click", () => {
+    if (els.themeToggle) els.themeToggle.addEventListener("click", () => {
       const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
       const nextTheme = currentTheme === "light" ? "dark" : "light";
       applyTheme(nextTheme);
@@ -1036,31 +1046,31 @@ const hamburgerIcon = document.getElementById('hamburgerIcon');
 const closeIcon = document.getElementById('closeIcon');
 
 function toggleMobileMenu() {
-    const isOpen = appSidebar.classList.toggle('open');
-    sidebarOverlay.classList.toggle('open');
-    if (isOpen) {
-        hamburgerIcon.hidden = true;
-        closeIcon.hidden = false;
-    } else {
-        hamburgerIcon.hidden = false;
-        closeIcon.hidden = true;
-    }
+  const isOpen = appSidebar.classList.toggle('open');
+  sidebarOverlay.classList.toggle('open');
+  if (isOpen) {
+    hamburgerIcon.hidden = true;
+    closeIcon.hidden = false;
+  } else {
+    hamburgerIcon.hidden = false;
+    closeIcon.hidden = true;
+  }
 }
 
 if (mobileMenuToggle) {
-    mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+  if (mobileMenuToggle) mobileMenuToggle.addEventListener('click', toggleMobileMenu);
 }
 if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', toggleMobileMenu);
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleMobileMenu);
 }
 
 // Close sidebar when clicking a navigation item on mobile
 document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768 && appSidebar.classList.contains('open')) {
-        if (e.target.closest('.sidebar-item') || e.target.closest('.instance-item')) {
-            toggleMobileMenu();
-        }
+  if (window.innerWidth <= 768 && appSidebar.classList.contains('open')) {
+    if (e.target.closest('.sidebar-item') || e.target.closest('.instance-item')) {
+      toggleMobileMenu();
     }
+  }
 });
 
 // ---------------------------------------------------------
@@ -1211,7 +1221,7 @@ function renderAddons(addons) {
     const card = document.createElement("div");
     card.className = "addon-card";
     const badgeClass = addon.addonType === "plugin" ? "plugin" : "pack";
-    
+
     card.innerHTML = `
       <div class="addon-header">
         <div class="addon-title-group">
@@ -1284,31 +1294,55 @@ function renderBreadcrumbs(path) {
   const container = document.getElementById("filesBreadcrumb");
   if (!container) return;
   container.innerHTML = "";
+  container.style.display = "flex";
+  container.style.alignItems = "center";
+  container.style.gap = "8px";
+
+  if (path) {
+    const backBtn = document.createElement("button");
+    backBtn.className = "icon-button";
+    backBtn.style.padding = "4px";
+    backBtn.style.marginRight = "4px";
+    backBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`;
+    backBtn.title = "Go Back";
+    backBtn.addEventListener("click", () => {
+      const parentPath = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
+      loadFiles(selectedInstanceId, parentPath);
+    });
+    container.appendChild(backBtn);
+  }
+
+  const breadcrumbsWrapper = document.createElement("div");
+  breadcrumbsWrapper.style.display = "flex";
+  breadcrumbsWrapper.style.alignItems = "center";
+  breadcrumbsWrapper.style.flexWrap = "wrap";
 
   const rootItem = document.createElement("span");
   rootItem.className = "breadcrumb-item";
   rootItem.textContent = "root";
   rootItem.addEventListener("click", () => loadFiles(selectedInstanceId, ""));
-  container.appendChild(rootItem);
+  breadcrumbsWrapper.appendChild(rootItem);
 
-  if (!path) return;
+  if (path) {
+    const parts = path.split("/").filter(Boolean);
+    let acc = "";
+    parts.forEach(part => {
+      const sep = document.createElement("span");
+      sep.className = "breadcrumb-separator";
+      sep.textContent = " / ";
+      breadcrumbsWrapper.appendChild(sep);
 
-  const parts = path.split("/").filter(Boolean);
-  let acc = "";
-  parts.forEach(part => {
-    const sep = document.createElement("span");
-    sep.className = "breadcrumb-separator";
-    sep.textContent = " / ";
-    container.appendChild(sep);
+      acc = acc ? `${acc}/${part}` : part;
+      const currentAcc = acc;
+      const item = document.createElement("span");
+      item.className = "breadcrumb-item";
+      item.textContent = part;
+      item.addEventListener("click", () => loadFiles(selectedInstanceId, currentAcc));
+      breadcrumbsWrapper.appendChild(item);
+    });
+  }
 
-    acc = acc ? `${acc}/${part}` : part;
-    const currentAcc = acc;
-    const item = document.createElement("span");
-    item.className = "breadcrumb-item";
-    item.textContent = part;
-    item.addEventListener("click", () => loadFiles(selectedInstanceId, currentAcc));
-    container.appendChild(item);
-  });
+  container.appendChild(breadcrumbsWrapper);
 }
 
 function isTextFile(ext) {
@@ -1331,29 +1365,7 @@ function renderFilesList(items) {
 
   if (noMsg) noMsg.hidden = !!(items && items.length > 0) || !!currentFileDirectoryPath;
 
-  // Directory Back (..) Row
-  if (currentFileDirectoryPath) {
-    const upRow = document.createElement("div");
-    upRow.className = "file-row up-folder-row";
-    upRow.innerHTML = `
-      <div class="file-info">
-        <span class="file-icon">
-          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </span>
-        <div>
-          <div class="file-name">..</div>
-          <div class="file-meta">Up one folder</div>
-        </div>
-      </div>
-    `;
-    upRow.addEventListener("click", () => {
-      const parentPath = currentFileDirectoryPath.includes("/")
-        ? currentFileDirectoryPath.substring(0, currentFileDirectoryPath.lastIndexOf("/"))
-        : "";
-      loadFiles(selectedInstanceId, parentPath);
-    });
-    container.appendChild(upRow);
-  }
+  // The Directory Back (..) row has been integrated into the breadcrumbs header.
 
   if (!items || items.length === 0) return;
 
@@ -1496,43 +1508,80 @@ async function loadBackups(instanceId) {
   container.innerHTML = `<div class="skeleton-card" style="height: 70px;"><div class="skeleton-body"><div class="skeleton-line title skeleton-box"></div></div></div>`;
 
   try {
-    const backups = await api(`/api/instances/${instanceId}/backups`);
-    renderBackupsList(backups);
+    const data = await api(`/api/instances/${instanceId}/backups`);
+    const isRunning = data && data.isBackupRunning === true;
+    const backups = Array.isArray(data) ? data : (data.backups || []);
+
+    renderBackupsList(backups, isRunning);
+
+    if (isRunning) {
+      setTimeout(() => {
+        if (selectedInstanceId === instanceId) {
+          loadBackups(instanceId);
+        }
+      }, 3000);
+    }
   } catch (err) {
     container.innerHTML = "";
     showNotice(formatFriendlyError(err));
   }
 }
 
-function renderBackupsList(backups) {
+function renderBackupsList(backups, isRunning = false) {
   const container = document.getElementById("backupsListContainer");
   const noMsg = document.getElementById("noBackupsMsg");
   if (!container) return;
   container.innerHTML = "";
 
-  if (!backups || backups.length === 0) {
+  if (createBackupBtn) {
+    createBackupBtn.disabled = isRunning;
+  }
+
+  if (isRunning) {
+    const loader = document.createElement("div");
+    loader.className = "backup-row";
+    loader.style.pointerEvents = "none";
+    loader.innerHTML = `
+      <div class="backup-info" style="overflow: hidden;">
+        <span class="backup-icon skeleton-box" style="width: 24px; height: 24px; border-radius: 4px; display: inline-block;"></span>
+        <div style="min-width: 0; flex: 1; padding-top: 2px;">
+          <div class="skeleton-box" style="height: 16px; width: 60%; margin-bottom: 6px; border-radius: 4px;"></div>
+          <div class="skeleton-box" style="height: 14px; width: 40%; border-radius: 4px;"></div>
+        </div>
+      </div>
+    `;
+    container.appendChild(loader);
+    if (noMsg) noMsg.hidden = true;
+  } else if (!backups || backups.length === 0) {
     if (noMsg) noMsg.hidden = false;
     return;
+  } else {
+    if (noMsg) noMsg.hidden = true;
   }
-  if (noMsg) noMsg.hidden = true;
 
   backups.forEach(backup => {
     const row = document.createElement("div");
     row.className = "backup-row";
 
     const dateStr = backup.createdAt ? new Date(backup.createdAt).toLocaleString() : "";
+    let displayTitle = backup.label ? escapeHtml(backup.label) : escapeHtml(backup.fileName);
     row.innerHTML = `
-      <div class="backup-info">
+      <div class="backup-info" style="overflow: hidden;">
         <span class="backup-icon">
           <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
         </span>
         <div>
-          <div class="backup-name">${escapeHtml(backup.fileName)}</div>
-          <div class="backup-meta">
+                            <div style="min-width: 0; flex: 1;">
+          <div class="backup-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(backup.fileName)}">
+            ${displayTitle}
+
+          </div>
+          <div class="backup-meta" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             <span>${formatFileSize(backup.sizeBytes / 1024)}</span>
+            
             <span>&bull;</span>
             <span>${escapeHtml(dateStr)}</span>
-            ${backup.isAutomated ? '<span class="addon-badge" style="font-size: 9px; margin-left: 6px;">AUTO</span>' : ''}
+            
           </div>
         </div>
       </div>
@@ -1547,14 +1596,12 @@ if (createBackupBtn) {
     if (!selectedInstanceId) return;
     try {
       createBackupBtn.disabled = true;
-      showNotice("Creating server backup zip...");
+      showNotice("Starting background backup...");
       const result = await api(`/api/instances/${selectedInstanceId}/backups`, { method: "POST" });
-      const nameStr = result?.fileName ? ` (${result.fileName})` : "";
-      showNotice(`Backup zip created successfully${nameStr}.`);
+
       loadBackups(selectedInstanceId);
     } catch (err) {
       showNotice(formatFriendlyError(err));
-    } finally {
       createBackupBtn.disabled = false;
     }
   });

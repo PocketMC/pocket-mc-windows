@@ -60,7 +60,10 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
             tunnelManager,
             localNetworkAddressService,
             authService,
-            NullLogger<RemoteDashboardHost>.Instance);
+            NullLogger<RemoteDashboardHost>.Instance,
+            null,
+            null,
+            null);
 
         _client = new HttpClient
         {

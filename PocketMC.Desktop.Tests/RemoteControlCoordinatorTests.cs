@@ -22,7 +22,7 @@ public sealed class RemoteControlCoordinatorTests
 
             var host = new RemoteDashboardHost(
                 appState, null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
-                new Mock<Microsoft.Extensions.Logging.ILogger<RemoteDashboardHost>>().Object);
+                new Mock<Microsoft.Extensions.Logging.ILogger<RemoteDashboardHost>>().Object, null, null, null);
 
             var coordinator = new RemoteControlCoordinator(
                 appState, settingsManager, host, null!, null!, null!);
