@@ -301,6 +301,7 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
 
   if (currentView === "selection") {
     closeSocket();
+    resetTabsToOverview();
     renderSelectionView(instances);
     setVisible(els.instanceSelectionView);
   } else {
@@ -419,15 +420,7 @@ function renderStatus(remoteStatus, instanceStatus) {
   }
 
   if (els.serverIpAddress) {
-    let primaryIp = "N/A";
-    if (instanceStatus.serverIps && instanceStatus.serverIps.length > 0) {
-      const tunnel = instanceStatus.serverIps.find(ip => {
-        const label = (ip.label || "").toLowerCase();
-        return label.includes("playit") && !label.includes("voice");
-      });
-      primaryIp = tunnel ? tunnel.address : "N/A";
-    }
-    els.serverIpAddress.textContent = `IP: ${primaryIp}`;
+    els.serverIpAddress.hidden = true;
   }
 
   if (els.serverIconImage) {
@@ -534,6 +527,7 @@ function renderStatus(remoteStatus, instanceStatus) {
   }
 
   if (filteredIps.length > 0) {
+    if (els.serverIpAddress) els.serverIpAddress.hidden = true;
     els.serverIpsContainer.hidden = false;
     els.serverIpsList.innerHTML = "";
 
@@ -561,6 +555,23 @@ function renderStatus(remoteStatus, instanceStatus) {
     }
   } else {
     els.serverIpsContainer.hidden = true;
+    if (els.serverIpAddress) {
+      els.serverIpAddress.hidden = true;
+    }
+  }
+}
+
+function resetTabsToOverview() {
+  els.tabs.forEach(t => t.classList.remove("active"));
+  const allTabContents = document.querySelectorAll(".tab-content");
+  allTabContents.forEach(c => { c.classList.remove("active"); c.hidden = true; });
+
+  const defaultTabBtn = document.querySelector('.tab-button[data-tab="overview"]');
+  if (defaultTabBtn) defaultTabBtn.classList.add("active");
+  const overviewContent = document.getElementById("tab-overview");
+  if (overviewContent) {
+    overviewContent.classList.add("active");
+    overviewContent.hidden = false;
   }
 }
 
@@ -864,10 +875,12 @@ if (els.retryButton) els.retryButton.addEventListener("click", () => refreshEver
 
 
 if (els.backToSelectorButton) {
-  if (els.backToSelectorButton) els.backToSelectorButton.addEventListener("click", () => {
+  els.backToSelectorButton.addEventListener("click", () => {
     localStorage.removeItem(instanceKey);
     selectedInstanceId = null;
     currentView = "selection";
+    closeSocket();
+    resetTabsToOverview();
     refreshEverything();
   });
 }

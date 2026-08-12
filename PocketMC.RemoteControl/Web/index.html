@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>PocketMC Remote</title>
   <link rel="icon" type="image/png" href="/remote/icon.png" />
   <link rel="stylesheet" href="/remote/styles.css">
@@ -91,28 +91,30 @@
       <section id="appView" hidden>
         <div class="server-heading">
           <div class="server-title-row">
-            <button id="backToSelectorButton" class="icon-button back-btn" title="Back to Select Instance">
-              <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            </button>
             <h1>Server Dashboard</h1>
           </div>
         </div>
 
         <div class="server-info-card">
           <div class="server-title-row-detail">
-            <h2>
-              <span id="serverName">Select a server</span>
-              <span id="pinnedBadge" class="pinned-icon" title="Pinned Instance" hidden>
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
-              </span>
-            </h2>
+            <div class="server-title-header-line">
+              <button id="backToSelectorButton" class="icon-button back-btn" title="Back to Select Instance">
+                <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              </button>
+              <h2>
+                <span id="serverName">Select a server</span>
+                <span id="pinnedBadge" class="pinned-icon" title="Pinned Instance" hidden>
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+                </span>
+              </h2>
+            </div>
             <div class="server-badges-row">
               <span id="statusPill" class="status-pill offline">Offline</span>
               <span id="serverVersionBadge" class="meta-badge">v1.20.1</span>
               <span id="serverType" class="meta-badge">Paper</span>
             </div>
           </div>
-          <p id="serverIpAddress" class="server-ip-label">IP: N/A</p>
+          <p id="serverIpAddress" class="server-ip-label" hidden>IP: N/A</p>
         </div>
 
         <nav class="tabs-nav">
@@ -452,64 +454,63 @@
             <p class="empty-state-desc">Add .jar, .phar, or .mcpack files into your server's folder in PocketMC Desktop, then refresh.</p>
           </div>
         </div>
-      </section>
 
-      <!-- Files Tab -->
-      <section id="tab-files" class="tab-content panel files-panel" hidden>
-        <div class="files-container">
-          <div class="files-header-bar">
-            <div class="files-breadcrumb" id="filesBreadcrumb">
-              <!-- Dynamically populated by JS: / > world > playerdata -->
+        <!-- Files Tab -->
+        <div id="tab-files" class="tab-content panel files-panel" hidden>
+          <div class="files-container">
+            <div class="files-header-bar">
+              <div class="files-breadcrumb" id="filesBreadcrumb">
+                <!-- Dynamically populated by JS: / > world > playerdata -->
+              </div>
+              <div class="files-actions">
+                <button id="refreshFilesBtn" class="secondary-button" type="button">
+                  <span class="button-icon"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg></span>
+                  <span>Refresh</span>
+                </button>
+              </div>
             </div>
-            <div class="files-actions">
-              <button id="refreshFilesBtn" class="secondary-button" type="button">
-                <span class="button-icon"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg></span>
-                <span>Refresh</span>
+
+            <div id="filesListContainer" class="files-list">
+              <!-- Dynamically populated by JS -->
+            </div>
+
+            <div id="noFilesMsg" class="empty-state-card" hidden>
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <h4 class="empty-state-title">Folder is Empty</h4>
+              <p class="empty-state-desc">No files or subdirectories found in this location.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Backups Tab -->
+        <div id="tab-backups" class="tab-content panel backups-panel" hidden>
+          <div class="backups-container">
+            <div class="backups-header-bar">
+              <div>
+                <h2>Server Backups</h2>
+                <p class="muted" style="font-size: 13px;">Manage local backup snapshots for this server instance.</p>
+              </div>
+              <button id="createBackupBtn" class="primary-button" type="button">
+                <span class="button-icon"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg></span>
+                <span>Create Backup Now</span>
               </button>
             </div>
-          </div>
 
-          <div id="filesListContainer" class="files-list">
-            <!-- Dynamically populated by JS -->
-          </div>
-
-          <div id="noFilesMsg" class="empty-state-card" hidden>
-            <div class="empty-state-icon">
-              <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <div id="backupsListContainer" class="backups-list">
+              <!-- Dynamically populated by JS -->
             </div>
-            <h4 class="empty-state-title">Folder is Empty</h4>
-            <p class="empty-state-desc">No files or subdirectories found in this location.</p>
+
+            <div id="noBackupsMsg" class="empty-state-card" hidden>
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg>
+              </div>
+              <h4 class="empty-state-title">No Backups Found</h4>
+              <p class="empty-state-desc">Click "Create Backup Now" to create your first server backup zip.</p>
+            </div>
           </div>
         </div>
-      </section>
-
-      <!-- Backups Tab -->
-      <section id="tab-backups" class="tab-content panel backups-panel" hidden>
-        <div class="backups-container">
-          <div class="backups-header-bar">
-            <div>
-              <h2>Server Backups</h2>
-              <p class="muted" style="font-size: 13px;">Manage local backup snapshots for this server instance.</p>
-            </div>
-            <button id="createBackupBtn" class="primary-button" type="button">
-              <span class="button-icon"><svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg></span>
-              <span>Create Backup Now</span>
-            </button>
-          </div>
-
-          <div id="backupsListContainer" class="backups-list">
-            <!-- Dynamically populated by JS -->
-          </div>
-
-          <div id="noBackupsMsg" class="empty-state-card" hidden>
-            <div class="empty-state-icon">
-              <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg>
-            </div>
-            <h4 class="empty-state-title">No Backups Found</h4>
-            <p class="empty-state-desc">Click "Create Backup Now" to create your first server backup zip.</p>
-          </div>
-        </div>
-      </section>
       </section>
 
       <!-- File Editor Modal -->
