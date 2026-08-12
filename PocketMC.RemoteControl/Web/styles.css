@@ -2055,6 +2055,12 @@ svg {
   color: var(--color-cpu);
 }
 
+.addon-badge.mod {
+  background: var(--color-busy-bg);
+  border-color: var(--color-busy-border);
+  color: var(--color-busy);
+}
+
 .addon-actions {
   display: flex;
   justify-content: flex-end;

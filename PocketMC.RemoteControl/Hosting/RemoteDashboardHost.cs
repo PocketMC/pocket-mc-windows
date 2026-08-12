@@ -873,6 +873,10 @@ public sealed class RemoteDashboardHost
                         catch { }
                     }
 
+                    string type = "pack";
+                    if (dirName == "plugins") type = "plugin";
+                    else if (dirName == "mods") type = "mod";
+
                     string relPath = Path.Combine(dirName, file.Name).Replace('\\', '/');
                     result.Add(new RemoteAddonDto
                     {
@@ -880,13 +884,17 @@ public sealed class RemoteDashboardHost
                         FilePath = relPath,
                         SizeKb = Math.Round(file.Length / 1024.0, 1),
                         LastModified = file.LastWriteTimeUtc.ToString("o"),
-                        AddonType = ext == ".jar" || ext == ".phar" ? "plugin" : "pack"
+                        AddonType = type
                     });
                 }
             }
 
             foreach (var subDir in dirInfo.GetDirectories())
             {
+                string type = "pack";
+                if (dirName == "plugins") type = "plugin";
+                else if (dirName == "mods") type = "mod";
+
                 string relPath = Path.Combine(dirName, subDir.Name).Replace('\\', '/');
                 result.Add(new RemoteAddonDto
                 {
@@ -894,7 +902,7 @@ public sealed class RemoteDashboardHost
                     FilePath = relPath,
                     SizeKb = 0,
                     LastModified = subDir.LastWriteTimeUtc.ToString("o"),
-                    AddonType = "pack"
+                    AddonType = type
                 });
             }
         }

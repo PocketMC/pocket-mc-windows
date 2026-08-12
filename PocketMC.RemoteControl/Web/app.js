@@ -1276,7 +1276,7 @@ function renderAddons(addons) {
   addons.forEach(addon => {
     const card = document.createElement("div");
     card.className = "addon-card";
-    const badgeClass = addon.addonType === "plugin" ? "plugin" : "pack";
+    const badgeClass = addon.addonType === "plugin" ? "plugin" : (addon.addonType === "mod" ? "mod" : "pack");
 
     card.innerHTML = `
       <div class="addon-header">
