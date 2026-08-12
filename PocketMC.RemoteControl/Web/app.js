@@ -593,6 +593,15 @@ function renderStatus(remoteStatus, instanceStatus) {
       els.serverIpAddress.hidden = true;
     }
   }
+
+  // Fix for iOS Safari scroll glitch when content shrinks below current scroll offset
+  const mainContent = document.querySelector(".main-content");
+  if (mainContent) {
+    const maxScroll = Math.max(0, mainContent.scrollHeight - mainContent.clientHeight);
+    if (mainContent.scrollTop > maxScroll) {
+      mainContent.scrollTop = maxScroll;
+    }
+  }
 }
 
 function resetTabsToOverview() {
