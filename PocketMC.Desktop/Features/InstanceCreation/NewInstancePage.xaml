@@ -37,11 +37,17 @@
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
                 <ui:Button x:Name="BtnImportModpack"
-                           Content="Import Modpack"
                            Appearance="Secondary"
-                           Icon="{ui:SymbolIcon FolderZip24}"
                            Margin="0,0,8,0"
-                           Click="BtnImportModpack_Click"/>
+                           Click="BtnImportModpack_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="FolderZip24" Margin="0,0,8,0" />
+                        <TextBlock Text="Import Modpack" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <Border Background="#33FFB347" BorderBrush="#FFFFB347" BorderThickness="1" CornerRadius="4" Padding="4,0" VerticalAlignment="Center">
+                            <TextBlock Text="BETA" FontSize="10" FontWeight="Bold" Foreground="#FFFFB347" VerticalAlignment="Center" />
+                        </Border>
+                    </StackPanel>
+                </ui:Button>
                 <ui:Button x:Name="BtnImportInstance"
                            Content="Import Instance"
                            Appearance="Secondary"

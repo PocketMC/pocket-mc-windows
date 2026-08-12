@@ -423,8 +423,14 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
         }
 
-        private void BtnImportModpack_Click(object sender, RoutedEventArgs e)
+        private async void BtnImportModpack_Click(object sender, RoutedEventArgs e)
         {
+            var result = await _dialogService.ShowDialogAsync("Modpacks (BETA)",
+                "Modpacks are designed for clients and may crash on servers out-of-the-box. You will often need to resolve mod dependencies manually (using an LLM can help!) to fix crashes.\n\nTip: If the modpack author provides a dedicated 'Server Pack', it's highly recommended to download it and use 'Import Instance' instead. However, not all developers create Server Packs.\n\nContinue with automated modpack install?",
+                DialogType.Warning);
+
+            if (result != DialogResult.Yes) return;
+
             var compat = new EngineCompatibility("Fabric"); // Dummy for Modpack Mode
 
             var browserPage = (PluginBrowserPage)ActivatorUtilities.CreateInstance(

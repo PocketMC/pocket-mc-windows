@@ -170,10 +170,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 return;
             }
 
-            if (report.SkippedOverrides.Any())
-            {
-                ShowAlert($"Skipped {report.SkippedOverrides.Count} unsafe overrides (e.g. paths outside instance directory).");
-            }
+
 
             UpdateOverallStatus("Installation Complete!", 100);
             TxtOverallStatus.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));

@@ -353,13 +353,33 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (string.IsNullOrEmpty(projectId)) projectId = vm.Slug;
 
                 string mcVersionArg = (_compat.Family == EngineFamily.Bedrock || _compat.Family == EngineFamily.Pocketmine) ? "" : (_mcVersion == "*" ? "" : _mcVersion);
+                string loaderArg = _compat.LoaderName;
+                EngineCompatibility compat = _compat;
+
+                if (_isModpackMode)
+                {
+                    var selectedMc = CmbMcVersion.SelectedItem as MinecraftVersion;
+                    mcVersionArg = (selectedMc != null && selectedMc.Id != "Any") ? selectedMc.Id : "";
+
+                    string selectedLoader = (CmbLoader.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(selectedLoader))
+                    {
+                        loaderArg = selectedLoader;
+                        compat = new EngineCompatibility(selectedLoader);
+                    }
+                    else
+                    {
+                        loaderArg = "";
+                        compat = new EngineCompatibility("Vanilla");
+                    }
+                }
 
                 IAddonProvider provider = vm.Provider switch
                 {
                     "CurseForge" => _curseForge,
                     _ => _modrinth
                 };
-                var resolved = await _resolver.ResolveAsync(provider, _serverDir!, projectId, mcVersionArg, _compat.LoaderName, _compat);
+                var resolved = await _resolver.ResolveAsync(provider, _serverDir ?? "", projectId, mcVersionArg, loaderArg, compat);
                 var rootResolved = resolved.FirstOrDefault();
                 if (rootResolved == null || string.IsNullOrEmpty(rootResolved.DownloadUrl) || !string.IsNullOrEmpty(rootResolved.Error))
                 {
