@@ -165,16 +165,24 @@ public sealed class RemoteDashboardHost
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        WebApplication? app = _app;
-        _app = null;
-        if (app == null)
+        await _startGate.WaitAsync(cancellationToken);
+        try
         {
-            return;
-        }
+            WebApplication? app = _app;
+            _app = null;
+            if (app == null)
+            {
+                return;
+            }
 
-        await app.StopAsync(cancellationToken);
-        await app.DisposeAsync();
-        _logger.LogInformation("Remote Control host stopped.");
+            await app.StopAsync(cancellationToken);
+            await app.DisposeAsync();
+            _logger.LogInformation("Remote Control host stopped.");
+        }
+        finally
+        {
+            _startGate.Release();
+        }
     }
 
     private void MapStaticFiles(WebApplication app)
@@ -324,6 +332,7 @@ public sealed class RemoteDashboardHost
             }
 
             await process.WriteInputAsync(request.Command.Trim());
+            
             _auditLogService.Log("remote", "console.command", instanceId);
             return Results.Ok(new { sent = true });
         });

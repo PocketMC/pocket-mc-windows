@@ -412,6 +412,16 @@ function renderStatus(remoteStatus, instanceStatus) {
   els.serverName.textContent = instanceStatus.name;
   els.serverType.textContent = instanceStatus.serverType;
 
+  const saveAllBtn = document.querySelector('button[data-cmd="save-all"]');
+  if (saveAllBtn) {
+    const type = (instanceStatus.serverType || "").toLowerCase();
+    if (type.includes("bedrock") || type.includes("bds") || type.includes("pocketmine")) {
+      saveAllBtn.style.display = "none";
+    } else {
+      saveAllBtn.style.display = "";
+    }
+  }
+
   if (els.pinnedBadge) {
     els.pinnedBadge.hidden = !instanceStatus.isPinned;
   }
