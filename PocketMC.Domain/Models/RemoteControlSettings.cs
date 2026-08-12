@@ -8,6 +8,10 @@ public sealed class RemoteControlSettings
     public string TunnelProviderId { get; set; } = "cloudflared-quick";
     public bool AllowRemoteConsoleCommands { get; set; }
     public bool AllowRemotePlayerActions { get; set; } = true;
+    public bool AllowRemoteServerSettings { get; set; } = true;
+    public bool AllowRemoteServerAddons { get; set; } = true;
+    public bool AllowRemoteFileManager { get; set; } = true;
+    public bool AllowRemoteServerBackups { get; set; } = true;
     public string? PlayitTunnelId { get; set; }
     public string? PasswordHash { get; set; }
     public bool RequireAuthentication { get; set; } = true;

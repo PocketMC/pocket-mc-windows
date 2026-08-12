@@ -42,6 +42,7 @@ const els = {
   commandForm: document.getElementById("commandForm"),
   commandInput: document.querySelector("#commandInput"),
   commandDisabled: document.querySelector("#commandDisabled"),
+  quickCommandsBar: document.querySelector("#quickCommandsBar"),
 
   playersState: document.querySelector("#playersState"),
   playerList: document.querySelector("#playerList"),
@@ -501,6 +502,7 @@ function renderStatus(remoteStatus, instanceStatus) {
 
   const canSendCommands = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
   els.commandForm.hidden = !canSendCommands;
+  if (els.quickCommandsBar) els.quickCommandsBar.hidden = !canSendCommands;
   els.commandDisabled.hidden = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
 
   if (els.offlinePlayerManage) {
@@ -508,6 +510,38 @@ function renderStatus(remoteStatus, instanceStatus) {
   }
   if (els.playersDisabled) {
     els.playersDisabled.hidden = remoteStatus.allowRemotePlayerActions;
+  }
+  
+  const settingsTabBtn = document.querySelector('.tab-button[data-tab="settings"]');
+  if (settingsTabBtn) {
+    settingsTabBtn.hidden = !remoteStatus.allowRemoteServerSettings;
+    if (!remoteStatus.allowRemoteServerSettings && settingsTabBtn.classList.contains("active")) {
+      resetTabsToOverview();
+    }
+  }
+
+  const addonsTabBtn = document.querySelector('.tab-button[data-tab="addons"]');
+  if (addonsTabBtn) {
+    addonsTabBtn.hidden = !remoteStatus.allowRemoteServerAddons;
+    if (!remoteStatus.allowRemoteServerAddons && addonsTabBtn.classList.contains("active")) {
+      resetTabsToOverview();
+    }
+  }
+
+  const fileManagerTabBtn = document.querySelector('.tab-button[data-tab="files"]');
+  if (fileManagerTabBtn) {
+    fileManagerTabBtn.hidden = !remoteStatus.allowRemoteFileManager;
+    if (!remoteStatus.allowRemoteFileManager && fileManagerTabBtn.classList.contains("active")) {
+      resetTabsToOverview();
+    }
+  }
+
+  const backupsTabBtn = document.querySelector('.tab-button[data-tab="backups"]');
+  if (backupsTabBtn) {
+    backupsTabBtn.hidden = !remoteStatus.allowRemoteServerBackups;
+    if (!remoteStatus.allowRemoteServerBackups && backupsTabBtn.classList.contains("active")) {
+      resetTabsToOverview();
+    }
   }
 
   renderPlayers(instanceStatus.onlinePlayers || [], remoteStatus.allowRemotePlayerActions);

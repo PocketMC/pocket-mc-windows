@@ -321,6 +321,82 @@
                                              VerticalAlignment="Center"
                                              IsChecked="{Binding AllowRemotePlayerActions}"/>
                         </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Allow remote server settings" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Allows paired devices to view and change server settings from the remote dashboard."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemoteServerSettings"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding AllowRemoteServerSettings}"/>
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Allow remote server addons" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Allows paired devices to view and manage server addons (plugins, mods, packs)."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemoteServerAddons"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding AllowRemoteServerAddons}"/>
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Allow remote file manager" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Allows paired devices to view, edit, and delete files on the server directly."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemoteFileManager"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding AllowRemoteFileManager}"/>
+                        </Grid>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Allow remote server backups" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Allows paired devices to view and trigger server backups from the remote dashboard."
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleRemoteServerBackups"
+                                             Grid.Column="1"
+                                             VerticalAlignment="Center"
+                                             IsChecked="{Binding AllowRemoteServerBackups}"/>
+                        </Grid>
                     </StackPanel>
                 </ui:CardExpander>
 

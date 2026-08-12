@@ -354,6 +354,11 @@ public sealed class RemoteDashboardHost
 
         api.MapGet("/instances/{instanceId:guid}/properties", (Guid instanceId) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerSettings)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var metadata = _instanceRegistry?.GetById(instanceId);
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             if (metadata == null || string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
@@ -387,6 +392,11 @@ public sealed class RemoteDashboardHost
 
         api.MapPut("/instances/{instanceId:guid}/properties", async (HttpContext context, Guid instanceId) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerSettings)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var metadata = _instanceRegistry?.GetById(instanceId);
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             if (metadata == null || string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
@@ -421,6 +431,11 @@ public sealed class RemoteDashboardHost
 
         api.MapGet("/instances/{instanceId:guid}/addons", (Guid instanceId) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerAddons)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
             {
@@ -433,6 +448,11 @@ public sealed class RemoteDashboardHost
 
         api.MapPost("/instances/{instanceId:guid}/addons/uninstall", async (HttpContext context, Guid instanceId) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerAddons)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
             {
@@ -474,6 +494,11 @@ public sealed class RemoteDashboardHost
         // ---------------------------------------------------------
         api.MapGet("/instances/{instanceId:guid}/files", (Guid instanceId, string? path) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteFileManager)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
 
@@ -535,6 +560,11 @@ public sealed class RemoteDashboardHost
 
         api.MapGet("/instances/{instanceId:guid}/files/content", (Guid instanceId, string? path) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteFileManager)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
 
@@ -584,6 +614,11 @@ public sealed class RemoteDashboardHost
 
         api.MapPut("/instances/{instanceId:guid}/files/content", async (HttpContext context, Guid instanceId) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteFileManager)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
 
@@ -600,6 +635,11 @@ public sealed class RemoteDashboardHost
 
         api.MapDelete("/instances/{instanceId:guid}/files", (Guid instanceId, string? path) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteFileManager)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
 
@@ -632,6 +672,11 @@ public sealed class RemoteDashboardHost
         // ---------------------------------------------------------
         api.MapGet("/instances/{instanceId:guid}/backups", (Guid instanceId) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerBackups)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             var metadata = _instanceRegistry?.GetById(instanceId);
             if (string.IsNullOrEmpty(serverDir) || metadata == null || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
@@ -707,6 +752,11 @@ public sealed class RemoteDashboardHost
 
         api.MapPost("/instances/{instanceId:guid}/backups", (Guid instanceId) =>
         {
+            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerBackups)
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             var metadata = _instanceRegistry?.GetById(instanceId);
             if (string.IsNullOrEmpty(serverDir) || metadata == null || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
@@ -775,7 +825,11 @@ public sealed class RemoteDashboardHost
             TunnelRunning = tunnelStatus.IsRunning,
             TunnelError = tunnelStatus.ErrorMessage,
             AllowRemoteConsoleCommands = settings.AllowRemoteConsoleCommands,
-            AllowRemotePlayerActions = settings.AllowRemotePlayerActions
+            AllowRemotePlayerActions = settings.AllowRemotePlayerActions,
+            AllowRemoteServerSettings = settings.AllowRemoteServerSettings,
+            AllowRemoteServerAddons = settings.AllowRemoteServerAddons,
+            AllowRemoteFileManager = settings.AllowRemoteFileManager,
+            AllowRemoteServerBackups = settings.AllowRemoteServerBackups
         };
     }
 

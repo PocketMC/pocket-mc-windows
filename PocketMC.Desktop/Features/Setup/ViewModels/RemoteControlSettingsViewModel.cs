@@ -53,6 +53,10 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         _port = remote.Port;
         _allowRemoteConsoleCommands = remote.AllowRemoteConsoleCommands;
         _allowRemotePlayerActions = remote.AllowRemotePlayerActions;
+        _allowRemoteServerSettings = remote.AllowRemoteServerSettings;
+        _allowRemoteServerAddons = remote.AllowRemoteServerAddons;
+        _allowRemoteFileManager = remote.AllowRemoteFileManager;
+        _allowRemoteServerBackups = remote.AllowRemoteServerBackups;
         _requireAuthentication = remote.RequireAuthentication;
         _accessMode = remote.AccessMode == RemoteAccessMode.LanOnly
             ? RemoteAccessMode.CloudflaredQuickTunnel
@@ -89,6 +93,18 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _allowRemotePlayerActions;
+
+    [ObservableProperty]
+    private bool _allowRemoteServerSettings;
+
+    [ObservableProperty]
+    private bool _allowRemoteServerAddons;
+
+    [ObservableProperty]
+    private bool _allowRemoteFileManager;
+
+    [ObservableProperty]
+    private bool _allowRemoteServerBackups;
 
     [ObservableProperty]
     private bool _requireAuthentication;
@@ -211,6 +227,26 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         SaveSettings();
     }
 
+    partial void OnAllowRemoteServerSettingsChanged(bool value)
+    {
+        SaveSettings();
+    }
+
+    partial void OnAllowRemoteServerAddonsChanged(bool value)
+    {
+        SaveSettings();
+    }
+
+    partial void OnAllowRemoteFileManagerChanged(bool value)
+    {
+        SaveSettings();
+    }
+
+    partial void OnAllowRemoteServerBackupsChanged(bool value)
+    {
+        SaveSettings();
+    }
+
     partial void OnRequireAuthenticationChanged(bool value)
     {
         if (value)
@@ -279,6 +315,10 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.Port = Port;
         settings.RemoteControl.AllowRemoteConsoleCommands = AllowRemoteConsoleCommands;
         settings.RemoteControl.AllowRemotePlayerActions = AllowRemotePlayerActions;
+        settings.RemoteControl.AllowRemoteServerSettings = AllowRemoteServerSettings;
+        settings.RemoteControl.AllowRemoteServerAddons = AllowRemoteServerAddons;
+        settings.RemoteControl.AllowRemoteFileManager = AllowRemoteFileManager;
+        settings.RemoteControl.AllowRemoteServerBackups = AllowRemoteServerBackups;
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
         settings.RemoteControl.RequireAuthentication = RequireAuthentication;
