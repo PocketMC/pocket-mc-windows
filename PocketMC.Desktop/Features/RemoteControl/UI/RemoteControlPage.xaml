@@ -46,6 +46,13 @@
                 </ui:NavigationView.MenuItems>
             </ui:NavigationView>
 
+            <!-- Vertical Separator -->
+            <Border Grid.Column="1" 
+                    HorizontalAlignment="Left" 
+                    Width="1" 
+                    Opacity="0.4"
+                    Background="{DynamicResource DividerStrokeColorDefaultBrush}" 
+                    Margin="12,0,0,24" />
 
             <!-- General Settings Tab -->
             <ScrollViewer x:Name="RemoteControlScrollViewer"
@@ -78,7 +85,7 @@
                                                  IsChecked="{Binding IsEnabled}"/>
                             </Grid>
 
-                            <StackPanel Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
                                 <Separator Margin="0,16" Opacity="0.15"/>
 
                             <Grid>
@@ -115,7 +122,7 @@
                                        FontSize="12"
                                        Margin="0,8,0,0"/>
 
-                            <Grid Margin="0,16,0,0">
+                            <Grid Margin="0,16,0,0" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVis}}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
@@ -233,7 +240,7 @@
                     </StackPanel>
                 </ui:Card>
 
-                    <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon LockClosed24}" Margin="0,12,0,0" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVis}}">
+                    <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon LockClosed24}" Margin="0,12,0,0">
                         <ui:CardExpander.Header>
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -268,7 +275,7 @@
                         </StackPanel>
                     </ui:CardExpander>
 
-                    <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Chat24}" Margin="0,12,0,0" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVis}}">
+                    <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Chat24}" Margin="0,12,0,0">
                         <ui:CardExpander.Header>
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -347,7 +354,7 @@
                         <ui:Button Grid.Column="1" Content="Add User" Appearance="Primary" Icon="{ui:SymbolIcon Add24}" Command="{Binding AddUserCommand}"/>
                     </Grid>
 
-                    <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ShieldKeyhole24}" Margin="0,0,0,16">
+                    <ui:CardExpander IsExpanded="{Binding IsAdminCredentialsExpanded, Mode=TwoWay}" Icon="{ui:SymbolIcon ShieldKeyhole24}" Margin="0,0,0,16">
                         <ui:CardExpander.Header>
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -377,7 +384,7 @@
                                 <ui:TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter admin username" Margin="0,0,0,8" />
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Admin Password" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
-                                <ui:PasswordBox Grid.Row="1" Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter new password (optional if unchanged)" Margin="0,0,0,12"/>
+                                <ui:PasswordBox Grid.Row="1" Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter admin password" Margin="0,0,0,12"/>
                                 
                                 <ui:Button Grid.Row="2" Grid.Column="1" Content="Save Admin Account" Appearance="Primary" Command="{Binding SaveCredentialsCommand}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
 
@@ -403,7 +410,7 @@
                                                 <TextBlock Text="{Binding Username}" FontSize="16" FontWeight="SemiBold"/>
                                                 <TextBlock Text="Sub-user" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
                                             </StackPanel>
-                                            <ui:Button Grid.Column="1" Content="Remove" Appearance="Danger" Command="{Binding RemoveCommand}" Margin="0,0,16,0"/>
+                                            <ui:Button Grid.Column="1" Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" Command="{Binding RemoveCommand}" Margin="0,0,16,0" ToolTip="Remove User"/>
                                         </Grid>
                                     </ui:CardExpander.Header>
 

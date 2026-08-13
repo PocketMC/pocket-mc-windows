@@ -107,10 +107,22 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         SelectedUser = userVm;
     }
 
-    public void RemoveUser(RemoteControlUserViewModel user)
+    public async Task RemoveUser(RemoteControlUserViewModel user)
     {
-        Users.Remove(user);
-        SaveSettings();
+        var result = await _dialogService.ShowDialogAsync(
+            "Remove User",
+            $"Are you sure you want to remove the user '{user.Username}'? This action cannot be undone.",
+            PocketMC.Desktop.Core.Interfaces.DialogType.Warning,
+            false,
+            "Remove",
+            "Cancel");
+
+        if (result == PocketMC.Desktop.Core.Interfaces.DialogResult.Ok || result == PocketMC.Desktop.Core.Interfaces.DialogResult.Yes)
+        {
+            Users.Remove(user);
+            SaveSettings();
+            SetStatus($"User '{user.Username}' removed successfully.", false);
+        }
     }
 
     public void SaveUser(RemoteControlUserViewModel user)
@@ -160,6 +172,9 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _password = "";
+
+    [ObservableProperty]
+    private bool _isAdminCredentialsExpanded;
 
     public bool IsPasswordSet => !string.IsNullOrEmpty(_applicationState.Settings.RemoteControl.PasswordHash);
     public bool IsPasswordNotSet => string.IsNullOrEmpty(_applicationState.Settings.RemoteControl.PasswordHash);
@@ -248,24 +263,33 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     {
         bool askUsername = IsUsernameNotSet;
         bool askPassword = IsPasswordNotSet;
-        var result = await _dialogService.PromptCredentialsAsync(
-            "Setup Admin Credentials",
-            "Remote Control requires authentication to be secure. Please set up the primary admin account, or turn off authentication to continue without it.",
-            askUsername,
-            askPassword);
-
-        if ((!askUsername || !string.IsNullOrEmpty(result.Username)) && 
-            (!askPassword || !string.IsNullOrEmpty(result.Password)))
+        
+        while (true)
         {
+            var result = await _dialogService.PromptCredentialsAsync(
+                "Setup Admin Credentials",
+                "Remote Control requires authentication to be secure. Please set up the primary admin account, or turn off authentication to continue without it.",
+                askUsername,
+                askPassword);
+
+            if (result.Username == null && result.Password == null)
+            {
+                RequireAuthentication = false;
+                break;
+            }
+
+            if ((askUsername && string.IsNullOrWhiteSpace(result.Username)) || 
+                (askPassword && string.IsNullOrWhiteSpace(result.Password)))
+            {
+                _dialogService.ShowMessage("Invalid Input", "Username and password cannot be empty. Please enter valid credentials.", PocketMC.Desktop.Core.Interfaces.DialogType.Warning);
+                continue;
+            }
+
             if (askUsername) Username = result.Username;
             if (askPassword) Password = result.Password!;
             SaveCredentials();
             SaveAndRestart();
-        }
-        else
-        {
-            RequireAuthentication = false;
-            SaveAndRestart();
+            break;
         }
     }
 
@@ -288,10 +312,24 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     [RelayCommand]
     private void SaveCredentials()
     {
+        if (string.IsNullOrWhiteSpace(Username))
+        {
+            SetStatus("Username cannot be empty.", true);
+            return;
+        }
+        
+        if (string.IsNullOrWhiteSpace(Password))
+        {
+            SetStatus("Password cannot be empty.", true);
+            return;
+        }
+
         _applicationState.Settings.RemoteControl.SecurityStamp = Guid.NewGuid().ToString();
         SaveSettings();
         OnPropertyChanged(nameof(IsPasswordSet));
         OnPropertyChanged(nameof(IsPasswordNotSet));
+        SetStatus("Admin credentials saved successfully.", false);
+        IsAdminCredentialsExpanded = false;
     }
 
     partial void OnEnableDiscordNotificationsChanged(bool value)
@@ -636,7 +674,7 @@ public partial class RemoteControlUserViewModel : ObservableObject
     private void Save() => _parent.SaveUser(this);
 
     [RelayCommand]
-    private void Remove() => _parent.RemoveUser(this);
+    private async Task Remove() => await _parent.RemoveUser(this);
 }
 
 
