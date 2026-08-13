@@ -284,6 +284,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             if (result.Username == null && result.Password == null)
             {
                 RequireAuthentication = false;
+                SaveAndRestart();
                 break;
             }
 
@@ -321,6 +322,22 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     [RelayCommand]
     private void SaveCredentials()
     {
+        if (string.IsNullOrWhiteSpace(Username) && string.IsNullOrWhiteSpace(Password))
+        {
+            Username = string.Empty;
+            Password = string.Empty;
+            _applicationState.Settings.RemoteControl.Username = null;
+            _applicationState.Settings.RemoteControl.PasswordHash = null;
+            _applicationState.Settings.RemoteControl.ProtectedPassword = null;
+            
+            SaveSettings();
+            OnPropertyChanged(nameof(IsPasswordSet));
+            OnPropertyChanged(nameof(IsPasswordNotSet));
+            SetStatus("Admin credentials cleared successfully.", false);
+            IsAdminCredentialsExpanded = false;
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(Username))
         {
             SetStatus("Username cannot be empty.", true);
