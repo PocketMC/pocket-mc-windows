@@ -1,7 +1,8 @@
-﻿using System.IO;
+using System.IO;
 using PocketMC.Application.Services.Instances;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Application.Services.Shell;
+using PocketMC.Infrastructure.Telemetry;
 
 namespace PocketMC.RemoteControl.Tunnels;
 
@@ -9,12 +10,14 @@ public sealed class CloudflaredInstaller : ICloudflaredInstaller
 {
     private readonly ApplicationState _applicationState;
     private readonly DownloaderService _downloaderService;
+    private readonly SettingsManager _settingsManager;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
-    public CloudflaredInstaller(ApplicationState applicationState, DownloaderService downloaderService)
+    public CloudflaredInstaller(ApplicationState applicationState, DownloaderService downloaderService, SettingsManager settingsManager)
     {
         _applicationState = applicationState;
         _downloaderService = downloaderService;
+        _settingsManager = settingsManager;
     }
 
     public async Task<string> EnsureInstalledAsync(CancellationToken cancellationToken)
@@ -33,7 +36,11 @@ public sealed class CloudflaredInstaller : ICloudflaredInstaller
         {
             if (File.Exists(cloudflaredPath))
             {
-                if (DownloaderService.CloudflaredExpectedSha256 != null)
+                if (!string.Equals(_applicationState.Settings.RemoteControl.CloudflaredVersion, DownloaderService.CloudflaredVersion, StringComparison.OrdinalIgnoreCase))
+                {
+                    File.Delete(cloudflaredPath);
+                }
+                else if (DownloaderService.CloudflaredExpectedSha256 != null)
                 {
                     bool isValid = await VerifySha256Async(cloudflaredPath, DownloaderService.CloudflaredExpectedSha256, cancellationToken);
                     if (!isValid)
@@ -46,6 +53,9 @@ public sealed class CloudflaredInstaller : ICloudflaredInstaller
             if (!File.Exists(cloudflaredPath))
             {
                 await _downloaderService.EnsureCloudflaredDownloadedAsync(appRootPath, progress: null, cancellationToken);
+                
+                _applicationState.Settings.RemoteControl.CloudflaredVersion = DownloaderService.CloudflaredVersion;
+                _settingsManager.Save(_applicationState.Settings);
             }
 
             return cloudflaredPath;

@@ -13,10 +13,12 @@ public sealed class CloudflaredQuickTunnelProviderTests
         Assert.Equal(expected, url);
     }
 
-    [Fact]
-    public void TryParsePublicUrl_IgnoresNonTryCloudflareUrls()
+    [Theory]
+    [InlineData("https://example.com")]
+    [InlineData("ERR failed to connect to https://api.trycloudflare.com")]
+    public void TryParsePublicUrl_IgnoresNonTryCloudflareUrls(string line)
     {
-        Assert.False(CloudflaredQuickTunnelProvider.TryParsePublicUrl("https://example.com", out string? url));
+        Assert.False(CloudflaredQuickTunnelProvider.TryParsePublicUrl(line, out string? url));
         Assert.Null(url);
     }
 }

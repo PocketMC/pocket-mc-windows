@@ -13,5 +13,6 @@ public sealed class RemoteControlSettings
     public bool RequireAuthentication { get; set; } = true;
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString();
     public string? ProtectedPassword { get; set; }
+    public string? CloudflaredVersion { get; set; }
     public List<RemoteControlUser> Users { get; set; } = new();
 }
