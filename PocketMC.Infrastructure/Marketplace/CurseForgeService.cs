@@ -390,6 +390,11 @@ namespace PocketMC.Infrastructure.Marketplace
             long fileId = long.Parse(fileNode["id"]!.ToString());
             string fileName = fileNode["fileName"]?.ToString() ?? "mod.jar";
             string downloadUrl = fileNode["downloadUrl"]?.ToString() ?? "";
+            
+            if (string.IsNullOrWhiteSpace(downloadUrl) && fileId > 0 && !string.IsNullOrWhiteSpace(fileName))
+            {
+                downloadUrl = $"https://edge.forgecdn.net/files/{fileId / 1000}/{fileId % 1000}/{Uri.EscapeDataString(fileName)}";
+            }
 
             var v = new MarketplaceVersion
             {

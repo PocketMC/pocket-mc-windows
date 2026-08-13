@@ -28,7 +28,7 @@ namespace PocketMC.Desktop.Core.Interfaces
         Task<string?> OpenFolderDialogAsync(string title);
         Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*");
         Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*");
-        Task<string?> PromptPasswordAsync(string title, string message);
+        Task<(string? Username, string? Password)> PromptCredentialsAsync(string title, string message, bool askUsername, bool askPassword);
         Task ShowProgressDialogAsync(string title, string message, System.Func<System.IProgress<double>, Task> action);
         Task ShowProgressDialogAsync(string title, string message, System.Func<System.IProgress<ProgressDialogUpdate>, Task> action);
     }

@@ -191,7 +191,8 @@ namespace PocketMC.Infrastructure.Marketplace
             // Fallback to latest compatible version
             if (version == null)
             {
-                version = await provider.GetLatestVersionAsync(projectId, mcVersion, compat.CompatibleLoaderNames);
+                var loaderCandidates = string.IsNullOrEmpty(loader) ? Array.Empty<string>() : compat.CompatibleLoaderNames;
+                version = await provider.GetLatestVersionAsync(projectId, mcVersion, loaderCandidates);
             }
 
             if (version == null)
@@ -202,7 +203,9 @@ namespace PocketMC.Infrastructure.Marketplace
 
                 var mcCandidates = ModrinthService.BuildMinecraftVersionCandidates(mcVersion);
                 string triedMcVersions = string.Join(" or ", mcCandidates.Where(c => !string.IsNullOrEmpty(c)));
-                string triedLoaders = string.Join("/", compat.CompatibleLoaderNames.Select(l => FirstCharToUpper(l)));
+                
+                var loaderNamesToPrint = string.IsNullOrEmpty(loader) ? new[] { "Any" } : compat.CompatibleLoaderNames.Select(l => FirstCharToUpper(l));
+                string triedLoaders = string.Join("/", loaderNamesToPrint);
                 string errorMsg = $"No compatible {triedLoaders} version found for Minecraft {triedMcVersions}.";
 
                 results.Add(new ResolvedDependency

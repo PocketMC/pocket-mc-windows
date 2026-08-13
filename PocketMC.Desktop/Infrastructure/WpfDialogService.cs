@@ -78,22 +78,22 @@ namespace PocketMC.Desktop.Infrastructure
             return Task.FromResult(dialog.ShowDialog() == true ? dialog.FileNames : System.Array.Empty<string>());
         }
 
-        public Task<string?> PromptPasswordAsync(string title, string message)
+        public Task<(string? Username, string? Password)> PromptCredentialsAsync(string title, string message, bool askUsername, bool askPassword)
         {
-            var tcs = new TaskCompletionSource<string?>();
+            var tcs = new TaskCompletionSource<(string? Username, string? Password)>();
             System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                var dialog = new PasswordPromptDialogWindow(title, message)
+                var dialog = new PasswordPromptDialogWindow(title, message, askUsername, askPassword)
                 {
                     Owner = System.Windows.Application.Current.MainWindow
                 };
                 if (dialog.ShowDialog() == true)
                 {
-                    tcs.SetResult(dialog.Password);
+                    tcs.SetResult((dialog.Username, dialog.Password));
                 }
                 else
                 {
-                    tcs.SetResult(null);
+                    tcs.SetResult((null, null));
                 }
             });
             return tcs.Task;

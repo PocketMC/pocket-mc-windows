@@ -9,11 +9,11 @@
     <NoWarn>$(NoWarn);CS0105</NoWarn>
     
     <!-- OS-Level App Details -->
-    <AssemblyName>Pocket MC</AssemblyName>
-    <Product>Pocket MC</Product>
+    <AssemblyName>PocketMC</AssemblyName>
+    <Product>PocketMC</Product>
     <Company>DS Labs</Company>
-    <Description>Pocket MC</Description>
-    <Title>Pocket MC</Title>
+    <Description>PocketMC</Description>
+    <Title>PocketMC</Title>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-﻿using PocketMC.RemoteControl.Models;
+using PocketMC.RemoteControl.Models;
 using PocketMC.Application.Services.Players;
 using PocketMC.Application.Interfaces;
 using PocketMC.Application.Interfaces.Instances;
@@ -39,7 +39,9 @@ public sealed class RemoteStatusService
 
     public IReadOnlyList<RemoteInstanceDto> GetInstances() =>
         _registry.GetAll()
-            .OrderBy(instance => instance.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(instance => instance.PinnedAt.HasValue)
+            .ThenBy(instance => instance.PinnedAt)
+            .ThenBy(instance => instance.Name, StringComparer.OrdinalIgnoreCase)
             .Select(instance =>
             {
                 bool isRunning = _lifecycleService.IsRunning(instance.Id);
@@ -54,7 +56,8 @@ public sealed class RemoteStatusService
                     State = GetState(instance.Id),
                     MinecraftVersion = instance.MinecraftVersion,
                     PlayerCount = process?.PlayerCount ?? metrics?.PlayerCount ?? 0,
-                    MaxPlayers = instance.MaxPlayers
+                    MaxPlayers = instance.MaxPlayers,
+                    IsPinned = instance.PinnedAt.HasValue
                 };
             })
             .ToList();
@@ -144,6 +147,7 @@ public sealed class RemoteStatusService
             CpuUsage = metrics?.CpuUsage ?? 0,
             RamUsageMb = metrics?.RamUsageMb ?? 0,
             MaxRamMb = metadata.MaxRamMb,
+            IsPinned = metadata.PinnedAt.HasValue,
             ServerIps = serverIps
         };
     }

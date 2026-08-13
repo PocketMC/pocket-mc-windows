@@ -18,5 +18,6 @@ public sealed class RemoteInstanceStatusDto
     public double CpuUsage { get; set; }
     public double RamUsageMb { get; set; }
     public int MaxRamMb { get; set; }
+    public bool IsPinned { get; set; }
     public IReadOnlyList<ServerIpDto> ServerIps { get; set; } = Array.Empty<ServerIpDto>();
 }

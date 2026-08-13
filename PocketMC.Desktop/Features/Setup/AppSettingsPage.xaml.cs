@@ -77,7 +77,7 @@ namespace PocketMC.Desktop.Features.Setup
             ("Dark Blue", "#003E92"),
             ("Teal", "#008272"),
             ("Cyan", "#0099BC"),
-            ("Pocket MC Green", "#008B00"),
+            ("PocketMC Green", "#008B00"),
             ("Emerald", "#10893E"),
             ("Yellow", "#986F0B"),
             ("Orange", "#CA5010"),

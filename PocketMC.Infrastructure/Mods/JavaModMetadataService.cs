@@ -40,7 +40,8 @@ namespace PocketMC.Infrastructure.Mods
                     {
                         DisplayName = CleanJarName(Path.GetFileName(filePath)),
                         FileName = Path.GetFileName(filePath),
-                        LoaderType = "Unknown"
+                        LoaderType = "Unknown",
+                        IsCorrupt = true
                     };
                 }
 
@@ -62,7 +63,8 @@ namespace PocketMC.Infrastructure.Mods
                 {
                     DisplayName = CleanJarName(Path.GetFileName(filePath)),
                     FileName = Path.GetFileName(filePath),
-                    LoaderType = "Unknown"
+                    LoaderType = "Unknown",
+                    IsCorrupt = true
                 };
             }
         }
@@ -189,6 +191,7 @@ namespace PocketMC.Infrastructure.Mods
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or NotSupportedException)
             {
                 metadata.LoaderType = "Unknown";
+                metadata.IsCorrupt = true;
             }
 
             return metadata;

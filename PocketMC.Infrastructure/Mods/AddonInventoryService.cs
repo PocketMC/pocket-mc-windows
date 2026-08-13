@@ -212,10 +212,19 @@ public sealed class AddonInventoryService
             isLoaderVersionIncompatible = !SemanticVersionHelper.IsCompatible(jarMetadata.RequiredLoaderVersion, metadata.LoaderVersion);
         }
 
-        bool isInvalid = jarMetadata.LoaderType == "Unknown" ||
-                         jarMetadata.IsPluginInModsFolder ||
-                         sideSupport == ModSideSupport.ClientOnly ||
-                         !isCompatibleLoader;
+        bool isInvalid = false;
+        if (metadata.IsModpack)
+        {
+            // For modpacks, ONLY delete client-only mods. Ignore metadata/loader checks.
+            isInvalid = sideSupport == ModSideSupport.ClientOnly;
+        }
+        else
+        {
+            isInvalid = jarMetadata.IsCorrupt ||
+                             jarMetadata.IsPluginInModsFolder ||
+                             sideSupport == ModSideSupport.ClientOnly ||
+                             !isCompatibleLoader;
+        }
 
         if (isInvalid)
         {

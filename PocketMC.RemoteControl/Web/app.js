@@ -4,23 +4,24 @@ const viewKey = "pocketmc.remote.currentView"; // "instances"
 const els = {
   connectionLabel: document.querySelector("#connectionLabel"),
   refreshButton: document.querySelector("#refreshButton"),
-  notice: document.querySelector("#notice"),
-  
+  refreshButton: document.querySelector("#refreshButton"),
+
   appView: document.querySelector("#appView"),
   emptyView: document.querySelector("#emptyView"),
   emptyRefreshButton: document.querySelector("#emptyRefreshButton"),
   errorView: document.querySelector("#errorView"),
   errorMessage: document.querySelector("#errorMessage"),
   retryButton: document.querySelector("#retryButton"),
-  
+
   loginView: document.querySelector("#loginView"),
   loginForm: document.querySelector("#loginForm"),
+  loginUsernameInput: document.querySelector("#loginUsernameInput"),
   loginPasswordInput: document.querySelector("#loginPasswordInput"),
   loginSubmitButton: document.querySelector("#loginSubmitButton"),
-  loginError: document.querySelector("#loginError"),
-  
+  loginSubmitButton: document.querySelector("#loginSubmitButton"),
+
   instanceListSidebar: document.querySelector("#instanceListSidebar"),
-  
+
   serverName: document.querySelector("#serverName"),
   serverType: document.querySelector("#serverType"),
   serverIconImage: document.querySelector("#serverIconImage"),
@@ -29,11 +30,11 @@ const els = {
   ramUsage: document.querySelector("#ramUsage"),
   cpuUsage: document.querySelector("#cpuUsage"),
   uptime: document.querySelector("#uptime"),
-  
+
   startButton: document.querySelector("#startButton"),
   stopButton: document.querySelector("#stopButton"),
   restartButton: document.querySelector("#restartButton"),
-  
+
   consoleState: document.querySelector("#consoleState"),
   consoleOutput: document.getElementById("consoleOutput"),
   filterInfo: document.getElementById("filterInfo"),
@@ -42,17 +43,18 @@ const els = {
   commandForm: document.getElementById("commandForm"),
   commandInput: document.querySelector("#commandInput"),
   commandDisabled: document.querySelector("#commandDisabled"),
-  
+  quickCommandsBar: document.querySelector("#quickCommandsBar"),
+
   playersState: document.querySelector("#playersState"),
   playerList: document.querySelector("#playerList"),
   offlinePlayerManage: document.querySelector("#offlinePlayerManage"),
   playersDisabled: document.querySelector("#playersDisabled"),
-  
+
   tabs: document.querySelectorAll(".tab-button"),
   tabContents: document.querySelectorAll(".tab-content"),
   serverIpsContainer: document.querySelector("#serverIpsContainer"),
   serverIpsList: document.querySelector("#serverIpsList"),
-  
+
   playerActionModal: document.querySelector("#playerActionModal"),
   playerActionModalTitle: document.querySelector("#playerActionModalTitle"),
   playerActionModalName: document.querySelector("#playerActionModalName"),
@@ -68,7 +70,7 @@ const els = {
   btnKick: document.querySelector("#btnKick"),
   btnBan: document.querySelector("#btnBan"),
   btnUnban: document.querySelector("#btnUnban"),
-  
+
   offlinePlayerInput: document.querySelector("#offlinePlayerInput"),
   btnOfflineManage: document.querySelector("#btnOfflineManage"),
   offlinePlayerForm: document.querySelector("#offlinePlayerForm"),
@@ -83,10 +85,21 @@ const els = {
   cpuProgressBar: document.querySelector("#cpuProgressBar"),
   ramProgressBar: document.querySelector("#ramProgressBar"),
   playersAvatarList: document.querySelector("#playersAvatarList"),
-  themeToggle: document.querySelector("#themeToggle")
+  themeToggle: document.querySelector("#themeToggle"),
+  pinnedBadge: document.querySelector("#pinnedBadge")
 };
 
-let selectedInstanceId = localStorage.getItem(instanceKey);
+
+// Global UI initialization based on current page
+const isLoginPage = window.location.pathname.includes('login.html');
+const isServerPage = window.location.pathname.includes('server.html');
+const urlParams = new URLSearchParams(window.location.search);
+let selectedInstanceId = isServerPage ? urlParams.get('id') : localStorage.getItem(instanceKey);
+
+if (isServerPage && !selectedInstanceId) {
+  window.location.href = '/remote/index.html';
+}
+
 let currentView = selectedInstanceId ? "details" : "selection";
 let searchQuery = "";
 let cachedInstances = [];
@@ -105,13 +118,29 @@ function setVisible(view) {
   }
 }
 
-function showNotice(message) {
-  els.notice.textContent = message;
-  els.notice.hidden = false;
-  clearTimeout(showNotice.timer);
-  showNotice.timer = setTimeout(() => {
-    els.notice.hidden = true;
-  }, 3600);
+function showSnackbar(message, type = "info") {
+  const container = document.getElementById("snackbar-container");
+  if (!container) return;
+
+  const snackbar = document.createElement("div");
+  snackbar.className = `snackbar ${type}`;
+
+  let iconSvg = "";
+  if (type === "success") {
+    iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+  } else if (type === "error") {
+    iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+  } else {
+    iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+  }
+
+  snackbar.innerHTML = `${iconSvg}<span>${message}</span>`;
+  container.appendChild(snackbar);
+
+  setTimeout(() => {
+    snackbar.classList.add("fade-out");
+    snackbar.addEventListener("animationend", () => snackbar.remove());
+  }, 2000);
 }
 
 async function api(path, options = {}) {
@@ -129,13 +158,19 @@ async function api(path, options = {}) {
       setVisible(els.loginView);
       throw new Error("Unauthorized");
     }
-    
+
     const text = await response.text();
     let msg = `Request failed (${response.status})`;
     try {
-        const json = JSON.parse(text);
-        if (json.error) msg = json.error;
-    } catch { msg = text || msg; }
+      const json = JSON.parse(text);
+      if (json.error) msg = json.error;
+    } catch {
+      if (text && (text.trim().startsWith("<") || text.includes("Cloudflare"))) {
+        msg = `Remote tunnel is offline (HTTP ${response.status})`;
+      } else {
+        msg = text || msg;
+      }
+    }
     throw new Error(msg);
   }
 
@@ -145,7 +180,7 @@ async function api(path, options = {}) {
 
 
 if (els.getStartedButton && els.welcomeScreen) {
-  els.getStartedButton.addEventListener("click", () => {
+  if (els.getStartedButton) els.getStartedButton.addEventListener("click", () => {
     localStorage.setItem("pocketmc.remote.welcomeSeen", "true");
     els.welcomeScreen.classList.add("welcome-fade-out");
     setTimeout(() => {
@@ -160,7 +195,7 @@ async function start() {
   if (welcomeSeen !== "true" && els.welcomeScreen) {
     els.welcomeScreen.hidden = false;
   }
-  
+
   clearInterval(statusTimer);
   closeSocket();
   await openDashboard();
@@ -169,12 +204,77 @@ async function start() {
 
 
 
+function formatFriendlyError(msg) {
+  if (!msg) return "An unexpected error occurred.";
+  const text = typeof msg === "string" ? msg : (msg.message || String(msg));
+  const lower = text.toLowerCase();
+
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("load failed") ||
+    lower.includes("typeerror") ||
+    lower.includes("connection refused") ||
+    lower.includes("net::err")
+  ) {
+    return "Connection lost. PocketMC Desktop or local network host is currently unreachable.";
+  }
+
+  if (
+    lower.includes("cloudflare") ||
+    lower.includes("tunnel") ||
+    lower.includes("<!doctype") ||
+    lower.includes("<html")
+  ) {
+    return "Remote tunnel connection closed. Remote Access was stopped or the tunnel URL expired.";
+  }
+
+  if (lower.includes("unauthorized") || lower.includes("401")) {
+    return "Session expired or invalid login. Please re-authenticate.";
+  }
+
+  if (lower.includes("404") || lower.includes("notfound")) {
+    return "The requested server instance was not found.";
+  }
+
+  return text;
+}
+
+function renderInstancesSkeleton() {
+  if (!els.instancesGrid) return;
+  els.instancesGrid.innerHTML = Array(3).fill(0).map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton-icon skeleton-box"></div>
+      <div class="skeleton-body">
+        <div class="skeleton-line title skeleton-box"></div>
+        <div class="skeleton-line sub skeleton-box"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderAddonsSkeleton() {
+  const grid = document.getElementById("addonsGrid");
+  if (!grid) return;
+  grid.innerHTML = Array(4).fill(0).map(() => `
+    <div class="addon-card" style="min-height: 100px;">
+      <div class="skeleton-body">
+        <div class="skeleton-line title skeleton-box" style="width: 60%;"></div>
+        <div class="skeleton-line sub skeleton-box" style="width: 35%;"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
 function showError(msg) {
   if (msg === "Unauthorized") return;
-  els.errorMessage.textContent = msg;
+  const friendlyMsg = formatFriendlyError(msg);
+  els.errorMessage.textContent = friendlyMsg;
   setVisible(els.errorView);
-  els.connectionLabel.textContent = "Disconnected";
-  els.connectionLabel.className = "connection-pill offline";
+  if (els.connectionLabel) {
+    els.connectionLabel.textContent = "Disconnected";
+    els.connectionLabel.className = "connection-pill offline";
+  }
 }
 
 async function openDashboard() {
@@ -197,7 +297,7 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
     showError(error.message);
     throw error;
   }
-  
+
   cachedInstances = instances;
 
   if (els.connectionLabel) {
@@ -219,6 +319,7 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
 
   if (currentView === "selection") {
     closeSocket();
+    resetTabsToOverview();
     renderSelectionView(instances);
     setVisible(els.instanceSelectionView);
   } else {
@@ -226,12 +327,14 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
 
     const instanceStatus = await api(`/api/instances/${selectedInstanceId}/status`);
     lastInstanceStatus = instanceStatus;
-    
+
     renderStatus(remoteStatusGlobal, instanceStatus);
 
     if (reconnectConsole) {
       historyLoadedForInstance = null;
       closeSocket();
+      loadServerSettings(selectedInstanceId);
+      loadAddons(selectedInstanceId);
     }
     await ensureConsoleConnection(instanceStatus);
   }
@@ -243,8 +346,8 @@ function renderSelectionView(instances) {
 
   const query = (searchQuery || "").toLowerCase().trim();
   const filtered = instances.filter(inst => {
-    return inst.name.toLowerCase().includes(query) || 
-           inst.serverType.toLowerCase().includes(query);
+    return inst.name.toLowerCase().includes(query) ||
+      inst.serverType.toLowerCase().includes(query);
   });
 
   if (filtered.length === 0) {
@@ -265,6 +368,8 @@ function renderSelectionView(instances) {
 
     const playerCount = inst.playerCount !== undefined ? inst.playerCount : 0;
     const maxPlayers = inst.maxPlayers !== undefined ? inst.maxPlayers : 20;
+    const isPinned = !!inst.isPinned;
+    const pinBadgeHtml = isPinned ? `<span class="card-pinned-icon" title="Pinned to top"><svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg></span>` : '';
 
     card.innerHTML = `
       <div class="instance-card-header">
@@ -272,7 +377,7 @@ function renderSelectionView(instances) {
           <img src="${getServerIcon(inst.serverType)}" alt="" class="instance-card-icon" />
         </div>
         <div class="instance-card-info">
-          <h3>${escapeHtml(inst.name)}</h3>
+          <h3>${escapeHtml(inst.name)}${pinBadgeHtml}</h3>
           <p>${escapeHtml(inst.serverType)} ${escapeHtml(inst.minecraftVersion || "")}</p>
         </div>
       </div>
@@ -323,34 +428,40 @@ function getServerIcon(serverType) {
 function renderStatus(remoteStatus, instanceStatus) {
   els.serverName.textContent = instanceStatus.name;
   els.serverType.textContent = instanceStatus.serverType;
-  
+
+  const saveAllBtn = document.querySelector('button[data-cmd="save-all"]');
+  if (saveAllBtn) {
+    const type = (instanceStatus.serverType || "").toLowerCase();
+    if (type.includes("bedrock") || type.includes("bds") || type.includes("pocketmine")) {
+      saveAllBtn.style.display = "none";
+    } else {
+      saveAllBtn.style.display = "";
+    }
+  }
+
+  if (els.pinnedBadge) {
+    els.pinnedBadge.hidden = !instanceStatus.isPinned;
+  }
+
   if (els.serverVersionBadge) {
     els.serverVersionBadge.textContent = instanceStatus.minecraftVersion ? `v${instanceStatus.minecraftVersion}` : "v1.20.1";
   }
 
   if (els.serverIpAddress) {
-    let primaryIp = "N/A";
-    if (instanceStatus.serverIps && instanceStatus.serverIps.length > 0) {
-      const tunnel = instanceStatus.serverIps.find(ip => {
-        const label = (ip.label || "").toLowerCase();
-        return label.includes("playit") && !label.includes("voice");
-      });
-      primaryIp = tunnel ? tunnel.address : "N/A";
-    }
-    els.serverIpAddress.textContent = `IP: ${primaryIp}`;
+    els.serverIpAddress.hidden = true;
   }
 
   if (els.serverIconImage) {
-      els.serverIconImage.src = getServerIcon(instanceStatus.serverType);
+    els.serverIconImage.src = getServerIcon(instanceStatus.serverType);
   }
 
   setStatusPill(instanceStatus);
   els.playerCount.textContent = `${instanceStatus.playerCount} / ${instanceStatus.maxPlayers}`;
-  
+
   const ramUsageGb = (instanceStatus.ramUsageMb / 1024).toFixed(1);
   const maxRamGb = instanceStatus.maxRamMb ? (instanceStatus.maxRamMb / 1024).toFixed(0) : "4";
   els.ramUsage.innerHTML = `${ramUsageGb} <span class="metric-tile-unit">/ ${maxRamGb} GB</span>`;
-  
+
   els.cpuUsage.textContent = `${instanceStatus.cpuUsage.toFixed(0)}`;
   els.uptime.textContent = formatUptime(instanceStatus.uptimeSeconds);
 
@@ -379,7 +490,7 @@ function renderStatus(remoteStatus, instanceStatus) {
       els.playersAvatarList.innerHTML = `<span class="muted" style="font-size: 12px; font-weight: normal;">No players online</span>`;
     }
   }
-  
+
   const state = (instanceStatus.state || "").toLowerCase();
   const isBusy = ["starting", "stopping", "restarting", "settingup", "installing"].includes(state);
 
@@ -394,7 +505,7 @@ function renderStatus(remoteStatus, instanceStatus) {
     const icon = btn.querySelector(".button-icon");
     const spinner = btn.querySelector(".btn-spinner");
     const textEl = btn.querySelector(".btn-text");
-    
+
     if (isTransitioning) {
       if (icon) icon.hidden = true;
       if (spinner) spinner.hidden = false;
@@ -415,38 +526,72 @@ function renderStatus(remoteStatus, instanceStatus) {
   els.restartButton.disabled = !instanceStatus.isRunning || isBusy;
 
 
-  
+
   const canSendCommands = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
   els.commandForm.hidden = !canSendCommands;
+  if (els.quickCommandsBar) els.quickCommandsBar.hidden = !canSendCommands;
   els.commandDisabled.hidden = remoteStatus.allowRemoteConsoleCommands && instanceStatus.isRunning;
-  
+
   if (els.offlinePlayerManage) {
-      els.offlinePlayerManage.hidden = !remoteStatus.allowRemotePlayerActions;
+    els.offlinePlayerManage.hidden = !remoteStatus.allowRemotePlayerActions;
   }
   if (els.playersDisabled) {
-      els.playersDisabled.hidden = remoteStatus.allowRemotePlayerActions;
+    els.playersDisabled.hidden = remoteStatus.allowRemotePlayerActions;
   }
   
+  const settingsTabBtn = document.querySelector('.tab-button[data-tab="settings"]');
+  if (settingsTabBtn) {
+    settingsTabBtn.hidden = !remoteStatus.allowRemoteServerSettings;
+    if (!remoteStatus.allowRemoteServerSettings && settingsTabBtn.classList.contains("active")) {
+      resetTabsToOverview();
+    }
+  }
+
+  const addonsTabBtn = document.querySelector('.tab-button[data-tab="addons"]');
+  if (addonsTabBtn) {
+    addonsTabBtn.hidden = !remoteStatus.allowRemoteServerAddons;
+    if (!remoteStatus.allowRemoteServerAddons && addonsTabBtn.classList.contains("active")) {
+      resetTabsToOverview();
+    }
+  }
+
+  const fileManagerTabBtn = document.querySelector('.tab-button[data-tab="files"]');
+  if (fileManagerTabBtn) {
+    fileManagerTabBtn.hidden = !remoteStatus.allowRemoteFileManager;
+    if (!remoteStatus.allowRemoteFileManager && fileManagerTabBtn.classList.contains("active")) {
+      resetTabsToOverview();
+    }
+  }
+
+  const backupsTabBtn = document.querySelector('.tab-button[data-tab="backups"]');
+  if (backupsTabBtn) {
+    backupsTabBtn.hidden = !remoteStatus.allowRemoteServerBackups;
+    if (!remoteStatus.allowRemoteServerBackups && backupsTabBtn.classList.contains("active")) {
+      resetTabsToOverview();
+    }
+  }
+
   renderPlayers(instanceStatus.onlinePlayers || [], remoteStatus.allowRemotePlayerActions);
 
   let filteredIps = [];
   if (state === "online") {
     filteredIps = (instanceStatus.serverIps || []).filter(ip => {
       const label = (ip.label || "").toLowerCase();
-      
+
       // Keep Playit public IPs (excluding Voice)
       if (label.includes("playit") && !label.includes("voice")) {
         return true;
       }
-      
+
       return false;
     });
   }
 
   if (filteredIps.length > 0) {
+    if (els.serverIpAddress) els.serverIpAddress.hidden = true;
     els.serverIpsContainer.hidden = false;
     els.serverIpsList.innerHTML = "";
-    
+
     for (const ip of filteredIps) {
       const badge = document.createElement("div");
       badge.className = "ip-item";
@@ -456,7 +601,7 @@ function renderStatus(remoteStatus, instanceStatus) {
           <span class="ip-value">${escapeHtml(ip.address)}</span>
         </div>
       `;
-      
+
       const copyBtn = document.createElement("button");
       copyBtn.className = "icon-button copy-btn";
       copyBtn.type = "button";
@@ -464,27 +609,53 @@ function renderStatus(remoteStatus, instanceStatus) {
       copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>`;
       copyBtn.addEventListener("click", () => {
         navigator.clipboard.writeText(ip.address);
-        showNotice("IP copied to clipboard!");
+        showSnackbar("IP copied to clipboard!", "success");
       });
       badge.appendChild(copyBtn);
       els.serverIpsList.append(badge);
     }
   } else {
     els.serverIpsContainer.hidden = true;
+    if (els.serverIpAddress) {
+      els.serverIpAddress.hidden = true;
+    }
+  }
+
+  // Fix for iOS Safari scroll glitch when content shrinks below current scroll offset
+  const mainContent = document.querySelector(".main-content");
+  if (mainContent) {
+    const maxScroll = Math.max(0, mainContent.scrollHeight - mainContent.clientHeight);
+    if (mainContent.scrollTop > maxScroll) {
+      mainContent.scrollTop = maxScroll;
+    }
+  }
+}
+
+function resetTabsToOverview() {
+  els.tabs.forEach(t => t.classList.remove("active"));
+  const allTabContents = document.querySelectorAll(".tab-content");
+  allTabContents.forEach(c => { c.classList.remove("active"); c.hidden = true; });
+
+  const defaultTabBtn = document.querySelector('.tab-button[data-tab="overview"]');
+  if (defaultTabBtn) defaultTabBtn.classList.add("active");
+  const overviewContent = document.getElementById("tab-overview");
+  if (overviewContent) {
+    overviewContent.classList.add("active");
+    overviewContent.hidden = false;
   }
 }
 
 function setStatusPill(instanceStatus) {
   const state = (instanceStatus.state || "").toLowerCase();
   const isBusy = ["starting", "stopping", "restarting", "settingup", "installing"].includes(state);
-  
+
   let statusText = "Offline";
   if (isBusy) {
     statusText = instanceStatus.state;
   } else if (instanceStatus.isRunning) {
     statusText = "Online";
   }
-  
+
   els.statusPill.textContent = statusText;
   els.statusPill.className = "status-pill";
   els.statusPill.classList.add(isBusy ? "busy" : (instanceStatus.isRunning ? "online" : "offline"));
@@ -495,7 +666,7 @@ function formatUptime(seconds) {
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  
+
   if (d > 0) return `${d}d ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
@@ -546,20 +717,20 @@ async function loadConsoleHistory() {
   }
 }
 
+let socketReconnectDelay = 1000;
+
 async function openConsoleSocket() {
   if (!selectedInstanceId) return;
   closeSocket();
-  
+
   els.consoleState.textContent = "Connecting";
   els.consoleState.className = "state-label busy";
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   socket = new WebSocket(`${protocol}//${window.location.host}/ws/instances/${selectedInstanceId}/console`);
-  
-  els.consoleState.textContent = "Connecting";
-  els.consoleState.className = "state-label busy";
 
   socket.addEventListener("open", () => {
+    socketReconnectDelay = 1000;
     els.consoleState.textContent = "Live";
     els.consoleState.className = "state-label live";
   });
@@ -574,9 +745,16 @@ async function openConsoleSocket() {
     socket = null;
     if (lastInstanceStatus?.isRunning) {
       els.consoleState.textContent = "Reconnecting";
-      setTimeout(() => ensureConsoleConnection(lastInstanceStatus), 1200);
+      els.consoleState.className = "state-label busy";
+      setTimeout(() => {
+        if (lastInstanceStatus?.isRunning && !socket) {
+          openConsoleSocket();
+        }
+      }, socketReconnectDelay);
+      socketReconnectDelay = Math.min(Math.round(socketReconnectDelay * 1.5), 30000);
     } else {
       els.consoleState.textContent = "Offline";
+      els.consoleState.className = "state-label offline";
     }
   });
 }
@@ -595,12 +773,12 @@ function appendConsole(line) {
   }
 
   const p = document.createElement("p");
-  
+
   let level = "info";
   if (line.includes("WARN")) level = "warn";
   if (line.includes("ERROR") || line.includes("Exception") || line.includes("Failed")) level = "error";
   p.classList.add(`log-${level}`);
-  
+
   let formatted = escapeHtml(line);
   // Colorize log pieces
   formatted = formatted.replace(/^(\[[0-9:]+\])\s*/, '<span class="log-time">$1</span> ');
@@ -613,7 +791,7 @@ function appendConsole(line) {
   while (els.consoleOutput.childNodes.length > 500) {
     els.consoleOutput.firstChild.remove();
   }
-  
+
   applyConsoleFiltersToLine(p);
   scrollConsole();
 }
@@ -622,7 +800,7 @@ function applyConsoleFilters() {
   const showInfo = els.filterInfo.checked;
   const showWarn = els.filterWarn.checked;
   const showError = els.filterError.checked;
-  
+
   for (const lineEl of els.consoleOutput.children) {
     applyConsoleFiltersToLine(lineEl);
   }
@@ -644,9 +822,9 @@ function applyConsoleFiltersToLine(lineEl) {
 function scrollConsole({ force = false } = {}) {
   const container = els.consoleOutput;
   if (!container) return;
-  
+
   const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 120;
-  
+
   if (force || isNearBottom) {
     container.scrollTop = container.scrollHeight;
     requestAnimationFrame(() => {
@@ -680,62 +858,62 @@ function renderPlayers(players, allowActions) {
     `;
 
     if (allowActions) {
-        const manageBtn = document.createElement("button");
-        manageBtn.className = "secondary-button";
-        manageBtn.innerHTML = `<span>Manage</span>`;
-        manageBtn.addEventListener("click", () => openPlayerModal(player.name));
-        item.appendChild(manageBtn);
+      const manageBtn = document.createElement("button");
+      manageBtn.className = "secondary-button";
+      manageBtn.innerHTML = `<span>Manage</span>`;
+      manageBtn.addEventListener("click", () => openPlayerModal(player.name));
+      item.appendChild(manageBtn);
     }
-    
+
     els.playerList.append(item);
   }
 }
 
 function openPlayerModal(playerName) {
-    els.playerActionModalName.textContent = playerName;
+  els.playerActionModalName.textContent = playerName;
 
-    let isOp = false;
-    let isBanned = false;
-    let isOnline = false;
+  let isOp = false;
+  let isBanned = false;
+  let isOnline = false;
 
-    if (lastInstanceStatus) {
-        if (lastInstanceStatus.oppedPlayers) {
-            isOp = lastInstanceStatus.oppedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
-        }
-        if (lastInstanceStatus.bannedPlayers) {
-            isBanned = lastInstanceStatus.bannedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
-        }
-        if (lastInstanceStatus.onlinePlayers) {
-            isOnline = lastInstanceStatus.onlinePlayers.some(p => p.name.toLowerCase() === playerName.toLowerCase());
-        }
+  if (lastInstanceStatus) {
+    if (lastInstanceStatus.oppedPlayers) {
+      isOp = lastInstanceStatus.oppedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
     }
+    if (lastInstanceStatus.bannedPlayers) {
+      isBanned = lastInstanceStatus.bannedPlayers.some(p => p.toLowerCase() === playerName.toLowerCase());
+    }
+    if (lastInstanceStatus.onlinePlayers) {
+      isOnline = lastInstanceStatus.onlinePlayers.some(p => p.name.toLowerCase() === playerName.toLowerCase());
+    }
+  }
 
-    els.btnMakeOp.hidden = isOp;
-    els.btnDeop.hidden = !isOp;
-    els.btnBan.hidden = isBanned;
-    els.btnUnban.hidden = !isBanned;
-    els.btnKick.hidden = !isOnline || isBanned;
+  els.btnMakeOp.hidden = isOp;
+  els.btnDeop.hidden = !isOp;
+  els.btnBan.hidden = isBanned;
+  els.btnUnban.hidden = !isBanned;
+  els.btnKick.hidden = !isOnline || isBanned;
 
-    els.playerActionButtons.hidden = false;
-    els.reasonModalForm.hidden = true;
-    els.playerActionModal.hidden = false;
-    modalActionTarget = { name: playerName, action: null };
+  els.playerActionButtons.hidden = false;
+  els.reasonModalForm.hidden = true;
+  els.playerActionModal.hidden = false;
+  modalActionTarget = { name: playerName, action: null };
 }
 
 async function performPlayerAction(action, reason = null) {
-    if (!modalActionTarget || !modalActionTarget.name) return;
-    try {
-        const body = reason ? JSON.stringify({ reason }) : "{}";
-        await api(`/api/instances/${selectedInstanceId}/players/${encodeURIComponent(modalActionTarget.name)}/${action}`, {
-            method: "POST",
-            body
-        });
-        showNotice(`Action '${action}' successful on ${modalActionTarget.name}`);
-        els.playerActionModal.hidden = true;
-        refreshEverything();
-    } catch(err) {
-        showNotice(err.message);
-    }
+  if (!modalActionTarget || !modalActionTarget.name) return;
+  try {
+    const body = reason ? JSON.stringify({ reason }) : "{}";
+    await api(`/api/instances/${selectedInstanceId}/players/${encodeURIComponent(modalActionTarget.name)}/${action}`, {
+      method: "POST",
+      body
+    });
+    showSnackbar(`Action '${action}' successful on ${modalActionTarget.name}`, "success");
+    els.playerActionModal.hidden = true;
+    refreshEverything();
+  } catch (err) {
+    showSnackbar(err.message, "error");
+  }
 }
 
 // ---------------------------------------------------------
@@ -744,18 +922,25 @@ async function performPlayerAction(action, reason = null) {
 els.tabs.forEach(tab => {
   tab.addEventListener("click", () => {
     els.tabs.forEach(t => t.classList.remove("active"));
-    els.tabContents.forEach(c => { c.classList.remove("active"); c.hidden = true; });
+    const allTabContents = document.querySelectorAll(".tab-content");
+    allTabContents.forEach(c => { c.classList.remove("active"); c.hidden = true; });
     tab.classList.add("active");
     const content = document.getElementById(`tab-${tab.dataset.tab}`);
-    content.classList.add("active");
-    content.hidden = false;
+    if (content) {
+      content.classList.add("active");
+      content.hidden = false;
+    }
     if (tab.dataset.tab === "console") scrollConsole({ force: true });
+    if (tab.dataset.tab === "settings") loadServerSettings(selectedInstanceId);
+    if (tab.dataset.tab === "addons") loadAddons(selectedInstanceId);
+    if (tab.dataset.tab === "files") loadFiles(selectedInstanceId, currentFileDirectoryPath);
+    if (tab.dataset.tab === "backups") loadBackups(selectedInstanceId);
   });
 });
 
-els.refreshButton.addEventListener("click", () => refreshEverything());
-els.emptyRefreshButton.addEventListener("click", () => refreshEverything());
-els.retryButton.addEventListener("click", () => refreshEverything());
+if (els.refreshButton) els.refreshButton.addEventListener("click", () => refreshEverything());
+if (els.emptyRefreshButton) els.emptyRefreshButton.addEventListener("click", () => refreshEverything());
+if (els.retryButton) els.retryButton.addEventListener("click", () => refreshEverything());
 
 
 
@@ -764,12 +949,14 @@ if (els.backToSelectorButton) {
     localStorage.removeItem(instanceKey);
     selectedInstanceId = null;
     currentView = "selection";
+    closeSocket();
+    resetTabsToOverview();
     refreshEverything();
   });
 }
 
 if (els.instanceSearchInput) {
-  els.instanceSearchInput.addEventListener("input", (e) => {
+  if (els.instanceSearchInput) els.instanceSearchInput.addEventListener("input", (e) => {
     searchQuery = e.target.value;
     renderSelectionView(cachedInstances);
   });
@@ -786,7 +973,7 @@ const bindInstanceAction = (btn, action) => {
       await api(`/api/instances/${selectedInstanceId}/${action}`, { method: "POST" });
       refreshEverything();
     } catch (error) {
-      showNotice(error.message);
+      showSnackbar(error.message, "error");
       btn.disabled = false;
     }
   });
@@ -797,7 +984,7 @@ bindInstanceAction(els.restartButton, "restart");
 
 [els.filterInfo, els.filterWarn, els.filterError].forEach(cb => cb.addEventListener("change", applyConsoleFilters));
 
-els.commandForm.addEventListener("submit", async (e) => {
+if (els.commandForm) els.commandForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const command = els.commandInput.value.trim();
   if (!command || !selectedInstanceId) return;
@@ -809,7 +996,7 @@ els.commandForm.addEventListener("submit", async (e) => {
     });
     els.commandInput.value = "";
   } catch (error) {
-    showNotice(error.message);
+    showSnackbar(error.message, "error");
   } finally {
     els.commandInput.disabled = false;
     els.commandInput.focus();
@@ -817,54 +1004,54 @@ els.commandForm.addEventListener("submit", async (e) => {
 });
 
 function escapeHtml(unsafe) {
-  return (unsafe||"").replace(/&/g, "&amp;")
+  return (unsafe || "").replace(/&/g, "&amp;")
     .replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 // Modal events
-els.playerActionButtons.addEventListener("click", (e) => {
-    if (e.target.tagName === "BUTTON") {
-        const action = e.target.dataset.action;
-        modalActionTarget.action = action;
-        
-        if (action === "kick" || action === "ban") {
-            els.playerActionButtons.hidden = true;
-            els.playerActionCloseRow.hidden = true;
-            els.reasonModalForm.hidden = false;
-            els.reasonModalInput.value = "";
-            els.reasonModalInput.focus();
-        } else {
-            performPlayerAction(action, null);
-        }
+if (els.playerActionButtons) els.playerActionButtons.addEventListener("click", (e) => {
+  if (e.target.tagName === "BUTTON") {
+    const action = e.target.dataset.action;
+    modalActionTarget.action = action;
+
+    if (action === "kick" || action === "ban") {
+      els.playerActionButtons.hidden = true;
+      els.playerActionCloseRow.hidden = true;
+      els.reasonModalForm.hidden = false;
+      els.reasonModalInput.value = "";
+      els.reasonModalInput.focus();
+    } else {
+      performPlayerAction(action, null);
     }
+  }
 });
-els.playerActionModalClose.addEventListener("click", () => {
-    els.playerActionModal.hidden = true;
+if (els.playerActionModalClose) els.playerActionModalClose.addEventListener("click", () => {
+  els.playerActionModal.hidden = true;
 });
-els.reasonModalCancel.addEventListener("click", () => {
-    els.reasonModalForm.hidden = true;
-    els.playerActionButtons.hidden = false;
-    els.playerActionCloseRow.hidden = false;
+if (els.reasonModalCancel) els.reasonModalCancel.addEventListener("click", () => {
+  els.reasonModalForm.hidden = true;
+  els.playerActionButtons.hidden = false;
+  els.playerActionCloseRow.hidden = false;
 });
-els.reasonModalForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    performPlayerAction(modalActionTarget.action, els.reasonModalInput.value.trim() || null);
+if (els.reasonModalForm) els.reasonModalForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  performPlayerAction(modalActionTarget.action, els.reasonModalInput.value.trim() || null);
 });
-els.offlinePlayerForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const name = els.offlinePlayerInput.value.trim();
-    if (!name) return;
-    openPlayerModal(name);
-    els.offlinePlayerInput.value = "";
+if (els.offlinePlayerForm) els.offlinePlayerForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = els.offlinePlayerInput.value.trim();
+  if (!name) return;
+  openPlayerModal(name);
+  els.offlinePlayerInput.value = "";
 });
 
 if (els.loginForm) {
-  els.loginForm.addEventListener("submit", async (e) => {
+  if (els.loginForm) els.loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    const username = els.loginUsernameInput ? els.loginUsernameInput.value : undefined;
     const password = els.loginPasswordInput.value;
-    els.loginError.hidden = true;
-    
+
     const btn = els.loginSubmitButton;
     const spinner = btn.querySelector(".btn-spinner");
     const icon = btn.querySelector(".button-icon");
@@ -876,18 +1063,23 @@ if (els.loginForm) {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ username, password })
       });
-      
+
       if (res.ok) {
+        if (els.loginUsernameInput) els.loginUsernameInput.value = "";
         els.loginPasswordInput.value = "";
         await openDashboard();
       } else {
-        els.loginError.hidden = false;
+        const errJson = await res.json().catch(() => ({}));
+        if (errJson && errJson.error) {
+          showSnackbar(errJson.error, "error");
+        } else {
+          showSnackbar("Invalid login. Please try again.", "error");
+        }
       }
     } catch (err) {
-      els.loginError.textContent = err.message || "Failed to login.";
-      els.loginError.hidden = false;
+      showSnackbar(err.message || "Failed to login.", "error");
     } finally {
       if (spinner) spinner.hidden = true;
       if (icon) icon.hidden = false;
@@ -921,7 +1113,7 @@ function initTheme() {
   applyTheme(initialTheme);
 
   if (els.themeToggle) {
-    els.themeToggle.addEventListener("click", () => {
+    if (els.themeToggle) els.themeToggle.addEventListener("click", () => {
       const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
       const nextTheme = currentTheme === "light" ? "dark" : "light";
       applyTheme(nextTheme);
@@ -942,29 +1134,564 @@ const hamburgerIcon = document.getElementById('hamburgerIcon');
 const closeIcon = document.getElementById('closeIcon');
 
 function toggleMobileMenu() {
-    const isOpen = appSidebar.classList.toggle('open');
-    sidebarOverlay.classList.toggle('open');
-    if (isOpen) {
-        hamburgerIcon.hidden = true;
-        closeIcon.hidden = false;
-    } else {
-        hamburgerIcon.hidden = false;
-        closeIcon.hidden = true;
-    }
+  const isOpen = appSidebar.classList.toggle('open');
+  sidebarOverlay.classList.toggle('open');
+  if (isOpen) {
+    hamburgerIcon.hidden = true;
+    closeIcon.hidden = false;
+  } else {
+    hamburgerIcon.hidden = false;
+    closeIcon.hidden = true;
+  }
 }
 
 if (mobileMenuToggle) {
-    mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+  if (mobileMenuToggle) mobileMenuToggle.addEventListener('click', toggleMobileMenu);
 }
 if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', toggleMobileMenu);
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleMobileMenu);
 }
 
 // Close sidebar when clicking a navigation item on mobile
 document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768 && appSidebar.classList.contains('open')) {
-        if (e.target.closest('.sidebar-item') || e.target.closest('.instance-item')) {
-            toggleMobileMenu();
-        }
+  if (window.innerWidth <= 768 && appSidebar.classList.contains('open')) {
+    if (e.target.closest('.sidebar-item') || e.target.closest('.instance-item')) {
+      toggleMobileMenu();
     }
+  }
 });
+
+// ---------------------------------------------------------
+// Quick Commands Shortcuts
+// ---------------------------------------------------------
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".quick-cmd-btn");
+  if (!btn) return;
+  const cmd = btn.dataset.cmd;
+  if (!cmd || !selectedInstanceId) return;
+
+  btn.disabled = true;
+  try {
+    await api(`/api/instances/${selectedInstanceId}/console/command`, {
+      method: "POST",
+      body: JSON.stringify({ command: cmd })
+    });
+    showSnackbar(`Sent command: /${cmd}`, "success");
+  } catch (err) {
+    showSnackbar(`Failed to send command: ${err.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------------------------------------------------------
+// Settings Logic
+// ---------------------------------------------------------
+async function loadServerSettings(instanceId) {
+  if (!instanceId) return;
+  try {
+    const props = await api(`/api/instances/${instanceId}/properties`);
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : ""; };
+    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+    setVal("settingMotd", props.motd);
+    setVal("settingGamemode", props.gamemode);
+    setVal("settingDifficulty", props.difficulty);
+    setVal("settingMaxPlayers", props.maxPlayers);
+    setVal("settingViewDistance", props.viewDistance);
+    setVal("settingSeed", props.seed);
+    setChk("settingPvp", props.pvp);
+    setChk("settingWhitelist", props.whitelist);
+    setChk("settingAllowFlight", props.allowFlight);
+    setChk("settingAllowCommandBlock", props.allowCommandBlock);
+    setChk("settingAllowNether", props.allowNether);
+  } catch (err) {
+    showSnackbar(`Failed to load server settings: ${err.message}`, "error");
+  }
+}
+
+const settingsForm = document.getElementById("settingsForm");
+if (settingsForm) {
+  settingsForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!selectedInstanceId) return;
+    const saveBtn = document.getElementById("btnSaveSettings");
+    const statusMsg = document.getElementById("settingsSaveStatus");
+    if (saveBtn) saveBtn.disabled = true;
+    if (statusMsg) {
+      statusMsg.hidden = false;
+      statusMsg.className = "status-msg";
+      statusMsg.textContent = "Saving settings...";
+    }
+
+    try {
+      const payload = {
+        motd: document.getElementById("settingMotd")?.value || "",
+        gamemode: document.getElementById("settingGamemode")?.value || "survival",
+        difficulty: document.getElementById("settingDifficulty")?.value || "easy",
+        maxPlayers: parseInt(document.getElementById("settingMaxPlayers")?.value) || 20,
+        viewDistance: document.getElementById("settingViewDistance")?.value || "10",
+        seed: document.getElementById("settingSeed")?.value || "",
+        pvp: document.getElementById("settingPvp")?.checked ?? true,
+        whitelist: document.getElementById("settingWhitelist")?.checked ?? false,
+        allowFlight: document.getElementById("settingAllowFlight")?.checked ?? false,
+        allowCommandBlock: document.getElementById("settingAllowCommandBlock")?.checked ?? false,
+        allowNether: document.getElementById("settingAllowNether")?.checked ?? true
+      };
+
+      await api(`/api/instances/${selectedInstanceId}/properties`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+
+      if (statusMsg) {
+        statusMsg.textContent = "Settings saved successfully!";
+        setTimeout(() => { statusMsg.hidden = true; }, 3000);
+      }
+      showSnackbar("Server properties updated.", "success");
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.className = "status-msg error";
+        statusMsg.textContent = `Error: ${err.message}`;
+      }
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  });
+}
+
+// ---------------------------------------------------------
+// Addons Logic
+// ---------------------------------------------------------
+let cachedAddons = [];
+
+async function loadAddons(instanceId) {
+  if (!instanceId) return;
+  const grid = document.getElementById("addonsGrid");
+  if (!grid) return;
+  renderAddonsSkeleton();
+
+  try {
+    cachedAddons = await api(`/api/instances/${instanceId}/addons`);
+    renderAddons(cachedAddons);
+  } catch (err) {
+    grid.innerHTML = "";
+    showSnackbar(formatFriendlyError(err), "error");
+  }
+}
+
+function formatFileSize(sizeKb) {
+  if (!sizeKb || sizeKb <= 0) return 'Folder';
+  if (sizeKb >= 1024 * 1024) {
+    return (sizeKb / (1024 * 1024)).toFixed(1) + ' GB';
+  }
+  if (sizeKb >= 1024) {
+    return (sizeKb / 1024).toFixed(1) + ' MB';
+  }
+  return sizeKb.toFixed(1) + ' KB';
+}
+
+function renderAddons(addons) {
+  const grid = document.getElementById("addonsGrid");
+  const noMsg = document.getElementById("noAddonsMsg");
+  const countBadge = document.getElementById("addonsCountBadge");
+  if (!grid) return;
+  grid.innerHTML = "";
+  if (countBadge) countBadge.textContent = `${addons.length} item${addons.length === 1 ? "" : "s"}`;
+
+  if (!addons || addons.length === 0) {
+    if (noMsg) noMsg.hidden = false;
+    return;
+  }
+  if (noMsg) noMsg.hidden = true;
+
+  addons.forEach(addon => {
+    const card = document.createElement("div");
+    card.className = "addon-card";
+    const badgeClass = addon.addonType === "plugin" ? "plugin" : (addon.addonType === "mod" ? "mod" : "pack");
+
+    card.innerHTML = `
+      <div class="addon-header">
+        <div class="addon-title-group">
+          <h4 class="addon-name">${escapeHtml(addon.name)}</h4>
+          <span class="addon-meta">${formatFileSize(addon.sizeKb)}</span>
+        </div>
+        <span class="addon-badge ${badgeClass}">${escapeHtml(addon.addonType)}</span>
+      </div>
+      <div class="addon-actions">
+        <button type="button" class="danger-button action-btn btn-uninstall-addon" data-path="${escapeHtml(addon.filePath)}">
+          Uninstall
+        </button>
+      </div>
+    `;
+
+    card.querySelector(".btn-uninstall-addon").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Are you sure you want to uninstall ${addon.name}?`)) return;
+      try {
+        await api(`/api/instances/${selectedInstanceId}/addons/uninstall`, {
+          method: "POST",
+          body: JSON.stringify({ addonPathOrId: addon.filePath })
+        });
+        showSnackbar(`Uninstalled ${addon.name}`, "success");
+        loadAddons(selectedInstanceId);
+      } catch (err) {
+        showSnackbar(`Failed to uninstall: ${err.message}`, "error");
+      }
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+const addonSearch = document.getElementById("addonSearchInput");
+if (addonSearch) {
+  addonSearch.addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    const filtered = cachedAddons.filter(a => a.name.toLowerCase().includes(q) || a.addonType.toLowerCase().includes(q));
+    renderAddons(filtered);
+  });
+}
+
+// ---------------------------------------------------------
+// Files Manager Logic
+// ---------------------------------------------------------
+let currentFileDirectoryPath = "";
+let currentEditingFilePath = null;
+
+async function loadFiles(instanceId, path = "") {
+  if (!instanceId) return;
+  currentFileDirectoryPath = path;
+  const container = document.getElementById("filesListContainer");
+  const noMsg = document.getElementById("noFilesMsg");
+  if (!container) return;
+
+  renderBreadcrumbs(path);
+  container.innerHTML = `<div class="skeleton-card" style="height: 60px;"><div class="skeleton-body"><div class="skeleton-line title skeleton-box"></div></div></div>`;
+
+  try {
+    const items = await api(`/api/instances/${instanceId}/files?path=${encodeURIComponent(path)}`);
+    renderFilesList(items);
+  } catch (err) {
+    container.innerHTML = "";
+    showSnackbar(formatFriendlyError(err), "error");
+  }
+}
+
+function renderBreadcrumbs(path) {
+  const container = document.getElementById("filesBreadcrumb");
+  if (!container) return;
+  container.innerHTML = "";
+  container.style.display = "flex";
+  container.style.alignItems = "center";
+  container.style.gap = "8px";
+
+  if (path) {
+    const backBtn = document.createElement("button");
+    backBtn.className = "icon-button";
+    backBtn.style.padding = "4px";
+    backBtn.style.marginRight = "4px";
+    backBtn.innerHTML = `<svg viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`;
+    backBtn.title = "Go Back";
+    backBtn.addEventListener("click", () => {
+      const parentPath = path.includes("/") ? path.substring(0, path.lastIndexOf("/")) : "";
+      loadFiles(selectedInstanceId, parentPath);
+    });
+    container.appendChild(backBtn);
+  }
+
+  const breadcrumbsWrapper = document.createElement("div");
+  breadcrumbsWrapper.style.display = "flex";
+  breadcrumbsWrapper.style.alignItems = "center";
+  breadcrumbsWrapper.style.flexWrap = "wrap";
+
+  const rootItem = document.createElement("span");
+  rootItem.className = "breadcrumb-item";
+  rootItem.textContent = "root";
+  rootItem.addEventListener("click", () => loadFiles(selectedInstanceId, ""));
+  breadcrumbsWrapper.appendChild(rootItem);
+
+  if (path) {
+    const parts = path.split("/").filter(Boolean);
+    let acc = "";
+    parts.forEach(part => {
+      const sep = document.createElement("span");
+      sep.className = "breadcrumb-separator";
+      sep.textContent = " / ";
+      breadcrumbsWrapper.appendChild(sep);
+
+      acc = acc ? `${acc}/${part}` : part;
+      const currentAcc = acc;
+      const item = document.createElement("span");
+      item.className = "breadcrumb-item";
+      item.textContent = part;
+      item.addEventListener("click", () => loadFiles(selectedInstanceId, currentAcc));
+      breadcrumbsWrapper.appendChild(item);
+    });
+  }
+
+  container.appendChild(breadcrumbsWrapper);
+}
+
+function isTextFile(ext) {
+  if (!ext) return false;
+  const cleanExt = ext.toLowerCase();
+  const textExtensions = new Set([
+    ".json", ".txt", ".properties", ".yml", ".yaml", ".toml",
+    ".log", ".conf", ".config", ".ini", ".env", ".sh", ".bat",
+    ".cmd", ".ps1", ".md", ".mcfunction", ".sk", ".xml", ".html",
+    ".css", ".js", ".wlist"
+  ]);
+  return textExtensions.has(cleanExt);
+}
+
+function renderFilesList(items) {
+  const container = document.getElementById("filesListContainer");
+  const noMsg = document.getElementById("noFilesMsg");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (noMsg) noMsg.hidden = !!(items && items.length > 0) || !!currentFileDirectoryPath;
+
+  // The Directory Back (..) row has been integrated into the breadcrumbs header.
+
+  if (!items || items.length === 0) return;
+
+  items.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "file-row";
+
+    const canEdit = !item.isDirectory && isTextFile(item.extension);
+    const iconSvg = item.isDirectory
+      ? `<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
+      : `<svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
+
+    row.innerHTML = `
+      <div class="file-info">
+        <span class="file-icon">${iconSvg}</span>
+        <div>
+          <div class="file-name">${escapeHtml(item.name)}</div>
+          <div class="file-meta">
+            ${item.isDirectory ? 'Folder' : formatFileSize(item.sizeBytes / 1024)}
+            ${!item.isDirectory && !canEdit ? ' &bull; Raw File' : ''}
+          </div>
+        </div>
+      </div>
+      <div class="file-actions">
+        ${canEdit ? `<button type="button" class="secondary-button btn-edit-file" style="padding: 4px 10px; font-size: 12px; margin-right: 6px;">Edit</button>` : ''}
+        <button type="button" class="danger-button btn-delete-file" style="padding: 4px 10px; font-size: 12px;">Delete</button>
+      </div>
+    `;
+
+    // Make card/row clickable
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".file-actions")) return;
+
+      if (item.isDirectory) {
+        loadFiles(selectedInstanceId, item.relativePath);
+      } else if (canEdit) {
+        openFileEditor(selectedInstanceId, item.relativePath);
+      } else {
+        showSnackbar(`Binary/raw file (${item.name}) cannot be edited in browser.`, "error");
+      }
+    });
+
+    const editBtn = row.querySelector(".btn-edit-file");
+    if (editBtn) {
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openFileEditor(selectedInstanceId, item.relativePath);
+      });
+    }
+
+    row.querySelector(".btn-delete-file").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Are you sure you want to delete ${item.name}?`)) return;
+      try {
+        await api(`/api/instances/${selectedInstanceId}/files?path=${encodeURIComponent(item.relativePath)}`, { method: "DELETE" });
+        showSnackbar(`Deleted ${item.name}`, "success");
+        loadFiles(selectedInstanceId, currentFileDirectoryPath);
+      } catch (err) {
+        showSnackbar(formatFriendlyError(err), "error");
+      }
+    });
+
+    container.appendChild(row);
+  });
+}
+
+async function openFileEditor(instanceId, relativePath) {
+  const modal = document.getElementById("fileEditorModal");
+  const title = document.getElementById("editorFileName");
+  const textarea = document.getElementById("editorTextarea");
+  const saveBtn = document.getElementById("saveFileBtn");
+  if (!modal || !textarea) return;
+
+  currentEditingFilePath = relativePath;
+  title.textContent = relativePath;
+  textarea.value = "Loading content...";
+  modal.hidden = false;
+  if (saveBtn) saveBtn.hidden = false;
+
+  try {
+    const res = await api(`/api/instances/${instanceId}/files/content?path=${encodeURIComponent(relativePath)}`);
+    textarea.value = res.content || "";
+    const isReadOnly = !res.isText || res.isTruncated;
+    textarea.readOnly = isReadOnly;
+    if (saveBtn) saveBtn.hidden = isReadOnly;
+  } catch (err) {
+    textarea.value = `Error loading file content: ${err.message}`;
+    textarea.readOnly = true;
+    if (saveBtn) saveBtn.hidden = true;
+  }
+}
+
+const closeEditor = () => {
+  const modal = document.getElementById("fileEditorModal");
+  if (modal) modal.hidden = true;
+  currentEditingFilePath = null;
+};
+document.getElementById("closeEditorBtn")?.addEventListener("click", closeEditor);
+document.getElementById("cancelEditorBtn")?.addEventListener("click", closeEditor);
+
+document.getElementById("saveFileBtn")?.addEventListener("click", async () => {
+  if (!selectedInstanceId || !currentEditingFilePath) return;
+  const textarea = document.getElementById("editorTextarea");
+  const saveBtn = document.getElementById("saveFileBtn");
+  if (!textarea || !saveBtn) return;
+
+  try {
+    saveBtn.disabled = true;
+    await api(`/api/instances/${selectedInstanceId}/files/content`, {
+      method: "PUT",
+      body: JSON.stringify({
+        relativePath: currentEditingFilePath,
+        content: textarea.value
+      })
+    });
+    showSnackbar("File saved successfully.", "success");
+    closeEditor();
+    loadFiles(selectedInstanceId, currentFileDirectoryPath);
+  } catch (err) {
+    showSnackbar(formatFriendlyError(err), "error");
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+const refreshFilesBtn = document.getElementById("refreshFilesBtn");
+if (refreshFilesBtn) {
+  refreshFilesBtn.addEventListener("click", () => loadFiles(selectedInstanceId, currentFileDirectoryPath));
+}
+
+// ---------------------------------------------------------
+// Backups Manager Logic
+// ---------------------------------------------------------
+async function loadBackups(instanceId) {
+  if (!instanceId) return;
+  const container = document.getElementById("backupsListContainer");
+  const noMsg = document.getElementById("noBackupsMsg");
+  if (!container) return;
+
+  container.innerHTML = `<div class="skeleton-card" style="height: 70px;"><div class="skeleton-body"><div class="skeleton-line title skeleton-box"></div></div></div>`;
+
+  try {
+    const data = await api(`/api/instances/${instanceId}/backups`);
+    const isRunning = data && data.isBackupRunning === true;
+    const backups = Array.isArray(data) ? data : (data.backups || []);
+
+    renderBackupsList(backups, isRunning);
+
+    if (isRunning) {
+      setTimeout(() => {
+        if (selectedInstanceId === instanceId) {
+          loadBackups(instanceId);
+        }
+      }, 3000);
+    }
+  } catch (err) {
+    container.innerHTML = "";
+    showSnackbar(formatFriendlyError(err), "error");
+  }
+}
+
+function renderBackupsList(backups, isRunning = false) {
+  const container = document.getElementById("backupsListContainer");
+  const noMsg = document.getElementById("noBackupsMsg");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (createBackupBtn) {
+    createBackupBtn.disabled = isRunning;
+  }
+
+  if (isRunning) {
+    const loader = document.createElement("div");
+    loader.className = "backup-row";
+    loader.style.pointerEvents = "none";
+    loader.innerHTML = `
+      <div class="backup-info" style="overflow: hidden;">
+        <span class="backup-icon skeleton-box" style="width: 24px; height: 24px; border-radius: 4px; display: inline-block;"></span>
+        <div style="min-width: 0; flex: 1; padding-top: 2px;">
+          <div class="skeleton-box" style="height: 16px; width: 60%; margin-bottom: 6px; border-radius: 4px;"></div>
+          <div class="skeleton-box" style="height: 14px; width: 40%; border-radius: 4px;"></div>
+        </div>
+      </div>
+    `;
+    container.appendChild(loader);
+    if (noMsg) noMsg.hidden = true;
+  } else if (!backups || backups.length === 0) {
+    if (noMsg) noMsg.hidden = false;
+    return;
+  } else {
+    if (noMsg) noMsg.hidden = true;
+  }
+
+  backups.forEach(backup => {
+    const row = document.createElement("div");
+    row.className = "backup-row";
+
+    const dateStr = backup.createdAt ? new Date(backup.createdAt).toLocaleString() : "";
+    let displayTitle = backup.label ? escapeHtml(backup.label) : escapeHtml(backup.fileName);
+    row.innerHTML = `
+      <div class="backup-info" style="overflow: hidden;">
+        <span class="backup-icon">
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+        </span>
+        <div>
+                            <div style="min-width: 0; flex: 1;">
+          <div class="backup-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(backup.fileName)}">
+            ${displayTitle}
+
+          </div>
+          <div class="backup-meta" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <span>${formatFileSize(backup.sizeBytes / 1024)}</span>
+            
+            <span>&bull;</span>
+            <span>${escapeHtml(dateStr)}</span>
+            
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+const createBackupBtn = document.getElementById("createBackupBtn");
+if (createBackupBtn) {
+  createBackupBtn.addEventListener("click", async () => {
+    if (!selectedInstanceId) return;
+    try {
+      createBackupBtn.disabled = true;
+      showSnackbar("Starting background backup...", "info");
+      const result = await api(`/api/instances/${selectedInstanceId}/backups`, { method: "POST" });
+
+      loadBackups(selectedInstanceId);
+    } catch (err) {
+      showSnackbar(formatFriendlyError(err), "error");
+      createBackupBtn.disabled = false;
+    }
+  });
+}
+

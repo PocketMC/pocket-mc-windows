@@ -53,8 +53,8 @@ public partial class InstanceImportPage : Page, ISupportsKeyboardBackNavigation
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Select Pocket MC Instance Export",
-            Filter = "Pocket MC Instance Export (*.zip)|*.zip|All Files (*.*)|*.*",
+            Title = "Select PocketMC Instance Export",
+            Filter = "PocketMC Instance Export (*.zip)|*.zip|All Files (*.*)|*.*",
             Multiselect = false
         };
 

@@ -94,7 +94,7 @@ public sealed class InstanceImportService : IInstanceImportService
         }
         catch (JsonException ex)
         {
-            throw new InvalidDataException("Import manifest is not valid Pocket MC JSON.", ex);
+            throw new InvalidDataException("Import manifest is not valid PocketMC JSON.", ex);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {

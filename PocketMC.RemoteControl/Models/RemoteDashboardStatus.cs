@@ -14,4 +14,8 @@ public sealed class RemoteDashboardStatus
     public int ActiveDeviceCount { get; set; }
     public bool AllowRemoteConsoleCommands { get; set; }
     public bool AllowRemotePlayerActions { get; set; }
+    public bool AllowRemoteServerSettings { get; set; }
+    public bool AllowRemoteServerAddons { get; set; }
+    public bool AllowRemoteFileManager { get; set; }
+    public bool AllowRemoteServerBackups { get; set; }
 }

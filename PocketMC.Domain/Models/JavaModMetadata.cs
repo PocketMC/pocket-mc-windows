@@ -17,6 +17,8 @@ namespace PocketMC.Domain.Models
         public string LoaderType { get; set; } = "Unknown"; // Fabric, Quilt, Forge, NeoForge, Plugin, Unknown
         public string? IconEntryPath { get; set; }
         public byte[]? IconBytes { get; set; }
+        
+        public bool IsCorrupt { get; set; }
 
         public string? RequiredMinecraftVersion { get; set; }
         public string? RequiredLoaderVersion { get; set; }

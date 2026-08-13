@@ -24,7 +24,7 @@
                         <ui:TextBlock FontTypography="Title"
                                       Text="Import Instance"
                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <TextBlock Text="Restore a Pocket MC export package and rebuild missing server files from its manifest."
+                        <TextBlock Text="Restore a PocketMC export package and rebuild missing server files from its manifest."
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    FontSize="13"
@@ -134,7 +134,7 @@
                                 </Grid.ColumnDefinitions>
                                 <ui:TextBox Grid.Column="0"
                                             Text="{Binding ZipPath, UpdateSourceTrigger=PropertyChanged}"
-                                            PlaceholderText="Select a .zip exported from Pocket MC"
+                                            PlaceholderText="Select a .zip exported from PocketMC"
                                             MinHeight="40"
                                             Margin="0,0,8,0"/>
                                 <ui:Button Grid.Column="1"

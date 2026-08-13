@@ -251,8 +251,11 @@ namespace PocketMC.Desktop.Features.Settings
 
         private bool IsLoaderCompatible(string loaderType)
         {
-            if (string.IsNullOrEmpty(loaderType) || loaderType == "Unknown")
+            if (string.IsNullOrEmpty(loaderType))
                 return true;
+            
+            if (loaderType == "Unknown")
+                return false;
 
             if (loaderType.Equals("Plugin", StringComparison.OrdinalIgnoreCase))
             {
@@ -481,10 +484,10 @@ namespace PocketMC.Desktop.Features.Settings
                     // Step 1: Plugin presence check
                     if (!PocketMC.Infrastructure.Mods.JavaModMetadataService.IsPluginJar(f))
                     {
-                        _dialogService.ShowMessage("Invalid Plugin",
-                            $"'{System.IO.Path.GetFileName(f)}' does not appear to be a valid Paper/Bukkit plugin.",
-                            DialogType.Error);
-                        continue;
+                        var res = await _dialogService.ShowDialogAsync("Missing Metadata",
+                            $"This jar file does not contain metadata. Are you sure that this jar is a valid mod/plugin you are trying to install?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
                     }
 
                     // Step 2: Scan metadata
@@ -762,16 +765,26 @@ namespace PocketMC.Desktop.Features.Settings
                     bool isForgeOrNeo = metadata.LoaderType == "Forge" || metadata.LoaderType == "NeoForge";
                     if (!IsLoaderCompatible(metadata.LoaderType))
                     {
-                        string requiredType = _metadata.ServerType;
-                        if (requiredType == "NeoForge") requiredType = "NeoForge mod";
-                        else if (requiredType == "Forge") requiredType = "Forge mod";
-                        else if (requiredType == "Fabric") requiredType = "Fabric mod";
-                        else requiredType = "Plugin";
-                        
-                        _dialogService.ShowMessage("Invalid Mod",
-                            $"The file '{System.IO.Path.GetFileName(f)}' is not a valid {requiredType}.",
-                            DialogType.Error);
-                        continue;
+                        if (metadata.LoaderType == "Unknown")
+                        {
+                            var res = await _dialogService.ShowDialogAsync("Missing Metadata",
+                                $"This jar file does not contain metadata. Are you sure that this jar is a valid mod/plugin you are trying to install?",
+                                DialogType.Warning);
+                            if (res != DialogResult.Yes) continue;
+                        }
+                        else
+                        {
+                            string requiredType = _metadata.ServerType;
+                            if (requiredType == "NeoForge") requiredType = "NeoForge mod";
+                            else if (requiredType == "Forge") requiredType = "Forge mod";
+                            else if (requiredType == "Fabric") requiredType = "Fabric mod";
+                            else requiredType = "Plugin";
+                            
+                            _dialogService.ShowMessage("Invalid Mod",
+                                $"The file '{System.IO.Path.GetFileName(f)}' is not a valid {requiredType}.",
+                                DialogType.Error);
+                            continue;
+                        }
                     }
 
                     if (isFabric || isForgeOrNeo)
