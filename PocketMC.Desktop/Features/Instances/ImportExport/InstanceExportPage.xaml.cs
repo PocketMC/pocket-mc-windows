@@ -50,8 +50,8 @@ public partial class InstanceExportPage : Page, ISupportsKeyboardBackNavigation
     {
         var dialog = new SaveFileDialog
         {
-            Title = "Save Pocket MC Instance Export",
-            Filter = "Pocket MC Instance Export (*.zip)|*.zip",
+            Title = "Save PocketMC Instance Export",
+            Filter = "PocketMC Instance Export (*.zip)|*.zip",
             DefaultExt = ".zip",
             AddExtension = true,
             OverwritePrompt = true,

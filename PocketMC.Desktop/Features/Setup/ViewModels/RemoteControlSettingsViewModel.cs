@@ -58,6 +58,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         _allowRemoteFileManager = remote.AllowRemoteFileManager;
         _allowRemoteServerBackups = remote.AllowRemoteServerBackups;
         _requireAuthentication = remote.RequireAuthentication;
+        _username = remote.Username;
         _accessMode = remote.AccessMode == RemoteAccessMode.LanOnly
             ? RemoteAccessMode.CloudflaredQuickTunnel
             : remote.AccessMode;
@@ -110,10 +111,14 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private bool _requireAuthentication;
 
     [ObservableProperty]
+    private string? _username;
+
+    [ObservableProperty]
     private string _password = "";
 
     public bool IsPasswordSet => !string.IsNullOrEmpty(_applicationState.Settings.RemoteControl.PasswordHash);
     public bool IsPasswordNotSet => string.IsNullOrEmpty(_applicationState.Settings.RemoteControl.PasswordHash);
+    public bool IsUsernameNotSet => string.IsNullOrEmpty(_applicationState.Settings.RemoteControl.Username);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDiscordNotLinked))]
@@ -184,9 +189,9 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     partial void OnIsEnabledChanged(bool value)
     {
-        if (value && RequireAuthentication && IsPasswordNotSet && !_isUpdatingFromSettings)
+        if (value && RequireAuthentication && (IsPasswordNotSet || IsUsernameNotSet) && !_isUpdatingFromSettings)
         {
-            _ = HandleEnableWithPasswordPromptAsync();
+            _ = HandleEnableWithCredentialsPromptAsync();
         }
         else
         {
@@ -194,15 +199,22 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         }
     }
 
-    private async Task HandleEnableWithPasswordPromptAsync()
+    private async Task HandleEnableWithCredentialsPromptAsync()
     {
-        var result = await _dialogService.PromptPasswordAsync(
-            "Setup Remote Password",
-            "Remote Control requires a password to be secure. Please set up a password, or turn off password authentication to continue without one.");
+        bool askUsername = IsUsernameNotSet;
+        bool askPassword = IsPasswordNotSet;
+        var result = await _dialogService.PromptCredentialsAsync(
+            "Setup Remote Credentials",
+            "Remote Control requires authentication to be secure. Please set up your credentials, or turn off authentication to continue without it.",
+            askUsername,
+            askPassword);
 
-        if (!string.IsNullOrEmpty(result))
+        if ((!askUsername || !string.IsNullOrEmpty(result.Username)) && 
+            (!askPassword || !string.IsNullOrEmpty(result.Password)))
         {
-            Password = result;
+            if (askUsername) Username = result.Username;
+            if (askPassword) Password = result.Password!;
+            SaveCredentials();
             SaveAndRestart();
         }
         else
@@ -256,14 +268,13 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         SaveSettings();
     }
 
-    partial void OnPasswordChanged(string value)
+    [RelayCommand]
+    private void SaveCredentials()
     {
-        // Don't auto-save while typing, handled by the save command or blur in UI,
-        // but if bound to property changed, we can save it.
-        // Usually better to save when they finish typing. We will save it.
-        if (string.IsNullOrEmpty(value)) return;
         _applicationState.Settings.RemoteControl.SecurityStamp = Guid.NewGuid().ToString();
         SaveSettings();
+        OnPropertyChanged(nameof(IsPasswordSet));
+        OnPropertyChanged(nameof(IsPasswordNotSet));
     }
 
     partial void OnEnableDiscordNotificationsChanged(bool value)
@@ -322,6 +333,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
         settings.RemoteControl.RequireAuthentication = RequireAuthentication;
+        settings.RemoteControl.Username = Username;
 
         if (!string.IsNullOrEmpty(Password))
         {

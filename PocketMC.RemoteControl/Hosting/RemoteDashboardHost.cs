@@ -241,31 +241,40 @@ public sealed class RemoteDashboardHost
             }
 
             var request = await ReadJsonAsync<RemoteLoginRequest>(context);
-            if (request == null || string.IsNullOrWhiteSpace(request.Password))
-            {
-                return Results.BadRequest(new { error = "Password is required" });
-            }
-
             var settings = _applicationState.Settings.RemoteControl;
-            if (!settings.RequireAuthentication || _authenticationService.VerifyPassword(request.Password, settings.PasswordHash))
-            {
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, "Admin"),
-                    new Claim("SecurityStamp", settings.SecurityStamp)
-                };
-                var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
-                var authProperties = new AuthenticationProperties
-                {
-                    IsPersistent = true,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
-                };
 
-                await context.SignInAsync("RemoteCookies", new ClaimsPrincipal(claimsIdentity), authProperties);
-                return Results.Ok(new { success = true });
+            if (settings.RequireAuthentication)
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return Results.BadRequest(new { error = "Password is required" });
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Username) || !string.Equals(request.Username.Trim(), settings.Username?.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    return Results.BadRequest(new { error = "Invalid username" });
+                }
+
+                if (!_authenticationService.VerifyPassword(request.Password, settings.PasswordHash))
+                {
+                    return Results.BadRequest(new { error = "Invalid password" });
+                }
             }
 
-            return Results.Unauthorized();
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, "Admin"),
+                new Claim("SecurityStamp", settings.SecurityStamp)
+            };
+            var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
+            };
+
+            await context.SignInAsync("RemoteCookies", new ClaimsPrincipal(claimsIdentity), authProperties);
+            return Results.Ok(new { success = true });
         });
 
         api.MapGet("/status", () => Results.Ok(BuildDashboardStatus()));

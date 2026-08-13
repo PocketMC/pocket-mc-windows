@@ -4,7 +4,7 @@ const viewKey = "pocketmc.remote.currentView"; // "instances"
 const els = {
   connectionLabel: document.querySelector("#connectionLabel"),
   refreshButton: document.querySelector("#refreshButton"),
-  notice: document.querySelector("#notice"),
+  refreshButton: document.querySelector("#refreshButton"),
 
   appView: document.querySelector("#appView"),
   emptyView: document.querySelector("#emptyView"),
@@ -15,9 +15,10 @@ const els = {
 
   loginView: document.querySelector("#loginView"),
   loginForm: document.querySelector("#loginForm"),
+  loginUsernameInput: document.querySelector("#loginUsernameInput"),
   loginPasswordInput: document.querySelector("#loginPasswordInput"),
   loginSubmitButton: document.querySelector("#loginSubmitButton"),
-  loginError: document.querySelector("#loginError"),
+  loginSubmitButton: document.querySelector("#loginSubmitButton"),
 
   instanceListSidebar: document.querySelector("#instanceListSidebar"),
 
@@ -117,13 +118,29 @@ function setVisible(view) {
   }
 }
 
-function showNotice(message) {
-  els.notice.textContent = message;
-  els.notice.hidden = false;
-  clearTimeout(showNotice.timer);
-  showNotice.timer = setTimeout(() => {
-    els.notice.hidden = true;
-  }, 3600);
+function showSnackbar(message, type = "info") {
+  const container = document.getElementById("snackbar-container");
+  if (!container) return;
+
+  const snackbar = document.createElement("div");
+  snackbar.className = `snackbar ${type}`;
+
+  let iconSvg = "";
+  if (type === "success") {
+    iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+  } else if (type === "error") {
+    iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+  } else {
+    iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+  }
+
+  snackbar.innerHTML = `${iconSvg}<span>${message}</span>`;
+  container.appendChild(snackbar);
+
+  setTimeout(() => {
+    snackbar.classList.add("fade-out");
+    snackbar.addEventListener("animationend", () => snackbar.remove());
+  }, 2000);
 }
 
 async function api(path, options = {}) {
@@ -592,7 +609,7 @@ function renderStatus(remoteStatus, instanceStatus) {
       copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>`;
       copyBtn.addEventListener("click", () => {
         navigator.clipboard.writeText(ip.address);
-        showNotice("IP copied to clipboard!");
+        showSnackbar("IP copied to clipboard!", "success");
       });
       badge.appendChild(copyBtn);
       els.serverIpsList.append(badge);
@@ -891,11 +908,11 @@ async function performPlayerAction(action, reason = null) {
       method: "POST",
       body
     });
-    showNotice(`Action '${action}' successful on ${modalActionTarget.name}`);
+    showSnackbar(`Action '${action}' successful on ${modalActionTarget.name}`, "success");
     els.playerActionModal.hidden = true;
     refreshEverything();
   } catch (err) {
-    showNotice(err.message);
+    showSnackbar(err.message, "error");
   }
 }
 
@@ -956,7 +973,7 @@ const bindInstanceAction = (btn, action) => {
       await api(`/api/instances/${selectedInstanceId}/${action}`, { method: "POST" });
       refreshEverything();
     } catch (error) {
-      showNotice(error.message);
+      showSnackbar(error.message, "error");
       btn.disabled = false;
     }
   });
@@ -979,7 +996,7 @@ if (els.commandForm) els.commandForm.addEventListener("submit", async (e) => {
     });
     els.commandInput.value = "";
   } catch (error) {
-    showNotice(error.message);
+    showSnackbar(error.message, "error");
   } finally {
     els.commandInput.disabled = false;
     els.commandInput.focus();
@@ -1032,8 +1049,8 @@ if (els.offlinePlayerForm) els.offlinePlayerForm.addEventListener("submit", (e) 
 if (els.loginForm) {
   if (els.loginForm) els.loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    const username = els.loginUsernameInput ? els.loginUsernameInput.value : undefined;
     const password = els.loginPasswordInput.value;
-    els.loginError.hidden = true;
 
     const btn = els.loginSubmitButton;
     const spinner = btn.querySelector(".btn-spinner");
@@ -1046,18 +1063,23 @@ if (els.loginForm) {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ username, password })
       });
 
       if (res.ok) {
+        if (els.loginUsernameInput) els.loginUsernameInput.value = "";
         els.loginPasswordInput.value = "";
         await openDashboard();
       } else {
-        els.loginError.hidden = false;
+        const errJson = await res.json().catch(() => ({}));
+        if (errJson && errJson.error) {
+          showSnackbar(errJson.error, "error");
+        } else {
+          showSnackbar("Invalid login. Please try again.", "error");
+        }
       }
     } catch (err) {
-      els.loginError.textContent = err.message || "Failed to login.";
-      els.loginError.hidden = false;
+      showSnackbar(err.message || "Failed to login.", "error");
     } finally {
       if (spinner) spinner.hidden = true;
       if (icon) icon.hidden = false;
@@ -1154,9 +1176,9 @@ document.addEventListener("click", async (e) => {
       method: "POST",
       body: JSON.stringify({ command: cmd })
     });
-    showNotice(`Sent command: /${cmd}`);
+    showSnackbar(`Sent command: /${cmd}`, "success");
   } catch (err) {
-    showNotice(`Failed to send command: ${err.message}`);
+    showSnackbar(`Failed to send command: ${err.message}`, "error");
   } finally {
     btn.disabled = false;
   }
@@ -1184,7 +1206,7 @@ async function loadServerSettings(instanceId) {
     setChk("settingAllowCommandBlock", props.allowCommandBlock);
     setChk("settingAllowNether", props.allowNether);
   } catch (err) {
-    showNotice(`Failed to load server settings: ${err.message}`);
+    showSnackbar(`Failed to load server settings: ${err.message}`, "error");
   }
 }
 
@@ -1226,7 +1248,7 @@ if (settingsForm) {
         statusMsg.textContent = "Settings saved successfully!";
         setTimeout(() => { statusMsg.hidden = true; }, 3000);
       }
-      showNotice("Server properties updated.");
+      showSnackbar("Server properties updated.", "success");
     } catch (err) {
       if (statusMsg) {
         statusMsg.className = "status-msg error";
@@ -1254,7 +1276,7 @@ async function loadAddons(instanceId) {
     renderAddons(cachedAddons);
   } catch (err) {
     grid.innerHTML = "";
-    showNotice(formatFriendlyError(err));
+    showSnackbar(formatFriendlyError(err), "error");
   }
 }
 
@@ -1311,10 +1333,10 @@ function renderAddons(addons) {
           method: "POST",
           body: JSON.stringify({ addonPathOrId: addon.filePath })
         });
-        showNotice(`Uninstalled ${addon.name}`);
+        showSnackbar(`Uninstalled ${addon.name}`, "success");
         loadAddons(selectedInstanceId);
       } catch (err) {
-        showNotice(`Failed to uninstall: ${err.message}`);
+        showSnackbar(`Failed to uninstall: ${err.message}`, "error");
       }
     });
 
@@ -1352,7 +1374,7 @@ async function loadFiles(instanceId, path = "") {
     renderFilesList(items);
   } catch (err) {
     container.innerHTML = "";
-    showNotice(formatFriendlyError(err));
+    showSnackbar(formatFriendlyError(err), "error");
   }
 }
 
@@ -1470,7 +1492,7 @@ function renderFilesList(items) {
       } else if (canEdit) {
         openFileEditor(selectedInstanceId, item.relativePath);
       } else {
-        showNotice(`Binary/raw file (${item.name}) cannot be edited in browser.`);
+        showSnackbar(`Binary/raw file (${item.name}) cannot be edited in browser.`, "error");
       }
     });
 
@@ -1487,10 +1509,10 @@ function renderFilesList(items) {
       if (!confirm(`Are you sure you want to delete ${item.name}?`)) return;
       try {
         await api(`/api/instances/${selectedInstanceId}/files?path=${encodeURIComponent(item.relativePath)}`, { method: "DELETE" });
-        showNotice(`Deleted ${item.name}`);
+        showSnackbar(`Deleted ${item.name}`, "success");
         loadFiles(selectedInstanceId, currentFileDirectoryPath);
       } catch (err) {
-        showNotice(formatFriendlyError(err));
+        showSnackbar(formatFriendlyError(err), "error");
       }
     });
 
@@ -1547,11 +1569,11 @@ document.getElementById("saveFileBtn")?.addEventListener("click", async () => {
         content: textarea.value
       })
     });
-    showNotice("File saved successfully.");
+    showSnackbar("File saved successfully.", "success");
     closeEditor();
     loadFiles(selectedInstanceId, currentFileDirectoryPath);
   } catch (err) {
-    showNotice(formatFriendlyError(err));
+    showSnackbar(formatFriendlyError(err), "error");
   } finally {
     saveBtn.disabled = false;
   }
@@ -1589,7 +1611,7 @@ async function loadBackups(instanceId) {
     }
   } catch (err) {
     container.innerHTML = "";
-    showNotice(formatFriendlyError(err));
+    showSnackbar(formatFriendlyError(err), "error");
   }
 }
 
@@ -1662,12 +1684,12 @@ if (createBackupBtn) {
     if (!selectedInstanceId) return;
     try {
       createBackupBtn.disabled = true;
-      showNotice("Starting background backup...");
+      showSnackbar("Starting background backup...", "info");
       const result = await api(`/api/instances/${selectedInstanceId}/backups`, { method: "POST" });
 
       loadBackups(selectedInstanceId);
     } catch (err) {
-      showNotice(formatFriendlyError(err));
+      showSnackbar(formatFriendlyError(err), "error");
       createBackupBtn.disabled = false;
     }
   });

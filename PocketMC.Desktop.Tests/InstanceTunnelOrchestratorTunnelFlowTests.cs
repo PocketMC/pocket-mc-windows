@@ -211,7 +211,7 @@ public sealed class InstanceTunnelOrchestratorTunnelFlowTests
 
         public Task<string?> OpenFolderDialogAsync(string title) => Task.FromResult<string?>(null);
         public Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult<string?>(null);
-        public Task<string?> PromptPasswordAsync(string title, string message) => Task.FromResult<string?>(null);
+        public Task<(string? Username, string? Password)> PromptCredentialsAsync(string title, string message, bool askUsername, bool askPassword) => Task.FromResult<(string? Username, string? Password)>((null, null));
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(Array.Empty<string>());
         public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<double>, Task> action) => action(new Progress<double>());
         public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<ProgressDialogUpdate>, Task> action) => action(new Progress<ProgressDialogUpdate>());

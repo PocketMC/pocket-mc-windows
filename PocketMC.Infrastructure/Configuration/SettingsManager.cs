@@ -162,7 +162,7 @@ namespace PocketMC.Infrastructure.Telemetry
             {
                 if (settings.HasCompletedFirstLaunch)
                 {
-                    // Apply the new Pocket MC default wallpaper to existing users on this update
+                    // Apply the new PocketMC default wallpaper to existing users on this update
                     settings.WindowBackdrop = "FakeMica";
                     settings.AccentColorMode = "Custom";
                     settings.CustomAccentColor = "#008B00";

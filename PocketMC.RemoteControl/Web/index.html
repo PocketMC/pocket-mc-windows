@@ -65,7 +65,7 @@
           <svg viewBox="0 0 24 24" class="moon-icon" aria-hidden="true" hidden><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
         </button>
       </div>
-      <div id="notice" class="notice" hidden aria-live="polite"></div>
+      <div id="snackbar-container" class="snackbar-container"></div>
 
 
       <!-- Instance Selection Dashboard -->
@@ -574,9 +574,10 @@
         <div class="panel-copy">
           <p class="eyebrow">Security</p>
           <h2>Authentication Required</h2>
-          <p>Please enter the remote dashboard password to continue.</p>
+          <p>Please enter your remote dashboard credentials to continue.</p>
         </div>
         <form id="loginForm" class="login-form">
+          <input type="text" id="loginUsernameInput" class="text-input login-input" placeholder="Username" autocomplete="username" style="margin-bottom: 0.5rem;" />
           <input type="password" id="loginPasswordInput" class="text-input login-input" placeholder="Password" autocomplete="current-password" required />
           <p class="login-help-text" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; text-align: center;">Logins remain valid for 24 hours on this browser.</p>
           <button id="loginSubmitButton" class="primary-button" type="submit">
@@ -586,7 +587,7 @@
             <span class="btn-spinner" hidden></span>
             <span class="btn-text">Login</span>
           </button>
-          <p id="loginError" class="login-error-text" hidden>Invalid password. Please try again.</p>
+
         </form>
       </section>
     </div>
