@@ -90,8 +90,17 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsUsersTab))]
     private int _selectedTab = 0;
 
-    public bool IsGeneralTab => SelectedTab == 0;
-    public bool IsUsersTab => SelectedTab == 1;
+    public bool IsGeneralTab
+    {
+        get => SelectedTab == 0;
+        set { if (value) SelectedTab = 0; }
+    }
+    
+    public bool IsUsersTab
+    {
+        get => SelectedTab == 1;
+        set { if (value) SelectedTab = 1; }
+    }
 
     public ObservableCollection<RemoteControlUserViewModel> Users { get; } = new();
 

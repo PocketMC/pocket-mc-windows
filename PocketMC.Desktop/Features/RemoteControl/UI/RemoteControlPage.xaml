@@ -27,43 +27,44 @@
                    Margin="24,24,24,16" />
 
         <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- Sidebar -->
-            <ui:NavigationView Grid.Column="0"
-                               x:Name="SidebarList"
-                               helpers:AnimatedNavIndicatorBehavior.IsEnabled="True"
-                               PaneDisplayMode="Left"
-                               IsPaneToggleVisible="False"
-                               IsBackButtonVisible="Collapsed"
-                               Margin="24,0,0,24">
-                <ui:NavigationView.MenuItems>
-                    <ui:NavigationViewItem Content="General Settings" Icon="{ui:SymbolIcon Settings24}" Click="NavItem_Click" IsActive="{Binding IsGeneralTab, Mode=OneWay}"/>
-                    <ui:NavigationViewItem Content="Users &amp; Permissions" Icon="{ui:SymbolIcon People24}" Click="NavItem_Click" IsActive="{Binding IsUsersTab, Mode=OneWay}"/>
-                </ui:NavigationView.MenuItems>
-            </ui:NavigationView>
-
-            <!-- Vertical Separator -->
-            <Border Grid.Column="1" 
-                    HorizontalAlignment="Left" 
-                    Width="1" 
-                    Opacity="0.4"
-                    Background="{DynamicResource DividerStrokeColorDefaultBrush}" 
-                    Margin="12,0,0,24" />
-
-            <!-- General Settings Tab -->
+            <!-- Single ScrollViewer for the whole page -->
             <ScrollViewer x:Name="RemoteControlScrollViewer"
-                          Grid.Column="1"
-                          Visibility="{Binding IsGeneralTab, Converter={StaticResource BoolToVis}}"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
                           CanContentScroll="False"
-                          PanningMode="VerticalOnly"
-                          Padding="24,0,24,24">
-                <StackPanel>
+                          PanningMode="VerticalOnly">
+                <StackPanel HorizontalAlignment="Stretch" Margin="24,0,24,24">
+                    
+                    <!-- Selection RadioButtons styled as ToggleButtons -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <RadioButton x:Name="RadioGeneral"
+                                     Grid.Column="0"
+                                     Content="General Settings"
+                                     IsChecked="{Binding IsGeneralTab, Mode=TwoWay}"
+                                     GroupName="RemoteControlTabs"
+                                     Style="{StaticResource {x:Type ToggleButton}}"
+                                     MinHeight="40"
+                                     Margin="0,0,8,0"
+                                     HorizontalAlignment="Stretch"
+                                     HorizontalContentAlignment="Center"/>
+                        <RadioButton x:Name="RadioUsers"
+                                     Grid.Column="1"
+                                     Content="Users &amp; Permissions"
+                                     IsChecked="{Binding IsUsersTab, Mode=TwoWay}"
+                                     GroupName="RemoteControlTabs"
+                                     Style="{StaticResource {x:Type ToggleButton}}"
+                                     MinHeight="40"
+                                     Margin="8,0,0,0"
+                                     HorizontalAlignment="Stretch"
+                                     HorizontalContentAlignment="Center"/>
+                    </Grid>
+
+                    <!-- General Settings Tab -->
+                    <StackPanel Visibility="{Binding IsGeneralTab, Converter={StaticResource BoolToVis}}">
                     <ui:Card>
                         <StackPanel>
                             <Grid>
@@ -330,18 +331,10 @@
                             </Grid>
                         </StackPanel>
                     </ui:CardExpander>
-                </StackPanel>
-            </ScrollViewer>
+                    </StackPanel>
 
-            <!-- Users and Permissions Tab -->
-            <ScrollViewer Grid.Column="1"
-                          Visibility="{Binding IsUsersTab, Converter={StaticResource BoolToVis}}"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          CanContentScroll="False"
-                          PanningMode="VerticalOnly"
-                          Padding="24,0,24,24">
-                <StackPanel>
+                    <!-- Users and Permissions Tab -->
+                    <StackPanel Visibility="{Binding IsUsersTab, Converter={StaticResource BoolToVis}}">
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -536,6 +529,7 @@
                                    TextAlignment="Center"
                                    TextWrapping="Wrap"
                                    MaxWidth="350"/>
+                    </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
