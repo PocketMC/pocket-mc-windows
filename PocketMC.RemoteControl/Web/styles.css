@@ -209,9 +209,17 @@ h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 0 16px 0;
-  margin-bottom: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  padding: max(24px, env(safe-area-inset-top)) 48px 16px 48px;
+  margin: -32px -48px 24px -48px;
   border-bottom: 1px solid var(--surface-border);
+  background: var(--bg-color);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .brand {
@@ -1627,17 +1635,8 @@ svg {
   }
 
   .top-bar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
     padding: max(14px, env(safe-area-inset-top)) 16px 14px 16px;
     margin: 0 -16px 20px -16px;
-    border-bottom: 1px solid var(--surface-border);
-    background: var(--bg-color);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
   }
 
   html[data-theme="light"] .top-bar {
