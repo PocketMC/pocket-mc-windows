@@ -11,6 +11,8 @@ using PocketMC.Application.Services.Shell;
 using PocketMC.Application.Interfaces;
 using System;
 using PocketMC.Desktop.Core.Interfaces;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace PocketMC.Desktop.Features.Setup.ViewModels;
 
@@ -51,12 +53,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         var remote = _applicationState.Settings.RemoteControl;
         _isEnabled = remote.Enabled;
         _port = remote.Port;
-        _allowRemoteConsoleCommands = remote.AllowRemoteConsoleCommands;
-        _allowRemotePlayerActions = remote.AllowRemotePlayerActions;
-        _allowRemoteServerSettings = remote.AllowRemoteServerSettings;
-        _allowRemoteServerAddons = remote.AllowRemoteServerAddons;
-        _allowRemoteFileManager = remote.AllowRemoteFileManager;
-        _allowRemoteServerBackups = remote.AllowRemoteServerBackups;
+
         _requireAuthentication = remote.RequireAuthentication;
         _username = remote.Username;
         _accessMode = remote.AccessMode == RemoteAccessMode.LanOnly
@@ -80,7 +77,71 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
         _settingsManager.SettingsSaved += OnSettingsSaved;
 
+        foreach (var user in remote.Users ?? new List<RemoteControlUser>())
+        {
+            Users.Add(new RemoteControlUserViewModel(user, this));
+        }
+
         UpdateStatus();
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsGeneralTab))]
+    [NotifyPropertyChangedFor(nameof(IsUsersTab))]
+    private int _selectedTab = 0;
+
+    public bool IsGeneralTab => SelectedTab == 0;
+    public bool IsUsersTab => SelectedTab == 1;
+
+    public ObservableCollection<RemoteControlUserViewModel> Users { get; } = new();
+
+    [ObservableProperty]
+    private RemoteControlUserViewModel? _selectedUser;
+
+    [RelayCommand]
+    private void AddUser()
+    {
+        var user = new RemoteControlUser();
+        var userVm = new RemoteControlUserViewModel(user, this) { IsEditing = true };
+        Users.Add(userVm);
+        SelectedUser = userVm;
+    }
+
+    public void RemoveUser(RemoteControlUserViewModel user)
+    {
+        Users.Remove(user);
+        SaveSettings();
+    }
+
+    public void SaveUser(RemoteControlUserViewModel user)
+    {
+        if (string.IsNullOrWhiteSpace(user.Username))
+        {
+            SetStatus("Username cannot be empty.", true);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Password))
+        {
+            SetStatus("Password is required to save credentials.", true);
+            return;
+        }
+
+        var hashed = _authenticationService.HashPassword(user.Password);
+        var adminHash = _applicationState.Settings.RemoteControl.PasswordHash;
+
+        if (!string.IsNullOrEmpty(adminHash) && hashed == adminHash)
+        {
+            SetStatus("Sub-user password cannot be the same as the admin password.", true);
+            return;
+        }
+
+        user.PasswordHash = hashed;
+        user.ProtectedPassword = PocketMC.Infrastructure.Security.DataProtector.Protect(user.Password);
+
+        user.IsEditing = false;
+        SaveSettings();
+        SetStatus("User credentials saved successfully.", false);
     }
 
     [ObservableProperty]
@@ -89,23 +150,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     [ObservableProperty]
     private int _port;
 
-    [ObservableProperty]
-    private bool _allowRemoteConsoleCommands;
 
-    [ObservableProperty]
-    private bool _allowRemotePlayerActions;
-
-    [ObservableProperty]
-    private bool _allowRemoteServerSettings;
-
-    [ObservableProperty]
-    private bool _allowRemoteServerAddons;
-
-    [ObservableProperty]
-    private bool _allowRemoteFileManager;
-
-    [ObservableProperty]
-    private bool _allowRemoteServerBackups;
 
     [ObservableProperty]
     private bool _requireAuthentication;
@@ -204,8 +249,8 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         bool askUsername = IsUsernameNotSet;
         bool askPassword = IsPasswordNotSet;
         var result = await _dialogService.PromptCredentialsAsync(
-            "Setup Remote Credentials",
-            "Remote Control requires authentication to be secure. Please set up your credentials, or turn off authentication to continue without it.",
+            "Setup Admin Credentials",
+            "Remote Control requires authentication to be secure. Please set up the primary admin account, or turn off authentication to continue without it.",
             askUsername,
             askPassword);
 
@@ -229,35 +274,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         SaveAndRestart();
     }
 
-    partial void OnAllowRemoteConsoleCommandsChanged(bool value)
-    {
-        SaveSettings();
-    }
 
-    partial void OnAllowRemotePlayerActionsChanged(bool value)
-    {
-        SaveSettings();
-    }
-
-    partial void OnAllowRemoteServerSettingsChanged(bool value)
-    {
-        SaveSettings();
-    }
-
-    partial void OnAllowRemoteServerAddonsChanged(bool value)
-    {
-        SaveSettings();
-    }
-
-    partial void OnAllowRemoteFileManagerChanged(bool value)
-    {
-        SaveSettings();
-    }
-
-    partial void OnAllowRemoteServerBackupsChanged(bool value)
-    {
-        SaveSettings();
-    }
 
     partial void OnRequireAuthenticationChanged(bool value)
     {
@@ -313,7 +330,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
 
 
-    private bool SaveSettings()
+    internal bool SaveSettings()
     {
         var settings = _applicationState.Settings;
         if (Port <= 0 || Port > 65535)
@@ -324,12 +341,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
         settings.RemoteControl.Enabled = IsEnabled;
         settings.RemoteControl.Port = Port;
-        settings.RemoteControl.AllowRemoteConsoleCommands = AllowRemoteConsoleCommands;
-        settings.RemoteControl.AllowRemotePlayerActions = AllowRemotePlayerActions;
-        settings.RemoteControl.AllowRemoteServerSettings = AllowRemoteServerSettings;
-        settings.RemoteControl.AllowRemoteServerAddons = AllowRemoteServerAddons;
-        settings.RemoteControl.AllowRemoteFileManager = AllowRemoteFileManager;
-        settings.RemoteControl.AllowRemoteServerBackups = AllowRemoteServerBackups;
+
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
         settings.RemoteControl.RequireAuthentication = RequireAuthentication;
@@ -348,10 +360,13 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
         settings.EnableDiscordNotifications = EnableDiscordNotifications;
 
+        settings.RemoteControl.Users = Users.Select(u => u.Model).ToList();
+
         _settingsManager.Save(settings);
 
         OnPropertyChanged(nameof(IsPasswordSet));
         OnPropertyChanged(nameof(IsPasswordNotSet));
+        OnPropertyChanged(nameof(IsOwnerSetupVisible));
 
         return true;
     }
@@ -503,6 +518,125 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             return null;
         }
     }
+
+    public bool IsOwnerSetupVisible => RequireAuthentication && IsPasswordNotSet;
+}
+
+public partial class RemoteControlUserViewModel : ObservableObject
+{
+    private readonly RemoteControlSettingsViewModel _parent;
+    public RemoteControlUser Model { get; }
+
+    public RemoteControlUserViewModel(RemoteControlUser model, RemoteControlSettingsViewModel parent)
+    {
+        Model = model;
+        _parent = parent;
+        _username = model.Username;
+        _password = "";
+        _allowRemoteConsoleCommands = model.AllowRemoteConsoleCommands;
+        _allowRemotePlayerActions = model.AllowRemotePlayerActions;
+        _allowRemoteServerSettings = model.AllowRemoteServerSettings;
+        _allowRemoteServerAddons = model.AllowRemoteServerAddons;
+        _allowRemoteFileManager = model.AllowRemoteFileManager;
+        _allowRemoteServerBackups = model.AllowRemoteServerBackups;
+        _passwordHash = model.PasswordHash;
+        _protectedPassword = model.ProtectedPassword;
+        
+        if (!string.IsNullOrEmpty(_protectedPassword))
+        {
+            try
+            {
+                _password = PocketMC.Infrastructure.Security.DataProtector.Unprotect(_protectedPassword) ?? "";
+            }
+            catch
+            {
+                _password = "";
+            }
+        }
+    }
+
+    [ObservableProperty]
+    private string _username;
+
+    [ObservableProperty]
+    private string _password;
+
+    public string PasswordHash 
+    { 
+        get => _passwordHash; 
+        set 
+        { 
+            _passwordHash = value; 
+            Model.PasswordHash = value; 
+        } 
+    }
+    private string _passwordHash = "";
+
+    public string? ProtectedPassword 
+    { 
+        get => _protectedPassword; 
+        set 
+        { 
+            _protectedPassword = value; 
+            Model.ProtectedPassword = value; 
+        } 
+    }
+    private string? _protectedPassword;
+
+    [ObservableProperty]
+    private bool _allowRemoteConsoleCommands;
+
+    [ObservableProperty]
+    private bool _allowRemotePlayerActions;
+
+    [ObservableProperty]
+    private bool _allowRemoteServerSettings;
+
+    [ObservableProperty]
+    private bool _allowRemoteServerAddons;
+
+    [ObservableProperty]
+    private bool _allowRemoteFileManager;
+
+    [ObservableProperty]
+    private bool _allowRemoteServerBackups;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotEditing))]
+    private bool _isEditing;
+
+    public bool IsNotEditing => !IsEditing;
+
+    partial void OnUsernameChanged(string value) => Model.Username = value;
+    partial void OnAllowRemoteConsoleCommandsChanged(bool value) { Model.AllowRemoteConsoleCommands = value; _parent.SaveSettings(); }
+    partial void OnAllowRemotePlayerActionsChanged(bool value) { Model.AllowRemotePlayerActions = value; _parent.SaveSettings(); }
+    partial void OnAllowRemoteServerSettingsChanged(bool value) { Model.AllowRemoteServerSettings = value; _parent.SaveSettings(); }
+    partial void OnAllowRemoteServerAddonsChanged(bool value) { Model.AllowRemoteServerAddons = value; _parent.SaveSettings(); }
+    partial void OnAllowRemoteFileManagerChanged(bool value) { Model.AllowRemoteFileManager = value; _parent.SaveSettings(); }
+    partial void OnAllowRemoteServerBackupsChanged(bool value) { Model.AllowRemoteServerBackups = value; _parent.SaveSettings(); }
+
+    [RelayCommand]
+    private void Edit()
+    {
+        if (!string.IsNullOrEmpty(ProtectedPassword))
+        {
+            try
+            {
+                Password = PocketMC.Infrastructure.Security.DataProtector.Unprotect(ProtectedPassword) ?? "";
+            }
+            catch
+            {
+                Password = "";
+            }
+        }
+        IsEditing = true;
+    }
+
+    [RelayCommand]
+    private void Save() => _parent.SaveUser(this);
+
+    [RelayCommand]
+    private void Remove() => _parent.RemoveUser(this);
 }
 
 

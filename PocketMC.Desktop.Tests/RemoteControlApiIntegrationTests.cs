@@ -30,8 +30,6 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         _state.Settings.RemoteControl.Enabled = true;
         _state.Settings.RemoteControl.Port = _port;
         _state.Settings.RemoteControl.AccessMode = RemoteAccessMode.LanOnly;
-        _state.Settings.RemoteControl.AllowRemoteConsoleCommands = true;
-        _state.Settings.RemoteControl.AllowRemotePlayerActions = true;
         _state.Settings.RemoteControl.RequireAuthentication = false;
 
         _lifecycleMock = new Mock<IServerLifecycleService>();
@@ -98,19 +96,6 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         Assert.Contains("hostRunning", json);
     }
 
-    [Fact]
-    public async Task ConsoleCommand_WhenDisabled_Returns403()
-    {
-        _state.Settings.RemoteControl.AllowRemoteConsoleCommands = false;
-        var instanceId = Guid.NewGuid();
-
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/instances/{instanceId}/console/command");
-        request.Content = JsonContent.Create(new { command = "help" });
-
-        var response = await _client.SendAsync(request);
-        string content = await response.Content.ReadAsStringAsync();
-        Assert.True(response.StatusCode == HttpStatusCode.Forbidden, $"Expected Forbidden, got {response.StatusCode}. Content: {content}");
-    }
 
     [Fact]
     public async Task Login_RateLimiting_Returns429AfterFiveAttempts()

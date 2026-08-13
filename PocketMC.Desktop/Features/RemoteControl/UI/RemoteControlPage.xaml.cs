@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Infrastructure;
 using System.Windows;
 using System.Windows.Controls;
 using PocketMC.Infrastructure;
@@ -11,6 +11,8 @@ namespace PocketMC.Desktop.Features.RemoteControl.UI
 {
     public partial class RemoteControlPage : Page
     {
+        private RemoteControlSettingsViewModel ViewModel => (RemoteControlSettingsViewModel)DataContext;
+
         public RemoteControlPage(RemoteControlSettingsViewModel viewModel)
         {
             InitializeComponent();
@@ -22,11 +24,33 @@ namespace PocketMC.Desktop.Features.RemoteControl.UI
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             ScrollViewerHelper.EnableMouseWheelScrolling(this, RemoteControlScrollViewer);
+            
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new System.Action(() => 
+            {
+                PocketMC.Desktop.Views.Behaviors.AnimatedNavIndicatorBehavior.AnimateToActiveItem(SidebarList);
+            }));
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             ScrollViewerHelper.DisableMouseWheelScrolling(this);
+        }
+
+        private void NavItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Wpf.Ui.Controls.NavigationViewItem clickedItem)
+            {
+                int idx = SidebarList.MenuItems.IndexOf(clickedItem);
+                if (idx != -1 && ViewModel.SelectedTab != idx)
+                {
+                    ViewModel.SelectedTab = idx;
+                    
+                    Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.DataBind, new System.Action(() => 
+                    {
+                        PocketMC.Desktop.Views.Behaviors.AnimatedNavIndicatorBehavior.AnimateToActiveItem(SidebarList);
+                    }));
+                }
+            }
         }
     }
 }

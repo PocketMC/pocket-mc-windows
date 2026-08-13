@@ -237,6 +237,10 @@ function formatFriendlyError(msg) {
     return "The requested server instance was not found.";
   }
 
+  if (lower.includes("forbidden") || lower.includes("403")) {
+    return "You do not have permission to view this tab or perform this action.";
+  }
+
   return text;
 }
 
@@ -333,8 +337,12 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
     if (reconnectConsole) {
       historyLoadedForInstance = null;
       closeSocket();
-      loadServerSettings(selectedInstanceId);
-      loadAddons(selectedInstanceId);
+      if (remoteStatusGlobal?.allowRemoteServerSettings) {
+        loadServerSettings(selectedInstanceId);
+      }
+      if (remoteStatusGlobal?.allowRemoteServerAddons) {
+        loadAddons(selectedInstanceId);
+      }
     }
     await ensureConsoleConnection(instanceStatus);
   }

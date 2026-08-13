@@ -120,12 +120,25 @@ public sealed class RemoteDashboardHost
                     };
                     options.Events.OnValidatePrincipal = context =>
                     {
-                        var expectedStamp = _applicationState.Settings.RemoteControl.SecurityStamp;
+                        var settings = _applicationState.Settings.RemoteControl;
+                        var expectedStamp = settings.SecurityStamp;
                         var actualStamp = context.Principal?.FindFirstValue("SecurityStamp");
                         if (actualStamp != expectedStamp)
                         {
                             context.RejectPrincipal();
+                            return Task.CompletedTask;
                         }
+
+                        var userId = context.Principal?.FindFirstValue("UserId");
+                        if (userId != null && userId != "Admin")
+                        {
+                            bool userExists = settings.Users?.Any(u => u.Id == userId) ?? false;
+                            if (!userExists)
+                            {
+                                context.RejectPrincipal();
+                            }
+                        }
+
                         return Task.CompletedTask;
                     };
                 });
@@ -250,34 +263,83 @@ public sealed class RemoteDashboardHost
                     return Results.BadRequest(new { error = "Password is required" });
                 }
 
-                if (string.IsNullOrWhiteSpace(request.Username) || !string.Equals(request.Username.Trim(), settings.Username?.Trim(), StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrWhiteSpace(request.Username))
                 {
-                    return Results.BadRequest(new { error = "Invalid username" });
+                    return Results.BadRequest(new { error = "Username is required" });
                 }
 
-                if (!_authenticationService.VerifyPassword(request.Password, settings.PasswordHash))
+                bool isAdmin = string.Equals(request.Username.Trim(), settings.Username?.Trim(), StringComparison.OrdinalIgnoreCase);
+                bool valid = false;
+                string role = "User";
+                string userId = "Admin";
+
+                if (isAdmin)
                 {
-                    return Results.BadRequest(new { error = "Invalid password" });
+                    valid = _authenticationService.VerifyPassword(request.Password, settings.PasswordHash);
+                    if (valid)
+                    {
+                        role = "Admin";
+                        userId = "Admin";
+                    }
                 }
+                else
+                {
+                    var subUser = settings.Users?.FirstOrDefault(u => string.Equals(u.Username.Trim(), request.Username.Trim(), StringComparison.OrdinalIgnoreCase));
+                    if (subUser != null)
+                    {
+                        valid = _authenticationService.VerifyPassword(request.Password, subUser.PasswordHash);
+                        if (valid)
+                        {
+                            role = "User";
+                            userId = subUser.Id;
+                        }
+                    }
+                }
+
+                if (!valid)
+                {
+                    return Results.BadRequest(new { error = "Invalid credentials" });
+                }
+
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, request.Username.Trim()),
+                    new Claim(ClaimTypes.Role, role),
+                    new Claim("UserId", userId),
+                    new Claim("SecurityStamp", settings.SecurityStamp)
+                };
+                var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
+                };
+
+                await context.SignInAsync("RemoteCookies", new ClaimsPrincipal(claimsIdentity), authProperties);
+            }
+            else
+            {
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, "Admin"),
+                    new Claim(ClaimTypes.Role, "Admin"),
+                    new Claim("UserId", "Admin"),
+                    new Claim("SecurityStamp", settings.SecurityStamp)
+                };
+                var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
+                };
+
+                await context.SignInAsync("RemoteCookies", new ClaimsPrincipal(claimsIdentity), authProperties);
             }
 
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, "Admin"),
-                new Claim("SecurityStamp", settings.SecurityStamp)
-            };
-            var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
-            };
-
-            await context.SignInAsync("RemoteCookies", new ClaimsPrincipal(claimsIdentity), authProperties);
             return Results.Ok(new { success = true });
         });
 
-        api.MapGet("/status", () => Results.Ok(BuildDashboardStatus()));
+        api.MapGet("/status", (HttpContext context) => Results.Ok(BuildDashboardStatus(context)));
 
         api.MapGet("/instances", () => Results.Ok(_statusService.GetInstances()));
 
@@ -318,7 +380,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPost("/instances/{instanceId:guid}/console/command", async (HttpContext context, Guid instanceId) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteConsoleCommands)
+            if (!HasPermission(context, u => u.AllowRemoteConsoleCommands))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -370,9 +432,9 @@ public sealed class RemoteDashboardHost
             });
         }
 
-        api.MapGet("/instances/{instanceId:guid}/properties", (Guid instanceId) =>
+        api.MapGet("/instances/{instanceId:guid}/properties", (HttpContext context, Guid instanceId) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerSettings)
+            if (!HasPermission(context, u => u.AllowRemoteServerSettings))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -410,7 +472,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPut("/instances/{instanceId:guid}/properties", async (HttpContext context, Guid instanceId) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerSettings)
+            if (!HasPermission(context, u => u.AllowRemoteServerSettings))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -447,9 +509,9 @@ public sealed class RemoteDashboardHost
             return Results.Ok(new { success = true });
         });
 
-        api.MapGet("/instances/{instanceId:guid}/addons", (Guid instanceId) =>
+        api.MapGet("/instances/{instanceId:guid}/addons", (HttpContext context, Guid instanceId) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerAddons)
+            if (!HasPermission(context, u => u.AllowRemoteServerAddons))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -466,7 +528,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPost("/instances/{instanceId:guid}/addons/uninstall", async (HttpContext context, Guid instanceId) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerAddons)
+            if (!HasPermission(context, u => u.AllowRemoteServerAddons))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -510,9 +572,9 @@ public sealed class RemoteDashboardHost
         // ---------------------------------------------------------
         // File Manager Endpoints
         // ---------------------------------------------------------
-        api.MapGet("/instances/{instanceId:guid}/files", (Guid instanceId, string? path) =>
+        api.MapGet("/instances/{instanceId:guid}/files", (HttpContext context, Guid instanceId, string? path) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteFileManager)
+            if (!HasPermission(context, u => u.AllowRemoteFileManager))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -576,9 +638,9 @@ public sealed class RemoteDashboardHost
             return Results.Ok(items.OrderByDescending(i => i.IsDirectory).ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase));
         });
 
-        api.MapGet("/instances/{instanceId:guid}/files/content", (Guid instanceId, string? path) =>
+        api.MapGet("/instances/{instanceId:guid}/files/content", (HttpContext context, Guid instanceId, string? path) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteFileManager)
+            if (!HasPermission(context, u => u.AllowRemoteFileManager))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -632,7 +694,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPut("/instances/{instanceId:guid}/files/content", async (HttpContext context, Guid instanceId) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteFileManager)
+            if (!HasPermission(context, u => u.AllowRemoteFileManager))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -651,9 +713,9 @@ public sealed class RemoteDashboardHost
             return Results.Ok(new { success = true });
         });
 
-        api.MapDelete("/instances/{instanceId:guid}/files", (Guid instanceId, string? path) =>
+        api.MapDelete("/instances/{instanceId:guid}/files", (HttpContext context, Guid instanceId, string? path) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteFileManager)
+            if (!HasPermission(context, u => u.AllowRemoteFileManager))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -688,9 +750,9 @@ public sealed class RemoteDashboardHost
         // ---------------------------------------------------------
         // Backups Endpoints
         // ---------------------------------------------------------
-        api.MapGet("/instances/{instanceId:guid}/backups", (Guid instanceId) =>
+        api.MapGet("/instances/{instanceId:guid}/backups", (HttpContext context, Guid instanceId) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerBackups)
+            if (!HasPermission(context, u => u.AllowRemoteServerBackups))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -768,9 +830,9 @@ public sealed class RemoteDashboardHost
             return Results.Ok(new { isBackupRunning = isRunning, backups = list });
         });
 
-        api.MapPost("/instances/{instanceId:guid}/backups", (Guid instanceId) =>
+        api.MapPost("/instances/{instanceId:guid}/backups", (HttpContext context, Guid instanceId) =>
         {
-            if (!_applicationState.Settings.RemoteControl.AllowRemoteServerBackups)
+            if (!HasPermission(context, u => u.AllowRemoteServerBackups))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -828,7 +890,7 @@ public sealed class RemoteDashboardHost
 
 
 
-    private RemoteDashboardStatus BuildDashboardStatus()
+    private RemoteDashboardStatus BuildDashboardStatus(HttpContext context)
     {
         RemoteControlSettings settings = _applicationState.Settings.RemoteControl;
         RemoteTunnelStatus tunnelStatus = _tunnelManager.GetStatus();
@@ -842,13 +904,33 @@ public sealed class RemoteDashboardHost
             PublicUrl = tunnelStatus.PublicUrl,
             TunnelRunning = tunnelStatus.IsRunning,
             TunnelError = tunnelStatus.ErrorMessage,
-            AllowRemoteConsoleCommands = settings.AllowRemoteConsoleCommands,
-            AllowRemotePlayerActions = settings.AllowRemotePlayerActions,
-            AllowRemoteServerSettings = settings.AllowRemoteServerSettings,
-            AllowRemoteServerAddons = settings.AllowRemoteServerAddons,
-            AllowRemoteFileManager = settings.AllowRemoteFileManager,
-            AllowRemoteServerBackups = settings.AllowRemoteServerBackups
+            AllowRemoteConsoleCommands = HasPermission(context, u => u.AllowRemoteConsoleCommands),
+            AllowRemotePlayerActions = HasPermission(context, u => u.AllowRemotePlayerActions),
+            AllowRemoteServerSettings = HasPermission(context, u => u.AllowRemoteServerSettings),
+            AllowRemoteServerAddons = HasPermission(context, u => u.AllowRemoteServerAddons),
+            AllowRemoteFileManager = HasPermission(context, u => u.AllowRemoteFileManager),
+            AllowRemoteServerBackups = HasPermission(context, u => u.AllowRemoteServerBackups)
         };
+    }
+
+    private bool HasPermission(HttpContext context, Func<RemoteControlUser, bool> userPerm)
+    {
+        var settings = _applicationState.Settings.RemoteControl;
+        if (!settings.RequireAuthentication) return true;
+
+        var role = context.User.FindFirstValue(ClaimTypes.Role);
+        if (role == "Admin" || string.IsNullOrEmpty(role))
+        {
+            return true;
+        }
+
+        var userId = context.User.FindFirstValue("UserId");
+        if (string.IsNullOrEmpty(userId)) return false;
+
+        var user = settings.Users?.FirstOrDefault(u => u.Id == userId);
+        if (user == null) return false;
+
+        return userPerm(user);
     }
 
     private static async Task<T?> ReadJsonAsync<T>(HttpContext context)

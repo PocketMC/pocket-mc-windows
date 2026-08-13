@@ -1,4 +1,4 @@
-﻿using PocketMC.RemoteControl.Models;
+using PocketMC.RemoteControl.Models;
 using PocketMC.Application.Services.Players;
 using PocketMC.Application.Interfaces;
 using PocketMC.Application.Interfaces.Instances;
@@ -36,10 +36,7 @@ public sealed class RemotePlayerActionService
         RemotePlayerActionRequest? request,
         string? deviceId)
     {
-        if (!_applicationState.Settings.RemoteControl.AllowRemotePlayerActions)
-        {
-            return RemoteControlActionResult.Failed(RemoteControlActionFailure.Disabled, "Remote player actions are disabled.");
-        }
+
 
         InstanceMetadata? metadata = _registry.GetById(instanceId);
         if (metadata == null)

@@ -27,7 +27,6 @@ public sealed class RemotePlayerActionServiceTests : IDisposable
         Directory.CreateDirectory(_tempDirectory);
 
         _applicationState = new ApplicationState();
-        _applicationState.Settings.RemoteControl.AllowRemotePlayerActions = true;
         _applicationState.ApplySettings(new AppSettings { AppRootPath = _tempDirectory });
 
         _registry = new InstanceRegistry(new InstancePathService(_applicationState), NullLogger<InstanceRegistry>.Instance);
@@ -128,16 +127,7 @@ public sealed class RemotePlayerActionServiceTests : IDisposable
         Assert.Equal("Invalid reason format.", result.Message);
     }
 
-    [Fact]
-    public async Task ExecuteAsync_ObeysAllowRemotePlayerActionsSetting()
-    {
-        _applicationState.Settings.RemoteControl.AllowRemotePlayerActions = false;
 
-        var result = await _service.ExecuteAsync(_javaInstanceId, "valid_name", "kick", null, "test-device");
 
-        Assert.False(result.Success);
-        Assert.Equal(RemoteControlActionFailure.Disabled, result.Failure);
-    }
+
 }
-
-

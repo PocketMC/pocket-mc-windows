@@ -46,9 +46,7 @@ public sealed class RemoteControlCoordinator
             LocalUrls = _localNetworkAddressService.GetLocalUrls(settings.Port),
             PublicUrl = tunnelStatus.PublicUrl,
             TunnelRunning = tunnelStatus.IsRunning,
-            TunnelError = tunnelStatus.ErrorMessage,
-            AllowRemoteConsoleCommands = settings.AllowRemoteConsoleCommands,
-            AllowRemotePlayerActions = settings.AllowRemotePlayerActions
+            TunnelError = tunnelStatus.ErrorMessage
         };
     }
 
