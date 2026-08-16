@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Application.Services.Setup;
 using PocketMC.Desktop.Core.Interfaces;
 using System;

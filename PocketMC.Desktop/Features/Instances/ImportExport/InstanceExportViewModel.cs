@@ -1,11 +1,12 @@
-﻿using PocketMC.Application.Interfaces;
+using PocketMC.Desktop.Features.Instances.ImportExport;
+using PocketMC.Application.Interfaces;
 using PocketMC.Application.Interfaces.Instances;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.IO;
 using PocketMC.Domain.Models;
 
-namespace PocketMC.Infrastructure.Instances;
+namespace PocketMC.Desktop.Features.Instances.ImportExport;
 
 public sealed class InstanceExportViewModel : ObservableObject
 {

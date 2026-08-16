@@ -1,4 +1,5 @@
-﻿using PocketMC.Desktop.Features.Networking;
+using PocketMC.Infrastructure.Mods;
+using PocketMC.Desktop.Features.Networking;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Infrastructure.OS;

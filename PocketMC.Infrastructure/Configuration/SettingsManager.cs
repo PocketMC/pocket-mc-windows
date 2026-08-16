@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -8,7 +9,7 @@ using PocketMC.Domain.Security;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Security;
 
-namespace PocketMC.Infrastructure.Telemetry
+namespace PocketMC.Infrastructure.Configuration
 {
     public class SettingsManager
     {

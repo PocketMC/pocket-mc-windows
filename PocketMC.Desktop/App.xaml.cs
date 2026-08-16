@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Settings;
@@ -243,7 +244,7 @@ public partial class App : System.Windows.Application
                             }
                         }
 
-                        var settingsManager = Services.GetRequiredService<PocketMC.Infrastructure.Telemetry.SettingsManager>();
+                        var settingsManager = Services.GetRequiredService<PocketMC.Infrastructure.Configuration.SettingsManager>();
 
                         applicationState.Settings.DiscordUserId = userId;
                         applicationState.Settings.DiscordApiUrl = apiUrl;

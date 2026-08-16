@@ -47,7 +47,9 @@
     <Using Include="PocketMC.Infrastructure.Monitoring" />
     <Using Include="PocketMC.Infrastructure.Diagnostics" />
     <Using Include="PocketMC.Infrastructure.Security" />
+    <Using Include="PocketMC.Infrastructure.Configuration" />
     <Using Include="PocketMC.Desktop.Features.Instances" />
+    <Using Include="PocketMC.Desktop.Features.Instances.ImportExport" />
     <Using Include="PocketMC.Desktop.Features.Instances.Services" />
     <Using Include="PocketMC.Desktop.Features.Mods" />
     <Using Include="PocketMC.Desktop.Features.Marketplace" />
@@ -63,6 +65,8 @@
     <Using Include="PocketMC.RemoteControl.Hosting" />
     <Using Include="PocketMC.RemoteControl.Models" />
     <Using Include="PocketMC.RemoteControl.Services" />
+    <Using Include="PocketMC.Desktop.Tests.TestSupport.Fixtures" />
+    <Using Include="PocketMC.Desktop.Tests.TestSupport.Utilities" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,7 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace PocketMC.Infrastructure.Telemetry
+namespace PocketMC.Infrastructure.Configuration
 {
     public static class AppConfig
     {

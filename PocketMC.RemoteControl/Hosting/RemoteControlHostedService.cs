@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+using PocketMC.Infrastructure.Configuration;
+using Microsoft.Extensions.Hosting;
 using PocketMC.RemoteControl.Services;
 using PocketMC.Infrastructure.Telemetry;
 using PocketMC.Application.Services.Shell;

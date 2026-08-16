@@ -10,16 +10,41 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="PocketMC.Domain.Models" />
+    <Using Include="PocketMC.Domain.Security" />
+    <Using Include="PocketMC.Domain.Storage" />
+    <Using Include="PocketMC.Application.Interfaces" />
+    <Using Include="PocketMC.Application.Interfaces.Instances" />
+    <Using Include="PocketMC.Application.Services.Shell" />
+    <Using Include="PocketMC.Application.Services.Instances" />
+    <Using Include="PocketMC.Infrastructure.Configuration" />
+    <Using Include="PocketMC.Infrastructure.Diagnostics" />
+    <Using Include="PocketMC.Infrastructure.Instances" />
+    <Using Include="PocketMC.Infrastructure" />
+    <Using Include="PocketMC.Infrastructure.Networking" />
+    <Using Include="PocketMC.Infrastructure.OS" />
+    <Using Include="PocketMC.Infrastructure.Players" />
+    <Using Include="PocketMC.Infrastructure.Tunnel" />
+    <Using Include="PocketMC.RemoteControl" />
+    <Using Include="PocketMC.RemoteControl.Hosting" />
+    <Using Include="PocketMC.RemoteControl.Models" />
+    <Using Include="PocketMC.RemoteControl.Services" />
+    <Using Include="PocketMC.RemoteControl.Tunnels" />
+    <Using Include="PocketMC.RemoteControl.Tests.TestSupport.Fixtures" />
+    <Using Include="PocketMC.RemoteControl.Tests.TestSupport.Utilities" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PocketMC.Domain\PocketMC.Domain.csproj" />
+    <ProjectReference Include="..\PocketMC.Application\PocketMC.Application.csproj" />
+    <ProjectReference Include="..\PocketMC.Infrastructure\PocketMC.Infrastructure.csproj" />
     <ProjectReference Include="..\PocketMC.RemoteControl\PocketMC.RemoteControl.csproj" />
   </ItemGroup>
-
 </Project>

@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.RemoteControl.Models;
 using PocketMC.RemoteControl.Hosting;
 using PocketMC.Domain.Models;
@@ -136,7 +137,7 @@ public sealed class RemoteControlCoordinator
         {
             candidateUrls.Add(settings.DiscordApiUrl);
         }
-        candidateUrls.AddRange(PocketMC.Infrastructure.Telemetry.AppConfig.DiscordApiUrls);
+        candidateUrls.AddRange(PocketMC.Infrastructure.Configuration.AppConfig.DiscordApiUrls);
         
         if (candidateUrls.Count == 0)
         {

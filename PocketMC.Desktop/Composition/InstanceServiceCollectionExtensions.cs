@@ -30,7 +30,7 @@ using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Instances.Services;
 
-namespace PocketMC.Application.Services.Instances
+namespace PocketMC.Desktop.Composition
 {
     public static class InstanceServiceCollectionExtensions
     {

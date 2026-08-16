@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Application.Interfaces.Mods;
 using PocketMC.Application.Services.Shell;
 using PocketMC.Infrastructure.Telemetry;
