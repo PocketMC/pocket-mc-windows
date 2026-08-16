@@ -115,7 +115,6 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
             services.AddSingleton<IPlayitDialogService, PlayitDialogService>();
 
             services.AddTransient<MainWindow>();
-            services.AddTransient<StartupUpdateWindow>();
             services.AddTransient<JavaSetupPage>();
             services.AddTransient<TunnelPage>();
             services.AddTransient<PlayitStatusPage>();

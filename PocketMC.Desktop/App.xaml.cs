@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Infrastructure;
@@ -89,24 +89,6 @@ public partial class App : System.Windows.Application
         var appState = Services.GetRequiredService<PocketMC.Application.Services.Shell.ApplicationState>();
         var updateService = Services.GetRequiredService<PocketMC.Desktop.Infrastructure.UpdateService>();
 
-        if (!System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
-        {
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
-
-            var updateWindow = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.StartupUpdateWindow>();
-            updateWindow.StartUpdateCheck();
-            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
-            updateWindow.ShowDialog();
-
-            if (!updateWindow.ShouldContinueToApp)
-            {
-                Shutdown(0);
-                return;
-            }
-
-            ShutdownMode = ShutdownMode.OnLastWindowClose;
-        }
-
         var mainWindow = Services.GetRequiredService<MainWindow>();
         if (Services.GetService<IAppNavigationService>() is IAppNavigationService appNavigationService)
         {
@@ -123,6 +105,21 @@ public partial class App : System.Windows.Application
         {
             PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
             mainWindow.Show();
+        }
+
+        if (!System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await updateService.CheckAndDownloadAsync();
+                }
+                catch (Exception ex)
+                {
+                    Services.GetService<ILogger<App>>()?.LogError(ex, "Background auto-update check failed.");
+                }
+            });
         }
 
         if (!string.IsNullOrEmpty(startupOptions.ActivatedUri))

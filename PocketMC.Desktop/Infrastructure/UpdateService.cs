@@ -156,8 +156,18 @@ namespace PocketMC.Desktop.Infrastructure
             _logger.LogInformation("Velopack update {Version} downloaded and staged for restart.", newVersion);
             Broadcast(UpdateStatus.From(UpdateStage.ReadyToRestart, newVersion, 100, info.TargetFullRelease?.Size));
 
-            _logger.LogInformation("Applying update now.");
-            ApplyUpdateAndRestart();
+            try
+            {
+                if (info.TargetFullRelease != null)
+                {
+                    mgr.WaitExitThenApplyUpdates(info.TargetFullRelease, silent: true, restart: false);
+                    _logger.LogInformation("Velopack update {Version} registered to apply automatically on application exit.", newVersion);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to register Velopack update to apply on exit.");
+            }
         }
 
         private static UpdateManager CreateManager()
