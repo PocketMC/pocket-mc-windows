@@ -20,7 +20,7 @@
     <EmbeddedResource Include="$(MSBuildProjectDirectory)\..\pocketmc.yml" LogicalName="PocketMC.Desktop.pocketmc.yml" />
     <Resource Include="icon.ico" />
     <Resource Include="Assets\dark_dirt.png" />
-    <SplashScreen Include="Assets\logo.png" />
+    <Resource Include="Assets\logo.png" />
     <Resource Include="Assets\logo_highres.png" />
     <Resource Include="Assets\splash.png" />
     <Resource Include="Assets\default_wallpaper.png" />

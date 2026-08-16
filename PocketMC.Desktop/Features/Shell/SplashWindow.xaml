@@ -1,0 +1,19 @@
+<Window x:Class="PocketMC.Desktop.Features.Shell.SplashWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PocketMC"
+        Width="512" Height="512"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True"
+        ResizeMode="NoResize">
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Image Source="pack://application:,,,/Assets/splash.png"
+               Width="512" Height="512"
+               RenderOptions.BitmapScalingMode="HighQuality"
+               Stretch="Uniform"/>
+    </Grid>
+</Window>

@@ -98,12 +98,12 @@ public partial class App : System.Windows.Application
 
         if (startupOptions.ShouldStartMinimizedToTray)
         {
-            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
+            SplashWindow.CloseSplash();
             mainWindow.ShowMinimizedToTray();
         }
         else
         {
-            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
+            SplashWindow.CloseSplash();
             mainWindow.Show();
         }
 

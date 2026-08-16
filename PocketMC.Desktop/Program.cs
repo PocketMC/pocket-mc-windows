@@ -8,8 +8,6 @@ namespace PocketMC.Desktop;
 
 public static class Program
 {
-    public static System.Windows.SplashScreen? Splash { get; private set; }
-    
     private const ShortcutLocation ShortcutRefreshLocations = ShortcutLocation.Desktop | ShortcutLocation.StartMenuRoot;
 
     [System.Runtime.InteropServices.DllImport("Shell32.dll")]
@@ -70,14 +68,13 @@ public static class Program
 
         try
         {
-            // Show splash screen manually because we have a custom Main method
-            // Use autoClose: false so we can close it instantly with 0ms fade later
-            Splash = new System.Windows.SplashScreen("assets/splash.png");
-            Splash.Show(false, topMost: true);
-
             // Normal WPF startup
             var app = new App();
             app.InitializeComponent();
+
+            // Show DPI-aware centered splash window
+            Features.Shell.SplashWindow.ShowSplash();
+
             app.Run();
         }
         finally
