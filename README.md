@@ -355,29 +355,31 @@ For packaging, PocketMC uses Velopack. See [`CONTRIBUTING.md`](CONTRIBUTING.md) 
 <summary>Expand</summary>
 <br>
 
-| Path | Purpose |
-|------|---------|
-| `PocketMC.Desktop/Composition` | Dependency injection and service registration |
-| `PocketMC.Desktop/Core` | Shared interfaces, MVVM utilities, and presentation primitives |
-| `PocketMC.Desktop/Infrastructure` | WPF/Windows integrations, dialogs, dispatcher, notifications, updates, loopback helper, single-instance enforcement, protocol registration, power management, filesystem/process helpers, and security utilities |
-| `PocketMC.Desktop/Features/Dashboard` | Dashboard cards, metrics, actions, instance state, and quick controls |
-| `PocketMC.Desktop/Features/InstanceCreation` | New instance wizard, version loading, EULA flow, world import, Geyser setup, and server downloads |
-| `PocketMC.Desktop/Features/Instances` | Metadata, registry, lifecycle, launch config, providers, backups, updates, import/export, worlds, runtime config, and process management |
-| `PocketMC.Desktop/Features/Java` | Java resolution, Adoptium provisioning, runtime validation, and custom path support |
-| `PocketMC.Desktop/Features/CloudBackups` | Google Drive, Dropbox, OneDrive integrations, OAuth, upload history, retention, and path safety |
-| `PocketMC.Desktop/Features/Tunnel` | Playit agent lifecycle, API client, provisioning, discovery, auto-creation, and ports map UI |
-| `PocketMC.Desktop/Features/Networking` | Port checks, roles, Simple Voice Chat detection and config patching, tunnel-aware preflight, and diagnostic snapshots |
-| `PocketMC.Desktop/Features/Marketplace` | Modrinth, CurseForge, Poggit, map browser, modpack parsing, dependency resolution, and install hardening |
-| `PocketMC.Desktop/Features/Mods` | Java add-on inventory, toggles, update checks, Bedrock add-on install/uninstall, pack registration |
-| `PocketMC.Desktop/Features/Console` | Filtering, sanitization, classification, persistent history, and display behavior |
-| `PocketMC.Desktop/Features/Players` | Parsing, bans, operators, whitelist/allowlist, and player UI |
-| `PocketMC.Desktop/Features/Diagnostics` | Dependency health monitoring, port diagnostics, and reporting |
-| `PocketMC.Desktop/Features/RemoteControl` | Web dashboard host (ASP.NET Core), REST API, WebSocket console, Cloudflare/Playit tunnel providers, QR codes, Discord integration, and settings UI |
-| `PocketMC.Desktop/Features/Settings` | App/server settings, runtime application, cloud config, appearance, notifications, and AI config |
-| `PocketMC.Desktop/Features/Shell` | Main shell, navigation, tray, startup options, visual state, and coordination |
-| `PocketMC.Desktop/Features/Intelligence` | AI API client (Gemini, OpenAI, Claude, Mistral, Groq, Ollama), session summarization, log preprocessing, markdown rendering, summary storage |
-| `PocketMC.Desktop/Features/Setup` | First-run root directory setup, App Settings page, Java Setup page |
-| `PocketMC.Desktop.Tests` | xUnit/Moq tests for lifecycle, process, settings, marketplace, tunnel, console, backups, cloud, add-ons, players, startup, and VM logic |
+PocketMC Windows is engineered following strict **Clean Architecture** principles across 5 production projects and 5 dedicated test projects:
+
+### Production Projects
+
+| Project | Responsibility | Dependencies |
+|---------|----------------|--------------|
+| **`PocketMC.Domain`** | Enterprise business models, enums, pure value objects, path traversal validation (`PathSafety`), archive extraction contracts (`SafeZipExtractor`), and domain utilities. | *None (Zero external dependencies, completely UI-agnostic)* |
+| **`PocketMC.Application`** | Use cases, business rules, service interfaces (`ILlmProviderFactory`, `IGeyserDetector`), and policy validations (`ModpackOverridePolicy`, `MarketplaceDownloadPolicy`). | `PocketMC.Domain` |
+| **`PocketMC.Infrastructure`** | Concrete external implementations: Adoptium Java runtime provisioning, Playit.gg agent lifecycle, Cloud backup providers (Google Drive, Dropbox, OneDrive), AI clients (Gemini, OpenAI, Claude, Mistral, Groq, Ollama), server process management, port diagnostic probes, DPAPI security, and system telemetry. | `PocketMC.Application`, `PocketMC.Domain` |
+| **`PocketMC.RemoteControl`** | Cross-cutting embedded ASP.NET Core web server, REST API, WebSocket live console streaming, pairing authorization, rate limiting, and Cloudflare/Playit HTTPS tunnel providers. | `PocketMC.Application`, `PocketMC.Domain`, `PocketMC.Infrastructure` |
+| **`PocketMC.Desktop`** | WPF presentation layer (`Wpf.Ui`), MVVM ViewModels, XAML pages, window chrome, system tray integration, dialog coordinators, navigation, and DI composition (`Composition/ServiceCollectionExtensions.cs`). | All application projects |
+
+### Dedicated Test Projects
+
+| Test Project | Focus |
+|--------------|-------|
+| **`PocketMC.Domain.Tests`** | Tests domain models, entity validation, path safety, ZIP security, version string comparers, and serialization contracts in pure isolation. |
+| **`PocketMC.Application.Tests`** | Tests use case workflows, policy rules, and business logic with mocked infrastructure dependencies. |
+| **`PocketMC.Infrastructure.Tests`** | Tests external integrations: Java provisioning, backup providers, cloud OAuth/sync, telemetry, network port diagnostics, process management, and AI provider strategies. |
+| **`PocketMC.RemoteControl.Tests`** | Tests embedded web server hosting, remote authentication, WebSocket streaming, rate limiting, and tunnel providers. |
+| **`PocketMC.Desktop.Tests`** | Tests WPF ViewModels, UI navigation, dialog workflows, theme coordination, and XAML binding integrity. |
+
+```
+Test Suite Execution: 680 / 680 Tests Passed (100% Pass Rate, 0 Skipped, 0 Failed)
+```
 
 </details>
 

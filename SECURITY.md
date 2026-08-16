@@ -83,4 +83,4 @@ If you discover a security vulnerability in PocketMC, please report it privately
 
 ---
 
-*Last updated: 2026-07-18*
+*Last updated: 2026-08-17*

@@ -16,18 +16,30 @@ PocketMC is a native WPF/.NET 8 desktop app for local Minecraft server hosting. 
 ## Project Structure
 
 ```
-├── PocketMC.Domain           # Core models, enums (No external dependencies)
-├── PocketMC.Application      # Interfaces, logic, use cases (Depends on Domain)
-├── PocketMC.Infrastructure   # Concrete implementations (Network, Cloud, AI, HTTP)
-├── PocketMC.Desktop          # WPF Views, ViewModels, DI container, main app
-├── PocketMC.RemoteControl    # Cross-cutting web server and API for dashboard
-├── Tests                     # Corresponding .Tests projects for each layer
-└── pocketmc.yml              # Single Source of Truth for configs
+├── PocketMC.Domain                 # Enterprise models, enums, path safety (Zero external dependencies)
+├── PocketMC.Application            # Use cases, interfaces, policies (Depends on Domain)
+├── PocketMC.Infrastructure         # External integrations: Adoptium, Cloud, AI, Playit, Process (Depends on App, Domain)
+├── PocketMC.RemoteControl          # Embedded ASP.NET Core web server, REST API & WebSocket console
+├── PocketMC.Desktop                # WPF UI (Wpf.Ui), MVVM ViewModels, Pages, DI Composition
+│
+├── PocketMC.Domain.Tests           # Isolated domain model and security unit tests (79 tests)
+├── PocketMC.Application.Tests      # Isolated use case & policy tests with mocked infrastructure (50 tests)
+├── PocketMC.Infrastructure.Tests   # Concrete provider, network, process & cloud integration tests (298 tests)
+├── PocketMC.RemoteControl.Tests    # Web dashboard host, auth & tunnel provider tests (46 tests)
+├── PocketMC.Desktop.Tests          # WPF ViewModel, navigation, dialog & XAML binding tests (207 tests)
+│
+└── pocketmc.yml                    # Single Source of Truth for configs
 ```
 
 ## Key Conventions & Development Guidelines
 
 - **Architecture Rules**: Never bleed WPF/UI logic (`System.Windows.*`) into the Domain, Application, or Infrastructure layers. Keep projects strictly separated.
+- **Layer Isolation & Testing**:
+  - `PocketMC.Domain.Tests`: Pure isolation, zero external dependencies.
+  - `PocketMC.Application.Tests`: Mocks infrastructure interfaces; never references concrete infrastructure or desktop projects.
+  - `PocketMC.Infrastructure.Tests`: Uses scoped test fixtures (`PortReliabilityTestWorkspace`, `TestSourceFileResolver`).
+  - `PocketMC.Desktop.Tests`: Focuses exclusively on ViewModels, navigation, and presentation layer behavior.
+- **Scoped Visibility**: Scoped `<InternalsVisibleTo Include="..." />` is configured across layers for corresponding test projects.
 - **Single Source of Truth**: The `pocketmc.yml` file is the master config. Do not hardcode versions in `.csproj` files or C# source. Use `AppConfig` to parse versions and proxies.
 - **Dependency Injection**: Use Constructor Injection exclusively. All new dependencies must be registered in the `Composition` folder using `IServiceCollection`.
 - **MVVM Pattern**: View logic belongs in the ViewModel. Avoid code-behind for business logic. ViewModels should inherit from `ObservableObject` and `INavigationAware`.
@@ -40,13 +52,21 @@ PocketMC is a native WPF/.NET 8 desktop app for local Minecraft server hosting. 
 ### Building and Running
 ```bash
 dotnet restore
-dotnet build
+dotnet build PocketMC.Desktop.sln
 dotnet run --project PocketMC.Desktop/PocketMC.Desktop.csproj
 ```
 
 ### Testing
 ```bash
-dotnet test
+# Run all 680 tests across the full solution (100% pass rate)
+dotnet test PocketMC.Desktop.sln
+
+# Target specific architectural layers
+dotnet test PocketMC.Domain.Tests/PocketMC.Domain.Tests.csproj
+dotnet test PocketMC.Application.Tests/PocketMC.Application.Tests.csproj
+dotnet test PocketMC.Infrastructure.Tests/PocketMC.Infrastructure.Tests.csproj
+dotnet test PocketMC.RemoteControl.Tests/PocketMC.RemoteControl.Tests.csproj
+dotnet test PocketMC.Desktop.Tests/PocketMC.Desktop.Tests.csproj
 ```
 
 ## Available Skills
@@ -54,3 +74,4 @@ dotnet test
 This project includes custom `.claude/skills` to assist with development:
 - `generate-mvvm`: Scaffolds a new View and ViewModel and registers it in the DI container.
 - `local-publish`: Compiles a standalone, self-contained executable for testing release builds locally.
+

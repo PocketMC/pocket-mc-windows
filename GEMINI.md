@@ -23,28 +23,35 @@ These rules dictate the architectural constraints and development practices for 
 
 ## 1. Architecture & Layering
 This project strictly follows Clean Architecture principles, separated into specific projects:
-- **PocketMC.Domain**: Core business logic, pure models, enums. Has NO dependencies on other layers or WPF.
-- **PocketMC.Application**: Interfaces, application logic, and use cases (e.g., ILlmProvider, ILlmProviderFactory). Depends ONLY on Domain.
-- **PocketMC.Infrastructure**: Concrete implementations of external concerns (Networking, Cloud Backups, AI API Clients like GeminiProvider, HTTP infrastructure). Depends on Application and Domain.
-- **PocketMC.Desktop**: The WPF Presentation layer. Contains Views, ViewModels, and UI-specific logic. Configures the Dependency Injection container.
-- **PocketMC.RemoteControl**: Cross-cutting API project.
+- **PocketMC.Domain**: Core enterprise business logic, pure models, enums, path safety utilities (`PathSafety`), and archive contracts (`SafeZipExtractor`). Has NO dependencies on other layers or WPF.
+- **PocketMC.Application**: Interfaces, application logic, use cases (e.g., `ILlmProvider`, `ILlmProviderFactory`, `IGeyserDetector`), and policy validators (`ModpackOverridePolicy`, `MarketplaceDownloadPolicy`). Depends ONLY on Domain.
+- **PocketMC.Infrastructure**: Concrete implementations of external concerns (Networking, Adoptium Java provisioning, Cloud Backups, AI API Clients, server process management, port diagnostic probes, DPAPI security). Depends on Application and Domain.
+- **PocketMC.RemoteControl**: Embedded ASP.NET Core web server, REST API, WebSocket console streaming, pairing authorization, rate limiting, and Cloudflare/Playit HTTPS tunnel providers. Depends on Application, Domain, and Infrastructure.
+- **PocketMC.Desktop**: The WPF Presentation layer (`Wpf.Ui`). Contains Views, ViewModels, and UI-specific logic. Configures the Dependency Injection container.
 
-*Rule*: Never bleed WPF/UI logic (System.Windows.*) into Domain, Application, or Infrastructure.
+*Rule*: Never bleed WPF/UI logic (`System.Windows.*`) into Domain, Application, Infrastructure, or RemoteControl.
 
 ## 2. Dependency Management
-- **Central Package Management (CPM)**: We use Directory.Packages.props. **NEVER** specify <Version> attributes inside individual <PackageReference> nodes in .csproj files. If you need a new NuGet package, add its version to Directory.Packages.props first, then add the versionless reference to the target project.
-- **Shared Properties**: We use Directory.Build.props to enforce .NET 8/10, Nullable enablement, and TreatWarningsAsErrors. Do not override these locally without a very good reason.
+- **Central Package Management (CPM)**: We use `Directory.Packages.props`. **NEVER** specify `<Version>` attributes inside individual `<PackageReference>` nodes in `.csproj` files. If you need a new NuGet package, add its version to `Directory.Packages.props` first, then add the versionless reference to the target project.
+- **Shared Properties**: We use `Directory.Build.props` to enforce .NET 8/10, Nullable enablement, and `TreatWarningsAsErrors`. Do not override these locally without a very good reason.
 
-## 3. Testing
+## 3. Testing Architecture
 - **Framework**: Use xUnit and Moq for all automated tests.
-- **Structure**: Tests are separated to mirror the core projects (PocketMC.Domain.Tests, PocketMC.Application.Tests, PocketMC.Infrastructure.Tests).
-- **Isolation**: When writing a test for a specific layer, do not accidentally include dependencies or context from a higher layer (especially PocketMC.Desktop).
+- **Project Structure**: Tests strictly mirror the production layers:
+  - **`PocketMC.Domain.Tests`**: Pure domain models, security contracts, and validators (Zero external dependencies).
+  - **`PocketMC.Application.Tests`**: Use case workflows and policies with mocked infrastructure dependencies.
+  - **`PocketMC.Infrastructure.Tests`**: Concrete providers, cloud backup flows, Adoptium provisioning, telemetry, and port probes using isolated fixtures (`PortReliabilityTestWorkspace`, `TestSourceFileResolver`).
+  - **`PocketMC.RemoteControl.Tests`**: Web server hosting, authentication, rate limiting, and tunnel providers.
+  - **`PocketMC.Desktop.Tests`**: ViewModels, navigation, dialog workflows, and XAML binding integrity.
+- **Test Isolation**: When writing a test for a specific layer, NEVER include dependencies or types from a higher layer (especially `PocketMC.Desktop`).
+- **Pass Rate**: 100% active test pass rate required (680 tests, 0 skipped, 0 failed).
 
 ## 4. Coding Standards & Conventions
-- **No Junk Drawers**: Avoid Helpers or Utils folders. Group classes by feature cohesion (e.g., Features/Networking, Features/Intelligence).
-- **Naming Conventions**: Use ViewModel suffix (not VM). Use clear, descriptive names.
-- **Dependency Injection**: Use Constructor Injection exclusively. All new services must be registered via the DI container extensions in Composition/ServiceCollectionExtensions.cs.
-- **Global Usings**: Do not use massive GlobalUsings.cs files to mask namespace dependencies. Keep usings explicit per file.
+- **No Junk Drawers**: Avoid generic `Helpers` or `Utils` folders. Group classes by feature cohesion (e.g., `Features/Networking`, `Features/Intelligence`, `Features/Instances/ImportExport`).
+- **Namespace Hygiene**: Align class namespaces with their actual folder structure (e.g., `PocketMC.Infrastructure.Configuration`, `PocketMC.Infrastructure.Mods`, `PocketMC.Desktop.Features.Instances.ImportExport`, `PocketMC.Desktop.Composition`).
+- **Naming Conventions**: Use `ViewModel` suffix (not `VM`). Use clear, descriptive names.
+- **Dependency Injection**: Use Constructor Injection exclusively. All new services must be registered via the DI container extensions in `Composition/ServiceCollectionExtensions.cs` or nested feature extensions.
+- **Global Usings**: Do not use massive `GlobalUsings.cs` files to mask cross-layer dependencies. Keep usings explicit and properly scoped. Scoped `<InternalsVisibleTo Include="..." />` enables clean test accessibility.
 
 ## 5. AI Integration Strategy
 - We use a Strategy pattern for AI. Do NOT build monolithic API clients.
