@@ -177,13 +177,24 @@ namespace PocketMC.Domain.Storage
         {
             if (File.Exists(targetPath))
             {
-                string backupPath = $"{targetPath}.{Guid.NewGuid():N}.bak";
-                File.Replace(tempPath, targetPath, backupPath, ignoreMetadataErrors: true);
-                TryDeleteFile(backupPath);
-                return;
+                try
+                {
+                    string backupPath = $"{targetPath}.{Guid.NewGuid():N}.bak";
+                    File.Replace(tempPath, targetPath, backupPath, ignoreMetadataErrors: true);
+                    TryDeleteFile(backupPath);
+                    return;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Fall back to overwrite move below
+                }
+                catch (IOException)
+                {
+                    // Fall back to overwrite move below
+                }
             }
 
-            File.Move(tempPath, targetPath);
+            File.Move(tempPath, targetPath, overwrite: true);
         }
 
         private static void TryDeleteFile(string filePath)

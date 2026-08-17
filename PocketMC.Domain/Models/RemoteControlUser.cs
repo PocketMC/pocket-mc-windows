@@ -16,4 +16,13 @@ public sealed class RemoteControlUser
     public bool AllowRemoteServerAddons { get; set; }
     public bool AllowRemoteFileManager { get; set; }
     public bool AllowRemoteServerBackups { get; set; }
+
+    // Instance Access
+    public bool AllowAllInstances { get; set; } = true;
+    public List<Guid> AllowedInstanceIds { get; set; } = new();
+
+    public bool CanAccessInstance(Guid instanceId)
+    {
+        return AllowAllInstances || (AllowedInstanceIds != null && AllowedInstanceIds.Contains(instanceId));
+    }
 }

@@ -502,6 +502,56 @@
                                             </StackPanel>
                                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowRemoteServerBackups}"/>
                                         </Grid>
+
+                                        <Separator Margin="0,16" Opacity="0.15"/>
+
+                                        <TextBlock Text="Instance Access" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+                                        <Grid Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="All Instances" FontSize="14" FontWeight="Medium"/>
+                                                <TextBlock Text="Grants access to all current and future server instances." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
+                                            </StackPanel>
+                                            <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowAllInstances}"/>
+                                        </Grid>
+
+                                        <!-- Specific Instances Checklist (visible when AllowAllInstances is false) -->
+                                        <StackPanel Visibility="{Binding IsRestrictedInstances, Converter={StaticResource BoolToVis}}" Margin="0,4,0,4">
+                                            <TextBlock Text="Select Available Instances" FontSize="13" FontWeight="Medium" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
+                                            
+                                            <!-- Available instances list -->
+                                            <ItemsControl ItemsSource="{Binding AvailableInstances}" Visibility="{Binding HasAvailableInstances, Converter={StaticResource BoolToVis}}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,0,6">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <StackPanel VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding InstanceName}" FontSize="14" FontWeight="Medium" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                                        <TextBlock Text="{Binding ServerType}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,8,0"/>
+                                                                        <TextBlock Text="{Binding MinecraftVersion}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                    </StackPanel>
+                                                                </StackPanel>
+                                                                <CheckBox Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <!-- No instances found warning -->
+                                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8" Visibility="{Binding HasNoAvailableInstances, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="No server instances found in PocketMC." FontSize="12" Foreground="{DynamicResource TextFillColorDisabledBrush}"/>
+                                            </Border>
+                                        </StackPanel>
                                     </StackPanel>
                                 </ui:CardExpander>
                             </DataTemplate>

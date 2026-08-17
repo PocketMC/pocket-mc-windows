@@ -341,37 +341,72 @@ public sealed class RemoteDashboardHost
 
         api.MapGet("/status", (HttpContext context) => Results.Ok(BuildDashboardStatus(context)));
 
-        api.MapGet("/instances", () => Results.Ok(_statusService.GetInstances()));
-
-        api.MapGet("/instances/{instanceId:guid}/status", async (Guid instanceId) =>
+        api.MapGet("/instances", (HttpContext context) =>
         {
+            var allInstances = _statusService.GetInstances();
+            if (!_applicationState.Settings.RemoteControl.RequireAuthentication || IsAdmin(context))
+            {
+                return Results.Ok(allInstances);
+            }
+
+            var permitted = allInstances.Where(i => HasInstanceAccess(context, i.Id)).ToList();
+            return Results.Ok(permitted);
+        });
+
+        api.MapGet("/instances/{instanceId:guid}/status", async (HttpContext context, Guid instanceId) =>
+        {
+            if (!HasInstanceAccess(context, instanceId))
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             RemoteInstanceStatusDto? status = await _statusService.GetInstanceStatusAsync(instanceId);
             return status == null ? Results.NotFound() : Results.Ok(status);
         });
 
-        api.MapPost("/instances/{instanceId:guid}/start", async (Guid instanceId) =>
+        api.MapPost("/instances/{instanceId:guid}/start", async (HttpContext context, Guid instanceId) =>
         {
+            if (!HasInstanceAccess(context, instanceId))
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var result = await _instanceControlService.StartAsync(instanceId);
             _auditLogService.Log("remote", "instance.start", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
-        api.MapPost("/instances/{instanceId:guid}/stop", async (Guid instanceId) =>
+        api.MapPost("/instances/{instanceId:guid}/stop", async (HttpContext context, Guid instanceId) =>
         {
+            if (!HasInstanceAccess(context, instanceId))
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var result = await _instanceControlService.StopAsync(instanceId);
             _auditLogService.Log("remote", "instance.stop", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
-        api.MapPost("/instances/{instanceId:guid}/restart", async (Guid instanceId) =>
+        api.MapPost("/instances/{instanceId:guid}/restart", async (HttpContext context, Guid instanceId) =>
         {
+            if (!HasInstanceAccess(context, instanceId))
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var result = await _instanceControlService.RestartAsync(instanceId);
             _auditLogService.Log("remote", "instance.restart", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
-        api.MapGet("/instances/{instanceId:guid}/console/history", (Guid instanceId) =>
+        api.MapGet("/instances/{instanceId:guid}/console/history", (HttpContext context, Guid instanceId) =>
         {
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteConsoleCommands))
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var process = _lifecycleService.GetProcess(instanceId);
             return process == null
                 ? Results.NotFound()
@@ -380,7 +415,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPost("/instances/{instanceId:guid}/console/command", async (HttpContext context, Guid instanceId) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteConsoleCommands))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteConsoleCommands))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -409,8 +444,13 @@ public sealed class RemoteDashboardHost
         });
 
 
-        api.MapGet("/instances/{instanceId:guid}/players", (Guid instanceId) =>
+        api.MapGet("/instances/{instanceId:guid}/players", (HttpContext context, Guid instanceId) =>
         {
+            if (!HasInstanceAccess(context, instanceId))
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
             var process = _lifecycleService.GetProcess(instanceId);
             return process == null
                 ? Results.NotFound()
@@ -426,6 +466,11 @@ public sealed class RemoteDashboardHost
         {
             api.MapPost($"/instances/{{instanceId:guid}}/players/{{name}}/{action}", async (HttpContext context, Guid instanceId, string name) =>
             {
+                if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemotePlayerActions))
+                {
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+                }
+
                 RemotePlayerActionRequest? request = await ReadJsonAsync<RemotePlayerActionRequest>(context);
                 RemoteControlActionResult result = await _playerActionService.ExecuteAsync(instanceId, name, action, request, "remote");
                 return ToActionResult(result);
@@ -434,7 +479,7 @@ public sealed class RemoteDashboardHost
 
         api.MapGet("/instances/{instanceId:guid}/properties", (HttpContext context, Guid instanceId) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteServerSettings))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteServerSettings))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -472,7 +517,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPut("/instances/{instanceId:guid}/properties", async (HttpContext context, Guid instanceId) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteServerSettings))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteServerSettings))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -511,7 +556,7 @@ public sealed class RemoteDashboardHost
 
         api.MapGet("/instances/{instanceId:guid}/addons", (HttpContext context, Guid instanceId) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteServerAddons))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteServerAddons))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -528,7 +573,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPost("/instances/{instanceId:guid}/addons/uninstall", async (HttpContext context, Guid instanceId) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteServerAddons))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteServerAddons))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -574,7 +619,7 @@ public sealed class RemoteDashboardHost
         // ---------------------------------------------------------
         api.MapGet("/instances/{instanceId:guid}/files", (HttpContext context, Guid instanceId, string? path) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteFileManager))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteFileManager))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -640,7 +685,7 @@ public sealed class RemoteDashboardHost
 
         api.MapGet("/instances/{instanceId:guid}/files/content", (HttpContext context, Guid instanceId, string? path) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteFileManager))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteFileManager))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -694,7 +739,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPut("/instances/{instanceId:guid}/files/content", async (HttpContext context, Guid instanceId) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteFileManager))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteFileManager))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -715,7 +760,7 @@ public sealed class RemoteDashboardHost
 
         api.MapDelete("/instances/{instanceId:guid}/files", (HttpContext context, Guid instanceId, string? path) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteFileManager))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteFileManager))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -752,7 +797,7 @@ public sealed class RemoteDashboardHost
         // ---------------------------------------------------------
         api.MapGet("/instances/{instanceId:guid}/backups", (HttpContext context, Guid instanceId) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteServerBackups))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteServerBackups))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -832,7 +877,7 @@ public sealed class RemoteDashboardHost
 
         api.MapPost("/instances/{instanceId:guid}/backups", (HttpContext context, Guid instanceId) =>
         {
-            if (!HasPermission(context, u => u.AllowRemoteServerBackups))
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteServerBackups))
             {
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
             }
@@ -867,6 +912,12 @@ public sealed class RemoteDashboardHost
 
         app.Map("/ws/instances/{instanceId:guid}/console", async (HttpContext context, Guid instanceId) =>
         {
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteConsoleCommands))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
+
             await _webSocketHandler.HandleAsync(context, instanceId);
         });
     }
@@ -913,21 +964,39 @@ public sealed class RemoteDashboardHost
         };
     }
 
-    private bool HasPermission(HttpContext context, Func<RemoteControlUser, bool> userPerm)
+    private bool IsAdmin(HttpContext context)
     {
         var settings = _applicationState.Settings.RemoteControl;
         if (!settings.RequireAuthentication) return true;
 
         var role = context.User.FindFirstValue(ClaimTypes.Role);
-        if (role == "Admin" || string.IsNullOrEmpty(role))
-        {
-            return true;
-        }
+        return role == "Admin" || string.IsNullOrEmpty(role);
+    }
 
+    private RemoteControlUser? GetAuthenticatedUser(HttpContext context)
+    {
+        var settings = _applicationState.Settings.RemoteControl;
         var userId = context.User.FindFirstValue("UserId");
-        if (string.IsNullOrEmpty(userId)) return false;
+        if (string.IsNullOrEmpty(userId)) return null;
 
-        var user = settings.Users?.FirstOrDefault(u => u.Id == userId);
+        return settings.Users?.FirstOrDefault(u => u.Id == userId);
+    }
+
+    private bool HasInstanceAccess(HttpContext context, Guid instanceId)
+    {
+        if (IsAdmin(context)) return true;
+
+        var user = GetAuthenticatedUser(context);
+        if (user == null) return false;
+
+        return user.CanAccessInstance(instanceId);
+    }
+
+    private bool HasPermission(HttpContext context, Func<RemoteControlUser, bool> userPerm)
+    {
+        if (IsAdmin(context)) return true;
+
+        var user = GetAuthenticatedUser(context);
         if (user == null) return false;
 
         return userPerm(user);

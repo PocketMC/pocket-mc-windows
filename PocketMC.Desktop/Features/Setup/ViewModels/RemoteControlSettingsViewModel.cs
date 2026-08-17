@@ -10,6 +10,7 @@ using PocketMC.RemoteControl.Services;
 using PocketMC.Infrastructure.Telemetry;
 using PocketMC.Application.Services.Shell;
 using PocketMC.Application.Interfaces;
+using PocketMC.Application.Services.Instances;
 using System;
 using PocketMC.Desktop.Core.Interfaces;
 using System.Collections.ObjectModel;
@@ -37,19 +38,22 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private readonly RemoteControlCoordinator _coordinator;
     private readonly IDialogService _dialogService;
     private readonly RemoteAuthenticationService _authenticationService;
+    private readonly InstanceRegistry? _instanceRegistry;
 
     public RemoteControlSettingsViewModel(
         ApplicationState applicationState,
         SettingsManager settingsManager,
         RemoteControlCoordinator coordinator,
         IDialogService dialogService,
-        RemoteAuthenticationService authenticationService)
+        RemoteAuthenticationService authenticationService,
+        InstanceRegistry? instanceRegistry = null)
     {
         _applicationState = applicationState;
         _settingsManager = settingsManager;
         _coordinator = coordinator;
         _dialogService = dialogService;
         _authenticationService = authenticationService;
+        _instanceRegistry = instanceRegistry;
 
         var remote = _applicationState.Settings.RemoteControl;
         _isEnabled = remote.Enabled;
@@ -78,12 +82,40 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
         _settingsManager.SettingsSaved += OnSettingsSaved;
 
+        if (_instanceRegistry != null)
+        {
+            _instanceRegistry.InstancesChanged += OnInstancesChanged;
+        }
+
+        var allInstances = _instanceRegistry?.GetAll() ?? Array.Empty<InstanceMetadata>();
         foreach (var user in remote.Users ?? new List<RemoteControlUser>())
         {
-            Users.Add(new RemoteControlUserViewModel(user, this));
+            Users.Add(new RemoteControlUserViewModel(user, this, allInstances));
         }
 
         UpdateStatus();
+    }
+
+    private void OnInstancesChanged(object? sender, EventArgs e)
+    {
+        void Update()
+        {
+            var allInstances = _instanceRegistry?.GetAll() ?? Array.Empty<InstanceMetadata>();
+            foreach (var userVm in Users)
+            {
+                userVm.PopulateAvailableInstances(allInstances);
+            }
+        }
+
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher != null && !dispatcher.CheckAccess())
+        {
+            dispatcher.InvokeAsync(Update);
+        }
+        else
+        {
+            Update();
+        }
     }
 
     [ObservableProperty]
@@ -112,7 +144,8 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     private void AddUser()
     {
         var user = new RemoteControlUser();
-        var userVm = new RemoteControlUserViewModel(user, this) { IsEditing = true };
+        var allInstances = _instanceRegistry?.GetAll() ?? Array.Empty<InstanceMetadata>();
+        var userVm = new RemoteControlUserViewModel(user, this, allInstances) { IsEditing = true };
         Users.Add(userVm);
         SelectedUser = userVm;
     }
@@ -369,7 +402,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     private void OnSettingsSaved(object? sender, PocketMC.Domain.Models.AppSettings settings)
     {
-        System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+        void Update()
         {
             _isUpdatingFromSettings = true;
             try
@@ -381,7 +414,17 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             {
                 _isUpdatingFromSettings = false;
             }
-        });
+        }
+
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher != null && !dispatcher.CheckAccess())
+        {
+            dispatcher.InvokeAsync(Update);
+        }
+        else
+        {
+            Update();
+        }
     }
 
 
@@ -592,7 +635,12 @@ public partial class RemoteControlUserViewModel : ObservableObject
     private readonly RemoteControlSettingsViewModel _parent;
     public RemoteControlUser Model { get; }
 
-    public RemoteControlUserViewModel(RemoteControlUser model, RemoteControlSettingsViewModel parent)
+    public ObservableCollection<UserInstanceAccessItemViewModel> AvailableInstances { get; } = new();
+
+    public RemoteControlUserViewModel(
+        RemoteControlUser model,
+        RemoteControlSettingsViewModel parent,
+        IReadOnlyList<InstanceMetadata>? instances = null)
     {
         Model = model;
         _parent = parent;
@@ -604,6 +652,7 @@ public partial class RemoteControlUserViewModel : ObservableObject
         _allowRemoteServerAddons = model.AllowRemoteServerAddons;
         _allowRemoteFileManager = model.AllowRemoteFileManager;
         _allowRemoteServerBackups = model.AllowRemoteServerBackups;
+        _allowAllInstances = model.AllowAllInstances;
         _passwordHash = model.PasswordHash;
         _protectedPassword = model.ProtectedPassword;
         
@@ -618,7 +667,42 @@ public partial class RemoteControlUserViewModel : ObservableObject
                 _password = "";
             }
         }
+
+        PopulateAvailableInstances(instances);
     }
+
+    public void PopulateAvailableInstances(IReadOnlyList<InstanceMetadata>? instances)
+    {
+        AvailableInstances.Clear();
+        if (instances == null || instances.Count == 0)
+        {
+            OnPropertyChanged(nameof(HasAvailableInstances));
+            OnPropertyChanged(nameof(HasNoAvailableInstances));
+            return;
+        }
+
+        var selectedIds = new HashSet<Guid>(Model.AllowedInstanceIds ?? Enumerable.Empty<Guid>());
+
+        foreach (var inst in instances.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            bool isSelected = selectedIds.Contains(inst.Id);
+            var itemVm = new UserInstanceAccessItemViewModel(
+                inst.Id,
+                inst.Name,
+                inst.ServerType,
+                inst.MinecraftVersion ?? "",
+                isSelected,
+                OnInstanceSelectionChanged);
+
+            AvailableInstances.Add(itemVm);
+        }
+
+        OnPropertyChanged(nameof(HasAvailableInstances));
+        OnPropertyChanged(nameof(HasNoAvailableInstances));
+    }
+
+    public bool HasAvailableInstances => AvailableInstances.Count > 0;
+    public bool HasNoAvailableInstances => AvailableInstances.Count == 0;
 
     [ObservableProperty]
     private string _username;
@@ -667,10 +751,26 @@ public partial class RemoteControlUserViewModel : ObservableObject
     private bool _allowRemoteServerBackups;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRestrictedInstances))]
+    private bool _allowAllInstances;
+
+    public bool IsRestrictedInstances => !AllowAllInstances;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotEditing))]
     private bool _isEditing;
 
     public bool IsNotEditing => !IsEditing;
+
+    private void OnInstanceSelectionChanged()
+    {
+        Model.AllowedInstanceIds = AvailableInstances
+            .Where(i => i.IsSelected)
+            .Select(i => i.InstanceId)
+            .ToList();
+
+        _parent.SaveSettings();
+    }
 
     partial void OnUsernameChanged(string value) => Model.Username = value;
     partial void OnAllowRemoteConsoleCommandsChanged(bool value) { Model.AllowRemoteConsoleCommands = value; _parent.SaveSettings(); }
@@ -679,6 +779,7 @@ public partial class RemoteControlUserViewModel : ObservableObject
     partial void OnAllowRemoteServerAddonsChanged(bool value) { Model.AllowRemoteServerAddons = value; _parent.SaveSettings(); }
     partial void OnAllowRemoteFileManagerChanged(bool value) { Model.AllowRemoteFileManager = value; _parent.SaveSettings(); }
     partial void OnAllowRemoteServerBackupsChanged(bool value) { Model.AllowRemoteServerBackups = value; _parent.SaveSettings(); }
+    partial void OnAllowAllInstancesChanged(bool value) { Model.AllowAllInstances = value; _parent.SaveSettings(); }
 
     [RelayCommand]
     private void Edit()
@@ -702,6 +803,40 @@ public partial class RemoteControlUserViewModel : ObservableObject
 
     [RelayCommand]
     private async Task Remove() => await _parent.RemoveUser(this);
+}
+
+public sealed partial class UserInstanceAccessItemViewModel : ObservableObject
+{
+    public Guid InstanceId { get; }
+    public string InstanceName { get; }
+    public string ServerType { get; }
+    public string MinecraftVersion { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    private readonly Action? _onChanged;
+
+    public UserInstanceAccessItemViewModel(
+        Guid instanceId,
+        string instanceName,
+        string serverType,
+        string minecraftVersion,
+        bool isSelected,
+        Action? onChanged = null)
+    {
+        InstanceId = instanceId;
+        InstanceName = instanceName;
+        ServerType = serverType;
+        MinecraftVersion = minecraftVersion;
+        _isSelected = isSelected;
+        _onChanged = onChanged;
+    }
+
+    partial void OnIsSelectedChanged(bool value)
+    {
+        _onChanged?.Invoke();
+    }
 }
 
 
