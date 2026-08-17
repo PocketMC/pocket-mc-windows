@@ -386,19 +386,20 @@
                                 </StackPanel>
 
                                 <!-- Actions -->
-                                <Grid Grid.Row="4">
-                                    <UniformGrid Columns="2" Visibility="{Binding StoppedControlsVisibility}">
-                                        <ui:Button Content="Start" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                        <ui:Button Content="Logs" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                        <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                    </UniformGrid>
-                                    <UniformGrid Columns="2" Visibility="{Binding RunningControlsVisibility}">
-                                        <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" Icon="{ui:SymbolIcon Stop24}" Command="{Binding DataContext.StopServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                        <ui:Button Content="Restart" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding DataContext.RestartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                        <ui:Button Content="Console" Appearance="Primary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                        <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                    </UniformGrid>
-                                </Grid>
+                                 <Grid Grid.Row="4">
+                                     <UniformGrid Columns="2" Visibility="{Binding StoppedControlsVisibility}">
+                                         <ui:Button Content="Start" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                         <ui:Button Content="Logs" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                         <ui:Button Content="Files" Appearance="Secondary" Icon="{ui:SymbolIcon Folder24}" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                         <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                     </UniformGrid>
+                                     <UniformGrid Columns="2" Visibility="{Binding RunningControlsVisibility}">
+                                         <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" Icon="{ui:SymbolIcon Stop24}" Command="{Binding DataContext.StopServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                         <ui:Button Content="Restart" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding DataContext.RestartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                         <ui:Button Content="Console" Appearance="Primary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                         <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                     </UniformGrid>
+                                 </Grid>
                             </Grid>
                         </ui:Card>
                     </DataTemplate>

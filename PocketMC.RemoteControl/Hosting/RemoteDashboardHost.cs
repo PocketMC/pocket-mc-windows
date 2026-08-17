@@ -100,7 +100,15 @@ public sealed class RemoteDashboardHost
                 ApplicationName = typeof(RemoteDashboardHost).Assembly.GetName().Name
             });
             builder.WebHost.UseUrls($"http://{bindAddress}:{settings.Port}");
+            builder.WebHost.ConfigureKestrel(kestrel =>
+            {
+                kestrel.Limits.MaxRequestBodySize = 104_857_600; // 100 MB (matching Cloudflare Tunnel payload limit)
+            });
             builder.Logging.ClearProviders();
+            builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = 104_857_600; // 100 MB
+            });
             builder.Services.ConfigureHttpJsonOptions(options =>
             {
                 options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -790,6 +798,54 @@ public sealed class RemoteDashboardHost
             }
 
             return Results.NotFound(new { error = "File or folder not found." });
+        });
+
+        api.MapPost("/instances/{instanceId:guid}/files/upload", async (HttpContext context, Guid instanceId, string? path) =>
+        {
+            if (!HasInstanceAccess(context, instanceId) || !HasPermission(context, u => u.AllowRemoteFileManager))
+            {
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+            }
+
+            var serverDir = _instanceRegistry?.GetPath(instanceId);
+            if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
+
+            if (!context.Request.HasFormContentType)
+            {
+                return Results.BadRequest(new { error = "Form-data with files is required." });
+            }
+
+            var form = await context.Request.ReadFormAsync();
+            string targetFolderRel = form.TryGetValue("path", out var formPath) ? formPath.ToString() : (path ?? string.Empty);
+
+            string? targetDirectory = GetSanitizedPath(serverDir, targetFolderRel);
+            if (targetDirectory == null)
+            {
+                return Results.BadRequest(new { error = "Invalid upload directory path." });
+            }
+
+            if (!Directory.Exists(targetDirectory))
+            {
+                Directory.CreateDirectory(targetDirectory);
+            }
+
+            int uploadedCount = 0;
+            foreach (var file in form.Files)
+            {
+                if (file.Length <= 0) continue;
+                string fileName = Path.GetFileName(file.FileName);
+                if (string.IsNullOrWhiteSpace(fileName)) continue;
+
+                string? destinationPath = GetSanitizedPath(serverDir, Path.Combine(targetFolderRel, fileName));
+                if (destinationPath == null) continue;
+
+                using var targetStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                await file.CopyToAsync(targetStream);
+                uploadedCount++;
+                _auditLogService.Log("remote", "file.upload", instanceId, Path.GetRelativePath(serverDir, destinationPath));
+            }
+
+            return Results.Ok(new { success = true, uploaded = uploadedCount });
         });
 
         // ---------------------------------------------------------
