@@ -215,18 +215,13 @@ function formatFriendlyError(msg) {
     lower.includes("load failed") ||
     lower.includes("typeerror") ||
     lower.includes("connection refused") ||
-    lower.includes("net::err")
-  ) {
-    return "Connection lost. PocketMC Desktop or local network host is currently unreachable.";
-  }
-
-  if (
+    lower.includes("net::err") ||
     lower.includes("cloudflare") ||
     lower.includes("tunnel") ||
     lower.includes("<!doctype") ||
     lower.includes("<html")
   ) {
-    return "Remote tunnel connection closed. Remote Access was stopped or the tunnel URL expired.";
+    return "PocketMC Desktop or remote service is currently stopped on the host computer. The dashboard will automatically reconnect once it is running.";
   }
 
   if (lower.includes("unauthorized") || lower.includes("401")) {
@@ -273,10 +268,12 @@ function renderAddonsSkeleton() {
 function showError(msg) {
   if (msg === "Unauthorized") return;
   const friendlyMsg = formatFriendlyError(msg);
-  els.errorMessage.textContent = friendlyMsg;
+  if (els.errorMessage) {
+    els.errorMessage.textContent = friendlyMsg;
+  }
   setVisible(els.errorView);
   if (els.connectionLabel) {
-    els.connectionLabel.textContent = "Disconnected";
+    els.connectionLabel.textContent = "Host Offline";
     els.connectionLabel.className = "connection-pill offline";
   }
 }
@@ -284,11 +281,21 @@ function showError(msg) {
 async function openDashboard() {
   try {
     await refreshEverything({ reconnectConsole: true });
-    statusTimer = setInterval(() => refreshEverything({ reconnectConsole: false }).catch(e => {
-      if (e.message === "Unauthorized") clearInterval(statusTimer);
-    }), 3000);
   } catch (error) {
     showError(error.message);
+  } finally {
+    if (!statusTimer) {
+      statusTimer = setInterval(async () => {
+        try {
+          await refreshEverything({ reconnectConsole: false });
+        } catch (e) {
+          if (e.message === "Unauthorized") {
+            clearInterval(statusTimer);
+            statusTimer = null;
+          }
+        }
+      }, 3000);
+    }
   }
 }
 
