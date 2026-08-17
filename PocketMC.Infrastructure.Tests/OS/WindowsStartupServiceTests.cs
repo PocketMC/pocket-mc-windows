@@ -61,13 +61,22 @@ public sealed class WindowsStartupServiceTests
     }
 
     [Fact]
-    public void IsBootTaskRegistered_WhenNotExist_ReturnsFalse()
+    public void IsRegistered_WhenValueExists_ReturnsTrue()
     {
-        var service = new WindowsStartupService(new RecordingStartupRegistry(), @"C:\PocketMC\PocketMC.Desktop.exe");
+        var registry = new RecordingStartupRegistry();
+        registry.SetValue(WindowsStartupService.RunValueName, "\"C:\\PocketMC\\PocketMC.exe\" --windows-startup");
+        var service = new WindowsStartupService(registry, @"C:\PocketMC\PocketMC.Desktop.exe");
 
-        bool isRegistered = service.IsBootTaskRegistered();
+        Assert.True(service.IsRegistered());
+    }
 
-        Assert.False(isRegistered);
+    [Fact]
+    public void IsRegistered_WhenValueDoesNotExist_ReturnsFalse()
+    {
+        var registry = new RecordingStartupRegistry();
+        var service = new WindowsStartupService(registry, @"C:\PocketMC\PocketMC.Desktop.exe");
+
+        Assert.False(service.IsRegistered());
     }
 
     private sealed class RecordingStartupRegistry : IWindowsStartupRegistry

@@ -4,7 +4,7 @@ namespace PocketMC.Desktop.Tests.Features.Setup.Architecture;
 public sealed class AppSettingsPageStartupArchitectureTests
 {
     [Fact]
-    public void Xaml_DefinesAppBehaviorStartupToggles()
+    public void Xaml_DefinesAppBehaviorStartupControls()
     {
         string xaml = File.ReadAllText(TestSourceFileResolver.Resolve(
             "PocketMC.Desktop",

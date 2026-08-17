@@ -53,7 +53,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="Start PocketMC with Windows" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Register PocketMC in your current Windows account startup apps."
+                                <TextBlock Text="Automatically launch PocketMC when you sign into Windows."
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -64,26 +64,6 @@
                                              VerticalAlignment="Center"
                                              Checked="ToggleStartWithWindows_Changed"
                                              Unchecked="ToggleStartWithWindows_Changed"/>
-                        </Grid>
-
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Start at system boot (before login)" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Start PocketMC in the background when your computer boots, without requiring a logged-in user. Requires administrative privileges."
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           FontSize="12"
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleStartOnSystemBoot"
-                                             Grid.Column="1"
-                                             VerticalAlignment="Center"
-                                             Checked="ToggleStartOnSystemBoot_Changed"
-                                             Unchecked="ToggleStartOnSystemBoot_Changed"/>
                         </Grid>
 
                         <Grid Margin="0,12,0,0">
