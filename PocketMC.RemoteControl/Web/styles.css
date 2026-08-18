@@ -903,9 +903,15 @@ button:disabled {
 }
 
 .instances-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .instances-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .instance-card {
