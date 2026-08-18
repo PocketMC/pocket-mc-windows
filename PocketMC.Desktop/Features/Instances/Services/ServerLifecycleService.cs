@@ -278,12 +278,15 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         {
             try
             {
+                var providerFactory = _serviceProvider.GetService<PocketMC.Application.Interfaces.AI.ILlmProviderFactory>();
                 var dialog = new ServerCrashDialogWindow();
                 dialog.Populate(
                     meta.Name,
                     meta.ServerType,
                     meta.MinecraftVersion,
                     analysis,
+                    _appState,
+                    providerFactory,
                     onOpenConsole: () =>
                     {
                         try
