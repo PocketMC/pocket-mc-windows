@@ -13,6 +13,7 @@ using PocketMC.Application.Services.Instances;
 using PocketMC.Application.Services.Shell;
 
 using PocketMC.Application.Interfaces;
+using PocketMC.Infrastructure.OS;
 
 namespace PocketMC.Infrastructure.Telemetry;
 
@@ -188,6 +189,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             var payload = new
             {
                 clientId = settings.TelemetryClientId.ToString(),
+                machineId = DeviceIdentifier.GetMachineId(),
                 isUpgrade = isUpgrade,
                 country = _cachedCountry
             };
@@ -235,6 +237,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             var payload = new
             {
                 clientId = settings.TelemetryClientId.ToString(),
+                machineId = DeviceIdentifier.GetMachineId(),
                 isAppOpen = !isAppClosed,
                 isServerRunning = activeProcesses.Count > 0,
                 activeServerCount = activeProcesses.Count,
@@ -268,6 +271,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             var payload = new
             {
                 clientId = settings.TelemetryClientId.ToString(),
+                machineId = DeviceIdentifier.GetMachineId(),
                 action = action
             };
 
