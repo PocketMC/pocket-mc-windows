@@ -218,7 +218,7 @@ namespace PocketMC.Desktop.Features.Setup
         private bool _hasError;
 
         public string Version { get; set; } = "";
-        public string VersionLabel => $"PHP {Version}";
+        public string VersionLabel => $"{Version}";
         public string DisplayName { get; set; } = "";
         public string TargetPocketMineVersion { get; set; } = "";
         public bool IsInstalled
