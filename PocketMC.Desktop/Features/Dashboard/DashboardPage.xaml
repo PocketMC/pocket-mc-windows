@@ -97,7 +97,8 @@
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       CanContentScroll="False"
-                      PanningMode="VerticalOnly">
+                      PanningMode="VerticalOnly"
+                      Padding="0,0,16,0">
             <Grid>
                 <!-- Empty State -->
                 <Border HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,64" Padding="64,48"
