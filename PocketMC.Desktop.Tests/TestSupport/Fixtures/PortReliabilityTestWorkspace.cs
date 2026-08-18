@@ -278,7 +278,9 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             NullLogger<ServerLifecycleService>.Instance,
             AppState,
             new PocketMC.Infrastructure.Instances.GeyserProvisioningService(null!, null!, Microsoft.Extensions.Logging.Abstractions.NullLogger<PocketMC.Infrastructure.Instances.GeyserProvisioningService>.Instance),
-            new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
+            new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
+            null!,
+            null!);
     }
 
     public int GetAvailableTcpPort()
