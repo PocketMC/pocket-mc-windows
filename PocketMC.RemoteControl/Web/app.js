@@ -1135,6 +1135,40 @@ if (els.loginForm) {
   });
 }
 
+// iOS Safari viewport zoom reset on input blur
+// iOS ignores user-scalable=no; when it auto-zooms on input focus, closing
+// the keyboard leaves the page zoomed in with the header off-screen.
+// This detects zoom via visualViewport and forces a reset.
+(function initIOSZoomReset() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (!isIOS) return;
+
+  document.addEventListener("focusout", (e) => {
+    if (!e.target || !["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+
+    // Small delay to let iOS finish its keyboard dismissal animation
+    setTimeout(() => {
+      // Check if viewport is still zoomed via visualViewport API
+      const vv = window.visualViewport;
+      if (vv && Math.abs(vv.scale - 1) > 0.01) {
+        // Force zoom reset by briefly swapping viewport meta
+        const viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+          const original = viewport.getAttribute("content");
+          viewport.setAttribute("content", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover");
+          // Force reflow then restore
+          requestAnimationFrame(() => {
+            viewport.setAttribute("content", original);
+          });
+        }
+      }
+      // Also reset scroll position
+      window.scrollTo(0, 0);
+    }, 100);
+  });
+})();
+
 // Theme management
 const themeKey = "pocketmc.remote.theme";
 function applyTheme(theme) {

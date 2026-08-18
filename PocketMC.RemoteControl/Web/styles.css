@@ -1392,7 +1392,7 @@ input[type="text"]:focus {
   border: 1px solid var(--surface-border);
   background: var(--surface-muted);
   color: var(--text-primary);
-  font-size: 13.5px;
+  font-size: 16px;
   width: 100%;
 }
 
