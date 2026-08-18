@@ -75,12 +75,31 @@ namespace PocketMC.Desktop.Features.Mods
         private static ImageSource? _bedrockFallback;
         private static ImageSource? _unknownFallback;
 
+        private static ImageSource? _bedrockBehaviorFallback;
+        private static ImageSource? _bedrockResourceFallback;
+
         public static ImageSource FabricFallback => _fabricFallback ??= CreateDrawingIcon(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7B5BCA")), "F");
         public static ImageSource QuiltFallback => _quiltFallback ??= CreateDrawingIcon(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF4E75")), "Q");
         public static ImageSource ForgeFallback => _forgeFallback ??= CreateDrawingIcon(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DF6E26")), "M"); // M for Mod
         public static ImageSource PluginFallback => _pluginFallback ??= CreateDrawingIcon(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2E75B6")), "P"); // P for Plugin
         public static ImageSource BedrockFallback => _bedrockFallback ??= CreateDrawingIcon(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2A8F46")), "B"); // B for Bedrock
+        public static ImageSource BedrockBehaviorFallback => _bedrockBehaviorFallback ??= CreateDrawingIcon(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9C27B0")), "BP");
+        public static ImageSource BedrockResourceFallback => _bedrockResourceFallback ??= CreateDrawingIcon(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00BCD4")), "RP");
         public static ImageSource UnknownFallback => _unknownFallback ??= CreateDrawingIcon(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7F7F7F")), "?");
+
+        public static async Task<ImageSource?> GetLocalIconAsync(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) return null;
+            try
+            {
+                var bytes = await File.ReadAllBytesAsync(filePath);
+                return GetIconFromBytes(bytes);
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         public static ImageSource? GetIconFromBytes(byte[]? bytes)
         {

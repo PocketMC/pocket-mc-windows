@@ -816,7 +816,7 @@
                                         
                                         <!-- Search Box -->
                                         <ui:TextBox Text="{Binding Addons.SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                                    PlaceholderText="Search plugins and mods..."
+                                                    PlaceholderText="{Binding Addons.SearchPlaceholder}"
                                                     Icon="{ui:SymbolIcon Search20}"
                                                     Margin="0,0,12,0"
                                                     VerticalAlignment="Center"/>
@@ -1288,61 +1288,227 @@
                                         </Grid>
                                     </StackPanel>
 
-                                    <!-- BDS: Add-on import section (replaces mods for Bedrock) -->
-                                    <TextBlock Text="Bedrock Add-ons" Style="{StaticResource SettingsHeader}" Margin="4,20,0,12"
-                                               Visibility="{Binding Addons.SupportsBedrockAddons, Converter={StaticResource VisibleIfTrue}}"/>
-                                    <ui:Card Margin="0,0,0,16" Padding="20"
-                                             Visibility="{Binding Addons.SupportsBedrockAddons, Converter={StaticResource VisibleIfTrue}}">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <ui:SymbolIcon Symbol="Info24" FontSize="12" Foreground="#89B4FA" Margin="0,0,8,0" VerticalAlignment="Top"/>
-                                                <TextBlock Text="Import .mcpack or .mcaddon files. They will be automatically extracted and registered in your world's pack list."
-                                                           Foreground="#89B4FA" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                                            </StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <ui:Button Content="Import Add-on (.mcpack/.mcaddon)" Command="{Binding Addons.ImportBedrockAddonCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Add20}"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </ui:Card>
-                                    <ItemsControl ItemsSource="{Binding Addons.Mods}"
-                                                  Visibility="{Binding Addons.SupportsBedrockAddons, Converter={StaticResource VisibleIfTrue}}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <ui:Card Margin="0,0,0,10" Padding="16,12">
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                        <StackPanel>
-                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14"/>
-                                                            <TextBlock Text="{Binding AddonType, StringFormat=Type: {0}}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                        </StackPanel>
-                                                        <ui:Button Grid.Column="1" Content="Remove" Appearance="Danger" Command="{Binding DataContext.Addons.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding Path}" VerticalAlignment="Center"/>
-                                                    </Grid>
-                                                </ui:Card>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-
-                                    <!-- Bedrock Addons Empty State -->
+                                    <!-- BDS: Add-on & Pack Management Section -->
                                     <StackPanel Visibility="{Binding Addons.SupportsBedrockAddons, Converter={StaticResource VisibleIfTrue}}">
-                                        <Grid Margin="0,-8,0,24">
-                                            <Grid.Style>
-                                                <Style TargetType="Grid">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Addons.Mods.Count}" Value="0">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Grid.Style>
-                                            <ui:Card Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
-                                                <StackPanel HorizontalAlignment="Center">
-                                                    <ui:SymbolIcon Symbol="Cube24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                                                    <TextBlock Text="No add-ons installed" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                    <TextBlock Text="Click 'Import Add-on' to add an .mcpack or .mcaddon file." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                        <!-- Clean Segmented Switcher & Action Toolbar -->
+                                        <Grid Margin="0,0,0,16">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Segmented Switcher: Behavior vs Resource Packs -->
+                                            <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="8" Padding="4">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <RadioButton Content="Behavior Packs"
+                                                                 IsChecked="{Binding Addons.IsBehaviorPacksTabSelected, Mode=TwoWay}"
+                                                                 GroupName="BedrockPacksTabs"
+                                                                 Style="{StaticResource {x:Type ToggleButton}}"
+                                                                 Padding="16,7"
+                                                                 FontSize="13"
+                                                                 FontWeight="SemiBold"/>
+                                                    <RadioButton Content="Resource Packs"
+                                                                 IsChecked="{Binding Addons.IsResourcePacksTabSelected, Mode=TwoWay}"
+                                                                 GroupName="BedrockPacksTabs"
+                                                                 Style="{StaticResource {x:Type ToggleButton}}"
+                                                                 Padding="16,7"
+                                                                 FontSize="13"
+                                                                 FontWeight="SemiBold"
+                                                                 Margin="4,0,0,0"/>
                                                 </StackPanel>
-                                            </ui:Card>
+                                            </Border>
+
+                                            <!-- Right-side Action Toolbar -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ui:Button Content="Import Add-on" Appearance="Primary" Icon="{ui:SymbolIcon Add20}"
+                                                           Command="{Binding Addons.ImportBedrockAddonCommand}" VerticalAlignment="Center"/>
+                                            </StackPanel>
                                         </Grid>
+
+                                        <!-- TAB 1: BEHAVIOR PACKS LIST -->
+                                        <StackPanel Visibility="{Binding Addons.IsBehaviorPacksTabSelected, Converter={StaticResource VisibleIfTrue}}">
+                                            <ItemsControl ItemsSource="{Binding Addons.BehaviorPacks}" Margin="0,0,0,8">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <ui:Card Margin="0,0,0,8" Padding="14,10">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <!-- Pack Icon -->
+                                                                <Border Width="40" Height="40" CornerRadius="8" Background="#1E1E2E" Margin="0,0,12,0" ClipToBounds="True" VerticalAlignment="Center">
+                                                                    <Grid>
+                                                                        <Image Source="{Binding Icon}" Width="40" Height="40" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                                        <ui:SymbolIcon Symbol="Cube24" FontSize="20" Foreground="#CBA6F7" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                                       Visibility="{Binding Icon, Converter={StaticResource InvertedVisibilityConverter}}"/>
+                                                                    </Grid>
+                                                                </Border>
+
+                                                                <!-- Info Column -->
+                                                                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0" TextTrimming="CharacterEllipsis"/>
+
+                                                                <!-- Actions -->
+                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                    <!-- Priority Reordering -->
+                                                                    <ui:Button Appearance="Secondary" Margin="0,0,4,0" VerticalAlignment="Center" Padding="6,5"
+                                                                               Command="{Binding DataContext.Addons.MoveBedrockPackUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                               CommandParameter="{Binding}"
+                                                                               IsEnabled="{Binding IsEnabled}"
+                                                                               Icon="{ui:SymbolIcon ArrowUp20}"
+                                                                               ToolTip="Increase Priority (Load Earlier)"/>
+                                                                    <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center" Padding="6,5"
+                                                                               Command="{Binding DataContext.Addons.MoveBedrockPackDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                               CommandParameter="{Binding}"
+                                                                               IsEnabled="{Binding IsEnabled}"
+                                                                               Icon="{ui:SymbolIcon ArrowDown20}"
+                                                                               ToolTip="Decrease Priority (Load Later)"/>
+
+                                                                    <!-- Enable / Disable Toggle -->
+                                                                    <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                                                     Command="{Binding DataContext.Addons.ToggleBedrockPackCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                                     CommandParameter="{Binding}"
+                                                                                     OnContent="Active" OffContent="Inactive" Content=""
+                                                                                     VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                                                    <!-- Delete -->
+                                                                    <ui:Button Appearance="Danger" VerticalAlignment="Center" Padding="6,5"
+                                                                               Command="{Binding DataContext.Addons.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                               CommandParameter="{Binding}"
+                                                                               Icon="{ui:SymbolIcon Delete20}"
+                                                                               ToolTip="Delete behavior pack"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </ui:Card>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <!-- Behavior Packs Empty State -->
+                                            <Grid Margin="0,0,0,24">
+                                                <Grid.Style>
+                                                    <Style TargetType="Grid">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Addons.BehaviorPacks.Count}" Value="0">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Grid.Style>
+                                                <ui:Card Padding="24" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
+                                                    <StackPanel HorizontalAlignment="Center">
+                                                        <ui:SymbolIcon Symbol="BrainCircuit24" FontSize="28" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                        <TextBlock Text="No Behavior Packs Installed" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="Import .mcpack or .mcaddon files to add custom entities, loot, and gameplay features." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </ui:Card>
+                                            </Grid>
+                                        </StackPanel>
+
+                                        <!-- TAB 2: RESOURCE PACKS LIST -->
+                                        <StackPanel Visibility="{Binding Addons.IsResourcePacksTabSelected, Converter={StaticResource VisibleIfTrue}}">
+                                            <!-- Require Resource Packs Option Card -->
+                                            <ui:Card Margin="0,0,0,12" Padding="14,10">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="Require Players to Accept Resource Packs" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        <TextBlock Text="Forces connecting Minecraft players to download and accept server texture packs before joining (texturepack-required)."
+                                                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+                                                    <ui:ToggleSwitch Grid.Column="1"
+                                                                     IsChecked="{Binding Addons.TexturepackRequired, Mode=TwoWay}"
+                                                                     OnContent="Required" OffContent="Optional" Content=""
+                                                                     VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </ui:Card>
+                                            <ItemsControl ItemsSource="{Binding Addons.ResourcePacks}" Margin="0,0,0,8">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <ui:Card Margin="0,0,0,8" Padding="14,10">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <!-- Pack Icon -->
+                                                                <Border Width="40" Height="40" CornerRadius="8" Background="#1E1E2E" Margin="0,0,12,0" ClipToBounds="True" VerticalAlignment="Center">
+                                                                    <Grid>
+                                                                        <Image Source="{Binding Icon}" Width="40" Height="40" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                                        <ui:SymbolIcon Symbol="Color24" FontSize="20" Foreground="#89B4FA" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                                       Visibility="{Binding Icon, Converter={StaticResource InvertedVisibilityConverter}}"/>
+                                                                    </Grid>
+                                                                </Border>
+
+                                                                <!-- Info Column -->
+                                                                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0" TextTrimming="CharacterEllipsis"/>
+
+                                                                <!-- Actions -->
+                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                    <!-- Priority Reordering -->
+                                                                    <ui:Button Appearance="Secondary" Margin="0,0,4,0" VerticalAlignment="Center" Padding="6,5"
+                                                                               Command="{Binding DataContext.Addons.MoveBedrockPackUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                               CommandParameter="{Binding}"
+                                                                               IsEnabled="{Binding IsEnabled}"
+                                                                               Icon="{ui:SymbolIcon ArrowUp20}"
+                                                                               ToolTip="Increase Priority (Load Earlier)"/>
+                                                                    <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center" Padding="6,5"
+                                                                               Command="{Binding DataContext.Addons.MoveBedrockPackDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                               CommandParameter="{Binding}"
+                                                                               IsEnabled="{Binding IsEnabled}"
+                                                                               Icon="{ui:SymbolIcon ArrowDown20}"
+                                                                               ToolTip="Decrease Priority (Load Later)"/>
+
+                                                                    <!-- Enable / Disable Toggle -->
+                                                                    <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                                                     Command="{Binding DataContext.Addons.ToggleBedrockPackCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                                     CommandParameter="{Binding}"
+                                                                                     OnContent="Active" OffContent="Inactive" Content=""
+                                                                                     VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                                                    <!-- Delete -->
+                                                                    <ui:Button Appearance="Danger" VerticalAlignment="Center" Padding="6,5"
+                                                                               Command="{Binding DataContext.Addons.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                               CommandParameter="{Binding}"
+                                                                               Icon="{ui:SymbolIcon Delete20}"
+                                                                               ToolTip="Delete resource pack"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </ui:Card>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <!-- Resource Packs Empty State -->
+                                            <Grid Margin="0,0,0,24">
+                                                <Grid.Style>
+                                                    <Style TargetType="Grid">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Addons.ResourcePacks.Count}" Value="0">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Grid.Style>
+                                                <ui:Card Padding="24" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
+                                                    <StackPanel HorizontalAlignment="Center">
+                                                        <ui:SymbolIcon Symbol="Color24" FontSize="28" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                        <TextBlock Text="No Resource Packs Installed" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="Import .mcpack or .mcaddon files to stream custom textures, models, and audio to connecting players." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </ui:Card>
+                                            </Grid>
+                                        </StackPanel>
                                     </StackPanel>
                                 </StackPanel>
                             </ScrollViewer>
