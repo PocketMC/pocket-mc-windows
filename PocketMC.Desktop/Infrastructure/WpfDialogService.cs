@@ -33,13 +33,15 @@ namespace PocketMC.Desktop.Infrastructure
             {
                 buttons = AppDialogButtons.YesNoCancel;
             }
-            else if (type == DialogType.Question || showCancel || !string.IsNullOrEmpty(secondaryButtonText))
+            else if (type == DialogType.Information && !showCancel && string.IsNullOrEmpty(secondaryButtonText))
             {
-                buttons = AppDialogButtons.YesNo;
+                // Pure informational dialogs with no secondary choice show a single button
+                buttons = AppDialogButtons.Ok;
             }
             else
             {
-                buttons = AppDialogButtons.Ok;
+                // All other confirmation prompts (Question, Warning, Danger, Discard, Delete, etc.) show 2 buttons
+                buttons = AppDialogButtons.YesNo;
             }
             DialogResult result = AppDialog.ShowResult(
                 title,
