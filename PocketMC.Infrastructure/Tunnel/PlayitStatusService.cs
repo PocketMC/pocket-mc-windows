@@ -15,8 +15,7 @@ namespace PocketMC.Infrastructure.Tunnel
         private readonly HttpClient _httpClient;
         private readonly ILogger<PlayitStatusService> _logger;
 
-        private const string GlobalStatusUrl = "https://status.playit.gg/api/getMonitorList/AxwIw5PSiW";
-        private const string DcStatusUrl = "https://dc.status.playit.gg/api/getMonitorList/rhIdVDK591";
+        private const string PrimaryStatusUrl = "https://status.playit.gg/api/status?days=1";
 
         public PlayitStatusService(HttpClient httpClient, ILogger<PlayitStatusService> logger)
         {
@@ -30,22 +29,43 @@ namespace PocketMC.Infrastructure.Tunnel
 
             try
             {
-                var globalTask = FetchStatusAsync(GlobalStatusUrl, cancellationToken);
-                var dcTask = FetchStatusAsync(DcStatusUrl, cancellationToken);
+                var statusResponse = await FetchStatusAsync(PrimaryStatusUrl, cancellationToken);
 
-                await Task.WhenAll(globalTask, dcTask);
-
-                var globalStatus = globalTask.Result;
-                var dcStatus = dcTask.Result;
-
-                if (globalStatus?.Data != null)
+                if (statusResponse?.Networks != null && statusResponse.Networks.Count > 0)
                 {
-                    results.AddRange(globalStatus.Data);
+                    foreach (var net in statusResponse.Networks)
+                    {
+                        if (string.IsNullOrWhiteSpace(net.Name)) continue;
+
+                        string rawStatus = (net.Status ?? "online").ToLowerInvariant();
+                        string statusClass = rawStatus switch
+                        {
+                            "online" => "success",
+                            "re-routed" or "rerouted" or "degraded" => "warning",
+                            "offline" or "down" or "outage" => "danger",
+                            _ => "unknown"
+                        };
+
+                        string statusText = rawStatus switch
+                        {
+                            "online" => "Operational",
+                            "re-routed" or "rerouted" => "Re-routed",
+                            "degraded" => "Degraded",
+                            "offline" or "down" or "outage" => "Outage",
+                            _ => "Unknown"
+                        };
+
+                        results.Add(new PlayitStatusMonitor
+                        {
+                            Name = net.Name,
+                            StatusClass = statusClass,
+                            StatusText = statusText
+                        });
+                    }
                 }
-
-                if (dcStatus?.Data != null)
+                else if (statusResponse?.Data != null)
                 {
-                    results.AddRange(dcStatus.Data);
+                    results.AddRange(statusResponse.Data);
                 }
             }
             catch (Exception ex)

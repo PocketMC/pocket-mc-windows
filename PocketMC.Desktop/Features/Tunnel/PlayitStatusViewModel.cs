@@ -91,19 +91,19 @@ namespace PocketMC.Desktop.Features.Tunnel
             switch (StatusClass.ToLowerInvariant())
             {
                 case "success":
-                    StatusText = "Operational";
+                    StatusText = monitor.StatusText ?? "Operational";
                     brushKey = "SystemFillColorSuccessBrush";
                     break;
                 case "warning":
-                    StatusText = "Degraded";
+                    StatusText = monitor.StatusText ?? "Degraded";
                     brushKey = "SystemFillColorCautionBrush";
                     break;
                 case "danger":
-                    StatusText = "Outage";
+                    StatusText = monitor.StatusText ?? "Outage";
                     brushKey = "SystemFillColorCriticalBrush";
                     break;
                 default:
-                    StatusText = "Unknown";
+                    StatusText = monitor.StatusText ?? "Unknown";
                     brushKey = "TextFillColorSecondaryBrush";
                     break;
             }
