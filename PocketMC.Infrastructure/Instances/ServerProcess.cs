@@ -71,6 +71,7 @@ public class ServerProcess : IServerProcess, IDisposable
 
     public Guid InstanceId { get; }
     public ServerState State { get; private set; } = ServerState.Stopped;
+    internal void SetStateForTest(ServerState state) => State = state;
     public string WorkingDirectory { get; private set; } = string.Empty;
     private readonly ConcurrentQueue<string> _outputBuffer = new();
     public IEnumerable<string> OutputBuffer => _outputBuffer;

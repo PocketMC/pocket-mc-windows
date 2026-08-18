@@ -133,12 +133,24 @@ public class ServerProcessManager
     {
         if (_activeProcesses.TryRemove(instanceId, out var active))
         {
-            active.Dispose();
+            _historicalProcesses[instanceId] = active;
         }
         if (_historicalProcesses.TryRemove(instanceId, out var historical))
         {
             historical.Dispose();
         }
+    }
+
+    internal void SetRunningForTest(Guid instanceId)
+    {
+        var proc = new ServerProcess(
+            instanceId,
+            _jobObject,
+            _launchConfigurator,
+            _playerListParser,
+            _loggerFactory.CreateLogger<ServerProcess>());
+        proc.SetStateForTest(ServerState.Online);
+        _activeProcesses[instanceId] = proc;
     }
 
     public void KillAll()

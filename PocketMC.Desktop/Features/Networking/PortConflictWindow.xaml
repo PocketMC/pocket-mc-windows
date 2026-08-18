@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Port Conflict"
-        Width="460"
+        Width="480"
         SizeToContent="Height"
-        MinWidth="400" MaxWidth="520"
+        MinWidth="420" MaxWidth="540"
         MinHeight="0"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -14,7 +14,7 @@
         WindowBackdropType="None"
         Background="{DynamicResource ApplicationBackgroundBrush}">
 
-    <Grid MaxWidth="500">
+    <Grid MaxWidth="520">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -49,7 +49,7 @@
             <ScrollViewer Grid.Row="1"
                           MaxHeight="140"
                           VerticalScrollBarVisibility="Auto"
-                          Margin="0,0,0,18">
+                          Margin="0,0,0,14">
                 <TextBlock x:Name="TxtMessage"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                            FontSize="13"
@@ -57,16 +57,47 @@
                            LineHeight="20"/>
             </ScrollViewer>
 
-            <!-- Separator -->
-            <Border Grid.Row="2"
-                    Height="1"
-                    Background="{DynamicResource ControlStrokeColorDefaultBrush}"
-                    Opacity="0.4"
-                    Margin="0,0,0,18"/>
+            <!-- Suggested Port Action Card -->
+            <Border x:Name="BorderSuggestedPort"
+                    Grid.Row="2"
+                    Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,16"
+                    Visibility="Collapsed">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="RECOMMENDED REPLACEMENT"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock x:Name="TxtSuggestedPortDescription"
+                                   Text="Port 25566 is verified available"
+                                   FontSize="13"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <ui:Button x:Name="BtnApplySuggested"
+                               Grid.Column="1"
+                               Appearance="Primary"
+                               Content="Use Port"
+                               Icon="{ui:SymbolIcon Sparkle24}"
+                               Click="BtnApplySuggested_Click"
+                               VerticalAlignment="Center"
+                               Padding="12,6"/>
+                </Grid>
+            </Border>
 
             <!-- Port input section -->
             <StackPanel Grid.Row="3" Margin="0,0,0,6">
-                <TextBlock Text="Enter a new port:"
+                <TextBlock Text="Enter or modify port:"
                            FontSize="13"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"

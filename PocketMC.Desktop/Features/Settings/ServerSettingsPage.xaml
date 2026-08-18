@@ -858,183 +858,182 @@
                                         </StackPanel>
                                     </ui:Card>
 
-                                    <TextBlock Text="Server Plugins" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"
-                                               Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}"/>
-                                    <ui:Card Margin="0,0,0,16" Padding="20"
-                                             Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}">
-                                                <ui:SymbolIcon Symbol="Info24" FontSize="12" Foreground="#89B4FA" Margin="0,0,8,0" VerticalAlignment="Top"/>
-                                                <TextBlock Text="PocketMine plugins are .phar files. Use the Add Plugin button to install them." Foreground="#89B4FA" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
-                                            </StackPanel>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:Button Content="Local File" Command="{Binding Addons.AddPluginCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
-                                                    <ui:Button Content="Plugin Marketplace" Command="{Binding Addons.BrowseModrinthPluginsCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Globe20}"
-                                                               Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}"/>
+                                    <!-- Server Plugins Section -->
+                                    <StackPanel Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,24">
+                                        <TextBlock Text="Server Plugins" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
+                                        <ui:Card Margin="0,0,0,16" Padding="20">
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}">
+                                                    <ui:SymbolIcon Symbol="Info24" FontSize="12" Foreground="#89B4FA" Margin="0,0,8,0" VerticalAlignment="Top"/>
+                                                    <TextBlock Text="PocketMine plugins are .phar files. Use the Add Plugin button to install them." Foreground="#89B4FA" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
                                                 </StackPanel>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
-                                                            Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}">
-                                                    <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                    <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
-                                                                     Margin="0,0,12,0" 
-                                                                     ToolTip="Automatically update on server start"
-                                                                     Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
-                                                    <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
-                                                        <ui:ProgressRing.Style>
-                                                            <Style TargetType="ui:ProgressRing">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </ui:ProgressRing.Style>
-                                                    </ui:ProgressRing>
-                                                    <ui:Button Content="Update All" Appearance="Info"
-                                                               Command="{Binding Addons.UpdateAllPluginsCommand}"
-                                                               Icon="{ui:SymbolIcon ArrowSync20}"
-                                                               ToolTip="Check all installed plugins for updates"/>
-                                                </StackPanel>
-                                            </Grid>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <ui:Button Content="Local File" Command="{Binding Addons.AddPluginCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
+                                                        <ui:Button Content="Plugin Marketplace" Command="{Binding Addons.BrowseModrinthPluginsCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Globe20}"
+                                                                   Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                                                                Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}">
+                                                        <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
+                                                                         Margin="0,0,12,0" 
+                                                                         ToolTip="Automatically update on server start"
+                                                                         Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
+                                                        <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
+                                                            <ui:ProgressRing.Style>
+                                                                <Style TargetType="ui:ProgressRing">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </ui:ProgressRing.Style>
+                                                        </ui:ProgressRing>
+                                                        <ui:Button Content="Update All" Appearance="Info"
+                                                                   Command="{Binding Addons.UpdateAllPluginsCommand}"
+                                                                   Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                   ToolTip="Check all installed plugins for updates"/>
+                                                    </StackPanel>
+                                                </Grid>
 
-                                        </StackPanel>
-                                    </ui:Card>
-                                    <ItemsControl ItemsSource="{Binding Addons.Plugins}" Margin="0,0,0,24">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
-                                                    <ui:Card.ContextMenu>
-                                                        <ContextMenu>
-                                                            <MenuItem Header="{Binding ToggleActionLabel}"
-                                                                      Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                      CommandParameter="{Binding}">
-                                                                <MenuItem.Icon>
-                                                                    <ui:SymbolIcon Symbol="Power20"/>
-                                                                </MenuItem.Icon>
-                                                            </MenuItem>
-                                                            <MenuItem Header="Open Folder" 
-                                                                      Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                      CommandParameter="{Binding Path}">
-                                                                <MenuItem.Icon>
-                                                                    <ui:SymbolIcon Symbol="FolderOpen20"/>
-                                                                </MenuItem.Icon>
-                                                            </MenuItem>
-                                                            <MenuItem Header="Delete" 
-                                                                      Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                      CommandParameter="{Binding Path}">
-                                                                <MenuItem.Icon>
-                                                                    <ui:SymbolIcon Symbol="Delete20" Foreground="Red"/>
-                                                                </MenuItem.Icon>
-                                                            </MenuItem>
-                                                        </ContextMenu>
-                                                    </ui:Card.ContextMenu>
-                                                    <Grid>
-                                                        <Grid.Style>
-                                                            <Style TargetType="Grid">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsDisabled}" Value="True">
-                                                                        <Setter Property="Opacity" Value="0.6"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Grid.Style>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        
-                                                        <!-- Icon -->
-                                                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="{DynamicResource ControlAltFillColorTertiaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" ClipToBounds="True">
-                                                            <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                                                        </Border>
-                                                        
-                                                        <!-- Info -->
-                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                            <StackPanel Orientation="Horizontal">
-                                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
-                                                                <Border Visibility="{Binding IsDisabled, Converter={StaticResource VisibleIfTrue}}"
-                                                                        Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
-                                                                    <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
-                                                                </Border>
-                                                            </StackPanel>
+                                            </StackPanel>
+                                        </ui:Card>
+                                        <ItemsControl ItemsSource="{Binding Addons.Plugins}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                        <ui:Card.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="{Binding ToggleActionLabel}"
+                                                                          Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding}">
+                                                                    <MenuItem.Icon>
+                                                                        <ui:SymbolIcon Symbol="Power20"/>
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                                <MenuItem Header="Open Folder" 
+                                                                          Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding Path}">
+                                                                    <MenuItem.Icon>
+                                                                        <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                                <MenuItem Header="Delete" 
+                                                                          Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding Path}">
+                                                                    <MenuItem.Icon>
+                                                                        <ui:SymbolIcon Symbol="Delete20" Foreground="Red"/>
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                            </ContextMenu>
+                                                        </ui:Card.ContextMenu>
+                                                        <Grid>
+                                                            <Grid.Style>
+                                                                <Style TargetType="Grid">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                            <Setter Property="Opacity" Value="0.6"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Grid.Style>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
                                                             
-                                                            <!-- Subtitle: Loader · Version · Source · Side -->
-                                                            <WrapPanel Margin="0,2,0,0" VerticalAlignment="Center">
-                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                                                    <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                                </Border>
-                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding HasVersion, Converter={StaticResource VisibleIfTrue}}">
-                                                                    <TextBlock Text="v" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                    <TextBlock Text="{Binding Version}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                    <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                                                </StackPanel>
-                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                                                    <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                                </Border>
-                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding ShowSideBadge, Converter={StaticResource VisibleIfTrue}}">
-                                                                    <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                                                    <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2">
-                                                                        <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                            <!-- Icon -->
+                                                            <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="{DynamicResource ControlAltFillColorTertiaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" ClipToBounds="True">
+                                                                <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                            </Border>
+                                                            
+                                                            <!-- Info -->
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                                    <Border Visibility="{Binding IsDisabled, Converter={StaticResource VisibleIfTrue}}"
+                                                                            Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
+                                                                        <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
                                                                     </Border>
                                                                 </StackPanel>
-                                                            </WrapPanel>
+                                                                
+                                                                <!-- Subtitle: Loader · Version · Source · Side -->
+                                                                <WrapPanel Margin="0,2,0,0" VerticalAlignment="Center">
+                                                                    <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                        <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                    </Border>
+                                                                    <StackPanel Orientation="Horizontal" Visibility="{Binding HasVersion, Converter={StaticResource VisibleIfTrue}}">
+                                                                        <TextBlock Text="v" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                        <TextBlock Text="{Binding Version}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                        <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                    </StackPanel>
+                                                                    <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                        <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                    </Border>
+                                                                    <StackPanel Orientation="Horizontal" Visibility="{Binding ShowSideBadge, Converter={StaticResource VisibleIfTrue}}">
+                                                                        <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                        <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2">
+                                                                            <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                        </Border>
+                                                                    </StackPanel>
+                                                                </WrapPanel>
 
 
-                                                        </StackPanel>
-                                                        
-                                                        <!-- Action buttons -->
-                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                            <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,8,0">
-                                                                <ui:ProgressRing.Style>
-                                                                    <Style TargetType="ui:ProgressRing">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </ui:ProgressRing.Style>
-                                                            </ui:ProgressRing>
-                                                            <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
-                                                                             Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                             CommandParameter="{Binding}"
-                                                                             IsEnabled="{Binding CanToggle}"
-                                                                             ToolTip="{Binding ToggleToolTip}"
-                                                                             OnContent="" OffContent="" Content=""
-                                                                             VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                            <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding Path}"
-                                                                       Icon="{ui:SymbolIcon FolderOpen20}"
-                                                                       ToolTip="Open file location"/>
-                                                            <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}"
-                                                                       IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
-                                                                       Visibility="{Binding IsDisabled, Converter={StaticResource InvertedVisibilityConverter}}"
-                                                                       Icon="{ui:SymbolIcon ArrowSync20}"
-                                                                       ToolTip="Check for updates from the marketplace"/>
+                                                            </StackPanel>
+                                                            
+                                                            <!-- Action buttons -->
+                                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,8,0">
+                                                                    <ui:ProgressRing.Style>
+                                                                        <Style TargetType="ui:ProgressRing">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </ui:ProgressRing.Style>
+                                                                </ui:ProgressRing>
+                                                                <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                                                 Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                                 CommandParameter="{Binding}"
+                                                                                 IsEnabled="{Binding CanToggle}"
+                                                                                 ToolTip="{Binding ToggleToolTip}"
+                                                                                 OnContent="" OffContent="" Content=""
+                                                                                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                                <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                           Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                           CommandParameter="{Binding Path}"
+                                                                           Icon="{ui:SymbolIcon FolderOpen20}"
+                                                                           ToolTip="Open file location"/>
+                                                                <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                           Command="{Binding DataContext.Addons.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                           CommandParameter="{Binding}"
+                                                                           IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
+                                                                           Visibility="{Binding IsDisabled, Converter={StaticResource InvertedVisibilityConverter}}"
+                                                                           Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                           ToolTip="Check for updates from the marketplace"/>
 
-                                                            <ui:Button Appearance="Danger" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding Path}"
-                                                                       Icon="{ui:SymbolIcon Delete20}"
-                                                                       ToolTip="Delete plugin from disk"/>
-                                                        </StackPanel>
-                                                    </Grid>
-                                                </ui:Card>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                                                <ui:Button Appearance="Danger" VerticalAlignment="Center"
+                                                                           Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                           CommandParameter="{Binding Path}"
+                                                                           Icon="{ui:SymbolIcon Delete20}"
+                                                                           ToolTip="Delete plugin from disk"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </ui:Card>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
 
-                                    <!-- Plugins Empty State -->
-                                    <StackPanel Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}">
-                                        <Grid Margin="0,-8,0,24">
+                                        <!-- Plugins Empty State -->
+                                        <Grid Margin="0,0,0,0">
                                             <Grid.Style>
                                                 <Style TargetType="Grid">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -1055,219 +1054,216 @@
                                         </Grid>
                                     </StackPanel>
 
-                                    <!-- Server Mods — hidden for PocketMine (not applicable) -->
-                                    <TextBlock Text="Server Mods" Style="{StaticResource SettingsHeader}" Margin="4,20,0,12"
-                                               Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}"/>
-                                    <ui:Card Margin="0,0,0,16" Padding="20"
-                                             Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}">
-                                        <StackPanel>
-                                            <Grid>
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <ui:Button Content="Add Mod JAR" Command="{Binding Addons.AddModCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
-                                                    <ui:Button Content="Browse Marketplace" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"
-                                                               Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                    <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
-                                                                     Margin="0,0,12,0" 
-                                                                     ToolTip="Automatically update on server start"
-                                                                     Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
-                                                    <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
-                                                        <ui:ProgressRing.Style>
-                                                            <Style TargetType="ui:ProgressRing">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </ui:ProgressRing.Style>
-                                                    </ui:ProgressRing>
-                                                    <ui:Button Content="Update All" Appearance="Info"
-                                                               Command="{Binding Addons.UpdateAllModsCommand}"
-                                                               Icon="{ui:SymbolIcon ArrowSync20}"
-                                                               ToolTip="Check all installed mods for updates"
-                                                               Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
-                                                </StackPanel>
-                                            </Grid>
+                                    <!-- Server Mods Section -->
+                                    <StackPanel Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,24">
+                                        <TextBlock Text="Server Mods" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
+                                        <ui:Card Margin="0,0,0,16" Padding="20">
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <ui:Button Content="Add Mod JAR" Command="{Binding Addons.AddModCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
+                                                        <ui:Button Content="Browse Marketplace" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"
+                                                                   Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
+                                                                         Margin="0,0,12,0" 
+                                                                         ToolTip="Automatically update on server start"
+                                                                         Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
+                                                        <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
+                                                            <ui:ProgressRing.Style>
+                                                                <Style TargetType="ui:ProgressRing">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Addons.IsUpdatingAll}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </ui:ProgressRing.Style>
+                                                        </ui:ProgressRing>
+                                                        <ui:Button Content="Update All" Appearance="Info"
+                                                                   Command="{Binding Addons.UpdateAllModsCommand}"
+                                                                   Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                   ToolTip="Check all installed mods for updates"
+                                                                   Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
+                                                    </StackPanel>
+                                                </Grid>
 
-                                        </StackPanel>
-                                    </ui:Card>
-                                    <ItemsControl ItemsSource="{Binding Addons.Mods}"
-                                                   Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
-                                                    <ui:Card.ContextMenu>
-                                                        <ContextMenu>
-                                                            <MenuItem Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                      CommandParameter="{Binding}">
-                                                                <MenuItem.Style>
-                                                                    <Style TargetType="MenuItem">
-                                                                        <Setter Property="Header" Value="Disable Mod"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsDisabled}" Value="True">
-                                                                                <Setter Property="Header" Value="Enable Mod"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </MenuItem.Style>
-                                                                <MenuItem.Icon>
-                                                                    <ui:SymbolIcon Symbol="Power20"/>
-                                                                </MenuItem.Icon>
-                                                            </MenuItem>
-                                                            <MenuItem Header="Open Folder" 
-                                                                      Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                      CommandParameter="{Binding Path}">
-                                                                <MenuItem.Icon>
-                                                                    <ui:SymbolIcon Symbol="FolderOpen20"/>
-                                                                </MenuItem.Icon>
-                                                            </MenuItem>
-                                                            <MenuItem Header="Delete" 
-                                                                      Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                      CommandParameter="{Binding Path}">
-                                                                <MenuItem.Icon>
-                                                                    <ui:SymbolIcon Symbol="Delete20" Foreground="Red"/>
-                                                                </MenuItem.Icon>
-                                                            </MenuItem>
-                                                        </ContextMenu>
-                                                    </ui:Card.ContextMenu>
-                                                    <Grid>
-                                                        <Grid.Style>
-                                                            <Style TargetType="Grid">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsDisabled}" Value="True">
-                                                                        <Setter Property="Opacity" Value="0.6"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Grid.Style>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
+                                            </StackPanel>
+                                        </ui:Card>
+                                        <ItemsControl ItemsSource="{Binding Addons.Mods}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                        <ui:Card.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding}">
+                                                                    <MenuItem.Style>
+                                                                        <Style TargetType="MenuItem">
+                                                                            <Setter Property="Header" Value="Disable Mod"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                                    <Setter Property="Header" Value="Enable Mod"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </MenuItem.Style>
+                                                                    <MenuItem.Icon>
+                                                                        <ui:SymbolIcon Symbol="Power20"/>
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                                <MenuItem Header="Open Folder" 
+                                                                          Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding Path}">
+                                                                    <MenuItem.Icon>
+                                                                        <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                                <MenuItem Header="Delete" 
+                                                                          Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding Path}">
+                                                                    <MenuItem.Icon>
+                                                                        <ui:SymbolIcon Symbol="Delete20" Foreground="Red"/>
+                                                                    </MenuItem.Icon>
+                                                                </MenuItem>
+                                                            </ContextMenu>
+                                                        </ui:Card.ContextMenu>
+                                                        <Grid>
+                                                            <Grid.Style>
+                                                                <Style TargetType="Grid">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                            <Setter Property="Opacity" Value="0.6"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Grid.Style>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
 
-                                                        <!-- Icon -->
-                                                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="{DynamicResource ControlAltFillColorTertiaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" ClipToBounds="True">
-                                                            <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                                                        </Border>
-
-                                                        <!-- Info -->
-                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                            <StackPanel Orientation="Horizontal">
-                                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
-                                                                
-                                                                <!-- Disabled badge -->
-                                                                <Border Visibility="{Binding IsDisabled, Converter={StaticResource VisibleIfTrue}}"
-                                                                        Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
-                                                                    <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
-                                                                </Border>
-                                                            </StackPanel>
-
-                                                            <!-- Subtitle: Filename · Loader · Version · Source -->
-                                                            <WrapPanel Margin="0,4,0,0" VerticalAlignment="Center">
-
-                                                                
-                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                                                    <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                                </Border>
-                                                                
-                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding HasVersion, Converter={StaticResource VisibleIfTrue}}">
-                                                                    <TextBlock Text="v" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                    <TextBlock Text="{Binding Version}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                    <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                                                </StackPanel>
-                                                                
-                                                                <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                                                                    <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                                </Border>
-                                                                
-                                                                <Border Background="{Binding SideBadgeBackground}"
-                                                                        CornerRadius="4"
-                                                                        Padding="6,2"
-                                                                        Visibility="{Binding ShowSideBadge, Converter={StaticResource VisibleIfTrue}}">
-                                                                    <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding SideBadgeForeground}"/>
-                                                                </Border>
-                                                            </WrapPanel>
-
-                                                            <!-- Client Only warning banner -->
-                                                            <Border Visibility="{Binding IsClientOnly, Converter={StaticResource VisibleIfTrue}}"
-                                                                    Background="#2D1E24" BorderBrush="#F38BA8" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,6,0,0" HorizontalAlignment="Left">
-                                                                <StackPanel Orientation="Horizontal">
-                                                                    <ui:SymbolIcon Symbol="Warning12" Foreground="#F38BA8" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                                                    <TextBlock Text="Client-only mod. Do not install on server unless you know what you are doing." FontSize="11" Foreground="#F38BA8" VerticalAlignment="Center"/>
-                                                                </StackPanel>
+                                                            <!-- Icon -->
+                                                            <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="{DynamicResource ControlAltFillColorTertiaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" ClipToBounds="True">
+                                                                <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
                                                             </Border>
 
+                                                            <!-- Info -->
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                                    
+                                                                    <!-- Disabled badge -->
+                                                                    <Border Visibility="{Binding IsDisabled, Converter={StaticResource VisibleIfTrue}}"
+                                                                            Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
+                                                                        <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                                    </Border>
+                                                                </StackPanel>
 
-                                                        </StackPanel>
+                                                                <!-- Subtitle: Filename · Loader · Version · Source -->
+                                                                <WrapPanel Margin="0,4,0,0" VerticalAlignment="Center">
 
-                                                        <!-- Actions -->
-                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                            <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,8,0">
-                                                                <ui:ProgressRing.Style>
-                                                                    <Style TargetType="ui:ProgressRing">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </ui:ProgressRing.Style>
-                                                            </ui:ProgressRing>
-                                                            <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
-                                                                             Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                             CommandParameter="{Binding}"
-                                                                             IsEnabled="{Binding CanToggle}"
-                                                                             ToolTip="{Binding ToggleToolTip}"
-                                                                             OnContent="" OffContent="" Content=""
-                                                                             VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                            <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding Path}"
-                                                                       Icon="{ui:SymbolIcon FolderOpen20}"
-                                                                       ToolTip="Open file location"/>
-                                                            <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}"
-                                                                       Icon="{ui:SymbolIcon ArrowSync20}"
-                                                                       ToolTip="Check for updates from the marketplace"
-                                                                       Visibility="{Binding DataContext.Addons.SupportsModrinth, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource VisibleIfTrue}}">
-                                                                <ui:Button.Style>
-                                                                    <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                                                        <Setter Property="IsEnabled" Value="True"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                                                                <Setter Property="IsEnabled" Value="False"/>
-                                                                            </DataTrigger>
-                                                                            <DataTrigger Binding="{Binding IsDisabled}" Value="True">
-                                                                                <Setter Property="IsEnabled" Value="False"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </ui:Button.Style>
-                                                            </ui:Button>
+                                                                    
+                                                                    <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                        <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                    </Border>
+                                                                    
+                                                                    <StackPanel Orientation="Horizontal" Visibility="{Binding HasVersion, Converter={StaticResource VisibleIfTrue}}">
+                                                                        <TextBlock Text="v" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                        <TextBlock Text="{Binding Version}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                        <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                                    </StackPanel>
+                                                                    
+                                                                    <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                        <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                                    </Border>
+                                                                    
+                                                                    <Border Background="{Binding SideBadgeBackground}"
+                                                                            CornerRadius="4"
+                                                                            Padding="6,2"
+                                                                            Visibility="{Binding ShowSideBadge, Converter={StaticResource VisibleIfTrue}}">
+                                                                        <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding SideBadgeForeground}"/>
+                                                                    </Border>
+                                                                </WrapPanel>
 
-                                                            <ui:Button Appearance="Danger" VerticalAlignment="Center"
-                                                                       Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding Path}"
-                                                                       Icon="{ui:SymbolIcon Delete20}"
-                                                                       ToolTip="Delete mod from disk"/>
-                                                        </StackPanel>
-                                                    </Grid>
-                                                </ui:Card>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                                                <!-- Client Only warning banner -->
+                                                                <Border Visibility="{Binding IsClientOnly, Converter={StaticResource VisibleIfTrue}}"
+                                                                        Background="#2D1E24" BorderBrush="#F38BA8" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,6,0,0" HorizontalAlignment="Left">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <ui:SymbolIcon Symbol="Warning12" Foreground="#F38BA8" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="Client-only mod. Do not install on server unless you know what you are doing." FontSize="11" Foreground="#F38BA8" VerticalAlignment="Center"/>
+                                                                    </StackPanel>
+                                                                </Border>
 
-                                    <!-- Mods Empty State -->
-                                    <StackPanel Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}">
-                                        <Grid Margin="0,-8,0,24">
+
+                                                            </StackPanel>
+
+                                                            <!-- Actions -->
+                                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                <ui:ProgressRing IsIndeterminate="True" Width="18" Height="18" Margin="0,0,8,0">
+                                                                    <ui:ProgressRing.Style>
+                                                                        <Style TargetType="ui:ProgressRing">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </ui:ProgressRing.Style>
+                                                                </ui:ProgressRing>
+                                                                <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                                                 Command="{Binding DataContext.Addons.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                                 CommandParameter="{Binding}"
+                                                                                 IsEnabled="{Binding CanToggle}"
+                                                                                 ToolTip="{Binding ToggleToolTip}"
+                                                                                 OnContent="" OffContent="" Content=""
+                                                                                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                                <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                           Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                           CommandParameter="{Binding Path}"
+                                                                           Icon="{ui:SymbolIcon FolderOpen20}"
+                                                                           ToolTip="Open file location"/>
+                                                                <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                                           Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                           CommandParameter="{Binding}"
+                                                                           Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                           ToolTip="Check for updates from the marketplace"
+                                                                           Visibility="{Binding DataContext.Addons.SupportsModrinth, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource VisibleIfTrue}}">
+                                                                    <ui:Button.Style>
+                                                                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                                                            <Setter Property="IsEnabled" Value="True"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </ui:Button.Style>
+                                                                </ui:Button>
+
+                                                                <ui:Button Appearance="Danger" VerticalAlignment="Center"
+                                                                           Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                                           CommandParameter="{Binding Path}"
+                                                                           Icon="{ui:SymbolIcon Delete20}"
+                                                                           ToolTip="Delete mod from disk"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </ui:Card>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- Mods Empty State -->
+                                        <Grid Margin="0,0,0,0">
                                             <Grid.Style>
                                                 <Style TargetType="Grid">
                                                     <Setter Property="Visibility" Value="Collapsed"/>

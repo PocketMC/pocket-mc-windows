@@ -65,6 +65,29 @@ public sealed class PortPreflightServiceTests
     }
 
     [Fact]
+    public void Check_WhenAnotherPocketMcInstanceIsRunningOnSamePort_DetectsConflictEvenWithPlayitConfigured()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var processManager = workspace.CreateServerProcessManager();
+        var service = workspace.CreatePortPreflightService(processManager);
+
+        var first = workspace.CreateInstance("Alpha", serverType: "Paper");
+        var second = workspace.CreateInstance("Beta", serverType: "Paper");
+
+        workspace.WriteServerProperties(first.Id, "server-port=25575");
+        workspace.WriteServerProperties(second.Id, "server-port=25575");
+
+        // Simulate first instance running
+        processManager.SetRunningForTest(first.Id);
+
+        PortCheckResult result = service.Check(second, workspace.GetInstancePath(second.Id));
+
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(PortFailureCode.InUseByPocketMcInstance, result.FailureCode);
+        Assert.NotEmpty(result.Conflicts);
+    }
+
+    [Fact]
     public void BuildRequests_JavaServerWithGeyserConfig_ReturnsProtocolAwareRequests()
     {
         using var workspace = new PortReliabilityTestWorkspace();

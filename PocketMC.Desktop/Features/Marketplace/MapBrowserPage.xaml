@@ -78,7 +78,7 @@
 
         <!-- Content Area -->
         <Grid Grid.Row="2">
-            <ScrollViewer x:Name="ResultsScrollViewer" Grid.Row="2" Margin="0,12,0,0" ScrollChanged="ResultsScrollViewer_ScrollChanged">
+            <ScrollViewer x:Name="ResultsScrollViewer" Grid.Row="2" Margin="0" Padding="0,0,16,0" VerticalScrollBarVisibility="Auto" ScrollChanged="ResultsScrollViewer_ScrollChanged">
                 <StackPanel>
                     <ItemsControl x:Name="ListResults" ItemsSource="{Binding}">
                         <ItemsControl.ItemTemplate>

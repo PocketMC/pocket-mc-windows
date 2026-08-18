@@ -479,7 +479,23 @@ namespace PocketMC.Desktop.Features.Dashboard
 
             if (isPortChangeable)
             {
-                var dialog = new PortConflictWindow(displayInfo.Title, displayInfo.Message, primary.Request.Port, _probeService)
+                int? suggestedPort = primary.Recommendations.FirstOrDefault(x => x.SuggestedPort.HasValue)?.SuggestedPort;
+                var recoveryService = _serviceProvider.GetService<PortRecoveryService>();
+                if (!suggestedPort.HasValue && recoveryService != null)
+                {
+                    suggestedPort = recoveryService.FindNextFreePort(primary.Request);
+                }
+
+                var leaseRegistry = _serviceProvider.GetService<PortLeaseRegistry>();
+
+                var dialog = new PortConflictWindow(
+                    displayInfo.Title,
+                    displayInfo.Message,
+                    primary.Request,
+                    suggestedPort,
+                    _probeService,
+                    _registry,
+                    leaseRegistry)
                 {
                     Owner = System.Windows.Application.Current.MainWindow
                 };

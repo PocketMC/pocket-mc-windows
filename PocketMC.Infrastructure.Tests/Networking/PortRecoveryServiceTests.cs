@@ -88,5 +88,50 @@ public sealed class PortRecoveryServiceTests
         Assert.True(recommendation.RequiresUserAction);
         Assert.Null(recommendation.SuggestedPort);
     }
+
+    [Fact]
+    public void FindNextFreePort_SkipsPortsConfiguredOnOtherInstances()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var service = workspace.CreatePortRecoveryService();
+
+        // Create an existing instance configured for 25566
+        var existing = workspace.CreateInstance("Existing Server", serverType: "Paper");
+        existing.ServerPort = 25566;
+        workspace.SaveMetadata(existing);
+        workspace.WriteServerProperties(existing.Id, "server-port=25566");
+
+        var newServerReq = new PortCheckRequest(
+            25565,
+            PortProtocol.Tcp,
+            PortIpMode.IPv4,
+            instanceId: Guid.NewGuid(),
+            instanceName: "New Server");
+
+        int? freePort = service.FindNextFreePort(newServerReq);
+
+        Assert.NotNull(freePort);
+        Assert.NotEqual(25565, freePort.Value);
+        Assert.NotEqual(25566, freePort.Value); // Must have skipped 25566 because existing instance owns it!
+    }
+
+    [Fact]
+    public void FindNextFreePort_ForBedrock_SearchesNearBedrockDefault()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var service = workspace.CreatePortRecoveryService();
+
+        var bedrockReq = new PortCheckRequest(
+            19132,
+            PortProtocol.Udp,
+            PortIpMode.IPv4,
+            instanceId: Guid.NewGuid(),
+            instanceName: "Bedrock Server");
+
+        int? freePort = service.FindNextFreePort(bedrockReq);
+
+        Assert.NotNull(freePort);
+        Assert.True(freePort.Value >= 19133);
+    }
 }
 

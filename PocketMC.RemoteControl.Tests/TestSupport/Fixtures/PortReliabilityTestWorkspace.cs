@@ -125,6 +125,8 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
         return new PortRecoveryService(
             probeService ?? CreatePortProbeService(),
             leaseRegistry ?? CreatePortLeaseRegistry(),
+            Registry,
+            ConfigurationService,
             NullLogger<PortRecoveryService>.Instance);
     }
 
@@ -141,7 +143,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             NullLoggerFactory.Instance);
     }
 
-    public PortPreflightService CreatePortPreflightService(ServerProcessManager? processManager = null)
+    public PortPreflightService CreatePortPreflightService(ServerProcessManager? processManager = null, PortProbeService? probeService = null)
     {
         return new PortPreflightService(
             Registry,
@@ -150,6 +152,7 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             AppState,
             new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
             new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
+            probeService ?? CreatePortProbeService(),
             NullLogger<PortPreflightService>.Instance);
     }
 

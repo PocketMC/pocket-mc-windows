@@ -1,10 +1,12 @@
 using PocketMC.Domain.Models;
 using PocketMC.Application.Services.Networking;
+using PocketMC.Application.Services.Instances;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using PocketMC.Infrastructure.Instances;
 
 namespace PocketMC.Infrastructure.Networking;
 
@@ -27,6 +29,8 @@ public sealed class PortRecoveryService
 
     private readonly PortProbeService _portProbeService;
     private readonly PortLeaseRegistry _portLeaseRegistry;
+    private readonly InstanceRegistry? _instanceRegistry;
+    private readonly ServerConfigurationService? _configurationService;
     private readonly ILogger<PortRecoveryService> _logger;
     private readonly ConcurrentQueue<PortRecoveryHistoryEntry> _history = new();
 
@@ -37,9 +41,24 @@ public sealed class PortRecoveryService
         PortProbeService portProbeService,
         PortLeaseRegistry portLeaseRegistry,
         ILogger<PortRecoveryService> logger)
+        : this(portProbeService, portLeaseRegistry, null, null, logger)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new port recovery service with instance registry support for cross-instance port awareness.
+    /// </summary>
+    public PortRecoveryService(
+        PortProbeService portProbeService,
+        PortLeaseRegistry portLeaseRegistry,
+        InstanceRegistry? instanceRegistry,
+        ServerConfigurationService? configurationService,
+        ILogger<PortRecoveryService> logger)
     {
         _portProbeService = portProbeService;
         _portLeaseRegistry = portLeaseRegistry;
+        _instanceRegistry = instanceRegistry;
+        _configurationService = configurationService;
         _logger = logger;
     }
 
@@ -263,6 +282,11 @@ public sealed class PortRecoveryService
         foreach (int candidate in EnumerateCandidatePorts(request, searchLimit))
         {
             if (_portLeaseRegistry.FindHolder(candidate, request.Protocol, request.IpMode, request.BindAddress) != null)
+            {
+                continue;
+            }
+
+            if (IsPortUsedByOtherInstance(candidate, request))
             {
                 continue;
             }
@@ -509,6 +533,64 @@ public sealed class PortRecoveryService
     }
 
     private static bool IsValidPort(int port) => port >= MinValidPort && port <= MaxValidPort;
+
+    private bool IsPortUsedByOtherInstance(int port, PortCheckRequest request)
+    {
+        if (_instanceRegistry == null)
+        {
+            return false;
+        }
+
+        foreach (var other in _instanceRegistry.GetAll())
+        {
+            if (request.InstanceId.HasValue && other.Id == request.InstanceId.Value)
+            {
+                continue;
+            }
+
+            string? otherServerDir = _instanceRegistry.GetPath(other.Id);
+            bool isBedrock = other.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true ||
+                             other.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
+
+            int otherMainPort = other.ServerPort ?? (_configurationService != null && otherServerDir != null
+                ? ParsePortOrDefault(_configurationService.Load(other, otherServerDir).ServerPort, isBedrock ? DefaultBedrockPort : DefaultJavaPort)
+                : (isBedrock ? DefaultBedrockPort : DefaultJavaPort));
+
+            PortProtocol otherMainProto = isBedrock ? PortProtocol.Udp : PortProtocol.Tcp;
+
+            if (otherMainPort == port && ProtocolsOverlap(request.Protocol, otherMainProto))
+            {
+                return true;
+            }
+
+            if (other.GeyserBedrockPort.HasValue && other.GeyserBedrockPort.Value == port && ProtocolsOverlap(request.Protocol, PortProtocol.Udp))
+            {
+                return true;
+            }
+
+            if (other.SimpleVoiceChatPort.HasValue && other.SimpleVoiceChatPort.Value == port && ProtocolsOverlap(request.Protocol, PortProtocol.Udp))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int ParsePortOrDefault(string? rawValue, int defaultPort)
+    {
+        return int.TryParse(rawValue, out int port) ? port : defaultPort;
+    }
+
+    private static bool ProtocolsOverlap(PortProtocol left, PortProtocol right)
+    {
+        if (left == PortProtocol.TcpAndUdp || right == PortProtocol.TcpAndUdp)
+        {
+            return true;
+        }
+
+        return left == right;
+    }
 
     private void RecordHistory(PortCheckResult result, PortRecoveryRecommendation recommendation)
     {
