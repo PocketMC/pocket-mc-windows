@@ -13,6 +13,10 @@ using Microsoft.Extensions.Logging;
 using PocketMC.Application.Interfaces;
 using PocketMC.Infrastructure.Networking;
 using PocketMC.Desktop.Features.Shell.Interfaces;
+using PocketMC.Desktop.Features.Instances.Dialogs;
+using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Features.Console;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace PocketMC.Desktop.Features.Instances.Services;
 
@@ -29,6 +33,8 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
     private readonly PocketMC.Application.Services.Shell.ApplicationState _appState;
     private readonly GeyserProvisioningService _geyserProvisioningService;
     private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
+    private readonly IAppNavigationService _navigationService;
+    private readonly IServiceProvider _serviceProvider;
     private string _appRootPath => _appState.GetRequiredAppRootPath();
 
     private readonly ConcurrentDictionary<Guid, int> _consecutiveRestarts = new();
@@ -51,7 +57,9 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         ILogger<ServerLifecycleService> logger,
         PocketMC.Application.Services.Shell.ApplicationState appState,
         GeyserProvisioningService geyserProvisioningService,
-        PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector)
+        PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector,
+        IAppNavigationService navigationService,
+        IServiceProvider serviceProvider)
     {
         _processManager = processManager;
         _registry = registry;
@@ -64,9 +72,12 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         _appState = appState;
         _geyserProvisioningService = geyserProvisioningService;
         _geyserDetector = geyserDetector;
+        _navigationService = navigationService;
+        _serviceProvider = serviceProvider;
 
         _processManager.OnInstanceStateChanged += HandleInstanceStateChanged;
         _processManager.OnServerCrashed += HandleProcessManagerServerCrashed;
+        _processManager.OnCrashAnalyzed += HandleProcessManagerCrashAnalyzed;
     }
 
     public async Task StartAsync(InstanceMetadata meta)
@@ -255,6 +266,59 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         _consecutiveRestarts.Clear();
     }
 
+    private void HandleProcessManagerCrashAnalyzed(Guid instanceId, CrashAnalysisResult analysis)
+    {
+        var meta = _registry.GetById(instanceId);
+        if (meta == null) return;
+
+        _logger.LogWarning("Server '{ServerName}' crashed ({Category}): {Title} - {Summary}",
+            meta.Name, analysis.Category, analysis.Title, analysis.Summary);
+
+        System.Windows.Application.Current?.Dispatcher?.InvokeAsync(() =>
+        {
+            try
+            {
+                var dialog = new ServerCrashDialogWindow();
+                dialog.Populate(
+                    meta.Name,
+                    meta.ServerType,
+                    meta.MinecraftVersion,
+                    analysis,
+                    onOpenConsole: () =>
+                    {
+                        try
+                        {
+                            string? instancePath = _registry.GetPath(meta.Id);
+                            if (string.IsNullOrWhiteSpace(instancePath) || !Directory.Exists(instancePath)) return;
+
+                            var process = _processManager.GetProcess(meta.Id);
+                            var consolePage = process != null
+                                ? ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, meta, process, instancePath)
+                                : ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, meta, instancePath);
+
+                            _navigationService.NavigateToDetailPage(
+                                consolePage,
+                                $"Console: {meta.Name}",
+                                DetailRouteKind.ServerConsole,
+                                DetailBackNavigation.Dashboard,
+                                true);
+                        }
+                        catch (Exception navEx)
+                        {
+                            _logger.LogWarning(navEx, "Failed to open console for server '{ServerName}'.", meta.Name);
+                        }
+                    });
+
+                dialog.Owner = System.Windows.Application.Current?.MainWindow;
+                dialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to display server crash dialog for '{ServerName}'.", meta.Name);
+            }
+        });
+    }
+
     private async void HandleProcessManagerServerCrashed(Guid instanceId, string _)
     {
         try
@@ -277,6 +341,14 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
 
         var meta = _registry.GetById(instanceId);
         if (meta == null || !meta.EnableAutoRestart) return;
+
+        var proc = _processManager.GetProcess(instanceId);
+        if (proc?.LastCrashAnalysis?.IsFatalModConfigurationError == true)
+        {
+            _logger.LogInformation("Auto-restart skipped for '{ServerName}' due to fatal mod/dependency configuration error.", meta.Name);
+            _notificationService.ShowInformation("Auto-Restart Paused", $"Server '{meta.Name}' stopped due to a missing mod or dependency error. Fix the required mods before restarting.");
+            return;
+        }
 
         int attempts = _consecutiveRestarts.GetOrAdd(instanceId, 0);
         if (attempts >= meta.MaxAutoRestarts)

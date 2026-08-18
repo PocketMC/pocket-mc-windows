@@ -23,6 +23,7 @@ using PocketMC.Application.Services.Players;
 using PocketMC.Infrastructure.Players;
 
 using PocketMC.Application.Interfaces;
+using PocketMC.Infrastructure.Instances.Diagnostics;
 
 namespace PocketMC.Infrastructure.Instances;
 
@@ -76,6 +77,7 @@ public class ServerProcess : IServerProcess, IDisposable
     public int PlayerCount { get; private set; }
     public DateTime? LastPlayerListUpdatedUtc { get; private set; }
     public string? CrashContext { get; private set; }
+    public CrashAnalysisResult? LastCrashAnalysis { get; private set; }
     public DateTime? StartTime { get; private set; }
     public IReadOnlyList<string> OnlinePlayerNames
     {
@@ -93,6 +95,7 @@ public class ServerProcess : IServerProcess, IDisposable
     public event Action<int>? OnExited;
     public event Action<ServerState>? OnStateChanged;
     public event Action<string>? OnServerCrashed;
+    public event Action<CrashAnalysisResult>? OnCrashAnalyzed;
     public event Action<IReadOnlyList<string>, DateTime>? OnOnlinePlayersUpdated;
 
     public ServerProcess(
@@ -493,14 +496,35 @@ public class ServerProcess : IServerProcess, IDisposable
     private void OnProcessExited(object? sender, EventArgs e)
     {
         int exitCode = _process?.ExitCode ?? -1;
-        if (!_intentionalStop && exitCode != 0)
+        var snapshotLines = _outputBuffer.ToArray();
+
+        var crashContext = new ServerCrashContext(
+            WorkingDirectory,
+            _serverType,
+            State,
+            _intentionalStop,
+            exitCode,
+            StartTime,
+            snapshotLines);
+
+        var analysis = ServerCrashDetector.Analyze(crashContext);
+        LastCrashAnalysis = analysis;
+
+        if (analysis.IsCrash)
         {
-            var snapshotLines = _outputBuffer.ToArray().TakeLast(50);
-            CrashContext = $"--- CRASH DETECTED (Exit Code: {exitCode}) ---\n" + string.Join(Environment.NewLine, snapshotLines);
+            CrashContext = string.IsNullOrWhiteSpace(analysis.FullLogContext)
+                ? $"--- CRASH DETECTED ({analysis.Title}) ---\n{analysis.Summary}"
+                : $"--- CRASH DETECTED ({analysis.Title}) ---\n{analysis.Summary}\n\n{analysis.FullLogContext}";
+
             SetState(ServerState.Crashed);
-            OnServerCrashed?.Invoke(CrashContext!);
+            OnCrashAnalyzed?.Invoke(analysis);
+            OnServerCrashed?.Invoke(CrashContext);
         }
-        else SetState(ServerState.Stopped);
+        else
+        {
+            SetState(ServerState.Stopped);
+        }
+
         CloseSessionLog();
         OnExited?.Invoke(exitCode);
     }

@@ -53,6 +53,7 @@ public class ServerProcessManager
 
     public event Action<Guid, ServerState>? OnInstanceStateChanged;
     public event Action<Guid, string>? OnServerCrashed;
+    public event Action<Guid, CrashAnalysisResult>? OnCrashAnalyzed;
 
     public ConcurrentDictionary<Guid, ServerProcess> ActiveProcesses => _activeProcesses;
 
@@ -84,6 +85,7 @@ public class ServerProcessManager
         };
 
         serverProcess.OnServerCrashed += crashLog => OnServerCrashed?.Invoke(meta.Id, crashLog);
+        serverProcess.OnCrashAnalyzed += analysis => OnCrashAnalyzed?.Invoke(meta.Id, analysis);
 
         try
         {
