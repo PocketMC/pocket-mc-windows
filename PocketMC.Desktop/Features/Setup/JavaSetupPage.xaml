@@ -179,7 +179,7 @@
                                             VerticalAlignment="Center"
                                             Background="{Binding StatusBackground}">
                                         <TextBlock Text="{Binding VersionLabel}"
-                                                   FontSize="12" FontWeight="Bold"
+                                                   FontSize="14" FontWeight="Bold"
                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"/>
