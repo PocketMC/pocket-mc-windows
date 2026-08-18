@@ -835,7 +835,8 @@ button:disabled {
 }
 
 .selection-container {
-  max-width: 500px;
+  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -904,13 +905,18 @@ button:disabled {
 
 .instances-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
 }
 
 @media (max-width: 768px) {
+  .selection-container {
+    max-width: 500px;
+  }
+
   .instances-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 
