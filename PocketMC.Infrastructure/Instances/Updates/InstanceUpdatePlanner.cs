@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.IO;
 using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure.Php;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Infrastructure.Instances.Updates;
@@ -39,8 +40,26 @@ public sealed class InstanceUpdatePlanner
         }
 
         var targetCompatibility = new EngineCompatibility(targetMetadata.ServerType);
-        int currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(currentMetadata);
-        int targetJava = JavaRuntimeResolver.GetRequiredJavaVersion(targetMetadata);
+        int currentJava = 0;
+        int targetJava = 0;
+        string runtimeChangeText;
+
+        if (targetMetadata.ServerType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
+        {
+            string currentPhp = PhpRuntimeResolver.GetRequiredPhpVersion(currentMetadata);
+            string targetPhp = PhpRuntimeResolver.GetRequiredPhpVersion(targetMetadata);
+            runtimeChangeText = string.Equals(currentPhp, targetPhp, StringComparison.OrdinalIgnoreCase)
+                ? $"PHP {targetPhp} remains required"
+                : $"PHP {currentPhp} -> PHP {targetPhp}";
+        }
+        else
+        {
+            currentJava = JavaRuntimeResolver.GetRequiredJavaVersion(currentMetadata);
+            targetJava = JavaRuntimeResolver.GetRequiredJavaVersion(targetMetadata);
+            runtimeChangeText = currentJava == targetJava
+                ? $"Java {targetJava} remains required"
+                : $"Java {currentJava} -> Java {targetJava}";
+        }
 
         var plan = new InstanceUpdatePlan
         {
@@ -54,9 +73,7 @@ public sealed class InstanceUpdatePlanner
             TargetCompatibility = targetCompatibility,
             CurrentRequiredJavaVersion = currentJava,
             TargetRequiredJavaVersion = targetJava,
-            RequiredJavaVersionChangeText = currentJava == targetJava
-                ? $"Java {targetJava} remains required"
-                : $"Java {currentJava} -> Java {targetJava}",
+            RequiredJavaVersionChangeText = runtimeChangeText,
             ServerArtifactFileName = ResolveServerArtifactFileName(targetMetadata.ServerType)
         };
 

@@ -11,6 +11,7 @@ using PocketMC.Infrastructure.Diagnostics;
 using PocketMC.Desktop.Features.Instances.Services;
 using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure.Php;
 using PocketMC.Desktop.Features.Networking;
 using PocketMC.Application.Services.Players;
 using PocketMC.Desktop.Features.Settings;
