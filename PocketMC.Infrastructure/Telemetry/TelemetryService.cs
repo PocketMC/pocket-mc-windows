@@ -106,27 +106,57 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         }
     }
 
-    private async Task ReportingLoopAsync()
+    private async Task EnsureCountryFetchedAsync()
     {
-        // 0. Fetch Country Location once
-        if (!_hasFetchedCountry)
+        if (_hasFetchedCountry && _cachedCountry != "Unknown")
         {
-            try
+            return;
+        }
+
+        // Attempt 1: ip-api.com
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+            var res = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("http://ip-api.com/json/?fields=country");
+            if (res.TryGetProperty("country", out var cc) && cc.ValueKind == System.Text.Json.JsonValueKind.String)
             {
-                using var client = _httpClientFactory.CreateClient();
-                client.Timeout = TimeSpan.FromSeconds(5);
-                var res = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("http://ip-api.com/json/?fields=country");
-                if (res.TryGetProperty("country", out var cc) && cc.ValueKind == System.Text.Json.JsonValueKind.String)
+                var country = cc.GetString()?.Trim();
+                if (!string.IsNullOrWhiteSpace(country) && !country.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
                 {
-                    _cachedCountry = cc.GetString() ?? "Unknown";
+                    _cachedCountry = country;
+                    _hasFetchedCountry = true;
+                    return;
                 }
-                _hasFetchedCountry = true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Failed to fetch country from ip-api.");
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to fetch country from ip-api.");
+        }
+
+        // Attempt 2: HTTPS fallback via ipapi.co
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+            var country = await client.GetStringAsync("https://ipapi.co/country_name/");
+            if (!string.IsNullOrWhiteSpace(country) && !country.Contains("error", StringComparison.OrdinalIgnoreCase))
+            {
+                _cachedCountry = country.Trim();
+                _hasFetchedCountry = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to fetch country from ipapi.co fallback.");
+        }
+    }
+
+    private async Task ReportingLoopAsync()
+    {
+        // 0. Fetch Country Location
+        await EnsureCountryFetchedAsync();
 
         // 1. Check/Report one-time installation
         await EnsureInstallReportedAsync();
@@ -137,6 +167,11 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         {
             try
             {
+                if (_cachedCountry == "Unknown")
+                {
+                    await EnsureCountryFetchedAsync();
+                }
+
                 var settings = _settingsManager.Load();
                 if (settings.EnableTelemetry)
                 {
@@ -171,6 +206,11 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         {
             _logger.LogInformation("Reporting installation/upgrade to telemetry backend...");
 
+            if (_cachedCountry == "Unknown")
+            {
+                await EnsureCountryFetchedAsync();
+            }
+
             // Check if there are pre-existing configurations or servers in the app root to detect upgrade
             bool isUpgrade = false;
             try
@@ -190,6 +230,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             {
                 clientId = settings.TelemetryClientId.ToString(),
                 machineId = DeviceIdentifier.GetMachineId(),
+                appVersion = AppConfig.AppVersion,
                 isUpgrade = isUpgrade,
                 country = _cachedCountry
             };
