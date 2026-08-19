@@ -583,10 +583,40 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         }
     }
 
-    private void SetStatus(string message, bool isError)
+    private CancellationTokenSource? _statusCts;
+
+    private void SetStatus(string message, bool isError, int autoDismissSeconds = 5)
     {
+        _statusCts?.Cancel();
+        _statusCts?.Dispose();
+        _statusCts = null;
+
         StatusText = message;
         IsStatusError = isError;
+
+        if (!string.IsNullOrEmpty(message) && autoDismissSeconds > 0)
+        {
+            var cts = new CancellationTokenSource();
+            _statusCts = cts;
+            _ = ClearStatusAfterDelayAsync(cts.Token, autoDismissSeconds);
+        }
+    }
+
+    private async Task ClearStatusAfterDelayAsync(CancellationToken token, int seconds)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(seconds), token);
+            if (!token.IsCancellationRequested)
+            {
+                StatusText = "";
+                IsStatusError = false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore cancellation when a new status is posted
+        }
     }
 
     [RelayCommand]
