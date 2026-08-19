@@ -8,10 +8,11 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Controls.Primitives;
 using PocketMC.Application.Services.Shell;
+using PocketMC.Desktop.Features.Shell.Interfaces;
 
 namespace PocketMC.Desktop.Features.Settings
 {
-    public partial class ServerSettingsPage : Page, IDisposable
+    public partial class ServerSettingsPage : Page, IDisposable, ISupportsKeyboardBackNavigation
     {
         public ServerSettingsViewModel ViewModel { get; }
         private readonly MouseWheelEventHandler _previewMouseWheelHandler;
@@ -327,6 +328,17 @@ namespace PocketMC.Desktop.Features.Settings
                 TxtMotdRaw.CaretIndex = caretIndex + code.Length;
                 TxtMotdRaw.Focus();
             }
+        }
+
+        public bool HandleBackNavigation()
+        {
+            if (MotdEditorMode.Visibility == Visibility.Visible)
+            {
+                MotdDisplayMode.Visibility = Visibility.Visible;
+                MotdEditorMode.Visibility = Visibility.Collapsed;
+                return true;
+            }
+            return false;
         }
 
         private void ServerSettingsPage_KeyDown(object sender, KeyEventArgs e)

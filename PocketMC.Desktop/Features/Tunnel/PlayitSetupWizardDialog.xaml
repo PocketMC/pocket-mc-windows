@@ -6,6 +6,7 @@
         Width="700" Height="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        KeyboardNavigation.TabNavigation="Cycle"
         WindowCornerPreference="Round" ExtendsContentIntoTitleBar="True"
         WindowBackdropType="None" Background="{DynamicResource ApplicationBackgroundBrush}">
 
@@ -91,6 +92,7 @@
                                Icon="{ui:SymbolIcon Globe24}"
                                Appearance="Primary"
                                Cursor="Hand"
+                               AutomationProperties.Name="Open Playit setup page in browser"
                                Click="BtnOpenSetupPage_Click"/>
                 </StackPanel>
 
@@ -111,6 +113,7 @@
                                      Padding="10,8"
                                      TextWrapping="NoWrap"
                                      ToolTip="Paste the Playit setup code here."
+                                     AutomationProperties.Name="Playit setup code input"
                                      VerticalAlignment="Center"/>
                             <ui:Button x:Name="BtnWizardConnect"
                                        Grid.Column="1"
@@ -119,6 +122,7 @@
                                        Appearance="Primary"
                                        Cursor="Hand"
                                        Margin="8,0,0,0"
+                                       AutomationProperties.Name="Connect Playit agent"
                                        Click="BtnWizardConnect_Click"/>
                         </Grid>
                     </Border>
@@ -149,6 +153,8 @@
                        Appearance="Secondary"
                        Cursor="Hand"
                        Margin="0,0,8,0"
+                       IsCancel="True"
+                       AutomationProperties.Name="Cancel wizard"
                        Click="BtnCancel_Click"/>
             <ui:Button x:Name="BtnPrevStep"
                        Content="Previous"
@@ -157,12 +163,14 @@
                        Cursor="Hand"
                        Margin="0,0,8,0"
                        Visibility="Collapsed"
+                       AutomationProperties.Name="Previous wizard step"
                        Click="BtnPrevStep_Click"/>
             <ui:Button x:Name="BtnNextStep"
                        Content="Next"
                        Icon="{ui:SymbolIcon ArrowRight24}"
                        Appearance="Primary"
                        Cursor="Hand"
+                       AutomationProperties.Name="Next wizard step"
                        Click="BtnNextStep_Click"/>
         </StackPanel>
     </Grid>

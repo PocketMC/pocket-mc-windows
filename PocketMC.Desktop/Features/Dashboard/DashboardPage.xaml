@@ -147,7 +147,12 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <ui:Card Padding="16,14">
+                            <ui:Card Padding="16,14"
+                                     Focusable="True"
+                                     IsTabStop="True"
+                                     KeyDown="Card_KeyDown"
+                                     AutomationProperties.Name="{Binding Name, StringFormat='Server instance {0}'}"
+                                     AutomationProperties.HelpText="{Binding StatusText, StringFormat='Status: {0}'}">
                                 <ui:Card.Style>
                                     <Style TargetType="ui:Card" BasedOn="{StaticResource {x:Type ui:Card}}">
                                         <Setter Property="BorderThickness" Value="1"/>
@@ -156,6 +161,13 @@
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsFocused" Value="True">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                                <Setter Property="BorderThickness" Value="2"/>
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsRunning}" Value="True">
                                                 <Setter Property="BorderBrush" Value="#10b981"/>
@@ -199,13 +211,15 @@
                                                 </Border>
                                             </WrapPanel>
                                             <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" MaxHeight="32" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource NullOrEmptyToVis}}"/>
-                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center"
+                                                        AutomationProperties.LiveSetting="Polite"
+                                                        AutomationProperties.Name="{Binding StatusText, StringFormat='Server status: {0}'}">
                                                 <ui:ProgressRing IsIndeterminate="True" Width="14" Height="14" Margin="0,0,6,0" Visibility="{Binding BusySpinnerVisibility}" Foreground="{Binding StatusBrush}"/>
                                                 <ui:SymbolIcon Symbol="{Binding StatusSymbol}" FontSize="12" Margin="0,0,6,0" Visibility="{Binding StatusSymbolVisibility}" Foreground="{Binding StatusBrush}" VerticalAlignment="Center"/>
                                                 <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </StackPanel>
-                                        <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}" Click="BtnMoreOptions_Click" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Page}}" ToolTip="More options" VerticalAlignment="Top" Padding="6,4">
+                                        <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}" Click="BtnMoreOptions_Click" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Page}}" ToolTip="More options" AutomationProperties.Name="{Binding Name, StringFormat='More options for {0}'}" VerticalAlignment="Top" Padding="6,4">
                                             <ui:Button.ContextMenu>
                                                 <ContextMenu>
                                                     <MenuItem Command="{Binding PlacementTarget.Tag.TogglePinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}">
@@ -272,6 +286,7 @@
                                                        Command="{Binding DataContext.OpenPlayersCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                        CommandParameter="{Binding}"
                                                        ToolTip="Manage online players"
+                                                       AutomationProperties.Name="{Binding Name, StringFormat='Manage online players for {0}'}"
                                                        Cursor="Hand">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <TextBlock Text="PLAYERS" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
@@ -303,7 +318,7 @@
                                                         <Setter Property="Symbol" Value="Desktop24"/>
                                                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsBedrockServer}" Value="True">
+                                                             <DataTrigger Binding="{Binding IsBedrockServer}" Value="True">
                                                                 <Setter Property="Symbol" Value="Cube24"/>
                                                                 <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}"/>
                                                             </DataTrigger>
@@ -312,7 +327,7 @@
                                                 </ui:SymbolIcon.Style>
                                             </ui:SymbolIcon>
                                             <TextBlock Grid.Column="1" Text="{Binding TunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click"/>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click" ToolTip="Copy IP address" AutomationProperties.Name="{Binding Name, StringFormat='Copy primary IP address for {0}'}"/>
                                         </Grid>
                                     </Border>
 
@@ -330,7 +345,7 @@
                                                 <TextBlock Text="Local Network (LAN)" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="Bold"/>
                                                 <TextBlock Text="{Binding LanAddressDisplayText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
-                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyLanIp_Click"/>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyLanIp_Click" ToolTip="Copy Local Network LAN IP" AutomationProperties.Name="{Binding Name, StringFormat='Copy Local Network LAN IP for {0}'}"/>
                                         </Grid>
                                     </Border>
 
@@ -349,7 +364,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding NumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyNumericIp_Click"/>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyNumericIp_Click" ToolTip="Copy Numeric IP address" AutomationProperties.Name="{Binding Name, StringFormat='Copy numeric IP for {0}'}"/>
                                             </Grid>
                                         </Border>
                                     </StackPanel>
@@ -371,7 +386,7 @@
                                                     <TextBlock Text="Bedrock" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
                                                     <TextBlock Text="{Binding BedrockTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click"/>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click" ToolTip="Copy Bedrock IP address" AutomationProperties.Name="{Binding Name, StringFormat='Copy Bedrock IP address for {0}'}"/>
                                             </Grid>
                                         </Border>
                                         <!-- Skeleton: Geyser Bedrock numeric -->
@@ -386,7 +401,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding BedrockNumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockNumericIp_Click"/>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockNumericIp_Click" ToolTip="Copy Bedrock numeric IP" AutomationProperties.Name="{Binding Name, StringFormat='Copy Bedrock numeric IP for {0}'}"/>
                                             </Grid>
                                         </Border>
                                     </StackPanel>
@@ -395,16 +410,16 @@
                                 <!-- Actions -->
                                  <Grid Grid.Row="4">
                                      <UniformGrid Columns="2" Visibility="{Binding StoppedControlsVisibility}">
-                                         <ui:Button Content="Start" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                         <ui:Button Content="Logs" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                         <ui:Button Content="Files" Appearance="Secondary" Icon="{ui:SymbolIcon Folder24}" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                         <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                         <ui:Button Content="Start" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Start server {0}'}"/>
+                                         <ui:Button Content="Logs" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open logs for {0}'}"/>
+                                         <ui:Button Content="Files" Appearance="Secondary" Icon="{ui:SymbolIcon Folder24}" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open files folder for {0}'}"/>
+                                         <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open settings for {0}'}"/>
                                      </UniformGrid>
                                      <UniformGrid Columns="2" Visibility="{Binding RunningControlsVisibility}">
-                                         <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" Icon="{ui:SymbolIcon Stop24}" Command="{Binding DataContext.StopServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                         <ui:Button Content="Restart" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding DataContext.RestartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                         <ui:Button Content="Console" Appearance="Primary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
-                                         <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch"/>
+                                         <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" Icon="{ui:SymbolIcon Stop24}" Command="{Binding DataContext.StopServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Stop server {0}'}"/>
+                                         <ui:Button Content="Restart" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding DataContext.RestartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Restart server {0}'}"/>
+                                         <ui:Button Content="Console" Appearance="Primary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open live console for {0}'}"/>
+                                         <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open settings for {0}'}"/>
                                      </UniformGrid>
                                  </Grid>
                             </Grid>

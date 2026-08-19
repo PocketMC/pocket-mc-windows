@@ -8,6 +8,7 @@
         MinHeight="0" MaxHeight="720"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        KeyboardNavigation.TabNavigation="Cycle"
         WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="None"
@@ -31,7 +32,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
             <ui:SymbolIcon Symbol="Cube24" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"
-                       Foreground="#89B4FA"/>
+                        Foreground="#89B4FA"/>
             <TextBlock x:Name="TxtTitle" Text="Installing Modpack..."
                        FontSize="16" FontWeight="Bold"
                        Foreground="#89B4FA"
@@ -105,7 +106,7 @@
 
         <!-- Actions -->
         <StackPanel x:Name="ActionsPanel" Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-            <ui:Button x:Name="BtnCancel" Content="Cancel" Appearance="Primary" Click="BtnCancel_Click"/>
+            <ui:Button x:Name="BtnCancel" Content="Cancel" Appearance="Primary" IsCancel="True" AutomationProperties.Name="Cancel modpack installation" Click="BtnCancel_Click"/>
         </StackPanel>
 
     </Grid>

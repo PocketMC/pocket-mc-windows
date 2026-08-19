@@ -9,6 +9,7 @@
         MinHeight="0" MaxHeight="640"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        KeyboardNavigation.TabNavigation="Cycle"
         WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="None"
@@ -101,6 +102,7 @@
         <!-- Actions -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
             <ui:Button x:Name="BtnCancel" Content="Cancel" Click="BtnCancel_Click" MinWidth="80"
+                       IsCancel="True" AutomationProperties.Name="Cancel addon installation"
                        Appearance="Secondary"/>
         </StackPanel>
     </Grid>
