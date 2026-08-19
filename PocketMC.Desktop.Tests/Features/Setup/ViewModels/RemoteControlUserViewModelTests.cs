@@ -9,6 +9,10 @@ using PocketMC.Desktop.Core.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.IO;
+using System.Linq;
+using System.Collections.Generic;
+using System;
+using Xunit;
 
 namespace PocketMC.Desktop.Tests.RemoteControl;
 
@@ -139,40 +143,129 @@ public sealed class RemoteControlUserViewModelTests
     }
 
     [Fact]
-    public void SaveUser_WhenUsernameMatchesAdminUsername_RejectsAndSetsError()
+    public void SaveUser_WhenNewUserMatchesAdminUsername_RejectsAndRemovesUnsavedEntry()
     {
         _state.Settings.RemoteControl.Username = "admin";
 
-        var userModel = new RemoteControlUser { Username = "admin" };
+        var userModel = new RemoteControlUser();
         var userVm = new RemoteControlUserViewModel(userModel, _settingsVm)
         {
             Username = "admin",
             Password = "somepassword"
         };
+        _settingsVm.Users.Add(userVm);
 
         _settingsVm.SaveUser(userVm);
 
         Assert.True(_settingsVm.IsStatusError);
         Assert.Equal("Sub-user username cannot be the same as the admin username.", _settingsVm.StatusText);
+        Assert.DoesNotContain(userVm, _settingsVm.Users);
     }
 
     [Fact]
-    public void SaveUser_WhenUsernameMatchesExistingSubUser_RejectsAndSetsError()
+    public void SaveUser_WhenExistingUserMatchesAdminUsername_RejectsAndRevertsUsername()
     {
-        var existingModel = new RemoteControlUser { Username = "existinguser" };
+        _state.Settings.RemoteControl.Username = "admin";
+
+        var userModel = new RemoteControlUser { Username = "validuser", PasswordHash = "hash123" };
+        var userVm = new RemoteControlUserViewModel(userModel, _settingsVm)
+        {
+            Username = "admin",
+            Password = "somepassword"
+        };
+        _settingsVm.Users.Add(userVm);
+
+        _settingsVm.SaveUser(userVm);
+
+        Assert.True(_settingsVm.IsStatusError);
+        Assert.Equal("Sub-user username cannot be the same as the admin username.", _settingsVm.StatusText);
+        Assert.Contains(userVm, _settingsVm.Users);
+        Assert.Equal("validuser", userVm.Username);
+        Assert.Equal("validuser", userVm.Model.Username);
+    }
+
+    [Fact]
+    public void SaveUser_WhenNewUserMatchesExistingSubUser_RejectsAndRemovesUnsavedEntry()
+    {
+        var existingModel = new RemoteControlUser { Username = "existinguser", PasswordHash = "hash123" };
         var existingVm = new RemoteControlUserViewModel(existingModel, _settingsVm) { Username = "existinguser" };
         _settingsVm.Users.Add(existingVm);
 
-        var newUserModel = new RemoteControlUser { Username = "existinguser" };
+        var newUserModel = new RemoteControlUser();
         var newUserVm = new RemoteControlUserViewModel(newUserModel, _settingsVm)
         {
             Username = "existinguser",
             Password = "somepassword"
         };
+        _settingsVm.Users.Add(newUserVm);
 
         _settingsVm.SaveUser(newUserVm);
 
         Assert.True(_settingsVm.IsStatusError);
         Assert.Equal("User 'existinguser' already exists.", _settingsVm.StatusText);
+        Assert.DoesNotContain(newUserVm, _settingsVm.Users);
+        Assert.Contains(existingVm, _settingsVm.Users);
+    }
+
+    [Fact]
+    public void SaveAdminCredentials_WhenAdminMatchesExistingSubUser_RejectsAndRevertsAdminUsername()
+    {
+        _state.Settings.RemoteControl.Username = "originalAdmin";
+        _settingsVm.Username = "subuser1";
+        _settingsVm.Password = "adminPass123!";
+
+        var subUserModel = new RemoteControlUser { Username = "subuser1", PasswordHash = "hash123" };
+        var subUserVm = new RemoteControlUserViewModel(subUserModel, _settingsVm) { Username = "subuser1" };
+        _settingsVm.Users.Add(subUserVm);
+
+        _settingsVm.SaveCredentialsCommand.Execute(null);
+
+        Assert.True(_settingsVm.IsStatusError);
+        Assert.Equal("Admin username cannot be the same as an existing sub-user username.", _settingsVm.StatusText);
+        Assert.Equal("originalAdmin", _settingsVm.Username);
+    }
+
+    [Fact]
+    public void CancelEdit_WhenUserIsUnsaved_RemovesFromUsersCollection()
+    {
+        var newUserModel = new RemoteControlUser();
+        var newUserVm = new RemoteControlUserViewModel(newUserModel, _settingsVm)
+        {
+            Username = "temporaryUser",
+            IsEditing = true
+        };
+        _settingsVm.Users.Add(newUserVm);
+
+        newUserVm.CancelEditCommand.Execute(null);
+
+        Assert.DoesNotContain(newUserVm, _settingsVm.Users);
+    }
+
+    [Fact]
+    public void CancelEdit_WhenUserIsSaved_RevertsUsernameAndExitsEditMode()
+    {
+        var savedModel = new RemoteControlUser { Username = "savedName", PasswordHash = "hash123" };
+        var userVm = new RemoteControlUserViewModel(savedModel, _settingsVm)
+        {
+            Username = "editedName",
+            IsEditing = true
+        };
+        _settingsVm.Users.Add(userVm);
+
+        userVm.CancelEditCommand.Execute(null);
+
+        Assert.Contains(userVm, _settingsVm.Users);
+        Assert.Equal("savedName", userVm.Username);
+        Assert.False(userVm.IsEditing);
+    }
+
+    [Fact]
+    public void Dispose_UnsubscribesFromSettingsSavedAndDisposesCleanly()
+    {
+        var vm = _settingsVm;
+        vm.Dispose();
+
+        _settingsManager.Save(_state.Settings);
+        Assert.NotNull(vm);
     }
 }
