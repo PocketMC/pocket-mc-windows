@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -200,7 +202,12 @@ namespace PocketMC.Desktop.Features.Tunnel
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Playit setup wizard connect failed.");
-                ShowConnectError(ex.Message);
+                string msg = ex is HttpRequestException or System.Net.Sockets.SocketException
+                    ? "Unable to reach Playit provisioning services. Please check your internet connection and try again."
+                    : (ex.Message.Contains("http://", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains("https://", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains(".com", StringComparison.OrdinalIgnoreCase)
+                        ? "Could not reach Playit provisioning servers. Please check your connection."
+                        : ex.Message);
+                ShowConnectError(msg);
             }
             finally
             {
