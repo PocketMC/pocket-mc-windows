@@ -54,6 +54,20 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Immediately refresh dynamic links and proxies from GitHub in the background at the start of every session
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await AppConfig.RefreshRemoteConfigAsync();
+            }
+            catch
+            {
+                // Silently fallback to embedded/cached config
+            }
+        });
+
         AppStartupOptions startupOptions = AppStartupOptions.Parse(e.Args);
         WindowsToastNotificationService.RegisterApplication();
         ProtocolRegistrationService.Register();

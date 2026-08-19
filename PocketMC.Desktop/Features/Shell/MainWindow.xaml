@@ -104,6 +104,7 @@
                                    Padding="10,4"
                                    Command="{Binding RestartAndApplyUpdateCommand}"
                                    ToolTip="Stop all servers first if any are running"
+                                   AutomationProperties.Name="Restart and apply pending update"
                                    Visibility="{Binding IsUpdateReadyToApply, Converter={StaticResource BoolToVis}}"/>
 
                         <!-- Dismiss -->
@@ -111,7 +112,8 @@
                                    Appearance="Transparent"
                                    Padding="4"
                                    Command="{Binding DismissUpdateBannerCommand}"
-                                   ToolTip="Dismiss — update will apply on next restart"/>
+                                   ToolTip="Dismiss — update will apply on next restart"
+                                   AutomationProperties.Name="Dismiss update notification banner"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -196,15 +198,21 @@
                     <ui:NavigationViewItem x:Name="NavDashboard"
                                            Content="Dashboard"
                                            Icon="{ui:SymbolIcon Home24}"
-                                           TargetPageType="{x:Type dash:DashboardPage}"/>
+                                           TargetPageType="{x:Type dash:DashboardPage}"
+                                           AutomationProperties.Name="Dashboard (Ctrl+1)"
+                                           AutomationProperties.HelpText="View and manage all local Minecraft server instances."/>
                     <ui:NavigationViewItem x:Name="NavTunnel"
                                            Content="Tunnel"
                                            Icon="{ui:SymbolIcon Globe24}"
-                                           TargetPageType="{x:Type tunnel:TunnelPage}"/>
+                                           TargetPageType="{x:Type tunnel:TunnelPage}"
+                                           AutomationProperties.Name="Tunnel (Ctrl+2)"
+                                           AutomationProperties.HelpText="Configure Playit.gg public tunnels for multiplayer connectivity."/>
                     <ui:NavigationViewItem x:Name="NavRemoteControl"
                                            Content="Remote Control"
                                            Icon="{ui:SymbolIcon PhoneDesktop24}"
-                                           TargetPageType="{x:Type remote:RemoteControlPage}"/>
+                                           TargetPageType="{x:Type remote:RemoteControlPage}"
+                                           AutomationProperties.Name="Remote Control (Ctrl+3)"
+                                           AutomationProperties.HelpText="Manage web dashboard and remote device access credentials."/>
                 </ui:NavigationView.MenuItems>
 
                 <!-- ─── Footer ─── -->
@@ -212,15 +220,21 @@
                     <ui:NavigationViewItem x:Name="NavSettings"
                                            Content="Settings"
                                            Icon="{ui:SymbolIcon Settings24}"
-                                           TargetPageType="{x:Type setup:AppSettingsPage}"/>
+                                           TargetPageType="{x:Type setup:AppSettingsPage}"
+                                           AutomationProperties.Name="Settings (Ctrl+5 or Ctrl+,)"
+                                           AutomationProperties.HelpText="Configure global application preferences and cloud backups."/>
                     <ui:NavigationViewItem x:Name="NavJavaSetup"
                                            Content="Runtimes"
                                            Icon="{ui:SymbolIcon ArrowDownload24}"
-                                           TargetPageType="{x:Type setup:JavaSetupPage}"/>
+                                           TargetPageType="{x:Type setup:JavaSetupPage}"
+                                           AutomationProperties.Name="Runtimes (Ctrl+4)"
+                                           AutomationProperties.HelpText="Manage installed Java and PHP runtime versions."/>
                     <ui:NavigationViewItem x:Name="NavAbout"
                                            Content="About"
                                            Icon="{ui:SymbolIcon Info24}"
-                                           TargetPageType="{x:Type shell:AboutPage}"/>
+                                           TargetPageType="{x:Type shell:AboutPage}"
+                                           AutomationProperties.Name="About (Ctrl+6)"
+                                           AutomationProperties.HelpText="View application version, links, and license information."/>
                 </ui:NavigationView.FooterMenuItems>
 
             </ui:NavigationView>

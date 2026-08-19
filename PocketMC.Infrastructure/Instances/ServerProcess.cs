@@ -44,6 +44,7 @@ public class ServerProcess : IServerProcess, IDisposable
     private bool _disposed;
     private volatile bool _intentionalStop;
     private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
+    private readonly object _sessionLogLock = new();
     private StreamWriter? _sessionLogWriter;
     private const int MAX_BUFFER_LINES = 5000;
     private readonly object _playerListLock = new();
@@ -331,10 +332,13 @@ public class ServerProcess : IServerProcess, IDisposable
         _outputBuffer.Enqueue(sanitizedLine);
         if (_outputBuffer.Count > MAX_BUFFER_LINES) _outputBuffer.TryDequeue(out _);
 
-        try { _sessionLogWriter?.WriteLine(sanitizedLine); }
-        catch (Exception ex)
+        lock (_sessionLogLock)
         {
-            _logger.LogDebug(ex, "Failed to append to session log for instance {InstanceId}.", InstanceId);
+            try { _sessionLogWriter?.WriteLine(sanitizedLine); }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to append to session log for instance {InstanceId}.", InstanceId);
+            }
         }
 
         if (isError) OnErrorLine?.Invoke(sanitizedLine);
@@ -532,12 +536,15 @@ public class ServerProcess : IServerProcess, IDisposable
 
     private void CloseSessionLog()
     {
-        try { _sessionLogWriter?.Dispose(); }
-        catch (Exception ex)
+        lock (_sessionLogLock)
         {
-            _logger.LogDebug(ex, "Failed to close session log for instance {InstanceId}.", InstanceId);
+            try { _sessionLogWriter?.Dispose(); }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to close session log for instance {InstanceId}.", InstanceId);
+            }
+            finally { _sessionLogWriter = null; }
         }
-        finally { _sessionLogWriter = null; }
     }
 
     private void SetState(ServerState newState)

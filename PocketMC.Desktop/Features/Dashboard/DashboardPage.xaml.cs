@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Infrastructure;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -161,6 +161,21 @@ namespace PocketMC.Desktop.Features.Dashboard
                 if (vm.BedrockIpDisplayText == "\u2713 Copied")
                 {
                     vm.BedrockIpDisplayText = null!; // resets to computed property
+                }
+            }
+        }
+
+        private void Card_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter || e.Key == Key.Space)
+            {
+                if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm)
+                {
+                    if (ViewModel.OpenConsoleCommand.CanExecute(vm))
+                    {
+                        ViewModel.OpenConsoleCommand.Execute(vm);
+                        e.Handled = true;
+                    }
                 }
             }
         }

@@ -58,7 +58,7 @@ namespace PocketMC.Desktop.Features.Console
     /// Dedicated console page for viewing server output and sending commands.
     /// Uses DispatcherTimer batching for high-performance rendering.
     /// </summary>
-    public partial class ServerConsolePage : Page, INotifyPropertyChanged, ITitleBarContextSource
+    public partial class ServerConsolePage : Page, INotifyPropertyChanged, ITitleBarContextSource, ISupportsKeyboardBackNavigation
     {
         private readonly IAppNavigationService _navigationService;
         private readonly InstanceMetadata _metadata;
@@ -256,6 +256,14 @@ namespace PocketMC.Desktop.Features.Console
             {
                 LockShellScrollHost();
                 EnsureLogScrollViewer();
+                if (TxtCommand.IsEnabled)
+                {
+                    TxtCommand.Focus();
+                }
+                else
+                {
+                    TxtLogSearch.Focus();
+                }
             }));
         }
 
@@ -581,8 +589,34 @@ namespace PocketMC.Desktop.Features.Console
             await SendCommand();
         }
 
+        public bool HandleBackNavigation()
+        {
+            if (!_navigationService.NavigateBack())
+            {
+                return _navigationService.NavigateToDashboard();
+            }
+            return true;
+        }
+
         private void Page_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            // Escape to go back, or clear active command input if typed
+            if (e.Key == Key.Escape)
+            {
+                if (TxtCommand.IsFocused && !string.IsNullOrEmpty(TxtCommand.Text))
+                {
+                    TxtCommand.Text = string.Empty;
+                    e.Handled = true;
+                    return;
+                }
+
+                if (HandleBackNavigation())
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+
             // Intercept '/' key (Oem2 or Divide) to focus command box
             if ((e.Key == Key.Oem2 || e.Key == Key.Divide) && !TxtCommand.IsFocused)
             {
@@ -640,7 +674,7 @@ namespace PocketMC.Desktop.Features.Console
                 }
                 else
                 {
-                    Keyboard.ClearFocus();
+                    HandleBackNavigation();
                 }
                 e.Handled = true;
                 return;

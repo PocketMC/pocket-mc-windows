@@ -326,4 +326,70 @@ public sealed class RemoteControlInstanceAccessIntegrationTests : IAsyncLifetime
         Assert.False(status.AllowRemoteFileManager);
         Assert.False(status.AllowRemoteServerBackups);
     }
+
+    [Fact]
+    public async Task FilesEndpoint_WhenPathEscapesInstanceRoot_ReturnsBadRequest()
+    {
+        await LoginAsync("admin", "adminpass");
+
+        var response = await _client.GetAsync($"/api/instances/{_instanceA.Id}/files?path=../../windows/system32");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task BackupEndpoint_WhenConcurrentBackupsTriggered_ReturnsConflictForDuplicate()
+    {
+        await LoginAsync("admin", "adminpass");
+
+        var backupMock = new Mock<PocketMC.Infrastructure.Backups.BackupService>(null!, null!, null!, null!, null!);
+        var tcs = new TaskCompletionSource<bool>();
+        backupMock.Setup(b => b.RunBackupAsync(It.IsAny<InstanceMetadata>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<Action<string>?>(), It.IsAny<IProgress<double>?>()))
+            .Returns(async () => { await tcs.Task; });
+
+        var localNet = new LocalNetworkAddressService();
+        var hostWithBackup = new RemoteDashboardHost(
+            _state,
+            null!,
+            null!,
+            null!,
+            null!,
+            new RemoteAuditLogService(),
+            new RemoteRequestLimiter(),
+            _lifecycleMock.Object,
+            new RemoteTunnelManager(_state, Array.Empty<IRemoteTunnelProvider>()),
+            localNet,
+            _authService,
+            NullLogger<RemoteDashboardHost>.Instance,
+            _instanceRegistry,
+            null,
+            backupMock.Object);
+
+        int backupPort = GetAvailableTcpPort();
+        _state.Settings.RemoteControl.Port = backupPort;
+        await hostWithBackup.StartAsync();
+
+        try
+        {
+            var cookieContainer = new CookieContainer();
+            var handler = new HttpClientHandler { CookieContainer = cookieContainer };
+            using var client = new HttpClient(handler) { BaseAddress = new Uri($"http://127.0.0.1:{backupPort}") };
+
+            var loginRes = await client.PostAsJsonAsync("/api/login", new RemoteLoginRequest { Username = "admin", Password = "adminpass" });
+            Assert.Equal(HttpStatusCode.OK, loginRes.StatusCode);
+
+            var firstCall = client.PostAsync($"/api/instances/{_instanceA.Id}/backups", null);
+            await Task.Delay(100);
+            var secondCall = await client.PostAsync($"/api/instances/{_instanceA.Id}/backups", null);
+
+            Assert.Equal(HttpStatusCode.Conflict, secondCall.StatusCode);
+
+            tcs.SetResult(true);
+            var firstRes = await firstCall;
+            Assert.Equal(HttpStatusCode.OK, firstRes.StatusCode);
+        }
+        finally
+        {
+            await hostWithBackup.StopAsync();
+        }
+    }
 }

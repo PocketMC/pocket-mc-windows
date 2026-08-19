@@ -168,7 +168,8 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(ct);
-            throw new HttpRequestException($"Google proxy exchange failed (HTTP {response.StatusCode}): {errorContent}");
+            _logger.LogWarning("Google proxy exchange failed (HTTP {StatusCode}): {ErrorContent}", response.StatusCode, errorContent);
+            throw new HttpRequestException("Authentication service was unable to complete the request. Please try again later.");
         }
 
         var json = await response.Content.ReadAsStringAsync(ct);
@@ -441,7 +442,11 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
             }
         }
 
-        if (lastException != null) throw lastException;
-        throw new HttpRequestException($"All proxy backends failed for {path}");
+        if (lastException != null)
+        {
+            _logger.LogWarning(lastException, "All authentication proxy backends failed for {Path}.", path);
+        }
+
+        throw new HttpRequestException("Unable to reach authentication services. Please check your internet connection and try again.");
     }
 }

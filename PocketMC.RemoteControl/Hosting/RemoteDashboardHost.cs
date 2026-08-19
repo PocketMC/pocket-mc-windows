@@ -19,6 +19,7 @@ using PocketMC.Domain.Models;
 using PocketMC.RemoteControl.Services;
 using PocketMC.RemoteControl.Tunnels;
 using PocketMC.Application.Services.Shell;
+using PocketMC.Domain.Security;
 using System.Security.Claims;
 
 namespace PocketMC.RemoteControl.Hosting;
@@ -944,9 +945,13 @@ public sealed class RemoteDashboardHost
             
             if (_backupService == null) return Results.BadRequest(new { error = "Backup service is unavailable" });
 
+            if (!_activeBackups.TryAdd(instanceId, true))
+            {
+                return Results.Conflict(new { error = "A backup is already running for this instance." });
+            }
+
             _auditLogService.Log("remote", "backup.create", instanceId, "Background Backup");
             
-            _activeBackups[instanceId] = true;
             _ = Task.Run(async () => 
             {
                 try
@@ -1140,15 +1145,14 @@ public sealed class RemoteDashboardHost
     private static string? GetSanitizedPath(string baseDir, string relativePath)
     {
         if (string.IsNullOrWhiteSpace(baseDir) || !Directory.Exists(baseDir)) return null;
-        string fullBase = Path.GetFullPath(baseDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-        string combined = Path.GetFullPath(Path.Combine(fullBase, (relativePath ?? string.Empty).TrimStart('/', '\\')));
-        if (!combined.StartsWith(fullBase + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(combined, fullBase, StringComparison.OrdinalIgnoreCase))
+        var normalizedRel = (relativePath ?? string.Empty).TrimStart('/', '\\');
+        if (string.IsNullOrWhiteSpace(normalizedRel))
         {
-            return null;
+            return Path.GetFullPath(baseDir);
         }
-        return combined;
+
+        return PathSafety.ValidateContainedPath(baseDir, normalizedRel);
     }
 }
 

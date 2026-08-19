@@ -61,7 +61,7 @@ public class BackupService
         "session.lock"
     };
 
-    public async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, bool isManualBackup = true, Action<string>? onProgress = null, IProgress<double>? progress = null)
+    public virtual async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, bool isManualBackup = true, Action<string>? onProgress = null, IProgress<double>? progress = null)
     {
         var localResult = await CreateLocalBackupAsync(metadata, serverDir, onProgress, progress);
 

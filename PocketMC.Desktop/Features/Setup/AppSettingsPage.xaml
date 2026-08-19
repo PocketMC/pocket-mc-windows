@@ -711,23 +711,52 @@
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
-                        <Grid Margin="0,0,0,12">
+                        <!-- Navigation Section -->
+                        <TextBlock Text="Navigation &amp; Views" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Navigate Back / Cancel" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="Navigate Backward / Cancel" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Escape" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="PageUp" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="or" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="Escape" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Navigate Forward" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="PageDown" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Switch Views (Dashboard, Tunnel, Remote, Runtimes, Settings, About)" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Alt" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="Left Arrow" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="1 - 6" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -737,7 +766,27 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="New Instance" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="Open Settings" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="," FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Dashboard & Actions Section -->
+                        <TextBlock Text="Dashboard &amp; Actions" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,4,0,8"/>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Create New Instance" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
                                     <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
@@ -749,12 +798,12 @@
                             </StackPanel>
                         </Grid>
 
-                        <Grid Margin="0,0,0,12">
+                        <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Refresh Lists / Content" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="Refresh Instances / Status" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
                                     <TextBlock Text="F5" FontSize="12" FontWeight="SemiBold"/>
@@ -770,15 +819,103 @@
                             </StackPanel>
                         </Grid>
 
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Open Focused Server Card Console" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Enter" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="or" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="Space" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
                         <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Confirm Default Action" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="Save Settings" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="S" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Console Page Section -->
+                        <TextBlock Text="Server Console" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,4,0,8"/>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Focus Command Prompt" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="Enter" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="/" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Search Console Logs" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="F" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Clear Console Logs" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="L" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Command History Previous / Next" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
+                                    <TextBlock Text="Up Arrow" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Text="/" VerticalAlignment="Center" Margin="2,0,6,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="Down Arrow" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>

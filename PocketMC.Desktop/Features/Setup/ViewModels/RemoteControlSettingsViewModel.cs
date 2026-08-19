@@ -18,7 +18,7 @@ using System.Linq;
 
 namespace PocketMC.Desktop.Features.Setup.ViewModels;
 
-public sealed partial class RemoteControlSettingsViewModel : ObservableObject
+public sealed partial class RemoteControlSettingsViewModel : ObservableObject, IDisposable
 {
     public sealed record RemoteAccessModeOption(RemoteAccessMode Mode, string Label);
 
@@ -173,6 +173,15 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(user.Username))
         {
             SetStatus("Username cannot be empty.", true);
+            if (string.IsNullOrEmpty(user.PasswordHash))
+            {
+                Users.Remove(user);
+            }
+            else
+            {
+                user.Username = user.SavedUsername;
+                user.Model.Username = user.SavedUsername;
+            }
             return;
         }
 
@@ -183,6 +192,15 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         if (!string.IsNullOrEmpty(adminUser) && string.Equals(trimmedUsername, adminUser.Trim(), StringComparison.OrdinalIgnoreCase))
         {
             SetStatus("Sub-user username cannot be the same as the admin username.", true);
+            if (string.IsNullOrEmpty(user.PasswordHash))
+            {
+                Users.Remove(user);
+            }
+            else
+            {
+                user.Username = user.SavedUsername;
+                user.Model.Username = user.SavedUsername;
+            }
             return;
         }
 
@@ -190,6 +208,15 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         if (Users.Any(u => u != user && string.Equals(u.Username?.Trim(), trimmedUsername, StringComparison.OrdinalIgnoreCase)))
         {
             SetStatus($"User '{trimmedUsername}' already exists.", true);
+            if (string.IsNullOrEmpty(user.PasswordHash))
+            {
+                Users.Remove(user);
+            }
+            else
+            {
+                user.Username = user.SavedUsername;
+                user.Model.Username = user.SavedUsername;
+            }
             return;
         }
 
@@ -202,6 +229,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         var hashed = _authenticationService.HashPassword(user.Password);
 
         user.Username = trimmedUsername;
+        user.SavedUsername = trimmedUsername;
         user.PasswordHash = hashed;
         user.ProtectedPassword = PocketMC.Infrastructure.Security.DataProtector.Protect(user.Password);
 
@@ -389,6 +417,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(Username))
         {
             SetStatus("Username cannot be empty.", true);
+            Username = _applicationState.Settings.RemoteControl.Username ?? "";
             return;
         }
         
@@ -404,6 +433,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         if (Users.Any(u => string.Equals(u.Username?.Trim(), trimmedAdminUsername, StringComparison.OrdinalIgnoreCase)))
         {
             SetStatus("Admin username cannot be the same as an existing sub-user username.", true);
+            Username = _applicationState.Settings.RemoteControl.Username ?? "";
             return;
         }
 
@@ -619,6 +649,20 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
         }
     }
 
+    public void Dispose()
+    {
+        _settingsManager.SettingsSaved -= OnSettingsSaved;
+
+        if (_instanceRegistry != null)
+        {
+            _instanceRegistry.InstancesChanged -= OnInstancesChanged;
+        }
+
+        _statusCts?.Cancel();
+        _statusCts?.Dispose();
+        _statusCts = null;
+    }
+
     [RelayCommand]
     private async Task CopyLocalUrl()
     {
@@ -636,7 +680,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     {
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
         {
-            FileName = "https://discord.gg/kTSUppTJ5C",
+            FileName = PocketMC.Infrastructure.Configuration.AppConfig.LinkDiscord,
             UseShellExecute = true
         });
     }
@@ -691,6 +735,8 @@ public partial class RemoteControlUserViewModel : ObservableObject
 
     public ObservableCollection<UserInstanceAccessItemViewModel> AvailableInstances { get; } = new();
 
+    public string SavedUsername { get; set; } = "";
+
     public RemoteControlUserViewModel(
         RemoteControlUser model,
         RemoteControlSettingsViewModel parent,
@@ -698,7 +744,8 @@ public partial class RemoteControlUserViewModel : ObservableObject
     {
         Model = model;
         _parent = parent;
-        _username = model.Username;
+        _username = model.Username ?? "";
+        SavedUsername = model.Username ?? "";
         _password = "";
         _allowRemoteConsoleCommands = model.AllowRemoteConsoleCommands;
         _allowRemotePlayerActions = model.AllowRemotePlayerActions;
@@ -835,9 +882,18 @@ public partial class RemoteControlUserViewModel : ObservableObject
     partial void OnAllowRemoteServerBackupsChanged(bool value) { Model.AllowRemoteServerBackups = value; _parent.SaveSettings(); }
     partial void OnAllowAllInstancesChanged(bool value) { Model.AllowAllInstances = value; _parent.SaveSettings(); }
 
+    partial void OnIsEditingChanged(bool value)
+    {
+        if (!value && string.IsNullOrEmpty(PasswordHash))
+        {
+            _parent.Users.Remove(this);
+        }
+    }
+
     [RelayCommand]
     private void Edit()
     {
+        SavedUsername = Username ?? "";
         if (!string.IsNullOrEmpty(ProtectedPassword))
         {
             try
@@ -850,6 +906,21 @@ public partial class RemoteControlUserViewModel : ObservableObject
             }
         }
         IsEditing = true;
+    }
+
+    [RelayCommand]
+    private void CancelEdit()
+    {
+        if (string.IsNullOrEmpty(PasswordHash))
+        {
+            _parent.Users.Remove(this);
+        }
+        else
+        {
+            Username = SavedUsername;
+            Model.Username = SavedUsername;
+            IsEditing = false;
+        }
     }
 
     [RelayCommand]

@@ -36,6 +36,7 @@
                            FontSize="12"
                            Padding="12,6"
                            Margin="0,0,8,0"
+                           AutomationProperties.Name="Open Network Status diagnostics"
                            Click="BtnNetworkStatus_Click"
                            Cursor="Hand"/>
                 <ui:Button x:Name="BtnPortsMap"
@@ -44,6 +45,7 @@
                            Appearance="Secondary"
                            FontSize="12"
                            Padding="12,6"
+                           AutomationProperties.Name="Open Interactive Ports Map"
                            Click="BtnPortsMap_Click"
                            Cursor="Hand"/>
             </StackPanel>
@@ -114,6 +116,7 @@
                                    Content="Download Agent"
                                    Icon="{ui:SymbolIcon ArrowDownload24}"
                                    Appearance="Primary"
+                                   AutomationProperties.Name="Download Playit agent binary"
                                    Click="BtnDownloadAgent_Click"
                                    Cursor="Hand"
                                    Margin="0,0,8,0"/>
@@ -121,6 +124,7 @@
                                    Content="Setup Agent"
                                    Icon="{ui:SymbolIcon PersonAdd24}"
                                    Appearance="Secondary"
+                                   AutomationProperties.Name="Setup Playit agent"
                                    Click="BtnSetupAgent_Click"
                                    Cursor="Hand"
                                    Margin="0,0,8,0"/>
@@ -128,6 +132,7 @@
                                    Content="Connect"
                                    Icon="{ui:SymbolIcon Play24}"
                                    Appearance="Secondary"
+                                   AutomationProperties.Name="Connect Playit tunnel"
                                    Click="BtnConnect_Click"
                                    Cursor="Hand"
                                    Margin="0,0,8,0"/>
@@ -135,6 +140,7 @@
                                    Content="Disconnect"
                                    Icon="{ui:SymbolIcon Stop24}"
                                    Appearance="Secondary"
+                                   AutomationProperties.Name="Disconnect Playit tunnel"
                                    Click="BtnDisconnect_Click"
                                    Cursor="Hand"
                                    Margin="0,0,8,0"/>
@@ -142,6 +148,7 @@
                                    Content="Delete Agent"
                                    Icon="{ui:SymbolIcon Delete24}"
                                    Appearance="Secondary"
+                                   AutomationProperties.Name="Delete Playit agent binary"
                                    Click="BtnDeleteAgent_Click"
                                    Cursor="Hand"
                                    Margin="0,0,8,0"/>
@@ -149,6 +156,7 @@
                                    Content="Refresh"
                                    Icon="{ui:SymbolIcon ArrowSync24}"
                                    Appearance="Secondary"
+                                   AutomationProperties.Name="Refresh Playit tunnel status"
                                    Click="BtnRefresh_Click"
                                    Cursor="Hand"/>
                     </StackPanel>
@@ -178,6 +186,7 @@
                                    FontSize="11"
                                    Padding="10,5"
                                    Margin="0,0,8,0"
+                                   AutomationProperties.Name="Manage Playit agents online"
                                    Click="BtnManageAgents_Click"
                                    Cursor="Hand"/>
                         <ui:Button Content="Visit Playit.gg"
@@ -185,6 +194,7 @@
                                    Appearance="Secondary"
                                    FontSize="11"
                                    Padding="10,5"
+                                   AutomationProperties.Name="Visit Playit.gg website"
                                    Click="BtnVisitPlayit_Click"
                                    Cursor="Hand"/>
                     </StackPanel>

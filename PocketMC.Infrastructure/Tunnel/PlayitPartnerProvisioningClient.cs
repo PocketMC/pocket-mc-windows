@@ -151,10 +151,16 @@ public sealed class PlayitPartnerProvisioningClient
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to provision a Playit partner agent.");
+            string userFriendlyMessage = ex is HttpRequestException or System.Net.Sockets.SocketException
+                ? "Unable to reach Playit provisioning services. Please check your internet connection and try again."
+                : (ex.Message.Contains("http://", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains("https://", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains(".com", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains("No such host", StringComparison.OrdinalIgnoreCase)
+                    ? "Could not connect to Playit provisioning services. Please check your connection and try again."
+                    : ex.Message);
+
             return new PlayitPartnerCreateAgentResult
             {
                 Success = false,
-                ErrorMessage = ex.Message
+                ErrorMessage = userFriendlyMessage
             };
         }
     }
@@ -175,8 +181,6 @@ public sealed class PlayitPartnerProvisioningClient
                 if (response.IsSuccessStatusCode)
                     return response;
                 
-                // Dispose non-success to try next, or wait... maybe we want to return non-success if ALL fail?
-                // For simplicity, let's just return the last non-success response if all fail.
                 if (url == urls[urls.Count - 1]) return response;
                 response.Dispose();
             }
@@ -187,7 +191,11 @@ public sealed class PlayitPartnerProvisioningClient
             }
         }
 
-        if (lastException != null) throw lastException;
-        throw new HttpRequestException("All Playit partner backends failed.");
+        if (lastException != null)
+        {
+            _logger.LogWarning(lastException, "All Playit partner backends failed.");
+        }
+
+        throw new HttpRequestException("Unable to reach Playit provisioning services. Please check your internet connection and try again.");
     }
 }

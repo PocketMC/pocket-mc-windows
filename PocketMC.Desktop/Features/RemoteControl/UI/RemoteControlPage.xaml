@@ -477,7 +477,10 @@
                                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Password" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
                                             <ui:PasswordBox Grid.Row="1" Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter password" Margin="0,0,0,12"/>
 
-                                            <ui:Button Grid.Row="2" Grid.Column="1" Content="Save Credentials" Appearance="Primary" Command="{Binding SaveCommand}" HorizontalAlignment="Left"/>
+                                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                                <ui:Button Content="Save Credentials" Appearance="Primary" Command="{Binding SaveCommand}" Margin="0,0,8,0"/>
+                                                <ui:Button Content="Cancel" Appearance="Secondary" Command="{Binding CancelEditCommand}"/>
+                                            </StackPanel>
                                         </Grid>
 
                                         <TextBlock Text="Permissions" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>

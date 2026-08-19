@@ -548,6 +548,49 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         Activate();
     }
 
+    protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+    {
+        base.OnPreviewMouseDown(e);
+
+        if (e.Handled) return;
+        if (_viewModel.IsNavigationLocked) return;
+
+        if (e.ChangedButton == MouseButton.XButton1)
+        {
+            if (TryNavigateBack())
+            {
+                e.Handled = true;
+            }
+        }
+        else if (e.ChangedButton == MouseButton.XButton2)
+        {
+            if (TryNavigateForward())
+            {
+                e.Handled = true;
+            }
+        }
+    }
+
+    private bool TryNavigateBack()
+    {
+        if (_currentPage is ISupportsKeyboardBackNavigation support)
+        {
+            if (support.HandleBackNavigation())
+            {
+                return true;
+            }
+        }
+
+        var nav = _serviceProvider.GetService<IAppNavigationService>();
+        return nav != null && nav.NavigateBack();
+    }
+
+    private bool TryNavigateForward()
+    {
+        var nav = _serviceProvider.GetService<IAppNavigationService>();
+        return nav != null && nav.NavigateForward();
+    }
+
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
@@ -557,33 +600,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         // If navigation is locked (e.g. initial setup), ignore hotkeys
         if (_viewModel.IsNavigationLocked) return;
 
-        // Escape to go back, but only if not typing in a text input
+        // Escape to go back
         if (e.Key == Key.Escape)
-        {
-            var focused = FocusManager.GetFocusedElement(this);
-            if (focused is not System.Windows.Controls.Primitives.TextBoxBase &&
-                focused is not System.Windows.Controls.PasswordBox)
-            {
-                if (_currentPage is ISupportsKeyboardBackNavigation support)
-                {
-                    if (support.HandleBackNavigation())
-                    {
-                        e.Handled = true;
-                        return;
-                    }
-                }
-
-                var nav = _serviceProvider.GetService<IAppNavigationService>();
-                if (nav != null && nav.NavigateBack())
-                {
-                    e.Handled = true;
-                    return;
-                }
-            }
-        }
-
-        // Alt + Left or BrowserBack to navigate back
-        if ((e.Key == Key.Left && Keyboard.Modifiers == ModifierKeys.Alt) || e.Key == Key.BrowserBack)
         {
             if (_currentPage is ISupportsKeyboardBackNavigation support)
             {
@@ -594,9 +612,46 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
                 }
             }
 
-            var nav = _serviceProvider.GetService<IAppNavigationService>();
-            if (nav != null && nav.NavigateBack())
+            var focused = FocusManager.GetFocusedElement(this);
+            if (focused is not System.Windows.Controls.Primitives.TextBoxBase &&
+                focused is not System.Windows.Controls.PasswordBox)
             {
+                var nav = _serviceProvider.GetService<IAppNavigationService>();
+                if (nav != null && nav.NavigateBack())
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
+
+        // PageUp or BrowserBack to navigate back
+        if (e.Key == Key.PageUp || e.Key == Key.BrowserBack)
+        {
+            if (TryNavigateBack())
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // PageDown or BrowserForward to navigate forward
+        if (e.Key == Key.PageDown || e.Key == Key.BrowserForward)
+        {
+            if (TryNavigateForward())
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // F5 or Ctrl + R to refresh dashboard instances
+        if (e.Key == Key.F5 || (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control))
+        {
+            var dashboardVm = _serviceProvider.GetService<DashboardViewModel>();
+            if (dashboardVm != null)
+            {
+                dashboardVm.RefreshInstancesCommand.Execute(null);
                 e.Handled = true;
                 return;
             }
@@ -640,11 +695,11 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
                         break;
                     case Key.D4:
                     case Key.NumPad4:
-                        handled = nav.NavigateToShellPage(typeof(AppSettingsPage));
+                        handled = nav.NavigateToShellPage(typeof(JavaSetupPage));
                         break;
                     case Key.D5:
                     case Key.NumPad5:
-                        handled = nav.NavigateToShellPage(typeof(JavaSetupPage));
+                        handled = nav.NavigateToShellPage(typeof(AppSettingsPage));
                         break;
                     case Key.D6:
                     case Key.NumPad6:
