@@ -44,15 +44,27 @@ public sealed record ControlledBackNavigationResult(
     string? TargetEntryId,
     bool TargetsShellRoute);
 
+public sealed record ControlledForwardNavigationResult(
+    bool Success,
+    string? TargetEntryId,
+    NavigationRouteKind TargetRoute);
+
 public sealed class ControlledNavigationStack
 {
     private readonly List<ControlledNavigationEntry> _entries = new();
+    private readonly List<ControlledNavigationEntry> _forwardEntries = new();
 
     public IReadOnlyList<ControlledNavigationEntry> Entries => _entries;
+    public IReadOnlyList<ControlledNavigationEntry> ForwardEntries => _forwardEntries;
 
     public ControlledNavigationEntry? Current => _entries.Count > 0 ? _entries[^1] : null;
+    public bool CanNavigateForward => _forwardEntries.Count > 0;
 
-    public void Clear() => _entries.Clear();
+    public void Clear()
+    {
+        _entries.Clear();
+        _forwardEntries.Clear();
+    }
 
     public ControlledNavigationEntry Push(
         NavigationRouteKind route,
@@ -63,6 +75,8 @@ public sealed class ControlledNavigationStack
         {
             _entries.Clear();
         }
+
+        _forwardEntries.Clear();
 
         if (backTarget.Kind == NavigationBackTargetKind.PreviousDetail && _entries.Count == 0)
         {
@@ -83,6 +97,7 @@ public sealed class ControlledNavigationStack
 
         ControlledNavigationEntry removed = _entries[^1];
         _entries.RemoveAt(_entries.Count - 1);
+        _forwardEntries.Add(removed);
 
         if (removed.BackTarget.Kind == NavigationBackTargetKind.PreviousDetail)
         {
@@ -101,12 +116,28 @@ public sealed class ControlledNavigationStack
                 false);
         }
 
-        _entries.Clear();
         return new ControlledBackNavigationResult(
             true,
             removed.EntryId,
             removed.BackTarget.Route,
             null,
             true);
+    }
+
+    public ControlledForwardNavigationResult NavigateForward()
+    {
+        if (_forwardEntries.Count == 0)
+        {
+            return new ControlledForwardNavigationResult(false, null, NavigationRouteKind.Dashboard);
+        }
+
+        ControlledNavigationEntry target = _forwardEntries[^1];
+        _forwardEntries.RemoveAt(_forwardEntries.Count - 1);
+        _entries.Add(target);
+
+        return new ControlledForwardNavigationResult(
+            true,
+            target.EntryId,
+            target.Route);
     }
 }

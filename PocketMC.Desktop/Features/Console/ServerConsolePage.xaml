@@ -30,48 +30,61 @@
             </Grid.ColumnDefinitions>
 
             <ui:Button Grid.Column="0" Content="Back" Appearance="Secondary"
-                       Icon="{ui:SymbolIcon ArrowLeft24}" Click="BtnBack_Click" Cursor="Hand" Margin="0,0,12,0"/>
+                       Icon="{ui:SymbolIcon ArrowLeft24}" Click="BtnBack_Click" Cursor="Hand" Margin="0,0,12,0"
+                       ToolTip="Back to Dashboard (Escape)"
+                       AutomationProperties.Name="Back to Dashboard (Escape)"/>
 
             <ToggleButton x:Name="BtnAutoScroll" Grid.Column="1" Content="Auto-scroll"
-                          IsChecked="True" VerticalAlignment="Center" Margin="0,0,12,0" Cursor="Hand" Padding="12,5"/>
+                          IsChecked="True" VerticalAlignment="Center" Margin="0,0,12,0" Cursor="Hand" Padding="12,5"
+                          AutomationProperties.Name="Toggle console auto-scrolling"/>
 
             <ui:Button Grid.Column="2" Content="Copy Logs" Appearance="Secondary"
-                       Icon="{ui:SymbolIcon Copy24}" Click="BtnCopyLogs_Click" Cursor="Hand" Margin="0,0,8,0"/>
+                       Icon="{ui:SymbolIcon Copy24}" Click="BtnCopyLogs_Click" Cursor="Hand" Margin="0,0,8,0"
+                       ToolTip="Copy logs to clipboard"
+                       AutomationProperties.Name="Copy console logs to clipboard"/>
 
             <ui:TextBox x:Name="TxtLogSearch" Grid.Column="3" PlaceholderText="Search logs..."
                         Margin="0,0,4,0" MinWidth="160" VerticalAlignment="Center"
                         TextChanged="TxtLogSearch_TextChanged"
-                        KeyDown="TxtLogSearch_KeyDown"/>
+                        KeyDown="TxtLogSearch_KeyDown"
+                        AutomationProperties.Name="Search console logs"/>
 
             <ToggleButton Grid.Column="4" Content=".*" ToolTip="Use Regex"
                           IsChecked="{Binding IsRegexEnabled}"
                           VerticalAlignment="Center" Margin="0,0,12,0"
-                          Width="32" Height="32" Padding="0" Cursor="Hand"/>
+                          Width="32" Height="32" Padding="0" Cursor="Hand"
+                          AutomationProperties.Name="Toggle regular expression search filter"/>
 
             <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                <ToggleButton Content="Chat" IsChecked="{Binding IsFilterChat}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand"/>
-                <ToggleButton Content="Info" IsChecked="{Binding IsFilterInfo}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand"/>
-                <ToggleButton Content="Warn" IsChecked="{Binding IsFilterWarn}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand"/>
-                <ToggleButton Content="Error" IsChecked="{Binding IsFilterError}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand"/>
-                <ToggleButton Content="Sys" IsChecked="{Binding IsFilterSystem}" Padding="8,4" Cursor="Hand"/>
+                <ToggleButton Content="Chat" IsChecked="{Binding IsFilterChat}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter chat logs"/>
+                <ToggleButton Content="Info" IsChecked="{Binding IsFilterInfo}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter informational logs"/>
+                <ToggleButton Content="Warn" IsChecked="{Binding IsFilterWarn}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter warning logs"/>
+                <ToggleButton Content="Error" IsChecked="{Binding IsFilterError}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter error logs"/>
+                <ToggleButton Content="Sys" IsChecked="{Binding IsFilterSystem}" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter system logs"/>
             </StackPanel>
 
             <ui:Button Grid.Column="6" Content="{Binding PlayerStatus}" Appearance="Secondary"
                        Icon="{ui:SymbolIcon People24}" Click="BtnPlayers_Click" Cursor="Hand" Margin="0,0,8,0"
                        ToolTip="Manage online players"
+                       AutomationProperties.Name="Manage online players"
                        IsEnabled="{Binding CanUseLiveServerControls}"/>
 
             <ui:Button Grid.Column="7" Content="Stop Server" Appearance="Danger"
                        Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand" Margin="0,0,8,0"
+                       ToolTip="Stop server process"
+                       AutomationProperties.Name="Stop server process"
                        IsEnabled="{Binding CanStopServer}"/>
 
             <ui:Button Grid.Column="8" Content="Restart" Appearance="Secondary"
                        Icon="{ui:SymbolIcon ArrowSync24}" Click="BtnRestart_Click" Cursor="Hand" Margin="0,0,8,0"
+                       ToolTip="Restart server process"
+                       AutomationProperties.Name="Restart server process"
                        IsEnabled="{Binding CanUseLiveServerControls}"/>
 
             <ui:Button Grid.Column="9" Content="AI Summary" Appearance="Info"
                        Icon="{ui:SymbolIcon Sparkle24}" Click="BtnAiSummary_Click" Cursor="Hand"
-                       ToolTip="Generate AI session summary"/>
+                       ToolTip="Generate AI session summary"
+                       AutomationProperties.Name="Generate AI session summary"/>
         </Grid>
 
         <!-- Console output area -->
@@ -205,10 +218,12 @@
             <ui:TextBox x:Name="TxtCommand" Grid.Column="0" PlaceholderText="Type a command..."
                         Margin="0,0,8,0"
                         IsEnabled="{Binding CanUseLiveServerControls}"
-                        KeyDown="TxtCommand_KeyDown"/>
+                        KeyDown="TxtCommand_KeyDown"
+                        AutomationProperties.Name="Server console command input"/>
             <ui:Button Grid.Column="1" Content="Send" Appearance="Primary"
                        Icon="{ui:SymbolIcon Send24}" Click="BtnSend_Click" Cursor="Hand"
-                       IsEnabled="{Binding CanUseLiveServerControls}"/>
+                       IsEnabled="{Binding CanUseLiveServerControls}"
+                       AutomationProperties.Name="Send console command"/>
         </Grid>
     </Grid>
 </Page>

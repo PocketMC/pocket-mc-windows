@@ -83,7 +83,7 @@ Your servers reside on your machine, in the app root you select. PocketMC is not
 </details>
 
 <details>
-<summary><b> &nbsp;Managed runtimes — zero Java headaches</b></summary>
+<summary><b> &nbsp;Managed runtimes, zero Java headaches</b></summary>
 <br>
 
 - App-local Java provisioning through Adoptium: **Java 8, 11, 17, 21, and 25**.

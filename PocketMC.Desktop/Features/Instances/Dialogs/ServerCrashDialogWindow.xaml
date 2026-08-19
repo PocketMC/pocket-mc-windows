@@ -10,6 +10,7 @@
         MinHeight="0" MaxHeight="800"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        KeyboardNavigation.TabNavigation="Cycle"
         WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="None"
@@ -80,6 +81,7 @@
                                Padding="6,2"
                                FontSize="11"
                                HorizontalAlignment="Right"
+                               AutomationProperties.Name="Toggle crash log view"
                                Click="BtnToggleView_Click"
                                Visibility="Collapsed"/>
                 </Grid>
@@ -95,6 +97,7 @@
                                      Foreground="#CDD6F4"
                                      FontFamily="Cascadia Code, Consolas, Courier New, monospace"
                                      FontSize="11"
+                                     AutomationProperties.Name="Diagnostic crash log viewer"
                                      TextWrapping="NoWrap"
                                      AcceptsReturn="True"/>
                         </ScrollViewer>
@@ -128,6 +131,7 @@
                                Appearance="Primary"
                                Icon="{ui:SymbolIcon Sparkle20}"
                                Padding="10,6"
+                               AutomationProperties.Name="Analyze crash with AI"
                                Click="BtnAnalyzeWithAi_Click"
                                Margin="0,0,6,0"/>
 
@@ -136,6 +140,7 @@
                                Appearance="Secondary"
                                Icon="{ui:SymbolIcon Copy20}"
                                Padding="10,6"
+                               AutomationProperties.Name="Copy diagnostic crash logs"
                                Click="BtnCopyLogs_Click"
                                Margin="0,0,6,0"/>
 
@@ -146,6 +151,7 @@
                                Padding="10,6"
                                Click="BtnOpenReport_Click"
                                ToolTip="Open crash report file in editor"
+                               AutomationProperties.Name="Open crash report file"
                                Margin="0,0,6,0"
                                Visibility="Collapsed"/>
                 </StackPanel>
@@ -157,6 +163,7 @@
                                Appearance="Secondary"
                                Icon="{ui:SymbolIcon WindowConsole20}"
                                Padding="10,6"
+                               AutomationProperties.Name="Open server live console"
                                Click="BtnConsole_Click"
                                Margin="0,0,6,0"/>
 
@@ -166,7 +173,9 @@
                                MinWidth="72"
                                Padding="12,6"
                                Click="BtnClose_Click"
-                               IsDefault="True"/>
+                               IsDefault="True"
+                               IsCancel="True"
+                               AutomationProperties.Name="Dismiss crash dialog (Escape)"/>
                 </StackPanel>
             </Grid>
         </Grid>

@@ -29,10 +29,17 @@ namespace PocketMC.Desktop.Infrastructure
     {
         private readonly ControlledNavigationStack _detailStack = new();
         private readonly List<DetailPageEntry> _detailPages = new();
+        private readonly List<DetailPageEntry> _forwardDetailPages = new();
+        private readonly Stack<Type> _shellBackStack = new();
+        private readonly Stack<Type> _shellForwardStack = new();
+        private Type? _currentShellPageType = typeof(DashboardPage);
+        private bool _isNavigatingHistory;
         private readonly IShellUIStateService _uiStateService;
         private readonly IInstanceImportService _importService;
         private readonly IInstanceExportService _exportService;
         private IShellHost? _shellHost;
+
+        public bool CanNavigateForward => _forwardDetailPages.Count > 0 || _shellForwardStack.Count > 0;
 
         public AppNavigationService(
             IShellUIStateService uiStateService,
@@ -84,32 +91,12 @@ namespace PocketMC.Desktop.Infrastructure
 
         public bool NavigateToDashboard()
         {
-            if (!ConfirmAndCancelActiveOperations()) return false;
-            if (_shellHost == null) return false;
-
-            bool navigated = _shellHost.ShowShellPage(typeof(DashboardPage));
-            if (navigated)
-            {
-                ClearDetailStack();
-                _uiStateService.UpdateBreadcrumb("Dashboard");
-            }
-
-            return navigated;
+            return NavigateToShellPage(typeof(DashboardPage));
         }
 
         public bool NavigateToTunnel()
         {
-            if (!ConfirmAndCancelActiveOperations()) return false;
-            if (_shellHost == null) return false;
-
-            bool navigated = _shellHost.ShowShellPage(typeof(TunnelPage));
-            if (navigated)
-            {
-                ClearDetailStack();
-                _uiStateService.UpdateBreadcrumb("Tunnel");
-            }
-
-            return navigated;
+            return NavigateToShellPage(typeof(TunnelPage));
         }
 
         public bool NavigateToShellPage(Type pageType)
@@ -117,9 +104,16 @@ namespace PocketMC.Desktop.Infrastructure
             if (!ConfirmAndCancelActiveOperations()) return false;
             if (_shellHost == null) return false;
 
+            if (!_isNavigatingHistory && _currentShellPageType != null && _currentShellPageType != pageType)
+            {
+                _shellBackStack.Push(_currentShellPageType);
+                _shellForwardStack.Clear();
+            }
+
             bool navigated = _shellHost.ShowShellPage(pageType);
             if (navigated)
             {
+                _currentShellPageType = pageType;
                 ClearDetailStack();
                 _uiStateService.UpdateBreadcrumb(GetBreadcrumbForPageType(pageType));
             }
@@ -143,6 +137,7 @@ namespace PocketMC.Desktop.Infrastructure
             if (!navigated) return false;
 
             if (clearDetailStack) ClearDetailStack();
+            ClearForwardDetailPages();
 
             ControlledNavigationEntry stackEntry = _detailStack.Push(
                 MapRoute(routeKind),
@@ -160,25 +155,111 @@ namespace PocketMC.Desktop.Infrastructure
             if (!ConfirmAndCancelActiveOperations()) return false;
             if (_shellHost == null) return false;
 
-            ControlledBackNavigationResult result = _detailStack.NavigateBack();
-            if (!result.Success) return false;
-
-            RemoveDetailEntry(result.RemovedEntryId, dispose: true);
-
-            if (result.TargetsShellRoute)
+            if (_detailPages.Count > 0)
             {
-                var pageType = MapShellPageType(result.TargetRoute);
-                bool navigated = _shellHost.ShowShellPage(pageType);
-                if (navigated) _uiStateService.UpdateBreadcrumb(GetBreadcrumbForPageType(pageType));
-                return navigated;
+                ControlledBackNavigationResult result = _detailStack.NavigateBack();
+                if (!result.Success) return false;
+
+                DetailPageEntry? removedEntry = RemoveDetailEntry(result.RemovedEntryId, dispose: false);
+                if (removedEntry != null)
+                {
+                    _forwardDetailPages.Add(removedEntry);
+                }
+
+                if (result.TargetsShellRoute)
+                {
+                    var pageType = MapShellPageType(result.TargetRoute);
+                    _currentShellPageType = pageType;
+                    bool navigated = _shellHost.ShowShellPage(pageType);
+                    if (navigated) _uiStateService.UpdateBreadcrumb(GetBreadcrumbForPageType(pageType));
+                    return navigated;
+                }
+
+                DetailPageEntry? targetEntry = _detailPages.LastOrDefault(entry => entry.EntryId == result.TargetEntryId);
+                if (targetEntry == null) return NavigateToDashboard();
+
+                bool detailNavigated = _shellHost.ShowDetailPage(targetEntry.Page, targetEntry.BreadcrumbLabel);
+                if (detailNavigated) _uiStateService.UpdateBreadcrumb(targetEntry.BreadcrumbLabel);
+                return detailNavigated;
             }
 
-            DetailPageEntry? targetEntry = _detailPages.LastOrDefault(entry => entry.EntryId == result.TargetEntryId);
-            if (targetEntry == null) return NavigateToDashboard();
+            // Shell back navigation
+            if (_shellBackStack.Count > 0)
+            {
+                Type previousShell = _shellBackStack.Pop();
+                if (_currentShellPageType != null)
+                {
+                    _shellForwardStack.Push(_currentShellPageType);
+                }
+                _currentShellPageType = previousShell;
 
-            bool detailNavigated = _shellHost.ShowDetailPage(targetEntry.Page, targetEntry.BreadcrumbLabel);
-            if (detailNavigated) _uiStateService.UpdateBreadcrumb(targetEntry.BreadcrumbLabel);
-            return detailNavigated;
+                _isNavigatingHistory = true;
+                try
+                {
+                    bool navigated = _shellHost.ShowShellPage(previousShell);
+                    if (navigated)
+                    {
+                        _uiStateService.UpdateBreadcrumb(GetBreadcrumbForPageType(previousShell));
+                    }
+                    return navigated;
+                }
+                finally
+                {
+                    _isNavigatingHistory = false;
+                }
+            }
+
+            return false;
+        }
+
+        public bool NavigateForward()
+        {
+            if (!ConfirmAndCancelActiveOperations()) return false;
+            if (_shellHost == null) return false;
+
+            if (_forwardDetailPages.Count > 0)
+            {
+                ControlledForwardNavigationResult result = _detailStack.NavigateForward();
+                if (!result.Success) return false;
+
+                DetailPageEntry? forwardEntry = _forwardDetailPages.LastOrDefault(entry => entry.EntryId == result.TargetEntryId);
+                if (forwardEntry == null) return false;
+
+                _forwardDetailPages.Remove(forwardEntry);
+                _detailPages.Add(forwardEntry);
+
+                bool detailNavigated = _shellHost.ShowDetailPage(forwardEntry.Page, forwardEntry.BreadcrumbLabel);
+                if (detailNavigated) _uiStateService.UpdateBreadcrumb(forwardEntry.BreadcrumbLabel);
+                return detailNavigated;
+            }
+
+            // Shell forward navigation
+            if (_shellForwardStack.Count > 0)
+            {
+                Type nextShell = _shellForwardStack.Pop();
+                if (_currentShellPageType != null)
+                {
+                    _shellBackStack.Push(_currentShellPageType);
+                }
+                _currentShellPageType = nextShell;
+
+                _isNavigatingHistory = true;
+                try
+                {
+                    bool navigated = _shellHost.ShowShellPage(nextShell);
+                    if (navigated)
+                    {
+                        _uiStateService.UpdateBreadcrumb(GetBreadcrumbForPageType(nextShell));
+                    }
+                    return navigated;
+                }
+                finally
+                {
+                    _isNavigatingHistory = false;
+                }
+            }
+
+            return false;
         }
 
         private string? GetBreadcrumbForPageType(Type pageType)
@@ -226,6 +307,15 @@ namespace PocketMC.Desktop.Infrastructure
             }
         }
 
+        private void ClearForwardDetailPages()
+        {
+            foreach (DetailPageEntry entry in _forwardDetailPages)
+            {
+                DisposePage(entry.Page);
+            }
+            _forwardDetailPages.Clear();
+        }
+
         private void ClearDetailStack()
         {
             foreach (DetailPageEntry entry in _detailPages)
@@ -235,6 +325,7 @@ namespace PocketMC.Desktop.Infrastructure
 
             _detailPages.Clear();
             _detailStack.Clear();
+            ClearForwardDetailPages();
         }
 
         private DetailPageEntry? RemoveDetailEntry(string? entryId, bool dispose)

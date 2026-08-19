@@ -39,5 +39,7 @@ namespace PocketMC.Desktop.Core.Interfaces
             DetailBackNavigation backNavigation,
             bool clearDetailStack = false);
         bool NavigateBack();
+        bool NavigateForward();
+        bool CanNavigateForward { get; }
     }
 }

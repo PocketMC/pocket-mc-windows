@@ -9,6 +9,7 @@
         MinHeight="0"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        KeyboardNavigation.TabNavigation="Cycle"
         WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="None"
@@ -91,6 +92,7 @@
                                Icon="{ui:SymbolIcon Sparkle24}"
                                Click="BtnApplySuggested_Click"
                                VerticalAlignment="Center"
+                               AutomationProperties.Name="Use recommended replacement port"
                                Padding="12,6"/>
                 </Grid>
             </Border>
@@ -107,6 +109,7 @@
                             PlaceholderText="e.g. 25566"
                             FontSize="14"
                             MaxLength="5"
+                            AutomationProperties.Name="Server port number input"
                             TextChanged="TxtPortInput_TextChanged"/>
 
                 <!-- Validation message -->
@@ -133,12 +136,15 @@
                            MinWidth="80"
                            Margin="0,0,8,0"
                            Click="Cancel_Click"
+                           AutomationProperties.Name="Cancel port change"
                            IsCancel="True"/>
                 <ui:Button x:Name="BtnConfirm"
                            Content="Change Port &amp; Start"
                            Appearance="Primary"
                            MinWidth="140"
                            Click="Confirm_Click"
+                           IsDefault="True"
+                           AutomationProperties.Name="Change port and start server"
                            IsEnabled="False"/>
             </StackPanel>
         </Grid>
