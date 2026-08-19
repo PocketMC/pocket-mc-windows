@@ -14,6 +14,7 @@ using PocketMC.Application.Services.Players;
 using PocketMC.Application.Services.Shell;
 using PocketMC.Domain.Storage;
 using PocketMC.Application.Services.Networking;
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Infrastructure.Instances.Updates;
 using PocketMC.Infrastructure.Instances.Providers;
@@ -102,7 +103,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IGeyserDetector, GeyserDetector>();
             services.AddSingleton<ISimpleVoiceChatDetector, SimpleVoiceChatDetector>();
             services.AddSingleton<IImageProcessingService, ImageProcessingService>();
-            services.AddSingleton<PhpProvisioningService>();
+            services.AddHttpClient<PhpProvisioningService>(client => client.DefaultRequestHeaders.Add("User-Agent", $"PocketMC.Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
             services.AddSingleton<GeyserProvisioningService>();
             services.AddSingleton<BedrockAddonInstaller>();
 

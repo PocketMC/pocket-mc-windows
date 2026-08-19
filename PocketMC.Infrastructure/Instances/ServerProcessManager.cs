@@ -75,6 +75,11 @@ public class ServerProcessManager
             throw new InvalidOperationException($"Server '{meta.Name}' is already running or starting.");
         }
 
+        if (_historicalProcesses.TryRemove(meta.Id, out var oldProcess) && !ReferenceEquals(oldProcess, serverProcess))
+        {
+            oldProcess.Dispose();
+        }
+
         _historicalProcesses[meta.Id] = serverProcess;
 
         serverProcess.OnStateChanged += state =>

@@ -38,11 +38,6 @@ namespace PocketMC.Infrastructure.Php
             _downloader = downloader;
             _applicationState = applicationState;
             _logger = logger;
-
-            if (!_httpClient.DefaultRequestHeaders.UserAgent.Any(x => x.Product?.Name == "PocketMC.Desktop"))
-            {
-                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"PocketMC.Desktop/{AppConfig.AppVersion}");
-            }
         }
 
         public virtual string? GetPhpExecutablePath(string version)

@@ -313,8 +313,12 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
                         }
                     });
 
-                dialog.Owner = System.Windows.Application.Current?.MainWindow;
-                dialog.ShowDialog();
+                var mainWindow = System.Windows.Application.Current?.MainWindow;
+                if (mainWindow != null && mainWindow.IsLoaded && mainWindow.IsVisible)
+                {
+                    dialog.Owner = mainWindow;
+                }
+                dialog.Show();
             }
             catch (Exception ex)
             {
