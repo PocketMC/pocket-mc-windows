@@ -4,7 +4,6 @@ const viewKey = "pocketmc.remote.currentView"; // "instances"
 const els = {
   connectionLabel: document.querySelector("#connectionLabel"),
   refreshButton: document.querySelector("#refreshButton"),
-  refreshButton: document.querySelector("#refreshButton"),
 
   appView: document.querySelector("#appView"),
   emptyView: document.querySelector("#emptyView"),
@@ -17,7 +16,6 @@ const els = {
   loginForm: document.querySelector("#loginForm"),
   loginUsernameInput: document.querySelector("#loginUsernameInput"),
   loginPasswordInput: document.querySelector("#loginPasswordInput"),
-  loginSubmitButton: document.querySelector("#loginSubmitButton"),
   loginSubmitButton: document.querySelector("#loginSubmitButton"),
 
   instanceListSidebar: document.querySelector("#instanceListSidebar"),
@@ -145,7 +143,7 @@ function showSnackbar(message, type = "info") {
 
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
-  if (options.body && !headers.has("Content-Type")) {
+  if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -215,18 +213,13 @@ function formatFriendlyError(msg) {
     lower.includes("load failed") ||
     lower.includes("typeerror") ||
     lower.includes("connection refused") ||
-    lower.includes("net::err")
-  ) {
-    return "Connection lost. PocketMC Desktop or local network host is currently unreachable.";
-  }
-
-  if (
+    lower.includes("net::err") ||
     lower.includes("cloudflare") ||
     lower.includes("tunnel") ||
     lower.includes("<!doctype") ||
     lower.includes("<html")
   ) {
-    return "Remote tunnel connection closed. Remote Access was stopped or the tunnel URL expired.";
+    return "PocketMC Desktop or remote service is currently stopped on the host computer. The dashboard will automatically reconnect once it is running.";
   }
 
   if (lower.includes("unauthorized") || lower.includes("401")) {
@@ -235,6 +228,10 @@ function formatFriendlyError(msg) {
 
   if (lower.includes("404") || lower.includes("notfound")) {
     return "The requested server instance was not found.";
+  }
+
+  if (lower.includes("forbidden") || lower.includes("403")) {
+    return "You do not have permission to view this tab or perform this action.";
   }
 
   return text;
@@ -269,10 +266,12 @@ function renderAddonsSkeleton() {
 function showError(msg) {
   if (msg === "Unauthorized") return;
   const friendlyMsg = formatFriendlyError(msg);
-  els.errorMessage.textContent = friendlyMsg;
+  if (els.errorMessage) {
+    els.errorMessage.textContent = friendlyMsg;
+  }
   setVisible(els.errorView);
   if (els.connectionLabel) {
-    els.connectionLabel.textContent = "Disconnected";
+    els.connectionLabel.textContent = "Host Offline";
     els.connectionLabel.className = "connection-pill offline";
   }
 }
@@ -280,11 +279,21 @@ function showError(msg) {
 async function openDashboard() {
   try {
     await refreshEverything({ reconnectConsole: true });
-    statusTimer = setInterval(() => refreshEverything({ reconnectConsole: false }).catch(e => {
-      if (e.message === "Unauthorized") clearInterval(statusTimer);
-    }), 3000);
   } catch (error) {
     showError(error.message);
+  } finally {
+    if (!statusTimer) {
+      statusTimer = setInterval(async () => {
+        try {
+          await refreshEverything({ reconnectConsole: false });
+        } catch (e) {
+          if (e.message === "Unauthorized") {
+            clearInterval(statusTimer);
+            statusTimer = null;
+          }
+        }
+      }, 3000);
+    }
   }
 }
 
@@ -333,22 +342,43 @@ async function refreshEverything({ reconnectConsole = false } = {}) {
     if (reconnectConsole) {
       historyLoadedForInstance = null;
       closeSocket();
-      loadServerSettings(selectedInstanceId);
-      loadAddons(selectedInstanceId);
+      if (remoteStatusGlobal?.allowRemoteServerSettings) {
+        loadServerSettings(selectedInstanceId);
+      }
+      if (remoteStatusGlobal?.allowRemoteServerAddons) {
+        loadAddons(selectedInstanceId);
+      }
     }
     await ensureConsoleConnection(instanceStatus);
   }
 }
 
+let lastRenderedSelectionHash = "";
+
 function renderSelectionView(instances) {
   if (!els.instancesGrid) return;
-  els.instancesGrid.innerHTML = "";
 
   const query = (searchQuery || "").toLowerCase().trim();
   const filtered = instances.filter(inst => {
     return inst.name.toLowerCase().includes(query) ||
       inst.serverType.toLowerCase().includes(query);
   });
+
+  const currentHash = JSON.stringify(filtered.map(i => ({
+    id: i.id,
+    name: i.name,
+    state: i.state,
+    isRunning: i.isRunning,
+    pc: i.playerCount,
+    max: i.maxPlayers,
+    pinned: i.isPinned
+  }))) + `_${query}`;
+
+  if (currentHash === lastRenderedSelectionHash && els.instancesGrid.children.length > 0) {
+    return;
+  }
+  lastRenderedSelectionHash = currentHash;
+  els.instancesGrid.innerHTML = "";
 
   if (filtered.length === 0) {
     els.instancesGrid.innerHTML = `<p class="muted" style="text-align: center; margin: 32px 0;">No matching servers found.</p>`;
@@ -590,31 +620,37 @@ function renderStatus(remoteStatus, instanceStatus) {
   if (filteredIps.length > 0) {
     if (els.serverIpAddress) els.serverIpAddress.hidden = true;
     els.serverIpsContainer.hidden = false;
-    els.serverIpsList.innerHTML = "";
 
-    for (const ip of filteredIps) {
-      const badge = document.createElement("div");
-      badge.className = "ip-item";
-      badge.innerHTML = `
-        <div class="ip-info">
-          <span class="ip-label">${escapeHtml(ip.label)}</span>
-          <span class="ip-value">${escapeHtml(ip.address)}</span>
-        </div>
-      `;
+    const ipsHash = JSON.stringify(filteredIps);
+    if (ipsHash !== lastRenderedIpsHash || els.serverIpsList.children.length === 0) {
+      lastRenderedIpsHash = ipsHash;
+      els.serverIpsList.innerHTML = "";
 
-      const copyBtn = document.createElement("button");
-      copyBtn.className = "icon-button copy-btn";
-      copyBtn.type = "button";
-      copyBtn.title = "Copy to clipboard";
-      copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>`;
-      copyBtn.addEventListener("click", () => {
-        navigator.clipboard.writeText(ip.address);
-        showSnackbar("IP copied to clipboard!", "success");
-      });
-      badge.appendChild(copyBtn);
-      els.serverIpsList.append(badge);
+      for (const ip of filteredIps) {
+        const badge = document.createElement("div");
+        badge.className = "ip-item";
+        badge.innerHTML = `
+          <div class="ip-info">
+            <span class="ip-label">${escapeHtml(ip.label)}</span>
+            <span class="ip-value">${escapeHtml(ip.address)}</span>
+          </div>
+        `;
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "icon-button copy-btn";
+        copyBtn.type = "button";
+        copyBtn.title = "Copy to clipboard";
+        copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/></svg>`;
+        copyBtn.addEventListener("click", () => {
+          navigator.clipboard.writeText(ip.address);
+          showSnackbar("IP copied to clipboard!", "success");
+        });
+        badge.appendChild(copyBtn);
+        els.serverIpsList.append(badge);
+      }
     }
   } else {
+    lastRenderedIpsHash = "";
     els.serverIpsContainer.hidden = true;
     if (els.serverIpAddress) {
       els.serverIpAddress.hidden = true;
@@ -836,9 +872,18 @@ function scrollConsole({ force = false } = {}) {
 // ---------------------------------------------------------
 // Players
 // ---------------------------------------------------------
+let lastRenderedIpsHash = "";
+let lastRenderedPlayersHash = "";
+
 function renderPlayers(players, allowActions) {
   els.playersState.textContent = `${players.length} online`;
   els.playersState.className = "state-label " + (players.length > 0 ? "online" : "");
+
+  const playersHash = JSON.stringify(players.map(p => p.name)) + `_${allowActions}`;
+  if (playersHash === lastRenderedPlayersHash && els.playerList.children.length > 0) {
+    return;
+  }
+  lastRenderedPlayersHash = playersHash;
   els.playerList.innerHTML = "";
 
   if (players.length === 0) {
@@ -1088,6 +1133,40 @@ if (els.loginForm) {
   });
 }
 
+// iOS Safari viewport zoom reset on input blur
+// iOS ignores user-scalable=no; when it auto-zooms on input focus, closing
+// the keyboard leaves the page zoomed in with the header off-screen.
+// This detects zoom via visualViewport and forces a reset.
+(function initIOSZoomReset() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (!isIOS) return;
+
+  document.addEventListener("focusout", (e) => {
+    if (!e.target || !["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+
+    // Small delay to let iOS finish its keyboard dismissal animation
+    setTimeout(() => {
+      // Check if viewport is still zoomed via visualViewport API
+      const vv = window.visualViewport;
+      if (vv && Math.abs(vv.scale - 1) > 0.01) {
+        // Force zoom reset by briefly swapping viewport meta
+        const viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+          const original = viewport.getAttribute("content");
+          viewport.setAttribute("content", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover");
+          // Force reflow then restore
+          requestAnimationFrame(() => {
+            viewport.setAttribute("content", original);
+          });
+        }
+      }
+      // Also reset scroll position
+      window.scrollTo(0, 0);
+    }, 100);
+  });
+})();
+
 // Theme management
 const themeKey = "pocketmc.remote.theme";
 function applyTheme(theme) {
@@ -1269,7 +1348,9 @@ async function loadAddons(instanceId) {
   if (!instanceId) return;
   const grid = document.getElementById("addonsGrid");
   if (!grid) return;
-  renderAddonsSkeleton();
+  if (grid.children.length === 0) {
+    renderAddonsSkeleton();
+  }
 
   try {
     cachedAddons = await api(`/api/instances/${instanceId}/addons`);
@@ -1367,7 +1448,7 @@ async function loadFiles(instanceId, path = "") {
   if (!container) return;
 
   renderBreadcrumbs(path);
-  container.innerHTML = `<div class="skeleton-card" style="height: 60px;"><div class="skeleton-body"><div class="skeleton-line title skeleton-box"></div></div></div>`;
+  renderFilesSkeleton(container);
 
   try {
     const items = await api(`/api/instances/${instanceId}/files?path=${encodeURIComponent(path)}`);
@@ -1375,6 +1456,26 @@ async function loadFiles(instanceId, path = "") {
   } catch (err) {
     container.innerHTML = "";
     showSnackbar(formatFriendlyError(err), "error");
+  }
+}
+
+function renderFilesSkeleton(container) {
+  container.innerHTML = "";
+  for (let i = 0; i < 4; i++) {
+    const row = document.createElement("div");
+    row.className = "file-row skeleton-loading-row";
+    row.innerHTML = `
+      <div class="file-info" style="overflow: hidden;">
+        <span class="file-icon">
+          <span class="skeleton-spinner" style="border-top-color: rgba(255,255,255,0.4);"></span>
+        </span>
+        <div style="min-width: 0; flex: 1;">
+          <div class="skeleton-text" style="width: ${130 + i * 25}px;"></div>
+          <div class="skeleton-subtext"></div>
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
   }
 }
 
@@ -1584,16 +1685,120 @@ if (refreshFilesBtn) {
   refreshFilesBtn.addEventListener("click", () => loadFiles(selectedInstanceId, currentFileDirectoryPath));
 }
 
+const uploadFilesBtn = document.getElementById("uploadFilesBtn");
+const fileUploadInput = document.getElementById("fileUploadInput");
+
+if (uploadFilesBtn && fileUploadInput) {
+  uploadFilesBtn.addEventListener("click", () => {
+    fileUploadInput.value = "";
+    fileUploadInput.click();
+  });
+
+  fileUploadInput.addEventListener("change", async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !selectedInstanceId) return;
+    await uploadFilesList(files);
+  });
+}
+
+async function uploadFilesList(files) {
+  if (!files || files.length === 0 || !selectedInstanceId) return;
+
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB Cloudflare Tunnel HTTP limit
+  for (let i = 0; i < files.length; i++) {
+    if (files[i].size > MAX_FILE_SIZE) {
+      showSnackbar(`"${files[i].name}" exceeds the 100 MB upload limit for Cloudflare Tunnels.`, "error");
+      return;
+    }
+  }
+
+  // Prepend skeleton loader rows for each uploading file
+  const container = document.getElementById("filesListContainer");
+  const noMsg = document.getElementById("noFilesMsg");
+  if (container) {
+    if (noMsg) noMsg.hidden = true;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const skeletonRow = document.createElement("div");
+      skeletonRow.className = "file-row skeleton-upload-row";
+      skeletonRow.innerHTML = `
+        <div class="file-info">
+          <span class="file-icon">
+            <span class="skeleton-spinner"></span>
+          </span>
+          <div>
+            <div class="file-name">${escapeHtml(file.name)}</div>
+            <div class="file-meta">Uploading &bull; ${formatFileSize(file.size / 1024)}</div>
+          </div>
+        </div>
+        <div class="file-actions">
+          <span class="skeleton-badge">
+            Uploading...
+          </span>
+        </div>
+      `;
+      container.insertBefore(skeletonRow, container.firstChild);
+    }
+  }
+
+  const formData = new FormData();
+  formData.append("path", currentFileDirectoryPath || "");
+  for (let i = 0; i < files.length; i++) {
+    formData.append("files", files[i]);
+  }
+
+  try {
+    showSnackbar(`Uploading ${files.length} file${files.length > 1 ? "s" : ""}...`, "info");
+    const result = await api(`/api/instances/${selectedInstanceId}/files/upload`, {
+      method: "POST",
+      body: formData
+    });
+    showSnackbar(`Successfully uploaded ${result.uploaded || files.length} file(s).`, "success");
+  } catch (err) {
+    showSnackbar(`Upload failed: ${err.message}`, "error");
+  } finally {
+    loadFiles(selectedInstanceId, currentFileDirectoryPath);
+  }
+}
+
+const filesTab = document.getElementById("tab-files");
+if (filesTab) {
+  filesTab.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    filesTab.classList.add("drag-over");
+  });
+
+  filesTab.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    filesTab.classList.remove("drag-over");
+  });
+
+  filesTab.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    filesTab.classList.remove("drag-over");
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await uploadFilesList(e.dataTransfer.files);
+    }
+  });
+}
+
 // ---------------------------------------------------------
 // Backups Manager Logic
 // ---------------------------------------------------------
-async function loadBackups(instanceId) {
+let backupsPollTimer = null;
+
+async function loadBackups(instanceId, showInitialSkeleton = false) {
   if (!instanceId) return;
   const container = document.getElementById("backupsListContainer");
   const noMsg = document.getElementById("noBackupsMsg");
   if (!container) return;
 
-  container.innerHTML = `<div class="skeleton-card" style="height: 70px;"><div class="skeleton-body"><div class="skeleton-line title skeleton-box"></div></div></div>`;
+  if (showInitialSkeleton && container.children.length === 0) {
+    renderBackupsSkeleton(container);
+  }
 
   try {
     const data = await api(`/api/instances/${instanceId}/backups`);
@@ -1602,16 +1807,41 @@ async function loadBackups(instanceId) {
 
     renderBackupsList(backups, isRunning);
 
+    if (backupsPollTimer) {
+      clearTimeout(backupsPollTimer);
+      backupsPollTimer = null;
+    }
+
     if (isRunning) {
-      setTimeout(() => {
+      backupsPollTimer = setTimeout(() => {
         if (selectedInstanceId === instanceId) {
-          loadBackups(instanceId);
+          loadBackups(instanceId, false);
         }
       }, 3000);
     }
   } catch (err) {
     container.innerHTML = "";
     showSnackbar(formatFriendlyError(err), "error");
+  }
+}
+
+function renderBackupsSkeleton(container) {
+  container.innerHTML = "";
+  for (let i = 0; i < 3; i++) {
+    const row = document.createElement("div");
+    row.className = "backup-row skeleton-loading-row";
+    row.innerHTML = `
+      <div class="backup-info" style="overflow: hidden;">
+        <span class="backup-icon">
+          <span class="skeleton-spinner" style="border-top-color: rgba(255,255,255,0.4);"></span>
+        </span>
+        <div style="min-width: 0; flex: 1;">
+          <div class="skeleton-text" style="width: ${120 + i * 30}px;"></div>
+          <div class="skeleton-subtext"></div>
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
   }
 }
 
@@ -1626,26 +1856,34 @@ function renderBackupsList(backups, isRunning = false) {
   }
 
   if (isRunning) {
-    const loader = document.createElement("div");
-    loader.className = "backup-row";
-    loader.style.pointerEvents = "none";
-    loader.innerHTML = `
+    const creatingRow = document.createElement("div");
+    creatingRow.className = "backup-row skeleton-upload-row";
+    creatingRow.innerHTML = `
       <div class="backup-info" style="overflow: hidden;">
-        <span class="backup-icon skeleton-box" style="width: 24px; height: 24px; border-radius: 4px; display: inline-block;"></span>
-        <div style="min-width: 0; flex: 1; padding-top: 2px;">
-          <div class="skeleton-box" style="height: 16px; width: 60%; margin-bottom: 6px; border-radius: 4px;"></div>
-          <div class="skeleton-box" style="height: 14px; width: 40%; border-radius: 4px;"></div>
+        <span class="backup-icon">
+          <span class="skeleton-spinner"></span>
+        </span>
+        <div>
+          <div class="backup-name">Creating backup zip archive...</div>
+          <div class="backup-meta">Compressing instance data in background</div>
         </div>
       </div>
+      <div class="backup-actions">
+        <span class="skeleton-badge">
+          In Progress...
+        </span>
+      </div>
     `;
-    container.appendChild(loader);
-    if (noMsg) noMsg.hidden = true;
-  } else if (!backups || backups.length === 0) {
-    if (noMsg) noMsg.hidden = false;
-    return;
-  } else {
+    container.appendChild(creatingRow);
     if (noMsg) noMsg.hidden = true;
   }
+
+  if (!backups || backups.length === 0) {
+    if (!isRunning && noMsg) noMsg.hidden = false;
+    return;
+  }
+
+  if (noMsg) noMsg.hidden = true;
 
   backups.forEach(backup => {
     const row = document.createElement("div");
@@ -1658,18 +1896,14 @@ function renderBackupsList(backups, isRunning = false) {
         <span class="backup-icon">
           <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
         </span>
-        <div>
-                            <div style="min-width: 0; flex: 1;">
+        <div style="min-width: 0; flex: 1;">
           <div class="backup-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(backup.fileName)}">
             ${displayTitle}
-
           </div>
           <div class="backup-meta" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             <span>${formatFileSize(backup.sizeBytes / 1024)}</span>
-            
             <span>&bull;</span>
             <span>${escapeHtml(dateStr)}</span>
-            
           </div>
         </div>
       </div>
@@ -1685,12 +1919,39 @@ if (createBackupBtn) {
     try {
       createBackupBtn.disabled = true;
       showSnackbar("Starting background backup...", "info");
-      const result = await api(`/api/instances/${selectedInstanceId}/backups`, { method: "POST" });
 
-      loadBackups(selectedInstanceId);
+      // Prepend active skeleton row immediately with zero flicker
+      const container = document.getElementById("backupsListContainer");
+      const noMsg = document.getElementById("noBackupsMsg");
+      if (container && !container.querySelector(".skeleton-upload-row")) {
+        if (noMsg) noMsg.hidden = true;
+        const creatingRow = document.createElement("div");
+        creatingRow.className = "backup-row skeleton-upload-row";
+        creatingRow.innerHTML = `
+          <div class="backup-info" style="overflow: hidden;">
+            <span class="backup-icon">
+              <span class="skeleton-spinner"></span>
+            </span>
+            <div>
+              <div class="backup-name">Creating backup zip archive...</div>
+              <div class="backup-meta">Compressing instance data in background</div>
+            </div>
+          </div>
+          <div class="backup-actions">
+            <span class="skeleton-badge">
+              In Progress...
+            </span>
+          </div>
+        `;
+        container.insertBefore(creatingRow, container.firstChild);
+      }
+
+      await api(`/api/instances/${selectedInstanceId}/backups`, { method: "POST" });
+      loadBackups(selectedInstanceId, false);
     } catch (err) {
       showSnackbar(formatFriendlyError(err), "error");
       createBackupBtn.disabled = false;
+      loadBackups(selectedInstanceId, false);
     }
   });
 }

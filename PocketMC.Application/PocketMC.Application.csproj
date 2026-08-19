@@ -11,4 +11,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="PocketMC.Application.Tests" />
+    <InternalsVisibleTo Include="PocketMC.Infrastructure.Tests" />
+    <InternalsVisibleTo Include="PocketMC.Desktop.Tests" />
+    <InternalsVisibleTo Include="PocketMC.RemoteControl.Tests" />
+  </ItemGroup>
 </Project>

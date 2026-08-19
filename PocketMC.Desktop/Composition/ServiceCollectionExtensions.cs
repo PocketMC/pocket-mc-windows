@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Setup;
@@ -60,6 +61,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IAppNavigationService, AppNavigationService>();
             services.TryAddSingleton<AppStartupOptions>(AppStartupOptions.NormalLaunch);
             services.AddSingleton<SettingsManager>();
+            services.AddSingleton<SettingsBackupService>();
             services.AddSingleton<ITelemetryService, TelemetryService>();
             services.AddSingleton<WindowsStartupService>();
             services.AddSingleton<WindowsCornerService>();
@@ -115,7 +117,6 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
             services.AddSingleton<IPlayitDialogService, PlayitDialogService>();
 
             services.AddTransient<MainWindow>();
-            services.AddTransient<StartupUpdateWindow>();
             services.AddTransient<JavaSetupPage>();
             services.AddTransient<TunnelPage>();
             services.AddTransient<PlayitStatusPage>();
@@ -133,7 +134,7 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<ServerSettingsViewModel>();
             services.AddTransient<CloudBackupSettingsViewModel>();
-            services.AddTransient<PocketMC.Infrastructure.Instances.InstanceImportViewModel>();
+            services.AddTransient<PocketMC.Desktop.Features.Instances.ImportExport.InstanceImportViewModel>();
             services.AddTransient<PocketMC.Desktop.Features.Instances.ImportExport.InstanceImportPage>();
 
             services.AddTransient<DashboardPage>();

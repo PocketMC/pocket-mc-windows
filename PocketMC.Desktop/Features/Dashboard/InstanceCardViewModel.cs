@@ -1,4 +1,4 @@
-﻿using PocketMC.Application.Services.Networking;
+using PocketMC.Application.Services.Networking;
 using System;
 using System.IO;
 using System.Linq;
@@ -309,15 +309,25 @@ public class InstanceCardViewModel : INotifyPropertyChanged
 
     public string StatusText => _stateTextOverride ?? _countdownText ?? _state switch
     {
-        ServerState.Stopped => "● Stopped",
+        ServerState.Stopped => "Stopped",
         ServerState.Installing => "Installing...",
         ServerState.SettingUp => "Setting Up...",
         ServerState.Starting => "Starting...",
-        ServerState.Online => "● Online",
+        ServerState.Online => "Online",
         ServerState.Stopping => "Stopping...",
-        ServerState.Crashed => "⚠️ Crashed",
-        _ => "● Unknown"
+        ServerState.Crashed => "Crashed",
+        _ => "Unknown"
     };
+
+    public Wpf.Ui.Controls.SymbolRegular StatusSymbol => _state switch
+    {
+        ServerState.Online => Wpf.Ui.Controls.SymbolRegular.PlayCircle24,
+        ServerState.Crashed => Wpf.Ui.Controls.SymbolRegular.Warning24,
+        ServerState.Stopped => Wpf.Ui.Controls.SymbolRegular.Circle24,
+        _ => Wpf.Ui.Controls.SymbolRegular.Circle24
+    };
+
+    public Visibility StatusSymbolVisibility => IsBusy ? Visibility.Collapsed : Visibility.Visible;
 
     public Brush StatusBrush => _state switch
     {
@@ -470,6 +480,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
 
             _state = newState;
             OnPropertyChanged(nameof(StatusText));
+            OnPropertyChanged(nameof(StatusSymbol));
+            OnPropertyChanged(nameof(StatusSymbolVisibility));
             OnPropertyChanged(nameof(StatusBrush));
             OnPropertyChanged(nameof(IsRunning));
             OnPropertyChanged(nameof(ShowRunningControls));
@@ -521,8 +533,10 @@ public class InstanceCardViewModel : INotifyPropertyChanged
 
     public void UpdateCountdown(int secondsLeft)
     {
-        _countdownText = $"🔄 Restarting in {secondsLeft}s...";
+        _countdownText = $"Restarting in {secondsLeft}s...";
         OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(StatusSymbol));
+        OnPropertyChanged(nameof(StatusSymbolVisibility));
         OnPropertyChanged(nameof(ShowRunningControls));
         OnPropertyChanged(nameof(RunningControlsVisibility));
         OnPropertyChanged(nameof(StoppedControlsVisibility));

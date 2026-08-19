@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.RemoteControl.Models;
 using PocketMC.RemoteControl.Hosting;
 using PocketMC.Domain.Models;
@@ -46,9 +47,7 @@ public sealed class RemoteControlCoordinator
             LocalUrls = _localNetworkAddressService.GetLocalUrls(settings.Port),
             PublicUrl = tunnelStatus.PublicUrl,
             TunnelRunning = tunnelStatus.IsRunning,
-            TunnelError = tunnelStatus.ErrorMessage,
-            AllowRemoteConsoleCommands = settings.AllowRemoteConsoleCommands,
-            AllowRemotePlayerActions = settings.AllowRemotePlayerActions
+            TunnelError = tunnelStatus.ErrorMessage
         };
     }
 
@@ -138,7 +137,7 @@ public sealed class RemoteControlCoordinator
         {
             candidateUrls.Add(settings.DiscordApiUrl);
         }
-        candidateUrls.AddRange(PocketMC.Infrastructure.Telemetry.AppConfig.DiscordApiUrls);
+        candidateUrls.AddRange(PocketMC.Infrastructure.Configuration.AppConfig.DiscordApiUrls);
         
         if (candidateUrls.Count == 0)
         {

@@ -58,4 +58,17 @@ public class RemoteFilesAndBackupsTests
         Assert.True(content.IsText);
         Assert.False(content.IsTruncated);
     }
+
+    [Fact]
+    public void SaveRemoteFileContentRequest_Properties_SetCorrectly()
+    {
+        var req = new SaveRemoteFileContentRequest
+        {
+            RelativePath = "config/paper-global.yml",
+            Content = "settings: {}"
+        };
+
+        Assert.Equal("config/paper-global.yml", req.RelativePath);
+        Assert.Equal("settings: {}", req.Content);
+    }
 }

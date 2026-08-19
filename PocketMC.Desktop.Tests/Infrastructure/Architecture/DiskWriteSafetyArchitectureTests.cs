@@ -1,0 +1,33 @@
+using PocketMC.Desktop.Tests.TestSupport.Utilities;
+namespace PocketMC.Desktop.Tests.Infrastructure.Architecture;
+
+public sealed class DiskWriteSafetyArchitectureTests
+{
+    [Theory]
+    [InlineData(
+        new[] { "PocketMC.Desktop", "Features", "Intelligence", "SummaryStorageService.cs" },
+        "File.WriteAllText(filePath",
+        "FileUtils.AtomicWriteAllText(filePath")]
+    [InlineData(
+        new[] { "PocketMC.Domain", "Models", "BackupMetadata.cs" },
+        "File.WriteAllText(path",
+        "FileUtils.AtomicWriteAllText(path")]
+    [InlineData(
+        new[] { "PocketMC.Infrastructure", "Marketplace", "AddonManifestService.cs" },
+        "File.WriteAllTextAsync(path",
+        "FileUtils.AtomicWriteAllTextAsync(path")]
+    [InlineData(
+        new[] { "PocketMC.Infrastructure", "Tunnel", "PlayitAgentService.cs" },
+        "File.WriteAllText(tomlPath",
+        "FileUtils.AtomicWriteAllText(tomlPath")]
+    public void PersistentStateWriters_UseAtomicFileReplacement(
+        string[] sourcePath,
+        string unsafeWriteCall,
+        string expectedAtomicWriteCall)
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(sourcePath));
+
+        Assert.DoesNotContain(unsafeWriteCall, source);
+        Assert.Contains(expectedAtomicWriteCall, source);
+    }
+}

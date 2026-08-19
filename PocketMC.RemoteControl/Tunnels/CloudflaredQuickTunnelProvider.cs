@@ -13,7 +13,7 @@ namespace PocketMC.RemoteControl.Tunnels;
 public sealed class CloudflaredQuickTunnelProvider : IRemoteTunnelProvider, IDisposable
 {
     private static readonly Regex TryCloudflareUrlRegex = new(
-        @"https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com",
+        @"https:\/\/(?!api\.)[a-zA-Z0-9-]+\.trycloudflare\.com",
         RegexOptions.Compiled | RegexOptions.IgnoreCase,
         TimeSpan.FromSeconds(1));
 

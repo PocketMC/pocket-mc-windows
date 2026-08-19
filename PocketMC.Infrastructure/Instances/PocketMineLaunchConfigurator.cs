@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
+using PocketMC.Infrastructure.Php;
 
 namespace PocketMC.Infrastructure.Instances;
 
@@ -34,13 +35,26 @@ public class PocketMineLaunchConfigurator
         string appRootPath,
         Action<string> onLog)
     {
-        onLog("[PocketMC] Verifying PHP runtime for Pocketmine-MP...");
-        await _phpProvisioning.EnsurePhpAsync(null);
+        string requiredPhpVersion = PhpRuntimeResolver.GetRequiredPhpVersion(meta);
+        string phpExePath;
 
-        string phpExePath = Path.Combine(appRootPath, "runtimes", "php", "bin", "php", "php.exe");
-        if (!File.Exists(phpExePath))
+        if (!string.IsNullOrWhiteSpace(meta.CustomJavaPath) && File.Exists(meta.CustomJavaPath))
         {
-            throw new FileNotFoundException($"PHP executable not found at {phpExePath}.");
+            phpExePath = meta.CustomJavaPath;
+            onLog($"[PocketMC] Using custom PHP executable: {phpExePath}");
+        }
+        else
+        {
+            onLog($"[PocketMC] Verifying PHP {requiredPhpVersion} runtime for Pocketmine-MP...");
+            await _phpProvisioning.EnsurePhpVersionAsync(requiredPhpVersion);
+
+            phpExePath = _phpProvisioning.GetPhpExecutablePath(requiredPhpVersion)
+                ?? Path.Combine(appRootPath, "runtime", $"php{requiredPhpVersion}", "bin", "php", "php.exe");
+
+            if (!File.Exists(phpExePath))
+            {
+                throw new FileNotFoundException($"PHP {requiredPhpVersion} executable not found at {phpExePath}.");
+            }
         }
 
         string pharPath = Path.Combine(workingDir, "PocketMine-MP.phar");

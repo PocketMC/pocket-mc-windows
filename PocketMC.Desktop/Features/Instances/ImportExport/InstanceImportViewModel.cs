@@ -1,3 +1,4 @@
+using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Domain.Exceptions;
 using System;
 using System.IO;
@@ -10,7 +11,7 @@ using PocketMC.Application.Interfaces;
 using PocketMC.Application.Interfaces.Instances;
 using PocketMC.Domain.Models;
 
-namespace PocketMC.Infrastructure.Instances;
+namespace PocketMC.Desktop.Features.Instances.ImportExport;
 
 public sealed class InstanceImportViewModel : ObservableObject
 {

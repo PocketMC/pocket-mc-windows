@@ -17,4 +17,8 @@
     <EmbeddedResource Include="Web\**\*.*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="PocketMC.RemoteControl.Tests" />
+    <InternalsVisibleTo Include="PocketMC.Desktop.Tests" />
+  </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
-﻿using PocketMC.Desktop.Features.Shell;
+using PocketMC.Infrastructure.Configuration;
+using PocketMC.Desktop.Features.Shell;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Infrastructure;
@@ -89,24 +90,6 @@ public partial class App : System.Windows.Application
         var appState = Services.GetRequiredService<PocketMC.Application.Services.Shell.ApplicationState>();
         var updateService = Services.GetRequiredService<PocketMC.Desktop.Infrastructure.UpdateService>();
 
-        if (!System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
-        {
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
-
-            var updateWindow = Services.GetRequiredService<PocketMC.Desktop.Features.Shell.StartupUpdateWindow>();
-            updateWindow.StartUpdateCheck();
-            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
-            updateWindow.ShowDialog();
-
-            if (!updateWindow.ShouldContinueToApp)
-            {
-                Shutdown(0);
-                return;
-            }
-
-            ShutdownMode = ShutdownMode.OnLastWindowClose;
-        }
-
         var mainWindow = Services.GetRequiredService<MainWindow>();
         if (Services.GetService<IAppNavigationService>() is IAppNavigationService appNavigationService)
         {
@@ -116,13 +99,28 @@ public partial class App : System.Windows.Application
 
         if (startupOptions.ShouldStartMinimizedToTray)
         {
-            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
+            SplashWindow.CloseSplash();
             mainWindow.ShowMinimizedToTray();
         }
         else
         {
-            PocketMC.Desktop.Program.Splash?.Close(TimeSpan.Zero);
+            SplashWindow.CloseSplash();
             mainWindow.Show();
+        }
+
+        if (!System.Diagnostics.Debugger.IsAttached && updateService.IsInstalled)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await updateService.CheckAndDownloadAsync();
+                }
+                catch (Exception ex)
+                {
+                    Services.GetService<ILogger<App>>()?.LogError(ex, "Background auto-update check failed.");
+                }
+            });
         }
 
         if (!string.IsNullOrEmpty(startupOptions.ActivatedUri))
@@ -246,7 +244,7 @@ public partial class App : System.Windows.Application
                             }
                         }
 
-                        var settingsManager = Services.GetRequiredService<PocketMC.Infrastructure.Telemetry.SettingsManager>();
+                        var settingsManager = Services.GetRequiredService<PocketMC.Infrastructure.Configuration.SettingsManager>();
 
                         applicationState.Settings.DiscordUserId = userId;
                         applicationState.Settings.DiscordApiUrl = apiUrl;

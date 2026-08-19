@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PocketMC.Application.Interfaces;
 using PocketMC.Application.Services.Instances;
+using PocketMC.Application.Services.Networking;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Models;
 using PocketMC.Infrastructure.Networking;
@@ -209,23 +210,44 @@ namespace PocketMC.Desktop.Features.Tunnel
                     return;
                 }
 
-                // Check for port collision robustly across the entire ecosystem
+                // Check for port collision robustly across the entire ecosystem with protocol awareness
                 var allServers = _instanceRegistry.GetAll();
+                PortProtocol targetProtocol = string.Equals(route.Protocol, "UDP", StringComparison.OrdinalIgnoreCase)
+                    ? PortProtocol.Udp
+                    : PortProtocol.Tcp;
+
                 foreach (var s in allServers)
                 {
-                    if (s.ServerPort == newPort && (s.Id != route.ServerId || route.PortType != "Main"))
+                    bool isBedrock = s.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true ||
+                                     s.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
+                    PortProtocol serverMainProto = isBedrock ? PortProtocol.Udp : PortProtocol.Tcp;
+
+                    if (s.ServerPort == newPort && serverMainProto == targetProtocol && (s.Id != route.ServerId || route.PortType != "Main"))
                     {
-                        AppDialog.ShowError("Port Collision", $"Port {newPort} is already in use as the main port for server '{s.Name}'.");
+                        AppDialog.ShowError("Port Collision", $"Port {newPort} ({targetProtocol}) is already assigned as the main port for server '{s.Name}'.");
                         return;
                     }
-                    if (_geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(s.Id)) && s.GeyserBedrockPort == newPort && (s.Id != route.ServerId || route.PortType != "Geyser"))
+                    if (_geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(s.Id)) && s.GeyserBedrockPort == newPort && targetProtocol == PortProtocol.Udp && (s.Id != route.ServerId || route.PortType != "Geyser"))
                     {
-                        AppDialog.ShowError("Port Collision", $"Port {newPort} is already in use as the Geyser bedrock bridge port for server '{s.Name}'.");
+                        AppDialog.ShowError("Port Collision", $"Port {newPort} (UDP) is already assigned as the Geyser bedrock bridge port for server '{s.Name}'.");
                         return;
                     }
-                    if (s.SimpleVoiceChatDetected && s.SimpleVoiceChatPort == newPort && (s.Id != route.ServerId || route.PortType != "Voice"))
+                    if (s.SimpleVoiceChatDetected && s.SimpleVoiceChatPort == newPort && targetProtocol == PortProtocol.Udp && (s.Id != route.ServerId || route.PortType != "Voice"))
                     {
-                        AppDialog.ShowError("Port Collision", $"Port {newPort} is already in use as the Simple Voice Chat port for server '{s.Name}'.");
+                        AppDialog.ShowError("Port Collision", $"Port {newPort} (UDP) is already assigned as the Simple Voice Chat port for server '{s.Name}'.");
+                        return;
+                    }
+                }
+
+                // Check OS socket availability
+                var probeService = _serviceProvider.GetService<PortProbeService>();
+                if (probeService != null)
+                {
+                    var probeReq = new PortCheckRequest(newPort, targetProtocol);
+                    var probeResult = probeService.Probe(probeReq);
+                    if (!probeResult.IsSuccessful)
+                    {
+                        AppDialog.ShowError("Port Already In Use", $"Port {newPort} ({targetProtocol}) is currently being used by another application on your computer.");
                         return;
                     }
                 }

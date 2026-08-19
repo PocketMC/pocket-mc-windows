@@ -60,9 +60,13 @@ namespace PocketMC.Desktop.Features.Settings
         // ── Installed addon collections ──────────────────────────────────
         private List<PluginItemViewModel> _allPlugins = new();
         private List<ModItemViewModel> _allMods = new();
+        private List<BedrockPackItemViewModel> _allBehaviorPacks = new();
+        private List<BedrockPackItemViewModel> _allResourcePacks = new();
 
         public ObservableCollection<PluginItemViewModel> Plugins { get; } = new();
         public ObservableCollection<ModItemViewModel> Mods { get; } = new();
+        public ObservableCollection<BedrockPackItemViewModel> BehaviorPacks { get; } = new();
+        public ObservableCollection<BedrockPackItemViewModel> ResourcePacks { get; } = new();
 
         // ── Search & Filter ──────────────────────────────────────────────
         private string _searchText = "";
@@ -98,11 +102,54 @@ namespace PocketMC.Desktop.Features.Settings
 
 
         public bool IsServerRunning => _isRunningCheck();
-        public bool ShowServerRunningAddonMessage => IsServerRunning && (_allMods.Count > 0 || _allPlugins.Count > 0);
-        public string ServerRunningAddonMessage => "Stop the server before enabling or disabling mods/plugins.";
+        public bool ShowServerRunningAddonMessage => IsServerRunning && (_allMods.Count > 0 || _allPlugins.Count > 0 || _allBehaviorPacks.Count > 0 || _allResourcePacks.Count > 0);
+        public string ServerRunningAddonMessage => "Stop the server before enabling or disabling mods/plugins/packs.";
 
         private bool _autoUpdateAddons;
         public bool AutoUpdateAddons { get => _autoUpdateAddons; set { if (SetProperty(ref _autoUpdateAddons, value)) _onAddonChanged(); } }
+
+        private bool _texturepackRequired;
+        public bool TexturepackRequired
+        {
+            get => _texturepackRequired;
+            set
+            {
+                if (SetProperty(ref _texturepackRequired, value))
+                {
+                    UpdateServerPropertiesTexturepackRequired(value);
+                    _onAddonChanged();
+                }
+            }
+        }
+
+        private int _selectedBedrockTab = 0; // 0 = Behavior Packs, 1 = Resource Packs
+        public int SelectedBedrockTab
+        {
+            get => _selectedBedrockTab;
+            set
+            {
+                if (SetProperty(ref _selectedBedrockTab, value))
+                {
+                    OnPropertyChanged(nameof(IsBehaviorPacksTabSelected));
+                    OnPropertyChanged(nameof(IsResourcePacksTabSelected));
+                }
+            }
+        }
+
+        public bool IsBehaviorPacksTabSelected
+        {
+            get => _selectedBedrockTab == 0;
+            set { if (value) SelectedBedrockTab = 0; }
+        }
+
+        public bool IsResourcePacksTabSelected
+        {
+            get => _selectedBedrockTab == 1;
+            set { if (value) SelectedBedrockTab = 1; }
+        }
+
+        public ICommand SelectBedrockTabCommand { get; }
+        public string SearchPlaceholder => IsBedrockDedicated ? "Search add-ons and packs..." : "Search plugins and mods...";
 
         // ── Engine predicates ────────────────────────────────────────────
         public bool ShowVanillaWarning => _metadata.ServerType?.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) == true;
@@ -131,6 +178,9 @@ namespace PocketMC.Desktop.Features.Settings
         // Bedrock-specific
         public ICommand ImportBedrockAddonCommand { get; }
         public ICommand DeleteBedrockAddonCommand { get; }
+        public ICommand ToggleBedrockPackCommand { get; }
+        public ICommand MoveBedrockPackUpCommand { get; }
+        public ICommand MoveBedrockPackDownCommand { get; }
 
         // PocketMine-specific
 
@@ -211,16 +261,29 @@ namespace PocketMC.Desktop.Features.Settings
                 async _ => { if (IsBedrockDedicated) await ImportBedrockAddonAsync(); else await AddModAsync(); },
                 _ => !_isRunningCheck() && !ShowVanillaWarning && (_metadata.Compatibility.SupportsMods || _metadata.Compatibility.SupportsBedrockAddons));
             DeleteModCommand = new RelayCommand(
-                async p => { if (IsBedrockDedicated) await DeleteBedrockAddonAsync(p as string); else await DeleteModAsync(p as string); },
+                async p => { if (IsBedrockDedicated) await DeleteBedrockPackAsync(p); else await DeleteModAsync(p as string); },
                 _ => !_isRunningCheck());
             BrowseModrinthModsCommand = new RelayCommand(
                 _ => { if (IsBedrockDedicated) ImportBedrockAddonCommand?.Execute(null); else BrowseModrinth("project_type:mod"); },
                 _ => _metadata.Compatibility.SupportsMods && _metadata.Compatibility.SupportsModrinth);
             BrowseModpacksCommand = new RelayCommand(_ => BrowseModrinth("project_type:modpack"), _ => _metadata.Compatibility.SupportsModpacks);
 
-            // ── Bedrock-specific commands (also reachable via unified commands above) ─
+            // ── Bedrock-specific commands ─
+            SelectBedrockTabCommand = new RelayCommand(p =>
+            {
+                if (p is int tab) SelectedBedrockTab = tab;
+                else if (int.TryParse(p?.ToString(), out int parsedTab)) SelectedBedrockTab = parsedTab;
+            });
             ImportBedrockAddonCommand = new RelayCommand(async _ => await ImportBedrockAddonAsync(), _ => IsBedrockDedicated && !_isRunningCheck());
-            DeleteBedrockAddonCommand = new RelayCommand(async p => await DeleteBedrockAddonAsync(p as string), _ => IsBedrockDedicated && !_isRunningCheck());
+            DeleteBedrockAddonCommand = new RelayCommand(async p => await DeleteBedrockPackAsync(p), _ => IsBedrockDedicated && !_isRunningCheck());
+            ToggleBedrockPackCommand = new RelayCommand(async p => await ToggleBedrockPackAsync(p as BedrockPackItemViewModel), p => p is BedrockPackItemViewModel && !_isRunningCheck());
+            MoveBedrockPackUpCommand = new RelayCommand(async p => await MoveBedrockPackAsync(p as BedrockPackItemViewModel, true), p => p is BedrockPackItemViewModel pack && pack.IsEnabled && !_isRunningCheck());
+            MoveBedrockPackDownCommand = new RelayCommand(async p => await MoveBedrockPackAsync(p as BedrockPackItemViewModel, false), p => p is BedrockPackItemViewModel pack && pack.IsEnabled && !_isRunningCheck());
+
+            if (IsBedrockDedicated)
+            {
+                LoadServerPropertiesTexturepackRequired();
+            }
 
             // ── PocketMine-specific commands ──────────────────────────────
 
@@ -284,8 +347,11 @@ namespace PocketMC.Desktop.Features.Settings
                 var manifest = _manifestService.LoadManifest(_serverDir);
                 if (IsBedrockDedicated)
                 {
-                    var items = BuildBedrockAddonList();
-                    _allMods = items;
+                    LoadServerPropertiesTexturepackRequired();
+                    var (bps, rps) = await BuildBedrockPacksAsync();
+                    _allBehaviorPacks = bps;
+                    _allResourcePacks = rps;
+                    _allMods = new List<ModItemViewModel>();
                     _allPlugins = new List<PluginItemViewModel>();
                     ApplyFiltersAndSort();
                 }
@@ -294,6 +360,8 @@ namespace PocketMC.Desktop.Features.Settings
                     var items = BuildPocketminePluginList(manifest);
                     _allPlugins = items;
                     _allMods = new List<ModItemViewModel>();
+                    _allBehaviorPacks = new List<BedrockPackItemViewModel>();
+                    _allResourcePacks = new List<BedrockPackItemViewModel>();
                     ApplyFiltersAndSort();
                 }
                 else
@@ -309,6 +377,8 @@ namespace PocketMC.Desktop.Features.Settings
                         .ToList();
                     _allPlugins = pluginItems;
                     _allMods = modItems;
+                    _allBehaviorPacks = new List<BedrockPackItemViewModel>();
+                    _allResourcePacks = new List<BedrockPackItemViewModel>();
                     ApplyFiltersAndSort();
                 }
             };
@@ -354,69 +424,299 @@ namespace PocketMC.Desktop.Features.Settings
 
         // ── Bedrock addon management ──────────────────────────────────────
 
-        private List<ModItemViewModel> BuildBedrockAddonList()
+        private void LoadServerPropertiesTexturepackRequired()
         {
-            var result = new List<ModItemViewModel>();
-            var installed = _bedrockInstaller.GetInstalledAddons(_serverDir);
-            foreach (var addon in installed)
+            try
             {
-                result.Add(new ModItemViewModel
+                string propsPath = Path.Combine(_serverDir, "server.properties");
+                if (File.Exists(propsPath))
                 {
-                    Name = addon.Name,
-                    DisplayName = addon.Name,
-                    FileName = Path.GetFileName(addon.FilePath),
-                    Path = addon.FilePath,
-                    SizeKb = addon.SizeKb,
-                    LastModified = addon.LastModified,
-                    AddonType = addon.AddonType,
-                    SourceLabel = "Manual",
-                    Icon = AddonIconService.BedrockFallback
-                });
+                    foreach (var line in File.ReadAllLines(propsPath))
+                    {
+                        string trimmed = line.Trim();
+                        if (trimmed.StartsWith("texturepack-required", StringComparison.OrdinalIgnoreCase))
+                        {
+                            int eq = trimmed.IndexOf('=');
+                            if (eq > 0)
+                            {
+                                string val = trimmed[(eq + 1)..].Trim();
+                                _texturepackRequired = bool.TryParse(val, out bool b) && b;
+                                OnPropertyChanged(nameof(TexturepackRequired));
+                                break;
+                            }
+                        }
+                    }
+                }
             }
-            return result;
+            catch { }
+        }
+
+        private void UpdateServerPropertiesTexturepackRequired(bool required)
+        {
+            try
+            {
+                string propsPath = Path.Combine(_serverDir, "server.properties");
+                if (File.Exists(propsPath))
+                {
+                    var lines = File.ReadAllLines(propsPath).ToList();
+                    bool found = false;
+                    for (int i = 0; i < lines.Count; i++)
+                    {
+                        if (lines[i].Trim().StartsWith("texturepack-required", StringComparison.OrdinalIgnoreCase))
+                        {
+                            lines[i] = $"texturepack-required={(required ? "true" : "false")}";
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        lines.Add($"texturepack-required={(required ? "true" : "false")}");
+                    }
+                    File.WriteAllLines(propsPath, lines);
+                }
+            }
+            catch { }
+        }
+
+        private async Task<(List<BedrockPackItemViewModel> BehaviorPacks, List<BedrockPackItemViewModel> ResourcePacks)> BuildBedrockPacksAsync()
+        {
+            var bps = new List<BedrockPackItemViewModel>();
+            var rps = new List<BedrockPackItemViewModel>();
+
+            var installed = _bedrockInstaller.GetPacks(_serverDir);
+            var sorted = installed
+                .OrderByDescending(p => p.IsEnabled)
+                .ThenBy(p => p.IsEnabled ? p.LoadOrder : int.MaxValue)
+                .ThenBy(p => p.Name);
+
+            foreach (var pack in sorted)
+            {
+                var vm = new BedrockPackItemViewModel
+                {
+                    Uuid = pack.Uuid,
+                    Name = pack.Name,
+                    Description = pack.Description,
+                    Version = pack.Version,
+                    MinEngineVersion = pack.MinEngineVersion,
+                    PackType = pack.PackType,
+                    DirectoryPath = pack.DirectoryPath,
+                    IconPath = pack.IconPath,
+                    IsEnabled = pack.IsEnabled,
+                    LoadOrder = pack.LoadOrder,
+                    SizeKb = pack.SizeKb,
+                    LastModified = pack.LastModified,
+                    Icon = pack.PackType == BedrockPackType.Behavior ? AddonIconService.BedrockBehaviorFallback : AddonIconService.BedrockResourceFallback
+                };
+
+                if (!string.IsNullOrWhiteSpace(pack.IconPath) && File.Exists(pack.IconPath))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        var icon = await AddonIconService.GetLocalIconAsync(pack.IconPath);
+                        if (icon != null)
+                        {
+                            DispatchToUI(() => vm.Icon = icon);
+                        }
+                    });
+                }
+
+                if (pack.PackType == BedrockPackType.Behavior)
+                {
+                    bps.Add(vm);
+                }
+                else
+                {
+                    rps.Add(vm);
+                }
+            }
+
+            return (bps, rps);
+        }
+
+        private async Task ToggleBedrockPackAsync(BedrockPackItemViewModel? pack)
+        {
+            if (pack == null) return;
+            if (_isRunningCheck())
+            {
+                _dialogService.ShowMessage("Server is Running", ServerRunningAddonMessage, DialogType.Warning);
+                return;
+            }
+
+            bool targetState = !pack.IsEnabled;
+            pack.IsEnabled = targetState;
+
+            var collection = pack.PackType == BedrockPackType.Behavior ? BehaviorPacks : ResourcePacks;
+            var list = pack.PackType == BedrockPackType.Behavior ? _allBehaviorPacks : _allResourcePacks;
+            var activePacks = list.Where(p => p.IsEnabled).ToList();
+
+            if (targetState)
+            {
+                pack.LoadOrder = activePacks.Count;
+                int curIdx = collection.IndexOf(pack);
+                int targetIdx = activePacks.Count - 1;
+                if (curIdx >= 0 && targetIdx >= 0 && curIdx != targetIdx)
+                {
+                    collection.Move(curIdx, targetIdx);
+                }
+            }
+            else
+            {
+                pack.LoadOrder = -1;
+                int order = 1;
+                foreach (var p in activePacks)
+                {
+                    p.LoadOrder = order++;
+                }
+                int curIdx = collection.IndexOf(pack);
+                int targetIdx = activePacks.Count;
+                if (curIdx >= 0 && targetIdx >= 0 && curIdx < targetIdx)
+                {
+                    collection.Move(curIdx, targetIdx);
+                }
+            }
+
+            try
+            {
+                await _bedrockInstaller.SetPackEnabledAsync(_serverDir, pack.Uuid, pack.PackType, targetState);
+                _onAddonChanged();
+            }
+            catch (Exception ex)
+            {
+                // Revert on failure
+                pack.IsEnabled = !targetState;
+                _dialogService.ShowMessage("Error", $"Could not toggle pack: {ex.Message}", DialogType.Error);
+            }
+        }
+
+        private async Task MoveBedrockPackAsync(BedrockPackItemViewModel? pack, bool moveUp)
+        {
+            if (pack == null || !pack.IsEnabled) return;
+            if (_isRunningCheck())
+            {
+                _dialogService.ShowMessage("Server is Running", ServerRunningAddonMessage, DialogType.Warning);
+                return;
+            }
+
+            var collection = pack.PackType == BedrockPackType.Behavior ? BehaviorPacks : ResourcePacks;
+            var allList = pack.PackType == BedrockPackType.Behavior ? _allBehaviorPacks : _allResourcePacks;
+
+            int curUiIdx = collection.IndexOf(pack);
+            if (curUiIdx < 0) return;
+
+            var activePacks = allList.Where(p => p.IsEnabled).OrderBy(p => p.LoadOrder).ToList();
+            int curActiveIdx = activePacks.IndexOf(pack);
+            if (curActiveIdx < 0) return;
+
+            int targetActiveIdx = moveUp ? curActiveIdx - 1 : curActiveIdx + 1;
+            if (targetActiveIdx < 0 || targetActiveIdx >= activePacks.Count) return;
+
+            var otherPack = activePacks[targetActiveIdx];
+            int otherUiIdx = collection.IndexOf(otherPack);
+            if (otherUiIdx < 0) return;
+
+            int oldOrder = pack.LoadOrder;
+            pack.LoadOrder = otherPack.LoadOrder;
+            otherPack.LoadOrder = oldOrder;
+
+            collection.Move(curUiIdx, otherUiIdx);
+
+            try
+            {
+                await _bedrockInstaller.ReorderPackAsync(_serverDir, pack.Uuid, pack.PackType, moveUp);
+                _onAddonChanged();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Error", $"Could not reorder pack: {ex.Message}", DialogType.Error);
+            }
+        }
+
+        private async Task DeleteBedrockPackAsync(object? param)
+        {
+            if (param == null) return;
+            if (_isRunningCheck())
+            {
+                _dialogService.ShowMessage("Server is Running", ServerRunningAddonMessage, DialogType.Warning);
+                return;
+            }
+
+            BedrockPackItemViewModel? pack = param as BedrockPackItemViewModel;
+            if (pack == null && param is string pathOrId)
+            {
+                pack = _allBehaviorPacks.Concat(_allResourcePacks).FirstOrDefault(p =>
+                    string.Equals(p.Uuid, pathOrId, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(p.DirectoryPath, pathOrId, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(Path.GetFileName(p.DirectoryPath), pathOrId, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (pack == null) return;
+
+            string packTypeStr = pack.PackType == BedrockPackType.Behavior ? "behavior" : "resource";
+            if (await _dialogService.ShowDialogAsync("Confirm Delete", $"Permanently remove {packTypeStr} pack '{pack.DisplayName}'?\n\nThis will remove it from your world and delete the pack files from disk.", DialogType.Question) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                await _bedrockInstaller.DeletePackAsync(_serverDir, pack.Uuid, pack.PackType);
+                if (pack.PackType == BedrockPackType.Behavior)
+                {
+                    _allBehaviorPacks.Remove(pack);
+                    BehaviorPacks.Remove(pack);
+                }
+                else
+                {
+                    _allResourcePacks.Remove(pack);
+                    ResourcePacks.Remove(pack);
+                }
+                _onAddonChanged();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Error", $"Could not delete pack: {ex.Message}", DialogType.Error);
+            }
         }
 
         private async Task ImportBedrockAddonAsync()
         {
-            const string filter = "Bedrock Add-ons (*.mcpack;*.mcaddon)|*.mcpack;*.mcaddon|All Files (*.*)|*.*";
+            if (_isRunningCheck())
+            {
+                _dialogService.ShowMessage("Server is Running", ServerRunningAddonMessage, DialogType.Warning);
+                return;
+            }
+
+            const string filter = "Bedrock Add-ons (*.mcpack;*.mcaddon;*.zip)|*.mcpack;*.mcaddon;*.zip|All Files (*.*)|*.*";
             var files = await _dialogService.OpenFilesDialogAsync("Import Bedrock Add-on(s)", filter);
+            if (files == null || files.Length == 0) return;
+
+            int successCount = 0;
+            var errors = new List<string>();
 
             foreach (var f in files)
             {
                 try
                 {
-                    await _bedrockInstaller.InstallAsync(f, _serverDir);
-                    _dialogService.ShowMessage("Installed", $"'{System.IO.Path.GetFileName(f)}' was installed successfully.");
+                    var installed = await _bedrockInstaller.InstallAddonAsync(f, _serverDir);
+                    successCount += installed.Count;
                 }
                 catch (Exception ex)
                 {
-                    _dialogService.ShowMessage("Install Failed", ex.Message, DialogType.Error);
+                    errors.Add($"{Path.GetFileName(f)}: {ex.Message}");
                 }
             }
 
             LoadAddons();
             _onAddonChanged();
-        }
 
-        private async Task DeleteBedrockAddonAsync(string? packDirOrId)
-        {
-            if (packDirOrId == null) return;
-
-            string displayName = System.IO.Path.GetFileName(packDirOrId);
-            if (await _dialogService.ShowDialogAsync("Confirm", $"Remove addon '{displayName}'?", DialogType.Question) != DialogResult.Yes)
-                return;
-
-            try
+            if (errors.Count > 0)
             {
-                // UninstallAsync accepts a directory path — pass relative dir name if full path given.
-                string id = System.IO.Path.GetFileName(packDirOrId);
-                await _bedrockInstaller.UninstallAsync(id, _serverDir);
-                LoadAddons();
-                _onAddonChanged();
+                string msg = string.Join("\n\n", errors);
+                string title = errors.Count == 1 ? "Invalid Add-on" : "Import Warnings";
+                _dialogService.ShowMessage(title, msg, DialogType.Warning);
             }
-            catch (Exception ex)
+            else if (successCount > 0)
             {
-                _dialogService.ShowMessage("Error", ex.Message, DialogType.Error);
+                _dialogService.ShowMessage("Installed", $"{successCount} Bedrock pack(s) installed and registered in your world successfully.", DialogType.Information);
             }
         }
 
@@ -1481,6 +1781,44 @@ namespace PocketMC.Desktop.Features.Settings
                 Mods.Clear();
                 foreach (var m in filteredMods) Mods.Add(m);
 
+                // Apply filter to Bedrock Behavior Packs
+                var filteredBps = _allBehaviorPacks.AsEnumerable();
+                if (!string.IsNullOrWhiteSpace(SearchText))
+                {
+                    string query = SearchText.Trim();
+                    filteredBps = filteredBps.Where(b =>
+                        b.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        b.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        b.Uuid.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        b.Version.Contains(query, StringComparison.OrdinalIgnoreCase));
+                }
+                filteredBps = filteredBps
+                    .OrderByDescending(b => b.IsEnabled)
+                    .ThenBy(b => b.IsEnabled ? b.LoadOrder : int.MaxValue)
+                    .ThenBy(b => b.Name);
+
+                BehaviorPacks.Clear();
+                foreach (var b in filteredBps) BehaviorPacks.Add(b);
+
+                // Apply filter to Bedrock Resource Packs
+                var filteredRps = _allResourcePacks.AsEnumerable();
+                if (!string.IsNullOrWhiteSpace(SearchText))
+                {
+                    string query = SearchText.Trim();
+                    filteredRps = filteredRps.Where(r =>
+                        r.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        r.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        r.Uuid.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        r.Version.Contains(query, StringComparison.OrdinalIgnoreCase));
+                }
+                filteredRps = filteredRps
+                    .OrderByDescending(r => r.IsEnabled)
+                    .ThenBy(r => r.IsEnabled ? r.LoadOrder : int.MaxValue)
+                    .ThenBy(r => r.Name);
+
+                ResourcePacks.Clear();
+                foreach (var r in filteredRps) ResourcePacks.Add(r);
+
                 OnPropertyChanged(nameof(IsServerRunning));
                 OnPropertyChanged(nameof(ShowServerRunningAddonMessage));
             });
@@ -1718,6 +2056,83 @@ namespace PocketMC.Desktop.Features.Settings
         }
     }
 
+    public class BedrockPackItemViewModel : Core.Mvvm.ViewModelBase
+    {
+        public string Uuid { get; set; } = "";
+        public string Name { get; set; } = "";
+
+        public string DisplayName
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(Name) && !Name.StartsWith("pack.", StringComparison.OrdinalIgnoreCase))
+                    return Name;
+
+                if (!string.IsNullOrWhiteSpace(DirectoryPath))
+                {
+                    string folder = Path.GetFileName(DirectoryPath);
+                    if (!string.IsNullOrWhiteSpace(folder))
+                        return folder.Replace('_', ' ').Replace('-', ' ');
+                }
+
+                return !string.IsNullOrWhiteSpace(Uuid) ? Uuid : "Bedrock Pack";
+            }
+        }
+
+        public string Description { get; set; } = "";
+        public string CleanDescription => Description.StartsWith("pack.", StringComparison.OrdinalIgnoreCase) ? "" : Description;
+        public string Version { get; set; } = "1.0.0";
+        public string MinEngineVersion { get; set; } = "";
+        public BedrockPackType PackType { get; set; }
+        public string DirectoryPath { get; set; } = "";
+        public string? IconPath { get; set; }
+
+        private ImageSource? _icon;
+        public ImageSource? Icon
+        {
+            get => _icon;
+            set => SetProperty(ref _icon, value);
+        }
+
+        public double SizeKb { get; set; }
+        public string FormattedSize => SizeKb >= 1024 ? $"{SizeKb / 1024.0:N1} MB" : $"{SizeKb:N0} KB";
+        public DateTime LastModified { get; set; }
+
+        private bool _isEnabled;
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (SetProperty(ref _isEnabled, value))
+                {
+                    OnPropertyChanged(nameof(StatusBadgeText));
+                    OnPropertyChanged(nameof(IsLoadOrderVisible));
+                }
+            }
+        }
+
+        private int _loadOrder = -1;
+        public int LoadOrder
+        {
+            get => _loadOrder;
+            set
+            {
+                if (SetProperty(ref _loadOrder, value))
+                {
+                    OnPropertyChanged(nameof(LoadOrderText));
+                    OnPropertyChanged(nameof(IsLoadOrderVisible));
+                }
+            }
+        }
+
+        public string LoadOrderText => LoadOrder > 0 ? $"#{LoadOrder}" : "";
+        public bool IsLoadOrderVisible => IsEnabled && LoadOrder > 0;
+        public string StatusBadgeText => IsEnabled ? "ACTIVE" : "INACTIVE";
+        public string TypeBadgeText => PackType == BedrockPackType.Behavior ? "BEHAVIOR" : "RESOURCE";
+        public bool HasVersion => !string.IsNullOrWhiteSpace(Version);
+        public bool HasDescription => !string.IsNullOrWhiteSpace(CleanDescription);
+    }
 }
 
 

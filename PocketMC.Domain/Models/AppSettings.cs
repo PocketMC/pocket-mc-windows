@@ -20,8 +20,7 @@ namespace PocketMC.Domain.Models
         public string? PlayitConfigDirectory { get; set; }
         public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }
         public bool HasCompletedFirstLaunch { get; set; }
-        public bool StartWithWindows { get; set; }
-        public bool StartOnSystemBoot { get; set; }
+        public bool StartWithWindows { get; set; } = false;
         public bool StartMinimizedToTray { get; set; }
         public bool MinimizeToTrayOnClose { get; set; }
         public bool KeepComputerAwakeWhileServersRunning { get; set; } = true;

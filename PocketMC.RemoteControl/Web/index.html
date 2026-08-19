@@ -463,6 +463,11 @@
                 <!-- Dynamically populated by JS: / > world > playerdata -->
               </div>
               <div class="files-actions">
+                <input type="file" id="fileUploadInput" multiple hidden />
+                <button id="uploadFilesBtn" class="primary-button" type="button">
+                  <span class="button-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>
+                  <span>Upload</span>
+                </button>
                 <button id="refreshFilesBtn" class="secondary-button" type="button">
                   <span class="button-icon"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg></span>
                   <span>Refresh</span>
@@ -547,22 +552,28 @@
         </button>
       </section>
 
-      <section id="errorView" class="panel error-panel" hidden>
-        <div class="panel-icon danger" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-        </div>
-        <div class="panel-copy">
-          <p class="eyebrow">Remote access</p>
-          <h2>Connection problem</h2>
-          <p id="errorMessage"></p>
-        </div>
-        <div class="pair-actions">
-          <button id="retryButton" class="primary-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
-            </span>
-            <span>Retry</span>
-          </button>
+      <section id="errorView" class="panel offline-host-panel" hidden>
+        <div class="offline-host-container">
+          <div class="offline-icon-wrapper">
+            <span class="offline-pulse-ring"></span>
+            <div class="offline-icon-box">
+              <svg viewBox="0 0 24 24" class="offline-server-svg"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            </div>
+          </div>
+          <div class="offline-status-badge">
+            <span class="offline-badge-dot"></span>
+            <span>Host Stopped</span>
+          </div>
+          <h2 class="offline-title">PocketMC Host is Offline</h2>
+          <p id="errorMessage" class="offline-description">PocketMC Desktop or remote service is currently stopped on the host computer. The dashboard will automatically reconnect once it is running.</p>
+          <div class="offline-actions">
+            <button id="retryButton" class="primary-button offline-retry-btn" type="button">
+              <span class="button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-13.7 5.6M4 12A8 8 0 0 1 17.7 6.4M17 3v4h4M7 21v-4H3"/></svg>
+              </span>
+              <span>Reconnect Now</span>
+            </button>
+          </div>
         </div>
       </section>
 

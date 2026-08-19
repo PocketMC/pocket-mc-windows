@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Console;
 using System;
 using System.Collections.Concurrent;
@@ -1220,13 +1220,25 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         bool newValue = !IsWhitelistEnabled;
         IsWhitelistEnabled = newValue;
 
-        // Bedrock uses "allow-list", Java/PocketMine use "white-list"
-        string propertyKey = IsBedrock ? "allow-list" : "white-list";
-        _configService.SaveProperty(_workingDirectory, propertyKey, newValue ? "true" : "false");
-
-        if (IsServerOnline)
+        try
         {
-            await _runtimeApplier.ApplyWhitelistToggleAsync(_metadata.Id, newValue);
+            // Bedrock uses "allow-list", Java/PocketMine use "white-list"
+            string propertyKey = IsBedrock ? "allow-list" : "white-list";
+            _configService.SaveProperty(_workingDirectory, propertyKey, newValue ? "true" : "false");
+
+            if (IsServerOnline)
+            {
+                await _runtimeApplier.ApplyWhitelistToggleAsync(_metadata.Id, newValue);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to toggle whitelist.");
+            // Revert UI toggle since it failed
+            IsWhitelistEnabled = !newValue;
+            _dialogService.ShowMessage("Error",
+                "Failed to save whitelist settings. The properties file might be locked by another process.",
+                DialogType.Error);
         }
     }
 
@@ -1254,23 +1266,33 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        // Always write the file directly so the UI refreshes instantly.
-        // When online, also send the runtime command so the running server picks it up.
-        var result = await _whitelistService.AddPlayerAsync(_metadata, username);
-
-        if (IsServerOnline)
+        try
         {
-            await _runtimeApplier.ApplyWhitelistAddAsync(_metadata.Id, username);
+            // Always write the file directly so the UI refreshes instantly.
+            // When online, also send the runtime command so the running server picks it up.
+            var result = await _whitelistService.AddPlayerAsync(_metadata, username);
+
+            if (IsServerOnline)
+            {
+                await _runtimeApplier.ApplyWhitelistAddAsync(_metadata.Id, username);
+            }
+
+            WhitelistAddUsername = string.Empty;
+            await LoadWhitelistAsync();
+
+            if (result == WhitelistAddResult.AddedWithOfflineUuidFallback)
+            {
+                _dialogService.ShowMessage("Warning",
+                    $"Failed to resolve Mojang UUID for '{username}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.",
+                    DialogType.Warning);
+            }
         }
-
-        WhitelistAddUsername = string.Empty;
-        await LoadWhitelistAsync();
-
-        if (result == WhitelistAddResult.AddedWithOfflineUuidFallback)
+        catch (Exception ex)
         {
-            _dialogService.ShowMessage("Warning",
-                $"Failed to resolve Mojang UUID for '{username}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.",
-                DialogType.Warning);
+            _logger.LogError(ex, "Failed to add player to whitelist.");
+            _dialogService.ShowMessage("Error",
+                "Failed to add the player. The whitelist file might be locked by another process, or it contains invalid formatting.",
+                DialogType.Error);
         }
     }
 
@@ -1278,16 +1300,26 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     {
         if (string.IsNullOrWhiteSpace(username)) return;
 
-        // Always write the file directly so the UI refreshes instantly.
-        // When online, also send the runtime command so the running server picks it up.
-        await _whitelistService.RemovePlayerAsync(_metadata, username);
-
-        if (IsServerOnline)
+        try
         {
-            await _runtimeApplier.ApplyWhitelistRemoveAsync(_metadata.Id, username);
-        }
+            // Always write the file directly so the UI refreshes instantly.
+            // When online, also send the runtime command so the running server picks it up.
+            await _whitelistService.RemovePlayerAsync(_metadata, username);
 
-        await LoadWhitelistAsync();
+            if (IsServerOnline)
+            {
+                await _runtimeApplier.ApplyWhitelistRemoveAsync(_metadata.Id, username);
+            }
+
+            await LoadWhitelistAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove player from whitelist.");
+            _dialogService.ShowMessage("Error",
+                "Failed to remove the player. The whitelist file might be locked by another process, or it contains invalid formatting.",
+                DialogType.Error);
+        }
     }
 
     private async Task ReloadWhitelistAsync()

@@ -1,4 +1,4 @@
-﻿using PocketMC.Domain.Storage;
+using PocketMC.Domain.Storage;
 using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Diagnostics;
@@ -336,7 +336,7 @@ namespace PocketMC.Desktop.Features.Console
                 Logs.Add(line);
                 if (PassesFilter(line))
                 {
-                    FilteredLogs.Add(line);
+                    LogParagraph.Inlines.Add(new System.Windows.Documents.Run(line.Text + Environment.NewLine) { Foreground = line.TextColor });
                     addedToFiltered = true;
                 }
                 count++;
@@ -348,15 +348,19 @@ namespace PocketMC.Desktop.Features.Console
             {
                 var removed = Logs[0];
                 Logs.RemoveAt(0);
-                if (FilteredLogs.Count > 0 && FilteredLogs[0] == removed)
-                    FilteredLogs.RemoveAt(0);
+                if (PassesFilter(removed))
+                {
+                    if (LogParagraph.Inlines.Count > 0)
+                    {
+                        LogParagraph.Inlines.Remove(LogParagraph.Inlines.FirstInline);
+                    }
+                }
             }
 
-            // Auto-scroll to bottom of the ListView
-            if (addedToFiltered && LogView != null && (BtnAutoScroll?.IsChecked ?? true))
+            // Auto-scroll to bottom of the RichTextBox
+            if (addedToFiltered && LogRichTextBox != null && (BtnAutoScroll?.IsChecked ?? true))
             {
-                if (FilteredLogs.Count > 0)
-                    LogView.ScrollIntoView(FilteredLogs[^1]);
+                LogRichTextBox.ScrollToEnd();
             }
         }
 
@@ -393,17 +397,19 @@ namespace PocketMC.Desktop.Features.Console
 
         private void ApplyFilters()
         {
-            if (FilteredLogs == null) return;
+            if (LogParagraph == null) return;
 
-            FilteredLogs.Clear();
+            LogParagraph.Inlines.Clear();
             foreach (var line in Logs)
             {
                 if (PassesFilter(line))
-                    FilteredLogs.Add(line);
+                {
+                    LogParagraph.Inlines.Add(new System.Windows.Documents.Run(line.Text + Environment.NewLine) { Foreground = line.TextColor });
+                }
             }
 
-            if (FilteredLogs.Count > 0 && (BtnAutoScroll?.IsChecked ?? true))
-                LogView.ScrollIntoView(FilteredLogs[^1]);
+            if (LogParagraph.Inlines.Count > 0 && (BtnAutoScroll?.IsChecked ?? true))
+                LogRichTextBox?.ScrollToEnd();
         }
 
         private async System.Threading.Tasks.Task LoadSessionLogHistoryAsync()
@@ -599,9 +605,22 @@ namespace PocketMC.Desktop.Features.Console
             {
                 Logs.Clear();
                 FilteredLogs.Clear();
+                LogParagraph?.Inlines.Clear();
                 e.Handled = true;
                 return;
             }
+        }
+
+        private void BtnAnalyzeSelection_Click(object sender, RoutedEventArgs e)
+        {
+            if (LogRichTextBox == null || string.IsNullOrWhiteSpace(LogRichTextBox.Selection.Text))
+            {
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("No Selection", "Please highlight some text in the console to analyze.");
+                return;
+            }
+
+            string selectedText = LogRichTextBox.Selection.Text;
+            _ = PerformAIAnalysisAsync(selectedText);
         }
 
         private async void TxtCommand_KeyDown(object sender, KeyEventArgs e)
@@ -857,7 +876,7 @@ namespace PocketMC.Desktop.Features.Console
 
         private void EnsureLogScrollViewer()
         {
-            _logScrollViewer ??= FindDescendant<ScrollViewer>(LogView);
+            _logScrollViewer ??= FindDescendant<ScrollViewer>(LogRichTextBox);
         }
 
         private void BtnCloseAiPanel_Click(object sender, RoutedEventArgs e)
@@ -870,23 +889,15 @@ namespace PocketMC.Desktop.Features.Console
             AiPanelColumn.Width = open ? new GridLength(420) : new GridLength(0);
         }
 
-        private async void BtnAnalyzeLine_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is LogLine line)
-            {
-                await AnalyzeLogLineAsync(line);
-            }
-        }
-
         private async void BtnAiSummary_Click(object sender, RoutedEventArgs e)
         {
             await SummarizeSessionAsync();
         }
 
-        private async System.Threading.Tasks.Task AnalyzeLogLineAsync(LogLine line)
+        private async System.Threading.Tasks.Task PerformAIAnalysisAsync(string contextText)
         {
             ToggleAiPanel(true);
-            TxtAiStatus.Text = "Analyzing error context...";
+            TxtAiStatus.Text = "Analyzing text...";
             TxtAiStatus.Visibility = Visibility.Visible;
             AiProgress.Visibility = Visibility.Visible;
             TxtAiResponse.Markdown = string.Empty;
@@ -902,32 +913,22 @@ namespace PocketMC.Desktop.Features.Console
 
                 var provider = _providerFactory.ParseProvider(_applicationState.Settings.AiProvider);
 
-                // Gather context: 5 lines before, 25 lines after
-                int targetIdx = Logs.IndexOf(line);
-                int start = Math.Max(0, targetIdx - 5);
-                int end = Math.Min(Logs.Count - 1, targetIdx + 25);
-
-                var contextBuilder = new StringBuilder();
-                for (int i = start; i <= end; i++)
-                {
-                    contextBuilder.AppendLine(Logs[i].Text);
-                }
-
                 string prompt = @"You are a Minecraft Server Expert. Analyze the following log snippet and explain:
-1. What the error is in simple terms.
+1. What the error or message is in simple terms.
 2. The most likely cause.
 3. How to fix it (be specific).
+
+Keep the response brief, formatted in Markdown, and easily readable.
 
 Logs:
 ";
 
-                var result = await _providerFactory.GetProvider(provider).GenerateCompletionAsync(apiKey, _applicationState.Settings.GetCurrentAiModel() ?? "", _applicationState.Settings.GetCurrentAiEndpoint() ?? "", prompt, contextBuilder.ToString());
+                var result = await _providerFactory.GetProvider(provider).GenerateCompletionAsync(apiKey, _applicationState.Settings.GetCurrentAiModel() ?? "", _applicationState.Settings.GetCurrentAiEndpoint() ?? "", prompt, contextText);
 
                 if (result.Success)
                     TxtAiResponse.Markdown = result.Content;
                 else
                     TxtAiResponse.Markdown = $"Analysis failure: {result.Error}";
-
             }
             catch (Exception ex)
             {

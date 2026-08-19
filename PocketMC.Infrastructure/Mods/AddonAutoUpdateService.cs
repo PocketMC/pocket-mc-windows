@@ -12,7 +12,7 @@ using PocketMC.Domain.Models;
 using PocketMC.Application.Services.Mods;
 using PocketMC.Application.Interfaces.Mods;
 
-namespace PocketMC.Infrastructure.Telemetry;
+namespace PocketMC.Infrastructure.Mods;
 
 /// <summary>
 /// Orchestrates automatic addon update checks and installation at server startup.

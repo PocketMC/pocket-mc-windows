@@ -18,6 +18,7 @@ using PocketMC.Infrastructure.Instances;
 using PocketMC.Infrastructure.Instances.Updates;
 using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure.Php;
 using PocketMC.Infrastructure.Backups;
 using PocketMC.Infrastructure.Backups.Providers;
 using PocketMC.Infrastructure.Networking;
@@ -30,7 +31,7 @@ using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Features.Console;
 using PocketMC.Desktop.Features.Instances.Services;
 
-namespace PocketMC.Application.Services.Instances
+namespace PocketMC.Desktop.Composition
 {
     public static class InstanceServiceCollectionExtensions
     {

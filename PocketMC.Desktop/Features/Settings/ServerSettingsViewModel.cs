@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Desktop.Features.Mods;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Core.Interfaces;

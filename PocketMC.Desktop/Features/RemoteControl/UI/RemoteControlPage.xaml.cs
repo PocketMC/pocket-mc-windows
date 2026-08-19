@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Infrastructure;
 using System.Windows;
 using System.Windows.Controls;
 using PocketMC.Infrastructure;
@@ -11,6 +11,8 @@ namespace PocketMC.Desktop.Features.RemoteControl.UI
 {
     public partial class RemoteControlPage : Page
     {
+        private RemoteControlSettingsViewModel ViewModel => (RemoteControlSettingsViewModel)DataContext;
+
         public RemoteControlPage(RemoteControlSettingsViewModel viewModel)
         {
             InitializeComponent();

@@ -187,7 +187,7 @@ namespace PocketMC.Desktop.Infrastructure
             {
                 nameof(DashboardPage) => "Dashboard",
                 nameof(TunnelPage) => "Tunnel",
-                nameof(JavaSetupPage) => "Java Setup",
+                nameof(JavaSetupPage) => "Runtimes",
                 nameof(AboutPage) => "About",
                 nameof(AppSettingsPage) => "Settings",
                 nameof(NewInstancePage) => "New Instance",

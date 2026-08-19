@@ -238,7 +238,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
 
         DialogResult confirm = await _dialogService.ShowDialogAsync(
             "Apply Update",
-            $"Update this server to Minecraft {targetMcVersion}?\n\nPocketMC will download the necessary files.",
+            $"Update this server to {CurrentServerType} {targetMcVersion}?\n\nPocketMC will download the necessary files.",
             DialogType.Question);
 
         if (confirm != DialogResult.Yes)

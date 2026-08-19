@@ -28,11 +28,21 @@ namespace PocketMC.Desktop.Infrastructure
                 _ => AppDialogType.Info
             };
 
-            // Only use the 3-button layout if a specific text for the third button is provided.
-            // This prevents redundant "No" and "Cancel" buttons from appearing together for simple confirmations.
-            var buttons = (showCancel && !string.IsNullOrEmpty(cancelButtonText))
-                ? AppDialogButtons.YesNoCancel
-                : AppDialogButtons.YesNo;
+            AppDialogButtons buttons;
+            if (showCancel && !string.IsNullOrEmpty(cancelButtonText))
+            {
+                buttons = AppDialogButtons.YesNoCancel;
+            }
+            else if (type == DialogType.Information && !showCancel && string.IsNullOrEmpty(secondaryButtonText))
+            {
+                // Pure informational dialogs with no secondary choice show a single button
+                buttons = AppDialogButtons.Ok;
+            }
+            else
+            {
+                // All other confirmation prompts (Question, Warning, Danger, Discard, Delete, etc.) show 2 buttons
+                buttons = AppDialogButtons.YesNo;
+            }
             DialogResult result = AppDialog.ShowResult(
                 title,
                 message,

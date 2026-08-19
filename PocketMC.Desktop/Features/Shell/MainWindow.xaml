@@ -214,7 +214,7 @@
                                            Icon="{ui:SymbolIcon Settings24}"
                                            TargetPageType="{x:Type setup:AppSettingsPage}"/>
                     <ui:NavigationViewItem x:Name="NavJavaSetup"
-                                           Content="Java Setup"
+                                           Content="Runtimes"
                                            Icon="{ui:SymbolIcon ArrowDownload24}"
                                            TargetPageType="{x:Type setup:JavaSetupPage}"/>
                     <ui:NavigationViewItem x:Name="NavAbout"

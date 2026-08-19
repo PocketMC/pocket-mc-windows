@@ -1,6 +1,10 @@
 using PocketMC.Application.Services.Shell;
 using PocketMC.Domain.Models;
+using PocketMC.Infrastructure.Configuration;
+using PocketMC.Infrastructure.Instances;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -10,107 +14,409 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-
-namespace PocketMC.Infrastructure.Instances;
-
-public class PhpProvisioningService
+namespace PocketMC.Infrastructure.Php
 {
-    private readonly HttpClient _httpClient;
-    private readonly DownloaderService _downloader;
-    private readonly ApplicationState _applicationState;
-    private readonly ILogger<PhpProvisioningService> _logger;
-
-    public PhpProvisioningService(
-        HttpClient httpClient,
-        DownloaderService downloader,
-        ApplicationState applicationState,
-        ILogger<PhpProvisioningService> logger)
+    public class PhpProvisioningService
     {
-        _httpClient = httpClient;
-        _downloader = downloader;
-        _applicationState = applicationState;
-        _logger = logger;
+        private readonly HttpClient _httpClient;
+        private readonly DownloaderService _downloader;
+        private readonly ApplicationState _applicationState;
+        private readonly ILogger<PhpProvisioningService> _logger;
 
-        if (!_httpClient.DefaultRequestHeaders.UserAgent.Any(x => x.Product?.Name == "PocketMC.Desktop"))
+        private readonly ConcurrentDictionary<string, Task> _inflightProvisioning = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, PhpProvisioningStatus> _statuses = new(StringComparer.OrdinalIgnoreCase);
+
+        public event Action<PhpProvisioningStatus>? OnProvisioningStatusChanged;
+
+        public PhpProvisioningService(
+            HttpClient httpClient,
+            DownloaderService downloader,
+            ApplicationState applicationState,
+            ILogger<PhpProvisioningService> logger)
         {
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("PocketMC.Desktop/1.3.0");
-        }
-    }
+            _httpClient = httpClient;
+            _downloader = downloader;
+            _applicationState = applicationState;
+            _logger = logger;
 
-    public virtual bool IsPhpPresent()
-    {
-        string appRoot = _applicationState.GetRequiredAppRootPath();
-        string phpExePath = Path.Combine(appRoot, "runtimes", "php", "bin", "php", "php.exe");
-        return File.Exists(phpExePath);
-    }
-
-    public virtual async Task EnsurePhpAsync(IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
-    {
-        if (IsPhpPresent())
-        {
-            return;
+            if (!_httpClient.DefaultRequestHeaders.UserAgent.Any(x => x.Product?.Name == "PocketMC.Desktop"))
+            {
+                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"PocketMC.Desktop/{AppConfig.AppVersion}");
+            }
         }
 
-        string appRoot = _applicationState.GetRequiredAppRootPath();
-        string runtimesDir = Path.Combine(appRoot, "runtimes");
-        string phpDir = Path.Combine(runtimesDir, "php");
-        string tempZipPath = Path.Combine(runtimesDir, "php_temp.zip");
-
-        Directory.CreateDirectory(runtimesDir);
-
-        try
+        public virtual string? GetPhpExecutablePath(string version)
         {
-            _logger.LogInformation("Resolving official PocketMine PHP binaries...");
+            if (!_applicationState.IsConfigured) return null;
+            string appRoot = _applicationState.GetRequiredAppRootPath();
 
-            // Get the specific tag recommended for PM5
-            var response = await _httpClient.GetFromJsonAsync<JsonObject>("https://api.github.com/repos/pmmp/PHP-Binaries/releases/tags/pm5-php-8.2-latest", cancellationToken);
-            var assets = response?["assets"] as JsonArray;
+            // Check new consolidated runtime/php{version}
+            string phpDir = Path.Combine(appRoot, "runtime", $"php{version}");
+            string? found = ProbeExecutable(phpDir);
+            if (found != null) return found;
 
-            string? downloadUrl = null;
-            if (assets != null)
+            // Check legacy runtimes/php if version is 8.2 and auto-migrate
+            if (version == "8.2")
             {
-                var windowsAsset = assets.FirstOrDefault(a =>
-                    a is JsonObject aObj &&
-                    aObj["name"]?.ToString().Contains("Windows-x64-PM5") == true &&
-                    aObj["name"]?.ToString().EndsWith(".zip") == true) as JsonObject;
-
-                downloadUrl = windowsAsset?["browser_download_url"]?.ToString();
+                string legacyPhpDir = Path.Combine(appRoot, "runtimes", "php");
+                string? legacyFound = ProbeExecutable(legacyPhpDir);
+                if (legacyFound != null)
+                {
+                    TryMigrateLegacyPhpDirectory(legacyPhpDir, phpDir);
+                    return ProbeExecutable(phpDir) ?? legacyFound;
+                }
             }
 
-            if (string.IsNullOrEmpty(downloadUrl))
+            return null;
+        }
+
+        private static string? ProbeExecutable(string phpDir)
+        {
+            if (!Directory.Exists(phpDir)) return null;
+
+            string p1 = Path.Combine(phpDir, "bin", "php", "php.exe");
+            if (File.Exists(p1)) return p1;
+
+            string p2 = Path.Combine(phpDir, "bin", "php.exe");
+            if (File.Exists(p2)) return p2;
+
+            string p3 = Path.Combine(phpDir, "php.exe");
+            if (File.Exists(p3)) return p3;
+
+            try
             {
-                throw new Exception("Could not find a valid Windows PHP binary in the PM5 latest tag.");
+                var matches = Directory.EnumerateFiles(phpDir, "php.exe", SearchOption.AllDirectories).ToList();
+                return matches.FirstOrDefault(m => m.IndexOf(@"\bin\php\php.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                    ?? matches.FirstOrDefault(m => m.IndexOf(@"\bin\php.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                    ?? matches.FirstOrDefault();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void TryMigrateLegacyPhpDirectory(string sourceDir, string targetDir)
+        {
+            try
+            {
+                if (Directory.Exists(sourceDir) && !Directory.Exists(targetDir))
+                {
+                    string targetParent = Path.GetDirectoryName(targetDir)!;
+                    Directory.CreateDirectory(targetParent);
+                    Directory.Move(sourceDir, targetDir);
+                    _logger.LogInformation("Successfully migrated legacy PHP runtime from {Source} to {Target}.", sourceDir, targetDir);
+
+                    string legacyParent = Path.GetDirectoryName(sourceDir)!;
+                    if (Directory.Exists(legacyParent) && !Directory.EnumerateFileSystemEntries(legacyParent).Any())
+                    {
+                        Directory.Delete(legacyParent, false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not migrate legacy PHP folder from {Source} to {Target}.", sourceDir, targetDir);
+            }
+        }
+
+        public virtual bool IsPhpVersionPresent(string version)
+        {
+            return GetPhpExecutablePath(version) != null;
+        }
+
+        public virtual bool IsPhpPresent()
+        {
+            return IsPhpVersionPresent(PhpRuntimeResolver.DefaultPhpVersion);
+        }
+
+        public virtual IReadOnlyList<PhpProvisioningStatus> GetStatuses()
+        {
+            return PhpRuntimeResolver.GetReleaseDefinitions()
+                .Select(def => GetStatus(def.Version))
+                .ToList();
+        }
+
+        public PhpProvisioningStatus GetStatus(string version)
+        {
+            if (_statuses.TryGetValue(version, out var status))
+            {
+                bool actualInstalled = IsPhpVersionPresent(version);
+                if (status.IsInstalled != actualInstalled && !status.IsBusy)
+                {
+                    status = CreateDefaultStatus(version);
+                    _statuses[version] = status;
+                }
+                return status;
+            }
+            return CreateDefaultStatus(version);
+        }
+
+        private PhpProvisioningStatus CreateDefaultStatus(string version)
+        {
+            var def = PhpRuntimeResolver.GetDefinition(version);
+            bool installed = IsPhpVersionPresent(version);
+            return new PhpProvisioningStatus
+            {
+                Version = version,
+                DisplayName = def?.DisplayName ?? $"PHP {version}",
+                IsInstalled = installed,
+                ExecutablePath = GetPhpExecutablePath(version),
+                Stage = installed ? PhpProvisioningStage.Ready : PhpProvisioningStage.Idle,
+                Message = installed ? "Installed" : "Not installed",
+                ProgressPercentage = installed ? 100 : 0
+            };
+        }
+
+        public async Task EnsureBundledRuntimesAsync(CancellationToken cancellationToken = default)
+        {
+            foreach (var version in PhpRuntimeResolver.GetBundledPhpVersions())
+            {
+                if (!IsPhpVersionPresent(version))
+                {
+                    await EnsurePhpVersionAsync(version, null, cancellationToken);
+                }
+            }
+        }
+
+        public Task EnsurePhpAsync(IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+        {
+            return EnsurePhpVersionAsync(PhpRuntimeResolver.DefaultPhpVersion, progress, cancellationToken);
+        }
+
+        public async Task EnsurePhpVersionAsync(
+            string version,
+            IProgress<DownloadProgress>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsPhpVersionPresent(version))
+            {
+                UpdateStatus(new PhpProvisioningStatus
+                {
+                    Version = version,
+                    DisplayName = PhpRuntimeResolver.GetDefinition(version)?.DisplayName ?? $"PHP {version}",
+                    IsInstalled = true,
+                    ExecutablePath = GetPhpExecutablePath(version),
+                    Stage = PhpProvisioningStage.Ready,
+                    Message = "Installed",
+                    ProgressPercentage = 100
+                });
+                return;
             }
 
-            _logger.LogInformation("Downloading official PocketMine PHP binary...");
-            await _downloader.DownloadFileAsync(downloadUrl, tempZipPath, null, progress, cancellationToken);
+            Task task;
+            lock (_inflightProvisioning)
+            {
+                if (_inflightProvisioning.TryGetValue(version, out var existingTask))
+                {
+                    task = existingTask;
+                }
+                else
+                {
+                    task = ProvisionInternalAsync(version, progress, cancellationToken);
+                    _inflightProvisioning[version] = task;
+                }
+            }
 
-            _logger.LogInformation("Extracting PHP binary...");
+            try
+            {
+                await task;
+            }
+            finally
+            {
+                lock (_inflightProvisioning)
+                {
+                    _inflightProvisioning.TryRemove(version, out _);
+                }
+            }
+        }
+
+        private async Task ProvisionInternalAsync(
+            string version,
+            IProgress<DownloadProgress>? callerProgress,
+            CancellationToken cancellationToken)
+        {
+            var def = PhpRuntimeResolver.GetDefinition(version);
+            string displayName = def?.DisplayName ?? $"PHP {version}";
+            string appRoot = _applicationState.GetRequiredAppRootPath();
+            string runtimeDir = Path.Combine(appRoot, "runtime");
+            string phpDir = Path.Combine(runtimeDir, $"php{version}");
+            string tempZipPath = Path.Combine(runtimeDir, $"php{version}_temp.zip");
+
+            Directory.CreateDirectory(runtimeDir);
+
+            try
+            {
+                UpdateStatus(new PhpProvisioningStatus
+                {
+                    Version = version,
+                    DisplayName = displayName,
+                    Stage = PhpProvisioningStage.ResolvingPackage,
+                    Message = "Resolving PHP download package..."
+                });
+
+                string? downloadUrl = null;
+                if (def != null && !string.IsNullOrWhiteSpace(def.Tag))
+                {
+                    try
+                    {
+                        var response = await _httpClient.GetFromJsonAsync<JsonObject>(
+                            $"https://api.github.com/repos/pmmp/PHP-Binaries/releases/tags/{def.Tag}", cancellationToken);
+                        var assets = response?["assets"] as JsonArray;
+                        if (assets != null)
+                        {
+                            var matchedAsset = assets.FirstOrDefault(a =>
+                                a is JsonObject aObj &&
+                                aObj["name"]?.ToString().Contains(def.AssetPattern, StringComparison.OrdinalIgnoreCase) == true &&
+                                aObj["name"]?.ToString().EndsWith(".zip", StringComparison.OrdinalIgnoreCase) == true &&
+                                aObj["name"]?.ToString().Contains("symbol", StringComparison.OrdinalIgnoreCase) != true &&
+                                aObj["name"]?.ToString().Contains("debug", StringComparison.OrdinalIgnoreCase) != true) as JsonObject;
+
+                            downloadUrl = matchedAsset?["browser_download_url"]?.ToString();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to resolve PHP release via GitHub API for {Tag}. Falling back to direct URL.", def.Tag);
+                    }
+                }
+
+                if (string.IsNullOrEmpty(downloadUrl) && def != null)
+                {
+                    downloadUrl = def.FallbackDownloadUrl;
+                }
+
+                if (string.IsNullOrEmpty(downloadUrl))
+                {
+                    throw new InvalidOperationException($"Could not determine download URL for PHP version {version}.");
+                }
+
+                UpdateStatus(new PhpProvisioningStatus
+                {
+                    Version = version,
+                    DisplayName = displayName,
+                    Stage = PhpProvisioningStage.Downloading,
+                    Message = "Downloading PHP binary package...",
+                    ProgressPercentage = 0
+                });
+
+                var progressRelay = new Progress<DownloadProgress>(p =>
+                {
+                    callerProgress?.Report(p);
+                    UpdateStatus(new PhpProvisioningStatus
+                    {
+                        Version = version,
+                        DisplayName = displayName,
+                        Stage = PhpProvisioningStage.Downloading,
+                        Message = $"Downloading PHP... {p.Percentage:0}%",
+                        ProgressPercentage = p.Percentage
+                    });
+                });
+
+                await _downloader.DownloadFileAsync(downloadUrl, tempZipPath, null, progressRelay, cancellationToken);
+
+                UpdateStatus(new PhpProvisioningStatus
+                {
+                    Version = version,
+                    DisplayName = displayName,
+                    Stage = PhpProvisioningStage.Extracting,
+                    Message = "Extracting PHP binary package...",
+                    ProgressPercentage = 95
+                });
+
+                if (Directory.Exists(phpDir))
+                {
+                    Directory.Delete(phpDir, true);
+                }
+
+                await _downloader.ExtractZipAsync(tempZipPath, phpDir, null);
+
+                UpdateStatus(new PhpProvisioningStatus
+                {
+                    Version = version,
+                    DisplayName = displayName,
+                    Stage = PhpProvisioningStage.Verifying,
+                    Message = "Verifying PHP executable..."
+                });
+
+                string? exePath = ProbeExecutable(phpDir);
+                if (exePath == null || !File.Exists(exePath))
+                {
+                    throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {phpDir}.");
+                }
+
+                UpdateStatus(new PhpProvisioningStatus
+                {
+                    Version = version,
+                    DisplayName = displayName,
+                    IsInstalled = true,
+                    ExecutablePath = exePath,
+                    Stage = PhpProvisioningStage.Ready,
+                    Message = "Installed",
+                    ProgressPercentage = 100
+                });
+
+                _logger.LogInformation("Successfully provisioned PHP {Version} to {Path}", version, exePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to provision PHP runtime version {Version}.", version);
+                UpdateStatus(new PhpProvisioningStatus
+                {
+                    Version = version,
+                    DisplayName = displayName,
+                    Stage = PhpProvisioningStage.Failed,
+                    Message = $"Failed: {ex.Message}"
+                });
+                throw;
+            }
+            finally
+            {
+                if (File.Exists(tempZipPath))
+                {
+                    try { File.Delete(tempZipPath); } catch { }
+                }
+            }
+        }
+
+        public async Task DeletePhpVersionAsync(string version)
+        {
+            if (!_applicationState.IsConfigured) return;
+            string appRoot = _applicationState.GetRequiredAppRootPath();
+            string phpDir = Path.Combine(appRoot, "runtime", $"php{version}");
+
             if (Directory.Exists(phpDir))
             {
-                Directory.Delete(phpDir, true);
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        Directory.Delete(phpDir, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to delete PHP runtime directory {Path}.", phpDir);
+                        throw;
+                    }
+                });
             }
 
-            await _downloader.ExtractZipAsync(tempZipPath, phpDir, progress);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to provision PHP runtime.");
-            throw;
-        }
-        finally
-        {
-            if (File.Exists(tempZipPath))
+            UpdateStatus(new PhpProvisioningStatus
             {
-                try
-                {
-                    File.Delete(tempZipPath);
-                }
-                catch (Exception cleanupEx)
-                {
-                    _logger.LogDebug(cleanupEx, "Best-effort PHP provisioning cleanup could not delete file {Path}.", tempZipPath);
-                }
-            }
+                Version = version,
+                DisplayName = PhpRuntimeResolver.GetDefinition(version)?.DisplayName ?? $"PHP {version}",
+                IsInstalled = false,
+                ExecutablePath = null,
+                Stage = PhpProvisioningStage.Idle,
+                Message = "Not installed",
+                ProgressPercentage = 0
+            });
+        }
+
+        private void UpdateStatus(PhpProvisioningStatus status)
+        {
+            _statuses[status.Version] = status;
+            OnProvisioningStatusChanged?.Invoke(status);
         }
     }
 }

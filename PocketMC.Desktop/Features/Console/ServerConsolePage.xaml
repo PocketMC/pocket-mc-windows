@@ -134,55 +134,26 @@
                     </Grid>
                 </Border>
 
-                <!-- Virtualized Log View -->
-                <ListView x:Name="LogView" Grid.Row="3" ItemsSource="{Binding FilteredLogs}"
-                            Background="Transparent" BorderThickness="0"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto"
-                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                            VirtualizingStackPanel.IsVirtualizing="True"
-                            VirtualizingStackPanel.VirtualizationMode="Recycling">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid x:Name="LogItemGrid">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0" Text="{Binding Text}" Foreground="{Binding TextColor}"
-                                           FontFamily="Cascadia Mono, Consolas" FontSize="14" TextWrapping="Wrap"
-                                           Padding="4,1"/>
-
-                                <ui:Button x:Name="BtnAnalyze" Grid.Column="1"
-                                           Icon="{ui:SymbolIcon Sparkle16}"
-                                           Appearance="Transparent" Padding="4,2" Margin="4,0"
-                                           VerticalAlignment="Top" Cursor="Hand"
-                                           ToolTip="AI: Explain this error"
-                                           Click="BtnAnalyzeLine_Click"
-                                           Visibility="Collapsed"/>
-                            </Grid>
-                            <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding Level}" Value="Error">
-                                    <Setter TargetName="BtnAnalyze" Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Level}" Value="Warn">
-                                    <Setter TargetName="BtnAnalyze" Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                            </DataTemplate.Triggers>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="ListViewItem">
-                                        <ContentPresenter />
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
+                <!-- Log View with Selectable Text -->
+                <RichTextBox x:Name="LogRichTextBox" Grid.Row="3"
+                             Background="Transparent" BorderThickness="0"
+                             IsReadOnly="True"
+                             IsDocumentEnabled="True"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Disabled"
+                             Padding="4,2">
+                    <RichTextBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="AI Analyze Selection"
+                                      Icon="{ui:SymbolIcon Sparkle16}"
+                                      Click="BtnAnalyzeSelection_Click"/>
+                            <MenuItem Header="Copy" Command="ApplicationCommands.Copy" />
+                        </ContextMenu>
+                    </RichTextBox.ContextMenu>
+                    <FlowDocument PagePadding="0" Background="Transparent" FontFamily="Cascadia Mono, Consolas" FontSize="14">
+                        <Paragraph x:Name="LogParagraph" Margin="0" LineHeight="20" />
+                    </FlowDocument>
+                </RichTextBox>
             </Grid>
         </Border>
             <!-- AI Side Panel Content -->

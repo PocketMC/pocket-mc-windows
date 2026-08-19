@@ -1,5 +1,6 @@
 using PocketMC.Application.Interfaces.Instances;
 using PocketMC.Domain.Models;
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Infrastructure.Mods;
@@ -31,7 +32,7 @@ public class PocketmineProvider : IServerSoftwareProvider
 
         if (!_httpClient.DefaultRequestHeaders.UserAgent.Any(x => x.Product?.Name == "PocketMC.Desktop"))
         {
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("PocketMC.Desktop/1.3.0");
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"PocketMC.Desktop/{AppConfig.AppVersion}");
         }
     }
 
@@ -40,7 +41,7 @@ public class PocketmineProvider : IServerSoftwareProvider
         var versions = new List<MinecraftVersion>();
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<JsonArray>("https://api.github.com/repos/pmmp/PocketMine-MP/releases");
+            var response = await _httpClient.GetFromJsonAsync<JsonArray>("https://api.github.com/repos/pmmp/PocketMine-MP/releases?per_page=100");
             if (response != null)
             {
                 foreach (var node in response)
@@ -76,26 +77,46 @@ public class PocketmineProvider : IServerSoftwareProvider
     {
         _logger.LogInformation("Resolving download URL for Pocketmine {Version}", versionId);
 
-        var response = await _httpClient.GetFromJsonAsync<JsonArray>("https://api.github.com/repos/pmmp/PocketMine-MP/releases");
         string? downloadUrl = null;
 
-        if (response != null)
+        // Try direct tag release endpoint first for instant resolution
+        try
         {
-            var release = response.FirstOrDefault(n => n is JsonObject r && r["tag_name"]?.ToString() == versionId) as JsonObject;
-            if (release != null)
+            var releaseObj = await _httpClient.GetFromJsonAsync<JsonObject>($"https://api.github.com/repos/pmmp/PocketMine-MP/releases/tags/{versionId}", cancellationToken);
+            var assets = releaseObj?["assets"] as JsonArray;
+            if (assets != null)
             {
-                var assets = release["assets"] as JsonArray;
-                if (assets != null)
-                {
-                    var pharAsset = assets.FirstOrDefault(a => a is JsonObject aObj && aObj["name"]?.ToString() == "PocketMine-MP.phar") as JsonObject;
-                    downloadUrl = pharAsset?["browser_download_url"]?.ToString();
-                }
+                var pharAsset = assets.FirstOrDefault(a => a is JsonObject aObj && aObj["name"]?.ToString() == "PocketMine-MP.phar") as JsonObject;
+                downloadUrl = pharAsset?["browser_download_url"]?.ToString();
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Direct tag lookup failed for PocketMine {Version}, falling back to list lookup.", versionId);
         }
 
         if (string.IsNullOrEmpty(downloadUrl))
         {
-            throw new Exception($"Could not find a valid PocketMine-MP.phar download URL for version {versionId}.");
+            var response = await _httpClient.GetFromJsonAsync<JsonArray>("https://api.github.com/repos/pmmp/PocketMine-MP/releases?per_page=100", cancellationToken);
+            if (response != null)
+            {
+                var release = response.FirstOrDefault(n => n is JsonObject r && r["tag_name"]?.ToString() == versionId) as JsonObject;
+                if (release != null)
+                {
+                    var assets = release["assets"] as JsonArray;
+                    if (assets != null)
+                    {
+                        var pharAsset = assets.FirstOrDefault(a => a is JsonObject aObj && aObj["name"]?.ToString() == "PocketMine-MP.phar") as JsonObject;
+                        downloadUrl = pharAsset?["browser_download_url"]?.ToString();
+                    }
+                }
+            }
+        }
+
+        // Direct GitHub asset download fallback
+        if (string.IsNullOrEmpty(downloadUrl))
+        {
+            downloadUrl = $"https://github.com/pmmp/PocketMine-MP/releases/download/{versionId}/PocketMine-MP.phar";
         }
 
         await _downloader.DownloadFileAsync(downloadUrl, destinationPath, null, progress, cancellationToken);

@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -8,7 +9,7 @@ using PocketMC.Domain.Security;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Security;
 
-namespace PocketMC.Infrastructure.Telemetry
+namespace PocketMC.Infrastructure.Configuration
 {
     public class SettingsManager
     {
@@ -20,13 +21,17 @@ namespace PocketMC.Infrastructure.Telemetry
 
         public event EventHandler<AppSettings>? SettingsSaved;
 
-        public SettingsManager(ILogger<SettingsManager>? logger = null)
+        public static string ResolveDefaultSettingsFilePath(string? customDataDirectory = null)
         {
-            _logger = logger;
-            _settingsFilePath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "PocketMC",
-                "settings.json");
+            string baseDir = !string.IsNullOrWhiteSpace(customDataDirectory)
+                ? customDataDirectory
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PocketMC");
+            return Path.Combine(baseDir, "settings.json");
+        }
+
+        public SettingsManager(ILogger<SettingsManager>? logger = null)
+            : this(ResolveDefaultSettingsFilePath(), logger)
+        {
         }
 
         public SettingsManager(string settingsFilePath, ILogger<SettingsManager>? logger = null)

@@ -29,6 +29,7 @@ public sealed class PortPreflightService
     private readonly PocketMC.Application.Services.Shell.ApplicationState _applicationState;
     private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
     private readonly ISimpleVoiceChatDetector _voiceChatDetector;
+    private readonly PortProbeService? _portProbeService;
     private readonly ILogger<PortPreflightService> _logger;
 
     /// <summary>
@@ -42,6 +43,22 @@ public sealed class PortPreflightService
         PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector,
         ISimpleVoiceChatDetector voiceChatDetector,
         ILogger<PortPreflightService> logger)
+        : this(registry, configurationService, serverProcessManager, applicationState, geyserDetector, voiceChatDetector, null, logger)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new port preflight service with port probe support for verified port recommendations.
+    /// </summary>
+    public PortPreflightService(
+        InstanceRegistry registry,
+        ServerConfigurationService configurationService,
+        ServerProcessManager serverProcessManager,
+        PocketMC.Application.Services.Shell.ApplicationState applicationState,
+        PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector,
+        ISimpleVoiceChatDetector voiceChatDetector,
+        PortProbeService? portProbeService,
+        ILogger<PortPreflightService> logger)
     {
         _registry = registry;
         _configurationService = configurationService;
@@ -49,6 +66,7 @@ public sealed class PortPreflightService
         _applicationState = applicationState;
         _geyserDetector = geyserDetector;
         _voiceChatDetector = voiceChatDetector;
+        _portProbeService = portProbeService;
         _logger = logger;
     }
 
@@ -81,8 +99,6 @@ public sealed class PortPreflightService
         var occupiedTargets = GetOtherInstanceTargets(metadata.Id);
         var detectedConflicts = new List<DetectedConflict>();
         var recommendations = new List<PortRecoveryRecommendation>();
-
-        bool isPlayitEnabled = _applicationState.IsConfigured && System.IO.File.Exists(_applicationState.GetPlayitExecutablePath());
 
         foreach (var target in targets)
         {
@@ -133,11 +149,6 @@ public sealed class PortPreflightService
                 }
 
                 if (!occupied.IsRunning)
-                {
-                    continue;
-                }
-
-                if (isPlayitEnabled)
                 {
                     continue;
                 }
@@ -830,7 +841,24 @@ public sealed class PortPreflightService
         {
             if (!occupiedPorts.Contains(candidate) && !IsPrivilegedPort(candidate))
             {
-                return candidate;
+                if (_portProbeService == null)
+                {
+                    return candidate;
+                }
+
+                var req = new PortCheckRequest(
+                    candidate,
+                    target.Protocol,
+                    target.IpMode,
+                    target.BindAddress,
+                    bindingRole: target.BindingRole,
+                    engine: target.Engine,
+                    displayName: target.Name);
+
+                if (_portProbeService.Probe(req).IsSuccessful)
+                {
+                    return candidate;
+                }
             }
 
             candidate++;

@@ -168,17 +168,21 @@ public sealed class PortFailureMessageService
 
     private static string BuildExternalConflictAction(PortCheckResult result, string? suggestedPortText)
     {
+        string suggestion = suggestedPortText != null
+            ? $" You can also {suggestedPortText}"
+            : " Choose a different port in Settings or use the Change Port dialog.";
+
         if (IsSimpleVoiceChatRequest(result.Request))
         {
-            return "A background process or another voice server is using this UDP port. Stop that process, then check Windows Firewall allows inbound UDP 24454 or the configured Simple Voice Chat port.";
+            return $"A background process or another voice server is using this UDP port. Stop that process, or allow inbound UDP 24454 or the configured Simple Voice Chat port in Windows Firewall.{suggestion}";
         }
 
         if (result.Request.Protocol == PortProtocol.Udp)
         {
-            return "A background process or another game server is currently using this UDP port. You must stop that process before starting this server. Also check Windows Firewall and Bedrock loopback settings for Bedrock/Geyser servers.";
+            return $"A background process or another game server is currently using this UDP port. You must stop that process or choose a different port.{suggestion}";
         }
 
-        return "A background process or another game server is currently using this port. You must stop that process before starting this server.";
+        return $"A background process or another game server is currently using this port. You must stop that process or choose a different port.{suggestion}";
     }
 
     private static string BuildBindFailureAction(PortCheckResult result, string? suggestedPortText)

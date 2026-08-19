@@ -1,3 +1,4 @@
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Application.Services.Setup;
 using PocketMC.Desktop.Core.Interfaces;
 using System;
@@ -58,6 +59,7 @@ namespace PocketMC.Desktop.Features.Setup
     {
         private readonly ApplicationState _applicationState;
         private readonly SettingsManager _settingsManager;
+        private readonly SettingsBackupService _settingsBackupService;
         private readonly IDialogService _dialogService;
         private readonly ILlmProviderFactory _aiProviderFactory;
         private readonly UpdateService _updateService;
@@ -96,6 +98,7 @@ namespace PocketMC.Desktop.Features.Setup
         public AppSettingsPage(
             ApplicationState applicationState,
             SettingsManager settingsManager,
+            SettingsBackupService settingsBackupService,
             IDialogService dialogService,
             ILlmProviderFactory aiProviderFactory,
             UpdateService updateService,
@@ -113,6 +116,7 @@ namespace PocketMC.Desktop.Features.Setup
             InitializeComponent();
             _applicationState = applicationState;
             _settingsManager = settingsManager;
+            _settingsBackupService = settingsBackupService;
             _dialogService = dialogService;
             _aiProviderFactory = aiProviderFactory;
             _updateService = updateService;
@@ -136,6 +140,14 @@ namespace PocketMC.Desktop.Features.Setup
             ScrollViewerHelper.EnableMouseWheelScrolling(this, MainScrollViewer);
             ScrollViewerHelper.DisableAncestorScrollViewers(this);
 
+            LoadSettingsIntoUI();
+
+            _healthMonitor.HealthChanged += UpdateDependencyHealth;
+            UpdateDependencyHealth();
+        }
+
+        private void LoadSettingsIntoUI()
+        {
             _isInitializing = true;
             RootDirectoryPathInput.Text = _applicationState.Settings.AppRootPath ?? "";
             CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
@@ -174,8 +186,8 @@ namespace PocketMC.Desktop.Features.Setup
             // Set initial state
             ExternalBackupPathInput.Text = _applicationState.Settings.ExternalBackupDirectory ?? "";
             ToggleStartWithWindows.IsChecked = _applicationState.Settings.StartWithWindows;
-            ToggleStartOnSystemBoot.IsChecked = _applicationState.Settings.StartOnSystemBoot;
             ToggleStartMinimizedToTray.IsChecked = _applicationState.Settings.StartMinimizedToTray;
+            ToggleStartMinimizedToTray.IsEnabled = _applicationState.Settings.StartWithWindows;
             ToggleMinimizeToTrayOnClose.IsChecked = _applicationState.Settings.MinimizeToTrayOnClose;
             ToggleKeepComputerAwakeWhileServersRunning.IsChecked = _applicationState.Settings.KeepComputerAwakeWhileServersRunning;
             ToggleTelemetry.IsChecked = _applicationState.Settings.EnableTelemetry;
@@ -208,9 +220,6 @@ namespace PocketMC.Desktop.Features.Setup
                 }
             }
 
-            _healthMonitor.HealthChanged += UpdateDependencyHealth;
-            UpdateDependencyHealth();
-
             // Discord RPC
             ToggleDiscordRpc.IsChecked = _applicationState.Settings.EnableDiscordRpc;
 
@@ -234,12 +243,7 @@ namespace PocketMC.Desktop.Features.Setup
         private void ToggleStartWithWindows_Changed(object sender, RoutedEventArgs e)
         {
             if (_isInitializing) return;
-            SaveStartupBehaviorSettings();
-        }
-
-        private void ToggleStartOnSystemBoot_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
+            ToggleStartMinimizedToTray.IsEnabled = ToggleStartWithWindows.IsChecked == true;
             SaveStartupBehaviorSettings();
         }
 
@@ -266,7 +270,6 @@ namespace PocketMC.Desktop.Features.Setup
                 settings.MinimizeToTrayOnClose = previousMinimizeToTrayOnClose;
                 RevertAppBehaviorToggles(
                     settings.StartWithWindows,
-                    settings.StartOnSystemBoot,
                     settings.StartMinimizedToTray,
                     previousMinimizeToTrayOnClose);
                 _dialogService.ShowMessage(
@@ -325,41 +328,45 @@ namespace PocketMC.Desktop.Features.Setup
         {
             var settings = _applicationState.Settings;
             bool previousStartWithWindows = settings.StartWithWindows;
-            bool previousStartOnSystemBoot = settings.StartOnSystemBoot;
             bool previousStartMinimizedToTray = settings.StartMinimizedToTray;
             bool previousMinimizeToTrayOnClose = settings.MinimizeToTrayOnClose;
 
-            settings.StartWithWindows = ToggleStartWithWindows.IsChecked == true;
-            settings.StartOnSystemBoot = ToggleStartOnSystemBoot.IsChecked == true;
-            settings.StartMinimizedToTray = ToggleStartMinimizedToTray.IsChecked == true;
-            settings.MinimizeToTrayOnClose = ToggleMinimizeToTrayOnClose.IsChecked == true;
+            bool newStartWithWindows = ToggleStartWithWindows.IsChecked == true;
+            bool newStartMinimizedToTray = ToggleStartMinimizedToTray.IsChecked == true;
+            bool newMinimizeToTrayOnClose = ToggleMinimizeToTrayOnClose.IsChecked == true;
+
+            if (newStartWithWindows == previousStartWithWindows &&
+                newStartMinimizedToTray == previousStartMinimizedToTray &&
+                newMinimizeToTrayOnClose == previousMinimizeToTrayOnClose)
+            {
+                return;
+            }
+
+            settings.StartWithWindows = newStartWithWindows;
+            settings.StartMinimizedToTray = newStartMinimizedToTray;
+            settings.MinimizeToTrayOnClose = newMinimizeToTrayOnClose;
 
             try
             {
                 _windowsStartupService.Apply(settings);
-                _windowsStartupService.ApplyBootTask(settings);
                 _settingsManager.Save(settings);
             }
             catch (Exception ex)
             {
                 settings.StartWithWindows = previousStartWithWindows;
-                settings.StartOnSystemBoot = previousStartOnSystemBoot;
                 settings.StartMinimizedToTray = previousStartMinimizedToTray;
                 settings.MinimizeToTrayOnClose = previousMinimizeToTrayOnClose;
 
                 try
                 {
                     _windowsStartupService.Apply(settings);
-                    _windowsStartupService.ApplyBootTask(settings);
                 }
                 catch
                 {
-                    // The visible toggle state still rolls back even if Windows rejects rollback too.
                 }
 
                 RevertAppBehaviorToggles(
                     previousStartWithWindows,
-                    previousStartOnSystemBoot,
                     previousStartMinimizedToTray,
                     previousMinimizeToTrayOnClose);
                 _dialogService.ShowMessage(
@@ -371,15 +378,14 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void RevertAppBehaviorToggles(
             bool startWithWindows,
-            bool startOnSystemBoot,
             bool startMinimizedToTray,
             bool minimizeToTrayOnClose)
         {
             bool wasInitializing = _isInitializing;
             _isInitializing = true;
             ToggleStartWithWindows.IsChecked = startWithWindows;
-            ToggleStartOnSystemBoot.IsChecked = startOnSystemBoot;
             ToggleStartMinimizedToTray.IsChecked = startMinimizedToTray;
+            ToggleStartMinimizedToTray.IsEnabled = startWithWindows;
             ToggleMinimizeToTrayOnClose.IsChecked = minimizeToTrayOnClose;
             _isInitializing = wasInitializing;
         }
@@ -1427,6 +1433,215 @@ namespace PocketMC.Desktop.Features.Setup
             finally
             {
                 BtnChangeRootDirectory.IsEnabled = true;
+            }
+        }
+
+        // ── Backup & Restore Handlers ────────────────────────────────────────
+
+        private void BackupSettings_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SettingsBackupDialogWindow(SettingsBackupDialogMode.Backup)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+
+                dialog.ShowDialog();
+                if (!dialog.Confirmed)
+                {
+                    return;
+                }
+
+                var categories = dialog.GetSelectedCategories();
+                var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = "Save Settings Backup",
+                    Filter = "PocketMC Settings Backup (*.json)|*.json|All Files (*.*)|*.*",
+                    FileName = $"PocketMC-Settings-Backup-{DateTime.Now:yyyy-MM-dd}.json",
+                    DefaultExt = ".json"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    var currentSettings = _settingsManager.Load();
+                    string json = _settingsBackupService.ExportToJson(currentSettings, categories);
+                    File.WriteAllText(saveFileDialog.FileName, json);
+
+                    _dialogService.ShowMessage(
+                        "Backup Saved",
+                        $"Your settings backup has been saved successfully to:\n{saveFileDialog.FileName}",
+                        DialogType.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Backup Failed", $"Could not save settings backup:\n{ex.Message}", DialogType.Error);
+            }
+        }
+
+        private async void RestoreSettings_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var openFileDialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Title = "Select PocketMC Settings Backup File",
+                    Filter = "PocketMC Settings Backup (*.json)|*.json|All Files (*.*)|*.*",
+                    CheckFileExists = true
+                };
+
+                if (openFileDialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                string fileContent = File.ReadAllText(openFileDialog.FileName);
+                SettingsBackupPackage package;
+                try
+                {
+                    package = _settingsBackupService.DeserializePackage(fileContent);
+                }
+                catch (Exception ex)
+                {
+                    _dialogService.ShowMessage(
+                        "Invalid Backup File",
+                        $"The selected file is not a valid PocketMC settings backup package.\n\nDetails: {ex.Message}",
+                        DialogType.Error);
+                    return;
+                }
+
+                var available = _settingsBackupService.GetAvailableCategories(package);
+                var dialog = new SettingsBackupDialogWindow(SettingsBackupDialogMode.Restore, available)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+
+                dialog.ShowDialog();
+                if (!dialog.Confirmed)
+                {
+                    return;
+                }
+
+                var categoriesToRestore = dialog.GetSelectedCategories();
+                var currentSettings = _settingsManager.Load();
+                var mergedSettings = _settingsBackupService.RestoreFromPackage(currentSettings, package, categoriesToRestore);
+
+                _settingsManager.Save(mergedSettings);
+                _applicationState.ApplySettings(mergedSettings);
+
+                // Apply visual/theme changes
+                if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+                {
+                    mainWin.ApplyTheme();
+                    mainWin.RequestMicaUpdate();
+                }
+
+                // Apply startup & sleep services
+                try
+                {
+                    _windowsStartupService.Apply(mergedSettings);
+                }
+                catch { }
+
+                _sleepPreventionCoordinator.Refresh();
+
+                if (mergedSettings.EnableDiscordRpc)
+                    _discordRpcService.Initialize();
+                else
+                    _discordRpcService.Shutdown();
+
+                // Refresh Page UI
+                LoadSettingsIntoUI();
+
+                await _dialogService.ShowDialogAsync(
+                    "Settings Restored",
+                    "The selected settings have been successfully restored.\n\nPocketMC will now restart to apply all configuration changes.",
+                    DialogType.Information,
+                    showCancel: false,
+                    primaryButtonText: "Restart");
+
+                RestartApplication();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Restore Failed", $"Could not restore settings:\n{ex.Message}", DialogType.Error);
+            }
+        }
+
+        private static void RestartApplication()
+        {
+            try
+            {
+                string? exePath = Environment.ProcessPath;
+                if (string.IsNullOrWhiteSpace(exePath))
+                {
+                    using var proc = Process.GetCurrentProcess();
+                    exePath = proc.MainModule?.FileName;
+                }
+
+                if (!string.IsNullOrWhiteSpace(exePath))
+                {
+                    var startInfo = new ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        UseShellExecute = true
+                    };
+
+                    if (Path.GetFileNameWithoutExtension(exePath).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var entryAssembly = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+                        if (!string.IsNullOrWhiteSpace(entryAssembly))
+                        {
+                            startInfo.ArgumentList.Add(entryAssembly);
+                        }
+                    }
+
+                    Process.Start(startInfo);
+                }
+            }
+            catch { }
+
+            System.Windows.Application.Current.Shutdown();
+        }
+
+        private async void ResetSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var confirmResult = await _dialogService.ShowDialogAsync(
+                "Reset All Settings",
+                "Are you sure you want to reset all app settings to default values?\n\n" +
+                "• Your server instances, worlds, and files will NOT be deleted.\n" +
+                "• Appearance, behavior toggles, API configurations, and notifications will be reset to factory defaults.",
+                DialogType.Question,
+                showCancel: false,
+                primaryButtonText: "Reset Settings",
+                secondaryButtonText: "Cancel");
+
+            if (confirmResult != DialogResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var defaultSettings = new AppSettings();
+                _settingsManager.Save(defaultSettings);
+                _applicationState.ApplySettings(defaultSettings);
+
+                try { _windowsStartupService.Apply(defaultSettings); } catch { }
+
+                await _dialogService.ShowDialogAsync(
+                    "Settings Reset",
+                    "PocketMC settings have been reset to defaults.\n\nPocketMC will now restart to apply default configurations.",
+                    DialogType.Information,
+                    showCancel: false,
+                    primaryButtonText: "Restart");
+
+                RestartApplication();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Reset Failed", $"Could not reset settings:\n{ex.Message}", DialogType.Error);
             }
         }
     }
