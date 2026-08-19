@@ -4,7 +4,6 @@ const viewKey = "pocketmc.remote.currentView"; // "instances"
 const els = {
   connectionLabel: document.querySelector("#connectionLabel"),
   refreshButton: document.querySelector("#refreshButton"),
-  refreshButton: document.querySelector("#refreshButton"),
 
   appView: document.querySelector("#appView"),
   emptyView: document.querySelector("#emptyView"),
@@ -17,7 +16,6 @@ const els = {
   loginForm: document.querySelector("#loginForm"),
   loginUsernameInput: document.querySelector("#loginUsernameInput"),
   loginPasswordInput: document.querySelector("#loginPasswordInput"),
-  loginSubmitButton: document.querySelector("#loginSubmitButton"),
   loginSubmitButton: document.querySelector("#loginSubmitButton"),
 
   instanceListSidebar: document.querySelector("#instanceListSidebar"),

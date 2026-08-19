@@ -87,6 +87,19 @@ public sealed class ServerLifecycleServiceTests
         Assert.Contains("Crash recovery was cancelled for instance {InstanceId}.", source, StringComparison.Ordinal);
         Assert.Contains("Unhandled error while processing crash recovery for instance {InstanceId}.", source, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Dispose_UnsubscribesFromCrashAnalyzedEvent()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Instances",
+            "Services",
+            "ServerLifecycleService.cs"));
+
+        Assert.Contains("_processManager.OnCrashAnalyzed -= HandleProcessManagerCrashAnalyzed;", source, StringComparison.Ordinal);
+    }
 }
 
 

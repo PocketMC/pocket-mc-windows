@@ -251,6 +251,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
     {
         _processManager.OnInstanceStateChanged -= HandleInstanceStateChanged;
         _processManager.OnServerCrashed -= HandleProcessManagerServerCrashed;
+        _processManager.OnCrashAnalyzed -= HandleProcessManagerCrashAnalyzed;
 
         CancelAllRestartDelays();
         ReleaseResidualNetworkingState();

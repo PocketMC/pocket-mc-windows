@@ -292,7 +292,7 @@ public sealed class RemoteDashboardHost
                 }
                 else
                 {
-                    var subUser = settings.Users?.FirstOrDefault(u => string.Equals(u.Username.Trim(), request.Username.Trim(), StringComparison.OrdinalIgnoreCase));
+                    var subUser = settings.Users?.FirstOrDefault(u => string.Equals(u.Username?.Trim(), request.Username.Trim(), StringComparison.OrdinalIgnoreCase));
                     if (subUser != null)
                     {
                         valid = _authenticationService.VerifyPassword(request.Password, subUser.PasswordHash);
@@ -1025,8 +1025,10 @@ public sealed class RemoteDashboardHost
         var settings = _applicationState.Settings.RemoteControl;
         if (!settings.RequireAuthentication) return true;
 
+        if (!context.User.Identity?.IsAuthenticated ?? true) return false;
+
         var role = context.User.FindFirstValue(ClaimTypes.Role);
-        return role == "Admin" || string.IsNullOrEmpty(role);
+        return string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
     }
 
     private RemoteControlUser? GetAuthenticatedUser(HttpContext context)

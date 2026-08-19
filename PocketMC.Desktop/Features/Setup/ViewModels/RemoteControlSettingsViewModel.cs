@@ -182,14 +182,15 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             return;
         }
 
-        var hashed = _authenticationService.HashPassword(user.Password);
         var adminHash = _applicationState.Settings.RemoteControl.PasswordHash;
 
-        if (!string.IsNullOrEmpty(adminHash) && hashed == adminHash)
+        if (!string.IsNullOrEmpty(adminHash) && _authenticationService.VerifyPassword(user.Password, adminHash))
         {
             SetStatus("Sub-user password cannot be the same as the admin password.", true);
             return;
         }
+
+        var hashed = _authenticationService.HashPassword(user.Password);
 
         user.PasswordHash = hashed;
         user.ProtectedPassword = PocketMC.Infrastructure.Security.DataProtector.Protect(user.Password);

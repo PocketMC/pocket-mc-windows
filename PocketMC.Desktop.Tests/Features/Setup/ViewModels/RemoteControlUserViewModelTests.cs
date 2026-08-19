@@ -113,4 +113,24 @@ public sealed class RemoteControlUserViewModelTests
         Assert.False(userModel.AllowAllInstances);
         Assert.True(userVm.IsRestrictedInstances);
     }
+
+    [Fact]
+    public void SaveUser_WhenPasswordMatchesAdminPassword_RejectsAndSetsError()
+    {
+        var authService = new RemoteAuthenticationService();
+        string adminPass = "AdminSecretPass123!";
+        _state.Settings.RemoteControl.PasswordHash = authService.HashPassword(adminPass);
+
+        var userModel = new RemoteControlUser { Username = "subuser" };
+        var userVm = new RemoteControlUserViewModel(userModel, _settingsVm)
+        {
+            Username = "subuser",
+            Password = adminPass
+        };
+
+        _settingsVm.SaveUser(userVm);
+
+        Assert.True(_settingsVm.IsStatusError);
+        Assert.Equal("Sub-user password cannot be the same as the admin password.", _settingsVm.StatusText);
+    }
 }

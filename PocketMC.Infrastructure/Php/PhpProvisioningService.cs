@@ -1,5 +1,6 @@
 using PocketMC.Application.Services.Shell;
 using PocketMC.Domain.Models;
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Infrastructure.Instances;
 using System;
 using System.Collections.Concurrent;
@@ -40,7 +41,7 @@ namespace PocketMC.Infrastructure.Php
 
             if (!_httpClient.DefaultRequestHeaders.UserAgent.Any(x => x.Product?.Name == "PocketMC.Desktop"))
             {
-                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("PocketMC.Desktop/1.3.0");
+                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"PocketMC.Desktop/{AppConfig.AppVersion}");
             }
         }
 

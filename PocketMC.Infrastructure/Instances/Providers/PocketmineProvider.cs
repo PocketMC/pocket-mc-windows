@@ -1,5 +1,6 @@
 using PocketMC.Application.Interfaces.Instances;
 using PocketMC.Domain.Models;
+using PocketMC.Infrastructure.Configuration;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Infrastructure.Mods;
@@ -31,7 +32,7 @@ public class PocketmineProvider : IServerSoftwareProvider
 
         if (!_httpClient.DefaultRequestHeaders.UserAgent.Any(x => x.Product?.Name == "PocketMC.Desktop"))
         {
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("PocketMC.Desktop/1.3.0");
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"PocketMC.Desktop/{AppConfig.AppVersion}");
         }
     }
 

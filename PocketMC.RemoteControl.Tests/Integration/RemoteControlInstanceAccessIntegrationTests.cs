@@ -309,4 +309,21 @@ public sealed class RemoteControlInstanceAccessIntegrationTests : IAsyncLifetime
         var statusA = await _client.GetAsync($"/api/instances/{_instanceA.Id}/status");
         Assert.Equal(HttpStatusCode.Forbidden, statusA.StatusCode);
     }
+
+    [Fact]
+    public async Task StatusEndpoint_WhenUnauthenticated_ReturnsFalseForAdminPermissions()
+    {
+        var response = await _client.GetAsync("/api/status");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var status = await response.Content.ReadFromJsonAsync<RemoteDashboardStatus>();
+        Assert.NotNull(status);
+        Assert.True(status.HostRunning);
+        Assert.False(status.AllowRemoteConsoleCommands);
+        Assert.False(status.AllowRemotePlayerActions);
+        Assert.False(status.AllowRemoteServerSettings);
+        Assert.False(status.AllowRemoteServerAddons);
+        Assert.False(status.AllowRemoteFileManager);
+        Assert.False(status.AllowRemoteServerBackups);
+    }
 }
