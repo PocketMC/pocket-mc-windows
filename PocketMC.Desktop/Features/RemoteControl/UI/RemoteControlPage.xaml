@@ -224,7 +224,12 @@
                                 </Border>
 
                                 <!-- Status Text -->
-                                <TextBlock Grid.Row="2" x:Name="RemoteStatusText" Text="{Binding StatusText}" FontSize="12" Margin="0,0,0,0" TextWrapping="Wrap">
+                                <TextBlock Grid.Row="2" x:Name="RemoteStatusText" 
+                                           Text="{Binding StatusText}" 
+                                           FontSize="12" 
+                                           Margin="0,4,0,0" 
+                                           TextWrapping="Wrap"
+                                           Visibility="{Binding HasStatusText, Converter={StaticResource BoolToVis}}">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Foreground" Value="#A6E3A1"/>
@@ -346,6 +351,52 @@
                         </StackPanel>
                         <ui:Button Grid.Column="1" Content="Add User" Appearance="Primary" Icon="{ui:SymbolIcon Add24}" Command="{Binding AddUserCommand}"/>
                     </Grid>
+
+                    <!-- Status Message Banner for Users & Permissions Tab -->
+                    <Border Visibility="{Binding HasStatusText, Converter={StaticResource BoolToVis}}" 
+                            Background="{DynamicResource ControlFillColorDefaultBrush}" 
+                            CornerRadius="6" 
+                            Padding="12,10" 
+                            Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon Margin="0,0,10,0" VerticalAlignment="Center">
+                                <ui:SymbolIcon.Style>
+                                    <Style TargetType="ui:SymbolIcon">
+                                        <Setter Property="Symbol" Value="CheckmarkCircle24"/>
+                                        <Setter Property="Foreground" Value="#A6E3A1"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                                <Setter Property="Symbol" Value="ErrorCircle24"/>
+                                                <Setter Property="Foreground" Value="#F38BA8"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ui:SymbolIcon.Style>
+                            </ui:SymbolIcon>
+                            <TextBlock Grid.Column="1" 
+                                       x:Name="UsersStatusText" 
+                                       Text="{Binding StatusText}" 
+                                       FontSize="13" 
+                                       FontWeight="Medium" 
+                                       VerticalAlignment="Center" 
+                                       TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#A6E3A1"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsStatusError}" Value="True">
+                                                <Setter Property="Foreground" Value="#F38BA8"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </Border>
 
                     <ui:CardExpander IsExpanded="{Binding IsAdminCredentialsExpanded, Mode=TwoWay}" Icon="{ui:SymbolIcon ShieldKeyhole24}" Margin="0,0,0,16">
                         <ui:CardExpander.Header>

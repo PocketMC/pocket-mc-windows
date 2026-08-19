@@ -21,6 +21,7 @@ public sealed class RemoteControlUserViewModelTests
     public RemoteControlUserViewModelTests()
     {
         _state = new ApplicationState();
+        _state.Settings.RemoteControl.Port = 25580;
         var tempConfigFile = Path.Combine(Path.GetTempPath(), $"PocketMC_Test_{Guid.NewGuid()}", "settings.json");
         _settingsManager = new SettingsManager(tempConfigFile);
 
@@ -115,11 +116,12 @@ public sealed class RemoteControlUserViewModelTests
     }
 
     [Fact]
-    public void SaveUser_WhenPasswordMatchesAdminPassword_RejectsAndSetsError()
+    public void SaveUser_WhenPasswordMatchesAdminPassword_SavesSuccessfully()
     {
         var authService = new RemoteAuthenticationService();
-        string adminPass = "AdminSecretPass123!";
+        string adminPass = "SharedPass123!";
         _state.Settings.RemoteControl.PasswordHash = authService.HashPassword(adminPass);
+        _state.Settings.RemoteControl.Username = "admin";
 
         var userModel = new RemoteControlUser { Username = "subuser" };
         var userVm = new RemoteControlUserViewModel(userModel, _settingsVm)
@@ -130,7 +132,47 @@ public sealed class RemoteControlUserViewModelTests
 
         _settingsVm.SaveUser(userVm);
 
+        Assert.False(_settingsVm.IsStatusError);
+        Assert.Equal("User 'subuser' credentials saved successfully.", _settingsVm.StatusText);
+        Assert.False(string.IsNullOrEmpty(userModel.PasswordHash));
+        Assert.True(authService.VerifyPassword(adminPass, userModel.PasswordHash));
+    }
+
+    [Fact]
+    public void SaveUser_WhenUsernameMatchesAdminUsername_RejectsAndSetsError()
+    {
+        _state.Settings.RemoteControl.Username = "admin";
+
+        var userModel = new RemoteControlUser { Username = "admin" };
+        var userVm = new RemoteControlUserViewModel(userModel, _settingsVm)
+        {
+            Username = "admin",
+            Password = "somepassword"
+        };
+
+        _settingsVm.SaveUser(userVm);
+
         Assert.True(_settingsVm.IsStatusError);
-        Assert.Equal("Sub-user password cannot be the same as the admin password.", _settingsVm.StatusText);
+        Assert.Equal("Sub-user username cannot be the same as the admin username.", _settingsVm.StatusText);
+    }
+
+    [Fact]
+    public void SaveUser_WhenUsernameMatchesExistingSubUser_RejectsAndSetsError()
+    {
+        var existingModel = new RemoteControlUser { Username = "existinguser" };
+        var existingVm = new RemoteControlUserViewModel(existingModel, _settingsVm) { Username = "existinguser" };
+        _settingsVm.Users.Add(existingVm);
+
+        var newUserModel = new RemoteControlUser { Username = "existinguser" };
+        var newUserVm = new RemoteControlUserViewModel(newUserModel, _settingsVm)
+        {
+            Username = "existinguser",
+            Password = "somepassword"
+        };
+
+        _settingsVm.SaveUser(newUserVm);
+
+        Assert.True(_settingsVm.IsStatusError);
+        Assert.Equal("User 'existinguser' already exists.", _settingsVm.StatusText);
     }
 }

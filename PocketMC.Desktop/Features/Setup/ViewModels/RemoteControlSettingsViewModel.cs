@@ -57,7 +57,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
         var remote = _applicationState.Settings.RemoteControl;
         _isEnabled = remote.Enabled;
-        _port = remote.Port;
+        _port = remote.Port <= 0 ? 25580 : remote.Port;
 
         _requireAuthentication = remote.RequireAuthentication;
         _username = remote.Username;
@@ -176,28 +176,38 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             return;
         }
 
+        var trimmedUsername = user.Username.Trim();
+
+        // Check if username matches admin username
+        var adminUser = _applicationState.Settings.RemoteControl.Username;
+        if (!string.IsNullOrEmpty(adminUser) && string.Equals(trimmedUsername, adminUser.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            SetStatus("Sub-user username cannot be the same as the admin username.", true);
+            return;
+        }
+
+        // Check if username is already taken by another sub-user
+        if (Users.Any(u => u != user && string.Equals(u.Username?.Trim(), trimmedUsername, StringComparison.OrdinalIgnoreCase)))
+        {
+            SetStatus($"User '{trimmedUsername}' already exists.", true);
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(user.Password))
         {
             SetStatus("Password is required to save credentials.", true);
             return;
         }
 
-        var adminHash = _applicationState.Settings.RemoteControl.PasswordHash;
-
-        if (!string.IsNullOrEmpty(adminHash) && _authenticationService.VerifyPassword(user.Password, adminHash))
-        {
-            SetStatus("Sub-user password cannot be the same as the admin password.", true);
-            return;
-        }
-
         var hashed = _authenticationService.HashPassword(user.Password);
 
+        user.Username = trimmedUsername;
         user.PasswordHash = hashed;
         user.ProtectedPassword = PocketMC.Infrastructure.Security.DataProtector.Protect(user.Password);
 
         user.IsEditing = false;
-        SaveSettings();
-        SetStatus("User credentials saved successfully.", false);
+        if (!SaveSettings()) return;
+        SetStatus($"User '{user.Username}' credentials saved successfully.", false);
     }
 
     [ObservableProperty]
@@ -246,7 +256,10 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
     public IReadOnlyList<RemoteAccessModeOption> AccessModes => RemoteAccessModeOptions;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatusText))]
     private string _statusText = "";
+
+    public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasLocalUrl))]
@@ -385,6 +398,16 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
             return;
         }
 
+        var trimmedAdminUsername = Username.Trim();
+
+        // Check if any sub-user already uses this username
+        if (Users.Any(u => string.Equals(u.Username?.Trim(), trimmedAdminUsername, StringComparison.OrdinalIgnoreCase)))
+        {
+            SetStatus("Admin username cannot be the same as an existing sub-user username.", true);
+            return;
+        }
+
+        Username = trimmedAdminUsername;
         _applicationState.Settings.RemoteControl.SecurityStamp = Guid.NewGuid().ToString();
         SaveSettings();
         OnPropertyChanged(nameof(IsPasswordSet));
@@ -562,7 +585,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject
 
     private void SetStatus(string message, bool isError)
     {
-        StatusText = isError ? message : "";
+        StatusText = message;
         IsStatusError = isError;
     }
 
