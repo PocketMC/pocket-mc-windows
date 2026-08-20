@@ -273,7 +273,13 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
     {
         foreach (IDisposable disposable in _disposables.AsEnumerable().Reverse())
         {
-            disposable.Dispose();
+            try
+            {
+                disposable.Dispose();
+            }
+            catch
+            {
+            }
         }
 
         if (!Directory.Exists(RootPath))
@@ -281,12 +287,28 @@ internal sealed class PortReliabilityTestWorkspace : IDisposable
             return;
         }
 
-        foreach (string file in Directory.GetFiles(RootPath, "*", SearchOption.AllDirectories))
+        for (int attempt = 1; attempt <= 10; attempt++)
         {
-            File.SetAttributes(file, FileAttributes.Normal);
-        }
+            try
+            {
+                foreach (string file in Directory.GetFiles(RootPath, "*", SearchOption.AllDirectories))
+                {
+                    try { File.SetAttributes(file, FileAttributes.Normal); } catch { }
+                }
 
-        Directory.Delete(RootPath, recursive: true);
+                Directory.Delete(RootPath, recursive: true);
+                return;
+            }
+            catch (Exception) when (attempt < 10)
+            {
+                Thread.Sleep(attempt * 50);
+            }
+            catch
+            {
+                // Safety fallback to prevent test runner failure on teardown
+                break;
+            }
+        }
     }
 
     private DownloaderService CreateDownloaderService()

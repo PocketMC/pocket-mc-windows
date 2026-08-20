@@ -85,12 +85,7 @@ public class ServerProcessManagerTests
         }
         finally
         {
-            if (process != null)
-            {
-                var internalProc = process.GetInternalProcess();
-                try { processManager.KillProcess(metadata.Id); } catch { }
-                try { internalProc?.WaitForExit(5000); } catch { }
-            }
+            try { processManager.KillProcess(metadata.Id); } catch { }
             processManager.ReleaseInstance(metadata.Id);
         }
     }
