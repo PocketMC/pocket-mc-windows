@@ -1,5 +1,5 @@
-version: 1.9.6.1
-channel: 
+version: 1.9.7
+channel: release
 auth_proxies:
   - "https://pocket-mc-proxy-20d5.onrender.com"
   - "https://pocket-mc-proxy-n2qx.onrender.com"
