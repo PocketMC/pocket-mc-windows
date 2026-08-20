@@ -57,6 +57,21 @@ public sealed class PlayerViewModelTests
         Assert.True(player.IsOpBusy);
     }
 
+    [Theory]
+    [InlineData("survival")]
+    [InlineData("creative")]
+    [InlineData("adventure")]
+    [InlineData("spectator")]
+    public void ConfirmGameModeChange_UpdatesBothSelectedAndConfirmed(string mode)
+    {
+        var player = CreatePlayer((_, _) => Task.CompletedTask);
+        player.ConfirmGameModeChange(mode);
+
+        Assert.Equal(mode, player.SelectedGameMode);
+        Assert.Equal(mode, player.ConfirmedGameMode);
+        Assert.False(player.IsGamemodeLoading);
+    }
+
     private static PlayerViewModel CreatePlayer(Func<PlayerViewModel, string, Task> changeGamemodeAsync)
     {
         return new PlayerViewModel(

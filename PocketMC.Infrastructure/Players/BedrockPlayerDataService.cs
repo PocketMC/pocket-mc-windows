@@ -317,8 +317,21 @@ public sealed class BedrockPlayerDataService
     {
         try
         {
-            List<BedrockBanEntry>? bans = await ReadJsonAsync<List<BedrockBanEntry>>(GetBanPath());
-            return bans ?? new List<BedrockBanEntry>();
+            string primaryPath = GetBanPath();
+            if (File.Exists(primaryPath))
+            {
+                List<BedrockBanEntry>? bans = await ReadJsonAsync<List<BedrockBanEntry>>(primaryPath);
+                return bans ?? new List<BedrockBanEntry>();
+            }
+
+            string legacyPath = GetLegacyBanPath();
+            if (File.Exists(legacyPath))
+            {
+                List<BedrockBanEntry>? legacyBans = await ReadJsonAsync<List<BedrockBanEntry>>(legacyPath);
+                return legacyBans ?? new List<BedrockBanEntry>();
+            }
+
+            return new List<BedrockBanEntry>();
         }
         catch (Exception ex)
         {
@@ -390,15 +403,35 @@ public sealed class BedrockPlayerDataService
 
     private async Task<PlayerDataSidecar> ReadPlayerDataSidecarAsync()
     {
-        PlayerDataSidecar? sidecar = await ReadJsonAsync<PlayerDataSidecar>(GetPlayerDataPath());
-        return sidecar ?? new PlayerDataSidecar();
+        string primaryPath = GetPlayerDataPath();
+        if (File.Exists(primaryPath))
+        {
+            PlayerDataSidecar? sidecar = await ReadJsonAsync<PlayerDataSidecar>(primaryPath);
+            return sidecar ?? new PlayerDataSidecar();
+        }
+
+        string legacyPath = GetLegacyPlayerDataPath();
+        if (File.Exists(legacyPath))
+        {
+            PlayerDataSidecar? legacySidecar = await ReadJsonAsync<PlayerDataSidecar>(legacyPath);
+            if (legacySidecar != null)
+            {
+                return legacySidecar;
+            }
+        }
+
+        return new PlayerDataSidecar();
     }
 
     private string GetPlayerMapPath() => Path.Combine(_appDataDirectory, PlayerMapFileName);
 
-    private string GetPlayerDataPath() => Path.Combine(_appDataDirectory, PlayerDataFileName);
+    private string GetPlayerDataPath() => Path.Combine(_serverRoot, PlayerDataFileName);
 
-    private string GetBanPath() => Path.Combine(_appDataDirectory, BanFileName);
+    private string GetLegacyPlayerDataPath() => Path.Combine(_appDataDirectory, PlayerDataFileName);
+
+    private string GetBanPath() => Path.Combine(_serverRoot, BanFileName);
+
+    private string GetLegacyBanPath() => Path.Combine(_appDataDirectory, BanFileName);
 
     private static string NormalizeGamemode(string? gamemode)
     {
