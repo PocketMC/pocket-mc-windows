@@ -19,6 +19,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly ApplicationState _applicationState;
         private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
         private readonly PocketMC.Application.Services.Networking.ISimpleVoiceChatDetector _voiceChatDetector;
+        private readonly PocketMC.Application.Interfaces.Networking.ILocalNetworkAddressService _localNetworkAddressService;
 
         public ObservableCollection<InstanceCardViewModel> Instances { get; } = new();
 
@@ -28,7 +29,8 @@ namespace PocketMC.Desktop.Features.Dashboard
             IServerLifecycleService lifecycleService,
             ApplicationState applicationState,
             PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector,
-            PocketMC.Application.Services.Networking.ISimpleVoiceChatDetector voiceChatDetector)
+            PocketMC.Application.Services.Networking.ISimpleVoiceChatDetector voiceChatDetector,
+            PocketMC.Application.Interfaces.Networking.ILocalNetworkAddressService? localNetworkAddressService = null)
         {
             _registry = registry;
             _serverProcessManager = serverProcessManager;
@@ -36,6 +38,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             _applicationState = applicationState;
             _geyserDetector = geyserDetector;
             _voiceChatDetector = voiceChatDetector;
+            _localNetworkAddressService = localNetworkAddressService ?? new PocketMC.Infrastructure.Networking.LocalNetworkAddressService();
         }
 
         public void LoadInstances()
@@ -73,7 +76,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 }
                 else
                 {
-                    var newVm = new InstanceCardViewModel(meta, _serverProcessManager, _lifecycleService, _applicationState, _registry, _geyserDetector, _voiceChatDetector);
+                    var newVm = new InstanceCardViewModel(meta, _serverProcessManager, _lifecycleService, _applicationState, _registry, _geyserDetector, _voiceChatDetector, _localNetworkAddressService);
                     Instances.Add(newVm);
                 }
             }

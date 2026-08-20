@@ -131,7 +131,7 @@ public sealed class RemoteControlInstanceAccessIntegrationTests : IAsyncLifetime
             _instanceRegistry,
             _lifecycleMock.Object,
             resourceMock.Object,
-            new LocalNetworkAddressService(),
+            new PocketMC.RemoteControl.Services.LocalNetworkAddressService(),
             _state,
             serverStateFileService,
             new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
@@ -142,7 +142,7 @@ public sealed class RemoteControlInstanceAccessIntegrationTests : IAsyncLifetime
         var wsHandler = new RemoteConsoleWebSocketHandler(_lifecycleMock.Object);
         var requestLimiter = new RemoteRequestLimiter();
         var tunnelManager = new RemoteTunnelManager(_state, Array.Empty<IRemoteTunnelProvider>());
-        var localNetworkAddressService = new LocalNetworkAddressService();
+        var localNetworkAddressService = new PocketMC.RemoteControl.Services.LocalNetworkAddressService();
 
         _host = new RemoteDashboardHost(
             _state,
@@ -346,7 +346,7 @@ public sealed class RemoteControlInstanceAccessIntegrationTests : IAsyncLifetime
         backupMock.Setup(b => b.RunBackupAsync(It.IsAny<InstanceMetadata>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<Action<string>?>(), It.IsAny<IProgress<double>?>()))
             .Returns(async () => { await tcs.Task; });
 
-        var localNet = new LocalNetworkAddressService();
+        var localNet = new PocketMC.RemoteControl.Services.LocalNetworkAddressService();
         var hostWithBackup = new RemoteDashboardHost(
             _state,
             null!,

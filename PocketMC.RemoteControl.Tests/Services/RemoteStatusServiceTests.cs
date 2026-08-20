@@ -121,7 +121,7 @@ public sealed class RemoteStatusServiceTests : IDisposable
         var logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<ServerStateFileService>();
         var serverStateFileService = new ServerStateFileService(registry, logger);
 
-        return new RemoteStatusService(registry, lifecycle, monitor, new LocalNetworkAddressService(), state, serverStateFileService, new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
+        return new RemoteStatusService(registry, lifecycle, monitor, new PocketMC.RemoteControl.Services.LocalNetworkAddressService(), state, serverStateFileService, new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
     }
 
     public void Dispose()

@@ -119,7 +119,7 @@ public sealed class RemoteStatusService
             serverIps.Add(new ServerIpDto { Label = "Voice Chat", Address = voiceChatTunnelIp });
         }
 
-        string? localIp = _localNetworkAddressService.GetLocalIpAddresses().FirstOrDefault();
+        string? localIp = _localNetworkAddressService.GetPrimaryLanIpAddress();
         if (!string.IsNullOrWhiteSpace(localIp))
         {
             serverIps.Add(new ServerIpDto { Label = PocketMC.Application.Services.Players.CommandFormatter.IsBedrock(metadata.ServerType) ? "LAN" : "Java (LAN)", Address = $"{localIp}:{serverPort}" });

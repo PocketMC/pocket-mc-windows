@@ -41,7 +41,9 @@ namespace PocketMC.RemoteControl
             services.AddSingleton<RemoteInstanceControlService>();
             services.AddSingleton<RemotePlayerActionService>();
             services.AddSingleton<RemoteAuditLogService>();
-            services.AddSingleton<LocalNetworkAddressService>();
+            services.AddSingleton<PocketMC.Application.Interfaces.Networking.ILocalNetworkAddressService, PocketMC.Infrastructure.Networking.LocalNetworkAddressService>();
+            services.AddSingleton<PocketMC.Infrastructure.Networking.LocalNetworkAddressService>();
+            services.AddSingleton<PocketMC.RemoteControl.Services.LocalNetworkAddressService>();
             services.AddSingleton<RemoteRequestLimiter>();
             services.AddSingleton<RemoteConsoleWebSocketHandler>();
             services.AddSingleton<RemoteDashboardHost>();

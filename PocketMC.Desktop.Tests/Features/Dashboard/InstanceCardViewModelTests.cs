@@ -213,6 +213,43 @@ public sealed class InstanceCardViewModelTests
         Assert.Equal("Just started", vm.LastPlayedTooltip);
     }
 
+    [Fact]
+    public void LanAddressDisplayText_UsesLocalNetworkAddressService()
+    {
+        var metadata = new InstanceMetadata
+        {
+            Id = Guid.NewGuid(),
+            Name = "Lan Server",
+            ServerType = "Paper",
+            ServerPort = 25565
+        };
+
+        using var workspace = new PortReliabilityTestWorkspace();
+        var processManager = workspace.CreateServerProcessManager();
+        var probeService = workspace.CreatePortProbeService();
+        var leaseRegistry = workspace.CreatePortLeaseRegistry();
+        var recoveryService = workspace.CreatePortRecoveryService(probeService, leaseRegistry);
+        var lifecycleService = workspace.CreateServerLifecycleService(
+            processManager,
+            workspace.CreatePortPreflightService(processManager),
+            probeService,
+            leaseRegistry,
+            recoveryService);
+
+        var fakeLan = new FakeLocalNetworkAddressService("192.168.1.155");
+        var vm = new InstanceCardViewModel(
+            metadata,
+            processManager,
+            lifecycleService,
+            workspace.AppState,
+            workspace.Registry,
+            new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
+            new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()),
+            fakeLan);
+
+        Assert.Equal("192.168.1.155:25565", vm.LanAddressDisplayText);
+    }
+
     private static InstanceCardViewModel CreateViewModel(PortReliabilityTestWorkspace workspace, InstanceMetadata metadata)
     {
         var processManager = workspace.CreateServerProcessManager();
@@ -227,6 +264,16 @@ public sealed class InstanceCardViewModelTests
             recoveryService);
 
         return new InstanceCardViewModel(metadata, processManager, lifecycleService, workspace.AppState, workspace.Registry, new PocketMC.Infrastructure.Instances.GeyserDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()), new PocketMC.Infrastructure.Networking.SimpleVoiceChatDetector(new PocketMC.Infrastructure.Marketplace.AddonManifestService()));
+    }
+
+    private sealed class FakeLocalNetworkAddressService : PocketMC.Application.Interfaces.Networking.ILocalNetworkAddressService
+    {
+        private readonly string _primaryIp;
+        public FakeLocalNetworkAddressService(string primaryIp) => _primaryIp = primaryIp;
+        public string GetPrimaryLanIpAddress() => _primaryIp;
+        public System.Collections.Generic.IReadOnlyList<string> GetLocalIpAddresses() => new[] { _primaryIp, "127.0.0.1" };
+        public System.Collections.Generic.IReadOnlyList<string> GetLocalUrls(int port, string scheme = "http") => new[] { $"{scheme}://{_primaryIp}:{port}" };
+        public string GetPreferredLocalUrl(int port, string scheme = "http") => $"{scheme}://{_primaryIp}:{port}";
     }
 }
 

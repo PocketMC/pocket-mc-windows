@@ -64,6 +64,8 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<SettingsBackupService>();
             services.AddSingleton<ITelemetryService, TelemetryService>();
             services.AddSingleton<WindowsStartupService>();
+            services.AddSingleton<PocketMC.Application.Interfaces.Networking.ILocalNetworkAddressService, PocketMC.Infrastructure.Networking.LocalNetworkAddressService>();
+            services.AddSingleton<PocketMC.Infrastructure.Networking.LocalNetworkAddressService>();
             services.AddSingleton<WindowsCornerService>();
             services.AddSingleton<ApplicationState>();
             services.AddSingleton<JobObject>();

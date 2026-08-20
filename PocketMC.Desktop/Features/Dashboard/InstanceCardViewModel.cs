@@ -1,3 +1,4 @@
+using PocketMC.Application.Interfaces.Networking;
 using PocketMC.Application.Services.Networking;
 using System;
 using System.IO;
@@ -44,8 +45,17 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private readonly InstanceRegistry _registry;
     private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
     private readonly ISimpleVoiceChatDetector _voiceChatDetector;
+    private readonly ILocalNetworkAddressService _localNetworkAddressService;
 
-    public InstanceCardViewModel(InstanceMetadata metadata, ServerProcessManager serverProcessManager, IServerLifecycleService lifecycleService, PocketMC.Application.Services.Shell.ApplicationState appState, InstanceRegistry registry, PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector, ISimpleVoiceChatDetector voiceChatDetector)
+    public InstanceCardViewModel(
+        InstanceMetadata metadata,
+        ServerProcessManager serverProcessManager,
+        IServerLifecycleService lifecycleService,
+        PocketMC.Application.Services.Shell.ApplicationState appState,
+        InstanceRegistry registry,
+        PocketMC.Application.Interfaces.Instances.IGeyserDetector geyserDetector,
+        ISimpleVoiceChatDetector voiceChatDetector,
+        ILocalNetworkAddressService? localNetworkAddressService = null)
     {
         _metadata = metadata;
         _serverProcessManager = serverProcessManager;
@@ -54,6 +64,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         _registry = registry;
         _geyserDetector = geyserDetector;
         _voiceChatDetector = voiceChatDetector;
+        _localNetworkAddressService = localNetworkAddressService ?? new PocketMC.Infrastructure.Networking.LocalNetworkAddressService();
         _bedrockLocalPort = metadata.GeyserBedrockPort ?? 19132;
 
         _tunnelAddress = appState.GetTunnelAddress(metadata.Id);
@@ -267,7 +278,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public string BedrockIpLabel => "Bedrock (Geyser):";
 
     public int PrimaryPort => _metadata.ServerPort ?? (IsBedrockServer ? 19132 : 25565);
-    public string LanAddressDisplayText => $"127.0.0.1:{PrimaryPort}";
+    public string LanAddressDisplayText => $"{_localNetworkAddressService.GetPrimaryLanIpAddress()}:{PrimaryPort}";
     public bool HasLanAddress => IsRunning;
 
     public int BedrockLocalPort => _bedrockLocalPort;
@@ -287,7 +298,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             {
                 return _bedrockTunnelAddress;
             }
-            return $"127.0.0.1:{_bedrockLocalPort} (local)";
+            return $"{_localNetworkAddressService.GetPrimaryLanIpAddress()}:{_bedrockLocalPort} (local)";
         }
         set
         {
