@@ -3,58 +3,51 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="What's New"
-        Width="460"
+        Width="580"
         SizeToContent="Height"
-        MinWidth="400" MaxWidth="520"
-        MinHeight="0"
+        MinWidth="500" MaxWidth="680"
+        MinHeight="0" MaxHeight="720"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        KeyboardNavigation.TabNavigation="Cycle"
         WindowCornerPreference="Round"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="None"
         Background="{DynamicResource ApplicationBackgroundBrush}">
 
-    <Grid MaxWidth="500">
+    <Grid MaxWidth="640">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <ui:TitleBar Grid.Row="0" Title="What's New" ShowMaximize="False" ShowMinimize="False" />
 
-        <Grid Grid.Row="1" Margin="28,4,28,28">
+        <Grid Grid.Row="1" Margin="28,8,28,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,20">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <ui:SymbolIcon Symbol="Rocket24"
-                                   FontSize="28"
-                                   Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,12,0"/>
-                    <TextBlock x:Name="TxtHeader"
-                               Text="What's New"
-                               FontSize="22"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
+            <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                <TextBlock x:Name="TxtHeader"
+                           Text="What's New"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                 <TextBlock x:Name="TxtSubheader"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           FontSize="13"
-                           Margin="0,2,0,0"/>
+                           FontSize="12"
+                           Margin="0,3,0,0"/>
             </StackPanel>
 
             <!-- Changelog Sections -->
             <ScrollViewer Grid.Row="1"
-                          MaxHeight="380"
+                          MaxHeight="400"
                           VerticalScrollBarVisibility="Auto"
-                          Padding="0,0,8,0">
+                          Padding="0,0,12,0">
                 <ItemsControl x:Name="SectionsPanel">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -67,28 +60,39 @@
 
                                 <!-- Section header -->
                                 <TextBlock Text="{Binding Name}"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
                                            Margin="0,0,0,8"/>
 
                                 <!-- Section items -->
                                 <ItemsControl ItemsSource="{Binding Items}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" Margin="8,3,0,3">
-                                                <ui:SymbolIcon Symbol="Checkmark24"
-                                                           FontSize="13"
-                                                           Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
-                                                           Margin="0,0,10,0"
-                                                           VerticalAlignment="Top"/>
-                                                <TextBlock Text="{Binding}"
+                                            <Grid Margin="0,4,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="0"
+                                                        Width="18" Height="18" CornerRadius="9"
+                                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                                        Margin="0,1,10,0"
+                                                        VerticalAlignment="Top">
+                                                    <ui:SymbolIcon Symbol="Checkmark16"
+                                                                   FontSize="10"
+                                                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding}"
                                                            FontSize="13"
                                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                            TextWrapping="Wrap"
                                                            LineHeight="20"
-                                                           VerticalAlignment="Top"/>
-                                            </StackPanel>
+                                                           VerticalAlignment="Center"/>
+                                            </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -111,19 +115,27 @@
             </StackPanel>
 
             <!-- Action buttons -->
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Grid Grid.Row="2" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
                 <ui:Button x:Name="BtnFullChangelog"
+                           Grid.Column="0"
                            Content="View Full Changelog"
                            Appearance="Secondary"
-                           Margin="0,0,8,0"
+                           HorizontalAlignment="Left"
                            Click="ViewFullChangelog_Click"
-                           Icon="{ui:SymbolIcon Open20}"/>
-                <ui:Button Content="Got It"
+                           Icon="{ui:SymbolIcon Open20}"
+                           AutomationProperties.Name="View Full Changelog"/>
+                <ui:Button Grid.Column="1"
+                           Content="Got It"
                            Appearance="Primary"
-                           MinWidth="90"
+                           MinWidth="100"
                            Click="GotIt_Click"
-                           IsDefault="True"/>
-            </StackPanel>
+                           IsDefault="True"
+                           AutomationProperties.Name="Got It"/>
+            </Grid>
         </Grid>
     </Grid>
 </ui:FluentWindow>
