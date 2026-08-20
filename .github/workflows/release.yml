@@ -104,26 +104,59 @@ jobs:
         id: notes
         shell: pwsh
         run: |
-          $whatsnew = Get-Content -Path PocketMC.Desktop/Assets/WhatsNew.txt -Raw
-          $lines = $whatsnew -split '\r?\n'
-          $formatted = @()
-          foreach ($line in $lines) {
-            $line = $line.Trim()
-            if ($line -match "^VERSION=") { continue }
-            elseif ($line -eq "[FEATURES]") { $formatted += "`n### ❯ Features" }
-            elseif ($line -eq "[FIXES]") { $formatted += "`n### ❯ Fixes" }
-            elseif ($line -eq "[IMPROVEMENTS]") { $formatted += "`n### ❯ Improvements" }
-            elseif ([string]::IsNullOrWhiteSpace($line)) { continue }
-            else { $formatted += " • $line" }
-          }
-          $body = $formatted -join "`n"
-          $body = $body -replace '(?m)^### ❯ [^\n]+\n+(?=### ❯|$)', ''
-          $body = $body.Trim()
+          $targetVersion = "${{ steps.config.outputs.version }}".Trim().TrimStart('v')
+          $body = ""
+          $discordBody = ""
 
-          $EOF = [guid]::NewGuid().ToString()
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF"
+          # 1. Parse GitHub Release notes directly from CHANGELOG.md
+          if (Test-Path -Path "CHANGELOG.md") {
+            $changelog = Get-Content -Path "CHANGELOG.md" -Raw
+            $escaped = [regex]::Escape($targetVersion)
+            $pattern = "(?ms)^##\s*v?${escaped}\b[^\r\n]*\r?\n(.*?)(?=\r?\n---\s*(\r?\n|\Z)|\r?\n##\s|\Z)"
+            $match = [regex]::Match($changelog, $pattern)
+            if ($match.Success -and -not [string]::IsNullOrWhiteSpace($match.Groups[1].Value)) {
+              $body = $match.Groups[1].Value.Trim()
+              Write-Host "Successfully extracted changelog section for v$targetVersion from CHANGELOG.md ($($body.Length) chars)"
+            }
+          }
+
+          # 2. Parse Discord release announcement strictly from WhatsNew.txt
+          if (Test-Path -Path "PocketMC.Desktop/Assets/WhatsNew.txt") {
+            $whatsnew = Get-Content -Path "PocketMC.Desktop/Assets/WhatsNew.txt" -Raw
+            $lines = $whatsnew -split '\r?\n'
+            $formatted = @()
+            foreach ($line in $lines) {
+              $trimmed = $line.Trim()
+              if ($trimmed -match "^VERSION=") { continue }
+              elseif ($trimmed -match "^\[(.*)\]$") { 
+                $sectionTitle = (Get-Culture).TextInfo.ToTitleCase($matches[1].ToLower())
+                $formatted += "`n### ❯ $sectionTitle" 
+              }
+              elseif ([string]::IsNullOrWhiteSpace($trimmed)) { continue }
+              else { 
+                $cleanItem = $trimmed -replace '^[-*•]\s*', ''
+                $formatted += " • $cleanItem" 
+              }
+            }
+            $discordBody = ($formatted -join "`n").Trim()
+          }
+
+          if ([string]::IsNullOrWhiteSpace($body)) {
+            $body = if (-not [string]::IsNullOrWhiteSpace($discordBody)) { $discordBody } else { "PocketMC v${targetVersion} is now available." }
+          }
+          if ([string]::IsNullOrWhiteSpace($discordBody)) {
+            $discordBody = $body
+          }
+
+          $EOF1 = [guid]::NewGuid().ToString()
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "body<<$EOF1"
           Add-Content -Path $env:GITHUB_OUTPUT -Value $body
-          Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF1
+
+          $EOF2 = [guid]::NewGuid().ToString()
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "discord_body<<$EOF2"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $discordBody
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $EOF2
 
       - name: Create GitHub Release
         if: steps.check_channel.outputs.skip == 'false'
@@ -149,7 +182,7 @@ jobs:
         if: steps.check_channel.outputs.skip == 'false'
         shell: pwsh
         env:
-          BODY: ${{ steps.notes.outputs.body }}
+          BODY: ${{ steps.notes.outputs.discord_body }}
         run: |
           $webhookUrl = "${{ secrets.DISCORD_RELEASE_WEBHOOK }}"
           if (-not $webhookUrl) { Write-Warning "DISCORD_RELEASE_WEBHOOK not set."; exit 0 }
