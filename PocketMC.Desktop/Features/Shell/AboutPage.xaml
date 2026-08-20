@@ -64,6 +64,27 @@
                 </Grid>
             </ui:Card>
 
+            <!-- ORGANIZATION / COMPANY SECTION -->
+            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Building24}" Margin="0,0,0,12">
+                <ui:CardExpander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="DS LABS" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock Text="Selective Digital Studio · Building Software That Works" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </ui:CardExpander.Header>
+
+                <StackPanel Margin="16,8,16,16">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <ui:Button Content="Visit Website" Appearance="Primary" Click="OpenOrganizationWebsite_Click" Icon="{ui:SymbolIcon Globe20}"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:CardExpander>
+
             <!-- COMMUNITY SECTION -->
             <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon People24}">
                 <ui:CardExpander.Header>

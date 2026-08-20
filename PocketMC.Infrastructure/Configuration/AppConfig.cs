@@ -48,6 +48,9 @@ namespace PocketMC.Infrastructure.Configuration
         public static string LinkReddit { get; private set; } = "https://www.reddit.com/r/PocketMC/";
         public static string LinkGitHub { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows";
         public static string LinkDonation { get; private set; } = "https://buymeacoffee.com/sahaj33";
+        public static string LinkOrganization { get; private set; } = "https://ds-labs-portfolio.vercel.app";
+        public static string OrganizationName { get; private set; } = "DS LABS";
+        public static string OrganizationTagline { get; private set; } = "Selective Digital Studio · Building Software That Works";
 
         static AppConfig()
         {

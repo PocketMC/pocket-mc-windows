@@ -31,7 +31,7 @@ public sealed class RemoteControlUserViewModelTests
 
         var authService = new RemoteAuthenticationService();
         var tunnelManager = new RemoteTunnelManager(_state, Array.Empty<IRemoteTunnelProvider>());
-        var localNet = new LocalNetworkAddressService();
+        var localNet = new PocketMC.RemoteControl.Services.LocalNetworkAddressService();
         var host = new RemoteDashboardHost(_state, null!, null!, null!, null!, null!, null!, null!, tunnelManager, localNet, authService, NullLogger<RemoteDashboardHost>.Instance);
         var coordinator = new RemoteControlCoordinator(_state, _settingsManager, host, tunnelManager, localNet);
         var dialogMock = new Mock<IDialogService>();

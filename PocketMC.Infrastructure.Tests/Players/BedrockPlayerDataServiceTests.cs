@@ -95,6 +95,28 @@ public sealed class BedrockPlayerDataServiceTests : IDisposable
         await service.SaveGamemodeAsync("SahajItaliya", "creative");
 
         Assert.Equal("creative", await service.GetGamemodeAsync("sahajitaliya"));
+        Assert.True(File.Exists(Path.Combine(_serverRoot, "player-data.json")));
+    }
+
+    [Fact]
+    public async Task GetGamemodeAsync_FallbackToLegacyAppDataDirectoryIfMissingInServerRoot()
+    {
+        await File.WriteAllTextAsync(
+            Path.Combine(_appDataDirectory, "player-data.json"),
+            """
+            {
+              "players": {
+                "LegacyPlayer": {
+                  "gamemode": "spectator",
+                  "lastSeen": "2026-05-01T00:00:00Z"
+                }
+              }
+            }
+            """);
+
+        var service = new BedrockPlayerDataService(_appDataDirectory, _serverRoot);
+
+        Assert.Equal("spectator", await service.GetGamemodeAsync("LegacyPlayer"));
     }
 
     [Fact]
@@ -115,6 +137,7 @@ public sealed class BedrockPlayerDataServiceTests : IDisposable
 
         Assert.Single(bansAfterAdd);
         Assert.Equal("SahajItaliya", bansAfterAdd[0].Name);
+        Assert.True(File.Exists(Path.Combine(_serverRoot, "bedrock-bans.json")));
 
         await service.RemoveBanAsync("sahajitaliya");
         List<BedrockBanEntry> bansAfterRemove = await service.GetBansAsync();

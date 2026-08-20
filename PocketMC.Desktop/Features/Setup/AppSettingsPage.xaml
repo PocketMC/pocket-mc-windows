@@ -535,12 +535,16 @@
                                 <TextBlock Text="CurseForge API Key" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap">
                                     <Run Text="Obtain a free key from the "/>
-                                    <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate">
+                                    <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate"
+                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
                                         <Run Text="CurseForge Console"/>
                                     </Hyperlink>
                                     <Run Text=" to access CurseForge addons."/>
                                 </TextBlock>
-                                <ui:TextBox x:Name="CurseForgeKeyInput" Margin="0,8,0,0" PlaceholderText="$2a$10$..."/>
+                                <ui:PasswordBox x:Name="CurseForgeKeyInput" 
+                                                Margin="0,8,0,0" 
+                                                PlaceholderText="$2a$10$..."
+                                                AutomationProperties.Name="CurseForge API Key"/>
                             </StackPanel>
                             <ui:Button Grid.Column="1" Content="Save Key" Appearance="Primary" VerticalAlignment="Bottom" Click="SaveApiKey_Click"/>
                         </Grid>
@@ -593,7 +597,11 @@
                                 <TextBlock x:Name="AiKeyStatus" Text="" FontSize="12" Margin="0,4,0,0" Foreground="#A6E3A1"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <ui:TextBox x:Name="AiApiKeyInput" PlaceholderText="Paste your API key here..." Width="250" Margin="0,0,8,0"/>
+                                <ui:PasswordBox x:Name="AiApiKeyInput" 
+                                                PlaceholderText="Paste your API key here..." 
+                                                Width="250" 
+                                                Margin="0,0,8,0"
+                                                AutomationProperties.Name="AI API Key"/>
                                 <ui:Button Content="Validate" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="Test the key with a small API call"/>
                                 <ui:Button Content="Save" Appearance="Primary" Click="SaveAiKey_Click"/>
                             </StackPanel>

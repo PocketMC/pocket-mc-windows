@@ -10,9 +10,11 @@ namespace PocketMC.Application.Interfaces
         ServerState State { get; }
         int PlayerCount { get; }
         IReadOnlyList<string> OnlinePlayerNames { get; }
+        IReadOnlyDictionary<string, string> PlayerGamemodes { get; }
         IEnumerable<string> OutputBuffer { get; }
         event Action<string>? OnOutputLine;
         event Action<string>? OnErrorLine;
+        event Action<string, string>? OnPlayerGamemodeChanged;
         Task WriteInputAsync(string input);
     }
 }

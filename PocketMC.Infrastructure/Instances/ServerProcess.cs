@@ -81,6 +81,8 @@ public class ServerProcess : IServerProcess, IDisposable
     public string? CrashContext { get; private set; }
     public CrashAnalysisResult? LastCrashAnalysis { get; private set; }
     public DateTime? StartTime { get; private set; }
+    private readonly ConcurrentDictionary<string, string> _playerGamemodes = new(StringComparer.OrdinalIgnoreCase);
+    public IReadOnlyDictionary<string, string> PlayerGamemodes => _playerGamemodes;
     public IReadOnlyList<string> OnlinePlayerNames
     {
         get
@@ -94,6 +96,7 @@ public class ServerProcess : IServerProcess, IDisposable
 
     public event Action<string>? OnOutputLine;
     public event Action<string>? OnErrorLine;
+    public event Action<string, string>? OnPlayerGamemodeChanged;
     public event Action<int>? OnExited;
     public event Action<ServerState>? OnStateChanged;
     public event Action<string>? OnServerCrashed;
@@ -344,6 +347,16 @@ public class ServerProcess : IServerProcess, IDisposable
         if (isError) OnErrorLine?.Invoke(sanitizedLine);
         else
         {
+            if (PlayerGamemodeLogParser.MightContainGamemode(sanitizedLine))
+            {
+                PlayerGamemodeChangeEvent? gamemodeEvt = PlayerGamemodeLogParser.TryParse(sanitizedLine);
+                if (gamemodeEvt != null)
+                {
+                    _playerGamemodes[gamemodeEvt.PlayerName] = gamemodeEvt.Gamemode;
+                    OnPlayerGamemodeChanged?.Invoke(gamemodeEvt.PlayerName, gamemodeEvt.Gamemode);
+                }
+            }
+
             // Player-count processing ALWAYS runs regardless of suppression.
             if (State == ServerState.Starting)
             {

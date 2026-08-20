@@ -28,9 +28,79 @@ public sealed class PlayerDataService
             return null;
         }
 
+        // 1. Try usercache.json
+        string? uuid = await TryGetUuidFromJsonArrayFileAsync("usercache.json", playerName);
+        if (uuid != null)
+        {
+            return uuid;
+        }
+
+        // 2. Try ops.json
+        uuid = await TryGetUuidFromJsonArrayFileAsync("ops.json", playerName);
+        if (uuid != null)
+        {
+            return uuid;
+        }
+
+        // 3. Try whitelist.json
+        uuid = await TryGetUuidFromJsonArrayFileAsync("whitelist.json", playerName);
+        if (uuid != null)
+        {
+            return uuid;
+        }
+
+        // 4. Try banned-players.json
+        uuid = await TryGetUuidFromJsonArrayFileAsync("banned-players.json", playerName);
+        if (uuid != null)
+        {
+            return uuid;
+        }
+
+        // 5. Try offline player UUID computation
+        string offlineUuid = ComputeOfflinePlayerUuid(playerName);
+        if (!string.IsNullOrWhiteSpace(offlineUuid))
+        {
+            string path = GetPlayerDataFilePath(offlineUuid);
+            if (File.Exists(path))
+            {
+                return offlineUuid;
+            }
+        }
+
+        return !string.IsNullOrWhiteSpace(offlineUuid) ? offlineUuid : null;
+    }
+
+    public static string ComputeOfflinePlayerUuid(string playerName)
+    {
+        if (string.IsNullOrWhiteSpace(playerName))
+        {
+            return string.Empty;
+        }
+
+        byte[] input = System.Text.Encoding.UTF8.GetBytes("OfflinePlayer:" + playerName);
+        using var md5 = System.Security.Cryptography.MD5.Create();
+        byte[] hash = md5.ComputeHash(input);
+
+        // Version 3 (MD5-based UUID)
+        hash[6] = (byte)((hash[6] & 0x0f) | 0x30);
+        // IETF variant
+        hash[8] = (byte)((hash[8] & 0x3f) | 0x80);
+
+        return string.Format(
+            "{0:x2}{1:x2}{2:x2}{3:x2}-{4:x2}{5:x2}-{6:x2}{7:x2}-{8:x2}{9:x2}-{10:x2}{11:x2}{12:x2}{13:x2}{14:x2}{15:x2}",
+            hash[0], hash[1], hash[2], hash[3],
+            hash[4], hash[5],
+            hash[6], hash[7],
+            hash[8], hash[9],
+            hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+    }
+
+    private async Task<string?> TryGetUuidFromJsonArrayFileAsync(string fileName, string playerName)
+    {
         try
         {
-            JsonDocument? document = await ReadJsonDocumentWithRetriesAsync(Path.Combine(_serverRoot, "usercache.json"));
+            string path = Path.Combine(_serverRoot, fileName);
+            JsonDocument? document = await ReadJsonDocumentWithRetriesAsync(path);
             if (document == null)
             {
                 return null;
@@ -58,7 +128,7 @@ public sealed class PlayerDataService
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Failed to read Java usercache.json from {ServerRoot}.", _serverRoot);
+            _logger?.LogDebug(ex, "Failed to read UUID for {PlayerName} from {FileName} in {ServerRoot}.", playerName, fileName, _serverRoot);
         }
 
         return null;
@@ -71,7 +141,7 @@ public sealed class PlayerDataService
             return "survival";
         }
 
-        string path = Path.Combine(_serverRoot, "world", "playerdata", $"{uuid}.dat");
+        string path = GetPlayerDataFilePath(uuid);
         if (!File.Exists(path))
         {
             return "survival";
@@ -181,7 +251,17 @@ public sealed class PlayerDataService
             opsWatcher.Dispose();
         }));
 
-        string playerDataDirectory = Path.Combine(_serverRoot, "world", "playerdata");
+        string playerDataDirectory = GetPlayerDataDirectory();
+        if (!Directory.Exists(playerDataDirectory))
+        {
+            // Fallback check: if default "world/playerdata" exists
+            string defaultDir = Path.Combine(_serverRoot, "world", "playerdata");
+            if (Directory.Exists(defaultDir))
+            {
+                playerDataDirectory = defaultDir;
+            }
+        }
+
         if (Directory.Exists(playerDataDirectory))
         {
             var playerdataWatcher = new FileSystemWatcher(playerDataDirectory, "*.dat")
@@ -210,6 +290,100 @@ public sealed class PlayerDataService
         }
 
         return new CompositeDisposable(disposables);
+    }
+
+    public string GetPlayerDataDirectory()
+    {
+        string levelName = GetLevelName();
+        string candidate = Path.Combine(_serverRoot, levelName, "playerdata");
+        if (Directory.Exists(candidate))
+        {
+            return candidate;
+        }
+
+        string worldCandidate = Path.Combine(_serverRoot, "world", "playerdata");
+        if (Directory.Exists(worldCandidate))
+        {
+            return worldCandidate;
+        }
+
+        // Try searching any immediate subdirectories for a "playerdata" directory
+        try
+        {
+            if (Directory.Exists(_serverRoot))
+            {
+                foreach (string dir in Directory.GetDirectories(_serverRoot))
+                {
+                    string nested = Path.Combine(dir, "playerdata");
+                    if (Directory.Exists(nested))
+                    {
+                        return nested;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "Failed to inspect server directories for playerdata folder in {ServerRoot}.", _serverRoot);
+        }
+
+        return candidate;
+    }
+
+    public string GetPlayerDataFilePath(string uuid)
+    {
+        string dir = GetPlayerDataDirectory();
+        string primaryPath = Path.Combine(dir, $"{uuid}.dat");
+        if (File.Exists(primaryPath))
+        {
+            return primaryPath;
+        }
+
+        string fallbackPath = Path.Combine(_serverRoot, "world", "playerdata", $"{uuid}.dat");
+        if (File.Exists(fallbackPath))
+        {
+            return fallbackPath;
+        }
+
+        return primaryPath;
+    }
+
+    public string GetLevelName()
+    {
+        string propsPath = Path.Combine(_serverRoot, "server.properties");
+        if (!File.Exists(propsPath))
+        {
+            return "world";
+        }
+
+        try
+        {
+            foreach (string line in File.ReadAllLines(propsPath))
+            {
+                string trimmed = line.Trim();
+                if (trimmed.StartsWith("#", StringComparison.Ordinal) || trimmed.StartsWith("!", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                int eqIndex = trimmed.IndexOf('=');
+                if (eqIndex > 0)
+                {
+                    string key = trimmed[..eqIndex].Trim();
+                    if (string.Equals(key, "level-name", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string value = trimmed[(eqIndex + 1)..].Trim();
+                        return string.IsNullOrWhiteSpace(value) ? "world" : value;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Failed to read level-name from server.properties in {ServerRoot}.", _serverRoot);
+        }
+
+        return "world";
     }
 
     private static void NotifyPlayerdataChanged(string path, Action<string> onPlayerdataChanged)

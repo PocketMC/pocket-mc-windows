@@ -137,7 +137,7 @@ public sealed class PlayerViewModel : ViewModelBase
                 return;
             }
 
-            if (CanChangeGamemode)
+            if (CanChangeGamemode && !string.Equals(normalizedMode, _confirmedGameMode, StringComparison.OrdinalIgnoreCase))
             {
                 _ = _changeGamemodeAsync(this, normalizedMode);
             }

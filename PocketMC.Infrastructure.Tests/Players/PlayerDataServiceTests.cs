@@ -56,6 +56,48 @@ public sealed class PlayerDataServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetUuidAsync_FallsBackToOpsJsonWhenUsercacheIsMissing()
+    {
+        await File.WriteAllTextAsync(
+            Path.Combine(_serverRoot, "ops.json"),
+            """
+            [
+              { "name": "FriendPlayer", "uuid": "00000000-0000-0000-0000-000000000999", "level": 4 }
+            ]
+            """);
+
+        var service = new PlayerDataService(_serverRoot);
+
+        string? uuid = await service.GetUuidAsync("friendplayer");
+
+        Assert.Equal("00000000-0000-0000-0000-000000000999", uuid);
+    }
+
+    [Fact]
+    public async Task GetUuidAsync_FallsBackToOfflineUuidWhenDatFileExists()
+    {
+        string offlineUuid = PlayerDataService.ComputeOfflinePlayerUuid("CrackedFriend");
+        string playerDataPath = Path.Combine(_serverRoot, "world", "playerdata", $"{offlineUuid}.dat");
+        Directory.CreateDirectory(Path.GetDirectoryName(playerDataPath)!);
+        WritePlayerDataFile(playerDataPath, playerGameType: 2);
+
+        var service = new PlayerDataService(_serverRoot);
+
+        string? uuid = await service.GetUuidAsync("CrackedFriend");
+
+        Assert.Equal(offlineUuid, uuid);
+        Assert.Equal("adventure", await service.GetGamemodeAsync(uuid!));
+    }
+
+    [Fact]
+    public void ComputeOfflinePlayerUuid_ComputesCorrectRfc4122V3Uuid()
+    {
+        string uuid = PlayerDataService.ComputeOfflinePlayerUuid("Steve");
+        Assert.False(string.IsNullOrWhiteSpace(uuid));
+        Assert.True(Guid.TryParse(uuid, out _));
+    }
+
+    [Fact]
     public async Task GetGamemodeAsync_ReturnsSurvivalWhenPlayerDataIsMissing()
     {
         var service = new PlayerDataService(_serverRoot);
@@ -78,6 +120,25 @@ public sealed class PlayerDataServiceTests : IDisposable
         string gamemode = await service.GetGamemodeAsync(uuid);
 
         Assert.Equal("creative", gamemode);
+    }
+
+    [Fact]
+    public async Task GetGamemodeAsync_ReadsPlayerGameTypeFromCustomLevelNameDirectory()
+    {
+        await File.WriteAllTextAsync(
+            Path.Combine(_serverRoot, "server.properties"),
+            "level-name=survival_world\nmax-players=20\n");
+
+        string uuid = "00000000-0000-0000-0000-000000000456";
+        string playerDataPath = Path.Combine(_serverRoot, "survival_world", "playerdata", $"{uuid}.dat");
+        Directory.CreateDirectory(Path.GetDirectoryName(playerDataPath)!);
+        WritePlayerDataFile(playerDataPath, playerGameType: 2);
+
+        var service = new PlayerDataService(_serverRoot);
+
+        string gamemode = await service.GetGamemodeAsync(uuid);
+
+        Assert.Equal("adventure", gamemode);
     }
 
     [Fact]

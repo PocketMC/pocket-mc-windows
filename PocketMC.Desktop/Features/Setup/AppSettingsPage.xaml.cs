@@ -150,7 +150,7 @@ namespace PocketMC.Desktop.Features.Setup
         {
             _isInitializing = true;
             RootDirectoryPathInput.Text = _applicationState.Settings.AppRootPath ?? "";
-            CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
+            CurseForgeKeyInput.Password = _applicationState.Settings.CurseForgeApiKey ?? "";
 
             // Setup Backdrop Combo
             BackdropCombo.Items.Clear();
@@ -193,7 +193,7 @@ namespace PocketMC.Desktop.Features.Setup
             ToggleTelemetry.IsChecked = _applicationState.Settings.EnableTelemetry;
 
             // AI Settings
-            AiApiKeyInput.Text = _applicationState.Settings.GetCurrentAiKey() ?? "";
+            AiApiKeyInput.Password = _applicationState.Settings.GetCurrentAiKey() ?? "";
 
             var initialProviderType = _aiProviderFactory.ParseProvider(_applicationState.Settings.AiProvider ?? "Gemini");
             var (initialDefaultModel, initialDefaultEndpoint) = _aiProviderFactory.GetProviderDefaults(initialProviderType);
@@ -833,7 +833,7 @@ namespace PocketMC.Desktop.Features.Setup
         }
         private void SaveApiKey_Click(object sender, RoutedEventArgs e)
         {
-            _applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Text.Trim();
+            _applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Password.Trim();
             _settingsManager.Save(_applicationState.Settings);
             _dialogService.ShowMessage("Saved", "API Configuration saved successfully.");
         }
@@ -858,7 +858,7 @@ namespace PocketMC.Desktop.Features.Setup
 
             // Auto-fill the key for the newly selected provider
             settings.AiApiKeys.TryGetValue(providerStr, out var key);
-            AiApiKeyInput.Text = key ?? string.Empty;
+            AiApiKeyInput.Password = key ?? string.Empty;
 
             settings.AiModels.TryGetValue(providerStr, out var model);
             settings.AiEndpoints.TryGetValue(providerStr, out var endpoint);
@@ -969,7 +969,7 @@ namespace PocketMC.Desktop.Features.Setup
 
         private async void ValidateAiKey_Click(object sender, RoutedEventArgs e)
         {
-            var apiKey = AiApiKeyInput.Text.Trim();
+            var apiKey = AiApiKeyInput.Password.Trim();
             var modelName = AiModelCombo.Text.Trim();
             var endpointUrl = AiEndpointUrlInput.Text.Trim();
             var provider = GetSelectedProvider();
@@ -1033,7 +1033,7 @@ namespace PocketMC.Desktop.Features.Setup
             var provider = GetSelectedProvider().ToString();
 
             settings.AiProvider = provider;
-            settings.AiApiKeys[provider] = AiApiKeyInput.Text.Trim();
+            settings.AiApiKeys[provider] = AiApiKeyInput.Password.Trim();
             settings.AiModels[provider] = AiModelCombo.Text.Trim();
             settings.AiEndpoints[provider] = AiEndpointUrlInput.Text.Trim();
 

@@ -103,6 +103,11 @@ namespace PocketMC.Desktop.Features.Shell
             OpenLink(AppConfig.LinkDonation);
         }
 
+        private void OpenOrganizationWebsite_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLink(AppConfig.LinkOrganization);
+        }
+
         private void WhatsNew_Click(object sender, RoutedEventArgs e)
         {
             try

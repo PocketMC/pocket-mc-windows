@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -32,11 +33,6 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
         TimeSpan.FromSeconds(1));
 
-    private static readonly Regex BedrockGamemodeRegex = new(
-        @"Game\s+mode\s+of\s+(?<name>.+?)\s+has\s+been\s+updated\s+to\s+(?<mode>Survival|Creative|Adventure|Spectator)\s+Mode",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
-        TimeSpan.FromSeconds(1));
-
     private readonly IAppNavigationService _navigationService;
     private readonly IDialogService _dialogService;
     private readonly IAppDispatcher _dispatcher;
@@ -57,6 +53,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     private readonly SemaphoreSlim _stateRefreshLock = new(1, 1);
     private readonly ConcurrentDictionary<string, PendingGamemodeChange> _pendingGamemodePlayers = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string> _playerUuidByName = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, string> _lastKnownGamemodeByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, HashSet<string>> _pendingBedrockOpSnapshots = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<string> _oppedPlayers = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<string> _bannedPlayers = new(StringComparer.OrdinalIgnoreCase);
@@ -137,6 +134,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             _serverProcess.OnOnlinePlayersUpdated += OnOnlinePlayersUpdated;
             _serverProcess.OnOutputLine += OnOutputLine;
             _serverProcess.OnStateChanged += OnServerStateChanged;
+            _serverProcess.OnPlayerGamemodeChanged += OnServerPlayerGamemodeChanged;
         }
         _stateWatcher = IsBedrock
             ? EmptyDisposable.Instance
@@ -274,13 +272,27 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     /// </summary>
     private async Task RefreshAllPlayerDataAsync()
     {
-        // 1. Request the updated player list from the server
+        // 1. If online Java server, flush in-memory player data to disk
+        if (IsServerOnline && UsesJavaNativePlayerData)
+        {
+            try
+            {
+                await DispatchCommandAsync("save-all");
+                await Task.Delay(250);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to dispatch save-all on refresh for instance {InstanceId}.", _metadata.Id);
+            }
+        }
+
+        // 2. Request the updated player list from the server
         await RequestPlayerListAsync();
 
-        // 2. Refresh persistent state (OP, bans) from authoritative files
+        // 3. Refresh persistent state (OP, bans) from authoritative files
         await RefreshPersistentStateAsync();
 
-        // 3. Load whitelist data
+        // 4. Load whitelist data
         await LoadWhitelistAsync();
 
         // 4. Re-fetch per-player gamemode from the latest source
@@ -336,65 +348,90 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        Dictionary<string, PlayerViewModel> existing = OnlinePlayers
-            .ToDictionary(player => player.Name, StringComparer.OrdinalIgnoreCase);
+        var namesSet = new HashSet<string>(uniqueNames, StringComparer.OrdinalIgnoreCase);
 
-        OnlinePlayers.Clear();
+        // 1. Remove players who left without clearing the entire collection
+        for (int i = OnlinePlayers.Count - 1; i >= 0; i--)
+        {
+            if (!namesSet.Contains(OnlinePlayers[i].Name))
+            {
+                OnlinePlayers.RemoveAt(i);
+            }
+        }
+
+        // 2. Add newly joined players or update existing players in-place
+        var existingDict = OnlinePlayers.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
         foreach (string name in uniqueNames)
         {
-            if (!existing.TryGetValue(name, out PlayerViewModel? player))
+            string initialMode = "survival";
+            if (_serverProcess != null && _serverProcess.PlayerGamemodes.TryGetValue(name, out string? procMode) && !string.IsNullOrWhiteSpace(procMode))
+            {
+                initialMode = procMode;
+            }
+            else if (_lastKnownGamemodeByName.TryGetValue(name, out string? knownMode) && !string.IsNullOrWhiteSpace(knownMode))
+            {
+                initialMode = knownMode;
+            }
+
+            _lastKnownGamemodeByName[name] = initialMode;
+
+            if (!existingDict.TryGetValue(name, out PlayerViewModel? player))
             {
                 player = new PlayerViewModel(
                     name,
                     ToggleOpAsync,
                     ChangeGamemodeAsync,
                     SubmitReasonAsync);
-            }
 
-            player.IsServerOnline = IsServerOnline;
-            if (IsBedrock)
-            {
-                if (_hasLoadedOpState && _knownBedrockPlayers.Contains(name))
+                player.SetGameModeFromServer(initialMode);
+                player.IsServerOnline = IsServerOnline;
+                player.IsBanned = _bannedPlayers.Contains(name);
+                OnlinePlayers.Add(player);
+
+                if (IsBedrock)
                 {
-                    player.SetOpFromState(_oppedPlayers.Contains(name));
+                    player.IsOpLoading = !(_hasLoadedOpState && _knownBedrockPlayers.Contains(name));
+                    if (!player.IsOpLoading)
+                    {
+                        player.SetOpFromState(_oppedPlayers.Contains(name));
+                    }
+                    _ = LoadBedrockPlayerStateAsync(name);
                 }
                 else
                 {
-                    player.IsOpLoading = true;
-                }
+                    if (_hasLoadedOpState || !UsesJavaNativePlayerData)
+                    {
+                        player.SetOpFromState(_oppedPlayers.Contains(name));
+                    }
+                    else
+                    {
+                        player.IsOpLoading = true;
+                    }
 
-                player.IsGamemodeLoading = false;
-                _ = LoadBedrockPlayerStateAsync(name);
-            }
-            else if (_hasLoadedOpState || !UsesJavaNativePlayerData)
-            {
-                player.SetOpFromState(_oppedPlayers.Contains(name));
+                    if (UsesJavaNativePlayerData)
+                    {
+                        if (initialMode == "survival" && (_serverProcess == null || !_serverProcess.PlayerGamemodes.ContainsKey(name)))
+                        {
+                            player.IsGamemodeLoading = true;
+                        }
+                        _ = LoadJavaGamemodeAsync(name);
+                    }
+                    else if (UsesSidecarGamemode)
+                    {
+                        _ = LoadSidecarGamemodeAsync(name);
+                    }
+                }
             }
             else
             {
-                player.IsOpLoading = true;
-            }
-
-            if (UsesJavaNativePlayerData)
-            {
-                if (!_playerUuidByName.ContainsKey(name) || player.IsGamemodeLoading)
+                // Existing player: update status in-place without destroying UI container
+                player.IsServerOnline = IsServerOnline;
+                player.IsBanned = _bannedPlayers.Contains(name);
+                if (_hasLoadedOpState)
                 {
-                    player.IsGamemodeLoading = true;
-                    _ = LoadJavaGamemodeAsync(name);
+                    player.SetOpFromState(_oppedPlayers.Contains(name));
                 }
             }
-            else if (UsesSidecarGamemode && !IsBedrock)
-            {
-                player.IsGamemodeLoading = false;
-                _ = LoadSidecarGamemodeAsync(name);
-            }
-            else
-            {
-                player.IsGamemodeLoading = false;
-            }
-
-            player.IsBanned = _bannedPlayers.Contains(name);
-            OnlinePlayers.Add(player);
         }
 
         UpdateLastUpdatedText();
@@ -514,6 +551,28 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         try
         {
+            // 1. If ServerProcess has a live tracked gamemode from real-time events, use it immediately
+            if (_serverProcess != null && _serverProcess.PlayerGamemodes.TryGetValue(playerName, out string? liveProcMode) && !string.IsNullOrWhiteSpace(liveProcMode))
+            {
+                _lastKnownGamemodeByName[playerName] = liveProcMode;
+                await _dispatcher.InvokeAsync(() =>
+                {
+                    PlayerViewModel? player = FindOnlinePlayer(playerName);
+                    player?.SetGameModeFromServer(liveProcMode);
+                });
+                return;
+            }
+
+            // 2. If server is online, query the live gamemode via console entity data query
+            if (IsServerOnline)
+            {
+                if (TryFormatPlayerCommandTarget(playerName, out string formattedTarget, showDialog: false))
+                {
+                    _ = DispatchCommandAsync($"data get entity {formattedTarget} playerGameType");
+                }
+            }
+
+            // 3. Fallback: read .dat file from disk
             string? uuid = await _playerDataService.GetUuidAsync(playerName);
             if (uuid == null)
             {
@@ -522,20 +581,32 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
                     PlayerViewModel? player = FindOnlinePlayer(playerName);
                     if (player != null)
                     {
-                        player.SetGameModeSilently("survival");
-                        player.IsGamemodeLoading = true;
+                        string fallbackMode = _lastKnownGamemodeByName.TryGetValue(playerName, out string? lastMode)
+                            ? lastMode
+                            : "survival";
+                        player.SetGameModeFromServer(fallbackMode);
                     }
                 });
                 return;
             }
 
             _playerUuidByName[playerName] = uuid;
-            string gamemode = await _playerDataService.GetGamemodeAsync(uuid);
+            string gamemodeFromDisk = await _playerDataService.GetGamemodeAsync(uuid);
+
+            string effectiveGamemode = gamemodeFromDisk;
+            if (gamemodeFromDisk == "survival" && _lastKnownGamemodeByName.TryGetValue(playerName, out string? cachedMode) && !string.IsNullOrWhiteSpace(cachedMode))
+            {
+                effectiveGamemode = cachedMode;
+            }
+            else
+            {
+                _lastKnownGamemodeByName[playerName] = effectiveGamemode;
+            }
 
             await _dispatcher.InvokeAsync(() =>
             {
                 PlayerViewModel? player = FindOnlinePlayer(playerName);
-                player?.SetGameModeFromServer(gamemode);
+                player?.SetGameModeFromServer(effectiveGamemode);
             });
         }
         catch (Exception ex)
@@ -546,8 +617,46 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
                 PlayerViewModel? player = FindOnlinePlayer(playerName);
                 if (player != null)
                 {
-                    player.SetGameModeSilently("survival");
-                    player.IsGamemodeLoading = false;
+                    string fallbackMode = _lastKnownGamemodeByName.TryGetValue(playerName, out string? lastMode)
+                        ? lastMode
+                        : "survival";
+                    player.SetGameModeFromServer(fallbackMode);
+                }
+            });
+        }
+    }
+
+    private void OnServerPlayerGamemodeChanged(string playerName, string gamemode)
+    {
+        _lastKnownGamemodeByName[playerName] = gamemode;
+
+        if (_pendingGamemodePlayers.TryRemove(playerName, out PendingGamemodeChange? pending))
+        {
+            pending.Cancel();
+            pending.Dispose();
+        }
+
+        _ = _dispatcher.InvokeAsync(async () =>
+        {
+            PlayerViewModel? player = FindOnlinePlayer(playerName);
+            if (player != null)
+            {
+                player.ConfirmGameModeChange(gamemode);
+                await player.FlashSuccessAsync();
+            }
+        });
+
+        if (UsesSidecarGamemode)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _bedrockPlayerDataService.SaveGamemodeAsync(playerName, gamemode);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to persist gamemode for {PlayerName} on instance {InstanceId}.", playerName, _metadata.Id);
                 }
             });
         }
@@ -818,6 +927,8 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             await _bedrockPlayerDataService.SaveGamemodeAsync(player.Name, mode);
         }
 
+        _lastKnownGamemodeByName[player.Name] = mode;
+
         var pending = new PendingGamemodeChange(mode, player.ConfirmedGameMode, shouldRevertPersistedGamemode: UsesSidecarGamemode);
         _pendingGamemodePlayers[player.Name] = pending;
         await DispatchCommandAsync($"gamemode {mode} {formattedName}");
@@ -843,6 +954,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         }
 
         pending.Dispose();
+        _lastKnownGamemodeByName[playerName] = pending.PreviousMode;
         if (pending.ShouldRevertPersistedGamemode)
         {
             await _bedrockPlayerDataService.SaveGamemodeAsync(playerName, pending.PreviousMode);
@@ -998,11 +1110,51 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         if (IsBedrock)
         {
             CaptureBedrockPlayerMap(line);
-            CaptureBedrockGamemode(line);
         }
 
-        if (!line.Contains("game mode", StringComparison.OrdinalIgnoreCase))
+        if (!PlayerGamemodeLogParser.MightContainGamemode(line))
         {
+            return;
+        }
+
+        PlayerGamemodeChangeEvent? gamemodeEvent = PlayerGamemodeLogParser.TryParse(line);
+        if (gamemodeEvent != null)
+        {
+            string playerName = gamemodeEvent.PlayerName;
+            string mode = gamemodeEvent.Gamemode;
+            _lastKnownGamemodeByName[playerName] = mode;
+
+            if (_pendingGamemodePlayers.TryRemove(playerName, out PendingGamemodeChange? pending))
+            {
+                pending.Cancel();
+                pending.Dispose();
+            }
+
+            _ = _dispatcher.InvokeAsync(async () =>
+            {
+                PlayerViewModel? player = FindOnlinePlayer(playerName);
+                if (player != null)
+                {
+                    player.ConfirmGameModeChange(mode);
+                    await player.FlashSuccessAsync();
+                }
+            });
+
+            if (UsesSidecarGamemode)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _bedrockPlayerDataService.SaveGamemodeAsync(playerName, mode);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to persist gamemode for {PlayerName} on instance {InstanceId}.", playerName, _metadata.Id);
+                    }
+                });
+            }
+
             return;
         }
 
@@ -1027,6 +1179,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
             removed.Cancel();
             removed.Dispose();
+            _lastKnownGamemodeByName[playerName] = pending.RequestedMode;
             _ = _dispatcher.InvokeAsync(async () =>
             {
                 PlayerViewModel? player = FindOnlinePlayer(playerName);
@@ -1078,34 +1231,6 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         string command = CommandFormatter.AppendOptionalReason($"kick {formattedName}", ban.Reason);
         await DispatchCommandAsync(command);
-    }
-
-    private void CaptureBedrockGamemode(string line)
-    {
-        Match match = BedrockGamemodeRegex.Match(line);
-        if (!match.Success)
-        {
-            return;
-        }
-
-        string name = match.Groups["name"].Value.Trim();
-        string mode = NormalizeGamemode(match.Groups["mode"].Value);
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await _bedrockPlayerDataService.SaveGamemodeAsync(name, mode);
-                await _dispatcher.InvokeAsync(() =>
-                {
-                    PlayerViewModel? player = FindOnlinePlayer(name);
-                    player?.SetGameModeFromServer(mode);
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to persist Bedrock gamemode confirmation for {PlayerName} on instance {InstanceId}.", name, _metadata.Id);
-            }
-        });
     }
 
     private void OnServerStateChanged(ServerState state)
@@ -1356,6 +1481,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             _serverProcess.OnOnlinePlayersUpdated -= OnOnlinePlayersUpdated;
             _serverProcess.OnOutputLine -= OnOutputLine;
             _serverProcess.OnStateChanged -= OnServerStateChanged;
+            _serverProcess.OnPlayerGamemodeChanged -= OnServerPlayerGamemodeChanged;
         }
     }
 

@@ -99,7 +99,20 @@ namespace PocketMC.Infrastructure.WhatsNew
                 if (currentSectionName != null && !string.IsNullOrWhiteSpace(line) &&
                     !line.StartsWith(VersionPrefix, StringComparison.OrdinalIgnoreCase))
                 {
-                    currentItems.Add(line);
+                    string itemText = line.Trim();
+                    if (itemText.StartsWith("- ") || itemText.StartsWith("* ") || itemText.StartsWith("• "))
+                    {
+                        itemText = itemText.Substring(2).Trim();
+                    }
+                    else if (itemText.StartsWith("-") || itemText.StartsWith("•"))
+                    {
+                        itemText = itemText.Substring(1).Trim();
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(itemText))
+                    {
+                        currentItems.Add(itemText);
+                    }
                 }
             }
 

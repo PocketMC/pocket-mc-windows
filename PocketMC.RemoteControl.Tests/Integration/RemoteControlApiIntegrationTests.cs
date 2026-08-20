@@ -44,7 +44,7 @@ public sealed class RemoteControlApiIntegrationTests : IAsyncLifetime
         var requestLimiter = new RemoteRequestLimiter();
 
         var tunnelManager = new RemoteTunnelManager(_state, Array.Empty<IRemoteTunnelProvider>());
-        var localNetworkAddressService = new LocalNetworkAddressService();
+        var localNetworkAddressService = new PocketMC.RemoteControl.Services.LocalNetworkAddressService();
         var authService = new RemoteAuthenticationService();
 
         _host = new RemoteDashboardHost(

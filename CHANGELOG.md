@@ -4,6 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
+- `v1.9.6...v1.9.7`: 84 commits focused on multi-user remote control permissions, fluid responsive dashboard grid, real-time player activity tracking and gamemode persistence, automated AI server crash analysis, granular settings backup/restore, accessibility/keyboard navigation, and deep security/concurrency hardening.
 - `v1.9.5...v1.9.6`: 90+ commits focused on system boot startup, importing existing server folders, advanced Playit HTTPS tunneling, modpack management overhaul (including .mrpack), and a massive UI/UX refactoring (splash screen, better console, progress bars).
 - `v1.9.4...v1.9.5`: 50+ commits focused on Clean Architecture refactoring, automatic update flow, Remote Control security, Geyser/VoiceChat detection, and Google Drive backup reliability.
 - `v1.9.3...v1.9.4`: 27 commits focused on custom accent colors, animated navigation, remote dashboard dark mode, Forge/NeoForge stabilization, and UI polish.
@@ -17,6 +18,89 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
+
+---
+
+## v1.9.7 - Multi-User Remote Control, Fluid Grid Dashboard, AI Crash Analysis & Core Hardening
+
+### Summary
+
+v1.9.7 is a major release introducing multi-user profiles and granular permissions for Remote Control, a completely redesigned fluid responsive dashboard grid with game-launcher aesthetics, automated AI crash analysis, real-time player activity log parsing and gamemode persistence, granular configuration backup/restore/reset tools, full keyboard navigation and accessibility across all dialogs, suggested port recovery in conflict dialogs, and deep security and concurrency hardening across all server lifecycles.
+
+### Diff Basis
+
+The `v1.9.6...v1.9.7` diff represents 84 commits focused on multi-user remote control architecture, responsive UI modernization, real-time player management, automated AI diagnostics, settings portability, security and credential protection, and solving core concurrency, memory, and lifecycle stability remediations.
+
+### Added
+
+- **Remote Control Multi-User Profiles & Granular Permissions**
+  - Added full multi-user profile management in Remote Control, allowing creation of sub-users with individual credentials (username/password), custom avatar accent colors, duplicate username collision protection, and granular permission sets.
+  - Implemented granular capability toggles per user: Console Access, Remote File Manager, Addon Manager, Backup Operations, Server State Control, and Server Settings modification.
+  - Added permission scoping allowing sub-user access to either all server instances or strictly selected individual instances.
+  - Overhauled credential input in `IDialogService` and `PasswordPromptDialogWindow` to support dual-field username/password authentication with validation against admin or duplicate username conflicts.
+- **Remote Web Dashboard Overhaul**
+  - Modernized the web UI with top-bar tab navigation, floating animated snackbar notifications (replacing disruptive error banners), and remote file upload capabilities.
+  - Expanded desktop view container width to 1200px for multi-column instance layouts and optimized mobile responsive layouts (including iOS Safari viewport scaling and auto-zoom prevention).
+  - Added full-color status icons, skeleton loaders, and a live WebSocket log streaming channel with backpressure handling.
+- **Fluid Responsive Dashboard Grid**
+  - Redesigned Desktop Dashboard instance cards from fixed-width static tiles into a fluid, responsive auto-fitting grid layout that dynamically scales to any display size with game-launcher grade aesthetics.
+  - Enhanced instance cards with sleek status indicators, real-time metrics badges, and smooth hover animations.
+- **Real-Time Player Activity & Live Gamemode Persistence**
+  - Added high-performance, non-blocking `PlayerActivityLogParser` supporting join and leave events across Java (Vanilla, Paper, Fabric, Forge, Spigot), Bedrock (BDS, XUIDs), and PocketMine-MP.
+  - Live player connect/disconnect logs immediately (0 ms) update online player management and dashboard card player badges without waiting for polling intervals.
+  - Continuous process-level tracking of player gamemodes from console events (`/gamemode`, `/gm`, aliases) and `/data get entity` responses, maintaining persistent dropdown state across page navigation and server reconnects.
+  - Implemented in-place online player synchronization avoiding UI dropdown resets and maintaining player list state integrity.
+- **Automated AI Server Crash Analysis**
+  - Integrated automated AI-powered root-cause crash analysis when servers exit unexpectedly with crash signatures or error codes.
+  - Generates clear, actionable crash explanations and recommended fixes directly in the server crash dialog.
+- **Granular Settings Backup, Restore & Reset**
+  - Added configuration backup and recovery tools in App Settings, allowing users to export selective categories into portable JSON backups.
+  - Added granular category restore (e.g. restoring API keys, paths, or behaviors without overwriting other settings) and factory reset capabilities.
+- **Full Keyboard Navigation & Accessibility Overhaul**
+  - Implemented comprehensive keyboard shortcut navigation across all main views (`Ctrl+1` through `Ctrl+6`, `Ctrl+,` for Settings, `Ctrl+N` for New Instance, `Ctrl+R`/`F5` for Refresh).
+  - Added console shortcuts (`/` to focus command bar, `Ctrl+F` to search logs, `Ctrl+L` to clear, Up/Down arrow history navigation).
+  - Added modal dialog cycle tab navigation (`PageUp`/`Escape` to navigate backward/cancel, `PageDown` forward).
+  - Added full `AutomationProperties.Name` support across interactive controls for screen readers and accessibility tools.
+  - Enabled mouse back/forward button navigation support across application views.
+- **Suggested Port Recovery in Conflict Dialogs**
+  - Integrated `PortRecoveryService` into port conflict dialogs, automatically probing the local network and suggesting free, alternative port options with one-click resolution.
+- **DS LABS Branding & Organization Section**
+  - Added dedicated DS LABS organization card and website link (`https://ds-labs-portfolio.vercel.app`) in the About page.
+
+### Changed
+
+- **Security & Password-Masked Fields (CurseForge & AI)**
+  - Replaced plain text input fields for CurseForge API Keys and AI Provider API Keys with secure password-masked controls (`PasswordBox`), preventing accidental exposure on screen shares or recordings.
+- **Dynamic Remote Configuration via GitHub API**
+  - Refactored `AppConfig` to load `pocketmc.yml` dynamically from the GitHub Contents API, bypassing CDN edge caching while preserving local binary version strings.
+  - Implemented a 3-tier config hierarchy: Disk Cache $\rightarrow$ Embedded Baseline $\rightarrow$ Static Defaults.
+- **Status Notification Auto-Dismissal**
+  - Desktop status notifications and snackbar alerts automatically dismiss after 5 seconds while remaining manually dismissible.
+- **Branding Standardization**
+  - Standardized all product naming to "PocketMC" across the entire codebase, UI strings, documentation, and tests.
+
+### Fixed
+
+- **Concurrency & Session Log Synchronization**
+  - Fixed race conditions during concurrent stdout/stderr streams by synchronizing log writers with `_sessionLogLock` in `ServerProcess`.
+- **Process File Handle Leaks & Lifecycle Management**
+  - Explicitly disposed replaced historical server processes in `ServerProcessManager` to prevent open file handle accumulation.
+- **UI Deadlocks on Server Crashes**
+  - Made server crash dialog invocation asynchronous to eliminate UI deadlocks during abnormal server terminations.
+- **Network & Proxy Exception Sanitization**
+  - Sanitized internal proxy URLs, socket errors, and backend hostnames from user-facing error dialogs in Google Drive backup, Playit provisioning, and cloud storage providers.
+- **Playit Status API Endpoint**
+  - Updated `PlayitStatusService` to use the official `status.playit.gg` API endpoint rather than deprecated routes.
+- **Modpack Rule Flexibility & Metadata Tolerance**
+  - Prevented deletion of valid mod files lacking metadata during modpack installations.
+- **Whitelist File Corruption Safety**
+  - Added defensive parsing and fallback recovery for corrupted or locked server `whitelist.json` files.
+- **LAN IP Detection & Fallbacks**
+  - Improved primary LAN IP resolution and fallback handling when multiple network adapters are active.
+- **Telemetry Deduplication**
+  - Added machine ID hashing to prevent duplicate install counts in telemetry reports.
+- **Comprehensive Master Test Suite Refactoring**
+  - Refactored all test fixtures and mocks to achieve a 100% pass rate across 876 unit and integration tests.
 
 ---
 
