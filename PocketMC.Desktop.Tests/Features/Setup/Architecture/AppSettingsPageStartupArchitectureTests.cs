@@ -64,4 +64,30 @@ public sealed class AppSettingsPageStartupArchitectureTests
         Assert.Contains("settings.KeepComputerAwakeWhileServersRunning = ToggleKeepComputerAwakeWhileServersRunning.IsChecked == true", source);
         Assert.Contains("_sleepPreventionCoordinator.Refresh()", source);
     }
+
+    [Fact]
+    public void Xaml_CurseForgeApiKey_UsesPasswordBoxWithAccentLinkColor()
+    {
+        string xaml = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Setup",
+            "AppSettingsPage.xaml"));
+
+        Assert.Contains("<ui:PasswordBox x:Name=\"CurseForgeKeyInput\"", xaml);
+        Assert.Contains("Foreground=\"{DynamicResource AccentTextFillColorPrimaryBrush}\"", xaml);
+    }
+
+    [Fact]
+    public void CodeBehind_CurseForgeApiKey_LoadsAndSavesPasswordSecurely()
+    {
+        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
+            "PocketMC.Desktop",
+            "Features",
+            "Setup",
+            "AppSettingsPage.xaml.cs"));
+
+        Assert.Contains("CurseForgeKeyInput.Password = _applicationState.Settings.CurseForgeApiKey ?? \"\";", source);
+        Assert.Contains("_applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Password.Trim();", source);
+    }
 }

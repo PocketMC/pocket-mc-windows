@@ -150,7 +150,7 @@ namespace PocketMC.Desktop.Features.Setup
         {
             _isInitializing = true;
             RootDirectoryPathInput.Text = _applicationState.Settings.AppRootPath ?? "";
-            CurseForgeKeyInput.Text = _applicationState.Settings.CurseForgeApiKey ?? "";
+            CurseForgeKeyInput.Password = _applicationState.Settings.CurseForgeApiKey ?? "";
 
             // Setup Backdrop Combo
             BackdropCombo.Items.Clear();
@@ -833,7 +833,7 @@ namespace PocketMC.Desktop.Features.Setup
         }
         private void SaveApiKey_Click(object sender, RoutedEventArgs e)
         {
-            _applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Text.Trim();
+            _applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Password.Trim();
             _settingsManager.Save(_applicationState.Settings);
             _dialogService.ShowMessage("Saved", "API Configuration saved successfully.");
         }

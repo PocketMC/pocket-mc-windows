@@ -535,12 +535,16 @@
                                 <TextBlock Text="CurseForge API Key" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap">
                                     <Run Text="Obtain a free key from the "/>
-                                    <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate">
+                                    <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate"
+                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
                                         <Run Text="CurseForge Console"/>
                                     </Hyperlink>
                                     <Run Text=" to access CurseForge addons."/>
                                 </TextBlock>
-                                <ui:TextBox x:Name="CurseForgeKeyInput" Margin="0,8,0,0" PlaceholderText="$2a$10$..."/>
+                                <ui:PasswordBox x:Name="CurseForgeKeyInput" 
+                                                Margin="0,8,0,0" 
+                                                PlaceholderText="$2a$10$..."
+                                                AutomationProperties.Name="CurseForge API Key"/>
                             </StackPanel>
                             <ui:Button Grid.Column="1" Content="Save Key" Appearance="Primary" VerticalAlignment="Bottom" Click="SaveApiKey_Click"/>
                         </Grid>

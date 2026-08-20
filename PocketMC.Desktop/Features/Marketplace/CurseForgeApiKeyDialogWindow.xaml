@@ -57,7 +57,8 @@
                 To download or search for CurseForge mods, you need a CurseForge API Key.
                 <LineBreak/>
                 <Run Text="You can obtain a free key from the "/>
-                <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate">
+                <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate"
+                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
                     <Run Text="CurseForge Console"/>
                 </Hyperlink>
                 <Run Text="."/>
