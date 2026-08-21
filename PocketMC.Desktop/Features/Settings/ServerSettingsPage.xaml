@@ -839,7 +839,6 @@
 
                                     <!-- Incompatible Addons Warning Banner -->
                                     <ui:Card Visibility="{Binding Addons.ShowIncompatibleWarning, Converter={StaticResource VisibleIfTrue}}"
-                                             Background="#2D281E" BorderBrush="#F9E2AF" BorderThickness="1"
                                              Margin="4,0,4,16" Padding="14,12">
                                         <Grid>
                                             <Grid.RowDefinitions>
@@ -857,7 +856,7 @@
 
                                             <!-- Title & Message -->
                                             <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="Incompatible Add-ons Detected" FontSize="13" FontWeight="SemiBold" Foreground="#F9E2AF"/>
+                                                <TextBlock Text="Incompatible Add-ons Detected" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                 <TextBlock Text="{Binding Addons.IncompatibleWarningMessage}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                             </StackPanel>
 
