@@ -4,6 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
+- `v1.9.7...v1.9.8`: Focuses on safe add-on inventory management (eliminated background auto-deletion), granular local add-on upload diagnostics with user-choice overrides, unified clean warning badges, accurate delta update download size calculation, and Windows auto-hide taskbar reveal support on maximized windows.
 - `v1.9.6...v1.9.7`: 84 commits focused on multi-user remote control permissions, fluid responsive dashboard grid, real-time player activity tracking and gamemode persistence, automated AI server crash analysis, granular settings backup/restore, accessibility/keyboard navigation, and deep security/concurrency hardening.
 - `v1.9.5...v1.9.6`: 90+ commits focused on system boot startup, importing existing server folders, advanced Playit HTTPS tunneling, modpack management overhaul (including .mrpack), and a massive UI/UX refactoring (splash screen, better console, progress bars).
 - `v1.9.4...v1.9.5`: 50+ commits focused on Clean Architecture refactoring, automatic update flow, Remote Control security, Geyser/VoiceChat detection, and Google Drive backup reliability.
@@ -18,6 +19,45 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
+
+---
+
+## v1.9.8 - Safe Addon Management, Accurate Validation & Shell Polishing
+
+### Summary
+
+v1.9.8 is a stability and refinement release that stops background auto-deletion of unrecognized or incompatible mods and plugins, adds an interactive user-controlled cleanup banner, introduces specific diagnostic dialogs for local add-on imports with override options, streamlines add-on cards with a single lightweight warning icon badge and tooltip, fixes Velopack delta update size reporting, and restores Windows auto-hide taskbar functionality when PocketMC is maximized.
+
+### Diff Basis
+
+The `v1.9.7...v1.9.8` diff represents improvements across add-on lifecycle handling, upload diagnostics, UI/UX badge consolidation, update telemetry accuracy, and Win32 desktop shell interop.
+
+### Added
+
+- **Accurate Diagnostic Dialogs for Local Add-on Uploads**
+  - Added comprehensive multi-loader and plugin metadata scanning during local file uploads (`AddModAsync` and `AddPluginAsync`) across all supported Java server types (Paper, Fabric, Forge, NeoForge, Purpur, Spigot, Bukkit).
+  - Replaced generic "Missing Metadata" popups with exact diagnostic reasons: `Incompatible Mod Loader` (e.g. Forge on Fabric), `Invalid Mod` (Bukkit plugin in mods folder), `Incompatible Add-on` (mod uploaded to plugins folder), `Client-Only Mod`, `Incompatible Minecraft / Loader Version`, and `Corrupt JAR Archive`.
+  - Added user choice dialogs allowing server administrators to bypass warnings and install add-ons anyway instead of blocking installation.
+- **One-Click Incompatible Add-on Removal Banner**
+  - Added a lightweight notification banner on the Add-ons page when incompatible items are detected, providing a safe one-click option to remove incompatible files or keep them.
+  - Added an instance-level "Don't ask again" preference stored directly in `instance.json` metadata.
+- **Windows Auto-Hide Taskbar Support on Maximize**
+  - Implemented `WM_GETMINMAXINFO` handling via Win32 `HwndSource` hook in `MainWindow`, detecting auto-hide taskbar state with `SHAppBarMessage` and reserving a 2-pixel margin on the docked edge.
+  - Allows the Windows Auto-Hide Taskbar to smoothly slide up on mouse hover even when PocketMC is maximized across any monitor or DPI scaling setting.
+
+### Changed
+
+- **Unified Lightweight Warning Badges**
+  - Replaced redundant client-only badges and large warning banners with a single compact `[ ⚠ ]` warning icon badge.
+  - Styled warning badges with native lightweight card background (`ControlAltFillColorTertiaryBrush`), removing dark muddy yellow colors.
+  - Added informative hover tooltips (`IncompatibleToolTip`) displaying the exact reason and required environment on hover.
+- **Dynamic Delta Update Download Size Calculation**
+  - Updated `UpdateService` to dynamically calculate and report the true download size by summing `info.DeltasToTarget` rather than hardcoding the full 35.6 MB installer size.
+
+### Fixed
+
+- **Eliminated Background Add-on Auto-Deletion**
+  - Removed all background `File.Delete` operations from `AddonInventoryService`, ensuring PocketMC never silently deletes user mods, plugins, or third-party add-ons from disk.
 
 ---
 
