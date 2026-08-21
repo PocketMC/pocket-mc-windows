@@ -21,6 +21,9 @@ public sealed class AddonInventoryItem
     public IReadOnlyList<string> Dependencies { get; init; } = Array.Empty<string>();
     public AddonUpdateStatus UpdateStatus { get; init; } = AddonUpdateStatus.Unknown;
     public AddonUpdateInfo? UpdateInfo { get; init; }
+    public bool IsIncompatible { get; init; }
+    public string? IncompatibleBadgeLabel { get; init; }
+    public string? IncompatibilityReason { get; init; }
     public bool CanEnable { get; init; }
     public bool CanDisable { get; init; }
     public bool RequiresServerStopped { get; init; } = true;

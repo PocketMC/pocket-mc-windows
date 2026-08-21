@@ -5,9 +5,11 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Views.Behaviors;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -89,6 +91,12 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         _startupCoordinator.AttachHost(this);
 
         AppTrayIcon.DataContext = _serviceProvider.GetRequiredService<TrayIconViewModel>();
+
+        SourceInitialized += (s, e) =>
+        {
+            var handle = new WindowInteropHelper(this).Handle;
+            HwndSource.FromHwnd(handle)?.AddHook(HwndHook);
+        };
     }
 
 
@@ -739,6 +747,152 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
                 });
             }
         });
+    }
+
+    // ── Auto-hide taskbar & Multi-monitor Maximize Support ───────────────────────
+
+    private const int WM_GETMINMAXINFO = 0x0024;
+    private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+    private const uint ABM_GETSTATE = 0x00000004;
+    private const uint ABM_GETTASKBARPOS = 0x00000005;
+    private const int ABS_AUTOHIDE = 0x0000001;
+
+    private const uint ABE_LEFT = 0;
+    private const uint ABE_TOP = 1;
+    private const uint ABE_RIGHT = 2;
+    private const uint ABE_BOTTOM = 3;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int x;
+        public int y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MINMAXINFO
+    {
+        public POINT ptReserved;
+        public POINT ptMaxSize;
+        public POINT ptMaxPosition;
+        public POINT ptMinTrackSize;
+        public POINT ptMaxTrackSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int left;
+        public int top;
+        public int right;
+        public int bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public int dwFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct APPBARDATA
+    {
+        public int cbSize;
+        public IntPtr hWnd;
+        public uint uCallbackMessage;
+        public uint uEdge;
+        public RECT rc;
+        public int lParam;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
+    [DllImport("shell32.dll")]
+    private static extern UIntPtr SHAppBarMessage(uint dwMessage, ref APPBARDATA pData);
+
+    private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_GETMINMAXINFO)
+        {
+            WmGetMinMaxInfo(hwnd, lParam);
+            handled = true;
+        }
+        return IntPtr.Zero;
+    }
+
+    private static void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam)
+    {
+        try
+        {
+            var mmi = (MINMAXINFO)Marshal.PtrToStructure(lParam, typeof(MINMAXINFO))!;
+            IntPtr hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            if (hMonitor != IntPtr.Zero)
+            {
+                var mi = new MONITORINFO();
+                mi.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+                if (GetMonitorInfo(hMonitor, ref mi))
+                {
+                    RECT rcWork = mi.rcWork;
+                    RECT rcMonitor = mi.rcMonitor;
+
+                    // Check if auto-hide taskbar is active on the system
+                    var abd = new APPBARDATA();
+                    abd.cbSize = Marshal.SizeOf(typeof(APPBARDATA));
+                    uint state = (uint)SHAppBarMessage(ABM_GETSTATE, ref abd);
+                    bool isAutoHide = (state & ABS_AUTOHIDE) != 0;
+
+                    if (isAutoHide)
+                    {
+                        // When taskbar is auto-hidden, rcWork == rcMonitor.
+                        // We must leave a 2-pixel margin on the taskbar edge so Windows can detect hover to show the taskbar.
+                        SHAppBarMessage(ABM_GETTASKBARPOS, ref abd);
+                        if (abd.rc.left >= rcMonitor.left && abd.rc.right <= rcMonitor.right &&
+                            abd.rc.top >= rcMonitor.top && abd.rc.bottom <= rcMonitor.bottom)
+                        {
+                            switch (abd.uEdge)
+                            {
+                                case ABE_LEFT:
+                                    rcWork.left += 2;
+                                    break;
+                                case ABE_TOP:
+                                    rcWork.top += 2;
+                                    break;
+                                case ABE_RIGHT:
+                                    rcWork.right -= 2;
+                                    break;
+                                case ABE_BOTTOM:
+                                    rcWork.bottom -= 2;
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            rcWork.bottom -= 2;
+                        }
+                    }
+
+                    mmi.ptMaxPosition.x = Math.Abs(rcWork.left - rcMonitor.left);
+                    mmi.ptMaxPosition.y = Math.Abs(rcWork.top - rcMonitor.top);
+                    mmi.ptMaxSize.x = Math.Abs(rcWork.right - rcWork.left);
+                    mmi.ptMaxSize.y = Math.Abs(rcWork.bottom - rcWork.top);
+                    mmi.ptMaxTrackSize.x = mmi.ptMaxSize.x;
+                    mmi.ptMaxTrackSize.y = mmi.ptMaxSize.y;
+                }
+            }
+            Marshal.StructureToPtr(mmi, lParam, true);
+        }
+        catch
+        {
+            // Non-critical window sizing fallback
+        }
     }
 }
 
