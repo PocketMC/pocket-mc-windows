@@ -60,6 +60,9 @@ namespace PocketMC.Domain.Models
         /// <summary>When true, this instance was created from a Modpack. Addon lifecycle and instance updates are disabled.</summary>
         public bool IsModpack { get; set; } = false;
 
+        /// <summary>When true, suppresses the automatic prompt offering to delete incompatible addons on settings page load for this instance.</summary>
+        public bool DontAskAgainRemoveIncompatibleAddons { get; set; } = false;
+
         // Custom backup destination (added for local backup routing)
         public string? CustomBackupDirectory { get; set; } = null;
 

@@ -78,7 +78,7 @@ public sealed class AddonManagementServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task InventoryDeletesClientOnlyMod()
+    public async Task InventoryPreservesClientOnlyModWithoutDeleting()
     {
         string serverDir = CreateServerDir();
         byte[] iconBytes = [1, 2, 3, 4, 5];
@@ -86,8 +86,9 @@ public sealed class AddonManagementServiceTests : IDisposable
 
         var items = await CreateInventoryService().ScanAsync(JavaMetadata(), serverDir);
 
-        Assert.Empty(items);
-        Assert.False(File.Exists(Path.Combine(serverDir, "mods", "rich.jar")));
+        var item = Assert.Single(items);
+        Assert.Equal(ModSideSupport.ClientOnly, item.SideSupport);
+        Assert.True(File.Exists(Path.Combine(serverDir, "mods", "rich.jar")));
     }
 
     [Fact]
@@ -192,7 +193,7 @@ public sealed class AddonManagementServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task InventoryDeletesCorruptJar()
+    public async Task InventoryPreservesCorruptJarWithoutDeleting()
     {
         string serverDir = CreateServerDir();
         string jarPath = Path.Combine(serverDir, "mods", "corrupt.jar");
@@ -201,8 +202,9 @@ public sealed class AddonManagementServiceTests : IDisposable
 
         var items = await CreateInventoryService().ScanAsync(JavaMetadata(), serverDir);
 
-        Assert.Empty(items);
-        Assert.False(File.Exists(jarPath));
+        var item = Assert.Single(items);
+        Assert.Equal("Unknown", item.LoaderType);
+        Assert.True(File.Exists(jarPath));
     }
 
     [Fact]
