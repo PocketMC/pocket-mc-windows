@@ -279,11 +279,10 @@ Custom background images and accent colors with different themes options, custom
 
 ### Remote Web Dashboard
 
-| Welcome | Login | Instances |
-| :---: | :---: | :---: |
-| <img src="docs/assets/screenshots/mobile-welcome.png" width="280" alt="Web Dashboard - Welcome" /> | <img src="docs/assets/screenshots/mobile-login.png" width="280" alt="Web Dashboard - Login" /> | <img src="docs/assets/screenshots/mobile-instances.png" width="280" alt="Web Dashboard - Instances" /> |
-| **Home** | **Console** | **Players** |
-| <img src="docs/assets/screenshots/mobile-home.png" width="280" alt="Web Dashboard - Home" /> | <img src="docs/assets/screenshots/mobile-console.png" width="280" alt="Web Dashboard - Console" /> | <img src="docs/assets/screenshots/mobile-players.png" width="280" alt="Web Dashboard - Players" /> |
+| | | | |
+| :---: | :---: | :---: | :---: |
+| **Welcome**<br><img src="docs/assets/screenshots/mobile-welcome.png" width="220" alt="Web Dashboard - Welcome" /> | **Login**<br><img src="docs/assets/screenshots/mobile-login.png" width="220" alt="Web Dashboard - Login" /> | **Instances**<br><img src="docs/assets/screenshots/mobile-instances.png" width="220" alt="Web Dashboard - Instances" /> | **Home**<br><img src="docs/assets/screenshots/mobile-home.png" width="220" alt="Web Dashboard - Home" /> |
+| **Console**<br><img src="docs/assets/screenshots/mobile-console.png" width="220" alt="Web Dashboard - Console" /> | **Players**<br><img src="docs/assets/screenshots/mobile-players.png" width="220" alt="Web Dashboard - Players" /> | **Backups**<br><img src="docs/assets/screenshots/mobile-backups.png" width="220" alt="Web Dashboard - Backups" /> | **File Management**<br><img src="docs/assets/screenshots/mobile-file-management.png" width="220" alt="Web Dashboard - File Management" /> |
 
 <br>
 
