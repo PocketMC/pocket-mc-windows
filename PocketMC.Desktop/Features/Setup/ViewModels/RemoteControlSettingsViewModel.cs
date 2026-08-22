@@ -222,6 +222,17 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
 
         if (string.IsNullOrWhiteSpace(user.Password))
         {
+            if (!string.IsNullOrEmpty(user.PasswordHash))
+            {
+                user.Username = trimmedUsername;
+                user.SavedUsername = trimmedUsername;
+                user.Model.Username = trimmedUsername;
+                user.IsEditing = false;
+                if (!SaveSettings()) return;
+                SetStatus($"User '{user.Username}' updated successfully.", false);
+                return;
+            }
+
             SetStatus("Password is required to save credentials.", true);
             return;
         }
@@ -406,9 +417,10 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
             _applicationState.Settings.RemoteControl.PasswordHash = null;
             _applicationState.Settings.RemoteControl.ProtectedPassword = null;
             
-            SaveSettings();
+            _settingsManager.Save(_applicationState.Settings);
             OnPropertyChanged(nameof(IsPasswordSet));
             OnPropertyChanged(nameof(IsPasswordNotSet));
+            OnPropertyChanged(nameof(IsOwnerSetupVisible));
             SetStatus("Admin credentials cleared successfully.", false);
             IsAdminCredentialsExpanded = false;
             return;
@@ -418,12 +430,6 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         {
             SetStatus("Username cannot be empty.", true);
             Username = _applicationState.Settings.RemoteControl.Username ?? "";
-            return;
-        }
-        
-        if (string.IsNullOrWhiteSpace(Password))
-        {
-            SetStatus("Password cannot be empty.", true);
             return;
         }
 
@@ -436,12 +442,37 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
             Username = _applicationState.Settings.RemoteControl.Username ?? "";
             return;
         }
+        
+        if (string.IsNullOrWhiteSpace(Password))
+        {
+            if (!string.IsNullOrEmpty(_applicationState.Settings.RemoteControl.PasswordHash))
+            {
+                Username = trimmedAdminUsername;
+                _applicationState.Settings.RemoteControl.Username = trimmedAdminUsername;
+                _applicationState.Settings.RemoteControl.SecurityStamp = Guid.NewGuid().ToString();
+                _settingsManager.Save(_applicationState.Settings);
+                OnPropertyChanged(nameof(IsPasswordSet));
+                OnPropertyChanged(nameof(IsPasswordNotSet));
+                OnPropertyChanged(nameof(IsOwnerSetupVisible));
+                SetStatus("Admin username updated successfully.", false);
+                IsAdminCredentialsExpanded = false;
+                return;
+            }
+
+            SetStatus("Password cannot be empty.", true);
+            return;
+        }
 
         Username = trimmedAdminUsername;
+        _applicationState.Settings.RemoteControl.Username = trimmedAdminUsername;
+        _applicationState.Settings.RemoteControl.PasswordHash = _authenticationService.HashPassword(Password);
+        _applicationState.Settings.RemoteControl.ProtectedPassword = PocketMC.Infrastructure.Security.DataProtector.Protect(Password);
         _applicationState.Settings.RemoteControl.SecurityStamp = Guid.NewGuid().ToString();
-        SaveSettings();
+
+        _settingsManager.Save(_applicationState.Settings);
         OnPropertyChanged(nameof(IsPasswordSet));
         OnPropertyChanged(nameof(IsPasswordNotSet));
+        OnPropertyChanged(nameof(IsOwnerSetupVisible));
         SetStatus("Admin credentials saved successfully.", false);
         IsAdminCredentialsExpanded = false;
     }
@@ -507,17 +538,16 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         settings.RemoteControl.AccessMode = AccessMode;
         settings.RemoteControl.TunnelProviderId = MapRemoteAccessModeToProviderId(AccessMode);
         settings.RemoteControl.RequireAuthentication = RequireAuthentication;
-        settings.RemoteControl.Username = Username;
+
+        if (!string.IsNullOrWhiteSpace(Username))
+        {
+            settings.RemoteControl.Username = Username.Trim();
+        }
 
         if (!string.IsNullOrEmpty(Password))
         {
             settings.RemoteControl.PasswordHash = _authenticationService.HashPassword(Password);
             settings.RemoteControl.ProtectedPassword = PocketMC.Infrastructure.Security.DataProtector.Protect(Password);
-        }
-        else
-        {
-            settings.RemoteControl.PasswordHash = null;
-            settings.RemoteControl.ProtectedPassword = null;
         }
 
         settings.EnableDiscordNotifications = EnableDiscordNotifications;

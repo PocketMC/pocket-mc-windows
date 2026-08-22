@@ -54,7 +54,7 @@ namespace PocketMC.Infrastructure.Configuration
                     return CreateDefaultSettings();
                 }
 
-                AppSettings? settings;
+                AppSettings? settings = null;
                 try
                 {
                     var content = File.ReadAllText(_settingsFilePath);
@@ -62,7 +62,26 @@ namespace PocketMC.Infrastructure.Configuration
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogWarning(ex, "Failed to load settings from {SettingsFilePath}. Falling back to defaults.", _settingsFilePath);
+                    var directory = Path.GetDirectoryName(_settingsFilePath) ?? "";
+                    string backupPath = Path.Combine(directory, $"settings.json.corrupted.{DateTime.UtcNow:yyyyMMddHHmmssfff}.bak");
+                    try
+                    {
+                        if (File.Exists(_settingsFilePath))
+                        {
+                            File.Copy(_settingsFilePath, backupPath, overwrite: true);
+                            _logger?.LogError(ex, "Failed to deserialize {SettingsFilePath}. Created rescue backup at {BackupPath} and falling back to defaults.", _settingsFilePath, backupPath);
+                        }
+                    }
+                    catch (Exception copyEx)
+                    {
+                        _logger?.LogError(copyEx, "Failed to create rescue backup for corrupted settings file at {SettingsFilePath}.", _settingsFilePath);
+                    }
+
+                    return CreateDefaultSettings();
+                }
+
+                if (settings == null)
+                {
                     return CreateDefaultSettings();
                 }
 
@@ -190,6 +209,17 @@ namespace PocketMC.Infrastructure.Configuration
             settings.UserRemovedJavaVersions ??= new System.Collections.Generic.HashSet<int>();
             settings.CloudBackups ??= new CloudBackupSettings();
             settings.RemoteControl ??= new RemoteControlSettings();
+            settings.RemoteControl.Users ??= new System.Collections.Generic.List<RemoteControlUser>();
+            foreach (var user in settings.RemoteControl.Users)
+            {
+                user.AllowedInstanceIds ??= new System.Collections.Generic.List<Guid>();
+            }
+
+            if (string.IsNullOrWhiteSpace(settings.RemoteControl.SecurityStamp))
+            {
+                settings.RemoteControl.SecurityStamp = Guid.NewGuid().ToString();
+            }
+
             if (settings.RemoteControl.Port <= 0 || settings.RemoteControl.Port > 65535)
             {
                 settings.RemoteControl.Port = 25580;
@@ -201,6 +231,8 @@ namespace PocketMC.Infrastructure.Configuration
                 RemoteAccessMode.PlayitHttpsTunnel => "playit-https",
                 _ => "none"
             };
+
+            settings.SchemaVersion = 2;
 
             settings.PlayitConfigDirectory ??= Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

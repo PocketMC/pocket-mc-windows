@@ -16,6 +16,7 @@ namespace PocketMC.Domain.Models
 
     public class AppSettings
     {
+        public int SchemaVersion { get; set; } = 2;
         public string? AppRootPath { get; set; }
         public string? PlayitConfigDirectory { get; set; }
         public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }

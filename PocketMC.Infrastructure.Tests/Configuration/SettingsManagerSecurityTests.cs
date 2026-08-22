@@ -111,6 +111,46 @@ public sealed class SettingsManagerSecurityTests : IDisposable
         Assert.Empty(loaded.CloudTokens);
     }
 
+    [Fact]
+    public void Load_WhenJsonIsCorrupted_CreatesRescueBackupFile()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        File.WriteAllText(settingsPath, "{ invalid json corrupt content !!! ");
+
+        var manager = new SettingsManager(settingsPath);
+        AppSettings loaded = manager.Load();
+
+        Assert.NotNull(loaded);
+        Assert.Equal(2, loaded.SchemaVersion);
+
+        string[] backupFiles = Directory.GetFiles(_tempDirectory, "settings.json.corrupted.*.bak");
+        Assert.Single(backupFiles);
+        Assert.Contains("invalid json corrupt content", File.ReadAllText(backupFiles[0]));
+    }
+
+    [Fact]
+    public void Load_MigratesLegacySettingsToSchemaVersion2AndInitializesRemoteControl()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        File.WriteAllText(settingsPath, """
+        {
+          "AppRootPath": "D:\\PocketMC\\Servers",
+          "HasCompletedFirstLaunch": true
+        }
+        """);
+
+        var manager = new SettingsManager(settingsPath);
+        AppSettings loaded = manager.Load();
+
+        Assert.Equal(2, loaded.SchemaVersion);
+        Assert.NotNull(loaded.RemoteControl);
+        Assert.Equal(25580, loaded.RemoteControl.Port);
+        Assert.NotNull(loaded.RemoteControl.Users);
+        Assert.False(string.IsNullOrWhiteSpace(loaded.RemoteControl.SecurityStamp));
+    }
+
     private static string CreateCorruptedProtectedPayload()
     {
         return "dpapi:v1:" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
