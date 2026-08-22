@@ -126,17 +126,25 @@ namespace PocketMC.Desktop.Infrastructure
             }
 
             string newVersion = info.TargetFullRelease?.Version?.ToString() ?? "unknown";
-            _logger.LogInformation("Velopack update available: {Version}. Starting background download.", newVersion);
+            
+            // Determine actual download size (delta if available, otherwise full release)
+            var deltas = info.DeltasToTarget?.ToList();
+            long? downloadSize = deltas != null && deltas.Count > 0
+                ? deltas.Sum(d => d.Size)
+                : info.TargetFullRelease?.Size;
+
+            _logger.LogInformation("Velopack update available: {Version}. Delta count: {DeltaCount}, Download size: {Size} bytes.",
+                newVersion, deltas?.Count ?? 0, downloadSize ?? 0);
 
             try
             {
-                Broadcast(UpdateStatus.From(UpdateStage.Downloading, newVersion, 0, info.TargetFullRelease?.Size));
+                Broadcast(UpdateStatus.From(UpdateStage.Downloading, newVersion, 0, downloadSize));
 
                 // Fixed: DownloadUpdatesAsync now expects Action<int> instead of IProgress<int>
                 await mgr.DownloadUpdatesAsync(info, pct =>
                 {
                     if (!ct.IsCancellationRequested)
-                        Broadcast(UpdateStatus.From(UpdateStage.Downloading, newVersion, pct, info.TargetFullRelease?.Size));
+                        Broadcast(UpdateStatus.From(UpdateStage.Downloading, newVersion, pct, downloadSize));
                 }, ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
@@ -154,7 +162,7 @@ namespace PocketMC.Desktop.Infrastructure
 
             _pendingUpdate = info;
             _logger.LogInformation("Velopack update {Version} downloaded and staged for restart.", newVersion);
-            Broadcast(UpdateStatus.From(UpdateStage.ReadyToRestart, newVersion, 100, info.TargetFullRelease?.Size));
+            Broadcast(UpdateStatus.From(UpdateStage.ReadyToRestart, newVersion, 100, downloadSize));
 
             try
             {

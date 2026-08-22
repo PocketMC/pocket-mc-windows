@@ -65,52 +65,8 @@ public sealed class AddonInventoryService
             var items = new List<AddonInventoryItem>();
             ScanKind(root, metadata, AddonKind.Mod, manifest, state, serverRunning, items, cancellationToken);
             ScanKind(root, metadata, AddonKind.Plugin, manifest, state, serverRunning, items, cancellationToken);
-            
-            var itemsToKeep = new List<AddonInventoryItem>();
-            
-            if (metadata.IsModpack)
-            {
-                itemsToKeep.AddRange(items);
-            }
-            else
-            {
-                foreach (var kindGroup in items.GroupBy(i => i.Kind))
-                {
-                    var groupedById = kindGroup.GroupBy(i => !string.IsNullOrEmpty(i.ModId) ? i.ModId.ToLowerInvariant() : i.DisplayName.ToLowerInvariant());
-                    
-                    foreach (var group in groupedById)
-                    {
-                        if (group.Count() == 1)
-                        {
-                            itemsToKeep.Add(group.First());
-                            continue;
-                        }
-                        
-                        var sorted = group
-                            .OrderBy(i => i.Provenance == null ? 1 : 0) // Prefer tracked over manual
-                            .ThenByDescending(i => i.LastModifiedUtc) // Prefer newest file
-                            .ToList();
-                            
-                        var winner = sorted.First();
-                        itemsToKeep.Add(winner);
-                        
-                        foreach (var loser in sorted.Skip(1))
-                        {
-                            try
-                            {
-                                if (File.Exists(loser.FullPath)) File.Delete(loser.FullPath);
-                                if (!string.IsNullOrEmpty(loser.DisabledPath) && File.Exists(loser.DisabledPath)) File.Delete(loser.DisabledPath);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogDebug(ex, "Could not remove duplicate add-on file {AddonPath}.", loser.FullPath);
-                            }
-                        }
-                    }
-                }
-            }
 
-            return (IReadOnlyList<AddonInventoryItem>)itemsToKeep
+            return (IReadOnlyList<AddonInventoryItem>)items
                 .OrderBy(item => item.Kind)
                 .ThenBy(item => item.State)
                 .ThenBy(item => item.DisplayName, StringComparer.OrdinalIgnoreCase)
@@ -215,7 +171,7 @@ public sealed class AddonInventoryService
         bool isInvalid = false;
         if (metadata.IsModpack)
         {
-            // For modpacks, ONLY delete client-only mods. Ignore metadata/loader checks.
+            // For modpacks, client-only mods are flagged. Ignore metadata/loader checks.
             isInvalid = sideSupport == ModSideSupport.ClientOnly;
         }
         else
@@ -226,23 +182,38 @@ public sealed class AddonInventoryService
                              !isCompatibleLoader;
         }
 
-        if (isInvalid)
+        bool isIncompatible = isInvalid || isMinecraftIncompatible || isLoaderVersionIncompatible;
+        string? incompatibilityReason = null;
+        string? incompatibleBadgeLabel = null;
+        if (jarMetadata.IsCorrupt)
         {
-            try
-            {
-                File.Delete(fullPath);
-                // Also clean up any disabled version if it exists
-                if (itemState == AddonState.Disabled)
-                {
-                    File.Delete(fullPath); 
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Could not remove incompatible add-on file {AddonPath}.", fullPath);
-            }
-            
-            return null; // Don't return an item so it doesn't show in UI
+            incompatibleBadgeLabel = "Corrupt JAR";
+            incompatibilityReason = "Corrupt or unreadable JAR file.";
+        }
+        else if (jarMetadata.IsPluginInModsFolder)
+        {
+            incompatibleBadgeLabel = "Plugin in Mods";
+            incompatibilityReason = "Server plugin placed in mods folder.";
+        }
+        else if (sideSupport == ModSideSupport.ClientOnly)
+        {
+            incompatibleBadgeLabel = "Client Only";
+            incompatibilityReason = "Client-only mod.";
+        }
+        else if (!isCompatibleLoader)
+        {
+            incompatibleBadgeLabel = "Loader Incompatible";
+            incompatibilityReason = $"Requires {jarMetadata.LoaderType} mod loader.";
+        }
+        else if (isMinecraftIncompatible)
+        {
+            incompatibleBadgeLabel = "Minecraft Incompatible";
+            incompatibilityReason = $"Requires Minecraft {jarMetadata.RequiredMinecraftVersion} (server is running {metadata.MinecraftVersion}).";
+        }
+        else if (isLoaderVersionIncompatible)
+        {
+            incompatibleBadgeLabel = "Loader Version Incompatible";
+            incompatibilityReason = $"Requires loader {jarMetadata.RequiredLoaderVersion} (server is running {metadata.LoaderVersion}).";
         }
 
         AddonProvenance? provenance = BuildProvenance(manifestEntry, metadata);
@@ -272,6 +243,9 @@ public sealed class AddonInventoryService
             IconBytes = jarMetadata.IconBytes,
             Dependencies = jarMetadata.Dependencies.ToArray(),
             UpdateStatus = provenance == null ? AddonUpdateStatus.UnknownSource : AddonUpdateStatus.Unknown,
+            IsIncompatible = isIncompatible,
+            IncompatibleBadgeLabel = incompatibleBadgeLabel,
+            IncompatibilityReason = incompatibilityReason,
             CanEnable = itemState == AddonState.Disabled && !serverRunning,
             CanDisable = itemState == AddonState.Enabled && !serverRunning,
             RequiresServerStopped = true,

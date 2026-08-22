@@ -837,6 +837,50 @@
 
 
 
+                                    <!-- Incompatible Addons Warning Banner -->
+                                    <ui:Card Visibility="{Binding Addons.ShowIncompatibleWarning, Converter={StaticResource VisibleIfTrue}}"
+                                             Margin="4,0,4,16" Padding="14,12">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Warning Icon -->
+                                            <ui:SymbolIcon Grid.Row="0" Grid.Column="0" Symbol="Warning24" Foreground="#F9E2AF" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Top"/>
+
+                                            <!-- Title & Message -->
+                                            <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="Incompatible Add-ons Detected" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding Addons.IncompatibleWarningMessage}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                            </StackPanel>
+
+                                            <!-- Action Buttons (Yes / No) -->
+                                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                                                <ui:Button Content="Remove Incompatible"
+                                                           Appearance="Primary"
+                                                           Command="{Binding Addons.RemoveIncompatibleAddonsCommand}"
+                                                           Margin="0,0,8,0"
+                                                           ToolTip="Automatically delete all incompatible add-ons from disk"/>
+                                                <ui:Button Content="Keep"
+                                                           Appearance="Secondary"
+                                                           Command="{Binding Addons.DismissIncompatibleWarningCommand}"
+                                                           ToolTip="Keep incompatible add-ons and dismiss this notification"/>
+                                            </StackPanel>
+
+                                            <!-- Don't ask again CheckBox -->
+                                            <CheckBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                                      Content="Don't ask again"
+                                                      IsChecked="{Binding Addons.DontAskAgainIncompatible, Mode=TwoWay}"
+                                                      FontSize="11" Margin="0,8,0,0" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                        </Grid>
+                                    </ui:Card>
+
                                     <ui:Card Visibility="{Binding Addons.ShowServerRunningAddonMessage, Converter={StaticResource VisibleIfTrue}}"
                                              Background="#2A2535" BorderBrush="#CBA6F7" BorderThickness="1"
                                              Margin="4,0,4,16" Padding="12">
@@ -975,12 +1019,12 @@
                                                                     <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                                                         <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                                     </Border>
-                                                                    <StackPanel Orientation="Horizontal" Visibility="{Binding ShowSideBadge, Converter={StaticResource VisibleIfTrue}}">
-                                                                        <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                                                                        <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2">
-                                                                            <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                                        </Border>
-                                                                    </StackPanel>
+                                                                    <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0"
+                                                                            Visibility="{Binding ShowIncompatibleBadge, Converter={StaticResource VisibleIfTrue}}"
+                                                                            ToolTip="{Binding IncompatibleToolTip}"
+                                                                            Cursor="Help">
+                                                                        <ui:SymbolIcon Symbol="Warning12" Foreground="#F9E2AF" FontSize="11" VerticalAlignment="Center"/>
+                                                                    </Border>
                                                                 </WrapPanel>
 
 
@@ -1182,23 +1226,14 @@
                                                                     <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
                                                                         <TextBlock Text="{Binding SourceLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                                     </Border>
-                                                                    
-                                                                    <Border Background="{Binding SideBadgeBackground}"
-                                                                            CornerRadius="4"
-                                                                            Padding="6,2"
-                                                                            Visibility="{Binding ShowSideBadge, Converter={StaticResource VisibleIfTrue}}">
-                                                                        <TextBlock Text="{Binding SideLabel}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding SideBadgeForeground}"/>
+
+                                                                    <Border Background="{DynamicResource ControlAltFillColorTertiaryBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0"
+                                                                            Visibility="{Binding ShowIncompatibleBadge, Converter={StaticResource VisibleIfTrue}}"
+                                                                            ToolTip="{Binding IncompatibleToolTip}"
+                                                                            Cursor="Help">
+                                                                        <ui:SymbolIcon Symbol="Warning12" Foreground="#F9E2AF" FontSize="11" VerticalAlignment="Center"/>
                                                                     </Border>
                                                                 </WrapPanel>
-
-                                                                <!-- Client Only warning banner -->
-                                                                <Border Visibility="{Binding IsClientOnly, Converter={StaticResource VisibleIfTrue}}"
-                                                                        Background="#2D1E24" BorderBrush="#F38BA8" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,6,0,0" HorizontalAlignment="Left">
-                                                                    <StackPanel Orientation="Horizontal">
-                                                                        <ui:SymbolIcon Symbol="Warning12" Foreground="#F38BA8" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                                                        <TextBlock Text="Client-only mod. Do not install on server unless you know what you are doing." FontSize="11" Foreground="#F38BA8" VerticalAlignment="Center"/>
-                                                                    </StackPanel>
-                                                                </Border>
 
 
                                                             </StackPanel>

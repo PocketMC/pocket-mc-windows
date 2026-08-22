@@ -211,6 +211,39 @@ namespace PocketMC.Desktop.Features.Settings
             set => SetProperty(ref _updateAllStatusText, value);
         }
 
+        // Incompatible Addons Warning Banner
+        private bool _showIncompatibleWarning;
+        public bool ShowIncompatibleWarning
+        {
+            get => _showIncompatibleWarning;
+            set => SetProperty(ref _showIncompatibleWarning, value);
+        }
+
+        private string _incompatibleWarningMessage = "";
+        public string IncompatibleWarningMessage
+        {
+            get => _incompatibleWarningMessage;
+            set => SetProperty(ref _incompatibleWarningMessage, value);
+        }
+
+        public bool DontAskAgainIncompatible
+        {
+            get => _metadata.DontAskAgainRemoveIncompatibleAddons;
+            set
+            {
+                if (_metadata.DontAskAgainRemoveIncompatibleAddons != value)
+                {
+                    _metadata.DontAskAgainRemoveIncompatibleAddons = value;
+                    OnPropertyChanged(nameof(DontAskAgainIncompatible));
+                    SaveMetadata();
+                    _onAddonChanged();
+                }
+            }
+        }
+
+        public ICommand RemoveIncompatibleAddonsCommand { get; }
+        public ICommand DismissIncompatibleWarningCommand { get; }
+
 
 
         public SettingsAddonsVM(
@@ -305,11 +338,73 @@ namespace PocketMC.Desktop.Features.Settings
 
             OpenFolderCommand = new RelayCommand(p => OpenContainingFolder(p as string));
             ToggleModActiveCommand = new RelayCommand(async p => await ToggleAddonStateAsync(p), CanToggleAddon);
+
+            RemoveIncompatibleAddonsCommand = new RelayCommand(async _ => await RemoveIncompatibleAddonsAsync());
+            DismissIncompatibleWarningCommand = new RelayCommand(_ => DismissIncompatibleWarning());
+        }
+
+        private void SaveMetadata()
+        {
+            try
+            {
+                var instanceManager = _serviceProvider.GetService(typeof(PocketMC.Application.Services.Instances.InstanceManager)) as PocketMC.Application.Services.Instances.InstanceManager;
+                if (instanceManager != null)
+                {
+                    instanceManager.SaveMetadata(_metadata, _serverDir);
+                }
+            }
+            catch { }
+        }
+
+        public async Task RemoveIncompatibleAddonsAsync()
+        {
+            var incompatibleMods = _allMods.Where(m => m.IsIncompatible).ToList();
+            var incompatiblePlugins = _allPlugins.Where(p => p.IsIncompatible).ToList();
+
+            foreach (var mod in incompatibleMods)
+            {
+                try
+                {
+                    if (File.Exists(mod.Path)) await FileUtils.DeleteFileAsync(mod.Path);
+                    await _manifestService.UnregisterByFileNameAsync(_serverDir, mod.FileName);
+                }
+                catch (Exception ex)
+                {
+                    _dialogService.ShowMessage("Error", $"Could not delete {mod.FileName}: {ex.Message}", DialogType.Error);
+                }
+            }
+
+            foreach (var plugin in incompatiblePlugins)
+            {
+                try
+                {
+                    if (File.Exists(plugin.Path)) await FileUtils.DeleteFileAsync(plugin.Path);
+                    await _manifestService.UnregisterByFileNameAsync(_serverDir, plugin.FileName);
+                }
+                catch (Exception ex)
+                {
+                    _dialogService.ShowMessage("Error", $"Could not delete {plugin.FileName}: {ex.Message}", DialogType.Error);
+                }
+            }
+
+            ShowIncompatibleWarning = false;
+            await LoadAddonsCoreAsync();
+            _onAddonChanged();
+        }
+
+        public void DismissIncompatibleWarning()
+        {
+            ShowIncompatibleWarning = false;
         }
 
         public void LoadAddons()
         {
-            LoadAddonsInternal(false);
+            _ = Task.Run(LoadAddonsCoreAsync);
+        }
+
+        public Task LoadAddonsAsync()
+        {
+            return LoadAddonsCoreAsync();
         }
 
         private bool IsLoaderCompatible(string loaderType)
@@ -331,65 +426,69 @@ namespace PocketMC.Desktop.Features.Settings
 
         internal void LoadAddonsSync()
         {
-            LoadAddonsInternal(true);
+            LoadAddonsCoreAsync().GetAwaiter().GetResult();
         }
 
-        private void LoadAddonsInternal(bool runSync)
+        private async Task LoadAddonsCoreAsync()
         {
-            Func<Task> action = async () =>
+            var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Infrastructure.Marketplace.ModrinthService)) as PocketMC.Infrastructure.Marketplace.ModrinthService;
+            if (modrinthService != null)
             {
-                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Infrastructure.Marketplace.ModrinthService)) as PocketMC.Infrastructure.Marketplace.ModrinthService;
-                if (modrinthService != null)
-                {
-                    await _manifestService.SyncManifestAsync(_serverDir, modrinthService, _metadata.Compatibility);
-                }
+                await _manifestService.SyncManifestAsync(_serverDir, modrinthService, _metadata.Compatibility);
+            }
 
-                var manifest = _manifestService.LoadManifest(_serverDir);
-                if (IsBedrockDedicated)
-                {
-                    LoadServerPropertiesTexturepackRequired();
-                    var (bps, rps) = await BuildBedrockPacksAsync();
-                    _allBehaviorPacks = bps;
-                    _allResourcePacks = rps;
-                    _allMods = new List<ModItemViewModel>();
-                    _allPlugins = new List<PluginItemViewModel>();
-                    ApplyFiltersAndSort();
-                }
-                else if (IsPocketmine)
-                {
-                    var items = BuildPocketminePluginList(manifest);
-                    _allPlugins = items;
-                    _allMods = new List<ModItemViewModel>();
-                    _allBehaviorPacks = new List<BedrockPackItemViewModel>();
-                    _allResourcePacks = new List<BedrockPackItemViewModel>();
-                    ApplyFiltersAndSort();
-                }
-                else
-                {
-                    var inventory = await _inventoryService.ScanAsync(_metadata, _serverDir);
-                    var pluginItems = inventory
-                        .Where(item => item.Kind == AddonKind.Plugin)
-                        .Select(CreatePluginViewModel)
-                        .ToList();
-                    var modItems = inventory
-                        .Where(item => item.Kind == AddonKind.Mod)
-                        .Select(CreateModViewModel)
-                        .ToList();
-                    _allPlugins = pluginItems;
-                    _allMods = modItems;
-                    _allBehaviorPacks = new List<BedrockPackItemViewModel>();
-                    _allResourcePacks = new List<BedrockPackItemViewModel>();
-                    ApplyFiltersAndSort();
-                }
-            };
-
-            if (runSync)
+            var manifest = _manifestService.LoadManifest(_serverDir);
+            if (IsBedrockDedicated)
             {
-                action().GetAwaiter().GetResult();
+                LoadServerPropertiesTexturepackRequired();
+                var (bps, rps) = await BuildBedrockPacksAsync();
+                _allBehaviorPacks = bps;
+                _allResourcePacks = rps;
+                _allMods = new List<ModItemViewModel>();
+                _allPlugins = new List<PluginItemViewModel>();
+                ApplyFiltersAndSort();
+            }
+            else if (IsPocketmine)
+            {
+                var items = BuildPocketminePluginList(manifest);
+                _allPlugins = items;
+                _allMods = new List<ModItemViewModel>();
+                _allBehaviorPacks = new List<BedrockPackItemViewModel>();
+                _allResourcePacks = new List<BedrockPackItemViewModel>();
+                ApplyFiltersAndSort();
             }
             else
             {
-                _ = Task.Run(action);
+                var inventory = await _inventoryService.ScanAsync(_metadata, _serverDir);
+                var pluginItems = inventory
+                    .Where(item => item.Kind == AddonKind.Plugin)
+                    .Select(CreatePluginViewModel)
+                    .ToList();
+                var modItems = inventory
+                    .Where(item => item.Kind == AddonKind.Mod)
+                    .Select(CreateModViewModel)
+                    .ToList();
+                _allPlugins = pluginItems;
+                _allMods = modItems;
+                _allBehaviorPacks = new List<BedrockPackItemViewModel>();
+                _allResourcePacks = new List<BedrockPackItemViewModel>();
+                ApplyFiltersAndSort();
+            }
+
+            var incompatibleMods = _allMods.Where(m => m.IsIncompatible).ToList();
+            var incompatiblePlugins = _allPlugins.Where(p => p.IsIncompatible).ToList();
+            int incompatibleCount = incompatibleMods.Count + incompatiblePlugins.Count;
+
+            if (incompatibleCount > 0 && !DontAskAgainIncompatible)
+            {
+                IncompatibleWarningMessage = incompatibleCount == 1
+                    ? "1 of your installed add-ons appears to be incompatible with this server. Would you like to automatically remove it?"
+                    : $"{incompatibleCount} of your installed add-ons appear to be incompatible with this server. Would you like to automatically remove them?";
+                ShowIncompatibleWarning = true;
+            }
+            else
+            {
+                ShowIncompatibleWarning = false;
             }
         }
 
@@ -781,22 +880,38 @@ namespace PocketMC.Desktop.Features.Settings
 
                 if (!IsPocketmine)
                 {
-                    // Step 1: Plugin presence check
-                    if (!PocketMC.Infrastructure.Mods.JavaModMetadataService.IsPluginJar(f))
+                    metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
+
+                    if (metadata.IsCorrupt)
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Corrupt JAR Archive",
+                            $"The file '{System.IO.Path.GetFileName(f)}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (metadata.LoaderType != "Plugin" && metadata.LoaderType != "Unknown")
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Incompatible Add-on",
+                            $"The file '{System.IO.Path.GetFileName(f)}' is a {metadata.LoaderType} mod, not a server plugin. This server is running {_metadata.ServerType} which requires plugins (Paper/Spigot/Bukkit).\n\nDo you want to install it anyway?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (metadata.LoaderType == "Unknown")
                     {
                         var res = await _dialogService.ShowDialogAsync("Missing Metadata",
-                            $"This jar file does not contain metadata. Are you sure that this jar is a valid mod/plugin you are trying to install?",
+                            $"The file '{System.IO.Path.GetFileName(f)}' does not contain plugin metadata (plugin.yml or paper-plugin.yml). Are you sure that this is a valid plugin you want to install?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (metadata.IsClientOnly)
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Client-Only Add-on",
+                            $"The file '{System.IO.Path.GetFileName(f)}' appears to be client-side only.\n\nDo you want to install it anyway?",
                             DialogType.Warning);
                         if (res != DialogResult.Yes) continue;
                     }
 
-                    // Step 2: Scan metadata
-                    metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
-                }
-
-                if (!IsPocketmine && metadata != null)
-                {
-                    // Step 3: API version check
+                    // API version check
                     if (!string.IsNullOrEmpty(metadata.ApiVersion) && !string.IsNullOrEmpty(_metadata.MinecraftVersion))
                     {
                         if (IsApiVersionIncompatible(metadata.ApiVersion, _metadata.MinecraftVersion))
@@ -808,7 +923,7 @@ namespace PocketMC.Desktop.Features.Settings
                         }
                     }
 
-                    // Step 4: Dependency display
+                    // Dependency display
                     if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
                     {
                         var depList = new List<string>();
@@ -982,6 +1097,9 @@ namespace PocketMC.Desktop.Features.Settings
                 IsDisabled = item.State == AddonState.Disabled,
                 State = item.State,
                 Kind = item.Kind,
+                IsIncompatible = item.IsIncompatible,
+                IncompatibleBadgeLabel = item.IncompatibleBadgeLabel,
+                IncompatibilityReason = item.IncompatibilityReason,
                 UpdateStatus = item.UpdateStatus,
                 UpdateInfo = item.UpdateInfo,
                 CanEnable = item.CanEnable,
@@ -1029,6 +1147,9 @@ namespace PocketMC.Desktop.Features.Settings
                 IsDisabled = item.State == AddonState.Disabled,
                 State = item.State,
                 Kind = item.Kind,
+                IsIncompatible = item.IsIncompatible,
+                IncompatibleBadgeLabel = item.IncompatibleBadgeLabel,
+                IncompatibilityReason = item.IncompatibilityReason,
                 UpdateStatus = item.UpdateStatus,
                 UpdateInfo = item.UpdateInfo,
                 CanEnable = item.CanEnable,
@@ -1050,7 +1171,7 @@ namespace PocketMC.Desktop.Features.Settings
             var files = await _dialogService.OpenFilesDialogAsync("Select Mod(s)", "JAR Files (*.jar)|*.jar");
             foreach (var f in files)
             {
-                var fileName = System.IO.Path.GetFileName(f).ToLowerInvariant();
+                var fileName = System.IO.Path.GetFileName(f);
 
                 PocketMC.Domain.Models.JavaModMetadata? metadata = null;
 
@@ -1061,60 +1182,57 @@ namespace PocketMC.Desktop.Features.Settings
 
                 if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
                 {
-                    bool isFabric = metadata.LoaderType == "Fabric";
-                    bool isForgeOrNeo = metadata.LoaderType == "Forge" || metadata.LoaderType == "NeoForge";
-                    if (!IsLoaderCompatible(metadata.LoaderType))
+                    if (metadata.IsCorrupt)
                     {
-                        if (metadata.LoaderType == "Unknown")
-                        {
-                            var res = await _dialogService.ShowDialogAsync("Missing Metadata",
-                                $"This jar file does not contain metadata. Are you sure that this jar is a valid mod/plugin you are trying to install?",
-                                DialogType.Warning);
-                            if (res != DialogResult.Yes) continue;
-                        }
-                        else
-                        {
-                            string requiredType = _metadata.ServerType;
-                            if (requiredType == "NeoForge") requiredType = "NeoForge mod";
-                            else if (requiredType == "Forge") requiredType = "Forge mod";
-                            else if (requiredType == "Fabric") requiredType = "Fabric mod";
-                            else requiredType = "Plugin";
-                            
-                            _dialogService.ShowMessage("Invalid Mod",
-                                $"The file '{System.IO.Path.GetFileName(f)}' is not a valid {requiredType}.",
-                                DialogType.Error);
-                            continue;
-                        }
+                        var res = await _dialogService.ShowDialogAsync("Corrupt JAR Archive",
+                            $"The file '{fileName}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (metadata.LoaderType == "Plugin" || metadata.HasPluginMetadata)
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Invalid Mod",
+                            $"The file '{fileName}' is a Bukkit/Paper plugin, not a {_metadata.ServerType} mod. Plugins must be placed in the plugins folder.\n\nDo you want to install it anyway?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (metadata.LoaderType == "Unknown")
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Missing Metadata",
+                            $"The file '{fileName}' does not contain mod metadata. Are you sure that this is a valid mod you want to install?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (!IsLoaderCompatible(metadata.LoaderType))
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Incompatible Mod Loader",
+                            $"The mod '{fileName}' requires {metadata.LoaderType} mod loader, but this server is running {_metadata.ServerType}.\n\nDo you want to install it anyway?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (metadata.IsClientOnly)
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Client-Only Mod",
+                            $"The mod '{fileName}' is a client-side only mod and may not work on a dedicated server.\n\nDo you want to install it anyway?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Incompatible Minecraft Version",
+                            $"The mod '{fileName}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}.\n\nDo you want to install it anyway?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
+                    }
+                    else if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
+                    {
+                        var res = await _dialogService.ShowDialogAsync("Incompatible Loader Version",
+                            $"The mod '{fileName}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}.\n\nDo you want to install it anyway?",
+                            DialogType.Warning);
+                        if (res != DialogResult.Yes) continue;
                     }
 
-                    if (isFabric || isForgeOrNeo)
-                    {
-                        if (metadata.IsClientOnly)
-                        {
-                            _dialogService.ShowMessage("Invalid Mod",
-                                $"The mod '{System.IO.Path.GetFileName(f)}' is a client-side only mod and cannot be installed on a server.",
-                                DialogType.Error);
-                            continue;
-                        }
-
-                        if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
-                        {
-                            var res = await _dialogService.ShowDialogAsync("Incompatible Minecraft Version",
-                                $"The mod '{System.IO.Path.GetFileName(f)}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}. Do you want to install it anyway?",
-                                DialogType.Warning);
-                            if (res != DialogResult.Yes) continue;
-                        }
-
-                        if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
-                        {
-                            var res = await _dialogService.ShowDialogAsync("Incompatible Loader Version",
-                                $"The mod '{System.IO.Path.GetFileName(f)}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}. Do you want to install it anyway?",
-                                DialogType.Warning);
-                            if (res != DialogResult.Yes) continue;
-                        }
-                    }
-
-                    if ((isFabric || isForgeOrNeo) && (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0))
+                    if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
                     {
                         var depList = new List<string>();
                         foreach (var dep in metadata.RequiredDependencies)
@@ -1949,6 +2067,13 @@ namespace PocketMC.Desktop.Features.Settings
         public bool IsDisabled { get; set; }
         public AddonKind Kind { get; set; } = AddonKind.Plugin;
         public AddonState State { get; set; } = AddonState.Enabled;
+        public bool IsIncompatible { get; set; }
+        public string? IncompatibleBadgeLabel { get; set; }
+        public string? IncompatibilityReason { get; set; }
+        public bool ShowIncompatibleBadge => IsIncompatible;
+        public string IncompatibleToolTip => !string.IsNullOrWhiteSpace(IncompatibleBadgeLabel) && !string.IsNullOrWhiteSpace(IncompatibilityReason)
+            ? $"{IncompatibleBadgeLabel}: {IncompatibilityReason}"
+            : (IncompatibilityReason ?? IncompatibleBadgeLabel ?? "Incompatible add-on");
         private AddonUpdateStatus _updateStatus = AddonUpdateStatus.Unknown;
         public AddonUpdateStatus UpdateStatus
         {
@@ -2007,6 +2132,13 @@ namespace PocketMC.Desktop.Features.Settings
         public bool IsDisabled { get; set; }
         public AddonKind Kind { get; set; } = AddonKind.Mod;
         public AddonState State { get; set; } = AddonState.Enabled;
+        public bool IsIncompatible { get; set; }
+        public string? IncompatibleBadgeLabel { get; set; }
+        public string? IncompatibilityReason { get; set; }
+        public bool ShowIncompatibleBadge => IsIncompatible;
+        public string IncompatibleToolTip => !string.IsNullOrWhiteSpace(IncompatibleBadgeLabel) && !string.IsNullOrWhiteSpace(IncompatibilityReason)
+            ? $"{IncompatibleBadgeLabel}: {IncompatibilityReason}"
+            : (IncompatibilityReason ?? IncompatibleBadgeLabel ?? "Incompatible add-on");
         private AddonUpdateStatus _updateStatus = AddonUpdateStatus.Unknown;
         public AddonUpdateStatus UpdateStatus
         {
@@ -2035,7 +2167,7 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 string hex = SideSupport switch
                 {
-                    ModSideSupport.ClientOnly => "#2D1E24",
+                    ModSideSupport.ClientOnly => "#2A251D",
                     _ => "#282828"
                 };
                 return (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
@@ -2048,7 +2180,7 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 string hex = SideSupport switch
                 {
-                    ModSideSupport.ClientOnly => "#F38BA8",
+                    ModSideSupport.ClientOnly => "#F9E2AF",
                     _ => "#A6ADC8"
                 };
                 return (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;

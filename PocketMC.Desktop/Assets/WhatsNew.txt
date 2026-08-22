@@ -1,28 +1,17 @@
-VERSION=1.9.7
+VERSION=1.9.8
 
 [NEW FEATURES]
-Manage your servers with team members using new sub-user accounts and custom permissions
-Enjoy a beautiful, responsive dashboard grid that adapts smoothly to your screen size
-Control server files, addons, and backups directly from the revamped web dashboard
-See player joins and game mode changes update on your dashboard instantly in real time
-Get instant AI-assisted explanations and suggested fixes whenever a server crashes
-Easily back up, restore, or reset your app settings with a single click
-Navigate the entire app seamlessly using full keyboard shortcuts and screen reader support
-Automatic alternative port suggestions when a network port is already in use
-Learn more about DS LABS directly from the updated About page
+Full control over incompatible addons with a one-click cleanup prompt and "Don't ask again" option
+Accurate and descriptive warning dialogs when uploading mods or plugins with choice to install anyway
+Hover over any addon warning icon to instantly view the exact reason for incompatibility
 
 [FIXES & STABILITY]
-Fixed background console log writing when multiple servers run together
-Fixed unexpected memory and process handle retention after server restarts
-Fixed server crash dialogs so they no longer freeze or block the app interface
-Cleaned up error messages to hide technical network links and socket details
-Updated the Playit status checker to use the official status service
-Prevented the modpack installer from accidentally removing valid custom mods
-Added automatic recovery when a server's whitelist file gets damaged
-Improved local network address detection across multiple Wi-Fi and Ethernet adapters
+PocketMC will no longer automatically delete incompatible or unrecognized mods from your server folders
+Fixed auto-hide taskbar so it smoothly pops up when moving your mouse to the screen edge while maximized
+Fixed app update size reporting to accurately show the small delta download size instead of the full installer
+Eliminated race conditions and improved responsiveness when managing server addons
 
 [IMPROVEMENTS]
-API keys for CurseForge and AI providers are now hidden for privacy
-App configuration now updates seamlessly and quickly from our official repository
-Desktop status notices now disappear automatically after 5 seconds
-Standardized and polished the PocketMC brand across the entire app
+Cleaned up addon cards with a single lightweight warning icon badge matching the app theme
+Refined the incompatible addons banner with clean, modern card styling
+Enhanced multi-file addon uploads with individual file validation across all Java server types

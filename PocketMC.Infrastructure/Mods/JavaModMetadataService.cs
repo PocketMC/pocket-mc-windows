@@ -83,6 +83,14 @@ namespace PocketMC.Infrastructure.Mods
                 bool isForgeExpected = string.Equals(expectedLoader, "Forge", StringComparison.OrdinalIgnoreCase);
                 bool isNeoForgeExpected = string.Equals(expectedLoader, "NeoForge", StringComparison.OrdinalIgnoreCase);
                 bool isQuiltExpected = string.Equals(expectedLoader, "Quilt", StringComparison.OrdinalIgnoreCase);
+                bool isPluginExpected = string.Equals(expectedLoader, "Plugin", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(expectedLoader, "Paper", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(expectedLoader, "Purpur", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(expectedLoader, "Spigot", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(expectedLoader, "Bukkit", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(expectedLoader, "BungeeCord", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(expectedLoader, "Waterfall", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(expectedLoader, "Velocity", StringComparison.OrdinalIgnoreCase);
 
                 var quiltEntry = archive.GetEntry("quilt.mod.json");
                 var fabricEntry = archive.GetEntry("fabric.mod.json");
@@ -92,6 +100,14 @@ namespace PocketMC.Infrastructure.Mods
                 metadata.HasPluginMetadata = pluginEntry != null;
 
                 // 1. Try expected loader first to support multi-loader jars correctly
+                if (isPluginExpected && pluginEntry != null)
+                {
+                    metadata.LoaderType = "Plugin";
+                    ParsePluginMetadata(archive, pluginEntry, metadata);
+                    metadata.SanitizeDependencies();
+                    return metadata;
+                }
+
                 if (isFabricExpected && fabricEntry != null)
                 {
                     metadata.LoaderType = "Fabric";

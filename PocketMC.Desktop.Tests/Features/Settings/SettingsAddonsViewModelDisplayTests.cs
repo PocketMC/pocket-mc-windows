@@ -63,6 +63,8 @@ namespace PocketMC.Desktop.Tests.Features.Settings
                     manifestService,
                     updateService,
                     NullLogger<AddonUpdateCheckService>.Instance));
+            _serviceProvider.Register<PocketMC.Infrastructure.Configuration.SettingsManager>(
+                new PocketMC.Infrastructure.Configuration.SettingsManager(Path.Combine(_tempDir, "settings.json")));
         }
 
         public void Dispose()
@@ -377,6 +379,360 @@ namespace PocketMC.Desktop.Tests.Features.Settings
             Assert.Equal("Optional on server", item4.SideLabel);
             Assert.False(item4.ShowSideBadge);
         }
+
+        [Fact]
+        public void LoadAddons_WhenIncompatibleAddonExists_ShowsIncompatibleWarning()
+        {
+            // Mod with client-only environment
+            string clientMod = "client-mod.jar";
+            CreateDummyJar($"mods/{clientMod}", @"{
+                ""id"": ""client-mod"",
+                ""name"": ""Client Mod"",
+                ""version"": ""1.0.0"",
+                ""environment"": ""client""
+            }");
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Fabric",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            // Act
+            vm.LoadAddonsSync();
+
+            // Assert
+            Assert.True(vm.ShowIncompatibleWarning);
+            Assert.Contains("1 of your installed add-ons appears to be incompatible", vm.IncompatibleWarningMessage);
+            Assert.Single(vm.Mods);
+            var mod = vm.Mods[0];
+            Assert.True(mod.IsIncompatible);
+            Assert.True(mod.IsClientOnly);
+            Assert.Equal("Client Only", mod.IncompatibleBadgeLabel);
+            Assert.True(mod.ShowIncompatibleBadge);
+            Assert.Equal("Client-only mod.", mod.IncompatibilityReason);
+        }
+
+        [Fact]
+        public async Task RemoveIncompatibleAddonsAsync_DeletesIncompatibleFiles_AndReloads()
+        {
+            // 1 Compatible mod
+            string goodMod = "good-mod.jar";
+            CreateDummyJar($"mods/{goodMod}", @"{
+                ""id"": ""good-mod"",
+                ""name"": ""Good Mod"",
+                ""version"": ""1.0.0""
+            }");
+
+            // 1 Client-only incompatible mod
+            string clientMod = "client-mod.jar";
+            CreateDummyJar($"mods/{clientMod}", @"{
+                ""id"": ""client-mod"",
+                ""name"": ""Client Mod"",
+                ""version"": ""1.0.0"",
+                ""environment"": ""client""
+            }");
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Fabric",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            vm.LoadAddonsSync();
+            Assert.Equal(2, vm.Mods.Count);
+            Assert.True(vm.ShowIncompatibleWarning);
+
+            // Act
+            await vm.RemoveIncompatibleAddonsAsync();
+            vm.LoadAddonsSync();
+
+            // Assert
+            Assert.Single(vm.Mods);
+            Assert.Equal(goodMod, vm.Mods[0].FileName);
+            Assert.False(vm.ShowIncompatibleWarning);
+            Assert.True(File.Exists(Path.Combine(_tempDir, "mods", goodMod)));
+            Assert.False(File.Exists(Path.Combine(_tempDir, "mods", clientMod)));
+        }
+
+        [Fact]
+        public void DismissIncompatibleWarning_HidesWarning()
+        {
+            string clientMod = "client-mod.jar";
+            CreateDummyJar($"mods/{clientMod}", @"{
+                ""id"": ""client-mod"",
+                ""name"": ""Client Mod"",
+                ""version"": ""1.0.0"",
+                ""environment"": ""client""
+            }");
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Fabric",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            vm.LoadAddonsSync();
+            Assert.True(vm.ShowIncompatibleWarning);
+
+            // Act
+            vm.DismissIncompatibleWarningCommand.Execute(null);
+
+            // Assert
+            Assert.False(vm.ShowIncompatibleWarning);
+        }
+
+        [Fact]
+        public void DontAskAgainIncompatible_WhenTrueOnInstance_DoesNotShowWarning()
+        {
+            string clientMod = "client-mod.jar";
+            CreateDummyJar($"mods/{clientMod}", @"{
+                ""id"": ""client-mod"",
+                ""name"": ""Client Mod"",
+                ""version"": ""1.0.0"",
+                ""environment"": ""client""
+            }");
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Fabric",
+                MinecraftVersion = "1.20.4",
+                DontAskAgainRemoveIncompatibleAddons = true // Instance-level setting
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            vm.LoadAddonsSync();
+
+            // Assert
+            Assert.False(vm.ShowIncompatibleWarning);
+            Assert.True(vm.DontAskAgainIncompatible);
+        }
+
+        [Fact]
+        public void LoadAddons_WhenLoaderIncompatible_ShowsLoaderIncompatibleBadge()
+        {
+            // Forge mod on Fabric server
+            string forgeMod = "forge-mod.jar";
+            string fullPath = Path.Combine(_tempDir, "mods", forgeMod);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            using (var fs = new FileStream(fullPath, FileMode.Create))
+            using (var archive = new ZipArchive(fs, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("META-INF/mods.toml");
+                using (var writer = new StreamWriter(entry.Open()))
+                {
+                    writer.Write("[[mods]]\nmodId=\"forge-mod\"\nversion=\"1.0.0\"\ndisplayName=\"Forge Mod\"");
+                }
+            }
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Fabric",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            // Act
+            vm.LoadAddonsSync();
+
+            // Assert
+            Assert.True(vm.ShowIncompatibleWarning);
+            Assert.Single(vm.Mods);
+            var mod = vm.Mods[0];
+            Assert.True(mod.IsIncompatible);
+            Assert.Equal("Loader Incompatible", mod.IncompatibleBadgeLabel);
+            Assert.True(mod.ShowIncompatibleBadge);
+            Assert.Contains("Forge", mod.IncompatibilityReason);
+        }
+
+        [Fact]
+        public async Task AddPluginCommand_WhenForgeModSelectedOnPaperServer_ShowsIncompatibleAddonDialog()
+        {
+            // Forge mod
+            string forgeMod = "forge-mod.jar";
+            string uploadPath = Path.Combine(_tempDir, "upload_" + forgeMod);
+            using (var fs = new FileStream(uploadPath, FileMode.Create))
+            using (var archive = new ZipArchive(fs, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("META-INF/mods.toml");
+                using (var writer = new StreamWriter(entry.Open()))
+                {
+                    writer.Write("[[mods]]\nmodId=\"forge-mod\"\nversion=\"1.0.0\"\ndisplayName=\"Forge Mod\"");
+                }
+            }
+
+            _dialogService.FilesToReturn = new[] { uploadPath };
+            _dialogService.DialogResultToReturn = DialogResult.Yes;
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Paper",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            // Act
+            vm.AddPluginCommand.Execute(null);
+            await Task.Delay(100);
+
+            // Assert
+            Assert.Contains(_dialogService.ShownDialogs, d => d.Title == "Incompatible Add-on" && d.Message.Contains("Forge mod, not a server plugin"));
+        }
+
+        [Fact]
+        public async Task AddModCommand_WhenBukkitPluginSelectedOnFabricServer_ShowsInvalidModDialog()
+        {
+            // Bukkit plugin
+            string pluginJar = "bukkit-plugin.jar";
+            string uploadPath = Path.Combine(_tempDir, "upload_" + pluginJar);
+            using (var fs = new FileStream(uploadPath, FileMode.Create))
+            using (var archive = new ZipArchive(fs, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("plugin.yml");
+                using (var writer = new StreamWriter(entry.Open()))
+                {
+                    writer.Write("name: TestPlugin\nversion: 1.0.0\nmain: com.example.TestPlugin\n");
+                }
+            }
+
+            _dialogService.FilesToReturn = new[] { uploadPath };
+            _dialogService.DialogResultToReturn = DialogResult.Yes;
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Fabric",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            // Act
+            vm.AddModCommand.Execute(null);
+            await Task.Delay(100);
+
+            // Assert
+            Assert.Contains(_dialogService.ShownDialogs, d => d.Title == "Invalid Mod" && d.Message.Contains("Bukkit/Paper plugin, not a Fabric mod"));
+        }
+
+        [Fact]
+        public async Task AddModCommand_WhenSimultaneousUpload_ShowsSpecificDialogForEachFile()
+        {
+            // 1. Forge mod (loader mismatch on Fabric)
+            string forgeMod = Path.Combine(_tempDir, "forge-mod.jar");
+            using (var fs = new FileStream(forgeMod, FileMode.Create))
+            using (var archive = new ZipArchive(fs, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry("META-INF/mods.toml");
+                using (var writer = new StreamWriter(entry.Open()))
+                {
+                    writer.Write("[[mods]]\nmodId=\"forge-mod\"\nversion=\"1.0.0\"\ndisplayName=\"Forge Mod\"");
+                }
+            }
+
+            // 2. Corrupt jar
+            string corruptJar = Path.Combine(_tempDir, "corrupt.jar");
+            File.WriteAllText(corruptJar, "Not a valid zip content");
+
+            _dialogService.FilesToReturn = new[] { forgeMod, corruptJar };
+            _dialogService.DialogResultToReturn = DialogResult.Yes;
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Fabric",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            // Act
+            vm.AddModCommand.Execute(null);
+            await Task.Delay(100);
+
+            // Assert
+            Assert.Contains(_dialogService.ShownDialogs, d => d.Title == "Incompatible Mod Loader");
+            Assert.Contains(_dialogService.ShownDialogs, d => d.Title == "Corrupt JAR Archive");
+        }
     }
 
     public class TestServiceProvider : IServiceProvider
@@ -399,10 +755,14 @@ namespace PocketMC.Desktop.Tests.Features.Settings
         public bool ShowMessageCalled { get; set; }
         public string? LastMessageTitle { get; set; }
         public string? LastMessageContent { get; set; }
+        public System.Collections.Generic.List<(string Title, string Message, DialogType Type)> ShownDialogs { get; } = new();
+        public DialogResult DialogResultToReturn { get; set; } = DialogResult.Yes;
+        public string[] FilesToReturn { get; set; } = Array.Empty<string>();
 
         public Task<DialogResult> ShowDialogAsync(string title, string message, DialogType type = DialogType.Information, bool showCancel = false, string? primaryButtonText = null, string? secondaryButtonText = null, string? cancelButtonText = null, string? linkText = null, string? linkUrl = null)
         {
-            return Task.FromResult(DialogResult.Ok);
+            ShownDialogs.Add((title, message, type));
+            return Task.FromResult(DialogResultToReturn);
         }
 
         public void ShowMessage(string title, string message, DialogType type = DialogType.Information)
@@ -410,12 +770,13 @@ namespace PocketMC.Desktop.Tests.Features.Settings
             ShowMessageCalled = true;
             LastMessageTitle = title;
             LastMessageContent = message;
+            ShownDialogs.Add((title, message, type));
         }
 
         public Task<string?> OpenFolderDialogAsync(string title) => Task.FromResult<string?>(null);
         public Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult<string?>(null);
         public Task<(string? Username, string? Password)> PromptCredentialsAsync(string title, string message, bool askUsername, bool askPassword) => Task.FromResult<(string? Username, string? Password)>((null, null));
-        public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(new string[0]);
+        public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*") => Task.FromResult(FilesToReturn);
         public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<double>, Task> action) => action(new Progress<double>());
         public Task ShowProgressDialogAsync(string title, string message, Func<IProgress<ProgressDialogUpdate>, Task> action) => action(new Progress<ProgressDialogUpdate>());
     }
