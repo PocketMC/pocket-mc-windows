@@ -45,6 +45,7 @@ public class ServerProcess : IServerProcess, IDisposable
     private volatile bool _intentionalStop;
     private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
     private readonly object _sessionLogLock = new();
+    private readonly SemaphoreSlim _stdinLock = new(1, 1);
     private StreamWriter? _sessionLogWriter;
     private const int MAX_BUFFER_LINES = 5000;
     private readonly object _playerListLock = new();
@@ -202,8 +203,43 @@ public class ServerProcess : IServerProcess, IDisposable
 
     public async Task WriteInputAsync(string command)
     {
-        if (_process != null && !_process.HasExited)
-            await _process.StandardInput.WriteLineAsync(command);
+        if (_process == null || _process.HasExited)
+        {
+            return;
+        }
+
+        try
+        {
+            await _stdinLock.WaitAsync();
+            try
+            {
+                if (_process != null && !_process.HasExited)
+                {
+                    await _process.StandardInput.WriteLineAsync(command);
+                    await _process.StandardInput.FlushAsync();
+                }
+            }
+            finally
+            {
+                _stdinLock.Release();
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+            _logger.LogDebug("Standard input stream was disposed for instance {InstanceId}.", InstanceId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to write input to instance {InstanceId} standard input stream.", InstanceId);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "Failed to write input to instance {InstanceId} due to IO exception.", InstanceId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Unexpected error writing input '{Command}' to instance {InstanceId}.", command, InstanceId);
+        }
     }
 
     /// <summary>
@@ -588,6 +624,7 @@ public class ServerProcess : IServerProcess, IDisposable
             CloseSessionLog();
             Kill();
             _process?.Dispose();
+            _stdinLock.Dispose();
         }
     }
 }

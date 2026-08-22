@@ -63,9 +63,19 @@ namespace PocketMC.Desktop.Features.Settings
         public void LoadRawProperties()
         {
             _isLoadingRawServerProperties = true;
-            RawServerProperties = _configService.LoadRawProperties(_serverDir);
-            _isRawServerPropertiesDirty = false;
-            _isLoadingRawServerProperties = false;
+            try
+            {
+                RawServerProperties = _configService.LoadRawProperties(_serverDir);
+            }
+            catch
+            {
+                RawServerProperties = string.Empty;
+            }
+            finally
+            {
+                _isRawServerPropertiesDirty = false;
+                _isLoadingRawServerProperties = false;
+            }
         }
 
         public void ClearDirtyRaw() => _isRawServerPropertiesDirty = false;

@@ -776,7 +776,15 @@ namespace PocketMC.Desktop.Features.Console
             Logs.Add(new LogLine { Text = $"> {command}", TextColor = Brushes.CornflowerBlue });
             TxtCommand.Text = string.Empty;
 
-            await _serverProcess.WriteInputAsync(command);
+            try
+            {
+                await _serverProcess.WriteInputAsync(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send command '{Command}' to {ServerName}.", command, _metadata.Name);
+                Logs.Add(new LogLine { Text = $"[ERROR] Failed to send command: {ex.Message}", TextColor = Brushes.Red });
+            }
         }
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)

@@ -124,7 +124,17 @@ namespace PocketMC.Infrastructure.Monitoring
 
                         if (sendListCommand && sp.State == ServerState.Online)
                         {
-                            Task.Run(() => sp.WriteListCommandAsync());
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await sp.WriteListCommandAsync();
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogDebug(ex, "Background list command failed for instance {InstanceId}.", sp.InstanceId);
+                                }
+                            });
                         }
                     }
                     catch (Win32Exception ex)
