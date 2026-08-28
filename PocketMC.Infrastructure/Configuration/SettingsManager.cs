@@ -120,7 +120,25 @@ namespace PocketMC.Infrastructure.Configuration
 
             lock (_settingsLock)
             {
-                var normalizedSettings = Normalize(CloneSettings(settings));
+                var cloned = CloneSettings(settings);
+
+                // Safeguard: Never overwrite an existing configured AppRootPath with null
+                if (string.IsNullOrWhiteSpace(cloned.AppRootPath) && File.Exists(_settingsFilePath))
+                {
+                    try
+                    {
+                        var existingContent = File.ReadAllText(_settingsFilePath);
+                        var existingSettings = JsonSerializer.Deserialize<AppSettings>(existingContent);
+                        if (existingSettings != null && !string.IsNullOrWhiteSpace(existingSettings.AppRootPath))
+                        {
+                            cloned.AppRootPath = existingSettings.AppRootPath;
+                            cloned.HasCompletedFirstLaunch = existingSettings.HasCompletedFirstLaunch;
+                        }
+                    }
+                    catch { }
+                }
+
+                var normalizedSettings = Normalize(cloned);
                 var directory = Path.GetDirectoryName(_settingsFilePath);
                 if (!Directory.Exists(directory) && directory != null)
                 {

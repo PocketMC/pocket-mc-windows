@@ -38,6 +38,11 @@ namespace PocketMC.Domain.Models
         public Guid? TelemetryClientId { get; set; }
         public bool HasReportedInstall { get; set; }
 
+        // Window State & Dimensions
+        public double? WindowWidth { get; set; }
+        public double? WindowHeight { get; set; }
+        public bool IsWindowMaximized { get; set; }
+
         // AI Summarization
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public string? AiApiKey { get; set; }

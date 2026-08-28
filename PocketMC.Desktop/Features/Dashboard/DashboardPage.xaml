@@ -105,7 +105,7 @@
                     <ItemsControl ItemsSource="{Binding Source=4, Converter={x:Static presentation:IntToRangeConverter.Instance}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <presentation:AdaptiveGridPanel MinColumnWidth="340" HorizontalSpacing="16" VerticalSpacing="16"/>
+                                <presentation:AdaptiveGridPanel MinColumnWidth="320" HorizontalSpacing="16" VerticalSpacing="16"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
@@ -211,7 +211,7 @@
                     </ItemsControl.Style>
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <presentation:AdaptiveGridPanel MinColumnWidth="340" HorizontalSpacing="16" VerticalSpacing="16"/>
+                            <presentation:AdaptiveGridPanel MinColumnWidth="320" HorizontalSpacing="16" VerticalSpacing="16"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>

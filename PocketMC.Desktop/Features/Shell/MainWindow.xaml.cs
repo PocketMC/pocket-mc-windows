@@ -2,6 +2,7 @@ using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Infrastructure.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -91,20 +92,96 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         {
             var handle = new WindowInteropHelper(this).Handle;
             HwndSource.FromHwnd(handle)?.AddHook(HwndHook);
+
+            var settingsManager = _serviceProvider.GetService<SettingsManager>();
+            var appState = _serviceProvider.GetService<ApplicationState>();
+            var settings = appState?.Settings ?? settingsManager?.Load();
+            if (settings?.IsWindowMaximized == true)
+            {
+                WindowState = WindowState.Maximized;
+            }
         };
     }
 
 
     private void ApplyDynamicWindowSize()
     {
+        var settingsManager = _serviceProvider.GetService<SettingsManager>();
+        var appState = _serviceProvider.GetService<ApplicationState>();
+        var settings = appState?.Settings;
+
+        if (settings == null || (!settings.WindowWidth.HasValue && !settings.IsWindowMaximized))
+        {
+            try
+            {
+                var loaded = settingsManager?.Load();
+                if (loaded != null)
+                {
+                    settings = loaded;
+                }
+            }
+            catch { }
+        }
+
         double screenWidth = SystemParameters.WorkArea.Width;
         double screenHeight = SystemParameters.WorkArea.Height;
 
-        double targetWidth = Math.Max(1024, Math.Min(1320, screenWidth * 0.85));
-        double targetHeight = Math.Max(680, Math.Min(860, screenHeight * 0.85));
+        if (settings != null && settings.WindowWidth.HasValue && settings.WindowHeight.HasValue &&
+            settings.WindowWidth.Value >= 1024 && settings.WindowHeight.Value >= 680)
+        {
+            Width = Math.Max(1024, Math.Min(settings.WindowWidth.Value, screenWidth));
+            Height = Math.Max(680, Math.Min(settings.WindowHeight.Value, screenHeight));
+        }
+        else
+        {
+            double targetWidth = Math.Max(1024, Math.Min(1440, screenWidth * 0.85));
+            double targetHeight = Math.Max(680, Math.Min(860, screenHeight * 0.85));
 
-        Width = targetWidth;
-        Height = targetHeight;
+            Width = targetWidth;
+            Height = targetHeight;
+        }
+
+        if (settings?.IsWindowMaximized == true)
+        {
+            WindowState = WindowState.Maximized;
+        }
+    }
+
+    private void SaveWindowState()
+    {
+        try
+        {
+            var appState = _serviceProvider.GetService<ApplicationState>();
+            var settingsManager = _serviceProvider.GetService<SettingsManager>();
+            var settings = appState?.Settings ?? settingsManager?.Load();
+            if (settings == null || settingsManager == null) return;
+
+            bool isMaximized = WindowState == WindowState.Maximized;
+            settings.IsWindowMaximized = isMaximized;
+
+            if (isMaximized)
+            {
+                if (RestoreBounds.Width >= 1024 && RestoreBounds.Height >= 680)
+                {
+                    settings.WindowWidth = RestoreBounds.Width;
+                    settings.WindowHeight = RestoreBounds.Height;
+                }
+            }
+            else if (WindowState == WindowState.Normal)
+            {
+                if (Width >= 1024 && Height >= 680)
+                {
+                    settings.WindowWidth = Width;
+                    settings.WindowHeight = Height;
+                }
+            }
+
+            settingsManager.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to persist window dimensions/state.");
+        }
     }
 
     private void UpdateDpiScalingIsolation()
@@ -470,12 +547,15 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void HideToTray()
     {
+        SaveWindowState();
         Hide();
         _serviceProvider.GetRequiredService<TrayIconViewModel>().EnsureVisible();
     }
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        SaveWindowState();
+
         var importService = _serviceProvider.GetRequiredService<IInstanceImportService>();
         var exportService = _serviceProvider.GetRequiredService<IInstanceExportService>();
         if (importService.IsActive || exportService.IsActive)
