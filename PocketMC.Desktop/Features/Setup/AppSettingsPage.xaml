@@ -26,11 +26,97 @@
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                    Margin="24,24,24,16" />
 
+        <!-- App Settings Skeleton (Zero-delay, active only during initial render/load) -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Disabled"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="24,0,24,24"
+                      Visibility="{Binding IsLoading, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource VisibleIfTrue}}">
+            <StackPanel>
+                <Border Style="{StaticResource SkeletonCardBorder}" Height="68" Margin="0,0,0,12" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="24" Height="24" CornerRadius="4" Margin="0,0,14,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SkeletonElement}" Height="18" Width="140" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                            <Border Style="{StaticResource SkeletonElement}" Height="12" Width="220" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="20" Height="20" CornerRadius="4"/>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource SkeletonCardBorder}" Height="68" Margin="0,0,0,12" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="24" Height="24" CornerRadius="4" Margin="0,0,14,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SkeletonElement}" Height="18" Width="120" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                            <Border Style="{StaticResource SkeletonElement}" Height="12" Width="260" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="20" Height="20" CornerRadius="4"/>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource SkeletonCardBorder}" Height="68" Margin="0,0,0,12" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="24" Height="24" CornerRadius="4" Margin="0,0,14,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SkeletonElement}" Height="18" Width="180" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                            <Border Style="{StaticResource SkeletonElement}" Height="12" Width="280" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="20" Height="20" CornerRadius="4"/>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource SkeletonCardBorder}" Height="68" Margin="0,0,0,12" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="24" Height="24" CornerRadius="4" Margin="0,0,14,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SkeletonElement}" Height="18" Width="150" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                            <Border Style="{StaticResource SkeletonElement}" Height="12" Width="240" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="20" Height="20" CornerRadius="4"/>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource SkeletonCardBorder}" Height="68" Margin="0,0,0,12" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="24" Height="24" CornerRadius="4" Margin="0,0,14,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SkeletonElement}" Height="18" Width="130" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                            <Border Style="{StaticResource SkeletonElement}" Height="12" Width="210" HorizontalAlignment="Left"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="20" Height="20" CornerRadius="4"/>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
         <ScrollViewer Grid.Row="1"
                       x:Name="MainScrollViewer"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
-                      Padding="24,0,24,24">
+                      Padding="24,0,24,24"
+                      Visibility="{Binding IsLoading, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InvertedVisibilityConverter}}">
             <StackPanel>
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>

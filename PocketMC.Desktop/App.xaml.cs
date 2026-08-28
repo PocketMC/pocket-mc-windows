@@ -98,7 +98,6 @@ public partial class App : System.Windows.Application
         SingleInstanceService.ShowApplicationRequested += OnShowApplicationRequested;
 
         await _host.StartAsync();
-        Services.GetRequiredService<WindowsCornerService>().RegisterGlobalWindowHook();
         Services.GetRequiredService<ServerSleepPreventionCoordinator>().Refresh();
 
         var appState = Services.GetRequiredService<PocketMC.Application.Services.Shell.ApplicationState>();

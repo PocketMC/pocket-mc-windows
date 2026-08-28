@@ -10,7 +10,6 @@
         xmlns:shell="clr-namespace:PocketMC.Desktop.Features.Shell"
         xmlns:remote="clr-namespace:PocketMC.Desktop.Features.RemoteControl.UI"
         xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
-        xmlns:helpers="clr-namespace:PocketMC.Desktop.Views.Behaviors"
         mc:Ignorable="d"
         Title="PocketMC"
         WindowBackdropType="None"
@@ -121,7 +120,6 @@
             <!-- ─── NavigationView shell ──────────────────────────────────────── -->
             <ui:NavigationView x:Name="RootNavigation"
                                Grid.Row="1"
-                               helpers:AnimatedNavIndicatorBehavior.IsEnabled="True"
                                PaneDisplayMode="Left"
                                IsBackButtonVisible="Collapsed"
                                IsPaneToggleVisible="{Binding IsPaneToggleVisible}"

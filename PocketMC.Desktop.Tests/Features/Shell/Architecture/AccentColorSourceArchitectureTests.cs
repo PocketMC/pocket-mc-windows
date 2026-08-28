@@ -1,5 +1,4 @@
 using PocketMC.Desktop.Tests.TestSupport.Utilities;
-using PocketMC.Desktop.Views.Behaviors;
 namespace PocketMC.Desktop.Tests.Features.Shell.Architecture;
 
 public sealed class AccentColorSourceArchitectureTests
@@ -128,19 +127,5 @@ public sealed class AccentColorSourceArchitectureTests
 
         Assert.DoesNotContain("Background=\"#2563EB\"", xaml);
         Assert.Contains("Background=\"{DynamicResource CardBackgroundFillColorSecondaryBrush}\"", xaml);
-    }
-
-    [Fact]
-    public void AnimatedNavIndicator_ReReadsBrushWhenAccentChanges()
-    {
-        string source = File.ReadAllText(TestSourceFileResolver.Resolve(
-            "PocketMC.Desktop",
-            "Views",
-            "Behaviors",
-            "AnimatedNavIndicatorBehavior.cs"));
-
-        Assert.Contains("AccentColorService.GlobalAccentChanged", source);
-        Assert.Contains("UpdateIndicatorBrush", source);
-        Assert.Contains("NavigationViewSelectionIndicatorForeground", source);
     }
 }

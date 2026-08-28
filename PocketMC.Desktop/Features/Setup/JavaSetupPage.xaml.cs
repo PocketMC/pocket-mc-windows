@@ -375,6 +375,15 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly ServerProcessManager _processManager;
         private bool _isSubscribedToProvisioning;
 
+        public static readonly DependencyProperty IsLoadingProperty =
+            DependencyProperty.Register(nameof(IsLoading), typeof(bool), typeof(JavaSetupPage), new PropertyMetadata(true));
+
+        public bool IsLoading
+        {
+            get => (bool)GetValue(IsLoadingProperty);
+            set => SetValue(IsLoadingProperty, value);
+        }
+
         public ObservableCollection<JavaRuntimeEntry> Runtimes { get; } = new();
         public ObservableCollection<PhpRuntimeEntry> PhpRuntimes { get; } = new();
 
@@ -403,12 +412,14 @@ namespace PocketMC.Desktop.Features.Setup
             Unloaded += OnUnloaded;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             ScrollViewerHelper.EnableMouseWheelScrolling(this, RuntimeScrollViewer);
             SubscribeToProvisioning();
-            ScanRuntimes();
+            IsLoading = true;
+            await Task.Run(() => ScanRuntimes());
             ApplyProvisioningStatuses();
+            IsLoading = false;
             _javaProvisioning.StartBackgroundProvisioning();
         }
 
@@ -423,8 +434,8 @@ namespace PocketMC.Desktop.Features.Setup
         /// </summary>
         private void ScanRuntimes()
         {
-            Runtimes.Clear();
-            PhpRuntimes.Clear();
+            var javaList = new System.Collections.Generic.List<JavaRuntimeEntry>();
+            var phpList = new System.Collections.Generic.List<PhpRuntimeEntry>();
 
             string appRoot = _applicationState.GetRequiredAppRootPath();
 
@@ -457,7 +468,7 @@ namespace PocketMC.Desktop.Features.Setup
                     _ => ""
                 };
 
-                Runtimes.Add(new JavaRuntimeEntry
+                javaList.Add(new JavaRuntimeEntry
                 {
                     Version = version,
                     DisplayName = $"Java {version} Runtime  ({mcRange})",
@@ -481,7 +492,7 @@ namespace PocketMC.Desktop.Features.Setup
                     string javaExe = System.IO.Path.Combine(dir, "bin", "java.exe");
                     bool exists = File.Exists(javaExe);
 
-                    Runtimes.Add(new JavaRuntimeEntry
+                    javaList.Add(new JavaRuntimeEntry
                     {
                         Version = 0,
                         DisplayName = folderName,
@@ -512,7 +523,7 @@ namespace PocketMC.Desktop.Features.Setup
                     detail = $"Target: {def.TargetPocketMineVersion}. Missing runtime.";
                 }
 
-                PhpRuntimes.Add(new PhpRuntimeEntry
+                phpList.Add(new PhpRuntimeEntry
                 {
                     Version = def.Version,
                     DisplayName = def.DisplayName,
@@ -523,7 +534,16 @@ namespace PocketMC.Desktop.Features.Setup
                 });
             }
 
-            UpdateGlobalStatus();
+            Dispatcher.Invoke(() =>
+            {
+                Runtimes.Clear();
+                foreach (var item in javaList) Runtimes.Add(item);
+
+                PhpRuntimes.Clear();
+                foreach (var item in phpList) PhpRuntimes.Add(item);
+
+                UpdateGlobalStatus();
+            });
         }
 
         // ──────────────────────────────────────────────

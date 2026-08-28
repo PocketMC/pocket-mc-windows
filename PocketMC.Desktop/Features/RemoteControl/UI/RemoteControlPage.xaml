@@ -4,7 +4,6 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:helpers="clr-namespace:PocketMC.Desktop.Views.Behaviors"
       mc:Ignorable="d" 
       d:DesignHeight="800" d:DesignWidth="1000"
       Title="RemoteControlPage">
@@ -165,7 +164,9 @@
                                             <TextBlock Text="{Binding PublicUrlProviderName, StringFormat='{}{0} Public URL'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
                                             <Grid Margin="0,2,0,0">
                                                 <TextBlock Text="{Binding PublicUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}"/>
-                                                <TextBlock Text="Starting tunnel..." FontSize="14" Foreground="{DynamicResource TextFillColorDisabledBrush}" Visibility="{Binding IsLoadingPublicUrl, Converter={StaticResource BoolToVis}}"/>
+                                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsLoadingPublicUrl, Converter={StaticResource BoolToVis}}" VerticalAlignment="Center">
+                                                    <Border Style="{StaticResource SkeletonElement}" Height="14" Width="180"/>
+                                                </StackPanel>
                                                 <TextBlock Text="{Binding PublicUrlErrorText}" FontSize="14" Foreground="{DynamicResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" Visibility="{Binding HasPublicUrlError, Converter={StaticResource BoolToVis}}"/>
                                             </Grid>
                                         </StackPanel>

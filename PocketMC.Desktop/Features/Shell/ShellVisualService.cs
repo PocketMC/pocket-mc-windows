@@ -22,7 +22,6 @@ namespace PocketMC.Desktop.Features.Shell
         private const int DwmUseImmersiveDarkModeBefore20H1 = 19;
 
         private readonly ApplicationState _applicationState;
-        private readonly WindowsCornerService _windowsCornerService;
         private readonly WallpaperMicaService _wallpaperMicaService;
         private readonly AccentColorService _accentColorService;
         private FluentWindow? _boundWindow;
@@ -33,11 +32,9 @@ namespace PocketMC.Desktop.Features.Shell
 
         public ShellVisualService(
             ApplicationState applicationState,
-            WindowsCornerService windowsCornerService,
             AccentColorService accentColorService)
         {
             _applicationState = applicationState;
-            _windowsCornerService = windowsCornerService;
             _accentColorService = accentColorService;
             _wallpaperMicaService = new WallpaperMicaService();
         }
@@ -78,7 +75,7 @@ namespace PocketMC.Desktop.Features.Shell
 
                 // Native Mica/Acrylic handled by DWM (includes native inactive dimming)
                 if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
-                    _windowsCornerService.IsWindows11())
+                    OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
                 {
                     HideFakeMicaLayer(window);
                     window.Background = Brushes.Transparent;
@@ -91,7 +88,7 @@ namespace PocketMC.Desktop.Features.Shell
                 }
 
                 if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase) &&
-                    _windowsCornerService.IsWindows11())
+                    OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
                 {
                     HideFakeMicaLayer(window);
                     window.Background = Brushes.Transparent;
@@ -152,7 +149,7 @@ namespace PocketMC.Desktop.Features.Shell
                 bool explicitLightMode = backdrop.Equals("Light", StringComparison.OrdinalIgnoreCase);
 
                 var wpfUiBackdrop = Wpf.Ui.Controls.WindowBackdropType.None;
-                if (_windowsCornerService.IsWindows11())
+                if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
                 {
                     if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase))
                         wpfUiBackdrop = Wpf.Ui.Controls.WindowBackdropType.Mica;
@@ -260,7 +257,7 @@ namespace PocketMC.Desktop.Features.Shell
                 string backdrop = _applicationState.Settings.WindowBackdrop ?? "Acrylic";
 
                 if (backdrop.Equals("Mica", StringComparison.OrdinalIgnoreCase) &&
-                    _windowsCornerService.IsWindows11())
+                    OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
                 {
                     dialog.Background = Brushes.Transparent;
                     dialog.WindowBackdropType = WindowBackdropType.Mica;
@@ -268,7 +265,7 @@ namespace PocketMC.Desktop.Features.Shell
                 }
 
                 if (backdrop.Equals("Acrylic", StringComparison.OrdinalIgnoreCase) &&
-                    _windowsCornerService.IsWindows11())
+                    OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
                 {
                     dialog.Background = Brushes.Transparent;
                     dialog.WindowBackdropType = WindowBackdropType.Acrylic;

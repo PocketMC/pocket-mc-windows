@@ -93,6 +93,15 @@ namespace PocketMC.Desktop.Features.Setup
             ("Coral", "#E74856")
         };
 
+        public static readonly DependencyProperty IsLoadingProperty =
+            DependencyProperty.Register(nameof(IsLoading), typeof(bool), typeof(AppSettingsPage), new PropertyMetadata(true));
+
+        public bool IsLoading
+        {
+            get => (bool)GetValue(IsLoadingProperty);
+            set => SetValue(IsLoadingProperty, value);
+        }
+
         public CloudBackupSettingsViewModel CloudBackups { get; }
 
         public AppSettingsPage(
@@ -137,13 +146,19 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void AppSettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
+            IsLoading = true;
             ScrollViewerHelper.EnableMouseWheelScrolling(this, MainScrollViewer);
             ScrollViewerHelper.DisableAncestorScrollViewers(this);
 
-            LoadSettingsIntoUI();
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() =>
+            {
+                LoadSettingsIntoUI();
 
-            _healthMonitor.HealthChanged += UpdateDependencyHealth;
-            UpdateDependencyHealth();
+                _healthMonitor.HealthChanged += UpdateDependencyHealth;
+                UpdateDependencyHealth();
+
+                IsLoading = false;
+            }));
         }
 
         private void LoadSettingsIntoUI()

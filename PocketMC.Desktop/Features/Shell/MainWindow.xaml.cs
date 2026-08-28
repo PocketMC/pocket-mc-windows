@@ -2,7 +2,6 @@ using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Views.Behaviors;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -36,7 +35,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private readonly IServiceProvider _serviceProvider;
     private readonly IShellUIStateService _uiStateService;
     private readonly IShellVisualService _visualService;
-    private readonly WindowsCornerService _windowsCornerService;
     private readonly ShellStartupCoordinator _startupCoordinator;
     private readonly ShellViewModel _viewModel;
     private readonly ILogger<MainWindow> _logger;
@@ -61,7 +59,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         IServiceProvider serviceProvider,
         IShellUIStateService uiStateService,
         IShellVisualService visualService,
-        WindowsCornerService windowsCornerService,
         ShellStartupCoordinator startupCoordinator,
         ShellViewModel viewModel,
         ILogger<MainWindow> logger)
@@ -69,7 +66,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         _serviceProvider = serviceProvider;
         _uiStateService = uiStateService;
         _visualService = visualService;
-        _windowsCornerService = windowsCornerService;
         _startupCoordinator = startupCoordinator;
         _viewModel = viewModel;
         _logger = logger;
@@ -77,7 +73,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         DataContext = _viewModel;
 
         InitializeComponent();
-        _windowsCornerService.ApplyWindows10RoundedCorners(this);
         ApplyDynamicWindowSize();
 
         if (visualService is ShellVisualService concreteVisual)
@@ -116,6 +111,23 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         _visualService.RequestMicaUpdate();
 
         _startupCoordinator.Start();
+
+        // Pre-warm shell pages during application idle to eliminate navigation lag
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, new Action(() =>
+        {
+            try
+            {
+                GetOrCreateShellPage(typeof(AppSettingsPage));
+                GetOrCreateShellPage(typeof(TunnelPage));
+                GetOrCreateShellPage(typeof(JavaSetupPage));
+                GetOrCreateShellPage(typeof(AboutPage));
+                GetOrCreateShellPage(typeof(RemoteControlPage));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Pre-warming shell page cache completed with note.");
+            }
+        }));
     }
 
     private void Window_Activated(object? sender, EventArgs e) =>
@@ -260,8 +272,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         SetNavigationItemActiveState(NavAbout, ReferenceEquals(targetItem, NavAbout));
         SetNavigationItemActiveState(NavSettings, ReferenceEquals(targetItem, NavSettings));
         SetNavigationItemActiveState(NavRemoteControl, ReferenceEquals(targetItem, NavRemoteControl));
-
-        PocketMC.Desktop.Views.Behaviors.AnimatedNavIndicatorBehavior.AnimateToActiveItem(RootNavigation);
     }
 
     private NavigationViewItem? GetShellNavigationItem(Type? pageType)

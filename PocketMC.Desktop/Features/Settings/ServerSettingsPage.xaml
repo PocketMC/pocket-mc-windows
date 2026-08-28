@@ -6,7 +6,6 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:intel="clr-namespace:PocketMC.Desktop.Features.Intelligence"
       xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
-      xmlns:helpers="clr-namespace:PocketMC.Desktop.Views.Behaviors"
       mc:Ignorable="d"
       d:DesignHeight="1200" d:DesignWidth="950"
       Title="Server Settings"
@@ -158,7 +157,6 @@
 
                 <ui:NavigationView Grid.Column="0"
                                    x:Name="SidebarList"
-                                   helpers:AnimatedNavIndicatorBehavior.IsEnabled="True"
                                    PaneDisplayMode="Left"
                                    IsPaneToggleVisible="False"
                                    IsBackButtonVisible="Collapsed">
@@ -178,11 +176,50 @@
                 </ui:NavigationView>
 
                 <Border x:Name="ContentAreaCard" Grid.Column="2" VerticalAlignment="Stretch">
-                    <TabControl x:Name="MainTabControl" Background="Transparent" BorderThickness="0" Margin="0" VerticalAlignment="Stretch">
-                        <TabControl.Resources><Style TargetType="TabPanel"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
+                    <Grid>
+                        <!-- Settings Tab Skeleton Loader (Zero-delay, active only during tab/page load) -->
+                        <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource VisibleIfTrue}}">
+                            <Border Style="{StaticResource SkeletonCardBorder}" Height="120" Margin="0,0,0,12" Padding="16,14">
+                                <StackPanel>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="18" Width="180" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="14" Width="320" HorizontalAlignment="Left" Margin="0,0,0,16"/>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="36" Width="400" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource SkeletonCardBorder}" Height="80" Margin="0,0,0,12" Padding="16,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <Border Style="{StaticResource SkeletonElement}" Height="16" Width="220" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                        <Border Style="{StaticResource SkeletonElement}" Height="12" Width="300" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Style="{StaticResource SkeletonElement}" Width="40" Height="22" CornerRadius="10" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SkeletonCardBorder}" Height="80" Margin="0,0,0,12" Padding="16,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <Border Style="{StaticResource SkeletonElement}" Height="16" Width="200" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                        <Border Style="{StaticResource SkeletonElement}" Height="12" Width="280" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Style="{StaticResource SkeletonElement}" Width="40" Height="22" CornerRadius="10" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
 
-                        <!-- TAB 1: IDENTITY & PERFORMANCE -->
-                        <TabItem Header="Identity">
+                        <TabControl x:Name="MainTabControl" Background="Transparent" BorderThickness="0" Margin="0" VerticalAlignment="Stretch"
+                                    Visibility="{Binding IsLoading, Converter={StaticResource InvertedVisibilityConverter}}">
+                            <TabControl.Resources><Style TargetType="TabPanel"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
+
+                            <!-- TAB 1: IDENTITY & PERFORMANCE -->
+                            <TabItem Header="Identity">
                             <ScrollViewer x:Name="GeneralScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <ui:CardExpander Header="Visual Identity" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12" IsExpanded="True">
@@ -2026,6 +2063,7 @@
                             </ScrollViewer>
                         </TabItem>
                     </TabControl>
+                    </Grid>
                 </Border>
             </Grid>
         </DockPanel>

@@ -100,6 +100,68 @@
                       PanningMode="VerticalOnly"
                       Padding="0,0,16,0">
             <Grid>
+                <!-- Skeleton Loader Grid (Zero-delay, active only during data load) -->
+                <Grid Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl ItemsSource="{Binding Source=4, Converter={x:Static presentation:IntToRangeConverter.Instance}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <presentation:AdaptiveGridPanel MinColumnWidth="340" HorizontalSpacing="16" VerticalSpacing="16"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource SkeletonCardBorder}">
+                                    <Grid Margin="0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/> <!-- Header -->
+                                            <RowDefinition Height="Auto"/> <!-- Metadata -->
+                                            <RowDefinition Height="Auto"/> <!-- Metrics -->
+                                            <RowDefinition Height="Auto"/> <!-- Connections -->
+                                            <RowDefinition Height="Auto"/> <!-- Actions -->
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Header -->
+                                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                                            <StackPanel>
+                                                <Border Style="{StaticResource SkeletonElement}" Height="18" Width="140" HorizontalAlignment="Left"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                    <Border Style="{StaticResource SkeletonElement}" Height="18" Width="52" Margin="0,0,6,0"/>
+                                                    <Border Style="{StaticResource SkeletonElement}" Height="18" Width="48" Margin="0,0,6,0"/>
+                                                    <Border Style="{StaticResource SkeletonElement}" Height="18" Width="60"/>
+                                                </StackPanel>
+                                                <Border Style="{StaticResource SkeletonElement}" Height="12" Width="90" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Metadata -->
+                                        <Border Grid.Row="1" Style="{StaticResource SkeletonElement}" Height="34" Margin="0,0,0,10"/>
+
+                                        <!-- Metrics -->
+                                        <Border Grid.Row="2" Style="{StaticResource SkeletonElement}" Height="36" Margin="0,0,0,10"/>
+
+                                        <!-- Connections -->
+                                        <Border Grid.Row="3" Style="{StaticResource SkeletonElement}" Height="32" Margin="0,0,0,12"/>
+
+                                        <!-- Actions -->
+                                        <Grid Grid.Row="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="6"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Height="32"/>
+                                            <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Height="32" Width="36"/>
+                                            <Border Grid.Column="4" Style="{StaticResource SkeletonElement}" Height="32" Width="36"/>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
                 <!-- Empty State -->
                 <Border HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,64" Padding="64,48"
                         Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
@@ -110,9 +172,13 @@
                         <Style TargetType="Border">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Instances.Count}" Value="0">
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsLoading}" Value="False"/>
+                                        <Condition Binding="{Binding Instances.Count}" Value="0"/>
+                                    </MultiDataTrigger.Conditions>
                                     <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
+                                </MultiDataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
@@ -134,6 +200,9 @@
                         <Style TargetType="ItemsControl">
                             <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
                                 <DataTrigger Binding="{Binding Instances.Count}" Value="0">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>

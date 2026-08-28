@@ -80,7 +80,53 @@
         <Grid Grid.Row="2">
             <ScrollViewer x:Name="ResultsScrollViewer" Grid.Row="2" Margin="0" Padding="0,0,16,0" VerticalScrollBarVisibility="Auto" ScrollChanged="ResultsScrollViewer_ScrollChanged">
                 <StackPanel>
+                    <!-- Marketplace Skeleton (Zero-delay, active only during search/load) -->
+                    <StackPanel x:Name="SkeletonList" Visibility="{Binding Visibility, ElementName=ProgressSearching}">
+                        <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,12" Padding="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="64"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="64" Height="64" CornerRadius="8"/>
+                                <StackPanel Grid.Column="1" Margin="16,0" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource SkeletonElement}" Height="18" Width="180" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="14" Width="300" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="12" Width="80" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                                <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="90" Height="36" CornerRadius="6" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,12" Padding="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="64"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="64" Height="64" CornerRadius="8"/>
+                                <StackPanel Grid.Column="1" Margin="16,0" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource SkeletonElement}" Height="18" Width="150" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="14" Width="260" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="12" Width="70" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                                <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="90" Height="36" CornerRadius="6" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+
                     <ItemsControl x:Name="ListResults" ItemsSource="{Binding}">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Visibility, ElementName=ProgressSearching}" Value="Visible">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <ui:Card Margin="0,0,0,12" Padding="12" Background="{DynamicResource ControlFillColorDefaultBrush}">
