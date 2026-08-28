@@ -51,6 +51,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         private bool _isSubscribed;
         private int _refreshVersion;
         private TunnelUiState _currentUiState = TunnelUiState.Missing;
+        private bool _hasInitialLoaded;
 
         /// <summary>
         /// Tracks the current tunnel inventory so management actions can look up tunnel data by ID.
@@ -94,9 +95,13 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
-            IsLoading = true;
+            if (!_hasInitialLoaded)
+            {
+                IsLoading = true;
+            }
             SubscribeToAgent();
             await RefreshStatusAsync();
+            _hasInitialLoaded = true;
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)

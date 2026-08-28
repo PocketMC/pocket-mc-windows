@@ -16,13 +16,15 @@
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen"
+        MinWidth="1024"
+        MinHeight="680"
         Icon="pack://application:,,,/icon.ico"
         Background="#FF242424"
         Loaded="Window_Loaded"
         Activated="Window_Activated"
         Deactivated="Window_Deactivated">
 
-    <Grid>
+    <Grid x:Name="RootLayoutGrid">
         <!-- Fake Mica: blurred wallpaper layer (collapsed until FakeMica theme is selected) -->
         <Image x:Name="WallpaperBlurLayer"
                Visibility="Collapsed"

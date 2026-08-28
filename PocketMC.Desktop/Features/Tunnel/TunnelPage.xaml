@@ -310,7 +310,16 @@
                 <ItemsControl x:Name="TunnelList"
                               Grid.Row="2"
                               Visibility="Collapsed">
-                        <ItemsControl.ItemTemplate>
+                    <ItemsControl.Style>
+                        <Style TargetType="ItemsControl">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLoading, RelativeSource={RelativeSource AncestorType=Page}}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Style>
+                    <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
                                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"

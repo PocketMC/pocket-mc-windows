@@ -97,17 +97,51 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void ApplyDynamicWindowSize()
     {
-        const double widthRatio = 0.75;
-        const double heightRatio = 0.85;
-        const double minWidth = 960;
-        const double minHeight = 640;
+        double screenWidth = SystemParameters.WorkArea.Width;
+        double screenHeight = SystemParameters.WorkArea.Height;
 
-        Width = Math.Max(minWidth, SystemParameters.WorkArea.Width * widthRatio);
-        Height = Math.Max(minHeight, SystemParameters.WorkArea.Height * heightRatio);
+        double targetWidth = Math.Max(1024, Math.Min(1320, screenWidth * 0.85));
+        double targetHeight = Math.Max(680, Math.Min(860, screenHeight * 0.85));
+
+        Width = targetWidth;
+        Height = targetHeight;
+    }
+
+    private void UpdateDpiScalingIsolation()
+    {
+        try
+        {
+            var dpi = VisualTreeHelper.GetDpi(this);
+            if (dpi.DpiScaleX > 0 && dpi.DpiScaleY > 0)
+            {
+                double invScaleX = 1.0 / dpi.DpiScaleX;
+                double invScaleY = 1.0 / dpi.DpiScaleY;
+
+                if (Math.Abs(invScaleX - 1.0) > 0.001 || Math.Abs(invScaleY - 1.0) > 0.001)
+                {
+                    RootLayoutGrid.LayoutTransform = new ScaleTransform(invScaleX, invScaleY);
+                }
+                else
+                {
+                    RootLayoutGrid.LayoutTransform = Transform.Identity;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to apply DPI scaling isolation.");
+        }
+    }
+
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        UpdateDpiScalingIsolation();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        UpdateDpiScalingIsolation();
         _visualService.RequestMicaUpdate();
 
         _startupCoordinator.Start();

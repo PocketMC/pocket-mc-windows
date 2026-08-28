@@ -84,16 +84,16 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Non-update footer content (toggle, warnings) -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center"
+                    <WrapPanel Grid.Column="0" VerticalAlignment="Center"
                                 Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource InvertedVisibilityConverter}}">
                         <!-- Auto-Start Toggle -->
                         <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" 
                                          Content="Auto-start server at PocketMC startup" 
-                                         Margin="0,0,24,0"
+                                         Margin="0,4,24,4"
                                          VerticalAlignment="Center"/>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
-                                    Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,24,0">
+                                    Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}" Margin="0,4,24,4">
                             <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,10,0"/>
                             <TextBlock Text="Unsaved changes detected"
                                        Foreground="{DynamicResource SystemFillColorCriticalBrush}"
@@ -103,7 +103,7 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
-                                    Visibility="{Binding IsRestartRequired, Converter={StaticResource VisibleIfTrue}}">
+                                    Visibility="{Binding IsRestartRequired, Converter={StaticResource VisibleIfTrue}}" Margin="0,4,24,4">
                             <ui:SymbolIcon Symbol="ArrowClockwise24" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" Margin="0,0,10,0"/>
                             <TextBlock Text="Server restart required to apply changes"
                                        Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
@@ -111,7 +111,7 @@
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-                    </StackPanel>
+                    </WrapPanel>
 
                     <!-- Update Status & Progress (stretches full width) -->
                     <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,24,0"
