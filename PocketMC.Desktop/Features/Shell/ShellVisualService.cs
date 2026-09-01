@@ -116,11 +116,14 @@ namespace PocketMC.Desktop.Features.Shell
                     SetTintLayer(window, TransparentTint);
 
                     string? customImagePath = _applicationState.Settings.CustomBackgroundImagePath;
-                    if (!string.IsNullOrWhiteSpace(customImagePath) && ApplyFakeMicaLayerWithCustomImage(window, customImagePath))
+                    double blurRadius = _applicationState.Settings.WallpaperBlurRadius;
+                    double tintOpacity = _applicationState.Settings.WallpaperTintOpacity;
+
+                    if (!string.IsNullOrWhiteSpace(customImagePath) && ApplyFakeMicaLayerWithCustomImage(window, customImagePath, blurRadius, tintOpacity))
                     {
                         return;
                     }
-                    ApplyFakeMicaLayer(window);
+                    ApplyFakeMicaLayer(window, blurRadius, tintOpacity);
                     return;
                 }
 
@@ -181,7 +184,7 @@ namespace PocketMC.Desktop.Features.Shell
 
         // ── Fake Mica Helpers ──────────────────────────────────────────
 
-        private void ApplyFakeMicaLayer(FluentWindow window)
+        private void ApplyFakeMicaLayer(FluentWindow window, double blurRadius, double tintOpacity)
         {
             try
             {
@@ -189,7 +192,7 @@ namespace PocketMC.Desktop.Features.Shell
                 var tintOverlay = window.FindName("WallpaperTintOverlay") as Border;
                 if (imageElement == null || tintOverlay == null) return;
 
-                _wallpaperMicaService.Apply(window, imageElement, tintOverlay);
+                _wallpaperMicaService.Apply(window, imageElement, tintOverlay, blurRadius, tintOpacity);
             }
             catch
             {
@@ -197,7 +200,7 @@ namespace PocketMC.Desktop.Features.Shell
             }
         }
 
-        private bool ApplyFakeMicaLayerWithCustomImage(FluentWindow window, string customImagePath)
+        private bool ApplyFakeMicaLayerWithCustomImage(FluentWindow window, string customImagePath, double blurRadius, double tintOpacity)
         {
             try
             {
@@ -205,7 +208,7 @@ namespace PocketMC.Desktop.Features.Shell
                 var tintOverlay = window.FindName("WallpaperTintOverlay") as Border;
                 if (imageElement == null || tintOverlay == null) return false;
 
-                return _wallpaperMicaService.ApplyCustomImage(window, imageElement, tintOverlay, customImagePath);
+                return _wallpaperMicaService.ApplyCustomImage(window, imageElement, tintOverlay, customImagePath, blurRadius, tintOpacity);
             }
             catch
             {

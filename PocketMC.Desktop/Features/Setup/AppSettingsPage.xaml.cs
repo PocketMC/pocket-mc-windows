@@ -72,6 +72,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly InstanceRegistry _registry;
         private readonly IServerLifecycleService _serverLifecycleService;
         private readonly PlayitAgentService _playitAgentService;
+        private System.Windows.Threading.DispatcherTimer? _blurDebounceTimer;
         private bool _isInitializing = true;
         private static readonly (string Name, string Hex)[] AccentColorPresets =
         {
@@ -196,6 +197,7 @@ namespace PocketMC.Desktop.Features.Setup
             // Initialize custom background panel state
             UpdateCustomBackgroundPanelVisibility();
             UpdateCustomBackgroundUI();
+            InitializeWallpaperEffects();
             InitializeAccentColorSection();
 
             // Set initial state
@@ -249,6 +251,7 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void AppSettingsPage_Unloaded(object sender, RoutedEventArgs e)
         {
+            _blurDebounceTimer?.Stop();
             ScrollViewerHelper.DisableMouseWheelScrolling(this);
             _healthMonitor.HealthChanged -= UpdateDependencyHealth;
         }
@@ -846,6 +849,134 @@ namespace PocketMC.Desktop.Features.Setup
                 CustomBgPlaceholderIcon.Visibility = Visibility.Visible;
             }
         }
+
+        // ── Wallpaper Blur & Dimming Handlers ─────────────────────────
+
+        private void InitializeWallpaperEffects()
+        {
+            var settings = _applicationState.Settings;
+
+            double blurRadius = settings.WallpaperBlurRadius;
+            if (WallpaperBlurSlider != null)
+            {
+                WallpaperBlurSlider.Value = blurRadius;
+            }
+            if (WallpaperBlurValueText != null)
+            {
+                WallpaperBlurValueText.Text = FormatBlurText(blurRadius);
+            }
+
+            double tintPercent = settings.WallpaperTintOpacity * 100.0;
+            if (WallpaperTintSlider != null)
+            {
+                WallpaperTintSlider.Value = tintPercent;
+            }
+            if (WallpaperTintValueText != null)
+            {
+                WallpaperTintValueText.Text = $"{Math.Round(tintPercent):F0}%";
+            }
+        }
+
+        private static string FormatBlurText(double radius)
+        {
+            return radius <= 0.5 ? "Off (0 px)" : $"{Math.Round(radius):F0} px";
+        }
+
+        private void WallpaperBlurSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (WallpaperBlurValueText != null)
+            {
+                WallpaperBlurValueText.Text = FormatBlurText(e.NewValue);
+            }
+
+            if (_isInitializing) return;
+
+            if (_blurDebounceTimer == null)
+            {
+                _blurDebounceTimer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(150)
+                };
+                _blurDebounceTimer.Tick += (s, ev) =>
+                {
+                    _blurDebounceTimer.Stop();
+                    ApplyWallpaperBlurFromSlider();
+                };
+            }
+
+            _blurDebounceTimer.Stop();
+            _blurDebounceTimer.Start();
+        }
+
+        private void ApplyWallpaperBlurFromSlider()
+        {
+            if (WallpaperBlurSlider == null) return;
+
+            var settings = _applicationState.Settings;
+            settings.WallpaperBlurRadius = WallpaperBlurSlider.Value;
+            _settingsManager.Save(settings);
+
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                mainWin.RequestMicaUpdate();
+            }
+        }
+
+        private void WallpaperTintSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (WallpaperTintValueText != null)
+            {
+                WallpaperTintValueText.Text = $"{Math.Round(e.NewValue):F0}%";
+            }
+
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            settings.WallpaperTintOpacity = Math.Clamp(e.NewValue / 100.0, 0.0, 1.0);
+            _settingsManager.Save(settings);
+
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                var tintOverlay = mainWin.FindName("WallpaperTintOverlay") as Border;
+                WallpaperMicaService.UpdateTintOverlay(tintOverlay, settings.WallpaperTintOpacity);
+            }
+        }
+
+        private void ResetWallpaperEffects_Click(object sender, RoutedEventArgs e)
+        {
+            bool wasInitializing = _isInitializing;
+            _isInitializing = true;
+
+            var settings = _applicationState.Settings;
+            settings.WallpaperBlurRadius = 80.0;
+            settings.WallpaperTintOpacity = 0.72;
+            _settingsManager.Save(settings);
+
+            if (WallpaperBlurSlider != null)
+            {
+                WallpaperBlurSlider.Value = 80.0;
+            }
+            if (WallpaperBlurValueText != null)
+            {
+                WallpaperBlurValueText.Text = FormatBlurText(80.0);
+            }
+            if (WallpaperTintSlider != null)
+            {
+                WallpaperTintSlider.Value = 72.0;
+            }
+            if (WallpaperTintValueText != null)
+            {
+                WallpaperTintValueText.Text = "72%";
+            }
+
+            _isInitializing = wasInitializing;
+
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                mainWin.RequestMicaUpdate();
+            }
+        }
+
         private void SaveApiKey_Click(object sender, RoutedEventArgs e)
         {
             _applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Password.Trim();

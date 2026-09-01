@@ -384,6 +384,85 @@
                                     </StackPanel>
                                 </Grid>
                             </Grid>
+
+                            <!-- Blur Intensity Slider -->
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Blur Intensity" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Adjust the background blur strength. Set to 0 for a crisp wallpaper."
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Slider x:Name="WallpaperBlurSlider"
+                                            Width="180"
+                                            Minimum="0"
+                                            Maximum="120"
+                                            SmallChange="1"
+                                            LargeChange="10"
+                                            TickFrequency="1"
+                                            IsSnapToTickEnabled="True"
+                                            VerticalAlignment="Center"
+                                            ValueChanged="WallpaperBlurSlider_ValueChanged"/>
+                                    <TextBlock x:Name="WallpaperBlurValueText"
+                                               Text="80 px"
+                                               Width="55"
+                                               TextAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Darkness / Dimming Slider -->
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Darkness &amp; Dimming" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Adjust dark overlay opacity for text contrast and readability."
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Slider x:Name="WallpaperTintSlider"
+                                            Width="180"
+                                            Minimum="0"
+                                            Maximum="100"
+                                            SmallChange="1"
+                                            LargeChange="5"
+                                            TickFrequency="1"
+                                            IsSnapToTickEnabled="True"
+                                            VerticalAlignment="Center"
+                                            ValueChanged="WallpaperTintSlider_ValueChanged"/>
+                                    <TextBlock x:Name="WallpaperTintValueText"
+                                               Text="72%"
+                                               Width="55"
+                                               TextAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Reset Effects Action -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                <ui:Button x:Name="BtnResetWallpaperEffects"
+                                           Content="Reset Blur &amp; Dimming"
+                                           Icon="{ui:SymbolIcon ArrowReset24}"
+                                           Appearance="Secondary"
+                                           Click="ResetWallpaperEffects_Click"/>
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- Accent Color Section -->

@@ -31,6 +31,8 @@ namespace PocketMC.Domain.Models
         public bool HasMigratedToGreenWallpaperBlurTheme { get; set; }
         public bool HasMigratedToDefaultImageWallpaper { get; set; }
         public string? CustomBackgroundImagePath { get; set; }
+        public double WallpaperBlurRadius { get; set; } = 80.0;
+        public double WallpaperTintOpacity { get; set; } = 0.72;
         public string? CurseForgeApiKey { get; set; }
 
         // Telemetry

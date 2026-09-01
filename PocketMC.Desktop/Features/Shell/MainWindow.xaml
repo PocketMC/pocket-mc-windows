@@ -137,7 +137,7 @@
                                  ShowMinimize="True"
                                  ShowClose="True">
                         <ui:TitleBar.Header>
-                            <Grid>
+                            <Grid VerticalAlignment="Top" Margin="0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
@@ -149,11 +149,12 @@
                                         Grid.Column="1"
                                         Background="#12FFFFFF"
                                         CornerRadius="4"
-                                        Padding="10,3"
-                                        Margin="0,0,12,0"
-                                        VerticalAlignment="Center"
+                                        Height="24"
+                                        Padding="10,0"
+                                        Margin="0,6,12,0"
+                                        VerticalAlignment="Top"
                                         Visibility="{Binding TitleBarContextVisibility}">
-                                    <StackPanel Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock x:Name="TitleBarContextTitle"
                                                    Text="{Binding TitleBarTitle}"
                                                    FontSize="12"
@@ -179,14 +180,16 @@
                                         Grid.Column="2"
                                         Background="#18FFFFFF"
                                         CornerRadius="4"
-                                        Padding="10,3"
-                                        Margin="0,0,8,0"
-                                        VerticalAlignment="Center"
+                                        Height="24"
+                                        Padding="10,0"
+                                        Margin="0,6,16,0"
+                                        VerticalAlignment="Top"
                                         Visibility="{Binding GlobalHealthVisibility}">
                                     <TextBlock x:Name="GlobalHealthTextBlock"
                                                Text="{Binding GlobalHealthStatusText}"
                                                Foreground="{Binding GlobalHealthStatusBrush, FallbackValue=Silver}"
-                                               FontSize="11"/>
+                                               FontSize="11"
+                                               VerticalAlignment="Center"/>
                                 </Border>
                             </Grid>
                         </ui:TitleBar.Header>
