@@ -58,9 +58,9 @@ public class DependencyHealthMonitor : IDisposable
             {
                 // Ping endpoints in parallel
                 await Task.WhenAll(
-                    CheckEndpointAsync("Playit.gg API", "https://playit.gg/", token),
-                    CheckEndpointAsync("Adoptium API", "https://api.adoptium.net/v3/info/release_names?page=0&size=1", token),
-                    CheckEndpointAsync("Modrinth API", "https://api.modrinth.com/", token)
+                    CheckEndpointAsync("Playit.gg API", PocketMC.Infrastructure.Configuration.AppConfig.HealthCheckPlayit, token),
+                    CheckEndpointAsync("Adoptium API", PocketMC.Infrastructure.Configuration.AppConfig.HealthCheckAdoptium, token),
+                    CheckEndpointAsync("Modrinth API", PocketMC.Infrastructure.Configuration.AppConfig.HealthCheckModrinth, token)
                 );
 
                 HealthChanged?.Invoke();
@@ -84,7 +84,7 @@ public class DependencyHealthMonitor : IDisposable
             client.Timeout = TimeSpan.FromSeconds(12);
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("User-Agent", "PocketMC-Desktop/1.0 (HealthCheck)");
+            request.Headers.Add("User-Agent", $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName}-Desktop/{PocketMC.Infrastructure.Configuration.AppConfig.AppVersion} (HealthCheck)");
 
             var response = await client.SendAsync(request, token);
             sw.Stop();

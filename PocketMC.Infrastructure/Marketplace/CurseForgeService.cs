@@ -20,7 +20,7 @@ namespace PocketMC.Infrastructure.Marketplace
         private readonly HttpClient _httpClient;
         private readonly ApplicationState _appState;
         private readonly ICurseForgeApiKeyDialogService _dialogService;
-        private const string ApiBase = "https://api.curseforge.com/v1";
+        private static string ApiBase => PocketMC.Infrastructure.Configuration.AppConfig.ProviderCurseForgeApi;
 
         public CurseForgeService(ApplicationState appState, HttpClient httpClient, ICurseForgeApiKeyDialogService dialogService)
         {

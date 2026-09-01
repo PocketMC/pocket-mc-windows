@@ -1,19 +1,85 @@
-version: 1.9.8
-channel:
-auth_proxies:
+# ==============================================================================
+# 1. APPLICATION IDENTITY & BRANDING
+# ==============================================================================
+app_name: "PocketMC"                                                  # [Requires App Update] Locked to local binary identity & assembly
+app_title: "PocketMC"                                                 # [Requires App Update] Locked to local binary identity & assembly
+app_id: "PocketMC"                                                    # [Requires App Update] Locked to local binary identity & registry key
+organization_name: "DS Labs"                                          # [Dual: Binary & Cloud] Baked into .exe/installer metadata at build + live-updates in UI
+organization_tagline: "Selective Digital Studio · Building Software That Works" # [Dual: Binary & Cloud] Baked into assembly metadata at build + live-updates in UI
+app_description: "Local-first Minecraft server manager for Windows."  # [Dual: Binary & Cloud] Baked into assembly metadata at build + live-updates in UI
+
+# ==============================================================================
+# 2. RELEASE, PACKAGING & CI/CD PIPELINE
+# (Used by MSBuild, dotnet publish, Velopack packaging, and GitHub Actions)
+# ==============================================================================
+version: 1.9.8                                                        # [Requires App Update] Binary build version (Used by Velopack CI/CD)
+channel: release                                                      # [Requires App Update] Release channel (release | beta)
+
+# ==============================================================================
+# 3. COMMUNITY, SUPPORT & WEB LINKS
+# ==============================================================================
+link_discord: "https://discord.gg/wJHJy64sR4"                         # [Dynamic Cloud] Live-updates Discord invite link
+link_instagram: "https://www.instagram.com/thepocketmc"               # [Dynamic Cloud] Live-updates Instagram profile link
+link_feedback: "https://docs.google.com/forms/d/e/1FAIpQLSd6cNMawAbvoELxqIF_FobaC3DptKnjQxViDh9XLcyJdNbTAQ/viewform?usp=dialog" # [Dynamic Cloud] Live-updates Feedback link
+link_youtube: "https://www.youtube.com/@OfficialPocketMC"             # [Dynamic Cloud] Live-updates YouTube channel link
+link_reddit: "https://www.reddit.com/r/PocketMC/"                     # [Dynamic Cloud] Live-updates Reddit community link
+link_github: "https://github.com/PocketMC/pocket-mc-windows"          # [Dynamic Cloud] Live-updates GitHub repository link
+link_releases: "https://github.com/PocketMC/pocket-mc-windows/releases" # [Dynamic Cloud] Live-updates Releases link
+link_website: "https://ds-labs-portfolio.vercel.app"                  # [Dynamic Cloud] Live-updates Official website link
+link_organization: "https://ds-labs-portfolio.vercel.app"             # [Dynamic Cloud] Live-updates Organization website link
+link_donation: "https://buymeacoffee.com/sahaj33"                     # [Dynamic Cloud] Live-updates Donation/Coffee link
+link_playit_website: "https://playit.gg"                              # [Dynamic Cloud] Live-updates Playit homepage link
+link_playit_setup: "https://playit.gg/l/setup-third-party"            # [Dynamic Cloud] Live-updates Playit third-party setup link
+link_playit_agents: "https://playit.gg/account/agents"                # [Dynamic Cloud] Live-updates Playit agents link
+
+# ==============================================================================
+# 4. BACKEND PROXIES & RELAYS
+# ==============================================================================
+auth_proxies:                                                         # [Dynamic Cloud] Live-updates fallback auth proxies
   - "https://pocket-mc-proxy-20d5.onrender.com"
   - "https://pocket-mc-proxy-n2qx.onrender.com"
-telemetry_proxies:
+telemetry_proxies:                                                    # [Dynamic Cloud] Live-updates telemetry proxies
   - "https://pocket-mc-proxy-3fqm.onrender.com/"
   - "https://pocket-mc-proxy.onrender.com/"
-discord_api_urls:
+discord_api_urls:                                                     # [Dynamic Cloud] Live-updates Discord bot notification webhooks
   - "https://pocketmc-welcome-bot-k1gq.onrender.com"
   - "https://pocketmc-welcome-bot-1e5d.onrender.com"
 
-link_discord: "https://discord.gg/wJHJy64sR4"
-link_instagram: "https://www.instagram.com/thepocketmc"
-link_feedback: "https://docs.google.com/forms/d/e/1FAIpQLSd6cNMawAbvoELxqIF_FobaC3DptKnjQxViDh9XLcyJdNbTAQ/viewform?usp=dialog"
-link_youtube: "https://www.youtube.com/@OfficialPocketMC"
-link_reddit: "https://www.reddit.com/r/PocketMC/"
-link_github: "https://github.com/PocketMC/pocket-mc-windows"
-link_donation: "https://buymeacoffee.com/sahaj33"
+# ==============================================================================
+# 5. PROVIDER & 3RD-PARTY SERVICE ENDPOINTS
+# ==============================================================================
+provider_mojang_manifest: "https://launchermeta.mojang.com/mc/game/version_manifest.json" # [Dynamic Cloud] Live-updates Mojang versions manifest
+provider_mojang_profiles: "https://api.mojang.com/users/profiles/minecraft" # [Dynamic Cloud] Live-updates Mojang player profile UUIDs
+provider_papermc_api: "https://fill.papermc.io/v3/projects/paper"     # [Dynamic Cloud] Live-updates PaperMC v3 API endpoint
+provider_purpur_api: "https://api.purpurmc.org/v2/purpur"             # [Dynamic Cloud] Live-updates Purpur v2 API endpoint
+provider_fabric_meta: "https://meta.fabricmc.net/v2"                  # [Dynamic Cloud] Live-updates Fabric Meta v2 endpoint
+provider_forge_meta: "https://meta.prismlauncher.org/v1/net.minecraftforge/index.json" # [Dynamic Cloud] Live-updates Forge versions index
+provider_forge_promotions: "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json" # [Dynamic Cloud] Live-updates Forge promotions feed
+provider_forge_maven: "https://maven.minecraftforge.net/net/minecraftforge/forge" # [Dynamic Cloud] Live-updates Forge installer maven URL
+provider_neoforge_meta: "https://meta.prismlauncher.org/v1/net.neoforged/index.json" # [Dynamic Cloud] Live-updates NeoForge versions index
+provider_neoforge_maven: "https://maven.neoforged.net/releases/net/neoforged/neoforge" # [Dynamic Cloud] Live-updates NeoForge installer maven URL
+provider_bedrock_kittizz: "https://raw.githubusercontent.com/kittizz/bedrock-server-downloads/main/bedrock-server-downloads.json" # [Dynamic Cloud] Live-updates Bedrock BDS index
+provider_pocketmine_releases: "https://api.github.com/repos/pmmp/PocketMine-MP/releases" # [Dynamic Cloud] Live-updates PocketMine releases API
+provider_php_releases: "https://api.github.com/repos/pmmp/PHP-Binaries/releases" # [Dynamic Cloud] Live-updates PHP binaries releases API
+provider_adoptium_api: "https://api.adoptium.net/v3"                  # [Dynamic Cloud] Live-updates Adoptium OpenJDK API v3
+provider_modrinth_api: "https://api.modrinth.com/v2"                  # [Dynamic Cloud] Live-updates Modrinth API v2
+provider_curseforge_api: "https://api.curseforge.com/v1"              # [Dynamic Cloud] Live-updates CurseForge API v1
+provider_playit_api: "https://api.playit.gg"                          # [Dynamic Cloud] Live-updates Playit REST API endpoint
+provider_playit_status: "https://status.playit.gg/api/status?days=1" # [Dynamic Cloud] Live-updates Playit status feed
+provider_geyser_api: "https://download.geysermc.org/v2/projects"      # [Dynamic Cloud] Live-updates Geyser/Floodgate API
+
+# ==============================================================================
+# 6. HEALTH CHECK ENDPOINTS
+# ==============================================================================
+health_check_playit: "https://playit.gg/"                             # [Dynamic Cloud] Live-updates Playit health ping endpoint
+health_check_adoptium: "https://api.adoptium.net/v3/info/release_names?page=0&size=1" # [Dynamic Cloud] Live-updates Adoptium health ping endpoint
+health_check_modrinth: "https://api.modrinth.com/"                    # [Dynamic Cloud] Live-updates Modrinth health ping endpoint
+
+# ==============================================================================
+# 7. AGENT BINARY ENDPOINTS & CHECKSUMS
+# ==============================================================================
+binary_playit_download_url: "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe" # [Dynamic Cloud] Live-updates Playit agent executable
+binary_playit_sha256: "9b00d6ff7d37d1052e5ae097e1348e11deae8617cd7a8ba39d1777f2006316a3" # [Dynamic Cloud] Live-updates Playit SHA256 integrity hash
+binary_cloudflared_download_url: "https://github.com/cloudflare/cloudflared/releases/download/2026.8.1/cloudflared-windows-amd64.exe" # [Dynamic Cloud] Live-updates Cloudflared executable
+binary_cloudflared_sha256: "8f1d6f87b8756dbf37064b16e2c8251b69d816305e4f4373e1b80efb28d13b83" # [Dynamic Cloud] Live-updates Cloudflared SHA256 integrity hash
+

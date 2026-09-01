@@ -19,7 +19,6 @@ namespace PocketMC.Infrastructure.Instances;
 public sealed class DiscordRpcService : IDiscordRpcService
 {
     private const string DiscordApplicationId = "1507742265240715354";
-    private const string PocketMcWebsiteUrl = "https://pocketmc.github.io/pocket-mc-website/";
 
     private readonly IServerLifecycleService _lifecycleService;
     private readonly IResourceMonitorService _resourceMonitorService;
@@ -218,11 +217,11 @@ public sealed class DiscordRpcService : IDiscordRpcService
             Assets = new Assets
             {
                 LargeImageKey = "pocketmc",
-                LargeImageText = "PocketMC Companion App"
+                LargeImageText = $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName} Companion App"
             },
             Buttons = new[]
             {
-                new Button { Label = "Download PocketMC", Url = PocketMcWebsiteUrl }
+                new Button { Label = $"Download {PocketMC.Infrastructure.Configuration.AppConfig.AppName}", Url = PocketMC.Infrastructure.Configuration.AppConfig.LinkWebsite }
             }
         };
     }
@@ -286,7 +285,7 @@ public sealed class DiscordRpcService : IDiscordRpcService
         // Always show Download PocketMC button
         presence.Buttons = new[]
         {
-            new Button { Label = "Download PocketMC", Url = PocketMcWebsiteUrl }
+            new Button { Label = $"Download {PocketMC.Infrastructure.Configuration.AppConfig.AppName}", Url = PocketMC.Infrastructure.Configuration.AppConfig.LinkWebsite }
         };
 
         return presence;

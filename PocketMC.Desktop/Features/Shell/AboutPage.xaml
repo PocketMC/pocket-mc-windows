@@ -11,7 +11,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,20">
-            <ui:TextBlock FontTypography="Title" Text="About PocketMC" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+            <ui:TextBlock x:Name="TxtAboutTitle" FontTypography="Title" Text="About PocketMC" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
             <TextBlock x:Name="TxtVersion" Text="Version 1.0.0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
         </StackPanel>
 
@@ -42,17 +42,17 @@
                             <RectangleGeometry Rect="0,0,120,120" RadiusX="16" RadiusY="16"/>
                         </Border.Clip>
                         <Image Source="pack://application:,,,/Assets/logo_highres.png"
-                               Stretch="UniformToFill"
-                               UseLayoutRounding="True"
-                               SnapsToDevicePixels="True"
-                               RenderOptions.BitmapScalingMode="Fant"
-                               RenderOptions.EdgeMode="Aliased"/>
+                                Stretch="UniformToFill"
+                                UseLayoutRounding="True"
+                                SnapsToDevicePixels="True"
+                                RenderOptions.BitmapScalingMode="Fant"
+                                RenderOptions.EdgeMode="Aliased"/>
                     </Border>
 
                     <!-- Info Content -->
                     <StackPanel Grid.Column="1" Margin="0,0,24,0">
-                        <TextBlock Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                        <TextBlock Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                        <TextBlock x:Name="TxtAppTitle" Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtAppDescription" Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                         <TextBlock Text="Repository" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
                         <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
@@ -72,8 +72,8 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBlock Text="DS LABS" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="Selective Digital Studio · Building Software That Works" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="TxtOrgName" Text="DS LABS" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="TxtOrgTagline" Text="Selective Digital Studio · Building Software That Works" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </ui:CardExpander.Header>
@@ -94,7 +94,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel>
                             <TextBlock Text="Community" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="Join our Discord server to get help, share tips, and connect with other PocketMC users." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="TxtCommunityDesc" Text="Join our Discord server to get help, share tips, and connect with other PocketMC users." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </ui:CardExpander.Header>
@@ -140,7 +140,7 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel>
                             <TextBlock Text="Support &amp; Donation" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="Support the development of PocketMC! If you love this project and find it useful, consider buying us a coffee." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="TxtDonationDesc" Text="Support the development of PocketMC! If you love this project and find it useful, consider buying us a coffee." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </ui:CardExpander.Header>

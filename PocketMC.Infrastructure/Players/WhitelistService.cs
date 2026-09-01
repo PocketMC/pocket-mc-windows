@@ -53,7 +53,8 @@ public sealed class WhitelistService
     {
         try
         {
-            string url = $"https://api.mojang.com/users/profiles/minecraft/{Uri.EscapeDataString(username)}";
+            string baseUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderMojangProfiles;
+            string url = $"{baseUrl}/{Uri.EscapeDataString(username)}";
             using var response = await _httpClient.GetAsync(url);
             if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
             {

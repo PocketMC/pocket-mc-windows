@@ -132,7 +132,8 @@
 
                 <!-- ─── Title Bar ─── -->
                 <ui:NavigationView.Header>
-                    <ui:TitleBar Title="PocketMC"
+                    <ui:TitleBar x:Name="AppTitleBar"
+                                 Title="PocketMC"
                                  ShowMaximize="True"
                                  ShowMinimize="True"
                                  ShowClose="True">

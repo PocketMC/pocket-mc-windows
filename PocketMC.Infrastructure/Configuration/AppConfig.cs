@@ -40,6 +40,9 @@ namespace PocketMC.Infrastructure.Configuration
         
         public static IReadOnlyList<string> DiscordApiUrls { get; private set; } = new List<string>();
 
+        public static string AppName { get; private set; } = "PocketMC";
+        public static string AppTitle { get; private set; } = "PocketMC";
+        public static string AppId { get; private set; } = "PocketMC";
         public static string AppVersion { get; private set; } = "1.0.0";
         public static string LinkDiscord { get; private set; } = "https://discord.gg/mWdMr8Mc2m";
         public static string LinkInstagram { get; private set; } = "https://www.instagram.com/thepocketmc";
@@ -47,10 +50,49 @@ namespace PocketMC.Infrastructure.Configuration
         public static string LinkYouTube { get; private set; } = "https://www.youtube.com/@OfficialPocketMC";
         public static string LinkReddit { get; private set; } = "https://www.reddit.com/r/PocketMC/";
         public static string LinkGitHub { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows";
+        public static string LinkReleases { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows/releases";
+        public static string LinkWebsite { get; private set; } = "https://ds-labs-portfolio.vercel.app";
+        public static string LinkDocs { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows";
         public static string LinkDonation { get; private set; } = "https://buymeacoffee.com/sahaj33";
         public static string LinkOrganization { get; private set; } = "https://ds-labs-portfolio.vercel.app";
-        public static string OrganizationName { get; private set; } = "DS LABS";
+        public static string LinkPlayitWebsite { get; private set; } = "https://playit.gg";
+        public static string LinkPlayitSetup { get; private set; } = "https://playit.gg/l/setup-third-party";
+        public static string LinkPlayitAgents { get; private set; } = "https://playit.gg/account/agents";
+        public static string OrganizationName { get; private set; } = "DS Labs";
         public static string OrganizationTagline { get; private set; } = "Selective Digital Studio · Building Software That Works";
+        public static string AppDescription { get; private set; } = "Local-first Minecraft server manager for Windows.";
+
+        // Provider & 3rd-Party Service Endpoints
+        public static string ProviderMojangManifest { get; private set; } = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+        public static string ProviderMojangProfiles { get; private set; } = "https://api.mojang.com/users/profiles/minecraft";
+        public static string ProviderPaperMcApi { get; private set; } = "https://fill.papermc.io/v3/projects/paper";
+        public static string ProviderPurpurApi { get; private set; } = "https://api.purpurmc.org/v2/purpur";
+        public static string ProviderFabricMeta { get; private set; } = "https://meta.fabricmc.net/v2";
+        public static string ProviderForgeMeta { get; private set; } = "https://meta.prismlauncher.org/v1/net.minecraftforge/index.json";
+        public static string ProviderForgePromotions { get; private set; } = "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json";
+        public static string ProviderForgeMaven { get; private set; } = "https://maven.minecraftforge.net/net/minecraftforge/forge";
+        public static string ProviderNeoForgeMeta { get; private set; } = "https://meta.prismlauncher.org/v1/net.neoforged/index.json";
+        public static string ProviderNeoForgeMaven { get; private set; } = "https://maven.neoforged.net/releases/net/neoforged/neoforge";
+        public static string ProviderBedrockKittizz { get; private set; } = "https://raw.githubusercontent.com/kittizz/bedrock-server-downloads/main/bedrock-server-downloads.json";
+        public static string ProviderPocketmineReleases { get; private set; } = "https://api.github.com/repos/pmmp/PocketMine-MP/releases";
+        public static string ProviderPhpReleases { get; private set; } = "https://api.github.com/repos/pmmp/PHP-Binaries/releases";
+        public static string ProviderAdoptiumApi { get; private set; } = "https://api.adoptium.net/v3";
+        public static string ProviderModrinthApi { get; private set; } = "https://api.modrinth.com/v2";
+        public static string ProviderCurseForgeApi { get; private set; } = "https://api.curseforge.com/v1";
+        public static string ProviderPlayitApi { get; private set; } = "https://api.playit.gg";
+        public static string ProviderPlayitStatus { get; private set; } = "https://status.playit.gg/api/status?days=1";
+        public static string ProviderGeyserApi { get; private set; } = "https://download.geysermc.org/v2/projects";
+
+        // Health Check Endpoints
+        public static string HealthCheckPlayit { get; private set; } = "https://playit.gg/";
+        public static string HealthCheckAdoptium { get; private set; } = "https://api.adoptium.net/v3/info/release_names?page=0&size=1";
+        public static string HealthCheckModrinth { get; private set; } = "https://api.modrinth.com/";
+
+        // Agent Binary Endpoints & Checksums
+        public static string BinaryPlayitDownloadUrl { get; private set; } = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
+        public static string? BinaryPlayitSha256 { get; private set; } = "9b00d6ff7d37d1052e5ae097e1348e11deae8617cd7a8ba39d1777f2006316a3";
+        public static string BinaryCloudflaredDownloadUrl { get; private set; } = "https://github.com/cloudflare/cloudflared/releases/download/2026.8.1/cloudflared-windows-amd64.exe";
+        public static string? BinaryCloudflaredSha256 { get; private set; } = "8f1d6f87b8756dbf37064b16e2c8251b69d816305e4f4373e1b80efb28d13b83";
 
         static AppConfig()
         {
@@ -184,6 +226,15 @@ namespace PocketMC.Infrastructure.Configuration
                             {
                                 var versionMatch = Regex.Match(trimmed, @"version:\s*""?([^""\r\n]+)""?");
                                 if (versionMatch.Success) AppVersion = versionMatch.Groups[1].Value;
+
+                                var nameMatch = Regex.Match(trimmed, @"app_name:\s*""?([^""\r\n]+)""?");
+                                if (nameMatch.Success) AppName = nameMatch.Groups[1].Value;
+
+                                var titleMatch = Regex.Match(trimmed, @"app_title:\s*""?([^""\r\n]+)""?");
+                                if (titleMatch.Success) AppTitle = titleMatch.Groups[1].Value;
+
+                                var idMatch = Regex.Match(trimmed, @"app_id:\s*""?([^""\r\n]+)""?");
+                                if (idMatch.Success) AppId = idMatch.Groups[1].Value;
                             }
 
                             var discordMatch = Regex.Match(trimmed, @"link_discord:\s*""?([^""\r\n]+)""?");
@@ -204,8 +255,116 @@ namespace PocketMC.Infrastructure.Configuration
                             var githubMatch = Regex.Match(trimmed, @"link_github:\s*""?([^""\r\n]+)""?");
                             if (githubMatch.Success) LinkGitHub = githubMatch.Groups[1].Value;
 
+                            var releasesMatch = Regex.Match(trimmed, @"link_releases:\s*""?([^""\r\n]+)""?");
+                            if (releasesMatch.Success) LinkReleases = releasesMatch.Groups[1].Value;
+
+                            var websiteMatch = Regex.Match(trimmed, @"link_website:\s*""?([^""\r\n]+)""?");
+                            if (websiteMatch.Success) LinkWebsite = websiteMatch.Groups[1].Value;
+
+                            var docsMatch = Regex.Match(trimmed, @"link_docs:\s*""?([^""\r\n]+)""?");
+                            if (docsMatch.Success) LinkDocs = docsMatch.Groups[1].Value;
+
+                            var orgLinkMatch = Regex.Match(trimmed, @"link_organization:\s*""?([^""\r\n]+)""?");
+                            if (orgLinkMatch.Success) LinkOrganization = orgLinkMatch.Groups[1].Value;
+
+                            var orgNameMatch = Regex.Match(trimmed, @"organization_name:\s*""?([^""\r\n]+)""?");
+                            if (orgNameMatch.Success) OrganizationName = orgNameMatch.Groups[1].Value;
+
+                            var orgTaglineMatch = Regex.Match(trimmed, @"organization_tagline:\s*""?([^""\r\n]+)""?");
+                            if (orgTaglineMatch.Success) OrganizationTagline = orgTaglineMatch.Groups[1].Value;
+
+                            var appDescMatch = Regex.Match(trimmed, @"app_description:\s*""?([^""\r\n]+)""?");
+                            if (appDescMatch.Success) AppDescription = appDescMatch.Groups[1].Value;
+
                             var donationMatch = Regex.Match(trimmed, @"link_donation:\s*""?([^""\r\n]+)""?");
                             if (donationMatch.Success) LinkDonation = donationMatch.Groups[1].Value;
+
+                            var playitWebMatch = Regex.Match(trimmed, @"link_playit_website:\s*""?([^""\r\n]+)""?");
+                            if (playitWebMatch.Success) LinkPlayitWebsite = playitWebMatch.Groups[1].Value;
+
+                            var playitSetupMatch = Regex.Match(trimmed, @"link_playit_setup:\s*""?([^""\r\n]+)""?");
+                            if (playitSetupMatch.Success) LinkPlayitSetup = playitSetupMatch.Groups[1].Value;
+
+                            var playitAgentsMatch = Regex.Match(trimmed, @"link_playit_agents:\s*""?([^""\r\n]+)""?");
+                            if (playitAgentsMatch.Success) LinkPlayitAgents = playitAgentsMatch.Groups[1].Value;
+
+                            var pMojangManifest = Regex.Match(trimmed, @"provider_mojang_manifest:\s*""?([^""\r\n]+)""?");
+                            if (pMojangManifest.Success) ProviderMojangManifest = pMojangManifest.Groups[1].Value;
+
+                            var pMojangProfiles = Regex.Match(trimmed, @"provider_mojang_profiles:\s*""?([^""\r\n]+)""?");
+                            if (pMojangProfiles.Success) ProviderMojangProfiles = pMojangProfiles.Groups[1].Value;
+
+                            var pPaperMc = Regex.Match(trimmed, @"provider_papermc_api:\s*""?([^""\r\n]+)""?");
+                            if (pPaperMc.Success) ProviderPaperMcApi = pPaperMc.Groups[1].Value;
+
+                            var pPurpur = Regex.Match(trimmed, @"provider_purpur_api:\s*""?([^""\r\n]+)""?");
+                            if (pPurpur.Success) ProviderPurpurApi = pPurpur.Groups[1].Value;
+
+                            var pFabricMeta = Regex.Match(trimmed, @"provider_fabric_meta:\s*""?([^""\r\n]+)""?");
+                            if (pFabricMeta.Success) ProviderFabricMeta = pFabricMeta.Groups[1].Value;
+
+                            var pForgeMeta = Regex.Match(trimmed, @"provider_forge_meta:\s*""?([^""\r\n]+)""?");
+                            if (pForgeMeta.Success) ProviderForgeMeta = pForgeMeta.Groups[1].Value;
+
+                            var pForgePromos = Regex.Match(trimmed, @"provider_forge_promotions:\s*""?([^""\r\n]+)""?");
+                            if (pForgePromos.Success) ProviderForgePromotions = pForgePromos.Groups[1].Value;
+
+                            var pForgeMaven = Regex.Match(trimmed, @"provider_forge_maven:\s*""?([^""\r\n]+)""?");
+                            if (pForgeMaven.Success) ProviderForgeMaven = pForgeMaven.Groups[1].Value;
+
+                            var pNeoForgeMeta = Regex.Match(trimmed, @"provider_neoforge_meta:\s*""?([^""\r\n]+)""?");
+                            if (pNeoForgeMeta.Success) ProviderNeoForgeMeta = pNeoForgeMeta.Groups[1].Value;
+
+                            var pNeoForgeMaven = Regex.Match(trimmed, @"provider_neoforge_maven:\s*""?([^""\r\n]+)""?");
+                            if (pNeoForgeMaven.Success) ProviderNeoForgeMaven = pNeoForgeMaven.Groups[1].Value;
+
+                            var pBedrock = Regex.Match(trimmed, @"provider_bedrock_kittizz:\s*""?([^""\r\n]+)""?");
+                            if (pBedrock.Success) ProviderBedrockKittizz = pBedrock.Groups[1].Value;
+
+                            var pPocketmine = Regex.Match(trimmed, @"provider_pocketmine_releases:\s*""?([^""\r\n]+)""?");
+                            if (pPocketmine.Success) ProviderPocketmineReleases = pPocketmine.Groups[1].Value;
+
+                            var pPhp = Regex.Match(trimmed, @"provider_php_releases:\s*""?([^""\r\n]+)""?");
+                            if (pPhp.Success) ProviderPhpReleases = pPhp.Groups[1].Value;
+
+                            var pAdoptium = Regex.Match(trimmed, @"provider_adoptium_api:\s*""?([^""\r\n]+)""?");
+                            if (pAdoptium.Success) ProviderAdoptiumApi = pAdoptium.Groups[1].Value;
+
+                            var pModrinth = Regex.Match(trimmed, @"provider_modrinth_api:\s*""?([^""\r\n]+)""?");
+                            if (pModrinth.Success) ProviderModrinthApi = pModrinth.Groups[1].Value;
+
+                            var pCurseForge = Regex.Match(trimmed, @"provider_curseforge_api:\s*""?([^""\r\n]+)""?");
+                            if (pCurseForge.Success) ProviderCurseForgeApi = pCurseForge.Groups[1].Value;
+
+                            var pPlayit = Regex.Match(trimmed, @"provider_playit_api:\s*""?([^""\r\n]+)""?");
+                            if (pPlayit.Success) ProviderPlayitApi = pPlayit.Groups[1].Value;
+
+                            var pPlayitStatus = Regex.Match(trimmed, @"provider_playit_status:\s*""?([^""\r\n]+)""?");
+                            if (pPlayitStatus.Success) ProviderPlayitStatus = pPlayitStatus.Groups[1].Value;
+
+                            var pGeyser = Regex.Match(trimmed, @"provider_geyser_api:\s*""?([^""\r\n]+)""?");
+                            if (pGeyser.Success) ProviderGeyserApi = pGeyser.Groups[1].Value;
+
+                            var hcPlayit = Regex.Match(trimmed, @"health_check_playit:\s*""?([^""\r\n]+)""?");
+                            if (hcPlayit.Success) HealthCheckPlayit = hcPlayit.Groups[1].Value;
+
+                            var hcAdoptium = Regex.Match(trimmed, @"health_check_adoptium:\s*""?([^""\r\n]+)""?");
+                            if (hcAdoptium.Success) HealthCheckAdoptium = hcAdoptium.Groups[1].Value;
+
+                            var hcModrinth = Regex.Match(trimmed, @"health_check_modrinth:\s*""?([^""\r\n]+)""?");
+                            if (hcModrinth.Success) HealthCheckModrinth = hcModrinth.Groups[1].Value;
+
+                            var bPlayitUrl = Regex.Match(trimmed, @"binary_playit_download_url:\s*""?([^""\r\n]+)""?");
+                            if (bPlayitUrl.Success) BinaryPlayitDownloadUrl = bPlayitUrl.Groups[1].Value;
+
+                            var bPlayitSha = Regex.Match(trimmed, @"binary_playit_sha256:\s*""?([^""\r\n]+)""?");
+                            if (bPlayitSha.Success) BinaryPlayitSha256 = bPlayitSha.Groups[1].Value;
+
+                            var bCloudflaredUrl = Regex.Match(trimmed, @"binary_cloudflared_download_url:\s*""?([^""\r\n]+)""?");
+                            if (bCloudflaredUrl.Success) BinaryCloudflaredDownloadUrl = bCloudflaredUrl.Groups[1].Value;
+
+                            var bCloudflaredSha = Regex.Match(trimmed, @"binary_cloudflared_sha256:\s*""?([^""\r\n]+)""?");
+                            if (bCloudflaredSha.Success) BinaryCloudflaredSha256 = bCloudflaredSha.Groups[1].Value;
                         }
                     }
 
@@ -248,7 +407,7 @@ namespace PocketMC.Infrastructure.Configuration
                 if (response.IsSuccessStatusCode)
                 {
                     string yaml = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
-                    if (!string.IsNullOrWhiteSpace(yaml) && yaml.Contains("link_"))
+                    if (!string.IsNullOrWhiteSpace(yaml) && (yaml.Contains("link_") || yaml.Contains("provider_") || yaml.Contains("app_") || yaml.Contains("version")))
                     {
                         ParseYamlContent(yaml, preserveLocalVersion: true);
 

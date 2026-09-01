@@ -74,6 +74,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         DataContext = _viewModel;
 
         InitializeComponent();
+        Title = PocketMC.Infrastructure.Configuration.AppConfig.AppName;
+        AppTitleBar.Title = PocketMC.Infrastructure.Configuration.AppConfig.AppName;
         ApplyDynamicWindowSize();
 
         if (visualService is ShellVisualService concreteVisual)

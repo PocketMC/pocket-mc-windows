@@ -11,8 +11,19 @@ namespace PocketMC.Infrastructure.Php
         string DisplayName,
         string Tag,
         string AssetPattern,
-        string FallbackDownloadUrl,
-        string TargetPocketMineVersion);
+        string AssetFileName,
+        string TargetPocketMineVersion)
+    {
+        public string FallbackDownloadUrl
+        {
+            get
+            {
+                string baseReleases = PocketMC.Infrastructure.Configuration.AppConfig.ProviderPhpReleases;
+                string directDownloadBase = baseReleases.Replace("api.github.com/repos", "github.com");
+                return $"{directDownloadBase}/download/{Tag}/{AssetFileName}";
+            }
+        }
+    }
 
     public static class PhpRuntimeResolver
     {
@@ -25,7 +36,7 @@ namespace PocketMC.Infrastructure.Php
                 DisplayName: "PHP 8.2 (PocketMine-MP 5.x - Recommended)",
                 Tag: "pm5-php-8.2-latest",
                 AssetPattern: "Windows-x64-PM5",
-                FallbackDownloadUrl: "https://github.com/pmmp/PHP-Binaries/releases/download/pm5-php-8.2-latest/PHP-8.2-Windows-x64-PM5.zip",
+                AssetFileName: "PHP-8.2-Windows-x64-PM5.zip",
                 TargetPocketMineVersion: "PocketMine-MP 5.x"
             ),
             new(
@@ -33,7 +44,7 @@ namespace PocketMC.Infrastructure.Php
                 DisplayName: "PHP 8.3 (PocketMine-MP 5.x / 6.x)",
                 Tag: "pm5-php-8.3-latest",
                 AssetPattern: "Windows-x64-PM5",
-                FallbackDownloadUrl: "https://github.com/pmmp/PHP-Binaries/releases/download/pm5-php-8.3-latest/PHP-8.3-Windows-x64-PM5.zip",
+                AssetFileName: "PHP-8.3-Windows-x64-PM5.zip",
                 TargetPocketMineVersion: "PocketMine-MP 5.x / 6.x"
             ),
             new(
@@ -41,7 +52,7 @@ namespace PocketMC.Infrastructure.Php
                 DisplayName: "PHP 8.0 (PocketMine-MP 4.x Legacy)",
                 Tag: "pm4-php-8.0-latest",
                 AssetPattern: "Windows-x64-PM4",
-                FallbackDownloadUrl: "https://github.com/pmmp/PHP-Binaries/releases/download/pm4-php-8.0-latest/PHP-Windows-x64-PM4.zip",
+                AssetFileName: "PHP-Windows-x64-PM4.zip",
                 TargetPocketMineVersion: "PocketMine-MP 4.x"
             ),
             new(
@@ -49,7 +60,7 @@ namespace PocketMC.Infrastructure.Php
                 DisplayName: "PHP 8.1 (PocketMine-MP 4.x Legacy)",
                 Tag: "pm4-php-8.1-latest",
                 AssetPattern: "Windows-x64-PM4",
-                FallbackDownloadUrl: "https://github.com/pmmp/PHP-Binaries/releases/download/pm4-php-8.1-latest/PHP-Windows-x64-PM4.zip",
+                AssetFileName: "PHP-Windows-x64-PM4.zip",
                 TargetPocketMineVersion: "PocketMine-MP 4.x"
             )
         };

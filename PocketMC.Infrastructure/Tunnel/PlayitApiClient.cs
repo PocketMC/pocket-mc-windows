@@ -298,7 +298,7 @@ namespace PocketMC.Infrastructure.Tunnel
 
     public class PlayitApiClient
     {
-        private const string BaseApiUrl = "https://api.playit.gg";
+        private static string BaseApiUrl => PocketMC.Infrastructure.Configuration.AppConfig.ProviderPlayitApi;
         private static readonly Regex SecretRegex = new(@"secret_key\s*=\s*""([^""]+)""", RegexOptions.Compiled);
         private readonly HttpClient _httpClient;
         private readonly ApplicationState _applicationState;
@@ -313,7 +313,7 @@ namespace PocketMC.Infrastructure.Tunnel
             _httpClient = httpClient ?? new HttpClient();
             if (!_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
             {
-                _httpClient.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop");
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName}-Desktop/{PocketMC.Infrastructure.Configuration.AppConfig.AppVersion}");
             }
 
             _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json");

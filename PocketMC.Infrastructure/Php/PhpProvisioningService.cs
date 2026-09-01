@@ -255,8 +255,9 @@ namespace PocketMC.Infrastructure.Php
                 {
                     try
                     {
+                        string baseReleases = PocketMC.Infrastructure.Configuration.AppConfig.ProviderPhpReleases;
                         var response = await _httpClient.GetFromJsonAsync<JsonObject>(
-                            $"https://api.github.com/repos/pmmp/PHP-Binaries/releases/tags/{def.Tag}", cancellationToken);
+                            $"{baseReleases}/tags/{def.Tag}", cancellationToken);
                         var assets = response?["assets"] as JsonArray;
                         if (assets != null)
                         {

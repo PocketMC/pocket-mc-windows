@@ -33,7 +33,6 @@ namespace PocketMC.Desktop.Infrastructure
 
     public sealed class UpdateService : IDisposable
     {
-        private const string GitHubRepo = "https://github.com/PocketMC/pocket-mc-windows";
         private const bool IncludePreReleases = false;
 
         private readonly ILogger<UpdateService> _logger;
@@ -180,7 +179,8 @@ namespace PocketMC.Desktop.Infrastructure
 
         private static UpdateManager CreateManager()
         {
-            var source = new GithubSource(GitHubRepo, accessToken: null, IncludePreReleases);
+            var repoUrl = PocketMC.Infrastructure.Configuration.AppConfig.LinkGitHub;
+            var source = new GithubSource(repoUrl, accessToken: null, IncludePreReleases);
             return new UpdateManager(source);
         }
 

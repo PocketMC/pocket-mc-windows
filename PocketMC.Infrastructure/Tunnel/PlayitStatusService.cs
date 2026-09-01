@@ -15,7 +15,7 @@ namespace PocketMC.Infrastructure.Tunnel
         private readonly HttpClient _httpClient;
         private readonly ILogger<PlayitStatusService> _logger;
 
-        private const string PrimaryStatusUrl = "https://status.playit.gg/api/status?days=1";
+        private static string PrimaryStatusUrl => PocketMC.Infrastructure.Configuration.AppConfig.ProviderPlayitStatus;
 
         public PlayitStatusService(HttpClient httpClient, ILogger<PlayitStatusService> logger)
         {
@@ -81,8 +81,7 @@ namespace PocketMC.Infrastructure.Tunnel
             try
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
-                // Add required headers if necessary, typically User-Agent
-                request.Headers.Add("User-Agent", "PocketMC-DesktopApp");
+                request.Headers.Add("User-Agent", $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName}-Desktop/{PocketMC.Infrastructure.Configuration.AppConfig.AppVersion}");
 
                 var response = await _httpClient.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();

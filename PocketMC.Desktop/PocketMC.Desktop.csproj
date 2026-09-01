@@ -8,12 +8,7 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <NoWarn>$(NoWarn);CS0105</NoWarn>
     
-    <!-- OS-Level App Details -->
-    <AssemblyName>PocketMC</AssemblyName>
-    <Product>PocketMC</Product>
-    <Company>DS Labs</Company>
-    <Description>PocketMC</Description>
-    <Title>PocketMC</Title>
+    <!-- OS-Level App Details & Assembly Identity dynamically inherited from Directory.Build.props (pocketmc.yml) -->
   </PropertyGroup>
 
   <ItemGroup>

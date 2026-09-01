@@ -103,17 +103,17 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IGeyserDetector, GeyserDetector>();
             services.AddSingleton<ISimpleVoiceChatDetector, SimpleVoiceChatDetector>();
             services.AddSingleton<IImageProcessingService, ImageProcessingService>();
-            services.AddHttpClient<PhpProvisioningService>(client => client.DefaultRequestHeaders.Add("User-Agent", $"PocketMC.Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<PhpProvisioningService>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
             services.AddSingleton<GeyserProvisioningService>();
             services.AddSingleton<BedrockAddonInstaller>();
 
-            services.AddHttpClient<VanillaProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<FabricProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<ForgeProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<NeoForgeProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<PaperProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<PocketmineProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<BedrockBdsProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<VanillaProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<FabricProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<ForgeProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<NeoForgeProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<PaperProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<PocketmineProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<BedrockBdsProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
 
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<VanillaProvider>());
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<FabricProvider>());

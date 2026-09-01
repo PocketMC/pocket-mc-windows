@@ -30,7 +30,14 @@ namespace PocketMC.Desktop.Features.Shell
             _dialogService = dialogService;
             _whatsNewService = whatsNewService;
 
+            TxtAboutTitle.Text = $"About {AppConfig.AppName}";
             TxtVersion.Text = $"Version {AppConfig.AppVersion}";
+            TxtAppTitle.Text = $"{AppConfig.AppName} Desktop";
+            TxtAppDescription.Text = AppConfig.AppDescription;
+            TxtOrgName.Text = AppConfig.OrganizationName;
+            TxtOrgTagline.Text = AppConfig.OrganizationTagline;
+            TxtCommunityDesc.Text = $"Join our Discord server to get help, share tips, and connect with other {AppConfig.AppName} users.";
+            TxtDonationDesc.Text = $"Support the development of {AppConfig.AppName}! If you love this project and find it useful, consider buying us a coffee.";
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;

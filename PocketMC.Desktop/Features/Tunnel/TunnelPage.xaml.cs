@@ -434,7 +434,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "https://playit.gg",
+                    FileName = PocketMC.Infrastructure.Configuration.AppConfig.LinkPlayitWebsite,
                     UseShellExecute = true
                 });
             }
@@ -450,7 +450,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "https://playit.gg/account/agents",
+                    FileName = PocketMC.Infrastructure.Configuration.AppConfig.LinkPlayitAgents,
                     UseShellExecute = true
                 });
             }

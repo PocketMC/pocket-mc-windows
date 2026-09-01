@@ -41,7 +41,8 @@ public class PocketmineProvider : IServerSoftwareProvider
         var versions = new List<MinecraftVersion>();
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<JsonArray>("https://api.github.com/repos/pmmp/PocketMine-MP/releases?per_page=100");
+            string releasesUrl = $"{PocketMC.Infrastructure.Configuration.AppConfig.ProviderPocketmineReleases}?per_page=100";
+            var response = await _httpClient.GetFromJsonAsync<JsonArray>(releasesUrl);
             if (response != null)
             {
                 foreach (var node in response)
@@ -82,7 +83,8 @@ public class PocketmineProvider : IServerSoftwareProvider
         // Try direct tag release endpoint first for instant resolution
         try
         {
-            var releaseObj = await _httpClient.GetFromJsonAsync<JsonObject>($"https://api.github.com/repos/pmmp/PocketMine-MP/releases/tags/{versionId}", cancellationToken);
+            string baseReleases = PocketMC.Infrastructure.Configuration.AppConfig.ProviderPocketmineReleases;
+            var releaseObj = await _httpClient.GetFromJsonAsync<JsonObject>($"{baseReleases}/tags/{versionId}", cancellationToken);
             var assets = releaseObj?["assets"] as JsonArray;
             if (assets != null)
             {
@@ -97,7 +99,8 @@ public class PocketmineProvider : IServerSoftwareProvider
 
         if (string.IsNullOrEmpty(downloadUrl))
         {
-            var response = await _httpClient.GetFromJsonAsync<JsonArray>("https://api.github.com/repos/pmmp/PocketMine-MP/releases?per_page=100", cancellationToken);
+            string baseReleases = PocketMC.Infrastructure.Configuration.AppConfig.ProviderPocketmineReleases;
+            var response = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseReleases}?per_page=100", cancellationToken);
             if (response != null)
             {
                 var release = response.FirstOrDefault(n => n is JsonObject r && r["tag_name"]?.ToString() == versionId) as JsonObject;
@@ -116,7 +119,9 @@ public class PocketmineProvider : IServerSoftwareProvider
         // Direct GitHub asset download fallback
         if (string.IsNullOrEmpty(downloadUrl))
         {
-            downloadUrl = $"https://github.com/pmmp/PocketMine-MP/releases/download/{versionId}/PocketMine-MP.phar";
+            string baseReleases = PocketMC.Infrastructure.Configuration.AppConfig.ProviderPocketmineReleases;
+            string directDownloadBase = baseReleases.Replace("api.github.com/repos", "github.com");
+            downloadUrl = $"{directDownloadBase}/download/{versionId}/PocketMine-MP.phar";
         }
 
         await _downloader.DownloadFileAsync(downloadUrl, destinationPath, null, progress, cancellationToken);

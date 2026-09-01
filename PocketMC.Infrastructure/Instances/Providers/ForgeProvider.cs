@@ -30,7 +30,7 @@ public class ForgeProvider : IServerSoftwareProvider
 
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
-        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.minecraftforge/index.json";
+        string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgeMeta;
         var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
         var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
@@ -105,7 +105,7 @@ public class ForgeProvider : IServerSoftwareProvider
 
     public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
-        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.minecraftforge/index.json";
+        string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgeMeta;
         var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
         var loaders = new List<ModLoaderVersion>();
@@ -162,8 +162,8 @@ public class ForgeProvider : IServerSoftwareProvider
     public async Task DownloadForgeJarAsync(string mcVersion, string forgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // Build the download URL for the installer
-        // Official: https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.2.20/forge-1.20.1-47.2.20-installer.jar
-        string url = $"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar";
+        string baseMaven = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgeMaven;
+        string url = $"{baseMaven}/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar";
 
         // NOTE: Forge installers need to be RUN to generate the server. 
         // For now, we download the installer. The instance launch logic will need to handle the "installation" step.
@@ -172,7 +172,8 @@ public class ForgeProvider : IServerSoftwareProvider
 
     private async Task<string> GetLatestForgeVersionAsync(string mcVersion)
     {
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json");
+        string promosUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgePromotions;
+        var response = await _httpClient.GetFromJsonAsync<JsonObject>(promosUrl);
         if (response != null && response.TryGetPropertyValue("promos", out var promosNode) && promosNode is JsonObject promos)
         {
             // Format: "1.20.1-recommended": "47.2.0"

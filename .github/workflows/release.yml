@@ -30,10 +30,20 @@ jobs:
         shell: pwsh
         run: |
           $content = Get-Content pocketmc.yml -Raw
-          $version = if ($content -match '(?m)^version:\s*(.+)$') { $matches[1].Trim() } else { "1.0.0" }
-          $channel = if ($content -match '(?m)^channel:\s*(.+)$') { $matches[1].Trim() } else { "none" }
+          $appId = if ($content -match '(?m)^app_id:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "PocketMC" }
+          $appName = if ($content -match '(?m)^app_name:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "PocketMC" }
+          $orgName = if ($content -match '(?m)^organization_name:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "DS Labs" }
+          $version = if ($content -match '(?m)^version:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "1.0.0" }
+          $channel = if ($content -match '(?m)^channel:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "none" }
+          $githubLink = if ($content -match '(?m)^link_github:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "https://github.com/PocketMC/pocket-mc-windows" }
+          $releasesLink = if ($content -match '(?m)^link_releases:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "https://github.com/PocketMC/pocket-mc-windows/releases" }
+          echo "app_id=$appId" >> $env:GITHUB_OUTPUT
+          echo "app_name=$appName" >> $env:GITHUB_OUTPUT
+          echo "org_name=$orgName" >> $env:GITHUB_OUTPUT
           echo "version=$version" >> $env:GITHUB_OUTPUT
           echo "channel=$channel" >> $env:GITHUB_OUTPUT
+          echo "link_github=$githubLink" >> $env:GITHUB_OUTPUT
+          echo "link_releases=$releasesLink" >> $env:GITHUB_OUTPUT
 
       - name: Ensure Release Channel
         id: check_channel
@@ -84,10 +94,13 @@ jobs:
         if: steps.check_channel.outputs.skip == 'false'
         run: >
           vpk pack
-          --packId ${{ env.APP_ID }}
+          --packId ${{ steps.config.outputs.app_id }}
           --packVersion ${{ steps.config.outputs.version }}
+          --packTitle "${{ steps.config.outputs.app_name }}"
+          --packAuthors "${{ steps.config.outputs.org_name }}"
+          --icon "PocketMC.Desktop/icon.ico"
           --packDir publish
-          --mainExe "PocketMC.exe"
+          --mainExe "${{ steps.config.outputs.app_name }}.exe"
           --framework net8.0,net8.0-aspnetcore
           --runtime ${{ env.RUNTIME }}
           --outputDir Releases
@@ -163,13 +176,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.config.outputs.version }}
-          name: PocketMC v${{ steps.config.outputs.version }}
+          name: ${{ steps.config.outputs.app_name }} v${{ steps.config.outputs.version }}
           body: ${{ steps.notes.outputs.body }}
           files: |
-            Releases/PocketMC-${{ steps.config.outputs.version }}-full.nupkg
-            Releases/PocketMC-${{ steps.config.outputs.version }}-delta.nupkg
-            Releases/PocketMC-win-Setup.exe
-            Releases/PocketMC-win-Portable.zip
+            Releases/${{ steps.config.outputs.app_id }}-${{ steps.config.outputs.version }}-full.nupkg
+            Releases/${{ steps.config.outputs.app_id }}-${{ steps.config.outputs.version }}-delta.nupkg
+            Releases/${{ steps.config.outputs.app_id }}-win-Setup.exe
+            Releases/${{ steps.config.outputs.app_id }}-win-Portable.zip
             Releases/releases.win.json
             Releases/assets.win.json
             Releases/RELEASES
@@ -193,11 +206,11 @@ jobs:
           $payload = @{
             content = "<@&1493922983742537819>"
             embeds = @(@{
-              title       = "❖ PocketMC v${{ steps.config.outputs.version }} Available ❖"
+              title       = "❖ ${{ steps.config.outputs.app_name }} v${{ steps.config.outputs.version }} Available ❖"
               description = $body
               color       = 3066993
               image       = @{ url = "https://cdn.discordapp.com/attachments/1493841758864412715/1512177063572934717/banner.png" }
-              footer      = @{ text = "PocketMC Build System" }
+              footer      = @{ text = "${{ steps.config.outputs.app_name }} Build System" }
             })
             components = @(
               @{
@@ -207,13 +220,13 @@ jobs:
                     type = 2
                     style = 5
                     label = "Download Release"
-                    url = "https://github.com/PocketMC/pocket-mc-windows/releases/tag/v${{ steps.config.outputs.version }}"
+                    url = "${{ steps.config.outputs.link_releases }}/tag/v${{ steps.config.outputs.version }}"
                   },
                   @{
                     type = 2
                     style = 5
                     label = "View Full Changelog"
-                    url = "https://github.com/PocketMC/pocket-mc-windows/blob/master/CHANGELOG.md"
+                    url = "${{ steps.config.outputs.link_github }}/blob/master/CHANGELOG.md"
                   }
                 )
               }

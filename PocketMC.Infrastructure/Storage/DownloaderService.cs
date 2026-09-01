@@ -16,11 +16,24 @@ public class DownloaderService
 {
     private const string DownloadClientName = "PocketMC.Downloads";
     private const string PlayitAgentVersion = "0.17.1";
-    private const string PlayitDownloadUrl = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
-    private const string? PlayitExpectedSha256 = "9b00d6ff7d37d1052e5ae097e1348e11deae8617cd7a8ba39d1777f2006316a3";
-    private const string CloudflaredDownloadUrl = "https://github.com/cloudflare/cloudflared/releases/download/2026.8.1/cloudflared-windows-amd64.exe";
-    public static string? CloudflaredExpectedSha256 = "8f1d6f87b8756dbf37064b16e2c8251b69d816305e4f4373e1b80efb28d13b83";
     public const string CloudflaredVersion = "2026.8.1";
+
+    private static string PlayitDownloadUrl => PocketMC.Infrastructure.Configuration.AppConfig.BinaryPlayitDownloadUrl;
+    private static string? PlayitExpectedSha256 => PocketMC.Infrastructure.Configuration.AppConfig.BinaryPlayitSha256;
+    private static string CloudflaredDownloadUrl => PocketMC.Infrastructure.Configuration.AppConfig.BinaryCloudflaredDownloadUrl;
+    private static bool _cloudflaredExpectedSha256IsOverridden;
+    private static string? _cloudflaredExpectedSha256Override;
+    public static string? CloudflaredExpectedSha256
+    {
+        get => _cloudflaredExpectedSha256IsOverridden 
+            ? _cloudflaredExpectedSha256Override 
+            : PocketMC.Infrastructure.Configuration.AppConfig.BinaryCloudflaredSha256;
+        set
+        {
+            _cloudflaredExpectedSha256IsOverridden = true;
+            _cloudflaredExpectedSha256Override = value;
+        }
+    }
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DownloaderService> _logger;

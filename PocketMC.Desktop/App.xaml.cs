@@ -61,6 +61,7 @@ public partial class App : System.Windows.Application
             try
             {
                 await AppConfig.RefreshRemoteConfigAsync();
+                Infrastructure.UninstallMetadataRegistrationService.Sync();
             }
             catch
             {
@@ -71,6 +72,7 @@ public partial class App : System.Windows.Application
         AppStartupOptions startupOptions = AppStartupOptions.Parse(e.Args);
         WindowsToastNotificationService.RegisterApplication();
         ProtocolRegistrationService.Register();
+        Infrastructure.UninstallMetadataRegistrationService.Sync();
 
         _host = Host.CreateDefaultBuilder()
             .ConfigureLogging(logging =>
