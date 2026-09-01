@@ -1,12 +1,12 @@
 # ==============================================================================
 # 1. APPLICATION IDENTITY & BRANDING
 # ==============================================================================
-app_name: "PocketMC"                                                  # [Requires App Update] Locked to local binary identity & assembly
-app_title: "PocketMC"                                                 # [Requires App Update] Locked to local binary identity & assembly
-app_id: "PocketMC"                                                    # [Requires App Update] Locked to local binary identity & registry key
-organization_name: "DS Labs"                                          # [Dual: Binary & Cloud] Baked into .exe/installer metadata at build + live-updates in UI
-organization_tagline: "Selective Digital Studio · Building Software That Works" # [Dual: Binary & Cloud] Baked into assembly metadata at build + live-updates in UI
-app_description: "Local-first Minecraft server manager for Windows."  # [Dual: Binary & Cloud] Baked into assembly metadata at build + live-updates in UI
+app_name: "PocketMC"                                                  # ui changes but [Requires App Update] Locked to local binary identity & assembly
+app_title: "PocketMC"                                                 # ui changes but [Requires App Update] Locked to local binary identity & assembly
+app_id: "PocketMC"                                                    # ui changes but [Requires App Update] Locked to local binary identity & registry key
+organization_name: "DS Labs"                                          # ui changes but [Requires App Update] Locked to local binary identity & assembly
+organization_tagline: "Selective Digital Studio · Building Software That Works" # ui changes but [Requires App Update] Locked to local binary identity & assembly
+app_description: "Local-first Minecraft server manager for Windows."  # ui changes but [Requires App Update] Locked to local binary identity & assembly
 
 # ==============================================================================
 # 2. RELEASE, PACKAGING & CI/CD PIPELINE
