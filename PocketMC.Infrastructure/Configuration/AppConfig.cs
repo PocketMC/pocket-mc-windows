@@ -121,26 +121,48 @@ namespace PocketMC.Infrastructure.Configuration
             }
         }
 
-        public static string GetCacheFilePath()
+        public static string GetConfigFilePath()
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            return Path.Combine(appData, "PocketMC", "cached_config.yml");
+            return Path.Combine(appData, "PocketMC", "pocketmc.yml");
         }
 
-        public static void LoadCachedConfig()
+        public static string GetCacheFilePath() => GetConfigFilePath();
+
+        public static void LoadCachedConfig() => LoadLocalConfig();
+
+        public static void LoadLocalConfig()
         {
             try
             {
-                string cachePath = GetCacheFilePath();
-                if (File.Exists(cachePath))
+                string configPath = GetConfigFilePath();
+
+                // Gracefully migrate legacy cached_config.yml if found
+                if (!File.Exists(configPath))
                 {
-                    string content = File.ReadAllText(cachePath);
+                    string legacyPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PocketMC", "cached_config.yml");
+                    if (File.Exists(legacyPath))
+                    {
+                        try
+                        {
+                            File.Move(legacyPath, configPath);
+                        }
+                        catch
+                        {
+                            configPath = legacyPath;
+                        }
+                    }
+                }
+
+                if (File.Exists(configPath))
+                {
+                    string content = File.ReadAllText(configPath);
                     ParseYamlContent(content, preserveLocalVersion: true);
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"PocketMC AppConfig failed to load cached configuration: {ex}");
+                Debug.WriteLine($"PocketMC AppConfig failed to load local configuration: {ex}");
             }
         }
 
@@ -411,20 +433,20 @@ namespace PocketMC.Infrastructure.Configuration
                     {
                         ParseYamlContent(yaml, preserveLocalVersion: true);
 
-                        // Save to local cache file
+                        // Save to local config file
                         try
                         {
-                            string cachePath = GetCacheFilePath();
-                            string? dir = Path.GetDirectoryName(cachePath);
+                            string configPath = GetConfigFilePath();
+                            string? dir = Path.GetDirectoryName(configPath);
                             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                             {
                                 Directory.CreateDirectory(dir);
                             }
-                            File.WriteAllText(cachePath, yaml);
+                            File.WriteAllText(configPath, yaml);
                         }
-                        catch (Exception cacheEx)
+                        catch (Exception configEx)
                         {
-                            Debug.WriteLine($"Failed to write remote config cache: {cacheEx}");
+                            Debug.WriteLine($"Failed to write remote config to local file: {configEx}");
                         }
 
                         return true;
