@@ -89,8 +89,8 @@ namespace PocketMC.Infrastructure.Configuration
         public static string HealthCheckModrinth { get; private set; } = "https://api.modrinth.com/";
 
         // Agent Binary Endpoints & Checksums
-        public static string BinaryPlayitDownloadUrl { get; private set; } = "https://github.com/playit-cloud/playit-agent/releases/download/v0.17.1/playit-windows-x86_64-signed.exe";
-        public static string? BinaryPlayitSha256 { get; private set; } = "9b00d6ff7d37d1052e5ae097e1348e11deae8617cd7a8ba39d1777f2006316a3";
+        public static string BinaryPlayitDownloadUrl { get; private set; } = "https://github.com/playit-cloud/playit-agent/releases/download/v1.0.10/playit-windows-x86_64-signed.exe";
+        public static string? BinaryPlayitSha256 { get; private set; } = "2dbdaad119844cbbc062cc9774b8b462afa5f1b4b7832a9fc5ef4676cae887cf";
         public static string BinaryCloudflaredDownloadUrl { get; private set; } = "https://github.com/cloudflare/cloudflared/releases/download/2026.8.1/cloudflared-windows-amd64.exe";
         public static string? BinaryCloudflaredSha256 { get; private set; } = "8f1d6f87b8756dbf37064b16e2c8251b69d816305e4f4373e1b80efb28d13b83";
 

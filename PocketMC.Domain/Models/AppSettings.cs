@@ -19,6 +19,7 @@ namespace PocketMC.Domain.Models
         public int SchemaVersion { get; set; } = 2;
         public string? AppRootPath { get; set; }
         public string? PlayitConfigDirectory { get; set; }
+        public string? PlayitVersion { get; set; } = "1.0.10";
         public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }
         public bool HasCompletedFirstLaunch { get; set; }
         public bool StartWithWindows { get; set; } = false;

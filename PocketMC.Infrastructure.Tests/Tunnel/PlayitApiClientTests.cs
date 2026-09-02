@@ -284,6 +284,47 @@ public class PlayitApiClientTests : IDisposable
 
         Assert.True(result.Success);
     }
+
+    [Fact]
+    public async Task GetAgentRundataAsync_WhenApiSucceeds_ParsesAndSyncsAgentId()
+    {
+        _appState.Settings.PlayitPartnerConnection = new PlayitPartnerConnection { AgentSecretKey = "dummy-key" };
+
+        var jsonResponse = """
+        {
+            "status": "success",
+            "data": {
+                "agent_id": "9d53fba3-3551-47e5-a00e-ed188be26bda",
+                "tunnels": [],
+                "permissions": {
+                    "is_self_managed": true,
+                    "has_premium": false,
+                    "account_status": "verified"
+                }
+            }
+        }
+        """;
+
+        var client = CreateClient((req, ct) =>
+        {
+            Assert.Equal(HttpMethod.Post, req.Method);
+            Assert.Equal("https://api.playit.gg/v1/agents/rundata", req.RequestUri?.ToString());
+            Assert.Equal("Agent-Key dummy-key", req.Headers.Authorization?.ToString());
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(jsonResponse)
+            });
+        });
+
+        var result = await client.GetAgentRundataAsync();
+
+        Assert.True(result.Success);
+        Assert.Equal("9d53fba3-3551-47e5-a00e-ed188be26bda", result.AgentId);
+        Assert.Equal("verified", result.AccountStatus);
+        Assert.False(result.HasPremium);
+        Assert.Equal("9d53fba3-3551-47e5-a00e-ed188be26bda", _appState.Settings.PlayitPartnerConnection.AgentId);
+    }
 }
 
 internal sealed class DelegateHttpMessageHandler : HttpMessageHandler

@@ -100,6 +100,12 @@ namespace PocketMC.Desktop.Features.Settings
             "Name", "Last Modified", "Size", "Loader Type", "Source"
         };
 
+        private bool _isLoading = true;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
 
         public bool IsServerRunning => _isRunningCheck();
         public bool ShowServerRunningAddonMessage => IsServerRunning && (_allMods.Count > 0 || _allPlugins.Count > 0 || _allBehaviorPacks.Count > 0 || _allResourcePacks.Count > 0);
@@ -431,64 +437,72 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task LoadAddonsCoreAsync()
         {
-            var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Infrastructure.Marketplace.ModrinthService)) as PocketMC.Infrastructure.Marketplace.ModrinthService;
-            if (modrinthService != null)
+            DispatchToUI(() => IsLoading = true);
+            try
             {
-                await _manifestService.SyncManifestAsync(_serverDir, modrinthService, _metadata.Compatibility);
-            }
+                var modrinthService = _serviceProvider.GetService(typeof(PocketMC.Infrastructure.Marketplace.ModrinthService)) as PocketMC.Infrastructure.Marketplace.ModrinthService;
+                if (modrinthService != null)
+                {
+                    await _manifestService.SyncManifestAsync(_serverDir, modrinthService, _metadata.Compatibility);
+                }
 
-            var manifest = _manifestService.LoadManifest(_serverDir);
-            if (IsBedrockDedicated)
-            {
-                LoadServerPropertiesTexturepackRequired();
-                var (bps, rps) = await BuildBedrockPacksAsync();
-                _allBehaviorPacks = bps;
-                _allResourcePacks = rps;
-                _allMods = new List<ModItemViewModel>();
-                _allPlugins = new List<PluginItemViewModel>();
-                ApplyFiltersAndSort();
-            }
-            else if (IsPocketmine)
-            {
-                var items = BuildPocketminePluginList(manifest);
-                _allPlugins = items;
-                _allMods = new List<ModItemViewModel>();
-                _allBehaviorPacks = new List<BedrockPackItemViewModel>();
-                _allResourcePacks = new List<BedrockPackItemViewModel>();
-                ApplyFiltersAndSort();
-            }
-            else
-            {
-                var inventory = await _inventoryService.ScanAsync(_metadata, _serverDir);
-                var pluginItems = inventory
-                    .Where(item => item.Kind == AddonKind.Plugin)
-                    .Select(CreatePluginViewModel)
-                    .ToList();
-                var modItems = inventory
-                    .Where(item => item.Kind == AddonKind.Mod)
-                    .Select(CreateModViewModel)
-                    .ToList();
-                _allPlugins = pluginItems;
-                _allMods = modItems;
-                _allBehaviorPacks = new List<BedrockPackItemViewModel>();
-                _allResourcePacks = new List<BedrockPackItemViewModel>();
-                ApplyFiltersAndSort();
-            }
+                var manifest = _manifestService.LoadManifest(_serverDir);
+                if (IsBedrockDedicated)
+                {
+                    LoadServerPropertiesTexturepackRequired();
+                    var (bps, rps) = await BuildBedrockPacksAsync();
+                    _allBehaviorPacks = bps;
+                    _allResourcePacks = rps;
+                    _allMods = new List<ModItemViewModel>();
+                    _allPlugins = new List<PluginItemViewModel>();
+                    ApplyFiltersAndSort();
+                }
+                else if (IsPocketmine)
+                {
+                    var items = BuildPocketminePluginList(manifest);
+                    _allPlugins = items;
+                    _allMods = new List<ModItemViewModel>();
+                    _allBehaviorPacks = new List<BedrockPackItemViewModel>();
+                    _allResourcePacks = new List<BedrockPackItemViewModel>();
+                    ApplyFiltersAndSort();
+                }
+                else
+                {
+                    var inventory = await _inventoryService.ScanAsync(_metadata, _serverDir);
+                    var pluginItems = inventory
+                        .Where(item => item.Kind == AddonKind.Plugin)
+                        .Select(CreatePluginViewModel)
+                        .ToList();
+                    var modItems = inventory
+                        .Where(item => item.Kind == AddonKind.Mod)
+                        .Select(CreateModViewModel)
+                        .ToList();
+                    _allPlugins = pluginItems;
+                    _allMods = modItems;
+                    _allBehaviorPacks = new List<BedrockPackItemViewModel>();
+                    _allResourcePacks = new List<BedrockPackItemViewModel>();
+                    ApplyFiltersAndSort();
+                }
 
-            var incompatibleMods = _allMods.Where(m => m.IsIncompatible).ToList();
-            var incompatiblePlugins = _allPlugins.Where(p => p.IsIncompatible).ToList();
-            int incompatibleCount = incompatibleMods.Count + incompatiblePlugins.Count;
+                var incompatibleMods = _allMods.Where(m => m.IsIncompatible).ToList();
+                var incompatiblePlugins = _allPlugins.Where(p => p.IsIncompatible).ToList();
+                int incompatibleCount = incompatibleMods.Count + incompatiblePlugins.Count;
 
-            if (incompatibleCount > 0 && !DontAskAgainIncompatible)
-            {
-                IncompatibleWarningMessage = incompatibleCount == 1
-                    ? "1 of your installed add-ons appears to be incompatible with this server. Would you like to automatically remove it?"
-                    : $"{incompatibleCount} of your installed add-ons appear to be incompatible with this server. Would you like to automatically remove them?";
-                ShowIncompatibleWarning = true;
+                if (incompatibleCount > 0 && !DontAskAgainIncompatible)
+                {
+                    IncompatibleWarningMessage = incompatibleCount == 1
+                        ? "1 of your installed add-ons appears to be incompatible with this server. Would you like to automatically remove it?"
+                        : $"{incompatibleCount} of your installed add-ons appear to be incompatible with this server. Would you like to automatically remove them?";
+                    ShowIncompatibleWarning = true;
+                }
+                else
+                {
+                    ShowIncompatibleWarning = false;
+                }
             }
-            else
+            finally
             {
-                ShowIncompatibleWarning = false;
+                DispatchToUI(() => IsLoading = false);
             }
         }
 

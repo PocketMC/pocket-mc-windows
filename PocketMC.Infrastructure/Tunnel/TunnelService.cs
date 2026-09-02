@@ -205,9 +205,9 @@ namespace PocketMC.Infrastructure.Tunnel
 
                     return polled ?? new TunnelResolutionResult
                     {
-                        Status = TunnelResolutionResult.TunnelStatus.FoundPendingAllocation,
-                        ErrorMessage = "Playit tunnel exists but no public address is allocated yet.",
-                        FailureCode = PortFailureCode.PublicReachabilityFailure,
+                        Status = TunnelResolutionResult.TunnelStatus.LimitReached,
+                        ErrorMessage = "Playit tunnel exists but no public address could be allocated (tunnel limit reached). Visit playit.gg to manage or delete unused tunnels.",
+                        FailureCode = PortFailureCode.TunnelLimitReached,
                         TunnelId = matching.Id,
                         ExistingTunnels = result.Tunnels
                     };
@@ -329,13 +329,14 @@ namespace PocketMC.Infrastructure.Tunnel
                 createResult.TunnelId);
 
             // Re-fetch tunnels to resolve the connect address.
-            // The newly created tunnel may take a moment to get a public allocation,
-            // so we poll briefly.
-            for (int attempt = 0; attempt < 6; attempt++)
+            // Playit Anycast routing can take 5-25s to allocate dedicated edge slots.
+            // We poll with progressive backoff and return immediately as soon as the address is ready.
+            for (int attempt = 0; attempt < 30; attempt++)
             {
                 if (attempt > 0)
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                    int delayMs = attempt < 3 ? 500 : 1000;
+                    await Task.Delay(TimeSpan.FromMilliseconds(delayMs));
                 }
 
                 TunnelListResult refreshed = await _apiClient.GetTunnelsAsync();
@@ -358,17 +359,16 @@ namespace PocketMC.Infrastructure.Tunnel
                 }
             }
 
-            // Tunnel was created but we couldn't resolve a public address yet.
-            // This is non-fatal — the address will appear once the allocation completes.
+            // Tunnel was created but we couldn't resolve a public address within the timeout (allocation limit reached)
             _logger.LogWarning(
-                "Tunnel was created for port {Port} but a public address is not yet available.",
+                "Tunnel was created for port {Port} but a public address could not be allocated within timeout (tunnel limit reached).",
                 request.Port);
 
             return new TunnelResolutionResult
             {
-                Status = TunnelResolutionResult.TunnelStatus.FoundPendingAllocation,
-                FailureCode = PortFailureCode.PublicReachabilityFailure,
-                ErrorMessage = "Address pending: Playit tunnel created, waiting for public address allocation."
+                Status = TunnelResolutionResult.TunnelStatus.LimitReached,
+                FailureCode = PortFailureCode.TunnelLimitReached,
+                ErrorMessage = "Playit could not allocate a public address (tunnel limit reached). Visit playit.gg to manage your tunnels."
             };
         }
 
@@ -376,9 +376,10 @@ namespace PocketMC.Infrastructure.Tunnel
             PortCheckRequest request,
             TunnelResolutionResult.TunnelStatus successStatus)
         {
-            for (int attempt = 0; attempt < 3; attempt++)
+            for (int attempt = 0; attempt < 30; attempt++)
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                int delayMs = attempt < 2 ? 500 : 1000;
+                await Task.Delay(TimeSpan.FromMilliseconds(delayMs));
                 TunnelListResult refreshed = await _apiClient.GetTunnelsAsync();
                 if (!refreshed.Success)
                 {
@@ -430,9 +431,10 @@ namespace PocketMC.Infrastructure.Tunnel
 
         private async Task<TunnelResolutionResult?> PollPendingSimpleVoiceChatAllocationAsync(PortCheckRequest request)
         {
-            for (int attempt = 0; attempt < 3; attempt++)
+            for (int attempt = 0; attempt < 30; attempt++)
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                int delayMs = attempt < 2 ? 500 : 1000;
+                await Task.Delay(TimeSpan.FromMilliseconds(delayMs));
                 TunnelListResult refreshed = await _apiClient.GetTunnelsAsync();
                 if (!refreshed.Success)
                 {

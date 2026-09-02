@@ -107,6 +107,15 @@ namespace PocketMC.Infrastructure.Tunnel
         public string LimitErrorText => $"Tunnel Limit Reached for {TunnelTypeDisplay}";
     }
 
+    public class PlayitAgentRundataResult
+    {
+        public bool Success { get; set; }
+        public string? AgentId { get; set; }
+        public bool HasPremium { get; set; }
+        public string? AccountStatus { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+
     public class TunnelListResult
     {
         public bool Success { get; set; }
@@ -331,7 +340,101 @@ namespace PocketMC.Infrastructure.Tunnel
 
         public bool HasPartnerConnection()
         {
-            return !string.IsNullOrWhiteSpace(GetPartnerConnection()?.AgentSecretKey);
+            return !string.IsNullOrWhiteSpace(GetSecretKey());
+        }
+
+        public async Task<PlayitAgentRundataResult> GetAgentRundataAsync(CancellationToken cancellationToken = default)
+        {
+            string? secretKey = GetSecretKey();
+            if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                return new PlayitAgentRundataResult
+                {
+                    Success = false,
+                    ErrorMessage = "No Playit secret key found."
+                };
+            }
+
+            try
+            {
+                using HttpRequestMessage request = BuildAuthorizedRequest(HttpMethod.Post, "/v1/agents/rundata", secretKey, new { });
+                using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new PlayitAgentRundataResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"Rundata returned HTTP {(int)response.StatusCode}"
+                    };
+                }
+
+                string body = await response.Content.ReadAsStringAsync(cancellationToken);
+                using JsonDocument doc = JsonDocument.Parse(body);
+                JsonElement root = doc.RootElement;
+
+                if (root.TryGetProperty("status", out JsonElement statusEl) && statusEl.GetString() == "success" &&
+                    root.TryGetProperty("data", out JsonElement dataEl))
+                {
+                    string? agentId = dataEl.TryGetProperty("agent_id", out JsonElement agentIdEl) ? agentIdEl.GetString() : null;
+                    bool hasPremium = false;
+                    string? accountStatus = null;
+
+                    if (dataEl.TryGetProperty("permissions", out JsonElement permEl))
+                    {
+                        if (permEl.TryGetProperty("has_premium", out JsonElement premEl)) hasPremium = premEl.GetBoolean();
+                        if (permEl.TryGetProperty("account_status", out JsonElement accStatusEl)) accountStatus = accStatusEl.GetString();
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(agentId))
+                    {
+                        SyncResolvedAgentId(agentId, secretKey, accountStatus);
+                    }
+
+                    return new PlayitAgentRundataResult
+                    {
+                        Success = true,
+                        AgentId = agentId,
+                        HasPremium = hasPremium,
+                        AccountStatus = accountStatus
+                    };
+                }
+
+                return new PlayitAgentRundataResult { Success = false, ErrorMessage = "Invalid rundata response structure." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to fetch Playit agent rundata.");
+                return new PlayitAgentRundataResult { Success = false, ErrorMessage = ex.Message };
+            }
+        }
+
+        public void SyncResolvedAgentId(string agentId, string? secretKey = null, string? accountStatus = null)
+        {
+            if (string.IsNullOrWhiteSpace(agentId)) return;
+
+            var currentConn = _applicationState.Settings.PlayitPartnerConnection;
+            if (currentConn != null && currentConn.AgentId == agentId && !string.IsNullOrWhiteSpace(currentConn.AgentSecretKey))
+            {
+                return;
+            }
+
+            var settings = _settingsManager.Load();
+            secretKey ??= GetSecretKey();
+
+            settings.PlayitPartnerConnection = new PlayitPartnerConnection
+            {
+                AgentId = agentId,
+                AgentSecretKey = secretKey ?? currentConn?.AgentSecretKey,
+                AccountId = currentConn?.AccountId,
+                ConnectedEmail = currentConn?.ConnectedEmail,
+                Platform = "windows",
+                AgentVersion = currentConn?.AgentVersion ?? "1.0.10",
+                ConnectedAtUtc = currentConn?.ConnectedAtUtc ?? DateTimeOffset.UtcNow
+            };
+
+            _settingsManager.Save(settings);
+            _applicationState.ApplySettings(settings);
+            _logger.LogInformation("Successfully synced Playit Agent ID ({AgentId}) into settings.", agentId);
         }
 
         public string? GetSecretKey()
@@ -372,6 +475,15 @@ namespace PocketMC.Infrastructure.Tunnel
                     ErrorMessage = "PocketMC is not connected to a Playit agent yet.",
                     RequiresClaim = true
                 };
+            }
+
+            if (string.IsNullOrWhiteSpace(GetPartnerConnection()?.AgentId))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try { await GetAgentRundataAsync(); }
+                    catch (Exception ex) { _logger.LogDebug(ex, "Failed background rundata resolution during GetTunnelsAsync."); }
+                });
             }
 
             try

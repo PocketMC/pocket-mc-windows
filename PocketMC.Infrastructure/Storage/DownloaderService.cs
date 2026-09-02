@@ -15,7 +15,7 @@ namespace PocketMC.Infrastructure.Instances;
 public class DownloaderService
 {
     private const string DownloadClientName = "PocketMC.Downloads";
-    private const string PlayitAgentVersion = "0.17.1";
+    public const string PlayitAgentVersion = "1.0.10";
     public const string CloudflaredVersion = "2026.8.1";
 
     private static string PlayitDownloadUrl => PocketMC.Infrastructure.Configuration.AppConfig.BinaryPlayitDownloadUrl;

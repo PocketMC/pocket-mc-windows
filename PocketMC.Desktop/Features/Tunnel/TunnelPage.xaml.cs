@@ -199,6 +199,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                 {
                     DownloadProgressBar.Visibility = Visibility.Collapsed;
                     DownloadProgressBar.IsIndeterminate = false;
+                    TxtDownloadProgress.Visibility = Visibility.Collapsed;
+                    TxtDownloadProgress.Text = string.Empty;
                 }
 
                 if (isDownloading)
@@ -323,12 +325,14 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                 if (result.IsTokenInvalid)
                 {
+                    _playitAgentService.RecoverFromInvalidSecret("The Playit agent was deleted from playit.gg. Click Setup Agent to link a new agent.");
                     SetUiState(
-                        TunnelUiState.Ready,
-                        "Reconnect Required",
-                        result.ErrorMessage ?? "The saved Playit credentials were rejected. Click Setup Agent to reconnect.",
-                        Brushes.Orange);
-                    ShowNoTunnels("Tunnel data is unavailable until the agent is linked again.");
+                        TunnelUiState.AwaitingSetupCode,
+                        "Awaiting Setup",
+                        "The Playit agent was deleted from playit.gg. Click Setup Agent to link a new agent.",
+                        Brushes.Gold);
+                    ShowNoTunnels("Click Setup Agent to link your Playit.gg account.");
+                    UpdateActionButtons(binaryExists: true);
                     return;
                 }
 
@@ -818,18 +822,19 @@ namespace PocketMC.Desktop.Features.Tunnel
             BtnDownloadAgent.IsEnabled = !isDownloading;
             BtnDownloadAgent.Content = partialExists ? "Resume Download" : "Download Agent";
 
-            // Setup Agent is shown when no saved connection exists (needs setup)
+            // Setup Agent is ONLY shown when no saved connection exists (needs setup)
             BtnSetupAgent.Visibility = (!hasSavedConnection && binaryExists) ? Visibility.Visible : Visibility.Collapsed;
             BtnSetupAgent.IsEnabled = !isDownloading && binaryExists;
 
             // Connect is shown when there IS a saved connection (just needs to start the agent)
             BtnConnect.Visibility = hasSavedConnection ? Visibility.Visible : Visibility.Collapsed;
-            BtnConnect.Content = _currentUiState == TunnelUiState.ReauthRequired ? "Reconnect" : "Connect";
+            BtnConnect.Content = "Connect";
             BtnConnect.IsEnabled =
                 !isDownloading &&
                 binaryExists &&
-                _currentUiState is TunnelUiState.Ready or TunnelUiState.AwaitingSetupCode or TunnelUiState.ReauthRequired;
+                _currentUiState is TunnelUiState.Ready or TunnelUiState.AwaitingSetupCode;
 
+            BtnDisconnect.Visibility = hasSavedConnection ? Visibility.Visible : Visibility.Collapsed;
             BtnDisconnect.IsEnabled = !isDownloading && hasSavedConnection;
 
             BtnDeleteAgent.Visibility = binaryExists ? Visibility.Visible : Visibility.Collapsed;
@@ -874,6 +879,12 @@ namespace PocketMC.Desktop.Features.Tunnel
             if (!_applicationState.IsConfigured || !File.Exists(_applicationState.GetPlayitExecutablePath()) || _playitAgentService.IsDownloadingBinary)
             {
                 await RefreshStatusAsync();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_playitAgentService.PartnerConnection?.AgentSecretKey))
+            {
+                BtnSetupAgent_Click(sender, e);
                 return;
             }
 
@@ -999,6 +1010,29 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 // Refresh the tunnel list so the newly created tunnel appears immediately
                 await RefreshStatusAsync();
+            }
+        }
+
+        private PlayitConsoleWindow? _consoleWindow;
+
+        private void BtnViewLogs_Click(object sender, RoutedEventArgs e)
+        {
+            if (_consoleWindow == null || !_consoleWindow.IsLoaded)
+            {
+                _consoleWindow = new PlayitConsoleWindow(_playitAgentService, _applicationState)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                _consoleWindow.Closed += (s, args) => _consoleWindow = null;
+                _consoleWindow.Show();
+            }
+            else
+            {
+                _consoleWindow.Activate();
+                if (_consoleWindow.WindowState == WindowState.Minimized)
+                {
+                    _consoleWindow.WindowState = WindowState.Normal;
+                }
             }
         }
 
