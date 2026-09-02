@@ -46,7 +46,7 @@
                    Text="Please wait while the addons and dependencies are being installed."/>
 
         <!-- List of items to install -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="300" Margin="0,0,0,15">
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="300" Margin="0,0,0,15" Padding="0,0,12,0">
             <ItemsControl x:Name="ItemsList" Focusable="False">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>

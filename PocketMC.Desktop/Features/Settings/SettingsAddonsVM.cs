@@ -805,18 +805,39 @@ namespace PocketMC.Desktop.Features.Settings
             int successCount = 0;
             var errors = new List<string>();
 
-            foreach (var f in files)
-            {
-                try
+            await _dialogService.ShowProgressDialogAsync(
+                "Importing Bedrock Add-ons",
+                "Preparing to import add-ons...",
+                async (progress) =>
                 {
-                    var installed = await _bedrockInstaller.InstallAddonAsync(f, _serverDir);
-                    successCount += installed.Count;
-                }
-                catch (Exception ex)
-                {
-                    errors.Add($"{Path.GetFileName(f)}: {ex.Message}");
-                }
-            }
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        var f = files[i];
+                        string fileName = Path.GetFileName(f);
+                        double pct = ((double)i / files.Length) * 100.0;
+                        progress.Report(new ProgressDialogUpdate
+                        {
+                            Percentage = pct,
+                            Message = $"Importing ({i + 1}/{files.Length}): {fileName}..."
+                        });
+
+                        try
+                        {
+                            var installed = await _bedrockInstaller.InstallAddonAsync(f, _serverDir);
+                            successCount += installed.Count;
+                        }
+                        catch (Exception ex)
+                        {
+                            errors.Add($"{fileName}: {ex.Message}");
+                        }
+                    }
+
+                    progress.Report(new ProgressDialogUpdate
+                    {
+                        Percentage = 100.0,
+                        Message = "Finalizing add-on import..."
+                    });
+                });
 
             LoadAddons();
             _onAddonChanged();
@@ -888,118 +909,143 @@ namespace PocketMC.Desktop.Features.Settings
         {
             string filter = IsPocketmine ? "PHAR Files (*.phar)|*.phar" : "JAR Files (*.jar)|*.jar";
             var files = await _dialogService.OpenFilesDialogAsync("Select Plugin(s)", filter);
-            foreach (var f in files)
-            {
-                PocketMC.Domain.Models.JavaModMetadata? metadata = null;
+            if (files == null || files.Length == 0) return;
 
-                if (!IsPocketmine)
+            await _dialogService.ShowProgressDialogAsync(
+                "Importing Plugins",
+                "Preparing to import plugins...",
+                async (progress) =>
                 {
-                    metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
-
-                    if (metadata.IsCorrupt)
+                    for (int i = 0; i < files.Length; i++)
                     {
-                        var res = await _dialogService.ShowDialogAsync("Corrupt JAR Archive",
-                            $"The file '{System.IO.Path.GetFileName(f)}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (metadata.LoaderType != "Plugin" && metadata.LoaderType != "Unknown")
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Add-on",
-                            $"The file '{System.IO.Path.GetFileName(f)}' is a {metadata.LoaderType} mod, not a server plugin. This server is running {_metadata.ServerType} which requires plugins (Paper/Spigot/Bukkit).\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (metadata.LoaderType == "Unknown")
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Missing Metadata",
-                            $"The file '{System.IO.Path.GetFileName(f)}' does not contain plugin metadata (plugin.yml or paper-plugin.yml). Are you sure that this is a valid plugin you want to install?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (metadata.IsClientOnly)
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Client-Only Add-on",
-                            $"The file '{System.IO.Path.GetFileName(f)}' appears to be client-side only.\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-
-                    // API version check
-                    if (!string.IsNullOrEmpty(metadata.ApiVersion) && !string.IsNullOrEmpty(_metadata.MinecraftVersion))
-                    {
-                        if (IsApiVersionIncompatible(metadata.ApiVersion, _metadata.MinecraftVersion))
+                        var f = files[i];
+                        string currentFileName = Path.GetFileName(f);
+                        double pct = ((double)i / files.Length) * 100.0;
+                        progress.Report(new ProgressDialogUpdate
                         {
-                            var res = await _dialogService.ShowDialogAsync("Incompatible API Version",
-                                $"'{System.IO.Path.GetFileName(f)}' requires api-version {metadata.ApiVersion}, but this server is running Minecraft {_metadata.MinecraftVersion}. The plugin may not load correctly.\n\nDo you want to install it anyway?",
-                                DialogType.Question);
-                            if (res != DialogResult.Yes) continue;
+                            Percentage = pct,
+                            Message = $"Importing ({i + 1}/{files.Length}): {currentFileName}..."
+                        });
+
+                        PocketMC.Domain.Models.JavaModMetadata? metadata = null;
+
+                        if (!IsPocketmine)
+                        {
+                            metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
+
+                            if (metadata.IsCorrupt)
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Corrupt JAR Archive",
+                                    $"The file '{System.IO.Path.GetFileName(f)}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (metadata.LoaderType != "Plugin" && metadata.LoaderType != "Unknown")
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Incompatible Add-on",
+                                    $"The file '{System.IO.Path.GetFileName(f)}' is a {metadata.LoaderType} mod, not a server plugin. This server is running {_metadata.ServerType} which requires plugins (Paper/Spigot/Bukkit).\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (metadata.LoaderType == "Unknown")
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Missing Metadata",
+                                    $"The file '{System.IO.Path.GetFileName(f)}' does not contain plugin metadata (plugin.yml or paper-plugin.yml). Are you sure that this is a valid plugin you want to install?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (metadata.IsClientOnly)
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Client-Only Add-on",
+                                    $"The file '{System.IO.Path.GetFileName(f)}' appears to be client-side only.\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+
+                            // API version check
+                            if (!string.IsNullOrEmpty(metadata.ApiVersion) && !string.IsNullOrEmpty(_metadata.MinecraftVersion))
+                            {
+                                if (IsApiVersionIncompatible(metadata.ApiVersion, _metadata.MinecraftVersion))
+                                {
+                                    var res = await _dialogService.ShowDialogAsync("Incompatible API Version",
+                                        $"'{System.IO.Path.GetFileName(f)}' requires api-version {metadata.ApiVersion}, but this server is running Minecraft {_metadata.MinecraftVersion}. The plugin may not load correctly.\n\nDo you want to install it anyway?",
+                                        DialogType.Question);
+                                    if (res != DialogResult.Yes) continue;
+                                }
+                            }
+
+                            // Dependency display
+                            if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
+                            {
+                                var depList = new List<string>();
+                                foreach (var dep in metadata.RequiredDependencies)
+                                    depList.Add($"[Required] {dep}");
+                                foreach (var dep in metadata.OptionalDependencies)
+                                    depList.Add($"[Optional] {dep}");
+
+                                _dialogService.ShowMessage("Plugin Dependencies",
+                                    $"The plugin '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the plugin to work properly:\n\n{string.Join("\n", depList)}",
+                                    DialogType.Information);
+                            }
                         }
+
+                        // Step 5: Check for existing plugin
+                        string newFileName = System.IO.Path.GetFileName(f);
+                        string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
+                        string modId = metadata?.ModId ?? "";
+
+                        var existingPlugin = Plugins.FirstOrDefault(p =>
+                        {
+                            if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
+                            if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                            if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
+                            {
+                                if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                                if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                            }
+                            string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
+                            if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                            if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                            if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                            if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                            return false;
+                        });
+
+                        if (existingPlugin != null)
+                        {
+                            var overwriteRes = await _dialogService.ShowDialogAsync("Plugin Already Exists", 
+                                $"The plugin '{displayName}' appears to be already installed as '{existingPlugin.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
+                            
+                            if (overwriteRes != DialogResult.Yes) continue;
+                            
+                            if (!string.Equals(existingPlugin.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var oldFilePath = System.IO.Path.Combine(_serverDir, "plugins", existingPlugin.FileName);
+                                if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
+                                
+                                await _manifestService.UnregisterByFileNameAsync(_serverDir, existingPlugin.FileName);
+                            }
+                        }
+
+
+                        // Step 5: Copy file
+                        var dir = System.IO.Path.Combine(_serverDir, "plugins");
+                        Directory.CreateDirectory(dir);
+                        string targetFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f));
+                        await FileUtils.CopyFileAsync(f, targetFile, true);
+                        
+                        await TryLinkModrinthByHashAsync(targetFile);
                     }
 
-                    // Dependency display
-                    if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
+                    progress.Report(new ProgressDialogUpdate
                     {
-                        var depList = new List<string>();
-                        foreach (var dep in metadata.RequiredDependencies)
-                            depList.Add($"[Required] {dep}");
-                        foreach (var dep in metadata.OptionalDependencies)
-                            depList.Add($"[Optional] {dep}");
-
-                        _dialogService.ShowMessage("Plugin Dependencies",
-                            $"The plugin '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the plugin to work properly:\n\n{string.Join("\n", depList)}",
-                            DialogType.Information);
-                    }
-                }
-
-                // Step 5: Check for existing plugin
-                string newFileName = System.IO.Path.GetFileName(f);
-                string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
-                string modId = metadata?.ModId ?? "";
-
-                var existingPlugin = Plugins.FirstOrDefault(p =>
-                {
-                    if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
-                    {
-                        if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                        if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
-                    }
-                    string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
-                    if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
-                    if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
-                    return false;
+                        Percentage = 100.0,
+                        Message = "Finalizing plugin import..."
+                    });
                 });
 
-                if (existingPlugin != null)
-                {
-                    var overwriteRes = await _dialogService.ShowDialogAsync("Plugin Already Exists", 
-                        $"The plugin '{displayName}' appears to be already installed as '{existingPlugin.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
-                    
-                    if (overwriteRes != DialogResult.Yes) continue;
-                    
-                    if (!string.Equals(existingPlugin.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var oldFilePath = System.IO.Path.Combine(_serverDir, "plugins", existingPlugin.FileName);
-                        if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
-                        
-                        await _manifestService.UnregisterByFileNameAsync(_serverDir, existingPlugin.FileName);
-                    }
-                }
-
-
-                // Step 5: Copy file
-                var dir = System.IO.Path.Combine(_serverDir, "plugins");
-                Directory.CreateDirectory(dir);
-                string targetFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f));
-                await FileUtils.CopyFileAsync(f, targetFile, true);
-                
-                await TryLinkModrinthByHashAsync(targetFile);
-            }
-            LoadAddons(); _onAddonChanged();
+            LoadAddons(); 
+            _onAddonChanged();
         }
 
         private async Task TryLinkModrinthByHashAsync(string filePath)
@@ -1183,129 +1229,152 @@ namespace PocketMC.Desktop.Features.Settings
         private async Task AddModAsync()
         {
             var files = await _dialogService.OpenFilesDialogAsync("Select Mod(s)", "JAR Files (*.jar)|*.jar");
-            foreach (var f in files)
-            {
-                var fileName = System.IO.Path.GetFileName(f);
+            if (files == null || files.Length == 0) return;
 
-                PocketMC.Domain.Models.JavaModMetadata? metadata = null;
-
-                if (!IsBedrockDedicated && !IsPocketmine)
+            await _dialogService.ShowProgressDialogAsync(
+                "Importing Mods",
+                "Preparing to import mods...",
+                async (progress) =>
                 {
-                    metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
-                }
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        var f = files[i];
+                        var fileName = System.IO.Path.GetFileName(f);
+                        double pct = ((double)i / files.Length) * 100.0;
+                        progress.Report(new ProgressDialogUpdate
+                        {
+                            Percentage = pct,
+                            Message = $"Importing ({i + 1}/{files.Length}): {fileName}..."
+                        });
 
-                if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
-                {
-                    if (metadata.IsCorrupt)
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Corrupt JAR Archive",
-                            $"The file '{fileName}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (metadata.LoaderType == "Plugin" || metadata.HasPluginMetadata)
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Invalid Mod",
-                            $"The file '{fileName}' is a Bukkit/Paper plugin, not a {_metadata.ServerType} mod. Plugins must be placed in the plugins folder.\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (metadata.LoaderType == "Unknown")
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Missing Metadata",
-                            $"The file '{fileName}' does not contain mod metadata. Are you sure that this is a valid mod you want to install?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (!IsLoaderCompatible(metadata.LoaderType))
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Mod Loader",
-                            $"The mod '{fileName}' requires {metadata.LoaderType} mod loader, but this server is running {_metadata.ServerType}.\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (metadata.IsClientOnly)
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Client-Only Mod",
-                            $"The mod '{fileName}' is a client-side only mod and may not work on a dedicated server.\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Minecraft Version",
-                            $"The mod '{fileName}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}.\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
-                    }
-                    else if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
-                    {
-                        var res = await _dialogService.ShowDialogAsync("Incompatible Loader Version",
-                            $"The mod '{fileName}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}.\n\nDo you want to install it anyway?",
-                            DialogType.Warning);
-                        if (res != DialogResult.Yes) continue;
+                        PocketMC.Domain.Models.JavaModMetadata? metadata = null;
+
+                        if (!IsBedrockDedicated && !IsPocketmine)
+                        {
+                            metadata = PocketMC.Infrastructure.Mods.JavaModMetadataService.ScanJar(f, _metadata.ServerType);
+                        }
+
+                        if (!IsBedrockDedicated && !IsPocketmine && metadata != null)
+                        {
+                            if (metadata.IsCorrupt)
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Corrupt JAR Archive",
+                                    $"The file '{fileName}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (metadata.LoaderType == "Plugin" || metadata.HasPluginMetadata)
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Invalid Mod",
+                                    $"The file '{fileName}' is a Bukkit/Paper plugin, not a {_metadata.ServerType} mod. Plugins must be placed in the plugins folder.\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (metadata.LoaderType == "Unknown")
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Missing Metadata",
+                                    $"The file '{fileName}' does not contain mod metadata. Are you sure that this is a valid mod you want to install?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (!IsLoaderCompatible(metadata.LoaderType))
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Incompatible Mod Loader",
+                                    $"The mod '{fileName}' requires {metadata.LoaderType} mod loader, but this server is running {_metadata.ServerType}.\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (metadata.IsClientOnly)
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Client-Only Mod",
+                                    $"The mod '{fileName}' is a client-side only mod and may not work on a dedicated server.\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Incompatible Minecraft Version",
+                                    $"The mod '{fileName}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}.\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+                            else if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
+                            {
+                                var res = await _dialogService.ShowDialogAsync("Incompatible Loader Version",
+                                    $"The mod '{fileName}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}.\n\nDo you want to install it anyway?",
+                                    DialogType.Warning);
+                                if (res != DialogResult.Yes) continue;
+                            }
+
+                            if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
+                            {
+                                var depList = new List<string>();
+                                foreach (var dep in metadata.RequiredDependencies)
+                                    depList.Add($"[Required] {dep}");
+                                foreach (var dep in metadata.OptionalDependencies)
+                                    depList.Add($"[Optional] {dep}");
+
+                                _dialogService.ShowMessage("Mod Dependencies",
+                                    $"The mod '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the mod to work properly:\n\n{string.Join("\n", depList)}",
+                                    DialogType.Information);
+                            }
+                        }
+
+                        // Check for existing mod
+                        string newFileName = System.IO.Path.GetFileName(f);
+                        string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
+                        string modId = metadata?.ModId ?? "";
+
+                        var existingMod = Mods.FirstOrDefault(p =>
+                        {
+                            if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
+                            if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                            if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
+                            {
+                                if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                                if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                            }
+                            string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
+                            if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                            if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
+                            if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
+                            if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
+                            return false;
+                        });
+
+                        if (existingMod != null)
+                        {
+                            var overwriteRes = await _dialogService.ShowDialogAsync("Mod Already Exists", 
+                                $"The mod '{displayName}' appears to be already installed as '{existingMod.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
+                            
+                            if (overwriteRes != DialogResult.Yes) continue;
+                            
+                            if (!string.Equals(existingMod.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var oldFilePath = System.IO.Path.Combine(_serverDir, "mods", existingMod.FileName);
+                                if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
+                                
+                                await _manifestService.UnregisterByFileNameAsync(_serverDir, existingMod.FileName);
+                            }
+                        }
+
+                        var dir = System.IO.Path.Combine(_serverDir, "mods");
+                        Directory.CreateDirectory(dir);
+                        string targetFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f));
+                        await FileUtils.CopyFileAsync(f, targetFile, true);
+
+                        await TryLinkModrinthByHashAsync(targetFile);
                     }
 
-                    if (metadata.RequiredDependencies.Count > 0 || metadata.OptionalDependencies.Count > 0)
+                    progress.Report(new ProgressDialogUpdate
                     {
-                        var depList = new List<string>();
-                        foreach (var dep in metadata.RequiredDependencies)
-                            depList.Add($"[Required] {dep}");
-                        foreach (var dep in metadata.OptionalDependencies)
-                            depList.Add($"[Optional] {dep}");
-
-                        _dialogService.ShowMessage("Mod Dependencies",
-                            $"The mod '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the mod to work properly:\n\n{string.Join("\n", depList)}",
-                            DialogType.Information);
-                    }
-                }
-
-                // Check for existing mod
-                string newFileName = System.IO.Path.GetFileName(f);
-                string displayName = string.IsNullOrWhiteSpace(metadata?.DisplayName) ? System.IO.Path.GetFileNameWithoutExtension(f) : metadata.DisplayName;
-                string modId = metadata?.ModId ?? "";
-
-                var existingMod = Mods.FirstOrDefault(p =>
-                {
-                    if (string.Equals(p.FileName, newFileName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectTitle) && string.Equals(p.ManifestEntry.ProjectTitle, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(p.ManifestEntry?.ProjectSlug))
-                    {
-                        if (string.Equals(p.ManifestEntry.ProjectSlug, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                        if (string.Equals(p.ManifestEntry.ProjectSlug, modId, StringComparison.OrdinalIgnoreCase)) return true;
-                    }
-                    string pNameNoExt = System.IO.Path.GetFileNameWithoutExtension(p.FileName);
-                    if (!string.IsNullOrWhiteSpace(displayName) && pNameNoExt.StartsWith(displayName + "-", StringComparison.OrdinalIgnoreCase)) return true;
-                    if (!string.IsNullOrWhiteSpace(modId) && pNameNoExt.StartsWith(modId + "-", StringComparison.OrdinalIgnoreCase)) return true;
-                    if (string.Equals(pNameNoExt, displayName, StringComparison.OrdinalIgnoreCase)) return true;
-                    if (string.Equals(pNameNoExt, modId, StringComparison.OrdinalIgnoreCase)) return true;
-                    return false;
+                        Percentage = 100.0,
+                        Message = "Finalizing mod import..."
+                    });
                 });
 
-                if (existingMod != null)
-                {
-                    var overwriteRes = await _dialogService.ShowDialogAsync("Mod Already Exists", 
-                        $"The mod '{displayName}' appears to be already installed as '{existingMod.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
-                    
-                    if (overwriteRes != DialogResult.Yes) continue;
-                    
-                    if (!string.Equals(existingMod.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var oldFilePath = System.IO.Path.Combine(_serverDir, "mods", existingMod.FileName);
-                        if (File.Exists(oldFilePath)) File.Delete(oldFilePath);
-                        
-                        await _manifestService.UnregisterByFileNameAsync(_serverDir, existingMod.FileName);
-                    }
-                }
-
-                var dir = System.IO.Path.Combine(_serverDir, "mods");
-                Directory.CreateDirectory(dir);
-                string targetFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(f));
-                await FileUtils.CopyFileAsync(f, targetFile, true);
-                
-                await TryLinkModrinthByHashAsync(targetFile);
-            }
-            LoadAddons(); _onAddonChanged();
+            LoadAddons(); 
+            _onAddonChanged();
         }
 
         private async Task DeleteModAsync(string? path)

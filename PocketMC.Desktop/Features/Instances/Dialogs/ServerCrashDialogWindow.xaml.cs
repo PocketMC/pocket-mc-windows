@@ -159,9 +159,9 @@ public partial class ServerCrashDialogWindow : FluentWindow
         }
 
         // Show loading state
-        LogScrollViewer.Visibility = Visibility.Collapsed;
-        AiMarkdownViewer.Visibility = Visibility.Collapsed;
-        AiLoadingPanel.Visibility = Visibility.Visible;
+        LogContainer.Visibility = Visibility.Collapsed;
+        AiMarkdownContainer.Visibility = Visibility.Collapsed;
+        AiLoadingContainer.Visibility = Visibility.Visible;
         TxtLogSectionTitle.Text = "AI Crash Intelligence";
         BtnToggleView.Visibility = Visibility.Collapsed;
         BtnAnalyzeWithAi.IsEnabled = false;
@@ -208,8 +208,8 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
         }
         finally
         {
-            AiLoadingPanel.Visibility = Visibility.Collapsed;
-            AiMarkdownViewer.Visibility = Visibility.Visible;
+            AiLoadingContainer.Visibility = Visibility.Collapsed;
+            AiMarkdownContainer.Visibility = Visibility.Visible;
             BtnAnalyzeWithAi.IsEnabled = true;
             BtnAnalyzeWithAi.Content = "Re-analyze with AI";
             BtnToggleView.Visibility = Visibility.Visible;
@@ -220,9 +220,9 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
 
     private void ShowAiContainer()
     {
-        LogScrollViewer.Visibility = Visibility.Collapsed;
-        AiLoadingPanel.Visibility = Visibility.Collapsed;
-        AiMarkdownViewer.Visibility = Visibility.Visible;
+        LogContainer.Visibility = Visibility.Collapsed;
+        AiLoadingContainer.Visibility = Visibility.Collapsed;
+        AiMarkdownContainer.Visibility = Visibility.Visible;
         TxtLogSectionTitle.Text = "AI Crash Intelligence";
     }
 
@@ -231,9 +231,9 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
         if (_isShowingAiView)
         {
             // Switch to Logs
-            AiMarkdownViewer.Visibility = Visibility.Collapsed;
-            AiLoadingPanel.Visibility = Visibility.Collapsed;
-            LogScrollViewer.Visibility = Visibility.Visible;
+            AiMarkdownContainer.Visibility = Visibility.Collapsed;
+            AiLoadingContainer.Visibility = Visibility.Collapsed;
+            LogContainer.Visibility = Visibility.Visible;
             TxtLogSectionTitle.Text = "Diagnostic & Exception Log";
             BtnToggleView.Content = "View AI Analysis";
             _isShowingAiView = false;
@@ -241,9 +241,9 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
         else
         {
             // Switch to AI
-            LogScrollViewer.Visibility = Visibility.Collapsed;
-            AiLoadingPanel.Visibility = Visibility.Collapsed;
-            AiMarkdownViewer.Visibility = Visibility.Visible;
+            LogContainer.Visibility = Visibility.Collapsed;
+            AiLoadingContainer.Visibility = Visibility.Collapsed;
+            AiMarkdownContainer.Visibility = Visibility.Visible;
             TxtLogSectionTitle.Text = "AI Crash Intelligence";
             BtnToggleView.Content = "View Logs";
             _isShowingAiView = true;

@@ -49,7 +49,10 @@ public class WorldManager
     /// Use <see cref="WorldPathResolver"/> to compute this.
     /// </param>
     /// <param name="onProgress">Optional progress callback.</param>
-    public async Task ImportWorldZipAsync(string archivePath, string targetWorldPath, Action<string>? onProgress = null)
+    public async Task ImportWorldZipAsync(
+        string archivePath,
+        string targetWorldPath,
+        Action<double, string>? onDetailedProgress = null)
     {
         ValidateArchiveExtension(archivePath);
 
@@ -57,10 +60,15 @@ public class WorldManager
 
         try
         {
-            onProgress?.Invoke("Extracting world archive...");
-            await SafeZipExtractor.ExtractAsync(archivePath, tempDir);
+            onDetailedProgress?.Invoke(0, "Extracting world archive...");
+            await SafeZipExtractor.ExtractAsync(archivePath, tempDir, (extracted, total) =>
+            {
+                double pct = total > 0 ? ((double)extracted / total) * 70.0 : -1.0;
+                string msg = total > 0 ? $"Extracting ({extracted}/{total} files)..." : "Extracting world archive...";
+                onDetailedProgress?.Invoke(pct, msg);
+            });
 
-            onProgress?.Invoke("Scanning for level.dat...");
+            onDetailedProgress?.Invoke(75.0, "Scanning for level.dat...");
             string? worldRoot = await Task.Run(() => FindWorldRoot(tempDir));
 
             if (worldRoot == null)
@@ -83,15 +91,15 @@ public class WorldManager
             // Clean existing world directory
             if (Directory.Exists(targetWorldPath))
             {
-                onProgress?.Invoke("Removing existing world...");
+                onDetailedProgress?.Invoke(80.0, "Removing old world files...");
                 await FileUtils.CleanDirectoryAsync(targetWorldPath);
             }
 
             // Copy the true world root to the target
-            onProgress?.Invoke("Installing world...");
+            onDetailedProgress?.Invoke(85.0, "Installing world...");
             await FileUtils.CopyDirectoryAsync(worldRoot, targetWorldPath);
 
-            onProgress?.Invoke("World imported successfully!");
+            onDetailedProgress?.Invoke(100.0, "World imported successfully!");
         }
         finally
         {
@@ -108,6 +116,11 @@ public class WorldManager
                 }
             }
         }
+    }
+
+    public Task ImportWorldZipAsync(string archivePath, string targetWorldPath, Action<string>? onProgress)
+    {
+        return ImportWorldZipAsync(archivePath, targetWorldPath, (pct, msg) => onProgress?.Invoke(msg));
     }
 
     /// <summary>

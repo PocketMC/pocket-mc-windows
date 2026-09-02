@@ -1055,42 +1055,85 @@ namespace PocketMC.Desktop.Features.Setup
             switch (provider)
             {
                 case AiProviderType.Gemini:
-                    list.Add(new AiModelInfo("gemini-2.5-flash"));
-                    list.Add(new AiModelInfo("gemini-2.0-flash"));
-                    list.Add(new AiModelInfo("gemini-1.5-flash"));
+                    // Latest (3.x generation)
+                    list.Add(new AiModelInfo("gemini-3.7-flash"));
+                    list.Add(new AiModelInfo("gemini-3.5-flash"));
+                    list.Add(new AiModelInfo("gemini-3.5-flash-lite"));
+                    // Stable (2.5 generation)
                     list.Add(new AiModelInfo("gemini-2.5-pro"));
-                    list.Add(new AiModelInfo("gemini-2.0-pro-exp"));
-                    list.Add(new AiModelInfo("gemini-1.5-pro"));
+                    list.Add(new AiModelInfo("gemini-2.5-flash"));
                     break;
                 case AiProviderType.OpenAI:
-                    list.Add(new AiModelInfo("gpt-4o-mini"));
+                    // GPT-5.6 family (latest flagship)
+                    list.Add(new AiModelInfo("gpt-5.6-sol"));
+                    list.Add(new AiModelInfo("gpt-5.6-terra"));
+                    list.Add(new AiModelInfo("gpt-5.6-luna"));
+                    // GPT-5.5 / 5.4
+                    list.Add(new AiModelInfo("gpt-5.5"));
+                    list.Add(new AiModelInfo("gpt-5.4"));
+                    // Reasoning (o-series)
+                    list.Add(new AiModelInfo("o3-pro"));
+                    list.Add(new AiModelInfo("o3"));
+                    // Legacy (still accessible)
                     list.Add(new AiModelInfo("gpt-4o"));
-                    list.Add(new AiModelInfo("o1-mini"));
-                    list.Add(new AiModelInfo("o3-mini"));
+                    list.Add(new AiModelInfo("gpt-4o-mini"));
                     break;
                 case AiProviderType.Claude:
-                    list.Add(new AiModelInfo("claude-3-5-haiku-latest"));
+                    // Claude 5 generation (latest)
+                    list.Add(new AiModelInfo("claude-fable-5-1"));
+                    list.Add(new AiModelInfo("claude-opus-5"));
+                    list.Add(new AiModelInfo("claude-sonnet-5"));
+                    // Claude 4.x generation
+                    list.Add(new AiModelInfo("claude-sonnet-4"));
+                    list.Add(new AiModelInfo("claude-haiku-4-5-20251001"));
+                    // Legacy (still accessible)
+                    list.Add(new AiModelInfo("claude-3-7-sonnet-latest"));
                     list.Add(new AiModelInfo("claude-3-5-sonnet-latest"));
+                    list.Add(new AiModelInfo("claude-3-5-haiku-latest"));
                     list.Add(new AiModelInfo("claude-3-opus-latest"));
                     break;
                 case AiProviderType.Mistral:
-                    list.Add(new AiModelInfo("open-mistral-7b"));
-                    list.Add(new AiModelInfo("mistral-tiny"));
-                    list.Add(new AiModelInfo("mistral-small-latest"));
-                    list.Add(new AiModelInfo("mistral-medium-latest"));
                     list.Add(new AiModelInfo("mistral-large-latest"));
+                    list.Add(new AiModelInfo("mistral-medium-latest"));
+                    list.Add(new AiModelInfo("mistral-small-latest"));
+                    list.Add(new AiModelInfo("codestral-latest"));
+                    list.Add(new AiModelInfo("pixtral-large-latest"));
+                    list.Add(new AiModelInfo("mistral-ocr-latest"));
+                    list.Add(new AiModelInfo("open-mistral-nemo"));
                     break;
                 case AiProviderType.Groq:
                     list.Add(new AiModelInfo("llama-3.3-70b-versatile"));
-                    list.Add(new AiModelInfo("llama3-8b-8192"));
-                    list.Add(new AiModelInfo("mixtral-8x7b-32768"));
+                    list.Add(new AiModelInfo("llama-3.1-8b-instant"));
+                    list.Add(new AiModelInfo("openai/gpt-oss-120b"));
+                    list.Add(new AiModelInfo("openai/gpt-oss-20b"));
+                    list.Add(new AiModelInfo("qwen/qwen3.6-27b"));
+                    list.Add(new AiModelInfo("deepseek-r1-distill-llama-70b"));
+                    list.Add(new AiModelInfo("deepseek-r1-distill-qwen-32b"));
                     list.Add(new AiModelInfo("gemma2-9b-it"));
+                    list.Add(new AiModelInfo("mixtral-8x7b-32768"));
                     break;
                 case AiProviderType.Ollama:
-                    list.Add(new AiModelInfo("llama3"));
-                    list.Add(new AiModelInfo("mistral"));
+                    // Qwen family
+                    list.Add(new AiModelInfo("qwen3.8"));
+                    list.Add(new AiModelInfo("qwen3.6"));
+                    list.Add(new AiModelInfo("qwen3-coder"));
+                    list.Add(new AiModelInfo("qwen2.5"));
+                    // Llama family
+                    list.Add(new AiModelInfo("llama4"));
+                    list.Add(new AiModelInfo("llama3.3"));
+                    list.Add(new AiModelInfo("llama3.2"));
+                    // DeepSeek
+                    list.Add(new AiModelInfo("deepseek-r1"));
+                    list.Add(new AiModelInfo("deepseek-v4-flash"));
+                    // Microsoft Phi
+                    list.Add(new AiModelInfo("phi4"));
+                    list.Add(new AiModelInfo("phi4-mini"));
+                    // Google Gemma
+                    list.Add(new AiModelInfo("gemma4"));
                     list.Add(new AiModelInfo("gemma2"));
-                    list.Add(new AiModelInfo("phi3"));
+                    // Others
+                    list.Add(new AiModelInfo("mistral"));
+                    list.Add(new AiModelInfo("codellama"));
                     break;
             }
             return list;

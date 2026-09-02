@@ -350,6 +350,13 @@ public partial class App : System.Windows.Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        // Suppress benign Wpf.Ui TitleBar HWND race condition on rapid window/dialog dismiss
+        if (e.Exception is ArgumentException argEx && argEx.Message.Contains("Hwnd of zero is not valid"))
+        {
+            e.Handled = true;
+            return;
+        }
+
         HandleUnhandledException(e.Exception, "UI thread", showDialog: true);
         e.Handled = true;
         Shutdown(-1);

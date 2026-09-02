@@ -49,16 +49,47 @@ namespace PocketMC.Desktop.Infrastructure
             string? linkText = null,
             string? linkUrl = null)
         {
+            var app = System.Windows.Application.Current;
+            if (app != null && !app.Dispatcher.CheckAccess())
+            {
+                return app.Dispatcher.Invoke(() => ShowResult(title, message, type, buttons, primaryButtonText, secondaryButtonText, tertiaryButtonText, linkText, linkUrl));
+            }
+
             var dialog = new AppDialogWindow();
             dialog.Configure(title, message, type, buttons, primaryButtonText, secondaryButtonText, tertiaryButtonText, linkText, linkUrl);
 
-            // Try to set owner to the main window for proper modality
+            // Try to set owner to the topmost active window (e.g. ProgressDialogWindow) for proper modality
             try
             {
-                var mainWindow = System.Windows.Application.Current?.MainWindow;
-                if (mainWindow != null && mainWindow.IsLoaded && mainWindow.IsVisible)
+                Window? owner = null;
+                if (System.Windows.Application.Current?.Windows != null)
                 {
-                    dialog.Owner = mainWindow;
+                    foreach (Window win in System.Windows.Application.Current.Windows)
+                    {
+                        if (win != null && win != dialog && win.IsVisible && win.IsLoaded)
+                        {
+                            if (win.IsActive)
+                            {
+                                owner = win;
+                                break;
+                            }
+                            owner = win;
+                        }
+                    }
+                }
+
+                if (owner == null)
+                {
+                    var mainWindow = System.Windows.Application.Current?.MainWindow;
+                    if (mainWindow != null && mainWindow.IsLoaded && mainWindow.IsVisible)
+                    {
+                        owner = mainWindow;
+                    }
+                }
+
+                if (owner != null && owner != dialog)
+                {
+                    dialog.Owner = owner;
                 }
             }
             catch

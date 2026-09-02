@@ -86,35 +86,38 @@
                                Visibility="Collapsed"/>
                 </Grid>
 
-                <Border Grid.Row="1" Background="#11111B" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
-                    <Grid>
-                        <!-- Log Viewer -->
-                        <ScrollViewer x:Name="LogScrollViewer" MaxHeight="240" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                            <TextBox x:Name="TxtLogViewer"
-                                     IsReadOnly="True"
-                                     BorderThickness="0"
-                                     Background="Transparent"
-                                     Foreground="#CDD6F4"
-                                     FontFamily="Cascadia Code, Consolas, Courier New, monospace"
-                                     FontSize="11"
-                                     AutomationProperties.Name="Diagnostic crash log viewer"
-                                     TextWrapping="NoWrap"
-                                     AcceptsReturn="True"/>
-                        </ScrollViewer>
+                <!-- Log Viewer (dark terminal container) -->
+                <Border x:Name="LogContainer" Grid.Row="1" Background="#11111B" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
+                    <TextBox x:Name="TxtLogViewer"
+                             IsReadOnly="True"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             Foreground="#CDD6F4"
+                             FontFamily="Cascadia Code, Consolas, Courier New, monospace"
+                             FontSize="11"
+                             MaxHeight="240"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             AutomationProperties.Name="Diagnostic crash log viewer"
+                             TextWrapping="NoWrap"
+                             AcceptsReturn="True"/>
+                </Border>
 
-                        <!-- AI Loading State -->
-                        <Grid x:Name="AiLoadingPanel" Visibility="Collapsed" MinHeight="160" VerticalAlignment="Center">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <ui:ProgressRing IsIndeterminate="True" Width="36" Height="36" Margin="0,0,0,12" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Analyzing crash with AI..." FontSize="13" FontWeight="SemiBold" Foreground="#CDD6F4" HorizontalAlignment="Center"/>
-                                <TextBlock x:Name="TxtAiProviderStatus" Text="Identifying root cause and remediation instructions..." FontSize="11" Foreground="#A6ADC8" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- AI Response Markdown Viewer (FlowDocumentScrollViewer handles its own scrolling) -->
-                        <intel:NativeMarkdownViewer x:Name="AiMarkdownViewer" MaxHeight="240" MinHeight="140" Visibility="Collapsed" />
+                <!-- AI Loading State -->
+                <Border x:Name="AiLoadingContainer" Grid.Row="1" Background="#11111B" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Visibility="Collapsed">
+                    <Grid MinHeight="160" VerticalAlignment="Center">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ui:ProgressRing IsIndeterminate="True" Width="36" Height="36" Margin="0,0,0,12" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Analyzing crash with AI..." FontSize="13" FontWeight="SemiBold" Foreground="#CDD6F4" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TxtAiProviderStatus" Text="Identifying root cause and remediation instructions..." FontSize="11" Foreground="#A6ADC8" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
+
+                <!-- AI Response Markdown Viewer (separate container, same style as server console/settings) -->
+                <ui:Card x:Name="AiMarkdownContainer" Grid.Row="1" Padding="16,12" Visibility="Collapsed">
+                    <intel:NativeMarkdownViewer x:Name="AiMarkdownViewer" MaxHeight="300" />
+                </ui:Card>
             </Grid>
 
             <!-- Actions Bar -->
