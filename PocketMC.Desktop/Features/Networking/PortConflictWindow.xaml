@@ -87,9 +87,10 @@
                     </StackPanel>
                     <ui:Button x:Name="BtnApplySuggested"
                                Grid.Column="1"
-                               Appearance="Primary"
+                               Style="{StaticResource AiActionButtonStyle}"
                                Content="Use Port"
                                Icon="{ui:SymbolIcon Sparkle24}"
+                               Cursor="Hand"
                                Click="BtnApplySuggested_Click"
                                VerticalAlignment="Center"
                                AutomationProperties.Name="Use recommended replacement port"

@@ -8,7 +8,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer x:Name="TunnelScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <Grid Margin="36,24,36,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

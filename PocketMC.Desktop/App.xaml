@@ -10,6 +10,29 @@
                 <ResourceDictionary Source="pack://application:,,,/Core/Presentation/SkeletonStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+            <!-- High-Contrast Accessible Style for AI Action Buttons & Crash Dialogs -->
+            <Style x:Key="AiActionButtonStyle" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
+                <Setter Property="Background" Value="#0066D6" />
+                <Setter Property="Foreground" Value="#FFFFFF" />
+                <Setter Property="BorderBrush" Value="#2A85FF" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="#1A7BE6" />
+                        <Setter Property="Foreground" Value="#FFFFFF" />
+                        <Setter Property="BorderBrush" Value="#4EA0FF" />
+                        <Setter Property="Cursor" Value="Hand" />
+                    </Trigger>
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter Property="Background" Value="#0052B3" />
+                        <Setter Property="Foreground" Value="#FFFFFF" />
+                        <Setter Property="BorderBrush" Value="#00408C" />
+                        <Setter Property="Cursor" Value="Hand" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

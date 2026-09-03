@@ -395,6 +395,96 @@ public sealed class ModrinthServiceMetadataTests
         Assert.Null(version);
     }
 
+    [Fact]
+    public async Task GetLatestVersionAsync_EmptyLoaderCandidates_ReturnsLatestVersion()
+    {
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string url = request.RequestUri?.ToString() ?? "";
+            if (url.Contains("/project/test-modpack/version"))
+            {
+                return MarketplaceHttpResponses.Json("""
+                [
+                  {
+                    "id": "modpack-ver-1",
+                    "project_id": "proj-modpack",
+                    "name": "Modpack 1.0",
+                    "version_type": "release",
+                    "loaders": ["fabric"],
+                    "game_versions": ["1.20.1"],
+                    "files": [{ "url": "https://cdn.example/pack.mrpack", "filename": "pack.mrpack", "primary": true }]
+                  }
+                ]
+                """);
+            }
+            if (url.Contains("/project/test-modpack"))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "proj-modpack", "slug": "test-modpack", "title": "Test Modpack" }""");
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var version = await ((IAddonProvider)service).GetLatestVersionAsync("test-modpack", "1.20.1", Array.Empty<string>());
+
+        Assert.NotNull(version);
+        Assert.Equal("modpack-ver-1", version.Id);
+        Assert.Equal("fabric", version.SelectedLoader);
+        Assert.Equal("1.20.1", version.MatchedMinecraftVersion);
+        Assert.Equal("pack.mrpack", version.FileName);
+    }
+
+    [Fact]
+    public async Task GetLatestVersionAsync_EmptyLoaderAndEmptyVersion_ReturnsLatestVersion()
+    {
+        ModrinthService service = CreateService((request, _) =>
+        {
+            string url = request.RequestUri?.ToString() ?? "";
+            if (url.Contains("/project/test-modpack/version"))
+            {
+                return MarketplaceHttpResponses.Json("""
+                [
+                  {
+                    "id": "modpack-ver-latest",
+                    "project_id": "proj-modpack",
+                    "name": "Modpack 2.0",
+                    "version_type": "release",
+                    "loaders": ["forge"],
+                    "game_versions": ["1.21.1"],
+                    "files": [{ "url": "https://cdn.example/pack2.mrpack", "filename": "pack2.mrpack", "primary": true }]
+                  }
+                ]
+                """);
+            }
+            if (url.Contains("/project/test-modpack"))
+            {
+                return MarketplaceHttpResponses.Json("""{ "id": "proj-modpack", "slug": "test-modpack", "title": "Test Modpack" }""");
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var version = await ((IAddonProvider)service).GetLatestVersionAsync("test-modpack", "", Array.Empty<string>());
+
+        Assert.NotNull(version);
+        Assert.Equal("modpack-ver-latest", version.Id);
+        Assert.Equal("forge", version.SelectedLoader);
+        Assert.Equal("1.21.1", version.MatchedMinecraftVersion);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ModpackWithLoader_IncludesLoaderCategoryFacet()
+    {
+        string capturedUrl = "";
+        ModrinthService service = CreateService((request, _) =>
+        {
+            capturedUrl = request.RequestUri?.ToString() ?? "";
+            return MarketplaceHttpResponses.Json("""{ "hits": [], "offset": 0, "limit": 20, "total_hits": 0 }""");
+        });
+
+        await service.SearchAsync("project_type:modpack", "", new[] { "fabric" });
+
+        Assert.Contains("categories%3Afabric", capturedUrl);
+    }
+
     private static ModrinthService CreateService(Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> responder)
     {
         return new ModrinthService(new HttpClient(new MarketplaceDelegateHttpMessageHandler(responder)));

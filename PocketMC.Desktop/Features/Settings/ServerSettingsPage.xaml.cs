@@ -251,13 +251,7 @@ namespace PocketMC.Desktop.Features.Settings
             try
             {
                 _isForwardingMouseWheel = true;
-                // Scroll by 3 lines for better responsiveness
-                int steps = System.Math.Max(1, System.Math.Abs(e.Delta) / Mouse.MouseWheelDeltaForOneLine) * 3;
-                for (int i = 0; i < steps; i++)
-                {
-                    if (e.Delta > 0) activeScrollViewer.LineUp();
-                    else activeScrollViewer.LineDown();
-                }
+                PocketMC.Desktop.Infrastructure.ScrollViewerHelper.ScrollByWheelDelta(activeScrollViewer, e.Delta);
             }
             finally
             {

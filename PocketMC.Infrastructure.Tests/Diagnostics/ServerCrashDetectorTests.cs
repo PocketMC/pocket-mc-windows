@@ -239,4 +239,68 @@ java.lang.NullPointerException: Cannot invoke method on null entity
         Assert.True(result.IsCrash);
         Assert.Equal(CrashCategory.BedrockScript, result.Category);
     }
+
+    [Fact]
+    public void Analyze_ForgeModSorterMissingDependencies_DetectsMissingModAndExtractsDetails()
+    {
+        var logs = new List<string>
+        {
+            "[17:05:07] [main/INFO] [ne.mi.fm.lo.mo.JarInJarDependencyLocator/]: Found 101 dependencies adding them to mods collection",
+            "[17:05:07] [main/INFO] [or.gr.gm.sc.ScriptModLocator/]: Injected ScriptModLocator candidates...",
+            "[17:05:08] [main/ERROR] [ne.mi.fm.lo.ModSorter/LOADING]: Missing or unsupported mandatory dependencies:",
+            "Mod ID: 'shouldersurfing', Requested by: 'tp_shooting', Expected range: '[1.20.1-4,1.20.1-5)', Actual version: '[MISSING]'",
+            "Exception in thread \"main\" java.lang.module.FindException: Module org.lwjgl not found, required by org.lwjgl.vulkan",
+            "   at java.base/java.lang.module.Resolver.findFail(Unknown Source)",
+            "[17:05:34] [GML Mappings Thread/INFO] [or.gr.gm.ma.MappingsProvider/]: MCPConfig is up to date.",
+            "[17:05:35] [GML Mappings Thread/INFO] [or.gr.gm.ma.MappingsProvider/]: Loaded runtime mappings in 27127ms",
+            "[17:05:35] [GML Mappings Thread/INFO] [or.gr.gm.ma.MappingsProvider/]: Finished runtime mappings setup."
+        };
+
+        var context = new ServerCrashContext(
+            WorkingDirectory: _testDir,
+            ServerType: "Forge",
+            StateBeforeExit: ServerState.Starting,
+            IntentionalStop: false,
+            ExitCode: 1,
+            ProcessStartTime: DateTime.UtcNow.AddMinutes(-1),
+            OutputBufferLines: logs);
+
+        var result = ServerCrashDetector.Analyze(context);
+
+        Assert.True(result.IsCrash);
+        Assert.Equal(CrashCategory.MissingMod, result.Category);
+        Assert.Equal("Forge Mod Loading Error", result.Title);
+        Assert.Contains("shouldersurfing", result.Summary);
+        Assert.Contains("tp_shooting", result.Summary);
+        Assert.Contains("ModSorter/LOADING", result.FullLogContext);
+    }
+
+    [Fact]
+    public void Analyze_StartupAbortedWithTrailingWorkerLogs_FindsActualFatalErrorAndSkipsWorkerInfo()
+    {
+        var logs = new List<string>
+        {
+            "[10:00:00] [main/INFO]: Server starting...",
+            "[10:00:05] [main/ERROR]: Failed to load world: Corrupted region file r.0.0.mca",
+            "[10:00:06] [Worker-1/INFO]: Async telemetry worker finished",
+            "[10:00:07] [Worker-2/INFO]: Cleanup worker shut down"
+        };
+
+        var context = new ServerCrashContext(
+            WorkingDirectory: _testDir,
+            ServerType: "Vanilla",
+            StateBeforeExit: ServerState.Starting,
+            IntentionalStop: false,
+            ExitCode: 1,
+            ProcessStartTime: DateTime.UtcNow.AddMinutes(-1),
+            OutputBufferLines: logs);
+
+        var result = ServerCrashDetector.Analyze(context);
+
+        Assert.True(result.IsCrash);
+        Assert.Equal(CrashCategory.StartupAborted, result.Category);
+        // Summary must capture the real error line, NOT the benign trailing worker INFO!
+        Assert.Contains("Corrupted region file", result.Summary);
+        Assert.DoesNotContain("Cleanup worker shut down", result.Summary);
+    }
 }

@@ -1,6 +1,9 @@
 using PocketMC.Domain.Security;
 using PocketMC.Domain.Storage;
+using PocketMC.Domain.Exceptions;
+using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Marketplace.Models;
 using System;
 using System.Collections.Generic;
@@ -134,6 +137,8 @@ namespace PocketMC.Desktop.Features.Marketplace
                     await RefreshResultsAsync();
                 }
             };
+            ScrollViewerHelper.EnableMouseWheelScrolling(this, ResultsScrollViewer);
+            Unloaded += (s, e) => ScrollViewerHelper.DisableMouseWheelScrolling(this);
             KeyDown += PluginBrowserPage_KeyDown;
         }
 
@@ -216,8 +221,13 @@ namespace PocketMC.Desktop.Features.Marketplace
                 _currentOffset = 0;
                 _results.Clear();
                 ProgressSearching.Visibility = Visibility.Visible;
+                EmptyStatePanel.Visibility = Visibility.Collapsed;
+                CurseForgeKeyPanel.Visibility = Visibility.Collapsed;
+                ResultsScrollViewer.Visibility = Visibility.Visible;
                 ListResults.Visibility = Visibility.Collapsed;
             }
+
+            CurseForgeApiKeyException? keyError = null;
 
             try
             {
@@ -286,6 +296,10 @@ namespace PocketMC.Desktop.Features.Marketplace
                 _currentOffset += hits.Count;
                 _hasMoreResults = hits.Count >= 20;
             }
+            catch (CurseForgeApiKeyException ex)
+            {
+                keyError = ex;
+            }
             catch (Exception ex)
             {
                 PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Search Error", $"Search failed: {ex.Message}");
@@ -293,13 +307,121 @@ namespace PocketMC.Desktop.Features.Marketplace
             finally
             {
                 ProgressSearching.Visibility = Visibility.Collapsed;
-                ListResults.Visibility = Visibility.Visible;
+
+                if (keyError != null)
+                {
+                    CurseForgeKeyPanel.Visibility = Visibility.Visible;
+                    EmptyStatePanel.Visibility = Visibility.Collapsed;
+                    ResultsScrollViewer.Visibility = Visibility.Collapsed;
+                    ListResults.Visibility = Visibility.Collapsed;
+
+                    if (keyError.IsMissingKey)
+                    {
+                        TxtCurseForgeKeyTitle.Text = "CurseForge API Key Required";
+                        TxtCurseForgeKeyDetail.Text = "CurseForge requires a free API key to browse and install addons. Enter your key to continue.";
+                    }
+                    else
+                    {
+                        TxtCurseForgeKeyTitle.Text = "Invalid CurseForge API Key";
+                        TxtCurseForgeKeyDetail.Text = "Your CurseForge API key was rejected (403 Forbidden). Please check that your key is entered correctly and has active permissions.";
+                    }
+                }
+                else
+                {
+                    CurseForgeKeyPanel.Visibility = Visibility.Collapsed;
+                    bool isEmpty = _results.Count == 0;
+                    EmptyStatePanel.Visibility = isEmpty ? Visibility.Visible : Visibility.Collapsed;
+                    ResultsScrollViewer.Visibility = isEmpty ? Visibility.Collapsed : Visibility.Visible;
+                    ListResults.Visibility = isEmpty ? Visibility.Collapsed : Visibility.Visible;
+
+                    if (isEmpty)
+                    {
+                        string query = TxtSearch.Text?.Trim() ?? "";
+                        string itemType = _isModpackMode ? "modpacks" : (_projectType.Contains("plugin") ? "plugins" : "mods");
+                        if (_compat.Family == EngineFamily.Bedrock) itemType = "add-ons";
+                        else if (_compat.Family == EngineFamily.Pocketmine) itemType = "pocketmine plugins";
+
+                        if (!string.IsNullOrEmpty(query))
+                        {
+                            TxtEmptyStateDetail.Text = $"No {itemType} matched \"{query}\". Try checking for spelling errors or adjusting your filters.";
+                        }
+                        else
+                        {
+                            TxtEmptyStateDetail.Text = $"No {itemType} matched the selected filter criteria. Try selecting 'Any' for loader or version.";
+                        }
+                    }
+                }
+
                 if (append)
                 {
                     ProgressLoadMore.Visibility = Visibility.Collapsed;
                     _isLoadingMore = false;
                 }
             }
+        }
+
+        private async void BtnResetFilters_Click(object sender, RoutedEventArgs e)
+        {
+            _searchCts?.Cancel();
+            TxtSearch.Text = "";
+            if (_isModpackMode)
+            {
+                CmbLoader.SelectedIndex = 0;
+                if (CmbMcVersion.Items.Count > 0)
+                {
+                    CmbMcVersion.SelectedIndex = 0;
+                }
+            }
+            CmbSort.SelectedIndex = 0;
+            await RefreshResultsAsync();
+        }
+
+        private async void BtnConfigureCurseForgeKey_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new CurseForgeApiKeyDialogWindow { Owner = Window.GetWindow(this) };
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ApiKey))
+            {
+                if (System.Windows.Application.Current is App app)
+                {
+                    var appState = app.Services.GetService<ApplicationState>();
+                    var settingsManager = app.Services.GetService<PocketMC.Infrastructure.Configuration.SettingsManager>();
+                    if (appState != null)
+                    {
+                        appState.Settings.CurseForgeApiKey = dialog.ApiKey;
+                        settingsManager?.Save(appState.Settings);
+                    }
+                }
+                await RefreshResultsAsync();
+            }
+        }
+
+        private async void BtnSwitchToModrinth_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in CmbSource.Items)
+            {
+                if (item is ComboBoxItem c && (c.Content?.ToString() == "Modrinth" || c.Tag?.ToString() == "Modrinth"))
+                {
+                    CmbSource.SelectedItem = item;
+                    break;
+                }
+            }
+            await RefreshResultsAsync();
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = e.Uri.AbsoluteUri,
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+            }
+            e.Handled = true;
         }
 
         private async void TxtSearch_TextChanged(Wpf.Ui.Controls.AutoSuggestBox sender, Wpf.Ui.Controls.AutoSuggestBoxTextChangedEventArgs e)
@@ -384,9 +506,10 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (rootResolved == null || string.IsNullOrEmpty(rootResolved.DownloadUrl) || !string.IsNullOrEmpty(rootResolved.Error))
                 {
                     string details = rootResolved?.Error ?? "No compatible version found.";
+                    string mcMessage = string.IsNullOrEmpty(mcVersionArg) ? "" : $" for Minecraft {mcVersionArg}";
                     PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                         "No compatible version found",
-                        $"PocketMC could not find a compatible version of {vm.Title} for Minecraft {mcVersionArg}.{Environment.NewLine}{Environment.NewLine}Details: {details}");
+                        $"PocketMC could not find a compatible version of {vm.Title}{mcMessage}.{Environment.NewLine}{Environment.NewLine}Details: {details}");
 
                     vm.State = InstallState.NotInstalled;
                     vm.IsActionEnabled = true;

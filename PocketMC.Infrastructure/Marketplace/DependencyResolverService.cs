@@ -206,7 +206,9 @@ namespace PocketMC.Infrastructure.Marketplace
                 
                 var loaderNamesToPrint = string.IsNullOrEmpty(loader) ? new[] { "Any" } : compat.CompatibleLoaderNames.Select(l => FirstCharToUpper(l));
                 string triedLoaders = string.Join("/", loaderNamesToPrint);
-                string errorMsg = $"No compatible {triedLoaders} version found for Minecraft {triedMcVersions}.";
+                string errorMsg = string.IsNullOrEmpty(triedMcVersions)
+                    ? $"No compatible {triedLoaders} version found."
+                    : $"No compatible {triedLoaders} version found for Minecraft {triedMcVersions}.";
 
                 results.Add(new ResolvedDependency
                 {
@@ -299,12 +301,16 @@ namespace PocketMC.Infrastructure.Marketplace
 
             if (version.Dependencies != null)
             {
+                string effectiveLoader = string.IsNullOrEmpty(loader) ? (version.SelectedLoader ?? "") : loader;
+                string effectiveMc = string.IsNullOrEmpty(mcVersion) ? (version.MatchedMinecraftVersion ?? "") : mcVersion;
+                EngineCompatibility effectiveCompat = !string.IsNullOrEmpty(effectiveLoader) ? new EngineCompatibility(effectiveLoader) : compat;
+
                 foreach (var dep in version.Dependencies)
                 {
                     if (dep.Type == DependencyType.Incompatible) continue;
                     if (dep.Type == DependencyType.Embedded) continue;
 
-                    await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, dep.VersionId, mcVersion, loader, results, visited, dep.Type, compat, false);
+                    await ResolveRecursiveAsync(provider, serverDir, dep.ProjectId, dep.VersionId, effectiveMc, effectiveLoader, results, visited, dep.Type, effectiveCompat, false);
                 }
             }
 

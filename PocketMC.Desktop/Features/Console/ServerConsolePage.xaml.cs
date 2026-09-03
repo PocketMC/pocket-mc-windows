@@ -755,6 +755,15 @@ namespace PocketMC.Desktop.Features.Console
             }
         }
 
+        private async void BtnCrashAiAnalyze_Click(object sender, RoutedEventArgs e)
+        {
+            string crashContext = _serverProcess?.CrashContext ?? TxtCrashLog.Text;
+            if (!string.IsNullOrWhiteSpace(crashContext))
+            {
+                await PerformAIAnalysisAsync(crashContext);
+            }
+        }
+
         private async System.Threading.Tasks.Task SendCommand()
         {
             if (!IsLiveProcess || _serverProcess == null) return;

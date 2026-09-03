@@ -131,8 +131,9 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <ui:Button x:Name="BtnAnalyzeWithAi"
                                Content="Analyze with AI"
-                               Appearance="Primary"
+                               Style="{StaticResource AiActionButtonStyle}"
                                Icon="{ui:SymbolIcon Sparkle20}"
+                               Cursor="Hand"
                                Padding="10,6"
                                AutomationProperties.Name="Analyze crash with AI"
                                Click="BtnAnalyzeWithAi_Click"

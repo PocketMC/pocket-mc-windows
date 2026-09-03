@@ -248,7 +248,7 @@ namespace PocketMC.Infrastructure.Marketplace
                     facetList.Add(new List<string> { $"versions:{mcVersion}" });
                 }
 
-                if ((type == "project_type:mod" || type == "project_type:plugin") && loaders != null && loaders.Count > 0)
+                if ((type == "project_type:mod" || type == "project_type:plugin" || type == "project_type:modpack") && loaders != null && loaders.Count > 0)
                 {
                     var loaderFacet = loaders.Select(l => $"categories:{l.ToLowerInvariant()}").ToList();
                     facetList.Add(loaderFacet);
@@ -277,6 +277,32 @@ namespace PocketMC.Infrastructure.Marketplace
             var projectInfo = await GetProjectInfoAsync(slug).ConfigureAwait(false);
             string projectSlug = projectInfo?.Slug ?? slug;
 
+            if (loaderCandidates == null || loaderCandidates.Count == 0)
+            {
+                foreach (var mcCand in mcCandidates)
+                {
+                    var mVersion = await GetLatestVersionAsync(projectSlug, mcCand).ConfigureAwait(false);
+                    if (mVersion != null)
+                    {
+                        var compatFile = SelectCompatibleFile(mVersion, "");
+                        if (compatFile != null)
+                        {
+                            var mv = MapToMarketplaceVersion(mVersion, projectInfo, compatFile);
+                            mv.DownloadUrl = compatFile.Url;
+                            mv.FileName = compatFile.FileName;
+                            mv.Hash = GetPreferredHash(compatFile, out string? hashType);
+                            mv.HashType = hashType;
+                            mv.SelectedLoader = mVersion.Loaders?.FirstOrDefault() ?? "";
+                            mv.MatchedMinecraftVersion = !string.IsNullOrEmpty(mcCand) ? mcCand : (mVersion.GameVersions?.FirstOrDefault() ?? "");
+                            mv.IconUrl = projectInfo?.IconUrl;
+                            return mv;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
             foreach (var mcCand in mcCandidates)
             {
                 var mVersion = await GetLatestVersionAsync(projectSlug, mcCand, loaderCandidates).ConfigureAwait(false);
@@ -293,7 +319,7 @@ namespace PocketMC.Infrastructure.Marketplace
                             mv.Hash = GetPreferredHash(compatFile, out string? hashType);
                             mv.HashType = hashType;
                             mv.SelectedLoader = loaderCand;
-                            mv.MatchedMinecraftVersion = mcCand;
+                            mv.MatchedMinecraftVersion = !string.IsNullOrEmpty(mcCand) ? mcCand : (mVersion.GameVersions?.FirstOrDefault() ?? "");
                             mv.IconUrl = projectInfo?.IconUrl;
                             return mv;
                         }

@@ -183,6 +183,39 @@
                 </StackPanel>
             </ScrollViewer>
 
+            <!-- Empty State Placeholder (Visible when not searching and results are empty) -->
+            <StackPanel x:Name="EmptyStatePanel" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,40">
+                <Border Width="80" Height="80" CornerRadius="40" Background="{DynamicResource ControlFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,20">
+                    <ui:SymbolIcon Symbol="Search24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <ui:TextBlock FontTypography="Subtitle" Text="No results found" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <ui:TextBlock x:Name="TxtEmptyStateDetail" Text="We couldn't find anything matching your search. Try different keywords or filters." FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" Margin="0,0,0,20"/>
+                <ui:Button x:Name="BtnResetFilters" Content="Reset Filters" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync24}" HorizontalAlignment="Center" Click="BtnResetFilters_Click"/>
+            </StackPanel>
+
+            <!-- CurseForge API Key Missing/Invalid Placeholder -->
+            <StackPanel x:Name="CurseForgeKeyPanel" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,32" MaxWidth="460">
+                <Border Width="80" Height="80" CornerRadius="40" Background="{DynamicResource ControlFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,20">
+                    <ui:SymbolIcon Symbol="Key24" FontSize="36" Foreground="#F9E2AF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                
+                <ui:TextBlock x:Name="TxtCurseForgeKeyTitle" FontTypography="Subtitle" Text="CurseForge API Key Required" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                
+                <ui:TextBlock x:Name="TxtCurseForgeKeyDetail" Text="CurseForge requires a free API key to search and install addons. Enter your key to continue." FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,24"/>
+                
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                    <ui:Button x:Name="BtnConfigureCurseForgeKey" Content="Configure API Key" Appearance="Primary" Icon="{ui:SymbolIcon Key24}" Margin="0,0,12,0" Padding="18,8" Click="BtnConfigureCurseForgeKey_Click"/>
+                    <ui:Button x:Name="BtnSwitchToModrinth" Content="Switch to Modrinth" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" Padding="16,8" Click="BtnSwitchToModrinth_Click"/>
+                </StackPanel>
+
+                <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                    <Run Text="Get a free key at "/>
+                    <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
+                        <Run Text="console.curseforge.com"/>
+                    </Hyperlink>
+                </TextBlock>
+            </StackPanel>
+
             <ui:ProgressRing x:Name="ProgressSearching" IsIndeterminate="True" Width="40" Height="40" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Grid>
     </Grid>

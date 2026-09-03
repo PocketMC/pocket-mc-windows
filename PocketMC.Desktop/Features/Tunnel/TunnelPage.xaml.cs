@@ -1,4 +1,5 @@
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Infrastructure;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -88,6 +89,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             _logger = logger;
 
             TunnelList.ItemsSource = _currentTunnels;
+            ScrollViewerHelper.EnableMouseWheelScrolling(this, TunnelScrollViewer);
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -106,7 +108,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-
+            ScrollViewerHelper.DisableMouseWheelScrolling(this);
             UnsubscribeFromAgent();
             // Important: we no longer cancel download on unload,
             // as it runs statefully in the background and can complete while another tab is active.

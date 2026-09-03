@@ -974,9 +974,10 @@
                                                                 </Style>
                                                             </ui:ProgressRing.Style>
                                                         </ui:ProgressRing>
-                                                        <ui:Button Content="Update All" Appearance="Info"
+                                                        <ui:Button Content="Update All" Style="{StaticResource AiActionButtonStyle}"
                                                                    Command="{Binding Addons.UpdateAllPluginsCommand}"
                                                                    Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                   Cursor="Hand"
                                                                    ToolTip="Check all installed plugins for updates"/>
                                                     </StackPanel>
                                                 </Grid>
@@ -1213,9 +1214,10 @@
                                                                 </Style>
                                                             </ui:ProgressRing.Style>
                                                         </ui:ProgressRing>
-                                                        <ui:Button Content="Update All" Appearance="Info"
+                                                        <ui:Button Content="Update All" Style="{StaticResource AiActionButtonStyle}"
                                                                    Command="{Binding Addons.UpdateAllModsCommand}"
                                                                    Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                   Cursor="Hand"
                                                                    ToolTip="Check all installed mods for updates"
                                                                    Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                     </StackPanel>

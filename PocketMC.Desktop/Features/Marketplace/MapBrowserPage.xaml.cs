@@ -1,4 +1,7 @@
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Domain.Exceptions;
+using Microsoft.Extensions.DependencyInjection;
+using PocketMC.Application.Services.Shell;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,6 +52,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
 
             Loaded += async (s, e) => await RefreshResultsAsync();
+            ScrollViewerHelper.EnableMouseWheelScrolling(this, ResultsScrollViewer);
+            Unloaded += (s, e) => ScrollViewerHelper.DisableMouseWheelScrolling(this);
             KeyDown += MapBrowserPage_KeyDown;
         }
 
@@ -85,8 +90,13 @@ namespace PocketMC.Desktop.Features.Marketplace
                 _currentOffset = 0;
                 _results.Clear();
                 ProgressSearching.Visibility = Visibility.Visible;
+                EmptyStatePanel.Visibility = Visibility.Collapsed;
+                CurseForgeKeyPanel.Visibility = Visibility.Collapsed;
+                ResultsScrollViewer.Visibility = Visibility.Visible;
                 ListResults.Visibility = Visibility.Collapsed;
             }
+
+            CurseForgeApiKeyException? keyError = null;
 
             try
             {
@@ -117,6 +127,10 @@ namespace PocketMC.Desktop.Features.Marketplace
                 _hasMoreResults = hits.Count >= 20;
                 ProgressLoadMore.Visibility = Visibility.Collapsed;
             }
+            catch (CurseForgeApiKeyException ex)
+            {
+                keyError = ex;
+            }
             catch (Exception ex)
             {
                 PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Search Error", $"Search failed: {ex.Message}");
@@ -124,9 +138,93 @@ namespace PocketMC.Desktop.Features.Marketplace
             finally
             {
                 ProgressSearching.Visibility = Visibility.Collapsed;
-                ListResults.Visibility = Visibility.Visible;
+
+                if (keyError != null)
+                {
+                    CurseForgeKeyPanel.Visibility = Visibility.Visible;
+                    EmptyStatePanel.Visibility = Visibility.Collapsed;
+                    ResultsScrollViewer.Visibility = Visibility.Collapsed;
+                    ListResults.Visibility = Visibility.Collapsed;
+
+                    if (keyError.IsMissingKey)
+                    {
+                        TxtCurseForgeKeyTitle.Text = "CurseForge API Key Required";
+                        TxtCurseForgeKeyDetail.Text = "CurseForge requires a free API key to search and download worlds. Enter your key to continue.";
+                    }
+                    else
+                    {
+                        TxtCurseForgeKeyTitle.Text = "Invalid CurseForge API Key";
+                        TxtCurseForgeKeyDetail.Text = "Your CurseForge API key was rejected (403 Forbidden). Please check that your key is entered correctly and has active permissions.";
+                    }
+                }
+                else
+                {
+                    CurseForgeKeyPanel.Visibility = Visibility.Collapsed;
+                    bool isEmpty = _results.Count == 0;
+                    EmptyStatePanel.Visibility = isEmpty ? Visibility.Visible : Visibility.Collapsed;
+                    ResultsScrollViewer.Visibility = isEmpty ? Visibility.Collapsed : Visibility.Visible;
+                    ListResults.Visibility = isEmpty ? Visibility.Collapsed : Visibility.Visible;
+
+                    if (isEmpty)
+                    {
+                        string query = TxtSearch.Text?.Trim() ?? "";
+                        if (!string.IsNullOrEmpty(query))
+                        {
+                            TxtEmptyStateDetail.Text = $"No worlds or maps matched \"{query}\". Try checking for spelling errors or clearing the category filter.";
+                        }
+                        else
+                        {
+                            TxtEmptyStateDetail.Text = "No worlds or maps found for the selected criteria. Try changing the category filter or search terms.";
+                        }
+                    }
+                }
+
                 _isLoadingMore = false;
             }
+        }
+
+        private async void BtnResetFilters_Click(object sender, RoutedEventArgs e)
+        {
+            _searchCts?.Cancel();
+            TxtSearch.Text = "";
+            CmbCategory.SelectedIndex = 0;
+            CmbSort.SelectedIndex = 0;
+            await RefreshResultsAsync();
+        }
+
+        private async void BtnConfigureCurseForgeKey_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new CurseForgeApiKeyDialogWindow { Owner = Window.GetWindow(this) };
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.ApiKey))
+            {
+                if (System.Windows.Application.Current is App app)
+                {
+                    var appState = app.Services.GetService<ApplicationState>();
+                    var settingsManager = app.Services.GetService<PocketMC.Infrastructure.Configuration.SettingsManager>();
+                    if (appState != null)
+                    {
+                        appState.Settings.CurseForgeApiKey = dialog.ApiKey;
+                        settingsManager?.Save(appState.Settings);
+                    }
+                }
+                await RefreshResultsAsync();
+            }
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = e.Uri.AbsoluteUri,
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+            }
+            e.Handled = true;
         }
 
         private async void TxtSearch_TextChanged(Wpf.Ui.Controls.AutoSuggestBox sender, Wpf.Ui.Controls.AutoSuggestBoxTextChangedEventArgs e)

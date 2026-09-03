@@ -20,6 +20,12 @@
         MinHeight="680"
         Icon="pack://application:,,,/icon.ico"
         Background="#FF242424"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        RenderOptions.BitmapScalingMode="Linear"
+        RenderOptions.ClearTypeHint="Enabled"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
         Loaded="Window_Loaded"
         Activated="Window_Activated"
         Deactivated="Window_Deactivated">

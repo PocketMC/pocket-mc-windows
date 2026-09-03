@@ -5,6 +5,7 @@ using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Core.Interfaces;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -54,6 +55,21 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        HardwareRenderingOptimizer.InitializeGlobalPerformanceProfile();
+
+        // 1. Optimize every Window across the entire application (GPU acceleration, pixel snapping, crisp text)
+        EventManager.RegisterClassHandler(
+            typeof(Window),
+            FrameworkElement.LoadedEvent,
+            new RoutedEventHandler((sender, _) =>
+            {
+                if (sender is Window window)
+                {
+                    HardwareRenderingOptimizer.OptimizeWindow(window);
+                }
+            })
+        );
 
         // Immediately refresh dynamic links and proxies from GitHub in the background at the start of every session
         _ = Task.Run(async () =>

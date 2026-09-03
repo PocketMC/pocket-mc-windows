@@ -220,6 +220,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        HardwareRenderingOptimizer.OptimizeWindow(this);
         UpdateDpiScalingIsolation();
         _visualService.RequestMicaUpdate();
 
