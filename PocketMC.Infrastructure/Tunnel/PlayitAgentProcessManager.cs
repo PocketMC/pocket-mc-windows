@@ -147,7 +147,6 @@ namespace PocketMC.Infrastructure.Tunnel
                 string? line;
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
-                    Log(line);
                     onLine?.Invoke(line);
                 }
             }
