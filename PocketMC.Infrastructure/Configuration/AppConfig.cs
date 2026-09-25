@@ -54,6 +54,10 @@ namespace PocketMC.Infrastructure.Configuration
         public static string LinkWebsite { get; private set; } = "https://ds-labs-portfolio.vercel.app";
         public static string LinkDocs { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows";
         public static string LinkDonation { get; private set; } = "https://buymeacoffee.com/sahaj33";
+        public static string LinkContributorDivy { get; private set; } = "https://github.com/divyviradiya2";
+        public static string LinkContributorSahaj { get; private set; } = "https://github.com/SizWinz";
+        public static string LinkHelperJohndinglesin { get; private set; } = "https://github.com/Johndinglesin";
+        public static string LinkDonatorNexVice { get; private set; } = "https://discord.com/users/524387761541742592";
         public static string LinkOrganization { get; private set; } = "https://ds-labs-portfolio.vercel.app";
         public static string LinkPlayitWebsite { get; private set; } = "https://playit.gg";
         public static string LinkPlayitSetup { get; private set; } = "https://playit.gg/l/setup-third-party";
@@ -300,6 +304,18 @@ namespace PocketMC.Infrastructure.Configuration
 
                             var donationMatch = Regex.Match(trimmed, @"link_donation:\s*""?([^""\r\n]+)""?");
                             if (donationMatch.Success) LinkDonation = donationMatch.Groups[1].Value;
+
+                            var divyMatch = Regex.Match(trimmed, @"link_contributor_divy:\s*""?([^""\r\n]+)""?");
+                            if (divyMatch.Success) LinkContributorDivy = divyMatch.Groups[1].Value;
+
+                            var sahajMatch = Regex.Match(trimmed, @"link_contributor_sahaj:\s*""?([^""\r\n]+)""?");
+                            if (sahajMatch.Success) LinkContributorSahaj = sahajMatch.Groups[1].Value;
+
+                            var helperJohnMatch = Regex.Match(trimmed, @"link_helper_johndinglesin:\s*""?([^""\r\n]+)""?");
+                            if (helperJohnMatch.Success) LinkHelperJohndinglesin = helperJohnMatch.Groups[1].Value;
+
+                            var nexviceMatch = Regex.Match(trimmed, @"link_donator_nexvice:\s*""?([^""\r\n]+)""?");
+                            if (nexviceMatch.Success) LinkDonatorNexVice = nexviceMatch.Groups[1].Value;
 
                             var playitWebMatch = Regex.Match(trimmed, @"link_playit_website:\s*""?([^""\r\n]+)""?");
                             if (playitWebMatch.Success) LinkPlayitWebsite = playitWebMatch.Groups[1].Value;

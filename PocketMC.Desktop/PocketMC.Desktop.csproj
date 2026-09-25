@@ -19,6 +19,10 @@
     <Resource Include="Assets\logo_highres.png" />
     <Resource Include="Assets\splash.png" />
     <Resource Include="Assets\default_wallpaper.png" />
+    <Resource Include="Assets\avatar_divyviradiya.png" />
+    <Resource Include="Assets\avatar_sahajitaliya.png" />
+    <Resource Include="Assets\avatar_johndinglesin.png" />
+    <Resource Include="Assets\avatar_nexvice.png" />
   </ItemGroup>
 
   <ItemGroup>

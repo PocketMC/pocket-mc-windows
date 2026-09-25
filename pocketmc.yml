@@ -28,6 +28,10 @@ link_releases: "https://github.com/PocketMC/pocket-mc-windows/releases" # [Dynam
 link_website: "https://ds-labs-portfolio.vercel.app"                  # [Dynamic Cloud] Live-updates Official website link
 link_organization: "https://ds-labs-portfolio.vercel.app"             # [Dynamic Cloud] Live-updates Organization website link
 link_donation: "https://buymeacoffee.com/sahaj33"                     # [Dynamic Cloud] Live-updates Donation/Coffee link
+link_contributor_divy: "https://github.com/divyviradiya2"                 # [Dynamic Cloud] Live-updates Divy Viradiya GitHub profile link
+link_contributor_sahaj: "https://github.com/SizWinz"                      # [Dynamic Cloud] Live-updates Sahaj Italiya GitHub profile link
+link_helper_johndinglesin: "https://github.com/Johndinglesin"             # [Dynamic Cloud] Live-updates Johndinglesin GitHub profile link
+link_donator_nexvice: "https://discord.com/users/524387761541742592"      # [Dynamic Cloud] Live-updates NexVice Discord profile link
 link_playit_website: "https://playit.gg"                              # [Dynamic Cloud] Live-updates Playit homepage link
 link_playit_setup: "https://playit.gg/l/setup-third-party"            # [Dynamic Cloud] Live-updates Playit third-party setup link
 link_playit_agents: "https://playit.gg/account/agents"                # [Dynamic Cloud] Live-updates Playit agents link
