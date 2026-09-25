@@ -13,7 +13,7 @@ app_description: "Local-first Minecraft server manager for Windows."  # ui chang
 # (Used by MSBuild, dotnet publish, Velopack packaging, and GitHub Actions)
 # ==============================================================================
 version: 1.9.8.5                                                     # [Requires App Update] Binary build version (Used by Velopack CI/CD)
-channel: beta                                                     # [Requires App Update] Release channel (release | beta)
+channel:                                                      # [Requires App Update] Release channel (release | beta)
 
 # ==============================================================================
 # 3. COMMUNITY, SUPPORT & WEB LINKS
