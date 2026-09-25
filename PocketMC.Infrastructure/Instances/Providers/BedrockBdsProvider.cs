@@ -36,9 +36,6 @@ namespace PocketMC.Infrastructure.Instances.Providers;
 /// </summary>
 public class BedrockBdsProvider : IServerSoftwareProvider
 {
-    private const string KittizzJsonUrl =
-        "https://raw.githubusercontent.com/kittizz/bedrock-server-downloads/main/bedrock-server-downloads.json";
-
     private readonly HttpClient _httpClient;
     private readonly DownloaderService _downloader;
     private readonly ILogger<BedrockBdsProvider> _logger;
@@ -154,7 +151,8 @@ public class BedrockBdsProvider : IServerSoftwareProvider
 
         try
         {
-            using var response = await _httpClient.GetAsync(KittizzJsonUrl);
+            string kittizzUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderBedrockKittizz;
+            using var response = await _httpClient.GetAsync(kittizzUrl);
             response.EnsureSuccessStatusCode();
             string json = await response.Content.ReadAsStringAsync();
             ParseKittizzJson(json);

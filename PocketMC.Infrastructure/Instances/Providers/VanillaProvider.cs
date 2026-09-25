@@ -43,7 +43,7 @@ public class VanillaProvider : IServerSoftwareProvider
     {
         try
         {
-            string url = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+            string url = PocketMC.Infrastructure.Configuration.AppConfig.ProviderMojangManifest;
             var response = await _httpClient.GetStringAsync(url);
             var manifest = JsonSerializer.Deserialize<VersionManifest>(response, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -64,7 +64,7 @@ public class VanillaProvider : IServerSoftwareProvider
         _logger.LogInformation("Resolving download URL for Vanilla {Version}", mcVersion);
 
         // 1. Get manifest to find version metadata URL
-        string manifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+        string manifestUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderMojangManifest;
         var manifestStr = await _httpClient.GetStringAsync(manifestUrl);
         var manifest = JsonSerializer.Deserialize<VersionManifest>(manifestStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 

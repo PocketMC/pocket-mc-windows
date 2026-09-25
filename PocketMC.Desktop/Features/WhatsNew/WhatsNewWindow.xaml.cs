@@ -12,8 +12,6 @@ namespace PocketMC.Desktop.Features.WhatsNew
     /// </summary>
     public partial class WhatsNewWindow : Wpf.Ui.Controls.FluentWindow
     {
-        private const string GitHubReleasesUrl = "https://github.com/PocketMC/pocket-mc-windows/releases";
-
         private readonly string _version;
 
         public WhatsNewWindow(ChangelogEntry? changelog, string version)
@@ -79,7 +77,8 @@ namespace PocketMC.Desktop.Features.WhatsNew
         {
             try
             {
-                string url = $"{GitHubReleasesUrl}/tag/v{_version}";
+                string baseReleases = PocketMC.Infrastructure.Configuration.AppConfig.LinkReleases;
+                string url = $"{baseReleases}/tag/v{_version}";
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
             catch

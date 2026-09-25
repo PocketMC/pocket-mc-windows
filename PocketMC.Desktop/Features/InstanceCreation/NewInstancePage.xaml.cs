@@ -60,6 +60,15 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         private readonly MouseWheelEventHandler _previewMouseWheelHandler;
         private bool _isForwardingMouseWheel;
 
+        public static readonly DependencyProperty IsLoadingProperty =
+            DependencyProperty.Register(nameof(IsLoading), typeof(bool), typeof(NewInstancePage), new PropertyMetadata(true));
+
+        public bool IsLoading
+        {
+            get => (bool)GetValue(IsLoadingProperty);
+            set => SetValue(IsLoadingProperty, value);
+        }
+
         public static bool IsDownloadInProgress { get; private set; }
         public static bool InstanceCreatePageIsOpen { get; private set; }
 
@@ -119,6 +128,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
             if (_hasLoadedInitialVersions)
             {
+                IsLoading = false;
                 UpdateCreateButtonState();
                 return;
             }
@@ -127,7 +137,14 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             string serverType = GetSelectedServerType();
             UpdateAddonPanelVisibility(serverType);
             UpdateCreateButtonState();
-            await LoadVersionsAsync(serverType);
+            try
+            {
+                await LoadVersionsAsync(serverType);
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private void Page_SizeChanged(object sender, SizeChangedEventArgs e)

@@ -30,8 +30,9 @@ public class FabricProvider : IServerSoftwareProvider
 
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
-        var gameVersionsResponse = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/game");
-        var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/loader");
+        string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
+        var gameVersionsResponse = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/game");
+        var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/loader");
 
         var loaders = new List<ModLoaderVersion>();
         if (loadersResponse != null)
@@ -72,7 +73,8 @@ public class FabricProvider : IServerSoftwareProvider
 
     public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
-        var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/loader");
+        string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
+        var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/loader");
         var loaders = new List<ModLoaderVersion>();
         
         if (loadersResponse != null)
@@ -112,20 +114,23 @@ public class FabricProvider : IServerSoftwareProvider
     public async Task DownloadFabricJarAsync(string mcVersion, string loaderVersion, string installerVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         // Official structure: v2/versions/loader/:game_version/:loader_version/:installer_version/server/jar
-        string url = $"https://meta.fabricmc.net/v2/versions/loader/{mcVersion}/{loaderVersion}/{installerVersion}/server/jar";
+        string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
+        string url = $"{baseMeta}/versions/loader/{mcVersion}/{loaderVersion}/{installerVersion}/server/jar";
         await _downloader.DownloadFileAsync(url, destinationPath, null, progress, cancellationToken);
     }
 
     private async Task<string> GetLatestLoaderVersionAsync()
     {
-        var loaders = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/loader");
+        string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
+        var loaders = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/loader");
         var latest = loaders?.FirstOrDefault(l => (bool)(l?["stable"] ?? false));
         return latest?["version"]?.ToString() ?? "0.15.7";
     }
 
     private async Task<string> GetLatestInstallerVersionAsync()
     {
-        var installers = await _httpClient.GetFromJsonAsync<JsonArray>("https://meta.fabricmc.net/v2/versions/installer");
+        string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
+        var installers = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/installer");
         var latest = installers?.FirstOrDefault(l => (bool)(l?["stable"] ?? false));
         return latest?["version"]?.ToString() ?? "1.0.1";
     }

@@ -81,7 +81,8 @@
                        AutomationProperties.Name="Restart server process"
                        IsEnabled="{Binding CanUseLiveServerControls}"/>
 
-            <ui:Button Grid.Column="9" Content="AI Summary" Appearance="Info"
+            <ui:Button Grid.Column="9" Content="AI Summary"
+                       Style="{StaticResource AiActionButtonStyle}"
                        Icon="{ui:SymbolIcon Sparkle24}" Click="BtnAiSummary_Click" Cursor="Hand"
                        ToolTip="Generate AI session summary"
                        AutomationProperties.Name="Generate AI session summary"/>
@@ -135,6 +136,12 @@
                                     <ui:TextBlock FontTypography="Subtitle" Text="Critical Crash Detected!" Foreground="#FF6B6B" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <ui:Button x:Name="BtnCrashAiAnalyze" Content="Analyze with AI"
+                                               Style="{StaticResource AiActionButtonStyle}"
+                                               Icon="{ui:SymbolIcon Sparkle20}"
+                                               Cursor="Hand"
+                                               Margin="0,0,8,0" Padding="8,4"
+                                               Click="BtnCrashAiAnalyze_Click"/>
                                     <ui:Button Content="Copy Report" Appearance="Secondary" Icon="{ui:SymbolIcon Copy24}" Margin="0,0,8,0" Padding="8,4" Click="BtnCopyCrash_Click"/>
                                     <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Dismiss24}" Padding="4" Click="BtnDismissCrash_Click" ToolTip="Hide Banner"/>
                                 </StackPanel>

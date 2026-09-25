@@ -66,7 +66,6 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<WindowsStartupService>();
             services.AddSingleton<PocketMC.Application.Interfaces.Networking.ILocalNetworkAddressService, PocketMC.Infrastructure.Networking.LocalNetworkAddressService>();
             services.AddSingleton<PocketMC.Infrastructure.Networking.LocalNetworkAddressService>();
-            services.AddSingleton<WindowsCornerService>();
             services.AddSingleton<ApplicationState>();
             services.AddSingleton<JobObject>();
             services.AddSingleton<WindowsToastNotificationService>();

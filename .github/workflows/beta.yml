@@ -31,8 +31,14 @@ jobs:
         shell: pwsh
         run: |
           $content = Get-Content pocketmc.yml -Raw
-          $version = if ($content -match '(?m)^version:\s*(.+)$') { $matches[1].Trim() } else { "1.0.0" }
-          $channel = if ($content -match '(?m)^channel:\s*(.+)$') { $matches[1].Trim() } else { "none" }
+          $appId = if ($content -match '(?m)^app_id:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "PocketMC" }
+          $appName = if ($content -match '(?m)^app_name:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "PocketMC" }
+          $orgName = if ($content -match '(?m)^organization_name:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "DS Labs" }
+          $version = if ($content -match '(?m)^version:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "1.0.0" }
+          $channel = if ($content -match '(?m)^channel:\s*([^#\r\n]+)') { $matches[1].Trim(' "''') } else { "none" }
+          echo "app_id=$appId" >> $env:GITHUB_OUTPUT
+          echo "app_name=$appName" >> $env:GITHUB_OUTPUT
+          echo "org_name=$orgName" >> $env:GITHUB_OUTPUT
           echo "version=$version" >> $env:GITHUB_OUTPUT
           echo "channel=$channel" >> $env:GITHUB_OUTPUT
 
@@ -76,14 +82,14 @@ jobs:
         if: steps.check_channel.outputs.skip == 'false'
         shell: pwsh
         run: |
-          Compress-Archive -Path "Beta Release/Portable/*" -DestinationPath "Beta Release/PocketMC-Beta-Portable-${{ steps.config.outputs.version }}.zip"
+          Compress-Archive -Path "Beta Release/Portable/*" -DestinationPath "Beta Release/${{ steps.config.outputs.app_id }}-Beta-Portable-${{ steps.config.outputs.version }}.zip"
 
       - name: Upload Beta Artifact
         if: steps.check_channel.outputs.skip == 'false'
         id: upload-beta-portable
         uses: actions/upload-artifact@v4
         with:
-          name: PocketMC-Beta-Portable-${{ steps.config.outputs.version }}
+          name: ${{ steps.config.outputs.app_id }}-Beta-Portable-${{ steps.config.outputs.version }}
           path: Beta Release/Portable/
 
       - name: Create Beta GitHub Release
@@ -91,10 +97,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.config.outputs.version }}
-          name: PocketMC v${{ steps.config.outputs.version }} (Beta)
+          name: ${{ steps.config.outputs.app_name }} v${{ steps.config.outputs.version }} (Beta)
           body: "This is an automated beta release for testing upcoming features."
           files: |
-            Beta Release/PocketMC-Beta-Portable-${{ steps.config.outputs.version }}.zip
+            Beta Release/${{ steps.config.outputs.app_id }}-Beta-Portable-${{ steps.config.outputs.version }}.zip
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -120,11 +126,11 @@ jobs:
 
           $payload = @{
             embeds = @(@{
-              title       = "❖ PocketMC Beta Available ❖"
+              title       = "❖ ${{ steps.config.outputs.app_name }} Beta Available ❖"
               description = "**Branch:** ``$branch`` `n**Commit:** ``$commit`` `n`n### ❯ Message`n" + '```text' + "`n$commitMessage`n" + '```'
               color       = 16753920
               image       = @{ url = "https://cdn.discordapp.com/attachments/1493841758864412715/1512177063572934717/banner.png" }
-              footer      = @{ text = "PocketMC CI/CD" }
+              footer      = @{ text = "${{ steps.config.outputs.app_name }} CI/CD" }
             })
             components = @(
               @{

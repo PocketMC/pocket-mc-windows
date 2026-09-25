@@ -262,9 +262,21 @@ public sealed class ServerConfigurationService
     public string LoadRawProperties(string serverDir)
     {
         string propsFile = GetPropertiesPath(serverDir);
-        return File.Exists(propsFile)
-            ? File.ReadAllText(propsFile, Encoding.UTF8)
-            : string.Empty;
+        if (!File.Exists(propsFile))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using var fs = new FileStream(propsFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(fs, Encoding.UTF8);
+            return reader.ReadToEnd();
+        }
+        catch (Exception)
+        {
+            return string.Empty;
+        }
     }
 
     public void SaveRawProperties(string serverDir, string contents)

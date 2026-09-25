@@ -755,6 +755,15 @@ namespace PocketMC.Desktop.Features.Console
             }
         }
 
+        private async void BtnCrashAiAnalyze_Click(object sender, RoutedEventArgs e)
+        {
+            string crashContext = _serverProcess?.CrashContext ?? TxtCrashLog.Text;
+            if (!string.IsNullOrWhiteSpace(crashContext))
+            {
+                await PerformAIAnalysisAsync(crashContext);
+            }
+        }
+
         private async System.Threading.Tasks.Task SendCommand()
         {
             if (!IsLiveProcess || _serverProcess == null) return;
@@ -776,7 +785,15 @@ namespace PocketMC.Desktop.Features.Console
             Logs.Add(new LogLine { Text = $"> {command}", TextColor = Brushes.CornflowerBlue });
             TxtCommand.Text = string.Empty;
 
-            await _serverProcess.WriteInputAsync(command);
+            try
+            {
+                await _serverProcess.WriteInputAsync(command);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send command '{Command}' to {ServerName}.", command, _metadata.Name);
+                Logs.Add(new LogLine { Text = $"[ERROR] Failed to send command: {ex.Message}", TextColor = Brushes.Red });
+            }
         }
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)

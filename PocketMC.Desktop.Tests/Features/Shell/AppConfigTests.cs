@@ -23,10 +23,43 @@ public sealed class AppConfigTests
 
         using var reader = new StreamReader(stream);
         string content = reader.ReadToEnd();
-        var versionMatch = Regex.Match(content, @"(?m)^version:\s*""?([^""\r\n]+)""?");
+        var versionMatch = Regex.Match(content, @"(?m)^version:\s*""?([^""\r\n#]+)""?");
 
         Assert.True(versionMatch.Success);
-        Assert.Equal(versionMatch.Groups[1].Value, AppConfig.AppVersion);
+        Assert.Equal(versionMatch.Groups[1].Value.Trim(), AppConfig.AppVersion);
+    }
+
+    [Fact]
+    public void AppIdentity_LoadsFromEmbeddedPocketMcConfig()
+    {
+        Assert.Equal("PocketMC", AppConfig.AppName);
+        Assert.Equal("PocketMC", AppConfig.AppTitle);
+        Assert.Equal("PocketMC", AppConfig.AppId);
+        Assert.Equal("DS Labs", AppConfig.OrganizationName);
+    }
+
+    [Fact]
+    public void ProviderEndpoints_LoadFromEmbeddedConfig()
+    {
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderMojangManifest));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderPaperMcApi));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderFabricMeta));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderForgeMeta));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderNeoForgeMaven));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderAdoptiumApi));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderModrinthApi));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderCurseForgeApi));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderPocketmineReleases));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderPhpReleases));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.ProviderPlayitApi));
+        Assert.Equal("https://playit.gg", AppConfig.LinkPlayitWebsite);
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.LinkPlayitSetup));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.LinkPlayitAgents));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.HealthCheckPlayit));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.HealthCheckAdoptium));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.HealthCheckModrinth));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.BinaryPlayitDownloadUrl));
+        Assert.False(string.IsNullOrWhiteSpace(AppConfig.BinaryCloudflaredDownloadUrl));
     }
 
     [Fact]
@@ -34,13 +67,23 @@ public sealed class AppConfigTests
     {
         string originalVersion = AppConfig.AppVersion;
         string yaml = @"
+app_name: ""PocketMC Test""
+app_title: ""PocketMC Test Title""
+app_id: ""PocketMC.Test""
 version: 9.9.9
+organization_name: ""DS Labs Test""
+organization_tagline: ""Building Test Software""
+app_description: ""A test manager description""
 link_discord: ""https://discord.gg/custom-test-invite""
 link_youtube: ""https://youtube.com/@custom-test""
 link_reddit: ""https://reddit.com/r/custom-test""
 link_instagram: ""https://instagram.com/custom-test""
 link_feedback: ""https://feedback.test.com/form""
 link_github: ""https://github.com/custom-test/repo""
+link_releases: ""https://github.com/custom-test/repo/releases""
+link_website: ""https://test-website.com""
+link_docs: ""https://test-docs.com""
+link_organization: ""https://test-org.com""
 link_donation: ""https://buymeacoffee.com/custom-test""
 auth_proxies:
   - ""https://proxy1.test.com""
@@ -53,12 +96,19 @@ discord_api_urls:
         AppConfig.ParseYamlContent(yaml, preserveLocalVersion: true);
 
         Assert.Equal(originalVersion, AppConfig.AppVersion);
+        Assert.Equal("DS Labs Test", AppConfig.OrganizationName);
+        Assert.Equal("Building Test Software", AppConfig.OrganizationTagline);
+        Assert.Equal("A test manager description", AppConfig.AppDescription);
         Assert.Equal("https://discord.gg/custom-test-invite", AppConfig.LinkDiscord);
         Assert.Equal("https://youtube.com/@custom-test", AppConfig.LinkYouTube);
         Assert.Equal("https://reddit.com/r/custom-test", AppConfig.LinkReddit);
         Assert.Equal("https://instagram.com/custom-test", AppConfig.LinkInstagram);
         Assert.Equal("https://feedback.test.com/form", AppConfig.LinkFeedback);
         Assert.Equal("https://github.com/custom-test/repo", AppConfig.LinkGitHub);
+        Assert.Equal("https://github.com/custom-test/repo/releases", AppConfig.LinkReleases);
+        Assert.Equal("https://test-website.com", AppConfig.LinkWebsite);
+        Assert.Equal("https://test-docs.com", AppConfig.LinkDocs);
+        Assert.Equal("https://test-org.com", AppConfig.LinkOrganization);
         Assert.Equal("https://buymeacoffee.com/custom-test", AppConfig.LinkDonation);
         Assert.Contains("https://proxy1.test.com", AppConfig.AuthProxies);
         Assert.Contains("https://telemetry1.test.com", AppConfig.TelemetryProxies);

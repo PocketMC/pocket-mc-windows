@@ -66,13 +66,39 @@
 
             <!-- Main Route Topology Area -->
             <Grid>
-                <!-- Loading State -->
-                <Grid x:Name="LoadingOverlay" Visibility="Collapsed" Panel.ZIndex="10" Background="#90000000">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <ui:ProgressRing IsIndeterminate="True" Width="40" Height="40" Margin="0,0,0,16"/>
-                        <TextBlock Text="Mapping active network interfaces..." Foreground="White" FontSize="14" FontWeight="SemiBold"/>
-                    </StackPanel>
-                </Grid>
+                <!-- Ports Map Skeleton Loader (Zero-delay, active only during network topology discovery) -->
+                <StackPanel x:Name="LoadingOverlay" Visibility="Collapsed">
+                    <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,16" Padding="16,14">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="36" Height="36" CornerRadius="18" Margin="0,0,12,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SkeletonElement}" Height="18" Width="180" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                <Border Style="{StaticResource SkeletonElement}" Height="12" Width="240" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="100" Height="32" CornerRadius="6"/>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,16" Padding="16,14">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="36" Height="36" CornerRadius="18" Margin="0,0,12,0"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SkeletonElement}" Height="18" Width="150" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                <Border Style="{StaticResource SkeletonElement}" Height="12" Width="200" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="100" Height="32" CornerRadius="6"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
 
                 <!-- No Tunnels/Offline message -->
                 <StackPanel x:Name="NoRoutesPanel" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,50,0,0">
@@ -88,6 +114,16 @@
                               CanContentScroll="False"
                               PanningMode="VerticalOnly"
                               Padding="0,0,12,0">
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Visibility, ElementName=LoadingOverlay}" Value="Visible">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ScrollViewer.Style>
                     <ItemsControl x:Name="RoutesList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

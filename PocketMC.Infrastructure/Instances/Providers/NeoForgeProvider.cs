@@ -28,7 +28,7 @@ public class NeoForgeProvider : IServerSoftwareProvider
 
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
-        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.neoforged/index.json";
+        string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderNeoForgeMeta;
         var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
         var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
@@ -100,7 +100,7 @@ public class NeoForgeProvider : IServerSoftwareProvider
 
     public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
-        const string metadataUrl = "https://meta.prismlauncher.org/v1/net.neoforged/index.json";
+        string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderNeoForgeMeta;
         var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
         var loaders = new List<ModLoaderVersion>();
@@ -170,8 +170,8 @@ public class NeoForgeProvider : IServerSoftwareProvider
 
     public async Task DownloadNeoForgeJarAsync(string mcVersion, string neoforgeVersion, string destinationPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        // URL Pattern: https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.65/neoforge-21.1.65-installer.jar
-        string url = $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoforgeVersion}/neoforge-{neoforgeVersion}-installer.jar";
+        string baseMaven = PocketMC.Infrastructure.Configuration.AppConfig.ProviderNeoForgeMaven;
+        string url = $"{baseMaven}/{neoforgeVersion}/neoforge-{neoforgeVersion}-installer.jar";
         await _downloader.DownloadFileAsync(url, destinationPath, null, progress, cancellationToken);
     }
 }

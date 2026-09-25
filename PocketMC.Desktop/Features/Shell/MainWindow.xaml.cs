@@ -2,7 +2,7 @@ using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Core.Interfaces;
-using PocketMC.Desktop.Views.Behaviors;
+using PocketMC.Infrastructure.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -36,7 +36,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private readonly IServiceProvider _serviceProvider;
     private readonly IShellUIStateService _uiStateService;
     private readonly IShellVisualService _visualService;
-    private readonly WindowsCornerService _windowsCornerService;
     private readonly ShellStartupCoordinator _startupCoordinator;
     private readonly ShellViewModel _viewModel;
     private readonly ILogger<MainWindow> _logger;
@@ -61,7 +60,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         IServiceProvider serviceProvider,
         IShellUIStateService uiStateService,
         IShellVisualService visualService,
-        WindowsCornerService windowsCornerService,
         ShellStartupCoordinator startupCoordinator,
         ShellViewModel viewModel,
         ILogger<MainWindow> logger)
@@ -69,7 +67,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         _serviceProvider = serviceProvider;
         _uiStateService = uiStateService;
         _visualService = visualService;
-        _windowsCornerService = windowsCornerService;
         _startupCoordinator = startupCoordinator;
         _viewModel = viewModel;
         _logger = logger;
@@ -77,7 +74,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         DataContext = _viewModel;
 
         InitializeComponent();
-        _windowsCornerService.ApplyWindows10RoundedCorners(this);
+        Title = PocketMC.Infrastructure.Configuration.AppConfig.AppName;
+        AppTitleBar.Title = PocketMC.Infrastructure.Configuration.AppConfig.AppName;
         ApplyDynamicWindowSize();
 
         if (visualService is ShellVisualService concreteVisual)
@@ -96,26 +94,154 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         {
             var handle = new WindowInteropHelper(this).Handle;
             HwndSource.FromHwnd(handle)?.AddHook(HwndHook);
+
+            var settingsManager = _serviceProvider.GetService<SettingsManager>();
+            var appState = _serviceProvider.GetService<ApplicationState>();
+            var settings = appState?.Settings ?? settingsManager?.Load();
+            if (settings?.IsWindowMaximized == true)
+            {
+                WindowState = WindowState.Maximized;
+            }
         };
     }
 
 
     private void ApplyDynamicWindowSize()
     {
-        const double widthRatio = 0.75;
-        const double heightRatio = 0.85;
-        const double minWidth = 960;
-        const double minHeight = 640;
+        var settingsManager = _serviceProvider.GetService<SettingsManager>();
+        var appState = _serviceProvider.GetService<ApplicationState>();
+        var settings = appState?.Settings;
 
-        Width = Math.Max(minWidth, SystemParameters.WorkArea.Width * widthRatio);
-        Height = Math.Max(minHeight, SystemParameters.WorkArea.Height * heightRatio);
+        if (settings == null || (!settings.WindowWidth.HasValue && !settings.IsWindowMaximized))
+        {
+            try
+            {
+                var loaded = settingsManager?.Load();
+                if (loaded != null)
+                {
+                    settings = loaded;
+                }
+            }
+            catch { }
+        }
+
+        double screenWidth = SystemParameters.WorkArea.Width;
+        double screenHeight = SystemParameters.WorkArea.Height;
+
+        if (settings != null && settings.WindowWidth.HasValue && settings.WindowHeight.HasValue &&
+            settings.WindowWidth.Value >= 1024 && settings.WindowHeight.Value >= 680)
+        {
+            Width = Math.Max(1024, Math.Min(settings.WindowWidth.Value, screenWidth));
+            Height = Math.Max(680, Math.Min(settings.WindowHeight.Value, screenHeight));
+        }
+        else
+        {
+            double targetWidth = Math.Max(1024, Math.Min(1440, screenWidth * 0.85));
+            double targetHeight = Math.Max(680, Math.Min(860, screenHeight * 0.85));
+
+            Width = targetWidth;
+            Height = targetHeight;
+        }
+
+        if (settings?.IsWindowMaximized == true)
+        {
+            WindowState = WindowState.Maximized;
+        }
+    }
+
+    private void SaveWindowState()
+    {
+        try
+        {
+            var appState = _serviceProvider.GetService<ApplicationState>();
+            var settingsManager = _serviceProvider.GetService<SettingsManager>();
+            var settings = appState?.Settings ?? settingsManager?.Load();
+            if (settings == null || settingsManager == null) return;
+
+            bool isMaximized = WindowState == WindowState.Maximized;
+            settings.IsWindowMaximized = isMaximized;
+
+            if (isMaximized)
+            {
+                if (RestoreBounds.Width >= 1024 && RestoreBounds.Height >= 680)
+                {
+                    settings.WindowWidth = RestoreBounds.Width;
+                    settings.WindowHeight = RestoreBounds.Height;
+                }
+            }
+            else if (WindowState == WindowState.Normal)
+            {
+                if (Width >= 1024 && Height >= 680)
+                {
+                    settings.WindowWidth = Width;
+                    settings.WindowHeight = Height;
+                }
+            }
+
+            settingsManager.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to persist window dimensions/state.");
+        }
+    }
+
+    private void UpdateDpiScalingIsolation()
+    {
+        try
+        {
+            var dpi = VisualTreeHelper.GetDpi(this);
+            if (dpi.DpiScaleX > 0 && dpi.DpiScaleY > 0)
+            {
+                double invScaleX = 1.0 / dpi.DpiScaleX;
+                double invScaleY = 1.0 / dpi.DpiScaleY;
+
+                if (Math.Abs(invScaleX - 1.0) > 0.001 || Math.Abs(invScaleY - 1.0) > 0.001)
+                {
+                    RootLayoutGrid.LayoutTransform = new ScaleTransform(invScaleX, invScaleY);
+                }
+                else
+                {
+                    RootLayoutGrid.LayoutTransform = Transform.Identity;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to apply DPI scaling isolation.");
+        }
+    }
+
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        UpdateDpiScalingIsolation();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        HardwareRenderingOptimizer.OptimizeWindow(this);
+        UpdateDpiScalingIsolation();
         _visualService.RequestMicaUpdate();
 
         _startupCoordinator.Start();
+
+        // Pre-warm shell pages during application idle to eliminate navigation lag
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, new Action(() =>
+        {
+            try
+            {
+                GetOrCreateShellPage(typeof(AppSettingsPage));
+                GetOrCreateShellPage(typeof(TunnelPage));
+                GetOrCreateShellPage(typeof(JavaSetupPage));
+                GetOrCreateShellPage(typeof(AboutPage));
+                GetOrCreateShellPage(typeof(RemoteControlPage));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Pre-warming shell page cache completed with note.");
+            }
+        }));
     }
 
     private void Window_Activated(object? sender, EventArgs e) =>
@@ -260,8 +386,6 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         SetNavigationItemActiveState(NavAbout, ReferenceEquals(targetItem, NavAbout));
         SetNavigationItemActiveState(NavSettings, ReferenceEquals(targetItem, NavSettings));
         SetNavigationItemActiveState(NavRemoteControl, ReferenceEquals(targetItem, NavRemoteControl));
-
-        PocketMC.Desktop.Views.Behaviors.AnimatedNavIndicatorBehavior.AnimateToActiveItem(RootNavigation);
     }
 
     private NavigationViewItem? GetShellNavigationItem(Type? pageType)
@@ -426,12 +550,15 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
     private void HideToTray()
     {
+        SaveWindowState();
         Hide();
         _serviceProvider.GetRequiredService<TrayIconViewModel>().EnsureVisible();
     }
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        SaveWindowState();
+
         var importService = _serviceProvider.GetRequiredService<IInstanceImportService>();
         var exportService = _serviceProvider.GetRequiredService<IInstanceExportService>();
         if (importService.IsActive || exportService.IsActive)

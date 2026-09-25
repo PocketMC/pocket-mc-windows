@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Features.Marketplace;
+using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System;
@@ -173,15 +173,35 @@ namespace PocketMC.Desktop.Features.Settings
                 : "ZIP Files (*.zip)|*.zip";
 
             var file = await _dialogService.OpenFileDialogAsync("Select World Archive", filter);
-            if (file != null)
+            if (!string.IsNullOrEmpty(file))
             {
                 try
                 {
                     string targetWorldPath = ResolveWorldDir();
-                    await _worldManager.ImportWorldZipAsync(file, targetWorldPath, p => { });
+                    string fileName = Path.GetFileName(file);
+
+                    await _dialogService.ShowProgressDialogAsync(
+                        "Importing World",
+                        $"Importing {fileName}...",
+                        async (progress) =>
+                        {
+                            await _worldManager.ImportWorldZipAsync(
+                                file,
+                                targetWorldPath,
+                                (pct, msg) => progress.Report(new ProgressDialogUpdate
+                                {
+                                    Percentage = pct,
+                                    Message = msg
+                                }));
+                        });
+
                     LoadWorldState();
+                    _dialogService.ShowMessage("World Imported", $"Successfully imported '{fileName}' into your world folder.", DialogType.Information);
                 }
-                catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
+                catch (Exception ex)
+                {
+                    _dialogService.ShowMessage("Import Failed", ex.Message, DialogType.Error);
+                }
             }
         }
 
@@ -204,13 +224,35 @@ namespace PocketMC.Desktop.Features.Settings
                 try
                 {
                     string targetWorldPath = ResolveWorldDir();
-                    await _worldManager.ImportWorldZipAsync(tempZip, targetWorldPath, p => { });
+                    string fileName = Path.GetFileName(tempZip);
+
+                    await _dialogService.ShowProgressDialogAsync(
+                        "Importing World",
+                        $"Installing {fileName}...",
+                        async (progress) =>
+                        {
+                            await _worldManager.ImportWorldZipAsync(
+                                tempZip,
+                                targetWorldPath,
+                                (pct, msg) => progress.Report(new ProgressDialogUpdate
+                                {
+                                    Percentage = pct,
+                                    Message = msg
+                                }));
+                        });
+
                     LoadWorldState();
-                    File.Delete(tempZip);
                 }
                 catch (Exception ex)
                 {
                     _dialogService.ShowMessage("Import Failed", ex.Message, DialogType.Error);
+                }
+                finally
+                {
+                    if (File.Exists(tempZip))
+                    {
+                        try { File.Delete(tempZip); } catch { }
+                    }
                 }
             };
             _navigationService.NavigateToDetailPage(browserPage, "Maps", DetailRouteKind.PluginBrowser, DetailBackNavigation.PreviousDetail);

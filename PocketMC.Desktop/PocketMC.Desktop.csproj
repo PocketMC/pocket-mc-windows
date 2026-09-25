@@ -8,12 +8,7 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <NoWarn>$(NoWarn);CS0105</NoWarn>
     
-    <!-- OS-Level App Details -->
-    <AssemblyName>PocketMC</AssemblyName>
-    <Product>PocketMC</Product>
-    <Company>DS Labs</Company>
-    <Description>PocketMC</Description>
-    <Title>PocketMC</Title>
+    <!-- OS-Level App Details & Assembly Identity dynamically inherited from Directory.Build.props (pocketmc.yml) -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +19,10 @@
     <Resource Include="Assets\logo_highres.png" />
     <Resource Include="Assets\splash.png" />
     <Resource Include="Assets\default_wallpaper.png" />
+    <Resource Include="Assets\avatar_divyviradiya.png" />
+    <Resource Include="Assets\avatar_sahajitaliya.png" />
+    <Resource Include="Assets\avatar_johndinglesin.png" />
+    <Resource Include="Assets\avatar_nexvice.png" />
   </ItemGroup>
 
   <ItemGroup>

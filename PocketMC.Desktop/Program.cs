@@ -47,6 +47,20 @@ public static class Program
         }
     }
 
+    private static void UpdateUninstallMetadata(string reason)
+    {
+        try
+        {
+            RefreshWindowsIconCache(reason);
+            Infrastructure.UninstallMetadataRegistrationService.Sync();
+            LogShortcutRefresh($"{reason}: Synced uninstall metadata dynamically from AppConfig.");
+        }
+        catch (Exception ex)
+        {
+            LogShortcutRefresh($"{reason}: Failed to update uninstall metadata. {ex}");
+        }
+    }
+
     [STAThread]
     public static void Main(string[] args)
     {
@@ -54,8 +68,8 @@ public static class Program
         // This handles squirrel-style install/uninstall hooks and
         // delta-patch application on startup.
         VelopackApp.Build()
-            .OnAfterInstallFastCallback((v) => RefreshWindowsIconCache("install"))
-            .OnAfterUpdateFastCallback((v) => RefreshWindowsIconCache("update"))
+            .OnAfterInstallFastCallback((v) => UpdateUninstallMetadata("install"))
+            .OnAfterUpdateFastCallback((v) => UpdateUninstallMetadata("update"))
             .Run();
 
         // Enforce single instance rule before starting WPF

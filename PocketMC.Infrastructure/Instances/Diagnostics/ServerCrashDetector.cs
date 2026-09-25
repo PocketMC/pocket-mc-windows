@@ -242,6 +242,9 @@ public static class ServerCrashDetector
 
             // 2. Forge / NeoForge: Missing or incompatible mods
             if (line.Contains("Missing or incompatible mods found:", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Missing or unsupported mandatory dependencies:", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("ModSorter/LOADING]: Missing", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Actual version: '[MISSING]'", StringComparison.OrdinalIgnoreCase) ||
                 line.Contains("net.minecraftforge.fml.ModLoadingException", StringComparison.OrdinalIgnoreCase) ||
                 line.Contains("fml.earlydisplay.EarlyLoadingException", StringComparison.OrdinalIgnoreCase) ||
                 line.Contains("ModLoadingErrors", StringComparison.OrdinalIgnoreCase))
@@ -282,7 +285,23 @@ public static class ServerCrashDetector
                 };
             }
 
-            // 4. Out of Memory (OOM)
+            // 4. Java Module / Classpath Resolution Error (e.g. FindException)
+            if (line.Contains("java.lang.module.FindException", StringComparison.OrdinalIgnoreCase) ||
+                (line.Contains("Module ", StringComparison.OrdinalIgnoreCase) && line.Contains("not found, required by", StringComparison.OrdinalIgnoreCase)))
+            {
+                var block = ExtractLogBlock(lines, i, 40);
+                return new CrashAnalysisResult
+                {
+                    IsCrash = true,
+                    Category = CrashCategory.JavaRuntime,
+                    Title = "Java Module Missing",
+                    Summary = line.Trim(),
+                    FullLogContext = block,
+                    ExitCode = exitCode
+                };
+            }
+
+            // 5. Out of Memory (OOM)
             if (line.Contains("java.lang.OutOfMemoryError", StringComparison.OrdinalIgnoreCase) ||
                 line.Contains("GC overhead limit exceeded", StringComparison.OrdinalIgnoreCase))
             {
@@ -298,7 +317,7 @@ public static class ServerCrashDetector
                 };
             }
 
-            // 5. Bedrock BDS Script Execution Error
+            // 6. Bedrock BDS Script Execution Error
             if (line.Contains("[ERROR] Script execution error", StringComparison.OrdinalIgnoreCase) ||
                 line.Contains("Segmentation fault", StringComparison.OrdinalIgnoreCase))
             {
@@ -314,7 +333,7 @@ public static class ServerCrashDetector
                 };
             }
 
-            // 6. PocketMine Fatal Error
+            // 7. PocketMine Fatal Error
             if (line.Contains("Fatal error:", StringComparison.OrdinalIgnoreCase) ||
                 line.Contains("Uncaught Error:", StringComparison.OrdinalIgnoreCase))
             {
@@ -331,9 +350,8 @@ public static class ServerCrashDetector
             }
         }
 
-        // Check for generic fatal Java exceptions in the last 100 lines
-        int startScan = Math.Max(0, lines.Count - 100);
-        for (int i = startScan; i < lines.Count; i++)
+        // Check for generic fatal Java exceptions across the entire log
+        for (int i = 0; i < lines.Count; i++)
         {
             string line = lines[i];
             if (line.Contains("Exception in thread \"main\"", StringComparison.OrdinalIgnoreCase) ||
@@ -359,18 +377,20 @@ public static class ServerCrashDetector
 
     private static CrashAnalysisResult BuildStartupFailureResult(IReadOnlyList<string> lines, int exitCode)
     {
-        var tail = lines.TakeLast(60).ToList();
         string summary = "The server stopped unexpectedly during startup before reaching the Online state.";
+        int errorIndex = FindLastFatalLogIndex(lines);
 
-        // Attempt to find any error or exception in the startup log
-        var errorLine = tail.LastOrDefault(l => 
-            l.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-            l.Contains("FATAL", StringComparison.OrdinalIgnoreCase) ||
-            l.Contains("Exception", StringComparison.OrdinalIgnoreCase));
-
-        if (!string.IsNullOrWhiteSpace(errorLine))
+        IReadOnlyList<string> logContextLines;
+        if (errorIndex >= 0)
         {
-            summary = errorLine.Trim();
+            summary = lines[errorIndex].Trim();
+            int start = Math.Max(0, errorIndex - 4);
+            int take = Math.Min(40, lines.Count - start);
+            logContextLines = lines.Skip(start).Take(take).ToList();
+        }
+        else
+        {
+            logContextLines = lines.TakeLast(60).ToList();
         }
 
         return new CrashAnalysisResult
@@ -379,24 +399,27 @@ public static class ServerCrashDetector
             Category = CrashCategory.StartupAborted,
             Title = "Server Startup Failed",
             Summary = summary,
-            FullLogContext = string.Join(Environment.NewLine, tail),
+            FullLogContext = string.Join(Environment.NewLine, logContextLines),
             ExitCode = exitCode
         };
     }
 
     private static CrashAnalysisResult BuildExitCodeFailureResult(IReadOnlyList<string> lines, int exitCode)
     {
-        var tail = lines.TakeLast(60).ToList();
         string summary = $"Server process terminated with non-zero exit code {exitCode}.";
+        int errorIndex = FindLastFatalLogIndex(lines);
 
-        var errorLine = tail.LastOrDefault(l => 
-            l.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-            l.Contains("FATAL", StringComparison.OrdinalIgnoreCase) ||
-            l.Contains("Exception", StringComparison.OrdinalIgnoreCase));
-
-        if (!string.IsNullOrWhiteSpace(errorLine))
+        IReadOnlyList<string> logContextLines;
+        if (errorIndex >= 0)
         {
-            summary = errorLine.Trim();
+            summary = lines[errorIndex].Trim();
+            int start = Math.Max(0, errorIndex - 4);
+            int take = Math.Min(40, lines.Count - start);
+            logContextLines = lines.Skip(start).Take(take).ToList();
+        }
+        else
+        {
+            logContextLines = lines.TakeLast(60).ToList();
         }
 
         return new CrashAnalysisResult
@@ -405,9 +428,33 @@ public static class ServerCrashDetector
             Category = CrashCategory.ProcessExitError,
             Title = $"Server Terminated (Exit Code {exitCode})",
             Summary = summary,
-            FullLogContext = string.Join(Environment.NewLine, tail),
+            FullLogContext = string.Join(Environment.NewLine, logContextLines),
             ExitCode = exitCode
         };
+    }
+
+    private static int FindLastFatalLogIndex(IReadOnlyList<string> lines)
+    {
+        for (int i = lines.Count - 1; i >= 0; i--)
+        {
+            string l = lines[i];
+
+            // Skip benign background thread INFO messages (e.g. mappings, worker threads)
+            if (l.Contains("/INFO]", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (l.Contains("Exception in thread", StringComparison.OrdinalIgnoreCase) ||
+                l.Contains("Missing or unsupported mandatory dependencies", StringComparison.OrdinalIgnoreCase) ||
+                l.Contains("/ERROR]", StringComparison.OrdinalIgnoreCase) ||
+                l.Contains("/FATAL]", StringComparison.OrdinalIgnoreCase) ||
+                l.Contains("Fatal error:", StringComparison.OrdinalIgnoreCase) ||
+                l.Contains("FindException:", StringComparison.OrdinalIgnoreCase) ||
+                (l.Contains("java.lang.", StringComparison.OrdinalIgnoreCase) && l.Contains("Exception")))
+            {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // ── Helper Extractors ────────────────────────────────────────────────────
@@ -449,6 +496,10 @@ public static class ServerCrashDetector
         for (int i = startIndex; i < Math.Min(lines.Count, startIndex + 25); i++)
         {
             string line = lines[i].Trim();
+            if (line.StartsWith("Mod ID:", StringComparison.OrdinalIgnoreCase))
+            {
+                return line;
+            }
             if (line.StartsWith("Mod ") || line.Contains("requires") || line.Contains("missing"))
             {
                 return line;

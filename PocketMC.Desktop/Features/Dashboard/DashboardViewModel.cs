@@ -1,4 +1,4 @@
-﻿using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -38,6 +38,7 @@ namespace PocketMC.Desktop.Features.Dashboard
 
         private bool _isActive;
 
+        public bool IsLoading => _listVm.IsLoading;
         public ObservableCollection<InstanceCardViewModel> Instances => _listVm.Instances;
         public ICommand NewInstanceCommand { get; }
         public ICommand RefreshInstancesCommand { get; }
@@ -67,6 +68,13 @@ namespace PocketMC.Desktop.Features.Dashboard
             PlayitApiClient playitApiClient)
         {
             _listVm = listVm;
+            _listVm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(DashboardInstanceListViewModel.IsLoading))
+                {
+                    OnPropertyChanged(nameof(IsLoading));
+                }
+            };
             _metricsVm = metricsVm;
             _actionsVm = actionsVm;
             _tunnelOrchestrator = tunnelOrchestrator;

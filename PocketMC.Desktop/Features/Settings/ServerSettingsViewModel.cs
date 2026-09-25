@@ -53,6 +53,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly string _appRootPath;
         private readonly ApplicationState _applicationState;
         private readonly PocketMC.Application.Interfaces.Instances.IGeyserDetector _geyserDetector;
+        private readonly PlayitApiClient _playitApiClient;
 
         public InstanceMetadata Metadata { get; }
         public ServerSettingsProfile Profile { get; }
@@ -75,7 +76,7 @@ namespace PocketMC.Desktop.Features.Settings
         private bool _isAiSummarizationAvailable;
         public bool IsAiSummarizationAvailable { get => _isAiSummarizationAvailable; set => SetProperty(ref _isAiSummarizationAvailable, value); }
 
-        private bool _isLoading;
+        private bool _isLoading = true;
         public bool IsLoading { get => _isLoading; set => SetProperty(ref _isLoading, value); }
 
         private bool _isRunning;
@@ -193,11 +194,10 @@ namespace PocketMC.Desktop.Features.Settings
                 () => ServerDir,
                 () => IsRunning);
 
+            _playitApiClient = playitApiClient;
             SaveCommand = new RelayCommand(_ => SaveConfigurations(), _ => !IsTransientState);
             CancelCommand = new RelayCommand(async _ => await CancelAsync());
             ResolvePlayitCommand = new RelayCommand(_ => _ = ResolveTunnelAddressAsync(playitApiClient));
-
-            LoadAll(playitApiClient);
         }
 
         private void ReloadCurrentInstance(IServiceProvider serviceProvider)
@@ -213,8 +213,9 @@ namespace PocketMC.Desktop.Features.Settings
             _navigationService.NavigateToDetailPage(settingsPage, $"Settings: {updatedMetadata.Name}", DetailRouteKind.ServerSettings, DetailBackNavigation.Dashboard, true);
         }
 
-        public void LoadAll(PlayitApiClient playitApiClient)
+        public void LoadAll(PlayitApiClient? playitApiClient = null)
         {
+            var client = playitApiClient ?? _playitApiClient;
             IsLoading = true;
             UpdateRunningState();
 
@@ -278,7 +279,10 @@ namespace PocketMC.Desktop.Features.Settings
             IsAiSummarizationAvailable = hasApiKey;
             Summaries.Load(hasApiKey);
 
-            _ = ResolveTunnelAddressAsync(playitApiClient);
+            if (client != null)
+            {
+                _ = ResolveTunnelAddressAsync(client);
+            }
 
             IsLoading = false;
             string? initialJavaPath = cfg.CustomJavaPath;

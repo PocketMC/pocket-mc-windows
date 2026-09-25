@@ -24,12 +24,13 @@ namespace PocketMC.Desktop.Features.Shell
 
         private BitmapSource? _blurredBitmap;
         private string? _lastWallpaperPath;
+        private double _lastBlurRadius = -1;
 
         /// <summary>
         /// Applies a static pre-blurred wallpaper as the background.
         /// No live effects, no position tracking — just a frozen image fill.
         /// </summary>
-        public void Apply(Window window, Image wallpaperImageElement, Border tintOverlay)
+        public void Apply(Window window, Image wallpaperImageElement, Border tintOverlay, double blurRadius = 80.0, double tintOpacity = 0.72)
         {
             if (window == null || wallpaperImageElement == null) return;
 
@@ -42,11 +43,12 @@ namespace PocketMC.Desktop.Features.Shell
                     return;
                 }
 
-                // Only re-render the blurred bitmap if the wallpaper changed
-                if (_blurredBitmap == null || _lastWallpaperPath != wallpaperPath)
+                // Only re-render the blurred bitmap if the wallpaper or blur radius changed
+                if (_blurredBitmap == null || _lastWallpaperPath != wallpaperPath || Math.Abs(_lastBlurRadius - blurRadius) > 0.1)
                 {
-                    _blurredBitmap = CreatePreBlurredBitmap(wallpaperPath);
+                    _blurredBitmap = CreatePreBlurredBitmap(wallpaperPath, blurRadius);
                     _lastWallpaperPath = wallpaperPath;
+                    _lastBlurRadius = blurRadius;
                 }
 
                 if (_blurredBitmap == null)
@@ -66,16 +68,23 @@ namespace PocketMC.Desktop.Features.Shell
                 wallpaperImageElement.Margin = new Thickness(0);
 
                 // Dark tint overlay for text readability
-                if (tintOverlay != null)
-                {
-                    tintOverlay.Background = new SolidColorBrush(Color.FromArgb(0xB8, 0x18, 0x18, 0x18));
-                    tintOverlay.Visibility = Visibility.Visible;
-                }
+                UpdateTintOverlay(tintOverlay, tintOpacity);
             }
             catch
             {
                 wallpaperImageElement.Visibility = Visibility.Collapsed;
             }
+        }
+
+        /// <summary>
+        /// Updates only the tint overlay color/opacity without re-rendering the bitmap.
+        /// </summary>
+        public static void UpdateTintOverlay(Border? tintOverlay, double tintOpacity)
+        {
+            if (tintOverlay == null) return;
+            byte alpha = (byte)Math.Clamp((int)Math.Round(tintOpacity * 255.0), 0, 255);
+            tintOverlay.Background = new SolidColorBrush(Color.FromArgb(alpha, 0x18, 0x18, 0x18));
+            tintOverlay.Visibility = Visibility.Visible;
         }
 
         /// <summary>
@@ -93,11 +102,9 @@ namespace PocketMC.Desktop.Features.Shell
         /// Applies a user-selected custom image with the same blur+freeze pipeline.
         /// Returns true if the custom image was applied successfully.
         /// </summary>
-        public bool ApplyCustomImage(Window window, Image wallpaperImageElement, Border tintOverlay, string? customImagePath)
+        public bool ApplyCustomImage(Window window, Image wallpaperImageElement, Border tintOverlay, string? customImagePath, double blurRadius = 80.0, double tintOpacity = 0.72)
         {
             if (window == null || wallpaperImageElement == null) return false;
-
-
 
             if (string.IsNullOrWhiteSpace(customImagePath) || (!customImagePath.StartsWith("pack://") && !File.Exists(customImagePath)))
             {
@@ -108,11 +115,12 @@ namespace PocketMC.Desktop.Features.Shell
 
             try
             {
-                // Only re-render if the image path changed
-                if (_blurredBitmap == null || _lastWallpaperPath != customImagePath)
+                // Only re-render if the image path or blur radius changed
+                if (_blurredBitmap == null || _lastWallpaperPath != customImagePath || Math.Abs(_lastBlurRadius - blurRadius) > 0.1)
                 {
-                    _blurredBitmap = CreatePreBlurredBitmap(customImagePath);
+                    _blurredBitmap = CreatePreBlurredBitmap(customImagePath, blurRadius);
                     _lastWallpaperPath = customImagePath;
+                    _lastBlurRadius = blurRadius;
                 }
 
                 if (_blurredBitmap == null) return false;
@@ -126,12 +134,7 @@ namespace PocketMC.Desktop.Features.Shell
                 wallpaperImageElement.Effect = null;
                 wallpaperImageElement.Margin = new Thickness(0);
 
-                if (tintOverlay != null)
-                {
-                    tintOverlay.Background = new SolidColorBrush(Color.FromArgb(0xB8, 0x18, 0x18, 0x18));
-                    tintOverlay.Visibility = Visibility.Visible;
-                }
-
+                UpdateTintOverlay(tintOverlay, tintOpacity);
                 return true;
             }
             catch
@@ -148,6 +151,7 @@ namespace PocketMC.Desktop.Features.Shell
         {
             _blurredBitmap = null;
             _lastWallpaperPath = null;
+            _lastBlurRadius = -1;
         }
 
         /// <summary>
@@ -155,7 +159,7 @@ namespace PocketMC.Desktop.Features.Shell
         /// into the pixels via RenderTargetBitmap. The result is a frozen
         /// BitmapSource with zero ongoing GPU cost.
         /// </summary>
-        private static BitmapSource? CreatePreBlurredBitmap(string path)
+        private static BitmapSource? CreatePreBlurredBitmap(string path, double blurRadius)
         {
             try
             {
@@ -164,6 +168,12 @@ namespace PocketMC.Desktop.Features.Shell
                 BitmapImage? source = LoadBitmap(path, decodeWidth);
                 if (source == null) return null;
 
+                // When blur radius is near 0, return the crisp source bitmap directly
+                if (blurRadius <= 0.5)
+                {
+                    return source;
+                }
+
                 // Render the bitmap with a blur effect baked in
                 var image = new Image
                 {
@@ -171,7 +181,7 @@ namespace PocketMC.Desktop.Features.Shell
                     Stretch = Stretch.UniformToFill,
                     Effect = new BlurEffect
                     {
-                        Radius = 80,
+                        Radius = Math.Clamp(blurRadius, 1, 150),
                         RenderingBias = RenderingBias.Performance
                     }
                 };

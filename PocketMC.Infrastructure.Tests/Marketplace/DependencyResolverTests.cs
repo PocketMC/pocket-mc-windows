@@ -265,6 +265,45 @@ namespace PocketMC.Infrastructure.Tests.Marketplace
             Assert.Equal("Mod B Readable Name", bDep.ProjectTitle);
             Assert.NotNull(bDep.Error);
         }
+
+        [Fact]
+        public async Task ResolveAsync_EmptyLoaderAndVersion_ResolvesSuccessfully()
+        {
+            var provider = new MockProvider();
+            provider.Versions["modpack-1"] = new MarketplaceVersion
+            {
+                ProjectId = "modpack-1",
+                ProjectTitle = "Cool Modpack",
+                DownloadUrl = "https://example.com/pack.mrpack",
+                FileName = "pack.mrpack",
+                SelectedLoader = "fabric",
+                MatchedMinecraftVersion = "1.20.1"
+            };
+
+            var resolver = new DependencyResolverService(new AddonManifestService());
+
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "modpack-1", "", "", new EngineCompatibility("Vanilla"));
+
+            Assert.Single(results);
+            var root = results[0];
+            Assert.Equal("modpack-1", root.ProjectId);
+            Assert.Null(root.Error);
+            Assert.Equal("https://example.com/pack.mrpack", root.DownloadUrl);
+        }
+
+        [Fact]
+        public async Task ResolveAsync_NotFoundWithEmptyVersion_FormatsErrorMessageCleanly()
+        {
+            var provider = new MockProvider();
+            var resolver = new DependencyResolverService(new AddonManifestService());
+
+            var results = await resolver.ResolveAsync(provider, "dummy_dir", "missing-pack", "", "", new EngineCompatibility("Vanilla"));
+
+            Assert.Single(results);
+            var root = results[0];
+            Assert.NotNull(root.Error);
+            Assert.Equal("No compatible Any version found.", root.Error);
+        }
     }
 }
 

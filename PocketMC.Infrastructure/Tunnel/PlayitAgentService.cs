@@ -18,6 +18,8 @@ using PocketMC.Infrastructure.Telemetry;
 using PocketMC.Application.Services.Shell;
 
 using PocketMC.Infrastructure;
+using Microsoft.Win32;
+using System.Net.NetworkInformation;
 
 namespace PocketMC.Infrastructure.Tunnel
 {
@@ -33,7 +35,15 @@ namespace PocketMC.Infrastructure.Tunnel
             RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
         private static readonly Regex TunnelRunningRegex = new(
-            @"tunnel running",
+            @"(tunnel running|playit connected; tunnels loaded|playit connected)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+
+        private static readonly Regex AgentIdRegex = new(
+            @"agent_id=(?<agentId>[a-f0-9\-]{8,})",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+
+        private static readonly Regex VersionRegex = new(
+            @"version=(?<version>[0-9\.]+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
 
         private static readonly Regex LegacyTomlSecretRegex = new(
@@ -49,6 +59,7 @@ namespace PocketMC.Infrastructure.Tunnel
         private readonly WindowsToastNotificationService _toastNotificationService;
         private readonly DownloaderService _downloaderService;
         private readonly ILogger<PlayitAgentService> _logger;
+        private readonly PlayitApiClient? _playitApiClient;
 
         private bool _claimUrlAlreadyFired;
         private bool _tunnelRunningAlreadyFired;
@@ -56,6 +67,8 @@ namespace PocketMC.Infrastructure.Tunnel
         private int _unexpectedRestartAttempts;
         private CancellationTokenSource? _restartDelayCancellation;
         private CancellationTokenSource? _downloadCancellation;
+        private CancellationTokenSource? _networkChangeCancellation;
+        private readonly object _networkEventLock = new();
         private volatile bool _isDownloadingBinary;
 
         private const int MaxUnexpectedRestartAttempts = 5;
@@ -73,6 +86,10 @@ namespace PocketMC.Infrastructure.Tunnel
         public event EventHandler<int>? OnAgentExited;
         public event EventHandler<DownloadProgress>? OnDownloadProgressChanged;
         public event EventHandler<bool>? OnDownloadStatusChanged;
+        public event Action<string>? OnLogReceived;
+
+        private readonly System.Collections.Concurrent.ConcurrentQueue<string> _recentLogs = new();
+        private const int MaxRecentLogs = 2000;
 
         public PlayitAgentService(
             ApplicationState applicationState,
@@ -82,7 +99,8 @@ namespace PocketMC.Infrastructure.Tunnel
             PlayitPartnerProvisioningClient partnerProvisioningClient,
             WindowsToastNotificationService toastNotificationService,
             DownloaderService downloaderService,
-            ILogger<PlayitAgentService> logger)
+            ILogger<PlayitAgentService> logger,
+            PlayitApiClient? playitApiClient = null)
         {
             _applicationState = applicationState;
             _settingsManager = settingsManager;
@@ -92,11 +110,14 @@ namespace PocketMC.Infrastructure.Tunnel
             _toastNotificationService = toastNotificationService;
             _downloaderService = downloaderService;
             _logger = logger;
+            _playitApiClient = playitApiClient;
 
             _processManager.OnOutputLineReceived += OnProcessOutput;
             _processManager.OnErrorLineReceived += OnProcessError;
             _processManager.OnProcessExited += OnProcessExitedCore;
             _stateMachine.OnStateChanged += s => OnStateChanged?.Invoke(this, s);
+
+            SubscribeSystemEvents();
         }
 
         public void Start()
@@ -134,6 +155,7 @@ namespace PocketMC.Infrastructure.Tunnel
                 return;
             }
 
+            string tomlPath = _settingsManager.GetPlayitTomlPath(_applicationState.Settings);
             EnsureRuntimeToml(secretKey);
             _claimUrlAlreadyFired = false;
             _tunnelRunningAlreadyFired = false;
@@ -141,8 +163,11 @@ namespace PocketMC.Infrastructure.Tunnel
             _stateMachine.TransitionTo(PlayitAgentState.Starting);
 
             string logPath = Path.Combine(_applicationState.GetRequiredAppRootPath(), "tunnel", "playit-agent.log");
-            _processManager.Start(playitPath, logPath);
-            _processManager.Log($"INFO: playit.exe started (PID: {_processManager.ProcessId})");
+            string arguments = $"--secret-path \"{tomlPath}\"";
+            _processManager.Start(playitPath, logPath, arguments);
+            string startMsg = $"INFO: playit.exe started (PID: {_processManager.ProcessId})";
+            _processManager.Log(startMsg);
+            AppendLog($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] {startMsg}");
         }
 
         public void Stop()
@@ -230,12 +255,63 @@ namespace PocketMC.Infrastructure.Tunnel
             Start();
         }
 
+        public IReadOnlyList<string> GetRecentLogs()
+        {
+            if (!_recentLogs.IsEmpty)
+            {
+                return _recentLogs.ToArray();
+            }
+
+            string logPath = GetLogFilePath();
+            if (File.Exists(logPath))
+            {
+                try
+                {
+                    return File.ReadLines(logPath).TakeLast(500).ToList();
+                }
+                catch
+                {
+                    // Fallback if log file is locked
+                }
+            }
+
+            return Array.Empty<string>();
+        }
+
+        public string GetLogFilePath()
+        {
+            if (!_applicationState.IsConfigured) return string.Empty;
+            return Path.Combine(_applicationState.GetRequiredAppRootPath(), "tunnel", "playit-agent.log");
+        }
+
+        private void AppendLog(string line)
+        {
+            _recentLogs.Enqueue(line);
+            while (_recentLogs.Count > MaxRecentLogs && _recentLogs.TryDequeue(out _)) { }
+            OnLogReceived?.Invoke(line);
+        }
+
         private void OnProcessOutput(string line)
         {
-            string safeLine = LogSanitizer.SanitizePlayitLine(line);
-            _processManager.Log("STDOUT: " + safeLine);
+            string sanitized = LogSanitizer.SanitizePlayitLine(line);
+            _processManager.Log("STDOUT: " + sanitized);
+            AppendLog(sanitized);
+            ProcessOutputLine(line);
+        }
 
-            if (line.Contains("Invalid secret, do you want to reset", StringComparison.OrdinalIgnoreCase))
+        private void OnProcessError(string line)
+        {
+            string sanitized = LogSanitizer.SanitizePlayitLine(line);
+            _processManager.Log("STDERR: " + sanitized);
+            AppendLog(sanitized);
+            ProcessOutputLine(line);
+        }
+
+        private void ProcessOutputLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return;
+
+            if (IsInvalidOrDeletedSecretLog(line))
             {
                 RecoverFromInvalidSecret();
                 return;
@@ -245,8 +321,28 @@ namespace PocketMC.Infrastructure.Tunnel
             if (claimMatch.Success && !_claimUrlAlreadyFired)
             {
                 _claimUrlAlreadyFired = true;
-                LastErrorMessage = "The Playit agent requested a manual claim flow. Reconnect PocketMC with a fresh setup code.";
-                _stateMachine.TransitionTo(PlayitAgentState.ReauthRequired);
+                RecoverFromInvalidSecret("The Playit agent requested a new setup code. Click Setup Agent to link your account.");
+                return;
+            }
+
+            var agentIdMatch = AgentIdRegex.Match(line);
+            if (agentIdMatch.Success)
+            {
+                string detectedAgentId = agentIdMatch.Groups["agentId"].Value;
+                if (!string.IsNullOrWhiteSpace(detectedAgentId))
+                {
+                    SyncAgentIdIfChanged(detectedAgentId);
+                }
+            }
+
+            var versionMatch = VersionRegex.Match(line);
+            if (versionMatch.Success)
+            {
+                string detectedVersion = versionMatch.Groups["version"].Value;
+                if (!string.IsNullOrWhiteSpace(detectedVersion))
+                {
+                    SyncAgentVersionIfChanged(detectedVersion);
+                }
             }
 
             if (TunnelRunningRegex.IsMatch(line) && !_tunnelRunningAlreadyFired)
@@ -262,11 +358,51 @@ namespace PocketMC.Infrastructure.Tunnel
             }
         }
 
-        private void OnProcessError(string line) => _processManager.Log("STDERR: " + LogSanitizer.SanitizePlayitLine(line));
+        private void SyncAgentIdIfChanged(string agentId)
+        {
+            var partner = _applicationState.Settings.PlayitPartnerConnection;
+            if (partner == null || string.IsNullOrWhiteSpace(partner.AgentId) || partner.AgentId != agentId)
+            {
+                var settings = _settingsManager.Load();
+                settings.PlayitPartnerConnection ??= new PlayitPartnerConnection();
+                settings.PlayitPartnerConnection.AgentId = agentId;
+                if (string.IsNullOrWhiteSpace(settings.PlayitPartnerConnection.AgentVersion))
+                {
+                    settings.PlayitPartnerConnection.AgentVersion = "1.0.10";
+                }
+                _settingsManager.Save(settings);
+                _applicationState.ApplySettings(settings);
+                _logger.LogInformation("Updated Playit Agent ID from runtime log: {AgentId}", agentId);
+            }
+        }
+
+        private void SyncAgentVersionIfChanged(string version)
+        {
+            var settings = _settingsManager.Load();
+            bool changed = false;
+            if (settings.PlayitVersion != version)
+            {
+                settings.PlayitVersion = version;
+                changed = true;
+            }
+            if (settings.PlayitPartnerConnection != null && settings.PlayitPartnerConnection.AgentVersion != version)
+            {
+                settings.PlayitPartnerConnection.AgentVersion = version;
+                changed = true;
+            }
+            if (changed)
+            {
+                _settingsManager.Save(settings);
+                _applicationState.ApplySettings(settings);
+                _logger.LogInformation("Updated Playit Agent version in settings: {Version}", version);
+            }
+        }
 
         private void OnProcessExitedCore(int exitCode)
         {
-            _processManager.Log($"INFO: playit.exe exited with code {exitCode}");
+            string exitMsg = $"INFO: playit.exe exited with code {exitCode}";
+            _processManager.Log(exitMsg);
+            AppendLog($"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] {exitMsg}");
             if (_manualStopRequested)
             {
                 _stateMachine.TransitionTo(PlayitAgentState.Stopped);
@@ -309,15 +445,37 @@ namespace PocketMC.Infrastructure.Tunnel
             finally { _restartDelayCancellation?.Dispose(); _restartDelayCancellation = null; }
         }
 
-        private void RecoverFromInvalidSecret()
+        private static bool IsInvalidOrDeletedSecretLog(string line)
         {
-            _processManager.Log("INFO: Invalid secret detected. Clearing saved Playit credentials.");
+            if (string.IsNullOrWhiteSpace(line)) return false;
+
+            return line.Contains("InvalidAgentKey", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("configured agent secret is no longer valid", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("Waiting for frontend secret provisioning", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("ApiError(Auth(", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("Invalid secret, do you want to reset", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("invalid secret", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("Secret error:", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("InvalidApiKey", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("NoLongerValid", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("AccountDoesNotExist", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("AccountNotAuthorized", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("AgentBlocked", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("AgentNotFound", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("reason=\"agent_not_found\"", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("reason=\"unauthorized\"", StringComparison.OrdinalIgnoreCase) ||
+                   line.Contains("reason=Unauthorized", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public void RecoverFromInvalidSecret(string? customMessage = null)
+        {
+            _processManager.Log("INFO: Invalid or deleted secret detected. Clearing saved Playit credentials.");
             ClearPartnerConnection();
             DeleteRuntimeToml();
-            LastErrorMessage = "The saved Playit credentials are no longer valid. Reconnect with a new setup code.";
+            LastErrorMessage = customMessage ?? "The Playit agent was deleted or is no longer valid. Click Setup Agent to link a new agent.";
             _manualStopRequested = true;
             _processManager.Stop();
-            _stateMachine.TransitionTo(PlayitAgentState.ReauthRequired);
+            _stateMachine.TransitionTo(PlayitAgentState.AwaitingSetupCode);
         }
 
         private void CancelPendingRestart()
@@ -355,27 +513,22 @@ namespace PocketMC.Infrastructure.Tunnel
 
         private void TryImportLegacyTomlConnection()
         {
-            if (!string.IsNullOrWhiteSpace(_applicationState.Settings.PlayitPartnerConnection?.AgentSecretKey))
-            {
-                return;
-            }
-
+            string? existingSecretKey = _applicationState.Settings.PlayitPartnerConnection?.AgentSecretKey;
             string tomlPath = _settingsManager.GetPlayitTomlPath(_applicationState.Settings);
-            if (!File.Exists(tomlPath))
-            {
-                return;
-            }
+            string? secretKey = existingSecretKey;
 
-            string? secretKey = null;
-            try
+            if (string.IsNullOrWhiteSpace(secretKey) && File.Exists(tomlPath))
             {
-                string content = File.ReadAllText(tomlPath);
-                Match match = LegacyTomlSecretRegex.Match(content);
-                secretKey = match.Success ? match.Groups[1].Value : null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to import a legacy Playit TOML secret.");
+                try
+                {
+                    string content = File.ReadAllText(tomlPath);
+                    Match match = LegacyTomlSecretRegex.Match(content);
+                    secretKey = match.Success ? match.Groups[1].Value : null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to import a legacy Playit TOML secret.");
+                }
             }
 
             if (string.IsNullOrWhiteSpace(secretKey))
@@ -383,12 +536,35 @@ namespace PocketMC.Infrastructure.Tunnel
                 return;
             }
 
+            string agentId = _applicationState.Settings.PlayitPartnerConnection?.AgentId ?? string.Empty;
+            string agentVersion = _applicationState.Settings.PlayitPartnerConnection?.AgentVersion ?? "1.0.10";
+
+            if (string.IsNullOrWhiteSpace(agentId) && _playitApiClient != null)
+            {
+                try
+                {
+                    var rundataTask = _playitApiClient.GetAgentRundataAsync();
+                    if (rundataTask.Wait(TimeSpan.FromSeconds(3)))
+                    {
+                        var rundata = rundataTask.Result;
+                        if (rundata.Success && !string.IsNullOrWhiteSpace(rundata.AgentId))
+                        {
+                            agentId = rundata.AgentId;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Could not resolve agent ID from rundata synchronously during import.");
+                }
+            }
+
             SavePartnerConnection(
-                _applicationState.Settings.PlayitPartnerConnection?.AgentId ?? string.Empty,
+                agentId,
                 secretKey,
                 _applicationState.Settings.PlayitPartnerConnection?.AccountId,
                 _applicationState.Settings.PlayitPartnerConnection?.ConnectedEmail,
-                PlayitEmbeddedAgentVersionResolver.Resolve(_applicationState.GetPlayitExecutablePath()).ToString());
+                agentVersion);
         }
 
         private void EnsureRuntimeToml(string secretKey)
@@ -613,8 +789,112 @@ namespace PocketMC.Infrastructure.Tunnel
             }
         }
 
+        private void SubscribeSystemEvents()
+        {
+            try
+            {
+                SystemEvents.PowerModeChanged += OnPowerModeChanged;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not subscribe to SystemEvents.PowerModeChanged.");
+            }
+
+            try
+            {
+                NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not subscribe to NetworkChange.NetworkAddressChanged.");
+            }
+        }
+
+        private void UnsubscribeSystemEvents()
+        {
+            try
+            {
+                SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+            }
+            catch { }
+
+            try
+            {
+                NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
+            }
+            catch { }
+        }
+
+        private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
+        {
+            if (e.Mode == PowerModes.Resume)
+            {
+                _logger.LogInformation("[PlayitAgentService] System resumed from sleep/standby. Scheduling agent socket re-sync.");
+                _ = HandleSystemResumeOrNetworkChangeAsync("System Resume", delaySeconds: 2);
+            }
+        }
+
+        private void OnNetworkAddressChanged(object? sender, EventArgs e)
+        {
+            lock (_networkEventLock)
+            {
+                _networkChangeCancellation?.Cancel();
+                _networkChangeCancellation?.Dispose();
+                _networkChangeCancellation = new CancellationTokenSource();
+                CancellationToken token = _networkChangeCancellation.Token;
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(1500, token);
+                        if (token.IsCancellationRequested) return;
+                        _logger.LogInformation("[PlayitAgentService] Network interface address change detected. Scheduling agent socket re-sync.");
+                        await HandleSystemResumeOrNetworkChangeAsync("Network Change", delaySeconds: 1);
+                    }
+                    catch (OperationCanceledException) { }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Error handling network address changed event.");
+                    }
+                }, token);
+            }
+        }
+
+        private async Task HandleSystemResumeOrNetworkChangeAsync(string reason, int delaySeconds)
+        {
+            if (_manualStopRequested) return;
+
+            string? secretKey = _applicationState.Settings.PlayitPartnerConnection?.AgentSecretKey;
+            if (string.IsNullOrWhiteSpace(secretKey)) return;
+
+            if (State is PlayitAgentState.Connected or PlayitAgentState.Starting or PlayitAgentState.Error)
+            {
+                _logger.LogInformation("[PlayitAgentService] Auto-recovering Playit agent after {Reason} (waiting {Delay}s for interface readiness).", reason, delaySeconds);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+                    if (!_manualStopRequested)
+                    {
+                        await RestartAsync(delayMs: 500);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[PlayitAgentService] Auto-recovery restart failed after {Reason}.", reason);
+                }
+            }
+        }
+
         public void Dispose()
         {
+            UnsubscribeSystemEvents();
+            lock (_networkEventLock)
+            {
+                _networkChangeCancellation?.Cancel();
+                _networkChangeCancellation?.Dispose();
+                _networkChangeCancellation = null;
+            }
             _processManager.OnOutputLineReceived -= OnProcessOutput;
             _processManager.OnErrorLineReceived -= OnProcessError;
             _processManager.OnProcessExited -= OnProcessExitedCore;

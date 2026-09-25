@@ -89,7 +89,8 @@ public sealed class PlayitPartnerProvisioningClient
 
     public Uri? GetSetupPageUri()
     {
-        return Uri.TryCreate("https://playit.gg/l/setup-third-party", UriKind.Absolute, out var uri)
+        string setupUrl = PocketMC.Infrastructure.Configuration.AppConfig.LinkPlayitSetup;
+        return Uri.TryCreate(setupUrl, UriKind.Absolute, out var uri)
             ? uri
             : null;
     }

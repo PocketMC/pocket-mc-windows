@@ -89,6 +89,43 @@ public class ServerProcessManagerTests
             processManager.ReleaseInstance(metadata.Id);
         }
     }
+
+    [Fact]
+    public async Task WriteInputAsync_ConcurrentCalls_ExecuteSafelyWithoutStreamCollision()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        ServerProcessManager processManager = workspace.CreateServerProcessManager();
+        InstanceMetadata metadata = workspace.CreateInstance("Bedrock Concurrent Stdin", serverType: "Bedrock (BDS)");
+        string instancePath = workspace.GetInstancePath(metadata.Id);
+        string serverExePath = Path.Combine(instancePath, "bedrock_server.exe");
+        File.Copy(Environment.GetEnvironmentVariable("ComSpec") ?? @"C:\Windows\System32\cmd.exe", serverExePath);
+
+        ServerProcess process = await processManager.StartProcessAsync(metadata, workspace.RootPath);
+
+        try
+        {
+            var tasks = new System.Collections.Generic.List<Task>();
+            for (int i = 0; i < 40; i++)
+            {
+                int index = i;
+                if (index % 2 == 0)
+                {
+                    tasks.Add(Task.Run(() => process.WriteListCommandAsync()));
+                }
+                else
+                {
+                    tasks.Add(Task.Run(() => process.WriteInputAsync($"echo command {index}")));
+                }
+            }
+
+            await Task.WhenAll(tasks);
+        }
+        finally
+        {
+            try { processManager.KillProcess(metadata.Id); } catch { }
+            processManager.ReleaseInstance(metadata.Id);
+        }
+    }
 }
 
 

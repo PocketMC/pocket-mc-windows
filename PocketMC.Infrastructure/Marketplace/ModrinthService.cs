@@ -118,6 +118,7 @@ namespace PocketMC.Infrastructure.Marketplace
         private const int MaxProviderAttempts = 3;
 
         private readonly HttpClient _httpClient;
+        private static string ApiBase => PocketMC.Infrastructure.Configuration.AppConfig.ProviderModrinthApi;
 
         public ModrinthService(HttpClient httpClient)
         {
@@ -247,14 +248,14 @@ namespace PocketMC.Infrastructure.Marketplace
                     facetList.Add(new List<string> { $"versions:{mcVersion}" });
                 }
 
-                if ((type == "project_type:mod" || type == "project_type:plugin") && loaders != null && loaders.Count > 0)
+                if ((type == "project_type:mod" || type == "project_type:plugin" || type == "project_type:modpack") && loaders != null && loaders.Count > 0)
                 {
                     var loaderFacet = loaders.Select(l => $"categories:{l.ToLowerInvariant()}").ToList();
                     facetList.Add(loaderFacet);
                 }
 
                 string facets = JsonSerializer.Serialize(facetList);
-                string url = $"https://api.modrinth.com/v2/search?query={Uri.EscapeDataString(query)}&facets={Uri.EscapeDataString(facets)}&limit=20&offset={offset}&index={sort}";
+                string url = $"{ApiBase}/search?query={Uri.EscapeDataString(query)}&facets={Uri.EscapeDataString(facets)}&limit=20&offset={offset}&index={sort}";
 
                 var result = await GetFromJsonWithRetryAsync<ModrinthSearchResult>(url).ConfigureAwait(false);
                 return result?.Hits ?? new();
@@ -276,6 +277,32 @@ namespace PocketMC.Infrastructure.Marketplace
             var projectInfo = await GetProjectInfoAsync(slug).ConfigureAwait(false);
             string projectSlug = projectInfo?.Slug ?? slug;
 
+            if (loaderCandidates == null || loaderCandidates.Count == 0)
+            {
+                foreach (var mcCand in mcCandidates)
+                {
+                    var mVersion = await GetLatestVersionAsync(projectSlug, mcCand).ConfigureAwait(false);
+                    if (mVersion != null)
+                    {
+                        var compatFile = SelectCompatibleFile(mVersion, "");
+                        if (compatFile != null)
+                        {
+                            var mv = MapToMarketplaceVersion(mVersion, projectInfo, compatFile);
+                            mv.DownloadUrl = compatFile.Url;
+                            mv.FileName = compatFile.FileName;
+                            mv.Hash = GetPreferredHash(compatFile, out string? hashType);
+                            mv.HashType = hashType;
+                            mv.SelectedLoader = mVersion.Loaders?.FirstOrDefault() ?? "";
+                            mv.MatchedMinecraftVersion = !string.IsNullOrEmpty(mcCand) ? mcCand : (mVersion.GameVersions?.FirstOrDefault() ?? "");
+                            mv.IconUrl = projectInfo?.IconUrl;
+                            return mv;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
             foreach (var mcCand in mcCandidates)
             {
                 var mVersion = await GetLatestVersionAsync(projectSlug, mcCand, loaderCandidates).ConfigureAwait(false);
@@ -292,7 +319,7 @@ namespace PocketMC.Infrastructure.Marketplace
                             mv.Hash = GetPreferredHash(compatFile, out string? hashType);
                             mv.HashType = hashType;
                             mv.SelectedLoader = loaderCand;
-                            mv.MatchedMinecraftVersion = mcCand;
+                            mv.MatchedMinecraftVersion = !string.IsNullOrEmpty(mcCand) ? mcCand : (mVersion.GameVersions?.FirstOrDefault() ?? "");
                             mv.IconUrl = projectInfo?.IconUrl;
                             return mv;
                         }
@@ -307,7 +334,7 @@ namespace PocketMC.Infrastructure.Marketplace
         {
             try
             {
-                string url = $"https://api.modrinth.com/v2/version/{versionId}";
+                string url = $"{ApiBase}/version/{versionId}";
                 var mVersion = await GetFromJsonWithRetryAsync<ModrinthVersion>(url).ConfigureAwait(false);
                 if (mVersion == null) return null;
 
@@ -410,7 +437,7 @@ namespace PocketMC.Infrastructure.Marketplace
             {
                 var requestBody = new { hashes = hashes.ToList(), algorithm };
                 return await PostJsonForJsonWithRetryAsync<Dictionary<string, ModrinthVersion>>(
-                        "https://api.modrinth.com/v2/version_files",
+                        $"{ApiBase}/version_files",
                         requestBody)
                     .ConfigureAwait(false)
                     ?? new();
@@ -425,7 +452,7 @@ namespace PocketMC.Infrastructure.Marketplace
         {
             try
             {
-                string url = $"https://api.modrinth.com/v2/project/{projectIdOrSlug}";
+                string url = $"{ApiBase}/project/{projectIdOrSlug}";
                 var project = await GetFromJsonWithRetryAsync<ModrinthProject>(url).ConfigureAwait(false);
                 if (project == null) return null;
 
@@ -499,7 +526,7 @@ namespace PocketMC.Infrastructure.Marketplace
         {
             try
             {
-                string baseUrl = $"https://api.modrinth.com/v2/project/{slug}/version";
+                string baseUrl = $"{ApiBase}/project/{slug}/version";
                 var queryParams = new List<string>();
 
                 if (!string.IsNullOrEmpty(mcVersion) && mcVersion != "*")

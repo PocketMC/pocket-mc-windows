@@ -41,7 +41,7 @@ namespace PocketMC.Infrastructure.Tunnel
         public bool IsRunning => _process != null && !_process.HasExited;
         public int? ProcessId => _process?.Id;
 
-        public void Start(string executablePath, string logFilePath)
+        public void Start(string executablePath, string logFilePath, string? arguments = null)
         {
             if (IsRunning) return;
 
@@ -56,7 +56,7 @@ namespace PocketMC.Infrastructure.Tunnel
             var psi = new ProcessStartInfo
             {
                 FileName = executablePath,
-                Arguments = "--stdout",
+                Arguments = arguments ?? string.Empty,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -147,6 +147,7 @@ namespace PocketMC.Infrastructure.Tunnel
                 string? line;
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
+                    Log(line);
                     onLine?.Invoke(line);
                 }
             }

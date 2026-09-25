@@ -6,7 +6,6 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:intel="clr-namespace:PocketMC.Desktop.Features.Intelligence"
       xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
-      xmlns:helpers="clr-namespace:PocketMC.Desktop.Views.Behaviors"
       mc:Ignorable="d"
       d:DesignHeight="1200" d:DesignWidth="950"
       Title="Server Settings"
@@ -85,16 +84,16 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Non-update footer content (toggle, warnings) -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center"
+                    <WrapPanel Grid.Column="0" VerticalAlignment="Center"
                                 Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource InvertedVisibilityConverter}}">
                         <!-- Auto-Start Toggle -->
                         <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" 
                                          Content="Auto-start server at PocketMC startup" 
-                                         Margin="0,0,24,0"
+                                         Margin="0,4,24,4"
                                          VerticalAlignment="Center"/>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
-                                    Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,24,0">
+                                    Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}" Margin="0,4,24,4">
                             <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,10,0"/>
                             <TextBlock Text="Unsaved changes detected"
                                        Foreground="{DynamicResource SystemFillColorCriticalBrush}"
@@ -104,7 +103,7 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
-                                    Visibility="{Binding IsRestartRequired, Converter={StaticResource VisibleIfTrue}}">
+                                    Visibility="{Binding IsRestartRequired, Converter={StaticResource VisibleIfTrue}}" Margin="0,4,24,4">
                             <ui:SymbolIcon Symbol="ArrowClockwise24" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" Margin="0,0,10,0"/>
                             <TextBlock Text="Server restart required to apply changes"
                                        Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
@@ -112,7 +111,7 @@
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-                    </StackPanel>
+                    </WrapPanel>
 
                     <!-- Update Status & Progress (stretches full width) -->
                     <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,24,0"
@@ -158,7 +157,6 @@
 
                 <ui:NavigationView Grid.Column="0"
                                    x:Name="SidebarList"
-                                   helpers:AnimatedNavIndicatorBehavior.IsEnabled="True"
                                    PaneDisplayMode="Left"
                                    IsPaneToggleVisible="False"
                                    IsBackButtonVisible="Collapsed">
@@ -178,11 +176,50 @@
                 </ui:NavigationView>
 
                 <Border x:Name="ContentAreaCard" Grid.Column="2" VerticalAlignment="Stretch">
-                    <TabControl x:Name="MainTabControl" Background="Transparent" BorderThickness="0" Margin="0" VerticalAlignment="Stretch">
-                        <TabControl.Resources><Style TargetType="TabPanel"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
+                    <Grid>
+                        <!-- Settings Tab Skeleton Loader (Zero-delay, active only during tab/page load) -->
+                        <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource VisibleIfTrue}}">
+                            <Border Style="{StaticResource SkeletonCardBorder}" Height="120" Margin="0,0,0,12" Padding="16,14">
+                                <StackPanel>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="18" Width="180" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="14" Width="320" HorizontalAlignment="Left" Margin="0,0,0,16"/>
+                                    <Border Style="{StaticResource SkeletonElement}" Height="36" Width="400" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource SkeletonCardBorder}" Height="80" Margin="0,0,0,12" Padding="16,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <Border Style="{StaticResource SkeletonElement}" Height="16" Width="220" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                        <Border Style="{StaticResource SkeletonElement}" Height="12" Width="300" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Style="{StaticResource SkeletonElement}" Width="40" Height="22" CornerRadius="10" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SkeletonCardBorder}" Height="80" Margin="0,0,0,12" Padding="16,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <Border Style="{StaticResource SkeletonElement}" Height="16" Width="200" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                        <Border Style="{StaticResource SkeletonElement}" Height="12" Width="280" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Style="{StaticResource SkeletonElement}" Width="40" Height="22" CornerRadius="10" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
 
-                        <!-- TAB 1: IDENTITY & PERFORMANCE -->
-                        <TabItem Header="Identity">
+                        <TabControl x:Name="MainTabControl" Background="Transparent" BorderThickness="0" Margin="0" VerticalAlignment="Stretch"
+                                    Visibility="{Binding IsLoading, Converter={StaticResource InvertedVisibilityConverter}}">
+                            <TabControl.Resources><Style TargetType="TabPanel"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
+
+                            <!-- TAB 1: IDENTITY & PERFORMANCE -->
+                            <TabItem Header="Identity">
                             <ScrollViewer x:Name="GeneralScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <ui:CardExpander Header="Visual Identity" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12" IsExpanded="True">
@@ -937,16 +974,61 @@
                                                                 </Style>
                                                             </ui:ProgressRing.Style>
                                                         </ui:ProgressRing>
-                                                        <ui:Button Content="Update All" Appearance="Info"
+                                                        <ui:Button Content="Update All" Style="{StaticResource AiActionButtonStyle}"
                                                                    Command="{Binding Addons.UpdateAllPluginsCommand}"
                                                                    Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                   Cursor="Hand"
                                                                    ToolTip="Check all installed plugins for updates"/>
                                                     </StackPanel>
                                                 </Grid>
 
                                             </StackPanel>
                                         </ui:Card>
+                                        <!-- Plugins Skeleton Loader -->
+                                        <StackPanel Visibility="{Binding Addons.IsLoading, Converter={StaticResource VisibleIfTrue}}">
+                                            <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,10" Padding="16,12">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="40" Height="40" CornerRadius="6" Margin="0,0,16,0"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <Border Style="{StaticResource SkeletonElement}" Height="16" Width="180" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                                        <Border Style="{StaticResource SkeletonElement}" Height="12" Width="240" HorizontalAlignment="Left"/>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="120" Height="30" CornerRadius="6" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,10" Padding="16,12">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="40" Height="40" CornerRadius="6" Margin="0,0,16,0"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <Border Style="{StaticResource SkeletonElement}" Height="16" Width="140" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                                        <Border Style="{StaticResource SkeletonElement}" Height="12" Width="200" HorizontalAlignment="Left"/>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="120" Height="30" CornerRadius="6" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                        </StackPanel>
+
                                         <ItemsControl ItemsSource="{Binding Addons.Plugins}">
+                                            <ItemsControl.Style>
+                                                <Style TargetType="ItemsControl">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Addons.IsLoading}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ItemsControl.Style>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
@@ -1082,9 +1164,13 @@
                                                 <Style TargetType="Grid">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Addons.Plugins.Count}" Value="0">
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding Addons.Plugins.Count}" Value="0"/>
+                                                                <Condition Binding="{Binding Addons.IsLoading}" Value="False"/>
+                                                            </MultiDataTrigger.Conditions>
                                                             <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
+                                                        </MultiDataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Grid.Style>
@@ -1128,9 +1214,10 @@
                                                                 </Style>
                                                             </ui:ProgressRing.Style>
                                                         </ui:ProgressRing>
-                                                        <ui:Button Content="Update All" Appearance="Info"
+                                                        <ui:Button Content="Update All" Style="{StaticResource AiActionButtonStyle}"
                                                                    Command="{Binding Addons.UpdateAllModsCommand}"
                                                                    Icon="{ui:SymbolIcon ArrowSync20}"
+                                                                   Cursor="Hand"
                                                                    ToolTip="Check all installed mods for updates"
                                                                    Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                     </StackPanel>
@@ -1138,7 +1225,51 @@
 
                                             </StackPanel>
                                         </ui:Card>
+                                        <!-- Mods Skeleton Loader -->
+                                        <StackPanel Visibility="{Binding Addons.IsLoading, Converter={StaticResource VisibleIfTrue}}">
+                                            <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,10" Padding="16,12">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="40" Height="40" CornerRadius="6" Margin="0,0,16,0"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <Border Style="{StaticResource SkeletonElement}" Height="16" Width="180" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                                        <Border Style="{StaticResource SkeletonElement}" Height="12" Width="240" HorizontalAlignment="Left"/>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="120" Height="30" CornerRadius="6" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,10" Padding="16,12">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="40" Height="40" CornerRadius="6" Margin="0,0,16,0"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <Border Style="{StaticResource SkeletonElement}" Height="16" Width="140" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                                                        <Border Style="{StaticResource SkeletonElement}" Height="12" Width="200" HorizontalAlignment="Left"/>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="120" Height="30" CornerRadius="6" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                        </StackPanel>
+
                                         <ItemsControl ItemsSource="{Binding Addons.Mods}">
+                                            <ItemsControl.Style>
+                                                <Style TargetType="ItemsControl">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Addons.IsLoading}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ItemsControl.Style>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
@@ -1303,9 +1434,13 @@
                                                 <Style TargetType="Grid">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Addons.Mods.Count}" Value="0">
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding Addons.Mods.Count}" Value="0"/>
+                                                                <Condition Binding="{Binding Addons.IsLoading}" Value="False"/>
+                                                            </MultiDataTrigger.Conditions>
                                                             <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
+                                                        </MultiDataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Grid.Style>
@@ -1359,7 +1494,45 @@
 
                                         <!-- TAB 1: BEHAVIOR PACKS LIST -->
                                         <StackPanel Visibility="{Binding Addons.IsBehaviorPacksTabSelected, Converter={StaticResource VisibleIfTrue}}">
+                                            <!-- Behavior Packs Skeleton Loader -->
+                                            <StackPanel Visibility="{Binding Addons.IsLoading, Converter={StaticResource VisibleIfTrue}}">
+                                                <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,8" Padding="14,10">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="40" Height="40" CornerRadius="8" Margin="0,0,12,0"/>
+                                                        <Border Grid.Column="1" Style="{StaticResource SkeletonElement}" Height="16" Width="200" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="120" Height="28" CornerRadius="6" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                                <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,8" Padding="14,10">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="40" Height="40" CornerRadius="8" Margin="0,0,12,0"/>
+                                                        <Border Grid.Column="1" Style="{StaticResource SkeletonElement}" Height="16" Width="160" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="120" Height="28" CornerRadius="6" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+
                                             <ItemsControl ItemsSource="{Binding Addons.BehaviorPacks}" Margin="0,0,0,8">
+                                                <ItemsControl.Style>
+                                                    <Style TargetType="ItemsControl">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Addons.IsLoading}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ItemsControl.Style>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <ui:Card Margin="0,0,0,8" Padding="14,10">
@@ -1424,9 +1597,13 @@
                                                     <Style TargetType="Grid">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Addons.BehaviorPacks.Count}" Value="0">
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Addons.BehaviorPacks.Count}" Value="0"/>
+                                                                    <Condition Binding="{Binding Addons.IsLoading}" Value="False"/>
+                                                                </MultiDataTrigger.Conditions>
                                                                 <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
+                                                            </MultiDataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Grid.Style>
@@ -1460,7 +1637,46 @@
                                                                      VerticalAlignment="Center"/>
                                                 </Grid>
                                             </ui:Card>
+
+                                            <!-- Resource Packs Skeleton Loader -->
+                                            <StackPanel Visibility="{Binding Addons.IsLoading, Converter={StaticResource VisibleIfTrue}}">
+                                                <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,8" Padding="14,10">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="40" Height="40" CornerRadius="8" Margin="0,0,12,0"/>
+                                                        <Border Grid.Column="1" Style="{StaticResource SkeletonElement}" Height="16" Width="200" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="120" Height="28" CornerRadius="6" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                                <Border Style="{StaticResource SkeletonCardBorder}" Margin="0,0,0,8" Padding="14,10">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Style="{StaticResource SkeletonElement}" Width="40" Height="40" CornerRadius="8" Margin="0,0,12,0"/>
+                                                        <Border Grid.Column="1" Style="{StaticResource SkeletonElement}" Height="16" Width="160" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                        <Border Grid.Column="2" Style="{StaticResource SkeletonElement}" Width="120" Height="28" CornerRadius="6" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </StackPanel>
+
                                             <ItemsControl ItemsSource="{Binding Addons.ResourcePacks}" Margin="0,0,0,8">
+                                                <ItemsControl.Style>
+                                                    <Style TargetType="ItemsControl">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Addons.IsLoading}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ItemsControl.Style>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <ui:Card Margin="0,0,0,8" Padding="14,10">
@@ -1525,9 +1741,13 @@
                                                     <Style TargetType="Grid">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Addons.ResourcePacks.Count}" Value="0">
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Addons.ResourcePacks.Count}" Value="0"/>
+                                                                    <Condition Binding="{Binding Addons.IsLoading}" Value="False"/>
+                                                                </MultiDataTrigger.Conditions>
                                                                 <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
+                                                            </MultiDataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Grid.Style>
@@ -2026,6 +2246,7 @@
                             </ScrollViewer>
                         </TabItem>
                     </TabControl>
+                    </Grid>
                 </Border>
             </Grid>
         </DockPanel>

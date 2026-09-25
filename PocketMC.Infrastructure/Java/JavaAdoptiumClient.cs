@@ -51,7 +51,8 @@ namespace PocketMC.Infrastructure.Java
 
         private async Task<JavaPackageInfo> ResolveWithImageTypeAsync(int version, string imageType, CancellationToken cancellationToken)
         {
-            string apiUrl = $"https://api.adoptium.net/v3/assets/latest/{version}/hotspot?os=windows&architecture=x64&image_type={imageType}";
+            string baseApi = PocketMC.Infrastructure.Configuration.AppConfig.ProviderAdoptiumApi;
+            string apiUrl = $"{baseApi}/assets/latest/{version}/hotspot?os=windows&architecture=x64&image_type={imageType}";
             const int maxAttempts = 3;
             Exception? lastException = null;
 

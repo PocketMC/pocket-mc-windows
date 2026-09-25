@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -115,8 +115,9 @@ public class GeyserProvisioningService
 
             if (isPaperLike)
             {
-                const string floodgateDirectUrl =
-                    "https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds/latest/downloads/spigot";
+                string baseGeyser = PocketMC.Infrastructure.Configuration.AppConfig.ProviderGeyserApi;
+                string floodgateDirectUrl =
+                    $"{baseGeyser}/floodgate/versions/latest/builds/latest/downloads/spigot";
 
                 string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
                 ReportStatus(progress, "Downloading Floodgate (GeyserMC direct)...");

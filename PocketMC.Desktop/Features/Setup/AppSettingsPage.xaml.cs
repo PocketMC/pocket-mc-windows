@@ -72,6 +72,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly InstanceRegistry _registry;
         private readonly IServerLifecycleService _serverLifecycleService;
         private readonly PlayitAgentService _playitAgentService;
+        private System.Windows.Threading.DispatcherTimer? _blurDebounceTimer;
         private bool _isInitializing = true;
         private static readonly (string Name, string Hex)[] AccentColorPresets =
         {
@@ -92,6 +93,15 @@ namespace PocketMC.Desktop.Features.Setup
             ("Gold", "#C19C00"),
             ("Coral", "#E74856")
         };
+
+        public static readonly DependencyProperty IsLoadingProperty =
+            DependencyProperty.Register(nameof(IsLoading), typeof(bool), typeof(AppSettingsPage), new PropertyMetadata(true));
+
+        public bool IsLoading
+        {
+            get => (bool)GetValue(IsLoadingProperty);
+            set => SetValue(IsLoadingProperty, value);
+        }
 
         public CloudBackupSettingsViewModel CloudBackups { get; }
 
@@ -137,13 +147,19 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void AppSettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
+            IsLoading = true;
             ScrollViewerHelper.EnableMouseWheelScrolling(this, MainScrollViewer);
             ScrollViewerHelper.DisableAncestorScrollViewers(this);
 
-            LoadSettingsIntoUI();
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() =>
+            {
+                LoadSettingsIntoUI();
 
-            _healthMonitor.HealthChanged += UpdateDependencyHealth;
-            UpdateDependencyHealth();
+                _healthMonitor.HealthChanged += UpdateDependencyHealth;
+                UpdateDependencyHealth();
+
+                IsLoading = false;
+            }));
         }
 
         private void LoadSettingsIntoUI()
@@ -181,6 +197,7 @@ namespace PocketMC.Desktop.Features.Setup
             // Initialize custom background panel state
             UpdateCustomBackgroundPanelVisibility();
             UpdateCustomBackgroundUI();
+            InitializeWallpaperEffects();
             InitializeAccentColorSection();
 
             // Set initial state
@@ -234,6 +251,7 @@ namespace PocketMC.Desktop.Features.Setup
 
         private void AppSettingsPage_Unloaded(object sender, RoutedEventArgs e)
         {
+            _blurDebounceTimer?.Stop();
             ScrollViewerHelper.DisableMouseWheelScrolling(this);
             _healthMonitor.HealthChanged -= UpdateDependencyHealth;
         }
@@ -831,6 +849,134 @@ namespace PocketMC.Desktop.Features.Setup
                 CustomBgPlaceholderIcon.Visibility = Visibility.Visible;
             }
         }
+
+        // ── Wallpaper Blur & Dimming Handlers ─────────────────────────
+
+        private void InitializeWallpaperEffects()
+        {
+            var settings = _applicationState.Settings;
+
+            double blurRadius = settings.WallpaperBlurRadius;
+            if (WallpaperBlurSlider != null)
+            {
+                WallpaperBlurSlider.Value = blurRadius;
+            }
+            if (WallpaperBlurValueText != null)
+            {
+                WallpaperBlurValueText.Text = FormatBlurText(blurRadius);
+            }
+
+            double tintPercent = settings.WallpaperTintOpacity * 100.0;
+            if (WallpaperTintSlider != null)
+            {
+                WallpaperTintSlider.Value = tintPercent;
+            }
+            if (WallpaperTintValueText != null)
+            {
+                WallpaperTintValueText.Text = $"{Math.Round(tintPercent):F0}%";
+            }
+        }
+
+        private static string FormatBlurText(double radius)
+        {
+            return radius <= 0.5 ? "Off (0 px)" : $"{Math.Round(radius):F0} px";
+        }
+
+        private void WallpaperBlurSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (WallpaperBlurValueText != null)
+            {
+                WallpaperBlurValueText.Text = FormatBlurText(e.NewValue);
+            }
+
+            if (_isInitializing) return;
+
+            if (_blurDebounceTimer == null)
+            {
+                _blurDebounceTimer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(150)
+                };
+                _blurDebounceTimer.Tick += (s, ev) =>
+                {
+                    _blurDebounceTimer.Stop();
+                    ApplyWallpaperBlurFromSlider();
+                };
+            }
+
+            _blurDebounceTimer.Stop();
+            _blurDebounceTimer.Start();
+        }
+
+        private void ApplyWallpaperBlurFromSlider()
+        {
+            if (WallpaperBlurSlider == null) return;
+
+            var settings = _applicationState.Settings;
+            settings.WallpaperBlurRadius = WallpaperBlurSlider.Value;
+            _settingsManager.Save(settings);
+
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                mainWin.RequestMicaUpdate();
+            }
+        }
+
+        private void WallpaperTintSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (WallpaperTintValueText != null)
+            {
+                WallpaperTintValueText.Text = $"{Math.Round(e.NewValue):F0}%";
+            }
+
+            if (_isInitializing) return;
+
+            var settings = _applicationState.Settings;
+            settings.WallpaperTintOpacity = Math.Clamp(e.NewValue / 100.0, 0.0, 1.0);
+            _settingsManager.Save(settings);
+
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                var tintOverlay = mainWin.FindName("WallpaperTintOverlay") as Border;
+                WallpaperMicaService.UpdateTintOverlay(tintOverlay, settings.WallpaperTintOpacity);
+            }
+        }
+
+        private void ResetWallpaperEffects_Click(object sender, RoutedEventArgs e)
+        {
+            bool wasInitializing = _isInitializing;
+            _isInitializing = true;
+
+            var settings = _applicationState.Settings;
+            settings.WallpaperBlurRadius = 80.0;
+            settings.WallpaperTintOpacity = 0.72;
+            _settingsManager.Save(settings);
+
+            if (WallpaperBlurSlider != null)
+            {
+                WallpaperBlurSlider.Value = 80.0;
+            }
+            if (WallpaperBlurValueText != null)
+            {
+                WallpaperBlurValueText.Text = FormatBlurText(80.0);
+            }
+            if (WallpaperTintSlider != null)
+            {
+                WallpaperTintSlider.Value = 72.0;
+            }
+            if (WallpaperTintValueText != null)
+            {
+                WallpaperTintValueText.Text = "72%";
+            }
+
+            _isInitializing = wasInitializing;
+
+            if (Window.GetWindow(this) as MainWindow is MainWindow mainWin)
+            {
+                mainWin.RequestMicaUpdate();
+            }
+        }
+
         private void SaveApiKey_Click(object sender, RoutedEventArgs e)
         {
             _applicationState.Settings.CurseForgeApiKey = CurseForgeKeyInput.Password.Trim();
@@ -909,42 +1055,85 @@ namespace PocketMC.Desktop.Features.Setup
             switch (provider)
             {
                 case AiProviderType.Gemini:
-                    list.Add(new AiModelInfo("gemini-2.5-flash"));
-                    list.Add(new AiModelInfo("gemini-2.0-flash"));
-                    list.Add(new AiModelInfo("gemini-1.5-flash"));
+                    // Latest (3.x generation)
+                    list.Add(new AiModelInfo("gemini-3.7-flash"));
+                    list.Add(new AiModelInfo("gemini-3.5-flash"));
+                    list.Add(new AiModelInfo("gemini-3.5-flash-lite"));
+                    // Stable (2.5 generation)
                     list.Add(new AiModelInfo("gemini-2.5-pro"));
-                    list.Add(new AiModelInfo("gemini-2.0-pro-exp"));
-                    list.Add(new AiModelInfo("gemini-1.5-pro"));
+                    list.Add(new AiModelInfo("gemini-2.5-flash"));
                     break;
                 case AiProviderType.OpenAI:
-                    list.Add(new AiModelInfo("gpt-4o-mini"));
+                    // GPT-5.6 family (latest flagship)
+                    list.Add(new AiModelInfo("gpt-5.6-sol"));
+                    list.Add(new AiModelInfo("gpt-5.6-terra"));
+                    list.Add(new AiModelInfo("gpt-5.6-luna"));
+                    // GPT-5.5 / 5.4
+                    list.Add(new AiModelInfo("gpt-5.5"));
+                    list.Add(new AiModelInfo("gpt-5.4"));
+                    // Reasoning (o-series)
+                    list.Add(new AiModelInfo("o3-pro"));
+                    list.Add(new AiModelInfo("o3"));
+                    // Legacy (still accessible)
                     list.Add(new AiModelInfo("gpt-4o"));
-                    list.Add(new AiModelInfo("o1-mini"));
-                    list.Add(new AiModelInfo("o3-mini"));
+                    list.Add(new AiModelInfo("gpt-4o-mini"));
                     break;
                 case AiProviderType.Claude:
-                    list.Add(new AiModelInfo("claude-3-5-haiku-latest"));
+                    // Claude 5 generation (latest)
+                    list.Add(new AiModelInfo("claude-fable-5-1"));
+                    list.Add(new AiModelInfo("claude-opus-5"));
+                    list.Add(new AiModelInfo("claude-sonnet-5"));
+                    // Claude 4.x generation
+                    list.Add(new AiModelInfo("claude-sonnet-4"));
+                    list.Add(new AiModelInfo("claude-haiku-4-5-20251001"));
+                    // Legacy (still accessible)
+                    list.Add(new AiModelInfo("claude-3-7-sonnet-latest"));
                     list.Add(new AiModelInfo("claude-3-5-sonnet-latest"));
+                    list.Add(new AiModelInfo("claude-3-5-haiku-latest"));
                     list.Add(new AiModelInfo("claude-3-opus-latest"));
                     break;
                 case AiProviderType.Mistral:
-                    list.Add(new AiModelInfo("open-mistral-7b"));
-                    list.Add(new AiModelInfo("mistral-tiny"));
-                    list.Add(new AiModelInfo("mistral-small-latest"));
-                    list.Add(new AiModelInfo("mistral-medium-latest"));
                     list.Add(new AiModelInfo("mistral-large-latest"));
+                    list.Add(new AiModelInfo("mistral-medium-latest"));
+                    list.Add(new AiModelInfo("mistral-small-latest"));
+                    list.Add(new AiModelInfo("codestral-latest"));
+                    list.Add(new AiModelInfo("pixtral-large-latest"));
+                    list.Add(new AiModelInfo("mistral-ocr-latest"));
+                    list.Add(new AiModelInfo("open-mistral-nemo"));
                     break;
                 case AiProviderType.Groq:
                     list.Add(new AiModelInfo("llama-3.3-70b-versatile"));
-                    list.Add(new AiModelInfo("llama3-8b-8192"));
-                    list.Add(new AiModelInfo("mixtral-8x7b-32768"));
+                    list.Add(new AiModelInfo("llama-3.1-8b-instant"));
+                    list.Add(new AiModelInfo("openai/gpt-oss-120b"));
+                    list.Add(new AiModelInfo("openai/gpt-oss-20b"));
+                    list.Add(new AiModelInfo("qwen/qwen3.6-27b"));
+                    list.Add(new AiModelInfo("deepseek-r1-distill-llama-70b"));
+                    list.Add(new AiModelInfo("deepseek-r1-distill-qwen-32b"));
                     list.Add(new AiModelInfo("gemma2-9b-it"));
+                    list.Add(new AiModelInfo("mixtral-8x7b-32768"));
                     break;
                 case AiProviderType.Ollama:
-                    list.Add(new AiModelInfo("llama3"));
-                    list.Add(new AiModelInfo("mistral"));
+                    // Qwen family
+                    list.Add(new AiModelInfo("qwen3.8"));
+                    list.Add(new AiModelInfo("qwen3.6"));
+                    list.Add(new AiModelInfo("qwen3-coder"));
+                    list.Add(new AiModelInfo("qwen2.5"));
+                    // Llama family
+                    list.Add(new AiModelInfo("llama4"));
+                    list.Add(new AiModelInfo("llama3.3"));
+                    list.Add(new AiModelInfo("llama3.2"));
+                    // DeepSeek
+                    list.Add(new AiModelInfo("deepseek-r1"));
+                    list.Add(new AiModelInfo("deepseek-v4-flash"));
+                    // Microsoft Phi
+                    list.Add(new AiModelInfo("phi4"));
+                    list.Add(new AiModelInfo("phi4-mini"));
+                    // Google Gemma
+                    list.Add(new AiModelInfo("gemma4"));
                     list.Add(new AiModelInfo("gemma2"));
-                    list.Add(new AiModelInfo("phi3"));
+                    // Others
+                    list.Add(new AiModelInfo("mistral"));
+                    list.Add(new AiModelInfo("codellama"));
                     break;
             }
             return list;

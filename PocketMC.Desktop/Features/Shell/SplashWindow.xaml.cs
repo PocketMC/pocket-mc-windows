@@ -10,6 +10,7 @@ public partial class SplashWindow : Window
     public SplashWindow()
     {
         InitializeComponent();
+        Title = PocketMC.Infrastructure.Configuration.AppConfig.AppName;
         SourceInitialized += OnSourceInitialized;
     }
 

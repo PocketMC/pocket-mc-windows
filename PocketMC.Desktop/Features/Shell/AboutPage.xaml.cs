@@ -16,6 +16,10 @@ using PocketMC.Infrastructure;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Infrastructure.OS;
+using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 
 namespace PocketMC.Desktop.Features.Shell
 {
@@ -30,7 +34,14 @@ namespace PocketMC.Desktop.Features.Shell
             _dialogService = dialogService;
             _whatsNewService = whatsNewService;
 
+            TxtAboutTitle.Text = $"About {AppConfig.AppName}";
             TxtVersion.Text = $"Version {AppConfig.AppVersion}";
+            TxtAppTitle.Text = $"{AppConfig.AppName} Desktop";
+            TxtAppDescription.Text = AppConfig.AppDescription;
+            TxtOrgName.Text = AppConfig.OrganizationName;
+            TxtOrgTagline.Text = AppConfig.OrganizationTagline;
+            TxtCommunityDesc.Text = $"Join our Discord server to get help, share tips, and connect with other {AppConfig.AppName} users.";
+            TxtDonationDesc.Text = $"Support the development of {AppConfig.AppName}! If you love this project and find it useful, consider buying us a coffee.";
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -39,6 +50,7 @@ namespace PocketMC.Desktop.Features.Shell
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             ScrollViewerHelper.EnableMouseWheelScrolling(this, AboutScrollViewer);
+            _ = RefreshContributorAvatarsAsync();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -106,6 +118,69 @@ namespace PocketMC.Desktop.Features.Shell
         private void OpenOrganizationWebsite_Click(object sender, RoutedEventArgs e)
         {
             OpenLink(AppConfig.LinkOrganization);
+        }
+
+        private void OpenDivyGitHub_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLink(AppConfig.LinkContributorDivy);
+        }
+
+        private void OpenSahajGitHub_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLink(AppConfig.LinkContributorSahaj);
+        }
+
+        private void OpenJohndinglesinGitHub_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLink(AppConfig.LinkHelperJohndinglesin);
+        }
+
+        private void OpenNexViceDiscord_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLink(AppConfig.LinkDonatorNexVice);
+        }
+
+        private async Task RefreshContributorAvatarsAsync()
+        {
+            try
+            {
+                await Task.WhenAll(
+                    TryLoadOnlineAvatarAsync(ImgDivyAvatar, "https://github.com/divyviradiya2.png?size=256"),
+                    TryLoadOnlineAvatarAsync(ImgSahajAvatar, "https://github.com/SizWinz.png?size=256"),
+                    TryLoadOnlineAvatarAsync(ImgJohndinglesinAvatar, "https://github.com/Johndinglesin.png?size=256")
+                );
+            }
+            catch
+            {
+            }
+        }
+
+        private async Task TryLoadOnlineAvatarAsync(Image? targetImage, string avatarUrl)
+        {
+            if (targetImage == null) return;
+            try
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("PocketMC-Desktop");
+                var bytes = await client.GetByteArrayAsync(avatarUrl).ConfigureAwait(false);
+                if (bytes != null && bytes.Length > 0)
+                {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        var bitmap = new BitmapImage();
+                        using var ms = new MemoryStream(bytes);
+                        bitmap.BeginInit();
+                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmap.StreamSource = ms;
+                        bitmap.EndInit();
+                        bitmap.Freeze();
+                        targetImage.Source = bitmap;
+                    });
+                }
+            }
+            catch
+            {
+            }
         }
 
         private void WhatsNew_Click(object sender, RoutedEventArgs e)

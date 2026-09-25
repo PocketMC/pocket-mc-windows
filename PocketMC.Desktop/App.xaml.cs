@@ -5,6 +5,7 @@ using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Core.Interfaces;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -55,12 +56,28 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
+        HardwareRenderingOptimizer.InitializeGlobalPerformanceProfile();
+
+        // 1. Optimize every Window across the entire application (GPU acceleration, pixel snapping, crisp text)
+        EventManager.RegisterClassHandler(
+            typeof(Window),
+            FrameworkElement.LoadedEvent,
+            new RoutedEventHandler((sender, _) =>
+            {
+                if (sender is Window window)
+                {
+                    HardwareRenderingOptimizer.OptimizeWindow(window);
+                }
+            })
+        );
+
         // Immediately refresh dynamic links and proxies from GitHub in the background at the start of every session
         _ = Task.Run(async () =>
         {
             try
             {
                 await AppConfig.RefreshRemoteConfigAsync();
+                Infrastructure.UninstallMetadataRegistrationService.Sync();
             }
             catch
             {
@@ -71,6 +88,7 @@ public partial class App : System.Windows.Application
         AppStartupOptions startupOptions = AppStartupOptions.Parse(e.Args);
         WindowsToastNotificationService.RegisterApplication();
         ProtocolRegistrationService.Register();
+        Infrastructure.UninstallMetadataRegistrationService.Sync();
 
         _host = Host.CreateDefaultBuilder()
             .ConfigureLogging(logging =>
@@ -98,7 +116,6 @@ public partial class App : System.Windows.Application
         SingleInstanceService.ShowApplicationRequested += OnShowApplicationRequested;
 
         await _host.StartAsync();
-        Services.GetRequiredService<WindowsCornerService>().RegisterGlobalWindowHook();
         Services.GetRequiredService<ServerSleepPreventionCoordinator>().Refresh();
 
         var appState = Services.GetRequiredService<PocketMC.Application.Services.Shell.ApplicationState>();
@@ -349,6 +366,13 @@ public partial class App : System.Windows.Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        // Suppress benign Wpf.Ui TitleBar HWND race condition on rapid window/dialog dismiss
+        if (e.Exception is ArgumentException argEx && argEx.Message.Contains("Hwnd of zero is not valid"))
+        {
+            e.Handled = true;
+            return;
+        }
+
         HandleUnhandledException(e.Exception, "UI thread", showDialog: true);
         e.Handled = true;
         Shutdown(-1);

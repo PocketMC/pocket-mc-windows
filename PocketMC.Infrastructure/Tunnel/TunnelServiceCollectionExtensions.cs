@@ -30,7 +30,7 @@ namespace PocketMC.Infrastructure.Tunnel
         public static IServiceCollection AddTunneling(this IServiceCollection services)
         {
             services.AddHttpClient<PlayitPartnerProvisioningClient>(client =>
-                client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0"))
+                client.DefaultRequestHeaders.Add("User-Agent", $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName}-Desktop/{PocketMC.Infrastructure.Configuration.AppConfig.AppVersion}"))
             .AddStandardResilience()
             .AddHttpMessageHandler<PocketMC.Infrastructure.Http.LoggingHttpMessageHandler>();
             services.AddSingleton<PlayitAgentProcessManager>();
@@ -43,7 +43,7 @@ namespace PocketMC.Infrastructure.Tunnel
             services.AddSingleton<TunnelService>();
             
             services.AddHttpClient<PocketMC.Application.Interfaces.Tunnels.IPlayitStatusService, PlayitStatusService>(client =>
-                client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0"))
+                client.DefaultRequestHeaders.Add("User-Agent", $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName}-Desktop/{PocketMC.Infrastructure.Configuration.AppConfig.AppVersion}"))
             .AddStandardResilience()
             .AddHttpMessageHandler<PocketMC.Infrastructure.Http.LoggingHttpMessageHandler>();
             

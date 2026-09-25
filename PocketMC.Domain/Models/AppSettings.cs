@@ -16,8 +16,10 @@ namespace PocketMC.Domain.Models
 
     public class AppSettings
     {
+        public int SchemaVersion { get; set; } = 2;
         public string? AppRootPath { get; set; }
         public string? PlayitConfigDirectory { get; set; }
+        public string? PlayitVersion { get; set; } = "1.0.10";
         public PlayitPartnerConnection? PlayitPartnerConnection { get; set; }
         public bool HasCompletedFirstLaunch { get; set; }
         public bool StartWithWindows { get; set; } = false;
@@ -30,12 +32,19 @@ namespace PocketMC.Domain.Models
         public bool HasMigratedToGreenWallpaperBlurTheme { get; set; }
         public bool HasMigratedToDefaultImageWallpaper { get; set; }
         public string? CustomBackgroundImagePath { get; set; }
+        public double WallpaperBlurRadius { get; set; } = 80.0;
+        public double WallpaperTintOpacity { get; set; } = 0.72;
         public string? CurseForgeApiKey { get; set; }
 
         // Telemetry
         public bool EnableTelemetry { get; set; } = true;
         public Guid? TelemetryClientId { get; set; }
         public bool HasReportedInstall { get; set; }
+
+        // Window State & Dimensions
+        public double? WindowWidth { get; set; }
+        public double? WindowHeight { get; set; }
+        public bool IsWindowMaximized { get; set; }
 
         // AI Summarization
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]

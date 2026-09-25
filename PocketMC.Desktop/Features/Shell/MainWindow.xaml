@@ -10,20 +10,27 @@
         xmlns:shell="clr-namespace:PocketMC.Desktop.Features.Shell"
         xmlns:remote="clr-namespace:PocketMC.Desktop.Features.RemoteControl.UI"
         xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
-        xmlns:helpers="clr-namespace:PocketMC.Desktop.Views.Behaviors"
         mc:Ignorable="d"
         Title="PocketMC"
         WindowBackdropType="None"
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen"
+        MinWidth="1024"
+        MinHeight="680"
         Icon="pack://application:,,,/icon.ico"
         Background="#FF242424"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        RenderOptions.BitmapScalingMode="Linear"
+        RenderOptions.ClearTypeHint="Enabled"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
         Loaded="Window_Loaded"
         Activated="Window_Activated"
         Deactivated="Window_Deactivated">
 
-    <Grid>
+    <Grid x:Name="RootLayoutGrid">
         <!-- Fake Mica: blurred wallpaper layer (collapsed until FakeMica theme is selected) -->
         <Image x:Name="WallpaperBlurLayer"
                Visibility="Collapsed"
@@ -121,7 +128,6 @@
             <!-- ─── NavigationView shell ──────────────────────────────────────── -->
             <ui:NavigationView x:Name="RootNavigation"
                                Grid.Row="1"
-                               helpers:AnimatedNavIndicatorBehavior.IsEnabled="True"
                                PaneDisplayMode="Left"
                                IsBackButtonVisible="Collapsed"
                                IsPaneToggleVisible="{Binding IsPaneToggleVisible}"
@@ -132,12 +138,13 @@
 
                 <!-- ─── Title Bar ─── -->
                 <ui:NavigationView.Header>
-                    <ui:TitleBar Title="PocketMC"
+                    <ui:TitleBar x:Name="AppTitleBar"
+                                 Title="PocketMC"
                                  ShowMaximize="True"
                                  ShowMinimize="True"
                                  ShowClose="True">
                         <ui:TitleBar.Header>
-                            <Grid>
+                            <Grid VerticalAlignment="Top" Margin="0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
@@ -149,11 +156,12 @@
                                         Grid.Column="1"
                                         Background="#12FFFFFF"
                                         CornerRadius="4"
-                                        Padding="10,3"
-                                        Margin="0,0,12,0"
-                                        VerticalAlignment="Center"
+                                        Height="24"
+                                        Padding="10,0"
+                                        Margin="0,6,12,0"
+                                        VerticalAlignment="Top"
                                         Visibility="{Binding TitleBarContextVisibility}">
-                                    <StackPanel Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock x:Name="TitleBarContextTitle"
                                                    Text="{Binding TitleBarTitle}"
                                                    FontSize="12"
@@ -179,14 +187,16 @@
                                         Grid.Column="2"
                                         Background="#18FFFFFF"
                                         CornerRadius="4"
-                                        Padding="10,3"
-                                        Margin="0,0,8,0"
-                                        VerticalAlignment="Center"
+                                        Height="24"
+                                        Padding="10,0"
+                                        Margin="0,6,16,0"
+                                        VerticalAlignment="Top"
                                         Visibility="{Binding GlobalHealthVisibility}">
                                     <TextBlock x:Name="GlobalHealthTextBlock"
                                                Text="{Binding GlobalHealthStatusText}"
                                                Foreground="{Binding GlobalHealthStatusBrush, FallbackValue=Silver}"
-                                               FontSize="11"/>
+                                               FontSize="11"
+                                               VerticalAlignment="Center"/>
                                 </Border>
                             </Grid>
                         </ui:TitleBar.Header>

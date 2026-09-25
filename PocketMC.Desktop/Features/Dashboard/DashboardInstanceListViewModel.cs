@@ -21,6 +21,13 @@ namespace PocketMC.Desktop.Features.Dashboard
         private readonly PocketMC.Application.Services.Networking.ISimpleVoiceChatDetector _voiceChatDetector;
         private readonly PocketMC.Application.Interfaces.Networking.ILocalNetworkAddressService _localNetworkAddressService;
 
+        private bool _isLoading = true;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            private set => SetProperty(ref _isLoading, value);
+        }
+
         public ObservableCollection<InstanceCardViewModel> Instances { get; } = new();
 
         public DashboardInstanceListViewModel(
@@ -41,51 +48,97 @@ namespace PocketMC.Desktop.Features.Dashboard
             _localNetworkAddressService = localNetworkAddressService ?? new PocketMC.Infrastructure.Networking.LocalNetworkAddressService();
         }
 
-        public void LoadInstances()
+        public async Task LoadInstancesAsync()
         {
-            if (!_applicationState.IsConfigured) return;
-
-            var existingVms = Instances.ToList();
-            Instances.Clear();
-            var metas = _registry.GetAll()
-                .OrderByDescending(m => m.PinnedAt.HasValue)
-                .ThenBy(m => m.PinnedAt)
-                .ThenByDescending(m => m.CreatedAt)
-                .ToList();
-            foreach (var meta in metas)
+            if (!_applicationState.IsConfigured)
             {
-                if (meta.ServerPort == null)
+                IsLoading = false;
+                return;
+            }
+
+            if (Instances.Count == 0)
+            {
+                IsLoading = true;
+            }
+
+            var metas = await Task.Run(() =>
+            {
+                var list = _registry.GetAll()
+                    .OrderByDescending(m => m.PinnedAt.HasValue)
+                    .ThenBy(m => m.PinnedAt)
+                    .ThenByDescending(m => m.CreatedAt)
+                    .ToList();
+
+                foreach (var meta in list)
                 {
-                    string? path = _registry.GetPath(meta.Id);
-                    if (!string.IsNullOrEmpty(path))
+                    if (meta.ServerPort == null)
                     {
-                        string propsFile = System.IO.Path.Combine(path, "server.properties");
-                        var props = PocketMC.Application.Services.Instances.ServerPropertiesParser.Read(propsFile);
-                        if (props.TryGetValue("server-port", out var pPort) && int.TryParse(pPort, out int parsedPort))
+                        string? path = _registry.GetPath(meta.Id);
+                        if (!string.IsNullOrEmpty(path))
                         {
-                            meta.ServerPort = parsedPort;
+                            string propsFile = System.IO.Path.Combine(path, "server.properties");
+                            if (System.IO.File.Exists(propsFile))
+                            {
+                                var props = PocketMC.Application.Services.Instances.ServerPropertiesParser.Read(propsFile);
+                                if (props.TryGetValue("server-port", out var pPort) && int.TryParse(pPort, out int parsedPort))
+                                {
+                                    meta.ServerPort = parsedPort;
+                                }
+                            }
                         }
                     }
                 }
+                return list;
+            });
 
+            if (metas.Count == 0)
+            {
+                Instances.Clear();
+                IsLoading = false;
+                return;
+            }
+
+            var existingVms = Instances.ToList();
+            var updatedVms = new System.Collections.Generic.List<InstanceCardViewModel>();
+
+            foreach (var meta in metas)
+            {
                 var existing = existingVms.FirstOrDefault(v => v.Id == meta.Id);
                 if (existing != null)
                 {
                     existing.UpdateFromMetadata(meta);
-                    Instances.Add(existing);
+                    updatedVms.Add(existing);
                 }
                 else
                 {
                     var newVm = new InstanceCardViewModel(meta, _serverProcessManager, _lifecycleService, _applicationState, _registry, _geyserDetector, _voiceChatDetector, _localNetworkAddressService);
-                    Instances.Add(newVm);
+                    updatedVms.Add(newVm);
                 }
             }
 
-            foreach (var vm in Instances)
+            foreach (var vm in updatedVms)
             {
                 var process = _serverProcessManager.GetProcess(vm.Id);
                 if (process != null) vm.UpdateState(process.State);
             }
+
+            // Sync Instances collection smoothly
+            bool hasChanged = Instances.Count != updatedVms.Count || !Instances.SequenceEqual(updatedVms);
+            if (hasChanged)
+            {
+                Instances.Clear();
+                foreach (var vm in updatedVms)
+                {
+                    Instances.Add(vm);
+                }
+            }
+
+            IsLoading = false;
+        }
+
+        public void LoadInstances()
+        {
+            _ = LoadInstancesAsync();
         }
 
         public InstanceCardViewModel? GetById(Guid id) => Instances.FirstOrDefault(i => i.Id == id);

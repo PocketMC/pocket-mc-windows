@@ -11,9 +11,12 @@ namespace PocketMC.Desktop.Infrastructure
         public bool PrimaryClicked { get; private set; }
         public PocketMC.Desktop.Core.Interfaces.DialogResult Result { get; private set; } = PocketMC.Desktop.Core.Interfaces.DialogResult.Dismiss;
 
+        private bool _isContentRendered = false;
+
         public AppDialogWindow()
         {
             InitializeComponent();
+            ContentRendered += (s, e) => _isContentRendered = true;
             var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
             visualService.ApplyThemeToDialog(this);
 
@@ -31,7 +34,19 @@ namespace PocketMC.Desktop.Infrastructure
             }
             catch
             {
-                // Non-critical â€” dialog will still work with whatever accent is current.
+                // Non-critical — dialog will still work with whatever accent is current.
+            }
+        }
+
+        private void SafeClose()
+        {
+            if (!_isContentRendered)
+            {
+                Dispatcher.InvokeAsync(Close, System.Windows.Threading.DispatcherPriority.Background);
+            }
+            else
+            {
+                Close();
             }
         }
 
@@ -139,21 +154,21 @@ namespace PocketMC.Desktop.Infrastructure
         {
             PrimaryClicked = true;
             Result = PocketMC.Desktop.Core.Interfaces.DialogResult.Yes;
-            Close();
+            SafeClose();
         }
 
         private void BtnSecondary_Click(object sender, RoutedEventArgs e)
         {
             PrimaryClicked = false;
             Result = PocketMC.Desktop.Core.Interfaces.DialogResult.No;
-            Close();
+            SafeClose();
         }
 
         private void BtnTertiary_Click(object sender, RoutedEventArgs e)
         {
             PrimaryClicked = false;
             Result = PocketMC.Desktop.Core.Interfaces.DialogResult.Cancel;
-            Close();
+            SafeClose();
         }
 
         protected override void OnKeyDown(System.Windows.Input.KeyEventArgs e)
@@ -170,7 +185,7 @@ namespace PocketMC.Desktop.Infrastructure
                 }
                 else
                 {
-                    Close();
+                    SafeClose();
                 }
                 e.Handled = true;
             }

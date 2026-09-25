@@ -189,6 +189,34 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         Assert.False(props.ContainsKey("texturepack-required"));
     }
 
+    [Fact]
+    public void LoadRawProperties_WhenFileIsOpenWithReadWriteShare_ReadsSuccessfully()
+    {
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager, Mock.Of<IGeyserDetector>());
+        var metadata = manager.CreateInstance("Shared File Test", "");
+        string serverDir = registry.GetPath(metadata.Id)!;
+        string propsPath = Path.Combine(serverDir, "server.properties");
+        File.WriteAllText(propsPath, "motd=SharedAccessTest\nmax-players=20\n", Encoding.UTF8);
+
+        // Open file with FileShare.ReadWrite mimicking an active Minecraft server process
+        using var fs = new FileStream(propsPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+
+        string content = service.LoadRawProperties(serverDir);
+
+        Assert.Contains("motd=SharedAccessTest", content);
+        Assert.Contains("max-players=20", content);
+    }
+
+    [Fact]
+    public void LoadRawProperties_WhenFileDoesNotExist_ReturnsEmptyString()
+    {
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager, Mock.Of<IGeyserDetector>());
+        string content = service.LoadRawProperties(Path.Combine(_tempDirectory, "NonExistentServer"));
+        Assert.Equal(string.Empty, content);
+    }
+
     private sealed class MockAssetProvider : PocketMC.Application.Interfaces.IAssetProvider
     {
         public Stream? GetAssetStream(string assetName) => null;

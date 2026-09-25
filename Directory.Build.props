@@ -5,5 +5,28 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Dynamic Metadata Ingestion from pocketmc.yml (Universal Single Source of Truth) -->
+    <PocketMcConfigPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)pocketmc.yml'))</PocketMcConfigPath>
+    <PocketMcConfigContent Condition="Exists('$(PocketMcConfigPath)')">$([System.IO.File]::ReadAllText('$(PocketMcConfigPath)'))</PocketMcConfigContent>
+    
+    <PocketMcAppName Condition="'$(PocketMcConfigContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(PocketMcConfigContent), '(?m)^app_name:\s*"?([^\r\n#"]+)"?').Groups[1].Value.Trim())</PocketMcAppName>
+    <PocketMcAppTitle Condition="'$(PocketMcConfigContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(PocketMcConfigContent), '(?m)^app_title:\s*"?([^\r\n#"]+)"?').Groups[1].Value.Trim())</PocketMcAppTitle>
+    <PocketMcAppId Condition="'$(PocketMcConfigContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(PocketMcConfigContent), '(?m)^app_id:\s*"?([^\r\n#"]+)"?').Groups[1].Value.Trim())</PocketMcAppId>
+    <PocketMcVersion Condition="'$(PocketMcConfigContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(PocketMcConfigContent), '(?m)^version:\s*([^\r\n#]+)').Groups[1].Value.Trim())</PocketMcVersion>
+    <PocketMcOrgName Condition="'$(PocketMcConfigContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(PocketMcConfigContent), '(?m)^organization_name:\s*"?([^\r\n#"]+)"?').Groups[1].Value.Trim())</PocketMcOrgName>
+    <PocketMcAppDesc Condition="'$(PocketMcConfigContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(PocketMcConfigContent), '(?m)^app_description:\s*"?([^\r\n#"]+)"?').Groups[1].Value.Trim())</PocketMcAppDesc>
+    <PocketMcGithub Condition="'$(PocketMcConfigContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(PocketMcConfigContent), '(?m)^link_github:\s*"?([^\r\n#"]+)"?').Groups[1].Value.Trim())</PocketMcGithub>
+
+    <Product Condition="'$(PocketMcAppName)' != ''">$(PocketMcAppName)</Product>
+    <Title Condition="'$(PocketMcAppTitle)' != ''">$(PocketMcAppTitle)</Title>
+    <AssemblyName Condition="'$(PocketMcAppName)' != '' and '$(MSBuildProjectName)' == 'PocketMC.Desktop'">$(PocketMcAppName)</AssemblyName>
+    <Version Condition="'$(PocketMcVersion)' != '' and '$(Version)' == ''">$(PocketMcVersion)</Version>
+    <Company Condition="'$(PocketMcOrgName)' != ''">$(PocketMcOrgName)</Company>
+    <Authors Condition="'$(PocketMcOrgName)' != ''">$(PocketMcOrgName)</Authors>
+    <Copyright Condition="'$(PocketMcOrgName)' != ''">Copyright © $(PocketMcOrgName)</Copyright>
+    <Description Condition="'$(PocketMcAppDesc)' != ''">$(PocketMcAppDesc)</Description>
+    <PackageProjectUrl Condition="'$(PocketMcGithub)' != ''">$(PocketMcGithub)</PackageProjectUrl>
+    <RepositoryUrl Condition="'$(PocketMcGithub)' != ''">$(PocketMcGithub)</RepositoryUrl>
   </PropertyGroup>
 </Project>

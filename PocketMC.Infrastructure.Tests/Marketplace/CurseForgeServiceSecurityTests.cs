@@ -4,6 +4,8 @@ using PocketMC.Domain.Models;
 using System.Net;
 using System.Net.Http;
 using PocketMC.Domain.Models;
+using PocketMC.Domain.Exceptions;
+using PocketMC.Application.Services.Shell;
 using PocketMC.Application.Interfaces.Mods;
 
 namespace PocketMC.Infrastructure.Tests.Marketplace;
@@ -243,6 +245,67 @@ public sealed class CurseForgeServiceSecurityTests
         };
 
         return new CurseForgeService(appState, client, new Moq.Mock<ICurseForgeApiKeyDialogService>().Object);
+    }
+
+    [Fact]
+    public async Task SearchAsync_MissingApiKey_ThrowsCurseForgeApiKeyExceptionWithIsMissingKeyTrue()
+    {
+        var appState = new ApplicationState();
+        appState.ApplySettings(new AppSettings { CurseForgeApiKey = null });
+
+        var client = new HttpClient(new MarketplaceDelegateHttpMessageHandler((_, _) => new HttpResponseMessage(HttpStatusCode.OK)))
+        {
+            BaseAddress = new Uri("https://api.curseforge.com")
+        };
+        var service = new CurseForgeService(appState, client, new Moq.Mock<ICurseForgeApiKeyDialogService>().Object);
+
+        var ex = await Assert.ThrowsAsync<CurseForgeApiKeyException>(() =>
+            service.SearchAsync("project_type:mod", "1.20.1", "fabric"));
+
+        Assert.True(ex.IsMissingKey);
+        Assert.Equal("CURSEFORGE_API_KEY_MISSING", ex.ErrorCode);
+    }
+
+    [Fact]
+    public async Task SearchAsync_Forbidden403_ThrowsCurseForgeApiKeyExceptionWithIsMissingKeyFalse()
+    {
+        var appState = new ApplicationState();
+        appState.ApplySettings(new AppSettings { CurseForgeApiKey = "invalid-key" });
+
+        var client = new HttpClient(new MarketplaceDelegateHttpMessageHandler((_, _) =>
+        {
+            var resp = new HttpResponseMessage(HttpStatusCode.Forbidden);
+            resp.Content = new StringContent("Forbidden: API Key missing or invalid");
+            return resp;
+        }))
+        {
+            BaseAddress = new Uri("https://api.curseforge.com")
+        };
+        var service = new CurseForgeService(appState, client, new Moq.Mock<ICurseForgeApiKeyDialogService>().Object);
+
+        var ex = await Assert.ThrowsAsync<CurseForgeApiKeyException>(() =>
+            service.SearchAsync("project_type:modpack", "1.20.1", "fabric"));
+
+        Assert.False(ex.IsMissingKey);
+        Assert.Equal("CURSEFORGE_API_KEY_INVALID", ex.ErrorCode);
+    }
+
+    [Fact]
+    public async Task SearchAsync_EmptyResults_ReturnsEmptyListWithoutDummyCards()
+    {
+        var appState = new ApplicationState();
+        appState.ApplySettings(new AppSettings { CurseForgeApiKey = "valid-key" });
+
+        var client = new HttpClient(new MarketplaceDelegateHttpMessageHandler((_, _) =>
+            MarketplaceHttpResponses.Json("""{ "data": [] }""")))
+        {
+            BaseAddress = new Uri("https://api.curseforge.com")
+        };
+        var service = new CurseForgeService(appState, client, new Moq.Mock<ICurseForgeApiKeyDialogService>().Object);
+
+        var hits = await service.SearchAsync("project_type:mod", "1.20.1", "fabric");
+
+        Assert.Empty(hits);
     }
 }
 

@@ -42,6 +42,43 @@ public sealed class RemoteSettingsTests : IDisposable
         Assert.NotNull(roundTripped);
     }
 
+    [Fact]
+    public void Load_PreservesExistingCredentialsAndMigratesToSchemaVersion2()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        File.WriteAllText(settingsPath, """
+        {
+          "RemoteControl": {
+            "Enabled": true,
+            "Port": 25590,
+            "Username": "savedAdmin",
+            "PasswordHash": "salt123:hash456",
+            "RequireAuthentication": true,
+            "Users": [
+              {
+                "Username": "savedSubUser",
+                "PasswordHash": "subsalt:subhash"
+              }
+            ]
+          }
+        }
+        """);
+
+        var settings = new SettingsManager(settingsPath).Load();
+
+        Assert.Equal(2, settings.SchemaVersion);
+        Assert.NotNull(settings.RemoteControl);
+        Assert.True(settings.RemoteControl.Enabled);
+        Assert.Equal(25590, settings.RemoteControl.Port);
+        Assert.Equal("savedAdmin", settings.RemoteControl.Username);
+        Assert.Equal("salt123:hash456", settings.RemoteControl.PasswordHash);
+        Assert.Single(settings.RemoteControl.Users);
+        Assert.Equal("savedSubUser", settings.RemoteControl.Users[0].Username);
+        Assert.Equal("subsalt:subhash", settings.RemoteControl.Users[0].PasswordHash);
+        Assert.NotNull(settings.RemoteControl.Users[0].AllowedInstanceIds);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))
