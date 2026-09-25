@@ -45,7 +45,7 @@
                                 Width="108" Height="108"
                                 CornerRadius="16"
                                 Margin="0,0,24,0"
-                                VerticalAlignment="Top"
+                                VerticalAlignment="Center"
                                 UseLayoutRounding="True"
                                 SnapsToDevicePixels="True">
                             <Border.Clip>
@@ -432,7 +432,7 @@
                         </Grid>
                     </ui:Card>
 
-                    <!-- Feedback & Support Card -->
+                    <!-- Support & Feedback Card -->
                     <ui:Card Grid.Column="2" Padding="20" VerticalAlignment="Stretch">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -443,7 +443,7 @@
 
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
                                 <ui:SymbolIcon Symbol="Heart24" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="Feedback &amp; Support" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="Support &amp; Feedback" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
 
                             <TextBlock x:Name="TxtDonationDesc"
@@ -455,15 +455,15 @@
                                        Margin="0,0,0,14"/>
 
                             <WrapPanel Grid.Row="2" VerticalAlignment="Bottom">
-                                <ui:Button Content="Submit Feedback Form"
-                                           Appearance="Primary"
-                                           Click="OpenFeedbackForm_Click"
-                                           Icon="{ui:SymbolIcon Open20}"
-                                           Margin="0,0,8,8"/>
                                 <ui:Button Content="Buy Me a Coffee"
-                                           Appearance="Secondary"
+                                           Appearance="Primary"
                                            Click="OpenDonationPage_Click"
                                            Icon="{ui:SymbolIcon Heart20}"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="Submit Feedback Form"
+                                           Appearance="Secondary"
+                                           Click="OpenFeedbackForm_Click"
+                                           Icon="{ui:SymbolIcon Open20}"
                                            Margin="0,0,8,8"/>
                                 <ui:Button Content="Get Help on Discord"
                                            Appearance="Secondary"
