@@ -113,6 +113,11 @@
 
                             <!-- Quick Action Buttons -->
                             <WrapPanel Margin="0,0,0,0">
+                                <ui:Button Content="Visit Website"
+                                           Appearance="Secondary"
+                                           Click="OpenWebsite_Click"
+                                           Icon="{ui:SymbolIcon Globe24}"
+                                           Margin="0,0,8,8"/>
                                 <ui:Button Content="GitHub"
                                            Appearance="Secondary"
                                            Click="OpenGitHub_Click"
@@ -126,7 +131,7 @@
                                 <ui:Button Content="Visit Studio"
                                            Appearance="Secondary"
                                            Click="OpenOrganizationWebsite_Click"
-                                           Icon="{ui:SymbolIcon Globe20}"
+                                           Icon="{ui:SymbolIcon Building24}"
                                            Margin="0,0,8,8"/>
                             </WrapPanel>
                         </StackPanel>

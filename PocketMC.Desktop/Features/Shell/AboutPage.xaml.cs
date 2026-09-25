@@ -120,6 +120,11 @@ namespace PocketMC.Desktop.Features.Shell
             OpenLink(AppConfig.LinkOrganization);
         }
 
+        private void OpenWebsite_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLink(AppConfig.LinkWebsite);
+        }
+
         private void OpenDivyGitHub_Click(object sender, RoutedEventArgs e)
         {
             OpenLink(AppConfig.LinkContributorDivy);

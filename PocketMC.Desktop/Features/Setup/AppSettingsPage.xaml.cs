@@ -238,7 +238,15 @@ namespace PocketMC.Desktop.Features.Setup
             }
 
             // Discord RPC
-            ToggleDiscordRpc.IsChecked = _applicationState.Settings.EnableDiscordRpc;
+            ToggleDiscordRpc.IsChecked = _applicationState.Settings.DiscordRpc.Enabled;
+            ToggleDiscordShowIdle.IsChecked = _applicationState.Settings.DiscordRpc.ShowIdle;
+            ToggleDiscordShowServerName.IsChecked = _applicationState.Settings.DiscordRpc.ShowServerName;
+            ToggleDiscordShowPlayerCount.IsChecked = _applicationState.Settings.DiscordRpc.ShowPlayerCount;
+            ToggleDiscordShowServerAddress.IsChecked = _applicationState.Settings.DiscordRpc.ShowServerAddress;
+            ToggleDiscordShowVersionAndEngine.IsChecked = !_applicationState.Settings.DiscordRpc.ShowServerAddress && _applicationState.Settings.DiscordRpc.ShowVersionAndEngine;
+            ToggleDiscordShowSoftwareIcon.IsChecked = _applicationState.Settings.DiscordRpc.ShowSoftwareIcon;
+            ToggleDiscordShowDownloadButton.IsChecked = _applicationState.Settings.DiscordRpc.ShowDownloadButton;
+            UpdateDiscordRpcPreview();
 
             // Notifications
             ToggleServerOnlineNotifications.IsChecked = _applicationState.Settings.EnableServerOnlineNotifications;
@@ -1247,20 +1255,138 @@ namespace PocketMC.Desktop.Features.Setup
             // Handled in AboutPage now
         }
 
-        // ── Discord RPC Toggle ────────────────────────────────────────────
+        // ── Discord RPC Toggles ────────────────────────────────────────────
 
         private void ToggleDiscordRpc_Changed(object sender, RoutedEventArgs e)
         {
             if (_isInitializing) return;
 
             var settings = _applicationState.Settings;
-            settings.EnableDiscordRpc = ToggleDiscordRpc.IsChecked == true;
+            settings.DiscordRpc.Enabled = ToggleDiscordRpc.IsChecked == true;
             _settingsManager.Save(settings);
 
-            if (settings.EnableDiscordRpc)
+            if (settings.DiscordRpc.Enabled)
                 _discordRpcService.Initialize();
             else
                 _discordRpcService.Shutdown();
+
+            UpdateDiscordRpcPreview();
+        }
+
+        private bool _isUpdatingMutualRpcOptions;
+
+        private void DiscordRpcOption_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing || _isUpdatingMutualRpcOptions) return;
+
+            try
+            {
+                _isUpdatingMutualRpcOptions = true;
+
+                // Mutually exclusive: Server Address and Server Software & Version cannot both be enabled simultaneously
+                if (sender == ToggleDiscordShowServerAddress && ToggleDiscordShowServerAddress.IsChecked == true)
+                {
+                    ToggleDiscordShowVersionAndEngine.IsChecked = false;
+                }
+                else if (sender == ToggleDiscordShowVersionAndEngine && ToggleDiscordShowVersionAndEngine.IsChecked == true)
+                {
+                    ToggleDiscordShowServerAddress.IsChecked = false;
+                }
+
+                var settings = _applicationState.Settings;
+                settings.DiscordRpc.ShowIdle = ToggleDiscordShowIdle.IsChecked == true;
+                settings.DiscordRpc.ShowServerName = ToggleDiscordShowServerName.IsChecked == true;
+                settings.DiscordRpc.ShowPlayerCount = ToggleDiscordShowPlayerCount.IsChecked == true;
+                settings.DiscordRpc.ShowServerAddress = ToggleDiscordShowServerAddress.IsChecked == true;
+                settings.DiscordRpc.ShowVersionAndEngine = ToggleDiscordShowVersionAndEngine.IsChecked == true;
+                settings.DiscordRpc.ShowSoftwareIcon = ToggleDiscordShowSoftwareIcon.IsChecked == true;
+                settings.DiscordRpc.ShowDownloadButton = ToggleDiscordShowDownloadButton.IsChecked == true;
+                _settingsManager.Save(settings);
+
+                _discordRpcService.UpdatePresence();
+                UpdateDiscordRpcPreview();
+            }
+            finally
+            {
+                _isUpdatingMutualRpcOptions = false;
+            }
+        }
+
+        private void UpdateDiscordRpcPreview()
+        {
+            if (PreviewOnlineCard == null || PreviewIdleCard == null) return;
+
+            bool masterEnabled = ToggleDiscordRpc.IsChecked == true;
+            bool showIdle = ToggleDiscordShowIdle.IsChecked == true;
+            bool showServerName = ToggleDiscordShowServerName.IsChecked == true;
+            bool showPlayerCount = ToggleDiscordShowPlayerCount.IsChecked == true;
+            bool showServerAddress = ToggleDiscordShowServerAddress.IsChecked == true;
+            bool showVersionAndEngine = ToggleDiscordShowVersionAndEngine.IsChecked == true;
+            bool showSoftwareIcon = ToggleDiscordShowSoftwareIcon.IsChecked == true;
+            bool showDownloadButton = ToggleDiscordShowDownloadButton.IsChecked == true;
+
+            // Overall card dimming if master RPC toggle is off
+            PreviewOnlineCard.Opacity = masterEnabled ? 1.0 : 0.35;
+            PreviewIdleCard.Opacity = masterEnabled ? (showIdle ? 1.0 : 0.35) : 0.35;
+
+            // Idle status label above card
+            if (PreviewIdleStatusText != null)
+            {
+                PreviewIdleStatusText.Visibility = (masterEnabled && !showIdle) ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            // Action buttons on both cards
+            if (PreviewOnlineButton != null)
+                PreviewOnlineButton.Visibility = showDownloadButton ? Visibility.Visible : Visibility.Collapsed;
+            if (PreviewIdleButton != null)
+                PreviewIdleButton.Visibility = showDownloadButton ? Visibility.Visible : Visibility.Collapsed;
+
+            // Line 2: Details
+            if (PreviewOnlineDetails != null)
+            {
+                PreviewOnlineDetails.Text = showServerName ? "Hosting Survival World" : "Hosting Minecraft Server";
+            }
+
+            // Line 3: State (Player Count, followed by either Server Address OR Engine/Version)
+            if (PreviewOnlineState != null)
+            {
+                var parts = new System.Collections.Generic.List<string>();
+
+                // 1. Player Count
+                if (showPlayerCount)
+                {
+                    parts.Add("0/20 Players");
+                }
+
+                // 2. Server Address OR Software Version (Mutually exclusive)
+                if (showServerAddress)
+                {
+                    parts.Add("cynthia-publishing.tun.ply.gg");
+                }
+                else if (showVersionAndEngine)
+                {
+                    parts.Add("Paper 1.21.1");
+                }
+
+                PreviewOnlineState.Text = parts.Count > 0 ? string.Join(" • ", parts) : "Server Online";
+            }
+
+            // Artwork & Small Badge
+            if (PreviewOnlineSoftwareBorder != null && PreviewOnlinePocketFallback != null && PreviewOnlineSmallBadge != null)
+            {
+                if (showSoftwareIcon)
+                {
+                    PreviewOnlineSoftwareBorder.Visibility = Visibility.Visible;
+                    PreviewOnlinePocketFallback.Visibility = Visibility.Collapsed;
+                    PreviewOnlineSmallBadge.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    PreviewOnlineSoftwareBorder.Visibility = Visibility.Collapsed;
+                    PreviewOnlinePocketFallback.Visibility = Visibility.Visible;
+                    PreviewOnlineSmallBadge.Visibility = Visibility.Collapsed;
+                }
+            }
         }
 
         private void ToggleServerOnlineNotifications_Changed(object sender, RoutedEventArgs e)

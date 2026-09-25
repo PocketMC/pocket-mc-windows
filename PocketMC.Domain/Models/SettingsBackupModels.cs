@@ -75,6 +75,7 @@ namespace PocketMC.Domain.Models
     public class DiscordBackupData
     {
         public bool EnableDiscordRpc { get; set; } = true;
+        public DiscordRpcSettings? DiscordRpc { get; set; }
         public string? DiscordUserId { get; set; }
         public string? DiscordApiUrl { get; set; }
         public string? DiscordApiKey { get; set; }
