@@ -242,6 +242,11 @@ public class ServerProcess : IServerProcess, IDisposable
         }
     }
 
+    public void EmitConsoleOutput(string line)
+    {
+        AppendOutput(line, false);
+    }
+
     /// <summary>
     /// Sends the "list" command to the server and marks the response for
     /// console-display suppression.  All internal processing (player count,

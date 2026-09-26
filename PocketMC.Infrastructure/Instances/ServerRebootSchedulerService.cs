@@ -288,6 +288,45 @@ public class ServerRebootSchedulerService : IDisposable
                 return;
             }
 
+            var process = _lifecycleService.GetProcess(meta.Id);
+            int warningSeconds = meta.ScheduledRebootWarningSeconds > 0 ? meta.ScheduledRebootWarningSeconds : 60;
+
+            if (meta.ScheduledRebootWarning && process != null && warningSeconds > 0)
+            {
+                await BroadcastRebootWarningAsync(process, $"[PocketMC] Scheduled server reboot in {warningSeconds} seconds!");
+
+                int remaining = warningSeconds;
+                while (remaining > 0)
+                {
+                    if (cts.Token.IsCancellationRequested || !_lifecycleService.IsRunning(meta.Id))
+                    {
+                        _logger.LogInformation("Scheduled reboot countdown for '{ServerName}' was cancelled.", meta.Name);
+                        return;
+                    }
+
+                    if (remaining is 60 or 30 or 15 or 10 or 5 or 4 or 3 or 2 or 1 && remaining < warningSeconds)
+                    {
+                        await BroadcastRebootWarningAsync(process, $"[PocketMC] Server rebooting in {remaining} seconds!");
+                    }
+
+                    await Task.Delay(1000, cts.Token);
+                    remaining--;
+                }
+
+                if (cts.Token.IsCancellationRequested || !_lifecycleService.IsRunning(meta.Id))
+                {
+                    return;
+                }
+
+                await BroadcastRebootWarningAsync(process, "[PocketMC] Server is rebooting now...");
+                await Task.Delay(500, cts.Token);
+            }
+
+            if (!_lifecycleService.IsRunning(meta.Id) || cts.Token.IsCancellationRequested)
+            {
+                return;
+            }
+
             _logger.LogInformation("Executing restart for server '{ServerName}' ({InstanceId}) per maintenance schedule.", meta.Name, meta.Id);
             await _lifecycleService.RestartAsync(meta.Id);
 
@@ -317,6 +356,18 @@ public class ServerRebootSchedulerService : IDisposable
         {
             _inFlightReboots.TryRemove(meta.Id, out _);
             cts.Dispose();
+        }
+    }
+
+    private static async Task BroadcastRebootWarningAsync(IServerProcess process, string message)
+    {
+        try
+        {
+            process.EmitConsoleOutput(message);
+            await process.WriteInputAsync($"say {message}");
+        }
+        catch
+        {
         }
     }
 

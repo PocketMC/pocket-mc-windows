@@ -16,5 +16,6 @@ namespace PocketMC.Application.Interfaces
         event Action<string>? OnErrorLine;
         event Action<string, string>? OnPlayerGamemodeChanged;
         Task WriteInputAsync(string input);
+        void EmitConsoleOutput(string line);
     }
 }
