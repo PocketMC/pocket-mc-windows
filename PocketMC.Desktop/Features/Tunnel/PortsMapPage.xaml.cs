@@ -566,6 +566,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                 if (e.Key == Key.Enter)
                 {
                     ExecuteSavePort(route);
+                    Keyboard.ClearFocus();
+                    Focus();
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Escape)

@@ -217,6 +217,44 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         Assert.Equal(string.Empty, content);
     }
 
+    [Fact]
+    public void SaveAndLoad_PersistsScheduledRebootSettings()
+    {
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager, Mock.Of<IGeyserDetector>());
+        var metadata = manager.CreateInstance("Reboot Test", "");
+        string serverDir = registry.GetPath(metadata.Id)!;
+
+        var configuration = new ServerConfiguration
+        {
+            EnableScheduledReboot = true,
+            ScheduledRebootMode = "Interval",
+            ScheduledRebootTime = "06:30",
+            ScheduledRebootIntervalHours = 12,
+            ScheduledRebootWarning = true,
+            ScheduledRebootWarningSeconds = 120
+        };
+
+        service.Save(metadata, serverDir, configuration);
+
+        var loadedConfig = service.Load(metadata, serverDir);
+        Assert.True(loadedConfig.EnableScheduledReboot);
+        Assert.Equal("Interval", loadedConfig.ScheduledRebootMode);
+        Assert.Equal("06:30", loadedConfig.ScheduledRebootTime);
+        Assert.Equal(12, loadedConfig.ScheduledRebootIntervalHours);
+        Assert.True(loadedConfig.ScheduledRebootWarning);
+        Assert.Equal(120, loadedConfig.ScheduledRebootWarningSeconds);
+
+        var metadataJson = File.ReadAllText(Path.Combine(serverDir, ".pocket-mc.json"));
+        var savedMetadata = JsonSerializer.Deserialize<InstanceMetadata>(metadataJson)!;
+        Assert.True(savedMetadata.EnableScheduledReboot);
+        Assert.Equal("Interval", savedMetadata.ScheduledRebootMode);
+        Assert.Equal("06:30", savedMetadata.ScheduledRebootTime);
+        Assert.Equal(12, savedMetadata.ScheduledRebootIntervalHours);
+        Assert.True(savedMetadata.ScheduledRebootWarning);
+        Assert.Equal(120, savedMetadata.ScheduledRebootWarningSeconds);
+    }
+
     private sealed class MockAssetProvider : PocketMC.Application.Interfaces.IAssetProvider
     {
         public Stream? GetAssetStream(string assetName) => null;

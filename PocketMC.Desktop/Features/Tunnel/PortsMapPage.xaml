@@ -249,7 +249,8 @@
                                                                                  FontWeight="Bold"
                                                                                  Padding="4,2"
                                                                                  Height="28"
-                                                                                 Width="68"
+                                                                                 Width="80"
+                                                                                 ClearButtonEnabled="False"
                                                                                  VerticalAlignment="Center"
                                                                                  HorizontalContentAlignment="Center"
                                                                                  KeyDown="TxtPort_KeyDown"/>

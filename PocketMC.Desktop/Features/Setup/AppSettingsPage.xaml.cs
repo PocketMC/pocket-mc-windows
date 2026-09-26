@@ -602,6 +602,8 @@ namespace PocketMC.Desktop.Features.Setup
             if (e.Key != Key.Enter) return;
 
             ApplyHexColorFromInput();
+            Keyboard.ClearFocus();
+            Focus();
             e.Handled = true;
         }
 
@@ -1222,6 +1224,16 @@ namespace PocketMC.Desktop.Features.Setup
         {
             if (_isInitializing) return;
             SaveAiSettings();
+        }
+
+        private void AiEndpointUrlInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter) return;
+
+            SaveAiSettings();
+            Keyboard.ClearFocus();
+            Focus();
+            e.Handled = true;
         }
 
         private void SaveAiSettings()

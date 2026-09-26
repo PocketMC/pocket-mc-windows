@@ -513,6 +513,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                 {
                     saveBtn.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 }
+                Keyboard.ClearFocus();
+                Focus();
                 e.Handled = true;
             }
         }
@@ -644,6 +646,8 @@ namespace PocketMC.Desktop.Features.Tunnel
                 {
                     saveBtn.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                 }
+                Keyboard.ClearFocus();
+                Focus();
                 e.Handled = true;
             }
         }

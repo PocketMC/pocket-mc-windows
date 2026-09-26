@@ -168,7 +168,7 @@
                         <ui:NavigationViewItem Content="World &amp; Files" Icon="{ui:SymbolIcon Folder24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Addons (Plugins/Mods)" Icon="{ui:SymbolIcon Add24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Automated Backups" Icon="{ui:SymbolIcon Save24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Fault Tolerance" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="Restart &amp; Recovery" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Advanced Editor" Icon="{ui:SymbolIcon Code24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="AI Summaries" Icon="{ui:SymbolIcon BrainCircuit24}" Click="NavItem_Click"
                                                Visibility="{Binding IsAiSummarizationAvailable, Converter={StaticResource VisibleIfTrue}}"/>
@@ -404,7 +404,7 @@
                                                         <Run Text="."/>
                                                     </TextBlock>
                                                     <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}"
-                                                                PlaceholderText="{Binding DefaultServerPortText, Mode=OneWay}" Width="160" HorizontalAlignment="Left"/>
+                                                                PlaceholderText="{Binding DefaultServerPortText, Mode=OneWay}" Width="160" ClearButtonEnabled="False" HorizontalAlignment="Left"/>
                                                 </StackPanel>
 
                                                 <StackPanel Grid.Column="2" Visibility="{Binding SupportsGeyserSettings, Converter={StaticResource BoolToVis}}">
@@ -412,7 +412,7 @@
                                                     <TextBlock Text="The UDP port used by Bedrock players to connect via Geyser."
                                                                FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
                                                     <ui:TextBox Text="{Binding General.GeyserBedrockPort, UpdateSourceTrigger=PropertyChanged}"
-                                                                PlaceholderText="19132" Width="160" HorizontalAlignment="Left"/>
+                                                                PlaceholderText="19132" Width="160" ClearButtonEnabled="False" HorizontalAlignment="Left"/>
                                                 </StackPanel>
                                             </Grid>
 
@@ -638,11 +638,11 @@
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Spawn Protection Radius:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding World.SpawnProtection, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding World.SpawnProtection, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                             </WrapPanel>
 
@@ -724,11 +724,11 @@
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Tick Distance:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding Bedrock.TickDistance, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding Bedrock.TickDistance, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Default Permission:" Style="{StaticResource SettingsSubtext}"/>
@@ -736,7 +736,7 @@
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="IPv6 Port:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding Bedrock.ServerPortV6, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding Bedrock.ServerPortV6, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                             </WrapPanel>
 
@@ -852,7 +852,8 @@
                                         </Grid.ColumnDefinitions>
                                         
                                         <!-- Search Box -->
-                                        <ui:TextBox Text="{Binding Addons.SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                        <ui:TextBox x:Name="AddonsSearchTextBox"
+                                                    Text="{Binding Addons.SearchText, UpdateSourceTrigger=PropertyChanged}"
                                                     PlaceholderText="{Binding Addons.SearchPlaceholder}"
                                                     Icon="{ui:SymbolIcon Search20}"
                                                     Margin="0,0,12,0"
@@ -1903,9 +1904,9 @@
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="Interval (Hours):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Backups.BackupIntervalHours, Mode=TwoWay}" Width="60" PlaceholderText="0" Margin="0,0,16,0"/>
+                                            <ui:TextBox Text="{Binding Backups.BackupIntervalHours, Mode=TwoWay}" Width="80" ClearButtonEnabled="False" PlaceholderText="0" Margin="0,0,16,0"/>
                                             <TextBlock Text="Keep limit:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Backups.MaxBackupsToKeep, Mode=TwoWay}" Width="60"/>
+                                            <ui:TextBox Text="{Binding Backups.MaxBackupsToKeep, Mode=TwoWay}" Width="80" ClearButtonEnabled="False"/>
                                         </StackPanel>
                                     </ui:CardControl>
 
@@ -1941,7 +1942,7 @@
                                                                 <ui:ToggleSwitch Grid.Column="0" Content="{Binding ProviderType}" IsChecked="{Binding IsEnabled, Mode=TwoWay}" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0"/>
                                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding IsEnabled, Converter={StaticResource VisibleIfTrue}}">
                                                                     <TextBlock Text="Retention:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                    <ui:TextBox Text="{Binding RetentionCount, Mode=TwoWay}" Width="50" VerticalAlignment="Center" ClearButtonEnabled="False"/>
+                                                                    <ui:TextBox Text="{Binding RetentionCount, Mode=TwoWay}" Width="70" VerticalAlignment="Center" ClearButtonEnabled="False"/>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </DataTemplate>
@@ -2098,10 +2099,12 @@
                             </ScrollViewer>
                         </TabItem>
 
-                        <!-- TAB 6: FAULT TOLERANCE -->
-                        <TabItem Header="FaultTolerance">
+                        <!-- TAB 6: RESTART & RECOVERY -->
+                        <TabItem Header="RestartAndRecovery">
                             <ScrollViewer x:Name="RestartScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
+                                    <TextBlock Text="Crash Recovery" Style="{StaticResource SettingsHeader}" Margin="0,0,0,8"/>
+
                                     <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon ArrowSync24}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
@@ -2121,11 +2124,11 @@
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="Attempts:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Advanced.MaxAutoRestarts}" Width="60" VerticalAlignment="Center"/>
+                                            <ui:TextBox Text="{Binding Advanced.MaxAutoRestarts}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
 
-                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.EnableAutoRestart}">
+                                    <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.EnableAutoRestart}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
                                                 <TextBlock Text="Restart Cooldown" FontSize="14" FontWeight="SemiBold"/>
@@ -2134,7 +2137,67 @@
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Advanced.AutoRestartDelay}" Width="60" VerticalAlignment="Center"/>
+                                            <ui:TextBox Text="{Binding Advanced.AutoRestartDelay}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </ui:CardControl>
+
+                                    <!-- Scheduled Maintenance -->
+                                    <TextBlock Text="Scheduled Maintenance" Style="{StaticResource SettingsHeader}" Margin="0,8,0,8"/>
+
+                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon ArrowClockwise24}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="Scheduled Reboot" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Periodically reboot the server to clear memory leaks and maintain peak responsiveness." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <ui:ToggleSwitch IsChecked="{Binding Advanced.EnableScheduledReboot}" VerticalAlignment="Center"/>
+                                    </ui:CardControl>
+
+                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.EnableScheduledReboot}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="Reboot Frequency" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Configure whether the server reboots at a fixed daily time (24-hour format) or after a recurring interval." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ComboBox ItemsSource="{Binding Advanced.RebootModes}"
+                                                      SelectedItem="{Binding Advanced.ScheduledRebootMode, Mode=TwoWay}"
+                                                      Width="110" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                        Visibility="{Binding Advanced.IsDailyMode, Converter={StaticResource VisibleIfTrue}}">
+                                                <TextBlock Text="Time (24h):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootTime}" Width="110" ClearButtonEnabled="False" PlaceholderText="04:00 (24h)" ToolTip="24-hour time format (00:00 - 23:59), e.g. 04:00 or 16:30" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                        Visibility="{Binding Advanced.IsIntervalMode, Converter={StaticResource VisibleIfTrue}}">
+                                                <TextBlock Text="Every (Hours):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootIntervalHours}" Width="80" ClearButtonEnabled="False" PlaceholderText="24" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ui:CardControl>
+
+                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Chat24}" IsEnabled="{Binding Advanced.EnableScheduledReboot}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="In-Game Warning" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Broadcast countdown notifications in Minecraft server chat before restarting." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <ui:ToggleSwitch IsChecked="{Binding Advanced.ScheduledRebootWarning}" VerticalAlignment="Center"/>
+                                    </ui:CardControl>
+
+                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.IsWarningSettingsEnabled}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="Warning Countdown" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Duration in seconds to alert online players before the reboot begins." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <ui:TextBox Text="{Binding Advanced.ScheduledRebootWarningSeconds}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
                                 </StackPanel>

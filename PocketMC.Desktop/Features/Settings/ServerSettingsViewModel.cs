@@ -266,6 +266,12 @@ namespace PocketMC.Desktop.Features.Settings
             Advanced.EnableAutoRestart = cfg.EnableAutoRestart;
             Advanced.MaxAutoRestarts = cfg.MaxAutoRestarts.ToString();
             Advanced.AutoRestartDelay = cfg.AutoRestartDelaySeconds.ToString();
+            Advanced.EnableScheduledReboot = cfg.EnableScheduledReboot;
+            Advanced.ScheduledRebootMode = string.IsNullOrWhiteSpace(cfg.ScheduledRebootMode) ? "Daily" : cfg.ScheduledRebootMode;
+            Advanced.ScheduledRebootTime = string.IsNullOrWhiteSpace(cfg.ScheduledRebootTime) ? "04:00" : cfg.ScheduledRebootTime;
+            Advanced.ScheduledRebootIntervalHours = (cfg.ScheduledRebootIntervalHours > 0 ? cfg.ScheduledRebootIntervalHours : 24).ToString();
+            Advanced.ScheduledRebootWarning = cfg.ScheduledRebootWarning;
+            Advanced.ScheduledRebootWarningSeconds = (cfg.ScheduledRebootWarningSeconds > 0 ? cfg.ScheduledRebootWarningSeconds : 60).ToString();
             Advanced.LoadRawProperties();
             Advanced.AdvancedProperties.Clear();
             foreach (var kvp in cfg.AllProperties) Advanced.AdvancedProperties.Add(Advanced.CreatePropertyItem(kvp.Key, kvp.Value));
@@ -515,6 +521,12 @@ namespace PocketMC.Desktop.Features.Settings
                 EnableAutoRestart = Advanced.EnableAutoRestart,
                 MaxAutoRestarts = int.TryParse(Advanced.MaxAutoRestarts, out int mr) ? mr : Metadata.MaxAutoRestarts,
                 AutoRestartDelaySeconds = int.TryParse(Advanced.AutoRestartDelay, out int rd) ? rd : Metadata.AutoRestartDelaySeconds,
+                EnableScheduledReboot = Advanced.EnableScheduledReboot,
+                ScheduledRebootMode = Advanced.ScheduledRebootMode,
+                ScheduledRebootTime = string.IsNullOrWhiteSpace(Advanced.ScheduledRebootTime) ? "04:00" : Advanced.ScheduledRebootTime.Trim(),
+                ScheduledRebootIntervalHours = int.TryParse(Advanced.ScheduledRebootIntervalHours, out int srh) && srh > 0 ? srh : 24,
+                ScheduledRebootWarning = Advanced.ScheduledRebootWarning,
+                ScheduledRebootWarningSeconds = int.TryParse(Advanced.ScheduledRebootWarningSeconds, out int rws) && rws >= 0 ? rws : 60,
                 BackupIntervalHours = Backups.BackupIntervalHours,
                 MaxBackupsToKeep = Backups.MaxBackupsToKeep,
                 Motd = General.Motd ?? "",
@@ -568,11 +580,6 @@ namespace PocketMC.Desktop.Features.Settings
 
             if (IsRunning)
             {
-                // Apply live settings that can be sent as commands without restart
-                _ = _runtimeApplier.ApplyDifficultyAsync(Metadata.Id, cfg.Difficulty);
-                _ = _runtimeApplier.ApplyWhitelistToggleAsync(Metadata.Id, cfg.WhiteList);
-                _ = _runtimeApplier.ApplyDefaultGamemodeAsync(Metadata.Id, cfg.Gamemode);
-
                 IsRestartRequired = true;
             }
             else

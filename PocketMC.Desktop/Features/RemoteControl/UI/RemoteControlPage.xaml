@@ -95,7 +95,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,12,0">
                                     <TextBlock Text="Port" FontSize="14" FontWeight="Medium"/>
-                                    <ui:TextBox x:Name="RemotePortInput" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="25580" Margin="0,8,0,0"/>
+                                    <ui:TextBox x:Name="RemotePortInput" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="25580" ClearButtonEnabled="False" Margin="0,8,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="0,0,12,0">
                                     <TextBlock Text="Access Mode" FontSize="14" FontWeight="Medium"/>

@@ -498,6 +498,7 @@
                                             Width="120"
                                             PlaceholderText="#008B00"
                                             MaxLength="7"
+                                            ClearButtonEnabled="False"
                                             KeyDown="HexColorInput_KeyDown"/>
                                 <ui:Button x:Name="BtnApplyHex"
                                            Content="Apply"
@@ -1172,7 +1173,7 @@
                                 <TextBlock Text="Endpoint URL" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Text="Override the default API endpoint. Required for local models like Ollama." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <ui:TextBox x:Name="AiEndpointUrlInput" Grid.Column="1" PlaceholderText="e.g. http://localhost:11434/api/chat" Width="300" VerticalAlignment="Center"/>
+                            <ui:TextBox x:Name="AiEndpointUrlInput" Grid.Column="1" PlaceholderText="e.g. http://localhost:11434/api/chat" Width="300" VerticalAlignment="Center" KeyDown="AiEndpointUrlInput_KeyDown"/>
                         </Grid>
 
                         <Separator Margin="0,16" Opacity="0.15"/>

@@ -110,6 +110,7 @@
                             PlaceholderText="e.g. 25566"
                             FontSize="14"
                             MaxLength="5"
+                            ClearButtonEnabled="False"
                             AutomationProperties.Name="Server port number input"
                             TextChanged="TxtPortInput_TextChanged"/>
 

@@ -233,15 +233,30 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
     public DateTime? GetSessionStartTime(Guid instanceId) =>
         _sessionStartTimes.TryGetValue(instanceId, out var time) ? time : null;
 
-    public async Task RestartAsync(Guid instanceId)
+    public async Task RestartAsync(Guid instanceId, CancellationToken cancellationToken = default)
     {
         var meta = _registry.GetById(instanceId);
-        if (meta == null) return;
+        if (meta == null || cancellationToken.IsCancellationRequested) return;
 
         await StopAsync(instanceId);
-        // Wait a small buffer for OS to release locks
-        await Task.Delay(800);
-        await StartAsync(meta);
+        if (cancellationToken.IsCancellationRequested) return;
+
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _restartCancellations[instanceId] = linkedCts;
+
+        try
+        {
+            await Task.Delay(800, linkedCts.Token);
+            if (linkedCts.Token.IsCancellationRequested) return;
+            await StartAsync(meta);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            _restartCancellations.TryRemove(new KeyValuePair<Guid, CancellationTokenSource>(instanceId, linkedCts));
+        }
     }
 
     /// <summary>

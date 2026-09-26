@@ -793,7 +793,7 @@ namespace PocketMC.Desktop.Tests.Features.Settings
         public bool IsRunning(Guid instanceId) => false;
         public bool IsWaitingToRestart(Guid instanceId) => false;
         public void AbortRestartDelay(Guid instanceId) { }
-        public Task RestartAsync(Guid instanceId) => Task.CompletedTask;
+        public Task RestartAsync(Guid instanceId, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public IServerProcess? GetProcess(Guid instanceId) => null;
         public DateTime? GetSessionStartTime(Guid instanceId) => null;
         public Task ReleaseInstanceAsync(Guid instanceId) => Task.CompletedTask;

@@ -70,6 +70,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IResourceMonitorService, ResourceMonitorService>();
             services.AddSingleton<BackupService>();
             services.AddSingleton<BackupSchedulerService>();
+            services.AddSingleton<ServerRebootSchedulerService>();
             services.AddSingleton<AddonExportService>();
             services.AddSingleton<ExportManifestBuilder>();
             services.AddSingleton<ExportFileEnumerator>();
