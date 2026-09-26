@@ -229,6 +229,11 @@ namespace PocketMC.Desktop.Features.Console
             // Resource monitoring
             _resourceMonitor.InstanceMetricsUpdated += OnMetricsUpdated;
 
+            // Intelligence: listen to summarization events and load existing summary
+            _summarizationService.SummarizationStarted += OnSummarizationStarted;
+            _summarizationService.SummarizationCompleted += OnSummarizationCompleted;
+            InitializeAiSummaryState();
+
             ReadOnlyLogInfoBar.Visibility = IsReadOnlySessionLog ? Visibility.Visible : Visibility.Collapsed;
 
             // 1. Load the configured tail of session history without blocking the UI.
@@ -866,6 +871,9 @@ namespace PocketMC.Desktop.Features.Console
         private void DetachHandlers()
         {
             _flushTimer.Stop();
+            _summarizationService.SummarizationStarted -= OnSummarizationStarted;
+            _summarizationService.SummarizationCompleted -= OnSummarizationCompleted;
+
             if (_serverProcess != null)
             {
                 _serverProcess.OnOutputLine -= OnOutputReceived;
@@ -935,13 +943,83 @@ namespace PocketMC.Desktop.Features.Console
             ToggleAiPanel(false);
         }
 
+        private bool _isAiPanelOpen;
+
         private void ToggleAiPanel(bool open)
         {
+            _isAiPanelOpen = open;
             AiPanelColumn.Width = open ? new GridLength(420) : new GridLength(0);
+        }
+
+        private void InitializeAiSummaryState()
+        {
+            if (_summarizationService.IsSummarizing(_instancePath))
+            {
+                ToggleAiPanel(true);
+                TxtAiStatus.Text = "Generating session summary...";
+                TxtAiStatus.Visibility = Visibility.Visible;
+                AiProgress.Visibility = Visibility.Visible;
+                TxtAiResponse.Markdown = string.Empty;
+            }
+            else
+            {
+                var latest = _summarizationService.GetLatestSummary(_instancePath);
+                if (latest != null && !string.IsNullOrWhiteSpace(latest.Content))
+                {
+                    TxtAiResponse.Markdown = latest.Content;
+                }
+            }
+        }
+
+        private void OnSummarizationStarted(string serverDir)
+        {
+            if (!string.Equals(serverDir, _instancePath, StringComparison.OrdinalIgnoreCase)) return;
+
+            Dispatcher.InvokeAsync(() =>
+            {
+                ToggleAiPanel(true);
+                TxtAiStatus.Text = "Generating session summary...";
+                TxtAiStatus.Visibility = Visibility.Visible;
+                AiProgress.Visibility = Visibility.Visible;
+                TxtAiResponse.Markdown = string.Empty;
+            });
+        }
+
+        private void OnSummarizationCompleted(string serverDir, SummarizationResult result)
+        {
+            if (!string.Equals(serverDir, _instancePath, StringComparison.OrdinalIgnoreCase)) return;
+
+            Dispatcher.InvokeAsync(() =>
+            {
+                TxtAiStatus.Visibility = Visibility.Collapsed;
+                AiProgress.Visibility = Visibility.Collapsed;
+
+                if (result.Success && result.Summary != null)
+                {
+                    TxtAiResponse.Markdown = result.Summary.Content;
+                    ToggleAiPanel(true);
+                }
+                else
+                {
+                    TxtAiResponse.Markdown = $"Summarization failure: {result.Error}";
+                }
+            });
         }
 
         private async void BtnAiSummary_Click(object sender, RoutedEventArgs e)
         {
+            if (_summarizationService.IsSummarizing(_instancePath))
+            {
+                ToggleAiPanel(true);
+                return;
+            }
+
+            if (!_isAiPanelOpen && !string.IsNullOrWhiteSpace(TxtAiResponse.Markdown))
+            {
+                ToggleAiPanel(true);
+                return;
+            }
+
             await SummarizeSessionAsync();
         }
 
@@ -955,12 +1033,12 @@ namespace PocketMC.Desktop.Features.Console
 
             try
             {
-                var apiKey = _applicationState.Settings.GetCurrentAiKey();
-                if (string.IsNullOrEmpty(apiKey))
+                if (!_applicationState.Settings.IsAiConfigured())
                 {
-                    TxtAiResponse.Markdown = "Error: AI API Key not configured in App Settings.";
+                    TxtAiResponse.Markdown = "Error: AI not configured in App Settings. Please configure an API Key or select Ollama.";
                     return;
                 }
+                var apiKey = _applicationState.Settings.GetCurrentAiKey() ?? string.Empty;
 
                 var provider = _providerFactory.ParseProvider(_applicationState.Settings.AiProvider);
 
@@ -994,6 +1072,12 @@ Logs:
 
         private async System.Threading.Tasks.Task SummarizeSessionAsync()
         {
+            if (_summarizationService.IsSummarizing(_instancePath))
+            {
+                ToggleAiPanel(true);
+                return;
+            }
+
             var logPath = _logHistoryService.GetSessionLogPath(_instancePath, preferCurrentSession: true);
             if (logPath != null && System.IO.File.Exists(logPath))
             {
@@ -1020,12 +1104,12 @@ Logs:
 
             try
             {
-                var apiKey = _applicationState.Settings.GetCurrentAiKey();
-                if (string.IsNullOrEmpty(apiKey))
+                if (!_applicationState.Settings.IsAiConfigured())
                 {
-                    TxtAiResponse.Markdown = "Error: AI API Key not configured in App Settings.";
+                    TxtAiResponse.Markdown = "Error: AI not configured in App Settings. Please configure an API Key or select Ollama.";
                     return;
                 }
+                var apiKey = _applicationState.Settings.GetCurrentAiKey() ?? string.Empty;
 
                 var provider = _providerFactory.ParseProvider(_applicationState.Settings.AiProvider);
 

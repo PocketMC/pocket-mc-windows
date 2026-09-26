@@ -86,20 +86,73 @@ public abstract class BaseLlmProvider : ILlmProvider
             using var doc = JsonDocument.Parse(responseBody);
             var root = doc.RootElement;
 
-            if (root.TryGetProperty("error", out var errorObj))
+            if (root.ValueKind == JsonValueKind.Object)
             {
-                if (errorObj.TryGetProperty("message", out var msg))
-                    return msg.GetString() ?? $"API error ({statusCode})";
-            }
+                if (root.TryGetProperty("error", out var errorObj))
+                {
+                    if (errorObj.ValueKind == JsonValueKind.String)
+                    {
+                        var str = errorObj.GetString();
+                        if (!string.IsNullOrWhiteSpace(str))
+                            return FormatErrorMessage(str, statusCode);
+                    }
+                    else if (errorObj.ValueKind == JsonValueKind.Object)
+                    {
+                        if (errorObj.TryGetProperty("message", out var msg) && msg.ValueKind == JsonValueKind.String)
+                        {
+                            var str = msg.GetString();
+                            if (!string.IsNullOrWhiteSpace(str))
+                                return FormatErrorMessage(str, statusCode);
+                        }
+                    }
+                }
 
-            if (root.TryGetProperty("message", out var topMsg))
-                return topMsg.GetString() ?? $"API error ({statusCode})";
+                if (root.TryGetProperty("message", out var topMsg) && topMsg.ValueKind == JsonValueKind.String)
+                {
+                    var str = topMsg.GetString();
+                    if (!string.IsNullOrWhiteSpace(str))
+                        return FormatErrorMessage(str, statusCode);
+                }
+            }
         }
-        catch (JsonException ex)
+        catch (Exception ex)
         {
             _logger.LogDebug(ex, "Failed to parse AI API error response body as JSON.");
         }
 
-        return $"API returned HTTP {statusCode}. {(responseBody.Length > 150 ? responseBody.Substring(0, 150) + "..." : responseBody)}";
+        return FormatDefaultHttpError(statusCode, responseBody);
+    }
+
+    private static string FormatErrorMessage(string rawMessage, int statusCode)
+    {
+        var msg = rawMessage.Trim();
+
+        if (statusCode == 401 || string.Equals(msg, "Unauthorized", StringComparison.OrdinalIgnoreCase))
+            return $"Authentication failed (HTTP 401): {msg}. Verify your API key.";
+
+        if (statusCode == 404)
+            return $"Not found (HTTP 404): {msg}.";
+
+        if (statusCode == 429)
+            return $"Rate limited (HTTP 429): {msg}. Please wait before retrying.";
+
+        return $"API error (HTTP {statusCode}): {msg}";
+    }
+
+    private static string FormatDefaultHttpError(int statusCode, string responseBody)
+    {
+        if (statusCode == 401)
+            return "Authentication failed (HTTP 401): Invalid or unauthorized API key.";
+
+        if (statusCode == 404)
+            return "API endpoint or model not found (HTTP 404).";
+
+        if (statusCode == 429)
+            return "Rate limited (HTTP 429): Too many requests. Please wait before retrying.";
+
+        var snippet = responseBody.Length > 150 ? responseBody[..150] + "..." : responseBody;
+        return string.IsNullOrWhiteSpace(snippet)
+            ? $"API returned HTTP {statusCode}."
+            : $"API returned HTTP {statusCode}: {snippet}";
     }
 }

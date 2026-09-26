@@ -136,17 +136,17 @@ public partial class ServerCrashDialogWindow : FluentWindow
             return;
         }
 
-        var apiKey = appSettings.GetCurrentAiKey();
-
-        if (string.IsNullOrWhiteSpace(apiKey))
+        if (!appSettings.IsAiConfigured())
         {
             ShowAiContainer();
-            AiMarkdownViewer.Markdown = "> [!WARNING]\n> **AI Provider Not Configured**\n>\n> No API key was found for the configured AI provider (**" + (appSettings.AiProvider ?? "AI") + "**).\n>\n> Please open **App Settings > AI Intelligence** to enter your API key.";
+            AiMarkdownViewer.Markdown = "> [!WARNING]\n> **AI Provider Not Configured**\n>\n> No API key was found for the configured AI provider (**" + (appSettings.AiProvider ?? "AI") + "**).\n>\n> Please open **App Settings > AI Intelligence** to enter your API key or select Ollama.";
             BtnToggleView.Visibility = Visibility.Visible;
             BtnToggleView.Content = "View Logs";
             _isShowingAiView = true;
             return;
         }
+
+        var apiKey = appSettings.GetCurrentAiKey() ?? string.Empty;
 
         if (_providerFactory == null)
         {

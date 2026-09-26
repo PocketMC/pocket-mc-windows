@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -48,10 +49,64 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
         _logger = logger;
     }
 
-    /// <summary>
-    /// Generate and store a session summary. Returns the saved summary or null on failure.
-    /// </summary>
-    public async Task<SummarizationResult> SummarizeAsync(
+    private readonly ConcurrentDictionary<string, Task<SummarizationResult>> _activeTasks = new(StringComparer.OrdinalIgnoreCase);
+
+    public event Action<string>? SummarizationStarted;
+    public event Action<string, SummarizationResult>? SummarizationCompleted;
+
+    public bool IsSummarizing(string serverDir) =>
+        !string.IsNullOrWhiteSpace(serverDir) && _activeTasks.ContainsKey(serverDir);
+
+    public SessionSummary? GetLatestSummary(string serverDir)
+    {
+        try
+        {
+            return _storageService.ListSummaries(serverDir).FirstOrDefault();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public Task<SummarizationResult> SummarizeAsync(
+        string serverDir,
+        string serverName,
+        AiProviderType provider,
+        string apiKey,
+        string? modelName,
+        string? endpointUrl,
+        DateTime sessionStart,
+        DateTime sessionEnd,
+        CancellationToken ct = default)
+    {
+        if (_activeTasks.TryGetValue(serverDir, out var existingTask))
+        {
+            _logger.LogInformation("Summarization already in progress for {Server}. Awaiting existing task to avoid duplicate token consumption.", serverName);
+            return existingTask;
+        }
+
+        var task = ExecuteSummarizeAsync(serverDir, serverName, provider, apiKey, modelName, endpointUrl, sessionStart, sessionEnd, ct);
+        _activeTasks[serverDir] = task;
+        SummarizationStarted?.Invoke(serverDir);
+
+        _ = task.ContinueWith(t =>
+        {
+            _activeTasks.TryRemove(serverDir, out _);
+            if (t.IsCompletedSuccessfully)
+            {
+                SummarizationCompleted?.Invoke(serverDir, t.Result);
+            }
+            else if (t.IsFaulted && t.Exception != null)
+            {
+                SummarizationCompleted?.Invoke(serverDir, SummarizationResult.Fail(t.Exception.InnerException?.Message ?? t.Exception.Message));
+            }
+        }, TaskScheduler.Default);
+
+        return task;
+    }
+
+    private async Task<SummarizationResult> ExecuteSummarizeAsync(
         string serverDir,
         string serverName,
         AiProviderType provider,

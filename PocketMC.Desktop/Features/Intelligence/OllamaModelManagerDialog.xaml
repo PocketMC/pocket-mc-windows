@@ -1,0 +1,202 @@
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Intelligence.OllamaModelManagerDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 mc:Ignorable="d"
+                 Title="Ollama Model Manager" Height="550" Width="700"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="CanResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Ollama Model Manager" />
+
+        <TabControl Grid.Row="1" Margin="16,0,16,16" Background="Transparent">
+            <!-- Tab 1: Installed Models -->
+            <TabItem x:Name="TabInstalledModels" Header="Installed Models">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,8,0,16">
+                        <ui:Button Content="Refresh" Icon="{ui:SymbolIcon ArrowClockwise24}" Click="RefreshButton_Click" />
+                        <TextBlock x:Name="StatusText" Text="" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="InstalledModelsList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:Card Margin="0,0,0,8" Padding="12">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding DetailsSummary}" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <ItemsControl ItemsSource="{Binding CapabilityList}" Margin="0,4,0,0">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal"/>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                                                                <TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                            <ui:Button Grid.Column="1" Content="Select" VerticalAlignment="Center" Appearance="Primary" Click="SelectModelButton_Click" Tag="{Binding Name}"/>
+                                        </Grid>
+                                    </ui:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 2: Download Models -->
+            <TabItem x:Name="TabDownloadModels" Header="Download Models">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Recommended Models" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                            
+                            <ui:Card Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="llama3.2:3b" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Lightweight, ~2.0 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="llama3.2:3b"/>
+                                </Grid>
+                            </ui:Card>
+
+                            <ui:Card Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="qwen2.5:7b" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Balanced, ~4.7 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="qwen2.5:7b"/>
+                                </Grid>
+                            </ui:Card>
+
+                            <ui:Card Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="deepseek-r1:8b" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Reasoning, ~4.9 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="deepseek-r1:8b"/>
+                                </Grid>
+                            </ui:Card>
+
+                            <ui:Card Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="phi4:14b" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Advanced, ~9.1 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="phi4:14b"/>
+                                </Grid>
+                            </ui:Card>
+
+                            <ui:Card Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="mistral:7b" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Balanced, ~4.1 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="mistral:7b"/>
+                                </Grid>
+                            </ui:Card>
+
+                            <TextBlock Text="Custom Model" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:TextBox x:Name="CustomModelTextBox" PlaceholderText="e.g. llama3:8b" Width="300"/>
+                                <ui:Button Content="Pull" Margin="8,0,0,0" Appearance="Primary" Click="PullCustomModel_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <ui:Card x:Name="ProgressPanel" Grid.Row="1" Visibility="Collapsed" Margin="0,16,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock x:Name="ProgressStatusText" Text="Downloading..." Margin="0,0,0,4"/>
+                                <ProgressBar x:Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="0" Height="4"/>
+                            </StackPanel>
+                            <ui:Button Grid.Column="1" Content="Cancel" Margin="12,0,0,0" Click="CancelPull_Click"/>
+                        </Grid>
+                    </ui:Card>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 3: Manual Steps -->
+            <TabItem x:Name="TabManualSteps" Header="Manual Steps">
+                <StackPanel Margin="0,8,0,0">
+                    <TextBlock Text="Manually Install Models" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="You can download and install models manually using the Ollama command line interface. Run the following command in your terminal:" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBox x:Name="ManualCommandBox" Grid.Column="0" Text="ollama pull &lt;model-name&gt;" IsReadOnly="True" FontFamily="Consolas"/>
+                        <ui:Button Grid.Column="1" Content="Copy Command" Margin="8,0,0,0" Icon="{ui:SymbolIcon Copy24}" Click="CopyCommand_Click"/>
+                    </Grid>
+
+                    <TextBlock Text="Note: Models are downloaded to your default Ollama storage location (usually ~/.ollama/models or C:\Users\&lt;User&gt;\.ollama\models)." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,12"/>
+                    <TextBlock Text="Find available models at ollama.com/library" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</ui:FluentWindow>

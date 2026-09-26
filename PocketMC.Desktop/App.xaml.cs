@@ -333,7 +333,7 @@ public partial class App : System.Windows.Application
                         var settingsViewModel = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsViewModel>(Services, metadata);
                         settingsViewModel.InitialTabIndex = 8;
                         settingsViewModel.Summaries.AutoViewLatestOnLoad = true;
-                        settingsViewModel.Summaries.Load(!string.IsNullOrWhiteSpace(Services.GetRequiredService<ApplicationState>().Settings.GetCurrentAiKey()));
+                        settingsViewModel.Summaries.Load(Services.GetRequiredService<ApplicationState>().Settings.IsAiConfigured());
 
                         var settingsPage = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<ServerSettingsPage>(Services, settingsViewModel);
 

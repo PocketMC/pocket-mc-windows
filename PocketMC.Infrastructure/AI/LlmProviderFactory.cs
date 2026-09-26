@@ -62,12 +62,12 @@ public class LlmProviderFactory : ILlmProviderFactory
     {
         return provider switch
         {
-            AiProviderType.Gemini => ("gemini-2.0-flash", "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent"),
+            AiProviderType.Gemini => ("gemini-3.8-flash", "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent"),
             AiProviderType.OpenAI => ("gpt-4o-mini", "https://api.openai.com/v1/chat/completions"),
             AiProviderType.Claude => ("claude-3-5-haiku-latest", "https://api.anthropic.com/v1/messages"),
             AiProviderType.Mistral => ("mistral-large-latest", "https://api.mistral.ai/v1/chat/completions"),
             AiProviderType.Groq => ("llama-3.3-70b-versatile", "https://api.groq.com/openai/v1/chat/completions"),
-            AiProviderType.Ollama => ("llama3.2", "http://localhost:11434/api/chat"),
+            AiProviderType.Ollama => ("qwen3:8b", "http://localhost:11434/api/chat"),
             _ => (string.Empty, string.Empty)
         };
     }

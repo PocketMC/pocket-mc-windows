@@ -211,7 +211,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 var settings = _applicationState.Settings;
 
                 // Check if feature is enabled and configured
-                if (!settings.EnableAiSummarization || string.IsNullOrWhiteSpace(settings.GetCurrentAiKey()))
+                if (!settings.EnableAiSummarization || !settings.IsAiConfigured())
                     return;
 
                 string? serverDir = _registry.GetPath(vm.Id);
@@ -241,7 +241,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 }
 
                 var result = await summarizationService.SummarizeAsync(
-                    serverDir, vm.Name, provider, settings.GetCurrentAiKey()!, settings.GetCurrentAiModel(), settings.GetCurrentAiEndpoint(), sessionStart, sessionEnd);
+                    serverDir, vm.Name, provider, settings.GetCurrentAiKey() ?? string.Empty, settings.GetCurrentAiModel(), settings.GetCurrentAiEndpoint(), sessionStart, sessionEnd);
 
                 if (result.Success)
                 {
