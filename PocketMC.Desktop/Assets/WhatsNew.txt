@@ -1,17 +1,28 @@
-VERSION=1.9.8
+VERSION=1.9.9
 
 [NEW FEATURES]
-Full control over incompatible addons with a one-click cleanup prompt and "Don't ask again" option
-Accurate and descriptive warning dialogs when uploading mods or plugins with choice to install anyway
-Hover over any addon warning icon to instantly view the exact reason for incompatibility
+Automated server reboots on a daily schedule or hourly interval with customizable in-game countdown warnings
+Built-in Ollama Model Manager to download, browse, and delete local and cloud AI models with live progress
+Fully customizable Discord Rich Presence with live preview, software logos, player counts, and join buttons
+Live Playit Tunnel console window to monitor connection logs, search events, and diagnose network status
+Personalize your wallpaper theme with adjustable background blur intensity and darkness dimming sliders
 
 [FIXES & STABILITY]
-PocketMC will no longer automatically delete incompatible or unrecognized mods from your server folders
-Fixed auto-hide taskbar so it smoothly pops up when moving your mouse to the screen edge while maximized
-Fixed app update size reporting to accurately show the small delta download size instead of the full installer
-Eliminated race conditions and improved responsiveness when managing server addons
+Fixed server process crashes caused by simultaneous console commands and background status checks
+Fixed file-lock errors when saving server properties while a server is actively running
+Fixed Bedrock Dedicated Server status detection so servers reliably show as Online upon startup
+Fixed remote control settings so saved passwords and user permissions are never accidentally cleared
+Corrupted configuration files are now safely backed up automatically instead of lost on launch
+Local Ollama instances no longer require a dummy API key to validate connections or generate summaries
 
 [IMPROVEMENTS]
-Cleaned up addon cards with a single lightweight warning icon badge matching the app theme
-Refined the incompatible addons banner with clean, modern card styling
-Enhanced multi-file addon uploads with individual file validation across all Java server types
+Instant UI responsiveness with skeleton loading screens across runtimes, players, ports, and tunnels
+Sleek three-dot options menu for server add-ons with quick access to open folders and select files in Explorer
+Cached AI session summaries so leaving and returning to the console preserves your analysis without re-running
+PocketMC now resumes your exact server page when returning from App Settings instead of resetting to the dashboard
+PocketMC now remembers your custom window size and maximized state across application restarts
+Updated AI models with Google Gemini 3.x generation (Gemini 3.8 Flash) and OpenAI GPT-5/o-series support
+Improved crash diagnostics that pinpoint the exact missing mod or Java error behind server startup failures
+Pressing Enter in server settings instantly commits changes, exits the field, and saves your configuration
+Upgraded embedded Playit tunnel agent to v1.0.10 with longer connection timeouts to prevent false dropouts
+Expanded About page with interactive contributor cards, community links, and support options

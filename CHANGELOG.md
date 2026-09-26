@@ -4,6 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
+- `v1.9.8...v1.9.9`: Focuses on scheduled server reboot automation with in-game warnings, built-in Ollama local and cloud model manager with progress tracking, persistent AI session summaries, seamless detail page navigation resumption, add-on card three-dot context menus, Playit v1.0.10 agent upgrade with dedicated binary console, customizable Discord Rich Presence with live preview, wallpaper theme blur and dimming controls, process concurrency and file locking stabilization, window geometry remembrance, and centralized configuration architecture.
 - `v1.9.7...v1.9.8`: Focuses on safe add-on inventory management (eliminated background auto-deletion), granular local add-on upload diagnostics with user-choice overrides, unified clean warning badges, accurate delta update download size calculation, and Windows auto-hide taskbar reveal support on maximized windows.
 - `v1.9.6...v1.9.7`: 84 commits focused on multi-user remote control permissions, fluid responsive dashboard grid, real-time player activity tracking and gamemode persistence, automated AI server crash analysis, granular settings backup/restore, accessibility/keyboard navigation, and deep security/concurrency hardening.
 - `v1.9.5...v1.9.6`: 90+ commits focused on system boot startup, importing existing server folders, advanced Playit HTTPS tunneling, modpack management overhaul (including .mrpack), and a massive UI/UX refactoring (splash screen, better console, progress bars).
@@ -19,6 +20,156 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
+
+---
+
+## v1.9.9 - Scheduled Server Reboots, Ollama Model Manager, Custom Discord RPC & Core Stabilization
+
+### Summary
+
+v1.9.9 is a comprehensive feature, stability, and performance release that introduces automated server reboot scheduling with in-game broadcast warnings, a built-in Ollama Model Manager for local and cloud AI models with real-time download progress, persistent session summarization caching, seamless navigation resumption between dashboard and detail pages, three-dot context menus and deep file exploration for server add-ons, an upgrade of the embedded Playit tunnel agent to v1.0.10 with a dedicated live console window, granular Discord Rich Presence customization with a real-time preview card, custom blur and dimming controls for wallpaper backdrop theming, server process stdin concurrency deadlock and file lock elimination, UI rendering optimizations with skeleton loading states and hardware acceleration, window geometry and maximized state persistence across sessions, and centralized single-source configuration.
+
+### Diff Basis
+
+The `v1.9.8...v1.9.9` diff spans 179 changed files (+12,139, -2,747) with enhancements across server lifecycle management, AI model orchestration, background schedulers, networking tunnels, Win32 rendering optimization, WPF UI responsiveness, desktop shell customization, crash diagnostics, and robust error recovery.
+
+### Added
+
+- **Scheduled Server Reboot & Maintenance Automation**
+  - Added background `ServerRebootSchedulerService` that monitors running server instances and executes scheduled maintenance reboots via daily time of day (24-hour format) or recurring hourly interval modes.
+  - Implemented in-game broadcast countdown warnings via the Minecraft `say` command and PocketMC console logging (`EmitConsoleOutput`) at staged thresholds (60s, 30s, 15s, 10s, 5s–1s) prior to reboot with configurable lead time.
+  - Added end-to-end cancellation support passing `CancellationToken` through `RestartAsync`, allowing scheduled reboots to gracefully abort if a server stops or the application exits, and awaiting in-flight tasks during scheduler shutdown to prevent background restarts after exit.
+  - Added dynamic summary label in Server Settings displaying upcoming reboot timing (e.g. "Daily at 04:00" or "Every 24 hours").
+- **Built-in Ollama Model Manager & Cloud / Local Integration**
+  - Implemented `IOllamaService` and `OllamaService` supporting local daemon management, model discovery, model pulling with real-time byte progress and transfer speed, model deletion, and cloud endpoint routing with Bearer authorization.
+  - Added `OllamaModelManagerDialog`: dedicated in-app modal to inspect installed models, delete obsolete weights, and download curated models (`llama3.2`, `llama3.3`, `deepseek-r1`, `phi4`, `mistral`, `gemma2`) or custom tags with live progress.
+  - Added live Ollama daemon status check and auto-population of installed models directly into the App Settings model selector.
+  - Added actionable error detection and suggestions (e.g. recommending `ollama pull <model>` on missing models).
+- **Persistent AI Session Summaries & Request Deduplication**
+  - Enhanced `SessionSummarizationService` with in-memory caching and concurrent task deduplication (`_activeTasks`), preventing duplicate API token consumption when multiple requests trigger for the same instance.
+  - Added reactive lifecycle events (`SummarizationStarted`, `SummarizationCompleted`) keeping the console AI panel synchronized across navigation events.
+  - Added instant panel reopening in `ServerConsolePage` showing cached markdown summaries without re-running analysis.
+- **Seamless Detail Page Navigation Resumption**
+  - Updated `AppNavigationService` to retain active server detail page context (such as Console or Settings) when transitioning to outer shell views (e.g. App Settings, Tunnels) and automatically resume the active detail view upon navigating back to the Dashboard.
+- **Add-on Card Three-Dot Context Menu & Deep Directory Navigation**
+  - Replaced cluttered card action buttons with a compact three-dot (`···`) options menu and right-click context menu across mods, plugins, behavior packs, and resource packs.
+  - Enhanced `OpenFolderCommand` to navigate into dedicated plugin/mod data folders or highlight the specific file directly in Windows File Explorer via `/select` argument.
+- **Playit Agent v1.0.10 Migration & Live Binary Console**
+  - Upgraded embedded Playit agent binary from v0.17.1 to v1.0.10 with verified SHA-256 integrity hash verification.
+  - Introduced `PlayitConsoleWindow`: dedicated live streaming log console with real-time text search filtering, colorized formatting (`PlayitLogFormatter`), monospace typography, auto-scroll toggle, log clearing, and copyable text.
+  - Added auto-healing agent ID tracking and settings synchronization via `POST /v1/agents/rundata`.
+  - Added tunnel limit detection and reporting upon allocation timeouts.
+- **Customizable Discord Rich Presence Controls & Live Preview**
+  - Added granular Discord Rich Presence configuration options in App Settings:
+    - Master toggle for Discord RPC
+    - Toggle showing Idle state vs clearing presence
+    - Toggle showing custom server instance name vs generic title
+    - Toggle showing online player count and server capacity
+    - Toggle showing server connection address / tunnel (mutually exclusive with version/engine display)
+    - Toggle showing server platform and Minecraft version
+    - Toggle showing server software platform logo (Paper, Purpur, Fabric, Forge, NeoForge, Bedrock, PocketMine, Vanilla)
+    - Toggle showing "Download PocketMC" profile action button
+  - Implemented an interactive live preview card dynamically reflecting the configured Discord Rich Presence cards in real time.
+- **Wallpaper Theme Customization (Blur & Dimming Controls)**
+  - Added configurable sliders in App Settings for Wallpaper Blur (Fake Mica) theme:
+    - Blur Intensity slider (0 to 150 radius; returns crisp unblurred image directly at 0)
+    - Darkness / Tint Opacity slider (0% to 95%)
+  - Implemented real-time overlay tint updating (`UpdateTintOverlay`) without costly background bitmap re-renders.
+  - Added a one-click "Reset Effects" button restoring default visual parameters.
+- **Window Geometry & State Remembrance**
+  - Implemented automatic persistence and restoration of windowed dimensions (`WindowWidth`, `WindowHeight`) and maximized window state across application restarts and system tray transitions.
+  - Added DPI scaling isolation on `MainWindow` via `LayoutTransform` inverse scaling to prevent visual clipping on non-standard monitor DPI configurations.
+- **Hardware Rendering & High-Refresh Display Optimization**
+  - Introduced `HardwareRenderingOptimizer` configuring high-refresh-rate display synchronization (120Hz/144Hz/240Hz), process-level GPU hardware acceleration, RDP hardware acceleration flags, device pixel snapping, and ClearType text formatting.
+  - Added idle-priority pre-warming for core shell views (`AppSettingsPage`, `TunnelPage`, `JavaSetupPage`, `AboutPage`, `RemoteControlPage`) to eliminate first-load navigation hitches.
+- **Windows Registry Uninstall Metadata Synchronization**
+  - Added `UninstallMetadataRegistrationService` to synchronize Windows Add/Remove Programs uninstall registry metadata (Publisher, URLInfoAbout, URLUpdateInfo, HelpLink, Comments) directly from `AppConfig`.
+- **Responsive Community & Contributor Showcase**
+  - Overhauled About page with dedicated responsive cards for Co-Founders, Contributors, Helpers, and Donators.
+  - Added asynchronous GitHub avatar fetching with in-memory bitmap decoding and caching.
+  - Standardized links for documentation, feedback forms, Buy Me a Coffee, Discord, Instagram, YouTube, and Reddit.
+
+### Changed
+
+- **Server Settings Restart & Recovery Tab**
+  - Renamed "Fault Tolerance" tab to "Restart & Recovery" to unify crash recovery and scheduled maintenance configurations.
+  - Enabled quick save on `Enter`: pressing Enter in settings text fields immediately commits the binding, unfocuses the field, closes the MOTD editor if open, and executes the save command (while safely excluding search filter inputs).
+  - Widened compact numerical input fields (port, max players, restart delay, reboot hours) and disabled clear button adorner overlays to prevent text obscuration.
+- **Playit Agent Process Handling & Timeouts**
+  - Replaced legacy `--stdout` argument with combined STDERR and STDOUT streaming into a unified tracing parser.
+  - Increased tunnel address allocation polling timeout from 10 seconds to 30 seconds with exponential backoff to accommodate Anycast edge routing latency.
+- **Crash Diagnostics & Action Styling**
+  - Introduced `AiActionButtonStyle` with high-contrast royal blue (`#0066D6`) appearance, bold typography, and hand cursor.
+  - Integrated direct "Analyze with AI" button into the Server Console crash banner.
+  - Replaced floaty mouse-wheel animation stepping in `ScrollViewerHelper` with immediate, responsive 1:1 wheel stepping.
+- **AI Model Catalog & Provider Resilience**
+  - Updated Google Gemini provider to 3.x generation models (`gemini-3.8-flash` as default, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`).
+  - Updated default Ollama model to `qwen3:8b` and standardized chat URL endpoint normalization.
+  - Added structured HTTP error formatting in `BaseLlmProvider` for 401 Unauthorized, 404 Not Found, and 429 Rate Limiting.
+  - Updated OpenAI catalog with GPT-5 and o-series model options.
+
+### Fixed
+
+- **Server Process Stdin Concurrency & Pipe Deadlocks**
+  - Guarded `ServerProcess.WriteInputAsync` with `SemaphoreSlim(1, 1)` and added structured exception handlers for `ObjectDisposedException`, `InvalidOperationException`, and `IOException`, eliminating concurrency crashes during simultaneous command dispatch.
+  - Wrapped background player list command execution in `ResourceMonitorService` inside isolated try-catch tasks to prevent unhandled exception propagation.
+- **Server Properties File Lock Exceptions**
+  - Updated `ServerConfigurationService.LoadRawProperties` to open `server.properties` with `FileShare.ReadWrite`, preventing file locking collisions when reading properties while the server process is running.
+- **Bedrock Dedicated Server Online Detection & Command Syntax**
+  - Updated online state detection to match "Server started" case-insensitively alongside "Done (", resolving state detection failures on Bedrock Dedicated Server.
+  - Removed enclosing square brackets from scheduled reboot warning messages sent via `say` to prevent syntax parsing errors on Bedrock BDS.
+- **Remote Control Credential Wipe & Settings Migration**
+  - Resolved an issue in `RemoteControlSettingsViewModel` where saving settings without updating passwords could overwrite or clear existing credential hashes and protected payloads.
+  - Added automatic migration to AppSettings Schema Version 2, normalizing user lists, allowed instance collections, default ports, and security stamps.
+  - Added corrupted settings file recovery: creating timestamped `.corrupted.bak` rescue snapshots upon deserialization failure rather than silently overwriting configuration.
+- **Dialog Threading & Premature Dismissal Safety**
+  - Added thread-safe dispatcher checks in `AppDialog.ShowResult`, ensuring background threads cleanly marshal dialog invocations to the UI thread.
+  - Dynamically resolved dialog parent ownership to the active topmost modal window (such as progress windows) rather than always defaulting to MainWindow, preventing z-order and modality inversion.
+  - Implemented `SafeClose()` in `AppDialogWindow` to defer dismissal until after `ContentRendered` has executed, preventing crash conditions during rapid dialog close events.
+- **Marketplace Authentication & Filter Handling**
+  - Handled CurseForge HTTP 401/403 responses by throwing `CurseForgeApiKeyException` with clear guidance rather than returning dummy error records.
+  - Fixed mod loader and Minecraft version filtering logic in `CurseForgeService` and `ModrinthService` to correctly handle "Any" selections.
+  - Added empty-state visual placeholders and API key setup notifications in Map and Plugin browser pages.
+- **Ollama API Key Requirement Exemption**
+  - Exempted local Ollama configurations from mandatory API key validation in App Settings and server console analysis.
+
+### Improved
+
+- **Skeleton Loading & Perceived Performance**
+  - Integrated skeleton loader placeholders across Java runtimes, PHP runtimes, Ports Map, Active Tunnels, Marketplace browsers, Player Management, and Server Settings to eliminate micro-stutters and perceived loading latency on lower-end systems.
+  - Fixed skeleton placeholder layout overlap and visibility binding conflicts.
+- **Add-on Installation & World Import Feedback**
+  - Added asynchronous progress feedback and enhanced error handling in `SettingsAddonsVM` and `SettingsWorldVM` during file imports.
+
+### Removed
+
+- **Obsolete Window Theming & Navigation Overhead**
+  - Removed `WindowsCornerService.cs` (legacy Windows 10 rounded corner interop).
+  - Removed `AnimatedNavIndicatorBehavior.cs` (high-overhead navigation line animation).
+  - Removed temporary and development-only release channel settings.
+
+### Internal / Architecture
+
+- **Centralized Single-Source Configuration (`pocketmc.yml` & `AppConfig`)**
+  - Centralized all 19 server software provider APIs, backend auth proxies, telemetry endpoints, health check probes, community URLs, and agent binary hashes into `pocketmc.yml`.
+  - Added embedded configuration fallback compiling `pocketmc.yml` directly into `PocketMC.Infrastructure` assembly.
+  - Integrated MSBuild metadata injection and Velopack packaging parameters linked to centralized configuration.
+
+### Tests
+
+- Added comprehensive unit test suites covering:
+  - `ServerRebootSchedulerServiceTests`: Daily and interval schedule calculations, countdown warnings, and cancellation tokens.
+  - `PlayitAgentServiceLogParsingTests` & `PlayitApiClientTests`: v1.0.10 log patterns, agent rundata parsing, and secret recovery.
+  - `SettingsManagerSecurityTests`: Rescue backup generation for corrupted settings JSON and schema version 2 migration.
+  - `ServerCrashDetectorTests`: ModSorter dependency error identification and trailing worker `/INFO]` log skipping.
+  - `ServerProcessManagerTests`: Concurrent stdin stream write locking.
+  - `CurseForgeServiceSecurityTests`, `ModrinthServiceMetadataTests`, `DependencyResolverTests`: Marketplace authentication, filtering, and dependency resolution.
+  - `RemoteSettingsTests`: Remote Control credential retention and multi-user profile migrations.
+  - `SessionSummarizationServiceTests`: Verification of session summarization state, caching, and task retrieval.
+  - `SettingsAddonsViewModelDisplayTests`: Addon card context menu interactions, enable/disable toggling, and file exploration.
+  - `AppNavigationServiceResumptionTests`: STA-threaded validation of detail page resumption across navigation stacks.
+  - `OllamaModelsTests`: Serialization, tag normalization, and human-readable byte size formatting.
+  - `OllamaServiceTests`: Daemon health checking, model listing, pulling with progress, and cloud authorization.
 
 ---
 
