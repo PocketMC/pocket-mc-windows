@@ -105,17 +105,20 @@ public class SettingsAdvancedViewModelTests : IDisposable
     }
 
     [Fact]
-    public void TimePicker_InstantiationAndProperties()
+    public void TimePickerControl_InstantiationAndProperties()
     {
         var thread = new System.Threading.Thread(() =>
         {
-            var tp = new Wpf.Ui.Controls.TimePicker
+            var tp = new PocketMC.Desktop.Features.Settings.Controls.TimePickerControl
             {
-                ClockIdentifier = Wpf.Ui.Controls.ClockIdentifier.Clock24Hour,
                 SelectedTime = new TimeSpan(16, 42, 0)
             };
 
             Assert.Equal(new TimeSpan(16, 42, 0), tp.SelectedTime);
+            Assert.Equal("16", tp.SelectedHourText);
+            Assert.Equal("42", tp.SelectedMinuteText);
+            Assert.Equal(24, tp.HoursList.Count);
+            Assert.Equal(60, tp.MinutesList.Count);
         });
         thread.SetApartmentState(System.Threading.ApartmentState.STA);
         thread.Start();

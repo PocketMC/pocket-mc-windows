@@ -6,6 +6,7 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:intel="clr-namespace:PocketMC.Desktop.Features.Intelligence"
       xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
+      xmlns:controls="clr-namespace:PocketMC.Desktop.Features.Settings.Controls"
       mc:Ignorable="d"
       d:DesignHeight="1200" d:DesignWidth="950"
       Title="Server Settings"
@@ -2167,9 +2168,8 @@
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsDailyMode, Converter={StaticResource VisibleIfTrue}}">
                                                 <TextBlock Text="Time:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <ui:TimePicker SelectedTime="{Binding Advanced.ScheduledRebootTimeSpan, Mode=TwoWay}"
-                                                               ClockIdentifier="Clock24Hour"
-                                                               VerticalAlignment="Center"/>
+                                                <controls:TimePickerControl SelectedTime="{Binding Advanced.ScheduledRebootTimeSpan, Mode=TwoWay}"
+                                                                            VerticalAlignment="Center"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsIntervalMode, Converter={StaticResource VisibleIfTrue}}">
