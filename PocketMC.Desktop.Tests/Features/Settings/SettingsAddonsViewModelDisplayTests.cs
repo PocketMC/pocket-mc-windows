@@ -733,6 +733,268 @@ namespace PocketMC.Desktop.Tests.Features.Settings
             Assert.Contains(_dialogService.ShownDialogs, d => d.Title == "Incompatible Mod Loader");
             Assert.Contains(_dialogService.ShownDialogs, d => d.Title == "Corrupt JAR Archive");
         }
+
+        [Fact]
+        public void OpenFolderCommand_ForBedrockBehaviorPack_OpensPackDirectory()
+        {
+            string packDir = Path.Combine(_tempDir, "behavior_packs", "MyTestBP");
+            Directory.CreateDirectory(packDir);
+            File.WriteAllText(Path.Combine(packDir, "manifest.json"), """
+            {
+              "format_version": 2,
+              "header": {
+                "name": "MyTestBP",
+                "description": "Test BP",
+                "uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                "version": [1, 0, 0],
+                "min_engine_version": [1, 20, 0]
+              },
+              "modules": [{ "type": "data", "uuid": "11111111-1111-1111-1111-111111111111", "version": [1, 0, 0] }]
+            }
+            """);
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Bedrock",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            string? openedFolder = null;
+            vm.CustomFolderOpener = p => openedFolder = p;
+
+            vm.LoadAddonsSync();
+            Assert.NotEmpty(vm.BehaviorPacks);
+
+            var pack = vm.BehaviorPacks.First(p => p.Name == "MyTestBP");
+            vm.OpenFolderCommand.Execute(pack);
+            Assert.Equal(packDir, openedFolder);
+
+            openedFolder = null;
+            vm.OpenFolderCommand.Execute(pack.DirectoryPath);
+            Assert.Equal(packDir, openedFolder);
+        }
+
+        [Fact]
+        public void OpenFolderCommand_ForBedrockResourcePack_OpensPackDirectory()
+        {
+            string packDir = Path.Combine(_tempDir, "resource_packs", "MyTestRP");
+            Directory.CreateDirectory(packDir);
+            File.WriteAllText(Path.Combine(packDir, "manifest.json"), """
+            {
+              "format_version": 2,
+              "header": {
+                "name": "MyTestRP",
+                "description": "Test RP",
+                "uuid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                "version": [1, 0, 0],
+                "min_engine_version": [1, 20, 0]
+              },
+              "modules": [{ "type": "resources", "uuid": "22222222-2222-2222-2222-222222222222", "version": [1, 0, 0] }]
+            }
+            """);
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Bedrock",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            string? openedFolder = null;
+            vm.CustomFolderOpener = p => openedFolder = p;
+
+            vm.LoadAddonsSync();
+            Assert.NotEmpty(vm.ResourcePacks);
+
+            var pack = vm.ResourcePacks.First(p => p.Name == "MyTestRP");
+            vm.OpenFolderCommand.Execute(pack);
+            Assert.Equal(packDir, openedFolder);
+
+            openedFolder = null;
+            vm.OpenFolderCommand.Execute(pack.DirectoryPath);
+            Assert.Equal(packDir, openedFolder);
+        }
+
+        [Fact]
+        public void OpenFolderCommand_ForBedrockFallback_OpensActiveCategoryDirectory()
+        {
+            string bpDir = Path.Combine(_tempDir, "behavior_packs");
+            string rpDir = Path.Combine(_tempDir, "resource_packs");
+            Directory.CreateDirectory(bpDir);
+            Directory.CreateDirectory(rpDir);
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Bedrock",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            string? openedFolder = null;
+            vm.CustomFolderOpener = p => openedFolder = p;
+
+            vm.SelectedBedrockTab = 0;
+            vm.OpenFolderCommand.Execute(null);
+            Assert.Equal(bpDir, openedFolder);
+
+            openedFolder = null;
+            vm.SelectedBedrockTab = 1;
+            vm.OpenFolderCommand.Execute(null);
+            Assert.Equal(rpDir, openedFolder);
+        }
+
+        [Fact]
+        public void OpenFolderCommand_ForPocketminePluginWithDataFolder_OpensPluginDataDirectory()
+        {
+            string pluginsDir = Path.Combine(_tempDir, "plugins");
+            Directory.CreateDirectory(pluginsDir);
+            File.WriteAllText(Path.Combine(pluginsDir, "EconomyAPI.phar"), "dummy phar content");
+            string dataDir = Path.Combine(pluginsDir, "EconomyAPI");
+            Directory.CreateDirectory(dataDir);
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Pocketmine",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            string? openedFolder = null;
+            vm.CustomFolderOpener = p => openedFolder = p;
+
+            vm.LoadAddonsSync();
+            Assert.NotEmpty(vm.Plugins);
+
+            var plugin = vm.Plugins.First(p => p.Name == "EconomyAPI");
+            vm.OpenFolderCommand.Execute(plugin);
+            Assert.Equal(dataDir, openedFolder);
+
+            openedFolder = null;
+            vm.OpenFolderCommand.Execute(plugin.Path);
+            Assert.Equal(dataDir, openedFolder);
+        }
+
+        [Fact]
+        public void OpenFolderCommand_ForPocketminePluginWithoutDataFolder_OpensPluginsDirectory()
+        {
+            string pluginsDir = Path.Combine(_tempDir, "plugins");
+            Directory.CreateDirectory(pluginsDir);
+            File.WriteAllText(Path.Combine(pluginsDir, "NoDataPlugin.phar"), "dummy phar content");
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Pocketmine",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            string? openedFolder = null;
+            vm.CustomFolderOpener = p => openedFolder = p;
+
+            vm.LoadAddonsSync();
+            Assert.NotEmpty(vm.Plugins);
+
+            var plugin = vm.Plugins.First(p => p.Name == "NoDataPlugin");
+            vm.OpenFolderCommand.Execute(plugin);
+            Assert.Equal(pluginsDir, openedFolder);
+
+            openedFolder = null;
+            vm.OpenFolderCommand.Execute(plugin.Path);
+            Assert.Equal(pluginsDir, openedFolder);
+        }
+
+        [Fact]
+        public void OpenFolderCommand_ForPocketmineDirectoryPlugin_OpensPluginDirectory()
+        {
+            string pluginsDir = Path.Combine(_tempDir, "plugins");
+            string sourcePluginDir = Path.Combine(pluginsDir, "MySourcePlugin");
+            Directory.CreateDirectory(sourcePluginDir);
+            File.WriteAllText(Path.Combine(sourcePluginDir, "plugin.yml"), "name: MySourcePlugin\nversion: 1.0.0\nmain: MainClass\napi: 5.0.0");
+
+            var metadata = new InstanceMetadata
+            {
+                ServerType = "Pocketmine",
+                MinecraftVersion = "1.20.4"
+            };
+
+            var vm = new SettingsAddonsVM(
+                metadata,
+                _tempDir,
+                null!,
+                _dialogService,
+                null!,
+                _serviceProvider,
+                () => false,
+                () => { }
+            );
+
+            string? openedFolder = null;
+            vm.CustomFolderOpener = p => openedFolder = p;
+
+            vm.LoadAddonsSync();
+            Assert.NotEmpty(vm.Plugins);
+
+            var plugin = vm.Plugins.First(p => p.Name == "MySourcePlugin");
+            Assert.Equal(sourcePluginDir, plugin.Path);
+
+            vm.OpenFolderCommand.Execute(plugin);
+            Assert.Equal(sourcePluginDir, openedFolder);
+
+            openedFolder = null;
+            vm.OpenFolderCommand.Execute(plugin.Path);
+            Assert.Equal(sourcePluginDir, openedFolder);
+        }
     }
 
     public class TestServiceProvider : IServiceProvider

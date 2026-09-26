@@ -202,6 +202,9 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand OpenFolderCommand { get; }
         public ICommand ToggleModActiveCommand { get; }
 
+        internal Action<string>? CustomFolderOpener { get; set; }
+        internal Action<string>? CustomFileSelector { get; set; }
+
         // Update All state
         private bool _isUpdatingAll;
         public bool IsUpdatingAll
@@ -287,7 +290,12 @@ namespace PocketMC.Desktop.Features.Settings
                 async _ => await AddPluginAsync(),
                 _ => !_isRunningCheck() && !ShowVanillaWarning && _metadata.Compatibility.SupportsPlugins);
             DeletePluginCommand = new RelayCommand(
-                async p => await DeletePluginAsync(p as string),
+                async p => await DeletePluginAsync(p switch
+                {
+                    PluginItemViewModel plugin => plugin.Path,
+                    string s => s,
+                    _ => null
+                }),
                 _ => !_isRunningCheck() && _metadata.Compatibility.SupportsPlugins);
             BrowseModrinthPluginsCommand = new RelayCommand(
                 _ => { BrowseModrinth("project_type:plugin"); },
@@ -300,7 +308,18 @@ namespace PocketMC.Desktop.Features.Settings
                 async _ => { if (IsBedrockDedicated) await ImportBedrockAddonAsync(); else await AddModAsync(); },
                 _ => !_isRunningCheck() && !ShowVanillaWarning && (_metadata.Compatibility.SupportsMods || _metadata.Compatibility.SupportsBedrockAddons));
             DeleteModCommand = new RelayCommand(
-                async p => { if (IsBedrockDedicated) await DeleteBedrockPackAsync(p); else await DeleteModAsync(p as string); },
+                async p =>
+                {
+                    if (IsBedrockDedicated)
+                        await DeleteBedrockPackAsync(p);
+                    else
+                        await DeleteModAsync(p switch
+                        {
+                            ModItemViewModel mod => mod.Path,
+                            string s => s,
+                            _ => null
+                        });
+                },
                 _ => !_isRunningCheck());
             BrowseModrinthModsCommand = new RelayCommand(
                 _ => { if (IsBedrockDedicated) ImportBedrockAddonCommand?.Execute(null); else BrowseModrinth("project_type:mod"); },
@@ -342,7 +361,7 @@ namespace PocketMC.Desktop.Features.Settings
                 _ => !_isUpdatingAll && Mods.Any(m => m.IsTracked));
 
 
-            OpenFolderCommand = new RelayCommand(p => OpenContainingFolder(p as string));
+            OpenFolderCommand = new RelayCommand(p => OpenAddonFolder(p));
             ToggleModActiveCommand = new RelayCommand(async p => await ToggleAddonStateAsync(p), CanToggleAddon);
 
             RemoveIncompatibleAddonsCommand = new RelayCommand(async _ => await RemoveIncompatibleAddonsAsync());
@@ -872,7 +891,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                 var vm = new PluginItemViewModel
                 {
-                    Name = entry?.DisplayName ?? entry?.ProjectTitle ?? fi.Name,
+                    Name = entry?.DisplayName ?? entry?.ProjectTitle ?? Path.GetFileNameWithoutExtension(fi.Name),
                     FileName = fi.Name,
                     Path = file,
                     ApiVersion = "PocketMine",
@@ -898,6 +917,46 @@ namespace PocketMC.Desktop.Features.Settings
 
                 result.Add(vm);
             }
+
+            foreach (var subDir in Directory.GetDirectories(dir))
+            {
+                string pluginYml = System.IO.Path.Combine(subDir, "plugin.yml");
+                if (File.Exists(pluginYml))
+                {
+                    var di = new DirectoryInfo(subDir);
+                    if (result.Any(p => string.Equals(Path.GetFileNameWithoutExtension(p.FileName), di.Name, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    var entry = manifest.Entries.FirstOrDefault(e =>
+                        e.FileName.Equals(di.Name, StringComparison.OrdinalIgnoreCase));
+
+                    string sourceLabel = entry != null ? (entry.Provider ?? "Folder") : "Folder";
+
+                    double sizeKb = 0;
+                    try
+                    {
+                        sizeKb = di.EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length) / 1024.0;
+                    }
+                    catch { }
+
+                    var vm = new PluginItemViewModel
+                    {
+                        Name = entry?.DisplayName ?? entry?.ProjectTitle ?? di.Name,
+                        FileName = di.Name,
+                        Path = subDir,
+                        ApiVersion = "PocketMine",
+                        SizeKb = sizeKb,
+                        IsMismatch = false,
+                        LastModified = di.LastWriteTime,
+                        ManifestEntry = entry,
+                        SourceLabel = sourceLabel,
+                        Icon = AddonIconService.PluginFallback
+                    };
+
+                    result.Add(vm);
+                }
+            }
+
             return result;
         }
 
@@ -1123,7 +1182,14 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 try
                 {
-                    await FileUtils.DeleteFileAsync(path);
+                    if (Directory.Exists(path))
+                    {
+                        Directory.Delete(path, true);
+                    }
+                    else if (File.Exists(path))
+                    {
+                        await FileUtils.DeleteFileAsync(path);
+                    }
                     await _manifestService.UnregisterByFileNameAsync(_serverDir, Path.GetFileName(path));
                     LoadAddons();
                     _onAddonChanged();
@@ -2025,23 +2091,259 @@ namespace PocketMC.Desktop.Features.Settings
             });
         }
 
-        private void OpenContainingFolder(string? path)
+        public void OpenAddonFolder(object? parameter)
         {
-            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
             try
             {
-                string dir = Path.GetDirectoryName(path) ?? "";
-                if (Directory.Exists(dir))
+                if (parameter is BedrockPackItemViewModel pack)
+                {
+                    OpenFolderOrContaining(pack.DirectoryPath);
+                    return;
+                }
+
+                if (parameter is PluginItemViewModel plugin)
+                {
+                    if (IsPocketmine)
+                    {
+                        OpenPocketminePluginFolder(plugin);
+                        return;
+                    }
+
+                    OpenFolderOrContaining(plugin.Path);
+                    return;
+                }
+
+                if (parameter is ModItemViewModel mod)
+                {
+                    OpenFolderOrContaining(mod.Path);
+                    return;
+                }
+
+                if (parameter is string pathOrDir && !string.IsNullOrWhiteSpace(pathOrDir))
+                {
+                    if (IsBedrockDedicated)
+                    {
+                        OpenFolderOrContaining(pathOrDir);
+                        return;
+                    }
+
+                    if (IsPocketmine)
+                    {
+                        OpenPocketminePluginFolder(pathOrDir);
+                        return;
+                    }
+
+                    OpenFolderOrContaining(pathOrDir);
+                    return;
+                }
+
+                // Fallback when parameter is null or empty
+                if (IsBedrockDedicated)
+                {
+                    string bpDir = Path.Combine(_serverDir, "behavior_packs");
+                    string rpDir = Path.Combine(_serverDir, "resource_packs");
+                    if (IsBehaviorPacksTabSelected && Directory.Exists(bpDir))
+                    {
+                        OpenFolderDirect(bpDir);
+                    }
+                    else if (IsResourcePacksTabSelected && Directory.Exists(rpDir))
+                    {
+                        OpenFolderDirect(rpDir);
+                    }
+                    else if (Directory.Exists(_serverDir))
+                    {
+                        OpenFolderDirect(_serverDir);
+                    }
+                    return;
+                }
+
+                if (IsPocketmine)
+                {
+                    string pluginsDir = Path.Combine(_serverDir, "plugins");
+                    if (Directory.Exists(pluginsDir))
+                    {
+                        OpenFolderDirect(pluginsDir);
+                    }
+                    else if (Directory.Exists(_serverDir))
+                    {
+                        OpenFolderDirect(_serverDir);
+                    }
+                    return;
+                }
+
+                if (Directory.Exists(_serverDir))
+                {
+                    OpenFolderDirect(_serverDir);
+                }
+            }
+            catch { /* Ignore */ }
+        }
+
+        private void OpenPocketminePluginFolder(PluginItemViewModel plugin)
+        {
+            string pluginsDir = Path.Combine(_serverDir, "plugins");
+
+            // 1. If plugin.Path is already an existing directory (source/folder plugin), open it directly
+            if (!string.IsNullOrWhiteSpace(plugin.Path) && Directory.Exists(plugin.Path))
+            {
+                OpenFolderDirect(plugin.Path);
+                return;
+            }
+
+            // 2. Check if a dedicated plugin data/config folder exists in plugins/
+            var candidates = new List<string>();
+            if (!string.IsNullOrWhiteSpace(plugin.Name))
+            {
+                candidates.Add(Path.Combine(pluginsDir, plugin.Name));
+                candidates.Add(Path.Combine(pluginsDir, Path.GetFileNameWithoutExtension(plugin.Name)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(plugin.FileName))
+                candidates.Add(Path.Combine(pluginsDir, Path.GetFileNameWithoutExtension(plugin.FileName)));
+
+            if (plugin.ManifestEntry != null && !string.IsNullOrWhiteSpace(plugin.ManifestEntry.ProjectTitle))
+                candidates.Add(Path.Combine(pluginsDir, plugin.ManifestEntry.ProjectTitle));
+
+            foreach (var candidate in candidates)
+            {
+                if (Directory.Exists(candidate))
+                {
+                    OpenFolderDirect(candidate);
+                    return;
+                }
+            }
+
+            // 3. If no specific plugin folder exists, open the PocketMine plugins folder
+            if (Directory.Exists(pluginsDir))
+            {
+                OpenFolderDirect(pluginsDir);
+                return;
+            }
+
+            // 4. Fallback to server directory
+            if (Directory.Exists(_serverDir))
+            {
+                OpenFolderDirect(_serverDir);
+            }
+        }
+
+        private void OpenPocketminePluginFolder(string pathOrDir)
+        {
+            string pluginsDir = Path.Combine(_serverDir, "plugins");
+
+            if (!string.IsNullOrWhiteSpace(pathOrDir) && Directory.Exists(pathOrDir))
+            {
+                OpenFolderDirect(pathOrDir);
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(pathOrDir))
+            {
+                string nameWithoutExt = Path.GetFileNameWithoutExtension(pathOrDir);
+                string candidate = Path.Combine(pluginsDir, nameWithoutExt);
+                if (Directory.Exists(candidate))
+                {
+                    OpenFolderDirect(candidate);
+                    return;
+                }
+            }
+
+            if (Directory.Exists(pluginsDir))
+            {
+                OpenFolderDirect(pluginsDir);
+                return;
+            }
+
+            if (Directory.Exists(_serverDir))
+            {
+                OpenFolderDirect(_serverDir);
+            }
+        }
+
+        private void OpenFolderOrContaining(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                if (Directory.Exists(_serverDir)) OpenFolderDirect(_serverDir);
+                return;
+            }
+
+            try
+            {
+                // If path is an existing directory, open the directory directly
+                if (Directory.Exists(path))
+                {
+                    OpenFolderDirect(path);
+                    return;
+                }
+
+                // If path is an existing file, select the file in explorer or open its containing folder
+                if (File.Exists(path))
+                {
+                    if (CustomFileSelector != null)
+                    {
+                        CustomFileSelector(path);
+                        return;
+                    }
+
+                    string dir = Path.GetDirectoryName(path) ?? "";
+                    if (Directory.Exists(dir))
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "explorer.exe",
+                            Arguments = $"/select,\"{path}\"",
+                            UseShellExecute = true
+                        });
+                    }
+                    return;
+                }
+
+                // If path does not exist, check if its parent directory exists
+                string? parent = Path.GetDirectoryName(path);
+                if (!string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent))
+                {
+                    OpenFolderDirect(parent);
+                    return;
+                }
+
+                if (Directory.Exists(_serverDir))
+                {
+                    OpenFolderDirect(_serverDir);
+                }
+            }
+            catch { /* Ignore */ }
+        }
+
+        private void OpenFolderDirect(string folder)
+        {
+            if (CustomFolderOpener != null)
+            {
+                CustomFolderOpener(folder);
+                return;
+            }
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = folder,
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+                try
                 {
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "explorer.exe",
-                        Arguments = $"/select,\"{path}\"",
+                        Arguments = $"\"{folder}\"",
                         UseShellExecute = true
                     });
                 }
+                catch { /* Ignore */ }
             }
-            catch { /* Ignore */ }
         }
 
         private bool CanToggleAddon(object? parameter)

@@ -1034,7 +1034,7 @@
                                                 <DataTemplate>
                                                     <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                         <ui:Card.ContextMenu>
-                                                            <ContextMenu>
+                                                            <ContextMenu Opened="AddonContextMenu_Opened">
                                                                 <MenuItem Header="{Binding ToggleActionLabel}"
                                                                           Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}">
@@ -1042,18 +1042,40 @@
                                                                         <ui:SymbolIcon Symbol="Power20"/>
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
+                                                                <MenuItem Header="Check for Updates"
+                                                                          Command="{Binding Path=PlacementTarget.Tag.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding}">
+                                                                    <MenuItem.Icon>
+                                                                        <ui:SymbolIcon Symbol="ArrowSync20"/>
+                                                                    </MenuItem.Icon>
+                                                                    <MenuItem.Style>
+                                                                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                                            <Setter Property="IsEnabled" Value="True"/>
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </MenuItem.Style>
+                                                                </MenuItem>
                                                                 <MenuItem Header="Open Folder" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                          CommandParameter="{Binding Path}">
+                                                                          CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
                                                                         <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
+                                                                <Separator/>
                                                                 <MenuItem Header="Delete" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                          CommandParameter="{Binding Path}">
+                                                                          CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
-                                                                        <ui:SymbolIcon Symbol="Delete20" Foreground="Red"/>
+                                                                        <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
                                                             </ContextMenu>
@@ -1134,24 +1156,52 @@
                                                                                  ToolTip="{Binding ToggleToolTip}"
                                                                                  OnContent="" OffContent="" Content=""
                                                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                                <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                           Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                           CommandParameter="{Binding Path}"
-                                                                           Icon="{ui:SymbolIcon FolderOpen20}"
-                                                                           ToolTip="Open file location"/>
-                                                                <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                           Command="{Binding DataContext.Addons.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                           CommandParameter="{Binding}"
-                                                                           IsEnabled="{Binding IsUpdating, Converter={StaticResource InvertedBooleanConverter}}"
-                                                                           Visibility="{Binding IsDisabled, Converter={StaticResource InvertedVisibilityConverter}}"
-                                                                           Icon="{ui:SymbolIcon ArrowSync20}"
-                                                                           ToolTip="Check for updates from the marketplace"/>
-
-                                                                <ui:Button Appearance="Danger" VerticalAlignment="Center"
-                                                                           Command="{Binding DataContext.Addons.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                           CommandParameter="{Binding Path}"
-                                                                           Icon="{ui:SymbolIcon Delete20}"
-                                                                           ToolTip="Delete plugin from disk"/>
+                                                                <ui:Button Appearance="Secondary" VerticalAlignment="Center"
+                                                                           Icon="{ui:SymbolIcon MoreVertical20}"
+                                                                           ToolTip="More options"
+                                                                           Click="BtnAddonMoreOptions_Click"
+                                                                           Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                                    <ui:Button.ContextMenu>
+                                                                        <ContextMenu Opened="AddonContextMenu_Opened">
+                                                                            <MenuItem Header="Check for Updates"
+                                                                                      Command="{Binding Path=PlacementTarget.Tag.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                      CommandParameter="{Binding}">
+                                                                                <MenuItem.Icon>
+                                                                                    <ui:SymbolIcon Symbol="ArrowSync20"/>
+                                                                                </MenuItem.Icon>
+                                                                                <MenuItem.Style>
+                                                                                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                                                        <Setter Property="IsEnabled" Value="True"/>
+                                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                                        <Style.Triggers>
+                                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                                            </DataTrigger>
+                                                                                            <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                            </DataTrigger>
+                                                                                        </Style.Triggers>
+                                                                                    </Style>
+                                                                                </MenuItem.Style>
+                                                                            </MenuItem>
+                                                                            <MenuItem Header="Open Folder" 
+                                                                                      Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                      CommandParameter="{Binding}">
+                                                                                <MenuItem.Icon>
+                                                                                    <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <Separator/>
+                                                                            <MenuItem Header="Delete" 
+                                                                                      Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                      CommandParameter="{Binding}">
+                                                                                <MenuItem.Icon>
+                                                                                    <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                        </ContextMenu>
+                                                                    </ui:Button.ContextMenu>
+                                                                </ui:Button>
                                                             </StackPanel>
                                                         </Grid>
                                                     </ui:Card>
@@ -1275,7 +1325,7 @@
                                                 <DataTemplate>
                                                     <ui:Card Margin="0,0,0,10" Padding="16,12" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                         <ui:Card.ContextMenu>
-                                                            <ContextMenu>
+                                                            <ContextMenu Opened="AddonContextMenu_Opened">
                                                                 <MenuItem Command="{Binding Path=PlacementTarget.Tag.ToggleModActiveCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}">
                                                                     <MenuItem.Style>
@@ -1292,18 +1342,43 @@
                                                                         <ui:SymbolIcon Symbol="Power20"/>
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
+                                                                <MenuItem Header="Check for Updates"
+                                                                          Command="{Binding Path=PlacementTarget.Tag.UpdateModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding}">
+                                                                    <MenuItem.Icon>
+                                                                        <ui:SymbolIcon Symbol="ArrowSync20"/>
+                                                                    </MenuItem.Icon>
+                                                                    <MenuItem.Style>
+                                                                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                                            <Setter Property="IsEnabled" Value="True"/>
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding PlacementTarget.Tag.SupportsModrinth, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Value="False">
+                                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </MenuItem.Style>
+                                                                </MenuItem>
                                                                 <MenuItem Header="Open Folder" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                          CommandParameter="{Binding Path}">
+                                                                          CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
                                                                         <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
+                                                                <Separator/>
                                                                 <MenuItem Header="Delete" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                          CommandParameter="{Binding Path}">
+                                                                          CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
-                                                                        <ui:SymbolIcon Symbol="Delete20" Foreground="Red"/>
+                                                                        <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
                                                             </ContextMenu>
@@ -1391,37 +1466,55 @@
                                                                                  ToolTip="{Binding ToggleToolTip}"
                                                                                  OnContent="" OffContent="" Content=""
                                                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                                <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                           Command="{Binding DataContext.Addons.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                           CommandParameter="{Binding Path}"
-                                                                           Icon="{ui:SymbolIcon FolderOpen20}"
-                                                                           ToolTip="Open file location"/>
-                                                                <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                                           Command="{Binding DataContext.Addons.UpdateModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                           CommandParameter="{Binding}"
-                                                                           Icon="{ui:SymbolIcon ArrowSync20}"
-                                                                           ToolTip="Check for updates from the marketplace"
-                                                                           Visibility="{Binding DataContext.Addons.SupportsModrinth, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource VisibleIfTrue}}">
-                                                                    <ui:Button.Style>
-                                                                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                                                                            <Setter Property="IsEnabled" Value="True"/>
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Binding="{Binding IsUpdating}" Value="True">
-                                                                                    <Setter Property="IsEnabled" Value="False"/>
-                                                                                </DataTrigger>
-                                                                                <DataTrigger Binding="{Binding IsDisabled}" Value="True">
-                                                                                    <Setter Property="IsEnabled" Value="False"/>
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </ui:Button.Style>
+                                                                <ui:Button Appearance="Secondary" VerticalAlignment="Center"
+                                                                           Icon="{ui:SymbolIcon MoreVertical20}"
+                                                                           ToolTip="More options"
+                                                                           Click="BtnAddonMoreOptions_Click"
+                                                                           Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                                    <ui:Button.ContextMenu>
+                                                                        <ContextMenu Opened="AddonContextMenu_Opened">
+                                                                            <MenuItem Header="Check for Updates"
+                                                                                      Command="{Binding Path=PlacementTarget.Tag.UpdateModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                      CommandParameter="{Binding}">
+                                                                                <MenuItem.Icon>
+                                                                                    <ui:SymbolIcon Symbol="ArrowSync20"/>
+                                                                                </MenuItem.Icon>
+                                                                                <MenuItem.Style>
+                                                                                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                                                        <Setter Property="IsEnabled" Value="True"/>
+                                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                                        <Style.Triggers>
+                                                                                            <DataTrigger Binding="{Binding PlacementTarget.Tag.SupportsModrinth, RelativeSource={RelativeSource AncestorType=ContextMenu}}" Value="False">
+                                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                            </DataTrigger>
+                                                                                            <DataTrigger Binding="{Binding IsUpdating}" Value="True">
+                                                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                                            </DataTrigger>
+                                                                                            <DataTrigger Binding="{Binding IsDisabled}" Value="True">
+                                                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                                            </DataTrigger>
+                                                                                        </Style.Triggers>
+                                                                                    </Style>
+                                                                                </MenuItem.Style>
+                                                                            </MenuItem>
+                                                                            <MenuItem Header="Open Folder" 
+                                                                                      Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                      CommandParameter="{Binding}">
+                                                                                <MenuItem.Icon>
+                                                                                    <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                            <Separator/>
+                                                                            <MenuItem Header="Delete" 
+                                                                                      Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                      CommandParameter="{Binding}">
+                                                                                <MenuItem.Icon>
+                                                                                    <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
+                                                                                </MenuItem.Icon>
+                                                                            </MenuItem>
+                                                                        </ContextMenu>
+                                                                    </ui:Button.ContextMenu>
                                                                 </ui:Button>
-
-                                                                <ui:Button Appearance="Danger" VerticalAlignment="Center"
-                                                                           Command="{Binding DataContext.Addons.DeleteModCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                           CommandParameter="{Binding Path}"
-                                                                           Icon="{ui:SymbolIcon Delete20}"
-                                                                           ToolTip="Delete mod from disk"/>
                                                             </StackPanel>
                                                         </Grid>
                                                     </ui:Card>
@@ -1536,7 +1629,26 @@
                                                 </ItemsControl.Style>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <ui:Card Margin="0,0,0,8" Padding="14,10">
+                                                        <ui:Card Margin="0,0,0,8" Padding="14,10" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                            <ui:Card.ContextMenu>
+                                                                <ContextMenu Opened="AddonContextMenu_Opened">
+                                                                    <MenuItem Header="Open Folder" 
+                                                                              Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              CommandParameter="{Binding}">
+                                                                        <MenuItem.Icon>
+                                                                            <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                    <Separator/>
+                                                                    <MenuItem Header="Delete" 
+                                                                              Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              CommandParameter="{Binding}">
+                                                                        <MenuItem.Icon>
+                                                                            <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                </ContextMenu>
+                                                            </ui:Card.ContextMenu>
                                                             <Grid>
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="Auto"/>
@@ -1579,12 +1691,32 @@
                                                                                      OnContent="Active" OffContent="Inactive" Content=""
                                                                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
 
-                                                                    <!-- Delete -->
-                                                                    <ui:Button Appearance="Danger" VerticalAlignment="Center" Padding="6,5"
-                                                                               Command="{Binding DataContext.Addons.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                               CommandParameter="{Binding}"
-                                                                               Icon="{ui:SymbolIcon Delete20}"
-                                                                               ToolTip="Delete behavior pack"/>
+                                                                    <!-- Options Menu -->
+                                                                    <ui:Button Appearance="Secondary" VerticalAlignment="Center" Padding="6,5"
+                                                                               Icon="{ui:SymbolIcon MoreVertical20}"
+                                                                               ToolTip="More options"
+                                                                               Click="BtnAddonMoreOptions_Click"
+                                                                               Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                                        <ui:Button.ContextMenu>
+                                                                            <ContextMenu Opened="AddonContextMenu_Opened">
+                                                                                <MenuItem Header="Open Folder" 
+                                                                                          Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                          CommandParameter="{Binding}">
+                                                                                    <MenuItem.Icon>
+                                                                                        <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                                    </MenuItem.Icon>
+                                                                                </MenuItem>
+                                                                                <Separator/>
+                                                                                <MenuItem Header="Delete" 
+                                                                                          Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                          CommandParameter="{Binding}">
+                                                                                    <MenuItem.Icon>
+                                                                                        <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
+                                                                                    </MenuItem.Icon>
+                                                                                </MenuItem>
+                                                                            </ContextMenu>
+                                                                        </ui:Button.ContextMenu>
+                                                                    </ui:Button>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </ui:Card>
@@ -1680,7 +1812,26 @@
                                                 </ItemsControl.Style>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <ui:Card Margin="0,0,0,8" Padding="14,10">
+                                                        <ui:Card Margin="0,0,0,8" Padding="14,10" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                            <ui:Card.ContextMenu>
+                                                                <ContextMenu Opened="AddonContextMenu_Opened">
+                                                                    <MenuItem Header="Open Folder" 
+                                                                              Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              CommandParameter="{Binding}">
+                                                                        <MenuItem.Icon>
+                                                                            <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                    <Separator/>
+                                                                    <MenuItem Header="Delete" 
+                                                                              Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              CommandParameter="{Binding}">
+                                                                        <MenuItem.Icon>
+                                                                            <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                </ContextMenu>
+                                                            </ui:Card.ContextMenu>
                                                             <Grid>
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="Auto"/>
@@ -1723,12 +1874,32 @@
                                                                                      OnContent="Active" OffContent="Inactive" Content=""
                                                                                      VerticalAlignment="Center" Margin="0,0,8,0"/>
 
-                                                                    <!-- Delete -->
-                                                                    <ui:Button Appearance="Danger" VerticalAlignment="Center" Padding="6,5"
-                                                                               Command="{Binding DataContext.Addons.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                               CommandParameter="{Binding}"
-                                                                               Icon="{ui:SymbolIcon Delete20}"
-                                                                               ToolTip="Delete resource pack"/>
+                                                                    <!-- Options Menu -->
+                                                                    <ui:Button Appearance="Secondary" VerticalAlignment="Center" Padding="6,5"
+                                                                               Icon="{ui:SymbolIcon MoreVertical20}"
+                                                                               ToolTip="More options"
+                                                                               Click="BtnAddonMoreOptions_Click"
+                                                                               Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                                        <ui:Button.ContextMenu>
+                                                                            <ContextMenu Opened="AddonContextMenu_Opened">
+                                                                                <MenuItem Header="Open Folder" 
+                                                                                          Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                          CommandParameter="{Binding}">
+                                                                                    <MenuItem.Icon>
+                                                                                        <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                                    </MenuItem.Icon>
+                                                                                </MenuItem>
+                                                                                <Separator/>
+                                                                                <MenuItem Header="Delete" 
+                                                                                          Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                                          CommandParameter="{Binding}">
+                                                                                    <MenuItem.Icon>
+                                                                                        <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
+                                                                                    </MenuItem.Icon>
+                                                                                </MenuItem>
+                                                                            </ContextMenu>
+                                                                        </ui:Button.ContextMenu>
+                                                                    </ui:Button>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </ui:Card>

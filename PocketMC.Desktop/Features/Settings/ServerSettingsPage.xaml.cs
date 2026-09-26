@@ -388,5 +388,23 @@ namespace PocketMC.Desktop.Features.Settings
                 }
             }
         }
+
+        private void BtnAddonMoreOptions_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.ContextMenu != null)
+            {
+                fe.ContextMenu.DataContext = fe.DataContext;
+                fe.ContextMenu.PlacementTarget = fe;
+                fe.ContextMenu.IsOpen = true;
+            }
+        }
+
+        private void AddonContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu cm && cm.PlacementTarget is FrameworkElement fe)
+            {
+                cm.DataContext = fe.DataContext;
+            }
+        }
     }
 }
