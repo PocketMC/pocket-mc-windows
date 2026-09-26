@@ -2,6 +2,7 @@ using PocketMC.Desktop.Features.Shell;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -28,7 +29,7 @@ namespace PocketMC.Desktop.Features.Settings
             Loaded += ServerSettingsPage_Loaded;
             Unloaded += ServerSettingsPage_Unloaded;
             MainTabControl.SelectionChanged += MainTabControl_SelectionChanged;
-            KeyDown += ServerSettingsPage_KeyDown;
+            PreviewKeyDown += ServerSettingsPage_PreviewKeyDown;
         }
 
         private bool _isFirstLoad = true;
@@ -335,13 +336,47 @@ namespace PocketMC.Desktop.Features.Settings
             return false;
         }
 
-        private void ServerSettingsPage_KeyDown(object sender, KeyEventArgs e)
+        private void ServerSettingsPage_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 if (ViewModel.SaveCommand.CanExecute(null))
                 {
                     ViewModel.SaveCommand.Execute(null);
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (e.Key == Key.Enter)
+            {
+                DependencyObject? focused = Keyboard.FocusedElement as DependencyObject
+                    ?? FocusManager.GetFocusedElement(this) as DependencyObject;
+                TextBox? textBox = focused as TextBox ?? FindAncestor<TextBox>(focused);
+
+                if (textBox != null && !textBox.AcceptsReturn && !textBox.IsReadOnly)
+                {
+                    // 1. Force the binding to commit immediately
+                    BindingOperations.GetBindingExpression(textBox, TextBox.TextProperty)?.UpdateSource();
+
+                    // 2. Clear focus to remove caret and exit the field
+                    Keyboard.ClearFocus();
+                    Focus();
+
+                    // 3. Close MOTD editor if open
+                    if (MotdEditorMode.Visibility == Visibility.Visible)
+                    {
+                        MotdDisplayMode.Visibility = Visibility.Visible;
+                        MotdEditorMode.Visibility = Visibility.Collapsed;
+                    }
+
+                    // 4. Save changes unless this was just an in-memory search filter
+                    bool isSearchBox = textBox.DataContext is SettingsAddonsVM;
+                    if (!isSearchBox && ViewModel.SaveCommand.CanExecute(null))
+                    {
+                        ViewModel.SaveCommand.Execute(null);
+                    }
+
                     e.Handled = true;
                 }
             }
