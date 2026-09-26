@@ -2177,28 +2177,6 @@
                                         </StackPanel>
                                     </ui:CardControl>
 
-                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Chat24}" IsEnabled="{Binding Advanced.EnableScheduledReboot}">
-                                        <ui:CardControl.Header>
-                                            <StackPanel>
-                                                <TextBlock Text="In-Game Warning" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Broadcast countdown notifications in Minecraft server chat before restarting." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            </StackPanel>
-                                        </ui:CardControl.Header>
-                                        <ui:ToggleSwitch IsChecked="{Binding Advanced.ScheduledRebootWarning}" VerticalAlignment="Center"/>
-                                    </ui:CardControl>
-
-                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.IsWarningSettingsEnabled}">
-                                        <ui:CardControl.Header>
-                                            <StackPanel>
-                                                <TextBlock Text="Warning Countdown" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Duration in seconds to alert online players before the reboot begins." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            </StackPanel>
-                                        </ui:CardControl.Header>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Advanced.ScheduledRebootWarningSeconds}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </ui:CardControl>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>

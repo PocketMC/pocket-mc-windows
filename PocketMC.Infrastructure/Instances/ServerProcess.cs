@@ -396,7 +396,7 @@ public class ServerProcess : IServerProcess, IDisposable
             // Player-count processing ALWAYS runs regardless of suppression.
             if (State == ServerState.Starting)
             {
-                if (sanitizedLine.Contains("Done (") || sanitizedLine.Contains("Server started."))
+                if (sanitizedLine.Contains("Done (", StringComparison.OrdinalIgnoreCase) || sanitizedLine.Contains("Server started", StringComparison.OrdinalIgnoreCase))
                 {
                     SetState(ServerState.Online);
                 }

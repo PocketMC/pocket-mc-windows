@@ -165,7 +165,7 @@ public class ServerRebootSchedulerService : IDisposable
         }
 
         var sessionStart = _lifecycleService.GetSessionStartTime(meta.Id);
-        var minUptime = TimeSpan.FromMinutes(5);
+        var minUptime = TimeSpan.FromMinutes(1);
         if (sessionStart.HasValue && (nowUtc - sessionStart.Value) < minUptime)
         {
             return false;
@@ -196,7 +196,7 @@ public class ServerRebootSchedulerService : IDisposable
             if (meta.LastScheduledRebootTime.HasValue)
             {
                 DateTime lastLocal = meta.LastScheduledRebootTime.Value.ToLocalTime();
-                if (lastLocal >= todayTargetLocal)
+                if (lastLocal.Date == nowLocal.Date && lastLocal >= todayTargetLocal)
                 {
                     return false;
                 }
@@ -205,7 +205,7 @@ public class ServerRebootSchedulerService : IDisposable
             if (sessionStart.HasValue)
             {
                 DateTime startLocal = sessionStart.Value.ToLocalTime();
-                if (startLocal >= todayTargetLocal)
+                if (startLocal.Date == nowLocal.Date && startLocal >= todayTargetLocal)
                 {
                     return false;
                 }
@@ -283,48 +283,12 @@ public class ServerRebootSchedulerService : IDisposable
 
         try
         {
-            _logger.LogInformation("Initiating scheduled reboot sequence for '{ServerName}' ({InstanceId}).", meta.Name, meta.Id);
-
-            var process = _lifecycleService.GetProcess(meta.Id);
-            int warningSeconds = meta.ScheduledRebootWarningSeconds > 0 ? meta.ScheduledRebootWarningSeconds : 60;
-
-            if (meta.ScheduledRebootWarning && process != null && warningSeconds > 0)
-            {
-                await SendSayCommandAsync(process, $"[PocketMC] Scheduled server reboot in {warningSeconds} seconds!");
-
-                int remaining = warningSeconds;
-                while (remaining > 0)
-                {
-                    if (cts.Token.IsCancellationRequested || !_lifecycleService.IsRunning(meta.Id))
-                    {
-                        _logger.LogInformation("Scheduled reboot countdown for '{ServerName}' was cancelled.", meta.Name);
-                        return;
-                    }
-
-                    if (remaining is 60 or 30 or 15 or 10 or 5 or 3 or 2 or 1 && remaining < warningSeconds)
-                    {
-                        await SendSayCommandAsync(process, $"[PocketMC] Server rebooting in {remaining} seconds!");
-                    }
-
-                    await Task.Delay(1000, cts.Token);
-                    remaining--;
-                }
-
-                if (cts.Token.IsCancellationRequested || !_lifecycleService.IsRunning(meta.Id))
-                {
-                    return;
-                }
-
-                await SendSayCommandAsync(process, "[PocketMC] Server is rebooting now...");
-                await Task.Delay(500, cts.Token);
-            }
-
             if (!_lifecycleService.IsRunning(meta.Id) || cts.Token.IsCancellationRequested)
             {
                 return;
             }
 
-            _logger.LogInformation("Executing restart for server '{ServerName}' as scheduled.", meta.Name);
+            _logger.LogInformation("Executing restart for server '{ServerName}' ({InstanceId}) per maintenance schedule.", meta.Name, meta.Id);
             await _lifecycleService.RestartAsync(meta.Id);
 
             meta.LastScheduledRebootTime = DateTime.UtcNow;
@@ -353,18 +317,6 @@ public class ServerRebootSchedulerService : IDisposable
         {
             _inFlightReboots.TryRemove(meta.Id, out _);
             cts.Dispose();
-        }
-    }
-
-    private static async Task SendSayCommandAsync(IServerProcess process, string message)
-    {
-        try
-        {
-            await process.WriteInputAsync($"say {message}");
-        }
-        catch
-        {
-            // Suppress non-critical command write errors if process is transitioning
         }
     }
 

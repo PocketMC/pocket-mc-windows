@@ -140,7 +140,7 @@ public class ServerRebootSchedulerServiceTests : IDisposable
         processMock.Setup(p => p.State).Returns(ServerState.Online);
 
         DateTime now = DateTime.UtcNow;
-        DateTime sessionStart = now.AddMinutes(-2); // only 2 minutes uptime
+        DateTime sessionStart = now.AddSeconds(-30); // only 30 seconds uptime
 
         _lifecycleServiceMock.Setup(x => x.IsRunning(meta.Id)).Returns(true);
         _lifecycleServiceMock.Setup(x => x.IsWaitingToRestart(meta.Id)).Returns(false);

@@ -580,11 +580,6 @@ namespace PocketMC.Desktop.Features.Settings
 
             if (IsRunning)
             {
-                // Apply live settings that can be sent as commands without restart
-                _ = _runtimeApplier.ApplyDifficultyAsync(Metadata.Id, cfg.Difficulty);
-                _ = _runtimeApplier.ApplyWhitelistToggleAsync(Metadata.Id, cfg.WhiteList);
-                _ = _runtimeApplier.ApplyDefaultGamemodeAsync(Metadata.Id, cfg.Gamemode);
-
                 IsRestartRequired = true;
             }
             else
