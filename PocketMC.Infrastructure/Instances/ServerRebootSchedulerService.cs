@@ -27,9 +27,15 @@ public class ServerRebootSchedulerService : IDisposable
     private readonly INotificationService _notificationService;
     private readonly ILogger<ServerRebootSchedulerService> _logger;
 
-    private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _inFlightReboots = new();
+    private readonly ConcurrentDictionary<Guid, InFlightReboot> _inFlightReboots = new();
     private int _isProcessing;
     private bool _isDisposed;
+
+    private sealed class InFlightReboot
+    {
+        public required CancellationTokenSource Cts { get; init; }
+        public Task? Task { get; set; }
+    }
 
     public ServerRebootSchedulerService(
         ApplicationState applicationState,
@@ -63,7 +69,18 @@ public class ServerRebootSchedulerService : IDisposable
     public void Stop()
     {
         _timer.Stop();
-        AbortAllPendingReboots();
+        Task[] pendingTasks = AbortAllPendingReboots();
+        if (pendingTasks.Length > 0)
+        {
+            try
+            {
+                Task.WaitAll(pendingTasks, TimeSpan.FromSeconds(3));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Exception waiting for scheduled reboots to terminate on stop.");
+            }
+        }
         _logger.LogInformation("Server reboot scheduler stopped.");
     }
 
@@ -71,28 +88,40 @@ public class ServerRebootSchedulerService : IDisposable
 
     public void AbortScheduledReboot(Guid instanceId)
     {
-        if (_inFlightReboots.TryRemove(instanceId, out var cts))
+        if (_inFlightReboots.TryRemove(instanceId, out var inFlight))
         {
             try
             {
-                cts.Cancel();
+                inFlight.Cts.Cancel();
             }
             catch (ObjectDisposedException) { }
-            finally
-            {
-                cts.Dispose();
-            }
 
             _logger.LogInformation("Scheduled reboot aborted for instance {InstanceId}.", instanceId);
         }
     }
 
-    private void AbortAllPendingReboots()
+    private Task[] AbortAllPendingReboots()
     {
+        var tasks = new System.Collections.Generic.List<Task>();
         foreach (var kvp in _inFlightReboots.ToArray())
         {
-            AbortScheduledReboot(kvp.Key);
+            if (_inFlightReboots.TryRemove(kvp.Key, out var inFlight))
+            {
+                try
+                {
+                    inFlight.Cts.Cancel();
+                }
+                catch (ObjectDisposedException) { }
+
+                if (inFlight.Task != null)
+                {
+                    tasks.Add(inFlight.Task);
+                }
+
+                _logger.LogInformation("Scheduled reboot aborted for instance {InstanceId}.", kvp.Key);
+            }
         }
+        return tasks.ToArray();
     }
 
     private void HandleInstanceStateChanged(Guid instanceId, ServerState state)
@@ -127,7 +156,16 @@ public class ServerRebootSchedulerService : IDisposable
 
                 if (IsDue(meta, nowUtc))
                 {
-                    _ = Task.Run(() => ExecuteScheduledRebootAsync(meta));
+                    var cts = new CancellationTokenSource();
+                    var inFlight = new InFlightReboot { Cts = cts };
+                    if (_inFlightReboots.TryAdd(meta.Id, inFlight))
+                    {
+                        inFlight.Task = Task.Run(() => ExecuteScheduledRebootAsync(meta, cts));
+                    }
+                    else
+                    {
+                        cts.Dispose();
+                    }
                 }
             }
         }
@@ -272,15 +310,8 @@ public class ServerRebootSchedulerService : IDisposable
         return false;
     }
 
-    private async Task ExecuteScheduledRebootAsync(InstanceMetadata meta)
+    private async Task ExecuteScheduledRebootAsync(InstanceMetadata meta, CancellationTokenSource cts)
     {
-        var cts = new CancellationTokenSource();
-        if (!_inFlightReboots.TryAdd(meta.Id, cts))
-        {
-            cts.Dispose();
-            return;
-        }
-
         try
         {
             if (!_lifecycleService.IsRunning(meta.Id) || cts.Token.IsCancellationRequested)
@@ -328,7 +359,12 @@ public class ServerRebootSchedulerService : IDisposable
             }
 
             _logger.LogInformation("Executing restart for server '{ServerName}' ({InstanceId}) per maintenance schedule.", meta.Name, meta.Id);
-            await _lifecycleService.RestartAsync(meta.Id);
+            await _lifecycleService.RestartAsync(meta.Id, cts.Token);
+
+            if (cts.Token.IsCancellationRequested)
+            {
+                return;
+            }
 
             meta.LastScheduledRebootTime = DateTime.UtcNow;
             string? instancePath = _registry.GetPath(meta.Id);

@@ -852,7 +852,8 @@
                                         </Grid.ColumnDefinitions>
                                         
                                         <!-- Search Box -->
-                                        <ui:TextBox Text="{Binding Addons.SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                        <ui:TextBox x:Name="AddonsSearchTextBox"
+                                                    Text="{Binding Addons.SearchText, UpdateSourceTrigger=PropertyChanged}"
                                                     PlaceholderText="{Binding Addons.SearchPlaceholder}"
                                                     Icon="{ui:SymbolIcon Search20}"
                                                     Margin="0,0,12,0"

@@ -147,7 +147,7 @@ public sealed class RemoteStatusServiceTests : IDisposable
         public bool IsRunning(Guid instanceId) => RunningInstances.Contains(instanceId);
         public bool IsWaitingToRestart(Guid instanceId) => false;
         public void AbortRestartDelay(Guid instanceId) { }
-        public Task RestartAsync(Guid instanceId) => Task.CompletedTask;
+        public Task RestartAsync(Guid instanceId, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public IServerProcess? GetProcess(Guid instanceId) => null;
         public DateTime? GetSessionStartTime(Guid instanceId) =>
             SessionStartTimes.TryGetValue(instanceId, out DateTime start) ? start : null;

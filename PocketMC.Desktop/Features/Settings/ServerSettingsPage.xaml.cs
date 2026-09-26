@@ -371,8 +371,15 @@ namespace PocketMC.Desktop.Features.Settings
                     }
 
                     // 4. Save changes unless this was just an in-memory search filter
-                    bool isSearchBox = textBox.DataContext is SettingsAddonsVM;
-                    if (!isSearchBox && ViewModel.SaveCommand.CanExecute(null))
+                    Binding? binding = BindingOperations.GetBinding(textBox, TextBox.TextProperty);
+                    string? bindingPath = binding?.Path?.Path;
+
+                    bool isSearchBox = textBox == AddonsSearchTextBox
+                        || textBox.DataContext is SettingsAddonsVM
+                        || (ViewModel != null && ReferenceEquals(textBox.DataContext, ViewModel.Addons))
+                        || bindingPath is "Addons.SearchText" or "SearchText";
+
+                    if (!isSearchBox && ViewModel?.SaveCommand.CanExecute(null) == true)
                     {
                         ViewModel.SaveCommand.Execute(null);
                     }

@@ -20,7 +20,7 @@ namespace PocketMC.Application.Interfaces
         bool IsRunning(Guid instanceId);
         bool IsWaitingToRestart(Guid instanceId);
         void AbortRestartDelay(Guid instanceId);
-        Task RestartAsync(Guid instanceId);
+        Task RestartAsync(Guid instanceId, CancellationToken cancellationToken = default);
 
         IServerProcess? GetProcess(Guid instanceId);
         DateTime? GetSessionStartTime(Guid instanceId);

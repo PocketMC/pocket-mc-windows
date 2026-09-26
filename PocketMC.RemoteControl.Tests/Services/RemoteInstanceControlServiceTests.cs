@@ -88,7 +88,7 @@ public sealed class RemoteInstanceControlServiceTests : IDisposable
         public bool IsWaitingToRestart(Guid instanceId) => false;
         public void AbortRestartDelay(Guid instanceId) { }
 
-        public Task RestartAsync(Guid instanceId)
+        public Task RestartAsync(Guid instanceId, CancellationToken cancellationToken = default)
         {
             RestartedInstanceId = instanceId;
             return Task.CompletedTask;
