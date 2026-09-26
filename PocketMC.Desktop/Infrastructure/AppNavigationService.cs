@@ -110,11 +110,28 @@ namespace PocketMC.Desktop.Infrastructure
                 _shellForwardStack.Clear();
             }
 
+            // If navigating back to Dashboard from another shell page (e.g. AppSettingsPage),
+            // and an active detail page exists (e.g. ServerConsolePage), resume that detail page.
+            if (pageType == typeof(DashboardPage) && _currentShellPageType != typeof(DashboardPage) && _detailPages.Count > 0)
+            {
+                var targetEntry = _detailPages.Last();
+                bool detailNavigated = _shellHost.ShowDetailPage(targetEntry.Page, targetEntry.BreadcrumbLabel);
+                if (detailNavigated)
+                {
+                    _currentShellPageType = pageType;
+                    _uiStateService.UpdateBreadcrumb(targetEntry.BreadcrumbLabel);
+                    return true;
+                }
+            }
+
             bool navigated = _shellHost.ShowShellPage(pageType);
             if (navigated)
             {
                 _currentShellPageType = pageType;
-                ClearDetailStack();
+                if (pageType == typeof(DashboardPage))
+                {
+                    ClearDetailStack();
+                }
                 _uiStateService.UpdateBreadcrumb(GetBreadcrumbForPageType(pageType));
             }
 
