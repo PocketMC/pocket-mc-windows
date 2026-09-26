@@ -166,4 +166,4 @@ Before submitting a pull request, verify:
 
 ## Code of Conduct
 
-All participants in the PocketMC community are expected to follow the standards outlined in our [Code of Conduct](CODE_OF_CONDUCT.md). Please report any unacceptable behavior to [sahajitaliya33@gmail.com](mailto:sahajitaliya33@gmail.com).
+All participants in the PocketMC community are expected to follow the standards outlined in our [Code of Conduct](CODE_OF_CONDUCT.md). Please report any unacceptable behavior to [contactdslabs@gmail.com](mailto:contactdslabs@gmail.com).

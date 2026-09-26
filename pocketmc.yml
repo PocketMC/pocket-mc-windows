@@ -18,14 +18,14 @@ channel:                                                      # [Requires App Up
 # ==============================================================================
 # 3. COMMUNITY, SUPPORT & WEB LINKS
 # ==============================================================================
-link_discord: "https://discord.gg/wJHJy64sR4"                         # [Dynamic Cloud] Live-updates Discord invite link
+link_discord: "https://discord.gg/mWdMr8Mc2m"                         # [Dynamic Cloud] Live-updates Discord invite link
 link_instagram: "https://www.instagram.com/pocketmc.official"               # [Dynamic Cloud] Live-updates Instagram profile link
 link_feedback: "https://docs.google.com/forms/d/e/1FAIpQLSd6cNMawAbvoELxqIF_FobaC3DptKnjQxViDh9XLcyJdNbTAQ/viewform?usp=dialog" # [Dynamic Cloud] Live-updates Feedback link
 link_youtube: "https://www.youtube.com/@OfficialPocketMC"             # [Dynamic Cloud] Live-updates YouTube channel link
 link_reddit: "https://www.reddit.com/r/PocketMC/"                     # [Dynamic Cloud] Live-updates Reddit community link
 link_github: "https://github.com/PocketMC/pocket-mc-windows"          # [Dynamic Cloud] Live-updates GitHub repository link
 link_releases: "https://github.com/PocketMC/pocket-mc-windows/releases" # [Dynamic Cloud] Live-updates Releases link
-link_website: "https://ds-labs-portfolio.vercel.app"                  # [Dynamic Cloud] Live-updates Official website link
+link_website: "https://pocketmc.github.io/pocket-mc-website/"             # [Dynamic Cloud] Live-updates Official website link
 link_organization: "https://ds-labs-portfolio.vercel.app"             # [Dynamic Cloud] Live-updates Organization website link
 link_donation: "https://buymeacoffee.com/sahaj33"                     # [Dynamic Cloud] Live-updates Donation/Coffee link
 link_contributor_divy: "https://github.com/divyviradiya2"                 # [Dynamic Cloud] Live-updates Divy Viradiya GitHub profile link

@@ -227,6 +227,11 @@ namespace PocketMC.Infrastructure.Configuration
             settings.UserRemovedJavaVersions ??= new System.Collections.Generic.HashSet<int>();
             settings.CloudBackups ??= new CloudBackupSettings();
             settings.RemoteControl ??= new RemoteControlSettings();
+            settings.DiscordRpc ??= new DiscordRpcSettings();
+            if (settings.DiscordRpc.ShowServerAddress && settings.DiscordRpc.ShowVersionAndEngine)
+            {
+                settings.DiscordRpc.ShowVersionAndEngine = false;
+            }
             settings.RemoteControl.Users ??= new System.Collections.Generic.List<RemoteControlUser>();
             foreach (var user in settings.RemoteControl.Users)
             {

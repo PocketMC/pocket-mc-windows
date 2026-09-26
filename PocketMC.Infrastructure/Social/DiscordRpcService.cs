@@ -115,10 +115,24 @@ public sealed class DiscordRpcService : IDiscordRpcService
         {
             if (_client == null || _client.IsDisposed || _disposed) return;
 
+            var rpcSettings = _applicationState.Settings.DiscordRpc;
+            if (!rpcSettings.Enabled)
+            {
+                _client.ClearPresence();
+                return;
+            }
+
             try
             {
                 var presence = BuildPresence();
-                _client.SetPresence(presence);
+                if (presence == null)
+                {
+                    _client.ClearPresence();
+                }
+                else
+                {
+                    _client.SetPresence(presence);
+                }
             }
             catch (Exception ex)
             {
@@ -173,8 +187,10 @@ public sealed class DiscordRpcService : IDiscordRpcService
 
     // ── Presence builder ────────────────────────────────────────────────
 
-    private RichPresence BuildPresence()
+    private RichPresence? BuildPresence()
     {
+        var rpcSettings = _applicationState.Settings.DiscordRpc;
+
         // Find the highest-priority running server
         var activeProcesses = _processManager.ActiveProcesses.Values
             .Where(p => p.State == ServerState.Online ||
@@ -184,7 +200,7 @@ public sealed class DiscordRpcService : IDiscordRpcService
 
         if (activeProcesses.Count == 0)
         {
-            return BuildIdlePresence();
+            return rpcSettings.ShowIdle ? BuildIdlePresence(rpcSettings) : null;
         }
 
         // Priority: Online > Starting > Stopping, then by player count desc, then by uptime desc
@@ -202,15 +218,15 @@ public sealed class DiscordRpcService : IDiscordRpcService
         var metadata = _instanceRegistry.GetById(primary.InstanceId);
         if (metadata == null)
         {
-            return BuildIdlePresence();
+            return rpcSettings.ShowIdle ? BuildIdlePresence(rpcSettings) : null;
         }
 
-        return BuildServerPresence(primary, metadata);
+        return BuildServerPresence(primary, metadata, rpcSettings);
     }
 
-    private RichPresence BuildIdlePresence()
+    private RichPresence BuildIdlePresence(DiscordRpcSettings rpcSettings)
     {
-        return new RichPresence
+        var presence = new RichPresence
         {
             Details = "Managing Servers",
             State = "Idle",
@@ -218,48 +234,78 @@ public sealed class DiscordRpcService : IDiscordRpcService
             {
                 LargeImageKey = "pocketmc",
                 LargeImageText = $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName} Companion App"
-            },
-            Buttons = new[]
-            {
-                new Button { Label = $"Download {PocketMC.Infrastructure.Configuration.AppConfig.AppName}", Url = PocketMC.Infrastructure.Configuration.AppConfig.LinkWebsite }
             }
         };
+
+        if (rpcSettings.ShowDownloadButton)
+        {
+            presence.Buttons = new[]
+            {
+                new Button { Label = $"Download {PocketMC.Infrastructure.Configuration.AppConfig.AppName}", Url = PocketMC.Infrastructure.Configuration.AppConfig.LinkWebsite }
+            };
+        }
+
+        return presence;
     }
 
-    private RichPresence BuildServerPresence(ServerProcess process, InstanceMetadata metadata)
+    private RichPresence BuildServerPresence(ServerProcess process, InstanceMetadata metadata, DiscordRpcSettings rpcSettings)
     {
-        string engineKey = GetEngineAssetKey(metadata.ServerType);
+        string engineKey = rpcSettings.ShowSoftwareIcon ? GetEngineAssetKey(metadata.ServerType) : "pocketmc";
         string engineLabel = metadata.ServerType;
+        string serverName = rpcSettings.ShowServerName ? metadata.Name : "Minecraft Server";
 
         string details;
         string state;
-        string smallImageKey;
-        string smallImageText;
+        string? smallImageKey = rpcSettings.ShowSoftwareIcon ? "pocketmc" : null;
+        string? smallImageText = null;
 
         switch (process.State)
         {
             case ServerState.Starting:
-                details = $"Starting {metadata.Name}";
-                state = $"{engineLabel} • {metadata.MinecraftVersion}";
-                smallImageKey = "pocketmc";
-                smallImageText = "Starting...";
+                details = $"Starting {serverName}";
+                state = rpcSettings.ShowVersionAndEngine
+                    ? $"{engineLabel} • {metadata.MinecraftVersion}"
+                    : "Starting...";
+                if (rpcSettings.ShowSoftwareIcon)
+                {
+                    smallImageText = "Starting...";
+                }
                 break;
 
             case ServerState.Stopping:
-                details = $"Stopping {metadata.Name}";
-                state = $"{engineLabel} • {metadata.MinecraftVersion}";
-                smallImageKey = "pocketmc";
-                smallImageText = "Stopping...";
+                details = $"Stopping {serverName}";
+                state = rpcSettings.ShowVersionAndEngine
+                    ? $"{engineLabel} • {metadata.MinecraftVersion}"
+                    : "Stopping...";
+                if (rpcSettings.ShowSoftwareIcon)
+                {
+                    smallImageText = "Stopping...";
+                }
                 break;
 
             case ServerState.Online:
             default:
-                details = $"Hosting {metadata.Name}";
-                state = BuildOnlineStateText(process, metadata);
-
-                smallImageKey = "pocketmc";
-                smallImageText = $"{engineLabel} {metadata.MinecraftVersion}";
+                details = $"Hosting {serverName}";
+                state = BuildOnlineStateText(process, metadata, rpcSettings);
+                if (rpcSettings.ShowSoftwareIcon)
+                {
+                    smallImageText = rpcSettings.ShowVersionAndEngine
+                        ? $"{engineLabel} {metadata.MinecraftVersion}"
+                        : $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName}";
+                }
                 break;
+        }
+
+        string largeTooltip;
+        if (rpcSettings.ShowSoftwareIcon)
+        {
+            largeTooltip = rpcSettings.ShowVersionAndEngine
+                ? $"{engineLabel} {metadata.MinecraftVersion}"
+                : $"{engineLabel} Server";
+        }
+        else
+        {
+            largeTooltip = $"{PocketMC.Infrastructure.Configuration.AppConfig.AppName} Server";
         }
 
         var presence = new RichPresence
@@ -269,98 +315,115 @@ public sealed class DiscordRpcService : IDiscordRpcService
             Assets = new Assets
             {
                 LargeImageKey = engineKey,
-                LargeImageText = $"{engineLabel} {metadata.MinecraftVersion}",
+                LargeImageText = TruncateForDiscord(largeTooltip, 128),
                 SmallImageKey = smallImageKey,
-                SmallImageText = smallImageText
+                SmallImageText = TruncateForDiscord(smallImageText, 128)
             }
         };
 
-        // Add elapsed timer if session start time is available
+        // Add elapsed server uptime timer
         DateTime? sessionStart = _lifecycleService.GetSessionStartTime(process.InstanceId);
         if (sessionStart.HasValue)
         {
             presence.Timestamps = new Timestamps(sessionStart.Value.ToUniversalTime());
         }
 
-        // Always show Download PocketMC button
-        presence.Buttons = new[]
+        // Show Download PocketMC button if enabled
+        if (rpcSettings.ShowDownloadButton)
         {
-            new Button { Label = $"Download {PocketMC.Infrastructure.Configuration.AppConfig.AppName}", Url = PocketMC.Infrastructure.Configuration.AppConfig.LinkWebsite }
-        };
+            presence.Buttons = new[]
+            {
+                new Button { Label = $"Download {PocketMC.Infrastructure.Configuration.AppConfig.AppName}", Url = PocketMC.Infrastructure.Configuration.AppConfig.LinkWebsite }
+            };
+        }
 
         return presence;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
-    private string BuildOnlineStateText(ServerProcess process, InstanceMetadata metadata)
+    private string BuildOnlineStateText(ServerProcess process, InstanceMetadata metadata, DiscordRpcSettings rpcSettings)
     {
-        int playerCount = process.PlayerCount;
-        int maxPlayers = metadata.MaxPlayers;
-        string prefix = $"{playerCount}/{maxPlayers} Players";
+        var parts = new System.Collections.Generic.List<string>();
 
-        bool isBedrock = metadata.ServerType.Equals("BedrockBDS", StringComparison.OrdinalIgnoreCase) ||
-                         metadata.ServerType.Equals("Pocketmine", StringComparison.OrdinalIgnoreCase);
-
-        if (isBedrock)
+        if (rpcSettings.ShowPlayerCount)
         {
-            // Native Bedrock/Pocketmine: show bedrock tunnel address (includes external port)
-            string? bedrockAddr = _applicationState.GetBedrockTunnelAddress(metadata.Id)
-                ?? _applicationState.GetTunnelAddress(metadata.Id);
-
-            if (!string.IsNullOrEmpty(bedrockAddr))
-            {
-                return $"{prefix} • {bedrockAddr}";
-            }
-            return $"{prefix} • Bedrock BDS";
+            int playerCount = process.PlayerCount;
+            int maxPlayers = metadata.MaxPlayers;
+            parts.Add($"{playerCount}/{maxPlayers} Players");
         }
 
-        if (_geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(metadata.Id)))
+        if (rpcSettings.ShowServerAddress)
         {
-            // Java with Geyser: show Java address AND Bedrock/Geyser address
-            string? javaAddr = _applicationState.GetTunnelAddress(metadata.Id);
-            string? bedrockAddr = _applicationState.GetBedrockTunnelAddress(metadata.Id);
+            bool isBedrock = metadata.ServerType.Equals("BedrockBDS", StringComparison.OrdinalIgnoreCase) ||
+                             metadata.ServerType.Equals("Pocketmine", StringComparison.OrdinalIgnoreCase);
 
-            if (!string.IsNullOrEmpty(javaAddr) && !string.IsNullOrEmpty(bedrockAddr))
+            if (isBedrock)
             {
-                return $"{prefix} • Java: {javaAddr} • Bedrock: {bedrockAddr}";
-            }
-            if (!string.IsNullOrEmpty(javaAddr))
-            {
-                return $"{prefix} • Java: {javaAddr}";
-            }
-            if (!string.IsNullOrEmpty(bedrockAddr))
-            {
-                return $"{prefix} • Bedrock: {bedrockAddr}";
-            }
+                string? bedrockAddr = _applicationState.GetBedrockTunnelAddress(metadata.Id)
+                    ?? _applicationState.GetTunnelAddress(metadata.Id);
 
-            return $"{prefix} • {metadata.ServerType} + Geyser";
+                if (!string.IsNullOrEmpty(bedrockAddr))
+                {
+                    parts.Add(bedrockAddr);
+                }
+            }
+            else if (_geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(metadata.Id)))
+            {
+                string? javaAddr = _applicationState.GetTunnelAddress(metadata.Id);
+                string? bedrockAddr = _applicationState.GetBedrockTunnelAddress(metadata.Id);
+
+                if (!string.IsNullOrEmpty(javaAddr) && !string.IsNullOrEmpty(bedrockAddr))
+                {
+                    parts.Add($"Java: {javaAddr}");
+                    parts.Add($"Bedrock: {bedrockAddr}");
+                }
+                else if (!string.IsNullOrEmpty(javaAddr))
+                {
+                    parts.Add(javaAddr);
+                }
+                else if (!string.IsNullOrEmpty(bedrockAddr))
+                {
+                    parts.Add($"Bedrock: {bedrockAddr}");
+                }
+            }
+            else
+            {
+                string? normalAddr = _applicationState.GetTunnelAddress(metadata.Id);
+                if (!string.IsNullOrEmpty(normalAddr))
+                {
+                    parts.Add(normalAddr);
+                }
+            }
+        }
+        else if (rpcSettings.ShowVersionAndEngine)
+        {
+            parts.Add($"{metadata.ServerType} {metadata.MinecraftVersion}");
         }
 
-        // Standard Java server
-        string? normalAddr = _applicationState.GetTunnelAddress(metadata.Id);
-        if (!string.IsNullOrEmpty(normalAddr))
+        if (parts.Count > 0)
         {
-            return $"{prefix} • {normalAddr}";
+            return string.Join(" • ", parts);
         }
-        return $"{prefix} • {metadata.ServerType}";
+
+        return "Server Online";
     }
 
     private static string GetEngineAssetKey(string serverType)
     {
         if (string.IsNullOrEmpty(serverType)) return "pocketmc";
         string typeLower = serverType.ToLowerInvariant();
-        if (typeLower.Contains("paper")) return "paper";
-        if (typeLower.Contains("fabric")) return "fabric";
+        if (typeLower.Contains("paper") || typeLower.Contains("purpur") || typeLower.Contains("spigot") || typeLower.Contains("bukkit")) return "paper";
+        if (typeLower.Contains("fabric") || typeLower.Contains("quilt")) return "fabric";
         if (typeLower.Contains("neoforge")) return "neoforge";
         if (typeLower.Contains("forge")) return "forge";
-        if (typeLower.Contains("bedrock")) return "bedrock";
+        if (typeLower.Contains("bedrock") || typeLower.Contains("bds")) return "bedrock";
         if (typeLower.Contains("pocketmine")) return "pocketmine";
         if (typeLower.Contains("vanilla")) return "vanilla";
         return "pocketmc";
     }
 
-    private static string TruncateForDiscord(string value, int maxLength)
+    private static string? TruncateForDiscord(string? value, int maxLength)
     {
         if (string.IsNullOrEmpty(value)) return value;
         // Discord requires at least 2 characters for Details/State

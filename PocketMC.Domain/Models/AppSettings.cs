@@ -67,7 +67,12 @@ namespace PocketMC.Domain.Models
         public int ConsoleBufferSize { get; set; } = 5000;
 
         // Discord Rich Presence
-        public bool EnableDiscordRpc { get; set; } = true;
+        public DiscordRpcSettings DiscordRpc { get; set; } = new();
+        public bool EnableDiscordRpc
+        {
+            get => DiscordRpc.Enabled;
+            set => DiscordRpc.Enabled = value;
+        }
 
         // User Intent Flags
         public System.Collections.Generic.HashSet<int> UserRemovedJavaVersions { get; set; } = new();
@@ -91,5 +96,18 @@ namespace PocketMC.Domain.Models
 
         // What's New
         public string? LastSeenChangelogVersion { get; set; }
+    }
+
+    public class DiscordRpcSettings
+    {
+        public bool Enabled { get; set; } = true;
+        public bool ShowIdle { get; set; } = true;
+        public bool ShowServerName { get; set; } = false;
+        public bool ShowServerAddress { get; set; } = false;
+        public bool ShowPlayerCount { get; set; } = true;
+        public bool ShowVersionAndEngine { get; set; } = true;
+        public bool ShowUptimeTimer { get; set; } = true;
+        public bool ShowSoftwareIcon { get; set; } = false;
+        public bool ShowDownloadButton { get; set; } = true;
     }
 }

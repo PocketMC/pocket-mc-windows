@@ -231,23 +231,6 @@
                                              Checked="ToggleKeepComputerAwakeWhileServersRunning_Changed"
                                              Unchecked="ToggleKeepComputerAwakeWhileServersRunning_Changed"/>
                         </Grid>
-                        <Grid Margin="0,12,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Discord Rich Presence" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Display your server type, player count, uptime, and a Join button directly on your Discord profile while a server is running." 
-                                           TextWrapping="Wrap" 
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                           FontSize="12" 
-                                           Margin="0,4,24,0"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch x:Name="ToggleDiscordRpc" Grid.Column="1" VerticalAlignment="Center" 
-                                             Checked="ToggleDiscordRpc_Changed" 
-                                             Unchecked="ToggleDiscordRpc_Changed"/>
-                        </Grid>
                     </StackPanel>
                 </ui:CardExpander>
 
@@ -619,8 +602,396 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                <!-- DISCORD RICH PRESENCE SECTION -->
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Games24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Discord Rich Presence" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Customize what is shown on your Discord profile when running servers."
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
 
+                    <StackPanel Margin="16,8,16,16">
+                        <!-- Master Switch: Enable Discord RPC -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Enable Discord Rich Presence" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Show your server status and details on your Discord profile."
+                                           TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch x:Name="ToggleDiscordRpc" Grid.Column="1" VerticalAlignment="Center"
+                                             Checked="ToggleDiscordRpc_Changed" Unchecked="ToggleDiscordRpc_Changed"/>
+                        </Grid>
 
+                        <Separator Background="{DynamicResource ControlStrokeColorDefaultBrush}" Margin="0,0,0,16"/>
+
+                        <!-- Sub-options container disabled if master toggle is off -->
+                        <StackPanel x:Name="DiscordRpcOptionsPanel" IsEnabled="{Binding IsChecked, ElementName=ToggleDiscordRpc}">
+                            <!-- Live Profile Previews -->
+                            <Grid Margin="0,0,0,20">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0"
+                                           Text="Live Profile Preview"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           Margin="0,0,0,10"/>
+
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="16"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Column 0: Active Server Preview -->
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Active Server"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Margin="2,0,0,6"/>
+                                        <ui:Card x:Name="PreviewOnlineCard"
+                                                 Padding="14,12"
+                                                 VerticalAlignment="Stretch">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- Header: Playing ... -->
+                                                <Grid Grid.Row="0" Margin="0,0,0,10">
+                                                    <TextBlock Text="Playing"
+                                                               FontSize="12"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock Text="•••"
+                                                               FontSize="12"
+                                                               FontWeight="Bold"
+                                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                               HorizontalAlignment="Right"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,2,0"/>
+                                                </Grid>
+
+                                                <!-- Main Content: Artwork + Text -->
+                                                <Grid Grid.Row="1">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Artwork (56x56) -->
+                                                    <Grid Grid.Column="0" Width="56" Height="56" Margin="0,0,12,0" VerticalAlignment="Top">
+                                                        <!-- Server Software Logo (Paper) (borderless) -->
+                                                        <Border x:Name="PreviewOnlineSoftwareBorder"
+                                                                CornerRadius="8"
+                                                                ClipToBounds="True">
+                                                            <Image x:Name="PreviewOnlineSoftwareLogo"
+                                                                   Source="pack://application:,,,/Assets/papermc.png"
+                                                                   Stretch="Uniform"
+                                                                   RenderOptions.BitmapScalingMode="Fant"/>
+                                                        </Border>
+
+                                                        <!-- PocketMC Logo Fallback (borderless) -->
+                                                        <Image x:Name="PreviewOnlinePocketFallback"
+                                                               Source="pack://application:,,,/Assets/logo.png"
+                                                               Stretch="Uniform"
+                                                               RenderOptions.BitmapScalingMode="Fant"
+                                                               Visibility="Collapsed"/>
+
+                                                        <!-- Small PocketMC Badge -->
+                                                        <Border x:Name="PreviewOnlineSmallBadge"
+                                                                Width="22" Height="22"
+                                                                CornerRadius="11"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Bottom"
+                                                                Margin="0,0,-3,-3"
+                                                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                                                BorderBrush="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                                                BorderThickness="2">
+                                                            <Image Source="pack://application:,,,/Assets/logo.png"
+                                                                   Stretch="Uniform"
+                                                                   RenderOptions.BitmapScalingMode="Fant"/>
+                                                        </Border>
+                                                    </Grid>
+
+                                                    <!-- Profile Metadata Lines -->
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="PocketMC"
+                                                                   FontWeight="Bold"
+                                                                   FontSize="13"
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock x:Name="PreviewOnlineDetails"
+                                                                   Text="Hosting Survival World"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                                   Margin="0,2,0,0"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   TextWrapping="NoWrap"/>
+                                                        <TextBlock x:Name="PreviewOnlineState"
+                                                                   Text="0/20 Players • cynthia-publishing.tun.ply.gg"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                                   Margin="0,1,0,0"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   TextWrapping="NoWrap"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0" VerticalAlignment="Center">
+                                                            <ui:SymbolIcon Symbol="Games24"
+                                                                           FontSize="13"
+                                                                           Foreground="#237F52"
+                                                                           VerticalAlignment="Center"
+                                                                           Margin="0,0,5,0"/>
+                                                            <TextBlock Text="2:30"
+                                                                       FontSize="12"
+                                                                       FontWeight="Medium"
+                                                                       Foreground="#237F52"
+                                                                       VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <!-- Download Action Button -->
+                                                <ui:Button x:Name="PreviewOnlineButton"
+                                                           Grid.Row="2"
+                                                           Content="Download PocketMC"
+                                                           Appearance="Secondary"
+                                                           HorizontalAlignment="Stretch"
+                                                           Height="32"
+                                                           Margin="0,12,0,0"/>
+                                            </Grid>
+                                        </ui:Card>
+                                    </StackPanel>
+
+                                    <!-- Column 2: Idle Status Preview -->
+                                    <StackPanel Grid.Column="2">
+                                        <Grid Margin="2,0,0,6">
+                                            <TextBlock Text="Idle State"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock x:Name="PreviewIdleStatusText"
+                                                       Text="Hidden when idle"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                                                       HorizontalAlignment="Right"
+                                                       Visibility="Collapsed"/>
+                                        </Grid>
+                                        <ui:Card x:Name="PreviewIdleCard"
+                                                 Padding="14,12"
+                                                 VerticalAlignment="Stretch">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- Header: Playing ... -->
+                                                <Grid Grid.Row="0" Margin="0,0,0,10">
+                                                    <TextBlock Text="Playing"
+                                                               FontSize="12"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock Text="•••"
+                                                               FontSize="12"
+                                                               FontWeight="Bold"
+                                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                               HorizontalAlignment="Right"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,2,0"/>
+                                                </Grid>
+
+                                                <!-- Main Content: Artwork + Text -->
+                                                <Grid Grid.Row="1">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- PocketMC Logo (borderless) -->
+                                                    <Image Grid.Column="0"
+                                                           Width="56" Height="56"
+                                                           Margin="0,0,12,0"
+                                                           VerticalAlignment="Top"
+                                                           Source="pack://application:,,,/Assets/logo.png"
+                                                           Stretch="Uniform"
+                                                           RenderOptions.BitmapScalingMode="Fant"/>
+
+                                                    <!-- Profile Metadata Lines -->
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="PocketMC"
+                                                                   FontWeight="Bold"
+                                                                   FontSize="13"
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="Managing Servers"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                                   Margin="0,2,0,0"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   TextWrapping="NoWrap"/>
+                                                        <TextBlock Text="Idle"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                                   Margin="0,1,0,0"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   TextWrapping="NoWrap"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0" VerticalAlignment="Center">
+                                                            <ui:SymbolIcon Symbol="Games24"
+                                                                           FontSize="13"
+                                                                           Foreground="#237F52"
+                                                                           VerticalAlignment="Center"
+                                                                           Margin="0,0,5,0"/>
+                                                            <TextBlock Text="0:55"
+                                                                       FontSize="12"
+                                                                       FontWeight="Medium"
+                                                                       Foreground="#237F52"
+                                                                       VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Grid>
+
+                                                <!-- Download Action Button -->
+                                                <ui:Button x:Name="PreviewIdleButton"
+                                                           Grid.Row="2"
+                                                           Content="Download PocketMC"
+                                                           Appearance="Secondary"
+                                                           HorizontalAlignment="Stretch"
+                                                           Height="32"
+                                                           Margin="0,12,0,0"/>
+                                            </Grid>
+                                        </ui:Card>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+
+                            <Separator Background="{DynamicResource ControlStrokeColorDefaultBrush}" Margin="0,0,0,16"/>
+
+                            <!-- Show Idle Presence -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Show status when idle" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Keep PocketMC visible on your Discord profile even when no servers are running."
+                                               TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                                </StackPanel>
+                                <ui:ToggleSwitch x:Name="ToggleDiscordShowIdle" Grid.Column="1" VerticalAlignment="Center"
+                                                 Checked="DiscordRpcOption_Changed" Unchecked="DiscordRpcOption_Changed"/>
+                            </Grid>
+
+                            <!-- Show Server Name -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Show server instance name" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Display your custom server name instead of a generic Minecraft title."
+                                               TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                                </StackPanel>
+                                <ui:ToggleSwitch x:Name="ToggleDiscordShowServerName" Grid.Column="1" VerticalAlignment="Center"
+                                                 Checked="DiscordRpcOption_Changed" Unchecked="DiscordRpcOption_Changed"/>
+                            </Grid>
+
+                            <!-- Show Player Count -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Show online player count" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Display the number of connected players and total server capacity."
+                                               TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                                </StackPanel>
+                                <ui:ToggleSwitch x:Name="ToggleDiscordShowPlayerCount" Grid.Column="1" VerticalAlignment="Center"
+                                                 Checked="DiscordRpcOption_Changed" Unchecked="DiscordRpcOption_Changed"/>
+                            </Grid>
+
+                            <!-- Show Server Address -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Show server connection address" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Display your server address so friends can see where to connect."
+                                               TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                                </StackPanel>
+                                <ui:ToggleSwitch x:Name="ToggleDiscordShowServerAddress" Grid.Column="1" VerticalAlignment="Center"
+                                                 Checked="DiscordRpcOption_Changed" Unchecked="DiscordRpcOption_Changed"/>
+                            </Grid>
+
+                            <!-- Show Server Software and Version -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Show server software and version" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Display the server software platform and Minecraft version."
+                                               TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                                </StackPanel>
+                                <ui:ToggleSwitch x:Name="ToggleDiscordShowVersionAndEngine" Grid.Column="1" VerticalAlignment="Center"
+                                                 Checked="DiscordRpcOption_Changed" Unchecked="DiscordRpcOption_Changed"/>
+                            </Grid>
+
+                            <!-- Show Server Software Logo -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Show server software logo" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Display the server software icon instead of the default PocketMC logo."
+                                               TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                                </StackPanel>
+                                <ui:ToggleSwitch x:Name="ToggleDiscordShowSoftwareIcon" Grid.Column="1" VerticalAlignment="Center"
+                                                 Checked="DiscordRpcOption_Changed" Unchecked="DiscordRpcOption_Changed"/>
+                            </Grid>
+
+                            <!-- Show Download Button -->
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Show PocketMC download button" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="Add a button on your profile linking friends to download PocketMC."
+                                               TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                                </StackPanel>
+                                <ui:ToggleSwitch x:Name="ToggleDiscordShowDownloadButton" Grid.Column="1" VerticalAlignment="Center"
+                                                 Checked="DiscordRpcOption_Changed" Unchecked="DiscordRpcOption_Changed"/>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </ui:CardExpander>
 
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Cloud24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>

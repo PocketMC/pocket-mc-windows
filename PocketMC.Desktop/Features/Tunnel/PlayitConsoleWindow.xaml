@@ -100,11 +100,11 @@
                 <!-- Search Logs Box -->
                 <ui:TextBox x:Name="TxtLogSearch" Grid.Column="4"
                             Height="32"
-                            PlaceholderText="Filter logs..."
+                            PlaceholderText="Filter logs (e.g. error, -retry)..."
                             VerticalAlignment="Center"
                             TextChanged="TxtLogSearch_TextChanged"
                             KeyDown="TxtLogSearch_KeyDown"
-                            ToolTip="Filter logs by keyword"/>
+                            ToolTip="Filter logs by keyword or level (use -keyword to exclude)"/>
             </Grid>
 
             <!-- Console Log Output Area -->
@@ -120,16 +120,16 @@
                              IsReadOnly="True"
                              IsDocumentEnabled="True"
                              VerticalScrollBarVisibility="Auto"
-                             HorizontalScrollBarVisibility="Auto"
-                             Padding="4,2">
+                             HorizontalScrollBarVisibility="Disabled"
+                             Padding="6,4,16,4">
                     <RichTextBox.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="Copy" Command="ApplicationCommands.Copy" Icon="{ui:SymbolIcon Copy24}"/>
                             <MenuItem Header="Select All" Command="ApplicationCommands.SelectAll" Icon="{ui:SymbolIcon SelectAllOn24}"/>
                         </ContextMenu>
                     </RichTextBox.ContextMenu>
-                    <FlowDocument PagePadding="0" Background="Transparent" FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="13">
-                        <Paragraph x:Name="LogParagraph" Margin="0" LineHeight="19" />
+                    <FlowDocument PagePadding="8,6,28,6" Background="Transparent" FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="12.5">
+                        <Paragraph x:Name="LogParagraph" Margin="0" LineHeight="21" />
                     </FlowDocument>
                 </RichTextBox>
             </Border>
@@ -149,7 +149,10 @@
                            Text=""
                            FontSize="11"
                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                           VerticalAlignment="Center"/>
+                           VerticalAlignment="Center"
+                           Cursor="Hand"
+                           ToolTip="Click to show playit-agent.log in File Explorer"
+                           MouseLeftButtonUp="TxtLogFilePath_MouseLeftButtonUp"/>
             </Grid>
         </Grid>
     </Grid>

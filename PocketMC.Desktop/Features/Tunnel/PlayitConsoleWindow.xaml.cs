@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using PocketMC.Application.Services;
 using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Domain.Models;
-using PocketMC.Infrastructure;
 using PocketMC.Infrastructure.Tunnel;
 using Wpf.Ui.Controls;
 
@@ -25,23 +24,36 @@ namespace PocketMC.Desktop.Features.Tunnel
         private readonly PlayitAgentService _playitAgentService;
         private readonly ApplicationState _applicationState;
         private readonly ConcurrentQueue<string> _pendingLines = new();
-        private readonly List<string> _allLogs = new();
+        private readonly List<PlayitLogEntry> _allEntries = new();
         private readonly DispatcherTimer _flushTimer;
         private string _searchTerm = string.Empty;
 
+        private Run? _lastRepeatRun;
+        private PlayitLogEntry? _lastAppendedEntry;
+
+        private static readonly SolidColorBrush TimestampBrush = new(Color.FromRgb(127, 132, 156));
+        private static readonly SolidColorBrush ModuleBrush = new(Color.FromRgb(180, 190, 254));
+        private static readonly SolidColorBrush RetryBrush = new(Color.FromRgb(250, 179, 135));
+        private static readonly SolidColorBrush RepeatBrush = new(Color.FromRgb(148, 226, 213));
         private static readonly SolidColorBrush ErrorBrush = new(Color.FromRgb(243, 139, 168));
         private static readonly SolidColorBrush WarnBrush = new(Color.FromRgb(249, 226, 175));
         private static readonly SolidColorBrush SuccessBrush = new(Color.FromRgb(166, 227, 161));
         private static readonly SolidColorBrush DebugBrush = new(Color.FromRgb(140, 145, 160));
         private static readonly SolidColorBrush InfoBrush = new(Color.FromRgb(205, 214, 244));
+        private static readonly SolidColorBrush MessageTextBrush = new(Color.FromRgb(205, 214, 244));
 
         static PlayitConsoleWindow()
         {
+            TimestampBrush.Freeze();
+            ModuleBrush.Freeze();
+            RetryBrush.Freeze();
+            RepeatBrush.Freeze();
             ErrorBrush.Freeze();
             WarnBrush.Freeze();
             SuccessBrush.Freeze();
             DebugBrush.Freeze();
             InfoBrush.Freeze();
+            MessageTextBrush.Freeze();
         }
 
         public PlayitConsoleWindow(PlayitAgentService playitAgentService, ApplicationState applicationState)
@@ -65,19 +77,22 @@ namespace PocketMC.Desktop.Features.Tunnel
             TxtLogFilePath.Text = _playitAgentService.GetLogFilePath();
             UpdateStatusDisplay();
 
-            // Load existing history
+            // Load existing history and group consecutive transient duplicates
             var recent = _playitAgentService.GetRecentLogs();
             foreach (var line in recent)
             {
-                _allLogs.Add(line);
-                AppendRun(line);
+                var entry = PlayitLogFormatter.Parse(line);
+                if (_allEntries.Count > 0 && PlayitLogFormatter.CanMerge(_allEntries[^1], entry))
+                {
+                    _allEntries[^1].RepeatCount++;
+                }
+                else
+                {
+                    _allEntries.Add(entry);
+                }
             }
 
-            UpdateLineCount();
-            if (BtnAutoScroll.IsChecked == true)
-            {
-                LogRichTextBox.ScrollToEnd();
-            }
+            RebuildDisplay();
 
             // Subscribe to live events
             _playitAgentService.OnLogReceived += OnLogReceived;
@@ -147,11 +162,30 @@ namespace PocketMC.Desktop.Features.Tunnel
             while (_pendingLines.TryDequeue(out string? line))
             {
                 if (line == null) continue;
-                _allLogs.Add(line);
 
-                if (string.IsNullOrEmpty(_searchTerm) || line.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
+                var entry = PlayitLogFormatter.Parse(line);
+
+                // Check if this entry can be collapsed with the last one
+                if (_allEntries.Count > 0 && PlayitLogFormatter.CanMerge(_allEntries[^1], entry))
                 {
-                    AppendRun(line);
+                    _allEntries[^1].RepeatCount++;
+
+                    // If currently displaying this entry, update repeat indicator in-place
+                    if (_lastRepeatRun != null && _lastAppendedEntry == _allEntries[^1])
+                    {
+                        _lastRepeatRun.Text = $" [x{_allEntries[^1].RepeatCount}]";
+                        _lastRepeatRun.Foreground = RepeatBrush;
+                        _lastRepeatRun.FontWeight = FontWeights.SemiBold;
+                    }
+                    appendedAny = true;
+                    continue;
+                }
+
+                _allEntries.Add(entry);
+
+                if (PlayitLogFormatter.MatchesSearch(entry, _searchTerm))
+                {
+                    AppendEntryToDocument(entry);
                     appendedAny = true;
                 }
             }
@@ -166,16 +200,55 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
         }
 
-        private void AppendRun(string line)
+        private void AppendEntryToDocument(PlayitLogEntry entry)
         {
-            SolidColorBrush brush = ClassifyLogColor(line);
-            var run = new Run(line + Environment.NewLine)
-            {
-                Foreground = brush
-            };
-            LogParagraph.Inlines.Add(run);
+            var span = new Span();
 
-            // Limit flow document inlines to prevent excessive memory usage
+            // 1. Timestamp: [HH:mm:ss]
+            span.Inlines.Add(new Run($"[{entry.TimeText}] ")
+            {
+                Foreground = TimestampBrush
+            });
+
+            // 2. Level Badge: [INFO ], [WARN ], [RETRY], [READY], [ERROR]
+            SolidColorBrush badgeBrush = GetBadgeBrush(entry);
+            span.Inlines.Add(new Run($"{entry.LevelBadge.PadRight(5)} ")
+            {
+                Foreground = badgeBrush,
+                FontWeight = FontWeights.SemiBold
+            });
+
+            // 3. Module Tag: [Control], [Daemon], etc.
+            span.Inlines.Add(new Run($"[{entry.Module}] ")
+            {
+                Foreground = ModuleBrush
+            });
+
+            // 4. Message Content
+            SolidColorBrush msgBrush = GetMessageBrush(entry);
+            span.Inlines.Add(new Run(entry.Message)
+            {
+                Foreground = msgBrush
+            });
+
+            // 5. Repeat count badge if collapsed
+            string repeatText = entry.RepeatCount > 1 ? $" [x{entry.RepeatCount}]" : string.Empty;
+            var repeatRun = new Run(repeatText)
+            {
+                Foreground = RepeatBrush,
+                FontWeight = FontWeights.SemiBold
+            };
+            span.Inlines.Add(repeatRun);
+
+            // 6. Trailing newline
+            span.Inlines.Add(new Run(Environment.NewLine));
+
+            LogParagraph.Inlines.Add(span);
+
+            _lastAppendedEntry = entry;
+            _lastRepeatRun = repeatRun;
+
+            // Prune excess lines to preserve memory and rendering performance
             if (LogParagraph.Inlines.Count > 3000)
             {
                 while (LogParagraph.Inlines.Count > 2500)
@@ -185,54 +258,58 @@ namespace PocketMC.Desktop.Features.Tunnel
             }
         }
 
-        private static SolidColorBrush ClassifyLogColor(string line)
+        private static SolidColorBrush GetBadgeBrush(PlayitLogEntry entry)
         {
-            if (line.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("error=", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("panic", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("failed", StringComparison.OrdinalIgnoreCase))
-            {
-                return ErrorBrush;
-            }
+            if (entry.IsTransientRetry) return RetryBrush;
 
-            if (line.Contains("WARN", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("warn", StringComparison.OrdinalIgnoreCase))
+            return entry.Level switch
             {
-                return WarnBrush;
-            }
+                PlayitLogLevel.Error => ErrorBrush,
+                PlayitLogLevel.Warn => WarnBrush,
+                PlayitLogLevel.Success => SuccessBrush,
+                PlayitLogLevel.Debug => DebugBrush,
+                PlayitLogLevel.Trace => DebugBrush,
+                _ => InfoBrush
+            };
+        }
 
-            if (line.Contains("playit connected", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("tunnels loaded", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase))
+        private static SolidColorBrush GetMessageBrush(PlayitLogEntry entry)
+        {
+            if (entry.IsTransientRetry) return RetryBrush;
+
+            return entry.Level switch
             {
-                return SuccessBrush;
-            }
-
-            if (line.Contains("DEBUG", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("TRACE", StringComparison.OrdinalIgnoreCase))
-            {
-                return DebugBrush;
-            }
-
-            return InfoBrush;
+                PlayitLogLevel.Error => ErrorBrush,
+                PlayitLogLevel.Warn => WarnBrush,
+                PlayitLogLevel.Success => SuccessBrush,
+                PlayitLogLevel.Debug => DebugBrush,
+                _ => MessageTextBrush
+            };
         }
 
         private void UpdateLineCount()
         {
-            int total = _allLogs.Count;
+            int total = _allEntries.Count;
             int displayed = LogParagraph.Inlines.Count;
             TxtLogCount.Text = string.IsNullOrEmpty(_searchTerm)
-                ? $"{total:N0} lines"
-                : $"{displayed:N0} of {total:N0} lines matching \"{_searchTerm}\"";
+                ? $"{total:N0} events"
+                : $"{displayed:N0} of {total:N0} events matching \"{_searchTerm}\"";
         }
 
         private async void BtnCopyLogs_Click(object sender, RoutedEventArgs e)
         {
-            IEnumerable<string> source = string.IsNullOrEmpty(_searchTerm)
-                ? _allLogs
-                : _allLogs.Where(l => l.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+            IEnumerable<PlayitLogEntry> source = string.IsNullOrEmpty(_searchTerm)
+                ? _allEntries
+                : _allEntries.Where(entry => PlayitLogFormatter.MatchesSearch(entry, _searchTerm));
 
-            string text = string.Join(Environment.NewLine, source);
+            var sb = new StringBuilder();
+            foreach (var entry in source)
+            {
+                string repeat = entry.RepeatCount > 1 ? $" [x{entry.RepeatCount}]" : string.Empty;
+                sb.AppendLine($"[{entry.TimeText}] [{entry.LevelBadge}] [{entry.Module}] {entry.Message}{repeat}");
+            }
+
+            string text = sb.ToString();
             if (!string.IsNullOrEmpty(text))
             {
                 bool copied = await ClipboardHelper.TrySetTextAsync(text);
@@ -253,7 +330,9 @@ namespace PocketMC.Desktop.Features.Tunnel
         private void BtnClearLogs_Click(object sender, RoutedEventArgs e)
         {
             LogParagraph.Inlines.Clear();
-            _allLogs.Clear();
+            _allEntries.Clear();
+            _lastAppendedEntry = null;
+            _lastRepeatRun = null;
             UpdateLineCount();
         }
 
@@ -282,19 +361,43 @@ namespace PocketMC.Desktop.Features.Tunnel
         private void RebuildDisplay()
         {
             LogParagraph.Inlines.Clear();
-            IEnumerable<string> filtered = string.IsNullOrEmpty(_searchTerm)
-                ? _allLogs
-                : _allLogs.Where(l => l.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+            _lastAppendedEntry = null;
+            _lastRepeatRun = null;
 
-            foreach (var line in filtered)
+            IEnumerable<PlayitLogEntry> filtered = string.IsNullOrEmpty(_searchTerm)
+                ? _allEntries
+                : _allEntries.Where(entry => PlayitLogFormatter.MatchesSearch(entry, _searchTerm));
+
+            foreach (var entry in filtered)
             {
-                AppendRun(line);
+                AppendEntryToDocument(entry);
             }
 
             UpdateLineCount();
             if (BtnAutoScroll.IsChecked == true)
             {
                 LogRichTextBox.ScrollToEnd();
+            }
+        }
+
+        private void TxtLogFilePath_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            string logPath = _playitAgentService.GetLogFilePath();
+            if (!string.IsNullOrEmpty(logPath) && File.Exists(logPath))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"/select,\"{logPath}\"",
+                        UseShellExecute = true
+                    });
+                }
+                catch
+                {
+                    // Ignore explorer launch issues
+                }
             }
         }
 

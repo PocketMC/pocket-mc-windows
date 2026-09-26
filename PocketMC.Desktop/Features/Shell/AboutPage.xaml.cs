@@ -41,7 +41,7 @@ namespace PocketMC.Desktop.Features.Shell
             TxtOrgName.Text = AppConfig.OrganizationName;
             TxtOrgTagline.Text = AppConfig.OrganizationTagline;
             TxtCommunityDesc.Text = $"Join our Discord server to get help, share tips, and connect with other {AppConfig.AppName} users.";
-            TxtDonationDesc.Text = $"Support the development of {AppConfig.AppName}! If you love this project and find it useful, consider buying us a coffee.";
+            TxtDonationDesc.Text = $"Support the development of {AppConfig.AppName}! If you love this project and find it useful, consider buying us a coffee or submitting feedback.";
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -118,6 +118,11 @@ namespace PocketMC.Desktop.Features.Shell
         private void OpenOrganizationWebsite_Click(object sender, RoutedEventArgs e)
         {
             OpenLink(AppConfig.LinkOrganization);
+        }
+
+        private void OpenWebsite_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLink(AppConfig.LinkWebsite);
         }
 
         private void OpenDivyGitHub_Click(object sender, RoutedEventArgs e)

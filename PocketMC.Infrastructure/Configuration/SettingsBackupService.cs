@@ -131,6 +131,7 @@ namespace PocketMC.Infrastructure.Configuration
                 package.Discord = new DiscordBackupData
                 {
                     EnableDiscordRpc = settings.EnableDiscordRpc,
+                    DiscordRpc = CloneObject(settings.DiscordRpc),
                     DiscordUserId = settings.DiscordUserId,
                     DiscordApiUrl = settings.DiscordApiUrl,
                     DiscordApiKey = settings.DiscordApiKey
@@ -330,7 +331,14 @@ namespace PocketMC.Infrastructure.Configuration
             // Discord
             if (categoriesToRestore.IncludeDiscord && package.Discord != null)
             {
-                targetSettings.EnableDiscordRpc = package.Discord.EnableDiscordRpc;
+                if (package.Discord.DiscordRpc != null)
+                {
+                    targetSettings.DiscordRpc = CloneObject(package.Discord.DiscordRpc) ?? new DiscordRpcSettings();
+                }
+                else
+                {
+                    targetSettings.EnableDiscordRpc = package.Discord.EnableDiscordRpc;
+                }
                 targetSettings.DiscordUserId = package.Discord.DiscordUserId;
                 targetSettings.DiscordApiUrl = package.Discord.DiscordApiUrl;
                 targetSettings.DiscordApiKey = package.Discord.DiscordApiKey;

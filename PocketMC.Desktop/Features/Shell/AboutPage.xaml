@@ -10,11 +10,20 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Page Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,20">
-            <ui:TextBlock x:Name="TxtAboutTitle" FontTypography="Title" Text="About PocketMC" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
-            <TextBlock x:Name="TxtVersion" Text="Version 1.0.0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
+            <ui:TextBlock x:Name="TxtAboutTitle"
+                          FontTypography="Title"
+                          Text="About PocketMC"
+                          Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                          Margin="0,0,0,4"/>
+            <TextBlock x:Name="TxtVersion"
+                       Text="Version 1.0.0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       FontSize="13"/>
         </StackPanel>
 
+        <!-- Main Scrollable Content -->
         <ScrollViewer x:Name="AboutScrollViewer"
                       Grid.Row="1"
                       VerticalScrollBarVisibility="Auto"
@@ -23,348 +32,453 @@
                       PanningMode="VerticalOnly"
                       Padding="0,0,16,0">
             <StackPanel>
-                <ui:Card Padding="24" VerticalAlignment="Top" Margin="0,0,0,12">
-                <Grid>
+                <!-- Hero App & Organization Card -->
+                <ui:Card Padding="24" VerticalAlignment="Top" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- App Logo -->
+                        <Border Grid.Column="0"
+                                Width="108" Height="108"
+                                CornerRadius="16"
+                                Margin="0,0,24,0"
+                                VerticalAlignment="Center"
+                                UseLayoutRounding="True"
+                                SnapsToDevicePixels="True">
+                            <Border.Clip>
+                                <RectangleGeometry Rect="0,0,108,108" RadiusX="16" RadiusY="16"/>
+                            </Border.Clip>
+                            <Image Source="pack://application:,,,/Assets/logo_highres.png"
+                                   Stretch="UniformToFill"
+                                   UseLayoutRounding="True"
+                                   SnapsToDevicePixels="True"
+                                   RenderOptions.BitmapScalingMode="Fant"
+                                   RenderOptions.EdgeMode="Aliased"/>
+                        </Border>
+
+                        <!-- Info Content -->
+                        <StackPanel Grid.Column="1">
+                            <TextBlock x:Name="TxtAppTitle"
+                                       Text="PocketMC Desktop"
+                                       FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtAppDescription"
+                                       Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12"
+                                       FontSize="13"/>
+
+                            <!-- Studio Attribution -->
+                            <Border Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}"
+                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,8"
+                                    Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Symbol="Building24"
+                                                   Margin="0,0,10,0"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Crafted by "
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock x:Name="TxtOrgName"
+                                                       Text="DS Labs"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="TxtOrgTagline"
+                                                   Text="Selective Digital Studio · Building Software That Works"
+                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                   FontSize="11"
+                                                   Margin="0,2,0,0"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Quick Action Buttons -->
+                            <WrapPanel Margin="0,0,0,0">
+                                <ui:Button Content="Visit Website"
+                                           Appearance="Secondary"
+                                           Click="OpenWebsite_Click"
+                                           Icon="{ui:SymbolIcon Globe24}"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="GitHub"
+                                           Appearance="Secondary"
+                                           Click="OpenGitHub_Click"
+                                           Icon="{ui:SymbolIcon Code24}"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="View What's New"
+                                           Appearance="Primary"
+                                           Click="WhatsNew_Click"
+                                           Icon="{ui:SymbolIcon Megaphone24}"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="Visit Studio"
+                                           Appearance="Secondary"
+                                           Click="OpenOrganizationWebsite_Click"
+                                           Icon="{ui:SymbolIcon Building24}"
+                                           Margin="0,0,8,8"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Grid>
+                </ui:Card>
+
+                <!-- Unified Team & Contributors Section -->
+                <ui:CardExpander IsExpanded="True"
+                                 Icon="{ui:SymbolIcon PeopleStar24}"
+                                 Margin="0,0,0,14">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Team &amp; Contributors"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"/>
+                                <TextBlock Text="The creators, maintainers, and community members building and supporting PocketMC."
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,0,0"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,10,16,16">
+                        <!-- Subsection: Co-Founders & Core Team -->
+                        <TextBlock Text="Co-Founders &amp; Core Team"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,2,0,8"/>
+                        <WrapPanel Margin="0,0,0,8">
+                            <ui:Button Click="OpenDivyGitHub_Click"
+                                       Appearance="Secondary"
+                                       Padding="8,6"
+                                       CornerRadius="8"
+                                       Cursor="Hand"
+                                       ToolTip="Divy Viradiya · Co-Founder (github.com/divyviradiya2)"
+                                       Width="210"
+                                       Height="54"
+                                       HorizontalContentAlignment="Left"
+                                       Margin="0,0,10,10">
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0" Width="38" Height="38" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <Border Width="38" Height="38"
+                                                CornerRadius="19"
+                                                SnapsToDevicePixels="True"
+                                                UseLayoutRounding="True">
+                                            <Border.Clip>
+                                                <EllipseGeometry Center="19,19" RadiusX="19" RadiusY="19"/>
+                                            </Border.Clip>
+                                            <Image x:Name="ImgDivyAvatar"
+                                                   Source="pack://application:,,,/Assets/avatar_divyviradiya.png"
+                                                   Width="38" Height="38"
+                                                   Stretch="UniformToFill"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+                                        <Ellipse Width="38" Height="38"
+                                                 Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                                 StrokeThickness="1"/>
+                                    </Grid>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Divy Viradiya"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                        <TextBlock Text="Co-Founder"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Margin="0,1,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </ui:Button>
+
+                            <ui:Button Click="OpenSahajGitHub_Click"
+                                       Appearance="Secondary"
+                                       Padding="8,6"
+                                       CornerRadius="8"
+                                       Cursor="Hand"
+                                       ToolTip="Sahaj Italiya · Co-Founder (github.com/SizWinz)"
+                                       Width="210"
+                                       Height="54"
+                                       HorizontalContentAlignment="Left"
+                                       Margin="0,0,10,10">
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0" Width="38" Height="38" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <Border Width="38" Height="38"
+                                                CornerRadius="19"
+                                                SnapsToDevicePixels="True"
+                                                UseLayoutRounding="True">
+                                            <Border.Clip>
+                                                <EllipseGeometry Center="19,19" RadiusX="19" RadiusY="19"/>
+                                            </Border.Clip>
+                                            <Image x:Name="ImgSahajAvatar"
+                                                   Source="pack://application:,,,/Assets/avatar_sahajitaliya.png"
+                                                   Width="38" Height="38"
+                                                   Stretch="UniformToFill"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+                                        <Ellipse Width="38" Height="38"
+                                                 Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                                 StrokeThickness="1"/>
+                                    </Grid>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Sahaj Italiya"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                        <TextBlock Text="Co-Founder"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Margin="0,1,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </ui:Button>
+                        </WrapPanel>
+
+                        <!-- Subsection: Contributors & Helpers -->
+                        <TextBlock Text="Contributors &amp; Helpers"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,10,0,8"/>
+                        <WrapPanel Margin="0,0,0,8">
+                            <ui:Button Click="OpenJohndinglesinGitHub_Click"
+                                       Appearance="Secondary"
+                                       Padding="8,6"
+                                       CornerRadius="8"
+                                       Cursor="Hand"
+                                       ToolTip="Johndinglesin · Helper (Testing, Dev &amp; Social Media)"
+                                       Width="210"
+                                       Height="54"
+                                       HorizontalContentAlignment="Left"
+                                       Margin="0,0,10,10">
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0" Width="38" Height="38" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <Border Width="38" Height="38"
+                                                CornerRadius="19"
+                                                SnapsToDevicePixels="True"
+                                                UseLayoutRounding="True">
+                                            <Border.Clip>
+                                                <EllipseGeometry Center="19,19" RadiusX="19" RadiusY="19"/>
+                                            </Border.Clip>
+                                            <Image x:Name="ImgJohndinglesinAvatar"
+                                                   Source="pack://application:,,,/Assets/avatar_johndinglesin.png"
+                                                   Width="38" Height="38"
+                                                   Stretch="UniformToFill"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+                                        <Ellipse Width="38" Height="38"
+                                                 Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                                 StrokeThickness="1"/>
+                                    </Grid>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Johndinglesin"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                        <TextBlock Text="Helper"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Margin="0,1,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </ui:Button>
+                        </WrapPanel>
+
+                        <!-- Subsection: Donators -->
+                        <TextBlock Text="Donators"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,10,0,8"/>
+                        <WrapPanel Margin="0,0,0,0">
+                            <ui:Button Click="OpenNexViceDiscord_Click"
+                                       Appearance="Secondary"
+                                       Padding="8,6"
+                                       CornerRadius="8"
+                                       Cursor="Hand"
+                                       ToolTip="NexVice (@nexvice) · Donator"
+                                       Width="210"
+                                       Height="54"
+                                       HorizontalContentAlignment="Left"
+                                       Margin="0,0,10,10">
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0" Width="38" Height="38" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <Border Width="38" Height="38"
+                                                CornerRadius="19"
+                                                SnapsToDevicePixels="True"
+                                                UseLayoutRounding="True">
+                                            <Border.Clip>
+                                                <EllipseGeometry Center="19,19" RadiusX="19" RadiusY="19"/>
+                                            </Border.Clip>
+                                            <Image x:Name="ImgNexViceAvatar"
+                                                   Source="pack://application:,,,/Assets/avatar_nexvice.png"
+                                                   Width="38" Height="38"
+                                                   Stretch="UniformToFill"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+                                        <Ellipse Width="38" Height="38"
+                                                 Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                                 StrokeThickness="1"/>
+                                    </Grid>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="NexVice"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                        <TextBlock Text="Donator"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Margin="0,1,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </ui:Button>
+                        </WrapPanel>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <!-- Responsive 2-Column Section: Community & Support -->
+                <Grid Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="14"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- App Logo -->
-                    <Border Grid.Column="0"
-                            Width="120" Height="120"
-                            CornerRadius="16"
-                            Margin="0,0,24,0"
-                            VerticalAlignment="Center"
-                            UseLayoutRounding="True"
-                            SnapsToDevicePixels="True">
-                        <Border.Clip>
-                            <RectangleGeometry Rect="0,0,120,120" RadiusX="16" RadiusY="16"/>
-                        </Border.Clip>
-                        <Image Source="pack://application:,,,/Assets/logo_highres.png"
-                                Stretch="UniformToFill"
-                                UseLayoutRounding="True"
-                                SnapsToDevicePixels="True"
-                                RenderOptions.BitmapScalingMode="Fant"
-                                RenderOptions.EdgeMode="Aliased"/>
-                    </Border>
+                    <!-- Community Card -->
+                    <ui:Card Grid.Column="0" Padding="20" VerticalAlignment="Stretch">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
 
-                    <!-- Info Content -->
-                    <StackPanel Grid.Column="1" Margin="0,0,24,0">
-                        <TextBlock x:Name="TxtAppTitle" Text="PocketMC Desktop" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                        <TextBlock x:Name="TxtAppDescription" Text="A modern native desktop application for managing Minecraft servers, proxies, modpacks, and more." Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                                <ui:SymbolIcon Symbol="People24" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Text="Community" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
 
-                        <TextBlock Text="Repository" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
-                        <TextBlock Text="Contributions, issues, and feature requests are welcome on GitHub!" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                        <StackPanel Orientation="Horizontal">
-                            <ui:Button Content="GitHub" Appearance="Secondary" Click="OpenGitHub_Click" Icon="{ui:SymbolIcon Code24}"/>
-                            <ui:Button Content="View What's New" Appearance="Primary" Margin="8,0,0,0" Click="WhatsNew_Click" Icon="{ui:SymbolIcon Megaphone24}"/>
-                        </StackPanel>
-                    </StackPanel>
+                            <TextBlock x:Name="TxtCommunityDesc"
+                                       Grid.Row="1"
+                                       Text="Join our Discord server to get help, share tips, and connect with other PocketMC users."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,14"/>
+
+                            <WrapPanel Grid.Row="2" VerticalAlignment="Bottom">
+                                <ui:Button Content="Join Discord"
+                                           Appearance="Primary"
+                                           Click="OpenDiscord_Click"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="Copy Invite"
+                                           Appearance="Secondary"
+                                           Click="CopyDiscordInvite_Click"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="Instagram"
+                                           Appearance="Secondary"
+                                           Click="OpenInstagram_Click"
+                                           Icon="{ui:SymbolIcon Camera24}"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="YouTube"
+                                           Appearance="Secondary"
+                                           Click="OpenYouTube_Click"
+                                           Icon="{ui:SymbolIcon Video24}"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="Reddit"
+                                           Appearance="Secondary"
+                                           Click="OpenReddit_Click"
+                                           Icon="{ui:SymbolIcon Chat24}"
+                                           Margin="0,0,8,8"/>
+                            </WrapPanel>
+                        </Grid>
+                    </ui:Card>
+
+                    <!-- Support & Feedback Card -->
+                    <ui:Card Grid.Column="2" Padding="20" VerticalAlignment="Stretch">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                                <ui:SymbolIcon Symbol="Heart24" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Text="Support &amp; Feedback" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="TxtDonationDesc"
+                                       Grid.Row="1"
+                                       Text="Support the development of PocketMC! If you love this project and find it useful, consider buying us a coffee or submitting feedback."
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,14"/>
+
+                            <WrapPanel Grid.Row="2" VerticalAlignment="Bottom">
+                                <ui:Button Content="Buy Me a Coffee"
+                                           Appearance="Primary"
+                                           Click="OpenDonationPage_Click"
+                                           Icon="{ui:SymbolIcon Heart20}"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="Submit Feedback Form"
+                                           Appearance="Secondary"
+                                           Click="OpenFeedbackForm_Click"
+                                           Icon="{ui:SymbolIcon Open20}"
+                                           Margin="0,0,8,8"/>
+                                <ui:Button Content="Get Help on Discord"
+                                           Appearance="Secondary"
+                                           Click="OpenDiscord_Click"
+                                           Icon="{ui:SymbolIcon People20}"
+                                           Margin="0,0,8,8"/>
+                            </WrapPanel>
+                        </Grid>
+                    </ui:Card>
                 </Grid>
-            </ui:Card>
-
-            <!-- ORGANIZATION / COMPANY SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Building24}" Margin="0,0,0,12">
-                <ui:CardExpander.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock x:Name="TxtOrgName" Text="DS LABS" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="TxtOrgTagline" Text="Selective Digital Studio · Building Software That Works" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:CardExpander.Header>
-
-                <StackPanel Margin="16,8,16,16">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Content="Visit Website" Appearance="Primary" Click="OpenOrganizationWebsite_Click" Icon="{ui:SymbolIcon Globe20}"/>
-                    </StackPanel>
-                </StackPanel>
-            </ui:CardExpander>
-
-            <!-- CO-FOUNDERS SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon PeopleStar24}" Margin="0,0,0,12">
-                <ui:CardExpander.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Co-Founders &amp; Contributors" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="Co-Founders of DS Labs · Creators of PocketMC" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:CardExpander.Header>
-
-                <StackPanel Margin="16,10,16,16">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Click="OpenDivyGitHub_Click"
-                                   Appearance="Transparent"
-                                   Padding="14,10"
-                                   CornerRadius="8"
-                                   Cursor="Hand"
-                                   ToolTip="https://github.com/divyviradiya2"
-                                   Margin="0,0,16,0"
-                                   HorizontalContentAlignment="Center">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Grid Width="52" Height="52" Margin="0,0,0,8" HorizontalAlignment="Center">
-                                    <Border Width="52" Height="52"
-                                            CornerRadius="26"
-                                            SnapsToDevicePixels="True"
-                                            UseLayoutRounding="True">
-                                        <Border.Clip>
-                                            <EllipseGeometry Center="26,26" RadiusX="26" RadiusY="26"/>
-                                        </Border.Clip>
-                                        <Image x:Name="ImgDivyAvatar"
-                                               Source="pack://application:,,,/Assets/avatar_divyviradiya.png"
-                                               Width="52" Height="52"
-                                               Stretch="UniformToFill"
-                                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    </Border>
-                                    <Ellipse Width="52" Height="52"
-                                             Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                             StrokeThickness="1"/>
-                                </Grid>
-                                <TextBlock Text="Divy Viradiya"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="Co-Founder"
-                                           FontSize="11"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </ui:Button>
-
-                        <ui:Button Click="OpenSahajGitHub_Click"
-                                   Appearance="Transparent"
-                                   Padding="14,10"
-                                   CornerRadius="8"
-                                   Cursor="Hand"
-                                   ToolTip="https://github.com/SizWinz"
-                                   HorizontalContentAlignment="Center">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Grid Width="52" Height="52" Margin="0,0,0,8" HorizontalAlignment="Center">
-                                    <Border Width="52" Height="52"
-                                            CornerRadius="26"
-                                            SnapsToDevicePixels="True"
-                                            UseLayoutRounding="True">
-                                        <Border.Clip>
-                                            <EllipseGeometry Center="26,26" RadiusX="26" RadiusY="26"/>
-                                        </Border.Clip>
-                                        <Image x:Name="ImgSahajAvatar"
-                                               Source="pack://application:,,,/Assets/avatar_sahajitaliya.png"
-                                               Width="52" Height="52"
-                                               Stretch="UniformToFill"
-                                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    </Border>
-                                    <Ellipse Width="52" Height="52"
-                                             Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                             StrokeThickness="1"/>
-                                </Grid>
-                                <TextBlock Text="Sahaj Italiya"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="Co-Founder"
-                                           FontSize="11"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </ui:Button>
-                    </StackPanel>
-                </StackPanel>
-            </ui:CardExpander>
-
-            <!-- HELPERS SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon PersonHeart24}" Margin="0,0,0,12">
-                <ui:CardExpander.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Helpers" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="Community members helping with testing, development, and social media." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:CardExpander.Header>
-
-                <StackPanel Margin="16,10,16,16">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Click="OpenJohndinglesinGitHub_Click"
-                                   Appearance="Transparent"
-                                   Padding="14,10"
-                                   CornerRadius="8"
-                                   Cursor="Hand"
-                                   ToolTip="Johndinglesin · Testing, Development &amp; Social Media"
-                                   HorizontalContentAlignment="Center">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Grid Width="52" Height="52" Margin="0,0,0,8" HorizontalAlignment="Center">
-                                    <Border Width="52" Height="52"
-                                            CornerRadius="26"
-                                            SnapsToDevicePixels="True"
-                                            UseLayoutRounding="True">
-                                        <Border.Clip>
-                                            <EllipseGeometry Center="26,26" RadiusX="26" RadiusY="26"/>
-                                        </Border.Clip>
-                                        <Image x:Name="ImgJohndinglesinAvatar"
-                                               Source="pack://application:,,,/Assets/avatar_johndinglesin.png"
-                                               Width="52" Height="52"
-                                               Stretch="UniformToFill"
-                                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    </Border>
-                                    <Ellipse Width="52" Height="52"
-                                             Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                             StrokeThickness="1"/>
-                                </Grid>
-                                <TextBlock Text="Johndinglesin"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="Helper"
-                                           FontSize="11"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </ui:Button>
-                    </StackPanel>
-                </StackPanel>
-            </ui:CardExpander>
-
-            <!-- DONATORS SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon RibbonStar24}" Margin="0,0,0,12">
-                <ui:CardExpander.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Donators" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="Special thanks to our generous donators supporting PocketMC." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:CardExpander.Header>
-
-                <StackPanel Margin="16,10,16,16">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Click="OpenNexViceDiscord_Click"
-                                   Appearance="Transparent"
-                                   Padding="14,10"
-                                   CornerRadius="8"
-                                   Cursor="Hand"
-                                   ToolTip="NexVice (@nexvice)"
-                                   HorizontalContentAlignment="Center">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Grid Width="52" Height="52" Margin="0,0,0,8" HorizontalAlignment="Center">
-                                    <Border Width="52" Height="52"
-                                            CornerRadius="26"
-                                            SnapsToDevicePixels="True"
-                                            UseLayoutRounding="True">
-                                        <Border.Clip>
-                                            <EllipseGeometry Center="26,26" RadiusX="26" RadiusY="26"/>
-                                        </Border.Clip>
-                                        <Image x:Name="ImgNexViceAvatar"
-                                               Source="pack://application:,,,/Assets/avatar_nexvice.png"
-                                               Width="52" Height="52"
-                                               Stretch="UniformToFill"
-                                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    </Border>
-                                    <Ellipse Width="52" Height="52"
-                                             Stroke="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                             StrokeThickness="1"/>
-                                </Grid>
-                                <TextBlock Text="NexVice"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="Donator"
-                                           FontSize="11"
-                                           HorizontalAlignment="Center"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </ui:Button>
-                    </StackPanel>
-                </StackPanel>
-            </ui:CardExpander>
-
-            <!-- COMMUNITY SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon People24}">
-                <ui:CardExpander.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Community" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="TxtCommunityDesc" Text="Join our Discord server to get help, share tips, and connect with other PocketMC users." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:CardExpander.Header>
-
-                <StackPanel Margin="16,8,16,16">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Content="Join Discord" Appearance="Primary" Click="OpenDiscord_Click"/>
-                        <ui:Button Content="Copy Invite" Appearance="Secondary" Margin="8,0,0,0" Click="CopyDiscordInvite_Click"/>
-                        <ui:Button Content="Instagram" Appearance="Secondary" Margin="8,0,0,0" Click="OpenInstagram_Click" Icon="{ui:SymbolIcon Camera24}"/>
-                        <ui:Button Content="YouTube" Appearance="Secondary" Margin="8,0,0,0" Click="OpenYouTube_Click" Icon="{ui:SymbolIcon Video24}"/>
-                        <ui:Button Content="Reddit" Appearance="Secondary" Margin="8,0,0,0" Click="OpenReddit_Click" Icon="{ui:SymbolIcon Chat24}"/>
-                    </StackPanel>
-                </StackPanel>
-            </ui:CardExpander>
-            <!-- FEEDBACK SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Bug24}" Margin="0,12,0,0">
-                <ui:CardExpander.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Feedback &amp; Support" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock Text="For bugs, support, and help, you can contact us directly on Discord or submit our feedback form." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:CardExpander.Header>
-
-                <StackPanel Margin="16,8,16,16">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Content="Submit Feedback Form" Appearance="Primary" Click="OpenFeedbackForm_Click" Icon="{ui:SymbolIcon Open20}"/>
-                        <ui:Button Content="Get Help on Discord" Appearance="Secondary" Margin="8,0,0,0" Click="OpenDiscord_Click" Icon="{ui:SymbolIcon People20}"/>
-                    </StackPanel>
-                </StackPanel>
-            </ui:CardExpander>
-
-            <!-- SUPPORT & DONATION SECTION -->
-            <ui:CardExpander IsExpanded="True" Icon="{ui:SymbolIcon Heart24}" Margin="0,12,0,0">
-                <ui:CardExpander.Header>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Support &amp; Donation" FontSize="16" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="TxtDonationDesc" Text="Support the development of PocketMC! If you love this project and find it useful, consider buying us a coffee." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:CardExpander.Header>
-
-                <StackPanel Margin="16,8,16,16">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <ui:Button Content="Buy Me a Coffee" Appearance="Primary" Click="OpenDonationPage_Click" Icon="{ui:SymbolIcon Heart20}"/>
-                    </StackPanel>
-                </StackPanel>
-            </ui:CardExpander>
             </StackPanel>
         </ScrollViewer>
     </Grid>

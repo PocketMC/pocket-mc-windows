@@ -51,7 +51,7 @@ namespace PocketMC.Infrastructure.Configuration
         public static string LinkReddit { get; private set; } = "https://www.reddit.com/r/PocketMC/";
         public static string LinkGitHub { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows";
         public static string LinkReleases { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows/releases";
-        public static string LinkWebsite { get; private set; } = "https://ds-labs-portfolio.vercel.app";
+        public static string LinkWebsite { get; private set; } = "https://pocketmc.github.io/pocket-mc-website/";
         public static string LinkDocs { get; private set; } = "https://github.com/PocketMC/pocket-mc-windows";
         public static string LinkDonation { get; private set; } = "https://buymeacoffee.com/sahaj33";
         public static string LinkContributorDivy { get; private set; } = "https://github.com/divyviradiya2";
@@ -285,7 +285,14 @@ namespace PocketMC.Infrastructure.Configuration
                             if (releasesMatch.Success) LinkReleases = releasesMatch.Groups[1].Value;
 
                             var websiteMatch = Regex.Match(trimmed, @"link_website:\s*""?([^""\r\n]+)""?");
-                            if (websiteMatch.Success) LinkWebsite = websiteMatch.Groups[1].Value;
+                            if (websiteMatch.Success)
+                            {
+                                var websiteUrl = websiteMatch.Groups[1].Value;
+                                if (!websiteUrl.Contains("ds-labs", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    LinkWebsite = websiteUrl;
+                                }
+                            }
 
                             var docsMatch = Regex.Match(trimmed, @"link_docs:\s*""?([^""\r\n]+)""?");
                             if (docsMatch.Success) LinkDocs = docsMatch.Groups[1].Value;

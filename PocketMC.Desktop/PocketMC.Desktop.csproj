@@ -22,6 +22,7 @@
     <Resource Include="Assets\avatar_divyviradiya.png" />
     <Resource Include="Assets\avatar_sahajitaliya.png" />
     <Resource Include="Assets\avatar_johndinglesin.png" />
+    <Resource Include="Assets\papermc.png" />
     <Resource Include="Assets\avatar_nexvice.png" />
   </ItemGroup>
 
