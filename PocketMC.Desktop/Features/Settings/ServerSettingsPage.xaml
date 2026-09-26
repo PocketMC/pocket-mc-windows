@@ -168,7 +168,7 @@
                         <ui:NavigationViewItem Content="World &amp; Files" Icon="{ui:SymbolIcon Folder24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Addons (Plugins/Mods)" Icon="{ui:SymbolIcon Add24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Automated Backups" Icon="{ui:SymbolIcon Save24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Fault Tolerance" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="Restart &amp; Recovery" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="Advanced Editor" Icon="{ui:SymbolIcon Code24}" Click="NavItem_Click"/>
                         <ui:NavigationViewItem Content="AI Summaries" Icon="{ui:SymbolIcon BrainCircuit24}" Click="NavItem_Click"
                                                Visibility="{Binding IsAiSummarizationAvailable, Converter={StaticResource VisibleIfTrue}}"/>
@@ -2098,8 +2098,8 @@
                             </ScrollViewer>
                         </TabItem>
 
-                        <!-- TAB 6: FAULT TOLERANCE -->
-                        <TabItem Header="FaultTolerance">
+                        <!-- TAB 6: RESTART & RECOVERY -->
+                        <TabItem Header="RestartAndRecovery">
                             <ScrollViewer x:Name="RestartScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <TextBlock Text="Crash Recovery" Style="{StaticResource SettingsHeader}" Margin="0,0,0,8"/>
