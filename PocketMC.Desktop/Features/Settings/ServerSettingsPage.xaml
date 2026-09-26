@@ -1065,7 +1065,7 @@
                                                                 </MenuItem>
                                                                 <MenuItem Header="Open Folder" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                          CommandParameter="{Binding Path}">
+                                                                          CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
                                                                         <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                     </MenuItem.Icon>
@@ -1073,7 +1073,7 @@
                                                                 <Separator/>
                                                                 <MenuItem Header="Delete" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                          CommandParameter="{Binding Path}">
+                                                                          CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
                                                                         <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
                                                                     </MenuItem.Icon>
@@ -1186,7 +1186,7 @@
                                                                             </MenuItem>
                                                                             <MenuItem Header="Open Folder" 
                                                                                       Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                                      CommandParameter="{Binding Path}">
+                                                                                      CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
                                                                                     <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                                 </MenuItem.Icon>
@@ -1194,7 +1194,7 @@
                                                                             <Separator/>
                                                                             <MenuItem Header="Delete" 
                                                                                       Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                                      CommandParameter="{Binding Path}">
+                                                                                      CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
                                                                                     <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
                                                                                 </MenuItem.Icon>
@@ -1368,7 +1368,7 @@
                                                                 </MenuItem>
                                                                 <MenuItem Header="Open Folder" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                          CommandParameter="{Binding Path}">
+                                                                          CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
                                                                         <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                     </MenuItem.Icon>
@@ -1376,7 +1376,7 @@
                                                                 <Separator/>
                                                                 <MenuItem Header="Delete" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                          CommandParameter="{Binding Path}">
+                                                                          CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
                                                                         <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
                                                                     </MenuItem.Icon>
@@ -1499,7 +1499,7 @@
                                                                             </MenuItem>
                                                                             <MenuItem Header="Open Folder" 
                                                                                       Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                                      CommandParameter="{Binding Path}">
+                                                                                      CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
                                                                                     <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                                 </MenuItem.Icon>
@@ -1507,7 +1507,7 @@
                                                                             <Separator/>
                                                                             <MenuItem Header="Delete" 
                                                                                       Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                                      CommandParameter="{Binding Path}">
+                                                                                      CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
                                                                                     <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
                                                                                 </MenuItem.Icon>
@@ -1629,7 +1629,26 @@
                                                 </ItemsControl.Style>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <ui:Card Margin="0,0,0,8" Padding="14,10">
+                                                        <ui:Card Margin="0,0,0,8" Padding="14,10" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                            <ui:Card.ContextMenu>
+                                                                <ContextMenu Opened="AddonContextMenu_Opened">
+                                                                    <MenuItem Header="Open Folder" 
+                                                                              Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              CommandParameter="{Binding}">
+                                                                        <MenuItem.Icon>
+                                                                            <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                    <Separator/>
+                                                                    <MenuItem Header="Delete" 
+                                                                              Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              CommandParameter="{Binding}">
+                                                                        <MenuItem.Icon>
+                                                                            <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                </ContextMenu>
+                                                            </ui:Card.ContextMenu>
                                                             <Grid>
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="Auto"/>
@@ -1682,7 +1701,7 @@
                                                                             <ContextMenu Opened="AddonContextMenu_Opened">
                                                                                 <MenuItem Header="Open Folder" 
                                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                                          CommandParameter="{Binding DirectoryPath}">
+                                                                                          CommandParameter="{Binding}">
                                                                                     <MenuItem.Icon>
                                                                                         <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                                     </MenuItem.Icon>
@@ -1793,7 +1812,26 @@
                                                 </ItemsControl.Style>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <ui:Card Margin="0,0,0,8" Padding="14,10">
+                                                        <ui:Card Margin="0,0,0,8" Padding="14,10" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
+                                                            <ui:Card.ContextMenu>
+                                                                <ContextMenu Opened="AddonContextMenu_Opened">
+                                                                    <MenuItem Header="Open Folder" 
+                                                                              Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              CommandParameter="{Binding}">
+                                                                        <MenuItem.Icon>
+                                                                            <ui:SymbolIcon Symbol="FolderOpen20"/>
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                    <Separator/>
+                                                                    <MenuItem Header="Delete" 
+                                                                              Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              CommandParameter="{Binding}">
+                                                                        <MenuItem.Icon>
+                                                                            <ui:SymbolIcon Symbol="Delete20" Foreground="#F38BA8"/>
+                                                                        </MenuItem.Icon>
+                                                                    </MenuItem>
+                                                                </ContextMenu>
+                                                            </ui:Card.ContextMenu>
                                                             <Grid>
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="Auto"/>
@@ -1846,7 +1884,7 @@
                                                                             <ContextMenu Opened="AddonContextMenu_Opened">
                                                                                 <MenuItem Header="Open Folder" 
                                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                                                          CommandParameter="{Binding DirectoryPath}">
+                                                                                          CommandParameter="{Binding}">
                                                                                     <MenuItem.Icon>
                                                                                         <ui:SymbolIcon Symbol="FolderOpen20"/>
                                                                                     </MenuItem.Icon>
