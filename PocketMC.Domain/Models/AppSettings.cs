@@ -55,6 +55,7 @@ namespace PocketMC.Domain.Models
         public bool EnableAiSummarization { get; set; } = false;
         public string AiProvider { get; set; } = "Gemini";
         public bool AlwaysAutoSummarize { get; set; } = false;
+        public string OllamaMode { get; set; } = "Local";
 
         public string? GetCurrentAiKey() => AiApiKeys.TryGetValue(AiProvider, out var key) ? key : null;
         public string? GetCurrentAiModel() => AiModels.TryGetValue(AiProvider, out var model) ? model : null;
@@ -64,6 +65,10 @@ namespace PocketMC.Domain.Models
         {
             if (string.Equals(AiProvider, "Ollama", StringComparison.OrdinalIgnoreCase))
             {
+                if (string.Equals(OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase))
+                {
+                    return !string.IsNullOrWhiteSpace(GetCurrentAiKey());
+                }
                 return true;
             }
             return !string.IsNullOrWhiteSpace(GetCurrentAiKey());

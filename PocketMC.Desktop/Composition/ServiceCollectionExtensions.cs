@@ -94,6 +94,9 @@ namespace PocketMC.Desktop.Composition
             
             services.AddSingleton<PocketMC.Application.Interfaces.AI.ILlmProviderFactory, PocketMC.Infrastructure.AI.LlmProviderFactory>();
 
+            services.AddHttpClient<PocketMC.Infrastructure.AI.OllamaService>(c => { c.Timeout = TimeSpan.FromMinutes(30); });
+            services.AddSingleton<PocketMC.Application.Interfaces.AI.IOllamaService>(sp => sp.GetRequiredService<PocketMC.Infrastructure.AI.OllamaService>());
+
 services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageService>();
             services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SessionSummarizationService>();
 

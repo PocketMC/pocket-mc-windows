@@ -67,7 +67,7 @@ public class LlmProviderFactory : ILlmProviderFactory
             AiProviderType.Claude => ("claude-3-5-haiku-latest", "https://api.anthropic.com/v1/messages"),
             AiProviderType.Mistral => ("mistral-large-latest", "https://api.mistral.ai/v1/chat/completions"),
             AiProviderType.Groq => ("llama-3.3-70b-versatile", "https://api.groq.com/openai/v1/chat/completions"),
-            AiProviderType.Ollama => ("llama3.2", "http://localhost:11434/api/chat"),
+            AiProviderType.Ollama => ("qwen3:8b", "http://localhost:11434/api/chat"),
             _ => (string.Empty, string.Empty)
         };
     }

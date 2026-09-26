@@ -1176,6 +1176,40 @@
                             <ui:TextBox x:Name="AiEndpointUrlInput" Grid.Column="1" PlaceholderText="e.g. http://localhost:11434/api/chat" Width="300" VerticalAlignment="Center" KeyDown="AiEndpointUrlInput_KeyDown"/>
                         </Grid>
 
+                        <!-- Ollama Mode Selector -->
+                        <Grid x:Name="OllamaModePanel" Margin="0,16,0,0" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Ollama Mode" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Choose between your local Ollama daemon or Ollama Cloud service." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ComboBox x:Name="OllamaModeCombo" Grid.Column="1" Width="200" VerticalAlignment="Center" SelectionChanged="OllamaModeCombo_SelectionChanged">
+                                <ComboBoxItem Content="Local (Self-Hosted)" IsSelected="True"/>
+                                <ComboBoxItem Content="Ollama Cloud"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- Ollama Daemon Status -->
+                        <Grid x:Name="OllamaStatusPanel" Margin="0,12,0,0" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="OllamaStatusTitle" Text="Daemon Status" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock x:Name="OllamaStatusText" Text="Checking..." FontSize="12" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Ollama Actions -->
+                        <StackPanel x:Name="OllamaActionsPanel" Orientation="Horizontal" Margin="0,12,0,0" Visibility="Collapsed">
+                            <ui:Button Content="Refresh Models" Icon="{ui:SymbolIcon ArrowClockwise24}" Appearance="Secondary" Click="RefreshOllamaModels_Click" Margin="0,0,8,0"/>
+                            <ui:Button x:Name="BtnManageOllamaModels" Content="Manage and Download Models" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary" Click="ManageOllamaModels_Click"/>
+                        </StackPanel>
+
                         <Separator Margin="0,16" Opacity="0.15"/>
 
                         <!-- Toggles -->

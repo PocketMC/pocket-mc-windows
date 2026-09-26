@@ -92,20 +92,96 @@ public class OllamaProvider : BaseLlmProvider
 
     protected override (string url, string body, string auth) BuildRequest(string apiKey, string model, string endpoint, string systemPrompt, string userContent)
     {
-        var m = string.IsNullOrWhiteSpace(model) ? "llama3.2" : model;
-        var url = string.IsNullOrWhiteSpace(endpoint) ? "http://localhost:11434/api/chat" : endpoint;
+        var m = string.IsNullOrWhiteSpace(model) ? "qwen3:8b" : model;
+        var url = NormalizeChatUrl(endpoint);
         var body = new { model = m, messages = new object[] { new { role = "system", content = systemPrompt }, new { role = "user", content = userContent } }, stream = false, options = new { temperature = 0.4, num_predict = 4096 } };
-        return (url, JsonSerializer.Serialize(body), "");
+
+        var auth = string.IsNullOrWhiteSpace(apiKey) ? "" : $"Bearer {apiKey.Trim()}";
+        return (url, JsonSerializer.Serialize(body), auth);
     }
 
     protected override string ExtractContent(string json)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
-        if (root.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var content))
-            return content.GetString() ?? string.Empty;
-        if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
-            return choices[0].GetProperty("message").GetProperty("content").GetString() ?? string.Empty;
+
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            if (root.TryGetProperty("message", out var msg) &&
+                msg.ValueKind == JsonValueKind.Object &&
+                msg.TryGetProperty("content", out var content) &&
+                content.ValueKind == JsonValueKind.String)
+            {
+                return content.GetString() ?? string.Empty;
+            }
+
+            if (root.TryGetProperty("choices", out var choices) &&
+                choices.ValueKind == JsonValueKind.Array &&
+                choices.GetArrayLength() > 0)
+            {
+                var first = choices[0];
+                if (first.ValueKind == JsonValueKind.Object &&
+                    first.TryGetProperty("message", out var choiceMsg) &&
+                    choiceMsg.ValueKind == JsonValueKind.Object &&
+                    choiceMsg.TryGetProperty("content", out var choiceContent) &&
+                    choiceContent.ValueKind == JsonValueKind.String)
+                {
+                    return choiceContent.GetString() ?? string.Empty;
+                }
+            }
+
+            if (root.TryGetProperty("error", out var errorProp))
+            {
+                string? errorMsg = null;
+                if (errorProp.ValueKind == JsonValueKind.String)
+                    errorMsg = errorProp.GetString();
+                else if (errorProp.ValueKind == JsonValueKind.Object &&
+                         errorProp.TryGetProperty("message", out var errMessageProp) &&
+                         errMessageProp.ValueKind == JsonValueKind.String)
+                    errorMsg = errMessageProp.GetString();
+
+                errorMsg ??= "Unknown Ollama error";
+
+                if (errorMsg.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(
+                        $"{errorMsg}. Pull the model first using 'ollama pull {GetModelFromError(errorMsg)}' or select an available model.");
+
+                throw new InvalidOperationException(errorMsg);
+            }
+        }
+
         return string.Empty;
+    }
+
+    private static string NormalizeChatUrl(string endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(endpoint))
+            return "http://localhost:11434/api/chat";
+
+        var trimmed = endpoint.Trim().TrimEnd('/');
+        if (!trimmed.Contains("://", System.StringComparison.Ordinal))
+        {
+            trimmed = trimmed.Contains("ollama.com", System.StringComparison.OrdinalIgnoreCase)
+                ? "https://" + trimmed
+                : "http://" + trimmed;
+        }
+
+        if (trimmed.EndsWith("/api/chat", System.StringComparison.OrdinalIgnoreCase))
+            return trimmed;
+
+        if (trimmed.EndsWith("/api", System.StringComparison.OrdinalIgnoreCase))
+            return trimmed + "/chat";
+
+        return trimmed + "/api/chat";
+    }
+
+    private static string GetModelFromError(string errorMsg)
+    {
+        var marker = "model '";
+        var startIdx = errorMsg.IndexOf(marker, System.StringComparison.OrdinalIgnoreCase);
+        if (startIdx < 0) return "<model-name>";
+        startIdx += marker.Length;
+        var endIdx = errorMsg.IndexOf('\'', startIdx);
+        return endIdx > startIdx ? errorMsg[startIdx..endIdx] : "<model-name>";
     }
 }
