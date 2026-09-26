@@ -82,46 +82,4 @@ public class SettingsAdvancedViewModelTests : IDisposable
         Assert.Contains("Daily", vm.RebootModes);
         Assert.Contains("Interval", vm.RebootModes);
     }
-
-    [Fact]
-    public void ScheduledRebootTimeSpan_SynchronizesWithScheduledRebootTime()
-    {
-        bool isDirty = false;
-        var vm = new SettingsAdvancedVM(@"C:\fake\server", _workspace.ConfigurationService, () => isDirty = true);
-
-        // Default
-        Assert.Equal("04:00", vm.ScheduledRebootTime);
-        Assert.Equal(new TimeSpan(4, 0, 0), vm.ScheduledRebootTimeSpan);
-
-        // Setting string updates TimeSpan
-        vm.ScheduledRebootTime = "16:42";
-        Assert.Equal(new TimeSpan(16, 42, 0), vm.ScheduledRebootTimeSpan);
-
-        // Setting TimeSpan updates string and marks dirty
-        isDirty = false;
-        vm.ScheduledRebootTimeSpan = new TimeSpan(21, 30, 0);
-        Assert.Equal("21:30", vm.ScheduledRebootTime);
-        Assert.True(isDirty);
-    }
-
-    [Fact]
-    public void TimePickerControl_InstantiationAndProperties()
-    {
-        var thread = new System.Threading.Thread(() =>
-        {
-            var tp = new PocketMC.Desktop.Features.Settings.Controls.TimePickerControl
-            {
-                SelectedTime = new TimeSpan(16, 42, 0)
-            };
-
-            Assert.Equal(new TimeSpan(16, 42, 0), tp.SelectedTime);
-            Assert.Equal("16", tp.SelectedHourText);
-            Assert.Equal("42", tp.SelectedMinuteText);
-            Assert.Equal(24, tp.HoursList.Count);
-            Assert.Equal(60, tp.MinutesList.Count);
-        });
-        thread.SetApartmentState(System.Threading.ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-    }
 }

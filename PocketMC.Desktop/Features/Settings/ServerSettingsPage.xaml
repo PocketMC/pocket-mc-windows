@@ -6,7 +6,6 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:intel="clr-namespace:PocketMC.Desktop.Features.Intelligence"
       xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
-      xmlns:controls="clr-namespace:PocketMC.Desktop.Features.Settings.Controls"
       mc:Ignorable="d"
       d:DesignHeight="1200" d:DesignWidth="950"
       Title="Server Settings"
@@ -2158,7 +2157,7 @@
                                         <ui:CardControl.Header>
                                             <StackPanel>
                                                 <TextBlock Text="Reboot Frequency" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Configure whether the server reboots at a fixed daily time or after a recurring interval." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="Configure whether the server reboots at a fixed daily time (24-hour format) or after a recurring interval." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -2167,9 +2166,8 @@
                                                       Width="110" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsDailyMode, Converter={StaticResource VisibleIfTrue}}">
-                                                <TextBlock Text="Time:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <controls:TimePickerControl SelectedTime="{Binding Advanced.ScheduledRebootTimeSpan, Mode=TwoWay}"
-                                                                            VerticalAlignment="Center"/>
+                                                <TextBlock Text="Time (24h):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootTime}" Width="110" ClearButtonEnabled="False" PlaceholderText="04:00 (24h)" ToolTip="24-hour time format (00:00 - 23:59), e.g. 04:00 or 16:30" VerticalAlignment="Center"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsIntervalMode, Converter={StaticResource VisibleIfTrue}}">
