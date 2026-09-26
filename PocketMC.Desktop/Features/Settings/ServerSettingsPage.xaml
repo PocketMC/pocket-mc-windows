@@ -2166,8 +2166,10 @@
                                                       Width="110" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsDailyMode, Converter={StaticResource VisibleIfTrue}}">
-                                                <TextBlock Text="Time (HH:mm):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootTime}" Width="90" ClearButtonEnabled="False" PlaceholderText="04:00" VerticalAlignment="Center"/>
+                                                <TextBlock Text="Time:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <ui:TimePicker SelectedTime="{Binding Advanced.ScheduledRebootTimeSpan, Mode=TwoWay}"
+                                                               ClockIdentifier="Clock24Hour"
+                                                               VerticalAlignment="Center"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsIntervalMode, Converter={StaticResource VisibleIfTrue}}">

@@ -73,8 +73,28 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 if (SetProperty(ref _scheduledRebootTime, value))
                 {
+                    OnPropertyChanged(nameof(ScheduledRebootTimeSpan));
                     OnPropertyChanged(nameof(NextRebootSummary));
                     _markDirty();
+                }
+            }
+        }
+
+        public TimeSpan? ScheduledRebootTimeSpan
+        {
+            get
+            {
+                if (ServerRebootSchedulerService.TryParseTimeOfDay(_scheduledRebootTime, out TimeSpan ts))
+                {
+                    return ts;
+                }
+                return new TimeSpan(4, 0, 0);
+            }
+            set
+            {
+                if (value.HasValue)
+                {
+                    ScheduledRebootTime = $"{value.Value.Hours:D2}:{value.Value.Minutes:D2}";
                 }
             }
         }
