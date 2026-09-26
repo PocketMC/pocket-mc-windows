@@ -26,6 +26,113 @@ namespace PocketMC.Desktop.Features.Settings
         private string _autoRestartDelay = "10";
         public string AutoRestartDelay { get => _autoRestartDelay; set { if (SetProperty(ref _autoRestartDelay, value)) _markDirty(); } }
 
+        public IReadOnlyList<string> RebootModes { get; } = new[] { "Daily", "Interval" };
+
+        private bool _enableScheduledReboot;
+        public bool EnableScheduledReboot
+        {
+            get => _enableScheduledReboot;
+            set
+            {
+                if (SetProperty(ref _enableScheduledReboot, value))
+                {
+                    OnPropertyChanged(nameof(IsDailyMode));
+                    OnPropertyChanged(nameof(IsIntervalMode));
+                    OnPropertyChanged(nameof(IsWarningSettingsEnabled));
+                    OnPropertyChanged(nameof(NextRebootSummary));
+                    _markDirty();
+                }
+            }
+        }
+
+        private string _scheduledRebootMode = "Daily";
+        public string ScheduledRebootMode
+        {
+            get => _scheduledRebootMode;
+            set
+            {
+                if (SetProperty(ref _scheduledRebootMode, value))
+                {
+                    OnPropertyChanged(nameof(IsDailyMode));
+                    OnPropertyChanged(nameof(IsIntervalMode));
+                    OnPropertyChanged(nameof(NextRebootSummary));
+                    _markDirty();
+                }
+            }
+        }
+
+        public bool IsDailyMode => string.Equals(ScheduledRebootMode, "Daily", StringComparison.OrdinalIgnoreCase);
+        public bool IsIntervalMode => string.Equals(ScheduledRebootMode, "Interval", StringComparison.OrdinalIgnoreCase);
+        public bool IsWarningSettingsEnabled => EnableScheduledReboot && ScheduledRebootWarning;
+
+        private string _scheduledRebootTime = "04:00";
+        public string ScheduledRebootTime
+        {
+            get => _scheduledRebootTime;
+            set
+            {
+                if (SetProperty(ref _scheduledRebootTime, value))
+                {
+                    OnPropertyChanged(nameof(NextRebootSummary));
+                    _markDirty();
+                }
+            }
+        }
+
+        private string _scheduledRebootIntervalHours = "24";
+        public string ScheduledRebootIntervalHours
+        {
+            get => _scheduledRebootIntervalHours;
+            set
+            {
+                if (SetProperty(ref _scheduledRebootIntervalHours, value))
+                {
+                    OnPropertyChanged(nameof(NextRebootSummary));
+                    _markDirty();
+                }
+            }
+        }
+
+        private bool _scheduledRebootWarning = true;
+        public bool ScheduledRebootWarning
+        {
+            get => _scheduledRebootWarning;
+            set
+            {
+                if (SetProperty(ref _scheduledRebootWarning, value))
+                {
+                    OnPropertyChanged(nameof(IsWarningSettingsEnabled));
+                    _markDirty();
+                }
+            }
+        }
+
+        private string _scheduledRebootWarningSeconds = "60";
+        public string ScheduledRebootWarningSeconds
+        {
+            get => _scheduledRebootWarningSeconds;
+            set
+            {
+                if (SetProperty(ref _scheduledRebootWarningSeconds, value))
+                {
+                    _markDirty();
+                }
+            }
+        }
+
+        public string NextRebootSummary
+        {
+            get
+            {
+                if (!EnableScheduledReboot) return string.Empty;
+                if (IsDailyMode)
+                {
+                    return $"Daily at {ScheduledRebootTime}";
+                }
+                return $"Every {ScheduledRebootIntervalHours} hours";
+            }
+        }
+
         public ObservableCollection<PropertyItem> AdvancedProperties { get; } = new();
 
         private string _rawServerProperties = "";

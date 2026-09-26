@@ -83,6 +83,12 @@ public sealed class ServerConfigurationService
             EnableAutoRestart = metadata.EnableAutoRestart,
             MaxAutoRestarts = metadata.MaxAutoRestarts,
             AutoRestartDelaySeconds = metadata.AutoRestartDelaySeconds,
+            EnableScheduledReboot = metadata.EnableScheduledReboot,
+            ScheduledRebootMode = string.IsNullOrWhiteSpace(metadata.ScheduledRebootMode) ? "Daily" : metadata.ScheduledRebootMode,
+            ScheduledRebootTime = string.IsNullOrWhiteSpace(metadata.ScheduledRebootTime) ? "04:00" : metadata.ScheduledRebootTime,
+            ScheduledRebootIntervalHours = metadata.ScheduledRebootIntervalHours > 0 ? metadata.ScheduledRebootIntervalHours : 24,
+            ScheduledRebootWarning = metadata.ScheduledRebootWarning,
+            ScheduledRebootWarningSeconds = metadata.ScheduledRebootWarningSeconds > 0 ? metadata.ScheduledRebootWarningSeconds : 60,
             BackupIntervalHours = metadata.BackupIntervalHours,
             MaxBackupsToKeep = metadata.MaxBackupsToKeep,
             Motd = TryGetDisplayName(props, profile, out var motd) ? motd : "A Minecraft Server",
@@ -132,6 +138,12 @@ public sealed class ServerConfigurationService
         metadata.EnableAutoRestart = configuration.EnableAutoRestart;
         metadata.MaxAutoRestarts = configuration.MaxAutoRestarts;
         metadata.AutoRestartDelaySeconds = configuration.AutoRestartDelaySeconds;
+        metadata.EnableScheduledReboot = configuration.EnableScheduledReboot;
+        metadata.ScheduledRebootMode = configuration.ScheduledRebootMode;
+        metadata.ScheduledRebootTime = configuration.ScheduledRebootTime;
+        metadata.ScheduledRebootIntervalHours = configuration.ScheduledRebootIntervalHours;
+        metadata.ScheduledRebootWarning = configuration.ScheduledRebootWarning;
+        metadata.ScheduledRebootWarningSeconds = configuration.ScheduledRebootWarningSeconds;
         metadata.BackupIntervalHours = configuration.BackupIntervalHours;
         metadata.MaxBackupsToKeep = configuration.MaxBackupsToKeep;
         metadata.CustomJavaPath = string.IsNullOrWhiteSpace(configuration.CustomJavaPath) ? null : configuration.CustomJavaPath;

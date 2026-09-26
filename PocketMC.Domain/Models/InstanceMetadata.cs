@@ -29,6 +29,15 @@ namespace PocketMC.Domain.Models
         public int MaxAutoRestarts { get; set; } = 3;
         public int AutoRestartDelaySeconds { get; set; } = 10;
 
+        // Scheduled Reboot configuration
+        public bool EnableScheduledReboot { get; set; } = false;
+        public string ScheduledRebootMode { get; set; } = "Daily";
+        public string ScheduledRebootTime { get; set; } = "04:00";
+        public int ScheduledRebootIntervalHours { get; set; } = 24;
+        public bool ScheduledRebootWarning { get; set; } = true;
+        public int ScheduledRebootWarningSeconds { get; set; } = 60;
+        public DateTime? LastScheduledRebootTime { get; set; }
+
         // Runtime configuration (NET-14)
         public string? CustomJavaPath { get; set; } = null;
         public string? AdvancedJvmArgs { get; set; } = null;

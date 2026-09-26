@@ -2102,6 +2102,8 @@
                         <TabItem Header="FaultTolerance">
                             <ScrollViewer x:Name="RestartScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
+                                    <TextBlock Text="Crash Recovery" Style="{StaticResource SettingsHeader}" Margin="0,0,0,8"/>
+
                                     <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon ArrowSync24}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
@@ -2125,7 +2127,7 @@
                                         </StackPanel>
                                     </ui:CardControl>
 
-                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.EnableAutoRestart}">
+                                    <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.EnableAutoRestart}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
                                                 <TextBlock Text="Restart Cooldown" FontSize="14" FontWeight="SemiBold"/>
@@ -2135,6 +2137,66 @@
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <ui:TextBox Text="{Binding Advanced.AutoRestartDelay}" Width="60" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </ui:CardControl>
+
+                                    <!-- Scheduled Maintenance -->
+                                    <TextBlock Text="Scheduled Maintenance" Style="{StaticResource SettingsHeader}" Margin="0,8,0,8"/>
+
+                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon ArrowClockwise24}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="Scheduled Reboot" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Periodically reboot the server to clear memory leaks and maintain peak responsiveness." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <ui:ToggleSwitch IsChecked="{Binding Advanced.EnableScheduledReboot}" VerticalAlignment="Center"/>
+                                    </ui:CardControl>
+
+                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.EnableScheduledReboot}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="Reboot Frequency" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Configure whether the server reboots at a fixed daily time or after a recurring interval." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ComboBox ItemsSource="{Binding Advanced.RebootModes}"
+                                                      SelectedItem="{Binding Advanced.ScheduledRebootMode, Mode=TwoWay}"
+                                                      Width="110" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                        Visibility="{Binding Advanced.IsDailyMode, Converter={StaticResource VisibleIfTrue}}">
+                                                <TextBlock Text="Time (HH:mm):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootTime}" Width="70" PlaceholderText="04:00" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                        Visibility="{Binding Advanced.IsIntervalMode, Converter={StaticResource VisibleIfTrue}}">
+                                                <TextBlock Text="Every (Hours):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootIntervalHours}" Width="60" PlaceholderText="24" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ui:CardControl>
+
+                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Chat24}" IsEnabled="{Binding Advanced.EnableScheduledReboot}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="In-Game Warning" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Broadcast countdown notifications in Minecraft server chat before restarting." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <ui:ToggleSwitch IsChecked="{Binding Advanced.ScheduledRebootWarning}" VerticalAlignment="Center"/>
+                                    </ui:CardControl>
+
+                                    <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.IsWarningSettingsEnabled}">
+                                        <ui:CardControl.Header>
+                                            <StackPanel>
+                                                <TextBlock Text="Warning Countdown" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Duration in seconds to alert online players before the reboot begins." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </ui:CardControl.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <ui:TextBox Text="{Binding Advanced.ScheduledRebootWarningSeconds}" Width="60" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
                                 </StackPanel>

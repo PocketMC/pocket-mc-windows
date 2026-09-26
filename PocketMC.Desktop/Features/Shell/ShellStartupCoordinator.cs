@@ -25,6 +25,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly SettingsManager _settingsManager;
         private readonly ApplicationState _applicationState;
         private readonly BackupSchedulerService _backupScheduler;
+        private readonly ServerRebootSchedulerService _rebootScheduler;
         private readonly IServerLifecycleService _serverLifecycleService;
         private readonly JavaProvisioningService _javaProvisioningService;
         private readonly PlayitAgentService _playitAgentService;
@@ -45,6 +46,7 @@ namespace PocketMC.Desktop.Features.Shell
             SettingsManager settingsManager,
             ApplicationState applicationState,
             BackupSchedulerService backupScheduler,
+            ServerRebootSchedulerService rebootScheduler,
             IServerLifecycleService serverLifecycleService,
             JavaProvisioningService javaProvisioningService,
             PlayitAgentService playitAgentService,
@@ -60,6 +62,7 @@ namespace PocketMC.Desktop.Features.Shell
             _settingsManager = settingsManager;
             _applicationState = applicationState;
             _backupScheduler = backupScheduler;
+            _rebootScheduler = rebootScheduler;
             _serverLifecycleService = serverLifecycleService;
             _javaProvisioningService = javaProvisioningService;
             _playitAgentService = playitAgentService;
@@ -181,6 +184,7 @@ namespace PocketMC.Desktop.Features.Shell
             _settingsManager.SettingsSaved -= OnSettingsSaved;
             _playitAgentService.OnTunnelRunning -= OnPlayitTunnelRunning;
             _backupScheduler.Stop();
+            _rebootScheduler.Stop();
             _healthMonitor.StopMonitoring();
             _discordRpcService.Shutdown();
             _telemetryService.Shutdown();
@@ -206,6 +210,7 @@ namespace PocketMC.Desktop.Features.Shell
             if (!_startupServicesStarted)
             {
                 _backupScheduler.Start();
+                _rebootScheduler.Start();
                 _healthMonitor.StartMonitoring();
                 _javaProvisioningService.StartBackgroundProvisioning();
 
