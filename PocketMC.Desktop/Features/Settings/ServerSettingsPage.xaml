@@ -404,7 +404,7 @@
                                                         <Run Text="."/>
                                                     </TextBlock>
                                                     <ui:TextBox Text="{Binding General.ServerPort, UpdateSourceTrigger=PropertyChanged}"
-                                                                PlaceholderText="{Binding DefaultServerPortText, Mode=OneWay}" Width="160" HorizontalAlignment="Left"/>
+                                                                PlaceholderText="{Binding DefaultServerPortText, Mode=OneWay}" Width="160" ClearButtonEnabled="False" HorizontalAlignment="Left"/>
                                                 </StackPanel>
 
                                                 <StackPanel Grid.Column="2" Visibility="{Binding SupportsGeyserSettings, Converter={StaticResource BoolToVis}}">
@@ -412,7 +412,7 @@
                                                     <TextBlock Text="The UDP port used by Bedrock players to connect via Geyser."
                                                                FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
                                                     <ui:TextBox Text="{Binding General.GeyserBedrockPort, UpdateSourceTrigger=PropertyChanged}"
-                                                                PlaceholderText="19132" Width="160" HorizontalAlignment="Left"/>
+                                                                PlaceholderText="19132" Width="160" ClearButtonEnabled="False" HorizontalAlignment="Left"/>
                                                 </StackPanel>
                                             </Grid>
 
@@ -638,11 +638,11 @@
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Spawn Protection Radius:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding World.SpawnProtection, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding World.SpawnProtection, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                             </WrapPanel>
 
@@ -724,11 +724,11 @@
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Tick Distance:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding Bedrock.TickDistance, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding Bedrock.TickDistance, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="Default Permission:" Style="{StaticResource SettingsSubtext}"/>
@@ -736,7 +736,7 @@
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
                                                     <TextBlock Text="IPv6 Port:" Style="{StaticResource SettingsSubtext}"/>
-                                                    <ui:TextBox Text="{Binding Bedrock.ServerPortV6, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ui:TextBox Text="{Binding Bedrock.ServerPortV6, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                             </WrapPanel>
 
@@ -1903,9 +1903,9 @@
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="Interval (Hours):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Backups.BackupIntervalHours, Mode=TwoWay}" Width="60" PlaceholderText="0" Margin="0,0,16,0"/>
+                                            <ui:TextBox Text="{Binding Backups.BackupIntervalHours, Mode=TwoWay}" Width="80" ClearButtonEnabled="False" PlaceholderText="0" Margin="0,0,16,0"/>
                                             <TextBlock Text="Keep limit:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Backups.MaxBackupsToKeep, Mode=TwoWay}" Width="60"/>
+                                            <ui:TextBox Text="{Binding Backups.MaxBackupsToKeep, Mode=TwoWay}" Width="80" ClearButtonEnabled="False"/>
                                         </StackPanel>
                                     </ui:CardControl>
 
@@ -1941,7 +1941,7 @@
                                                                 <ui:ToggleSwitch Grid.Column="0" Content="{Binding ProviderType}" IsChecked="{Binding IsEnabled, Mode=TwoWay}" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0"/>
                                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding IsEnabled, Converter={StaticResource VisibleIfTrue}}">
                                                                     <TextBlock Text="Retention:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                                    <ui:TextBox Text="{Binding RetentionCount, Mode=TwoWay}" Width="50" VerticalAlignment="Center" ClearButtonEnabled="False"/>
+                                                                    <ui:TextBox Text="{Binding RetentionCount, Mode=TwoWay}" Width="70" VerticalAlignment="Center" ClearButtonEnabled="False"/>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </DataTemplate>
@@ -2123,7 +2123,7 @@
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="Attempts:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Advanced.MaxAutoRestarts}" Width="60" VerticalAlignment="Center"/>
+                                            <ui:TextBox Text="{Binding Advanced.MaxAutoRestarts}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
 
@@ -2136,7 +2136,7 @@
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Advanced.AutoRestartDelay}" Width="60" VerticalAlignment="Center"/>
+                                            <ui:TextBox Text="{Binding Advanced.AutoRestartDelay}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
 
@@ -2167,12 +2167,12 @@
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsDailyMode, Converter={StaticResource VisibleIfTrue}}">
                                                 <TextBlock Text="Time (HH:mm):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootTime}" Width="70" PlaceholderText="04:00" VerticalAlignment="Center"/>
+                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootTime}" Width="90" ClearButtonEnabled="False" PlaceholderText="04:00" VerticalAlignment="Center"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsIntervalMode, Converter={StaticResource VisibleIfTrue}}">
                                                 <TextBlock Text="Every (Hours):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootIntervalHours}" Width="60" PlaceholderText="24" VerticalAlignment="Center"/>
+                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootIntervalHours}" Width="80" ClearButtonEnabled="False" PlaceholderText="24" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </ui:CardControl>
@@ -2196,7 +2196,7 @@
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                            <ui:TextBox Text="{Binding Advanced.ScheduledRebootWarningSeconds}" Width="60" VerticalAlignment="Center"/>
+                                            <ui:TextBox Text="{Binding Advanced.ScheduledRebootWarningSeconds}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
                                 </StackPanel>

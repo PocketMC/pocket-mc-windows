@@ -69,6 +69,7 @@
                          MaxLength="5"
                          FontSize="13"
                          Padding="10,8"
+                         ClearButtonEnabled="False"
                          ToolTip="Port number between 1 and 65535"
                          PreviewTextInput="TxtLocalPort_PreviewTextInput"/>
                 <TextBlock x:Name="TxtPortError"

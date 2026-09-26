@@ -346,7 +346,7 @@
 
                         <!-- Players Limit -->
                         <TextBlock Text="Players Limit" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:TextBox x:Name="TxtMaxPlayers" Text="20" Margin="0,0,0,24"/>
+                        <ui:TextBox x:Name="TxtMaxPlayers" Text="20" ClearButtonEnabled="False" Margin="0,0,0,24"/>
                         
                         <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,0,0,24"/>
 
