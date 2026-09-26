@@ -293,7 +293,7 @@ public class ServerRebootSchedulerService : IDisposable
 
             if (meta.ScheduledRebootWarning && process != null && warningSeconds > 0)
             {
-                await BroadcastRebootWarningAsync(process, $"[PocketMC] Scheduled server reboot in {warningSeconds} seconds!");
+                await BroadcastRebootWarningAsync(process, $"Scheduled server reboot in {warningSeconds} seconds!");
 
                 int remaining = warningSeconds;
                 while (remaining > 0)
@@ -306,7 +306,7 @@ public class ServerRebootSchedulerService : IDisposable
 
                     if (remaining is 60 or 30 or 15 or 10 or 5 or 4 or 3 or 2 or 1 && remaining < warningSeconds)
                     {
-                        await BroadcastRebootWarningAsync(process, $"[PocketMC] Server rebooting in {remaining} seconds!");
+                        await BroadcastRebootWarningAsync(process, $"Server rebooting in {remaining} seconds!");
                     }
 
                     await Task.Delay(1000, cts.Token);
@@ -318,7 +318,7 @@ public class ServerRebootSchedulerService : IDisposable
                     return;
                 }
 
-                await BroadcastRebootWarningAsync(process, "[PocketMC] Server is rebooting now...");
+                await BroadcastRebootWarningAsync(process, "Server is rebooting now...");
                 await Task.Delay(500, cts.Token);
             }
 
@@ -363,7 +363,7 @@ public class ServerRebootSchedulerService : IDisposable
     {
         try
         {
-            process.EmitConsoleOutput(message);
+            process.EmitConsoleOutput($"[PocketMC] {message}");
             await process.WriteInputAsync($"say {message}");
         }
         catch
