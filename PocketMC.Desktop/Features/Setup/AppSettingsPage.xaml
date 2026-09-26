@@ -1129,8 +1129,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="API Key" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Enter your API key for the selected provider. Keys are stored locally." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="AiApiKeyTitle" Text="API Key" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock x:Name="AiApiKeySubtitle" Text="Enter your API key for the selected provider. Keys are stored locally." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                                 <TextBlock x:Name="AiKeyStatus" Text="" FontSize="12" Margin="0,4,0,0" Foreground="#A6E3A1"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -1139,7 +1139,7 @@
                                                 Width="250" 
                                                 Margin="0,0,8,0"
                                                 AutomationProperties.Name="AI API Key"/>
-                                <ui:Button Content="Validate" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="Test the key with a small API call"/>
+                                <ui:Button x:Name="BtnValidateAiKey" Content="Validate" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="Test the connection with a small API call"/>
                                 <ui:Button Content="Save" Appearance="Primary" Click="SaveAiKey_Click"/>
                             </StackPanel>
                         </Grid>

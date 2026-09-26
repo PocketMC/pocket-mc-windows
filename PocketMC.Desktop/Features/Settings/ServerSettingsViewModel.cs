@@ -281,7 +281,7 @@ namespace PocketMC.Desktop.Features.Settings
             Backups.LoadBackups();
 
             // AI Summaries
-            bool hasApiKey = !string.IsNullOrWhiteSpace(_applicationState.Settings.GetCurrentAiKey());
+            bool hasApiKey = _applicationState.Settings.IsAiConfigured();
             IsAiSummarizationAvailable = hasApiKey;
             Summaries.Load(hasApiKey);
 

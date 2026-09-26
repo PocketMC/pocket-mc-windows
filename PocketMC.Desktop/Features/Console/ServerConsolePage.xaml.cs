@@ -955,12 +955,12 @@ namespace PocketMC.Desktop.Features.Console
 
             try
             {
-                var apiKey = _applicationState.Settings.GetCurrentAiKey();
-                if (string.IsNullOrEmpty(apiKey))
+                if (!_applicationState.Settings.IsAiConfigured())
                 {
-                    TxtAiResponse.Markdown = "Error: AI API Key not configured in App Settings.";
+                    TxtAiResponse.Markdown = "Error: AI not configured in App Settings. Please configure an API Key or select Ollama.";
                     return;
                 }
+                var apiKey = _applicationState.Settings.GetCurrentAiKey() ?? string.Empty;
 
                 var provider = _providerFactory.ParseProvider(_applicationState.Settings.AiProvider);
 
@@ -1020,12 +1020,12 @@ Logs:
 
             try
             {
-                var apiKey = _applicationState.Settings.GetCurrentAiKey();
-                if (string.IsNullOrEmpty(apiKey))
+                if (!_applicationState.Settings.IsAiConfigured())
                 {
-                    TxtAiResponse.Markdown = "Error: AI API Key not configured in App Settings.";
+                    TxtAiResponse.Markdown = "Error: AI not configured in App Settings. Please configure an API Key or select Ollama.";
                     return;
                 }
+                var apiKey = _applicationState.Settings.GetCurrentAiKey() ?? string.Empty;
 
                 var provider = _providerFactory.ParseProvider(_applicationState.Settings.AiProvider);
 

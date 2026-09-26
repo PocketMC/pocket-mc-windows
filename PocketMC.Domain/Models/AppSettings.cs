@@ -60,6 +60,15 @@ namespace PocketMC.Domain.Models
         public string? GetCurrentAiModel() => AiModels.TryGetValue(AiProvider, out var model) ? model : null;
         public string? GetCurrentAiEndpoint() => AiEndpoints.TryGetValue(AiProvider, out var ep) ? ep : null;
 
+        public bool IsAiConfigured()
+        {
+            if (string.Equals(AiProvider, "Ollama", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            return !string.IsNullOrWhiteSpace(GetCurrentAiKey());
+        }
+
         // Disaster Recovery
         public string? ExternalBackupDirectory { get; set; }
 

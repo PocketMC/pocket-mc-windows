@@ -13,7 +13,7 @@ public class GeminiProvider : BaseLlmProvider
 
     protected override (string url, string body, string auth) BuildRequest(string apiKey, string model, string endpoint, string systemPrompt, string userContent)
     {
-        var m = string.IsNullOrWhiteSpace(model) ? "gemini-2.0-flash" : model;
+        var m = string.IsNullOrWhiteSpace(model) ? "gemini-3.8-flash" : model;
         var e = string.IsNullOrWhiteSpace(endpoint) ? "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent" : endpoint;
         var url = e.Contains("{0}") ? string.Format(e, m) + $"?key={apiKey}" : $"{e}?key={apiKey}";
         var body = new

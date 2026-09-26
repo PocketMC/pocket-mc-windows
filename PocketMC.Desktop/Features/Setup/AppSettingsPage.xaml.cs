@@ -219,7 +219,7 @@ namespace PocketMC.Desktop.Features.Setup
             SetSelectedModel(_applicationState.Settings.GetCurrentAiModel() ?? initialDefaultModel);
 
             AiEndpointUrlInput.Text = _applicationState.Settings.GetCurrentAiEndpoint() ?? initialDefaultEndpoint;
-            EndpointUrlPanel.Visibility = initialProviderType == AiProviderType.Ollama ? Visibility.Visible : Visibility.Collapsed;
+            UpdateAiApiKeyUI(initialProviderType);
 
             ToggleAiSummarization.IsChecked = _applicationState.Settings.EnableAiSummarization;
             ToggleAutoSummarize.IsChecked = _applicationState.Settings.AlwaysAutoSummarize;
@@ -1026,12 +1026,33 @@ namespace PocketMC.Desktop.Features.Setup
             AiEndpointUrlInput.Text = !string.IsNullOrWhiteSpace(endpoint) ? endpoint : defaultEndpoint;
             SetSelectedModel(!string.IsNullOrWhiteSpace(model) ? model : defaultModel);
 
-            EndpointUrlPanel.Visibility = providerType == AiProviderType.Ollama ? Visibility.Visible : Visibility.Collapsed;
+            UpdateAiApiKeyUI(providerType);
 
             _isInitializing = wasInitializing;
 
             // Single atomic save with all fields correctly set
             SaveAiSettings();
+        }
+
+        private void UpdateAiApiKeyUI(AiProviderType providerType)
+        {
+            bool isOllama = providerType == AiProviderType.Ollama;
+            EndpointUrlPanel.Visibility = isOllama ? Visibility.Visible : Visibility.Collapsed;
+
+            if (isOllama)
+            {
+                AiApiKeyTitle.Text = "API Key (Optional)";
+                AiApiKeySubtitle.Text = "Local Ollama models do not require an API key unless using an authenticated reverse proxy.";
+                AiApiKeyInput.PlaceholderText = "Optional for local Ollama...";
+                BtnValidateAiKey.Content = "Test Connection";
+            }
+            else
+            {
+                AiApiKeyTitle.Text = "API Key";
+                AiApiKeySubtitle.Text = "Enter your API key for the selected provider. Keys are stored locally.";
+                AiApiKeyInput.PlaceholderText = "Paste your API key here...";
+                BtnValidateAiKey.Content = "Validate";
+            }
         }
 
         private void AiModelCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1066,12 +1087,11 @@ namespace PocketMC.Desktop.Features.Setup
             {
                 case AiProviderType.Gemini:
                     // Latest (3.x generation)
+                    list.Add(new AiModelInfo("gemini-3.8-flash"));
                     list.Add(new AiModelInfo("gemini-3.7-flash"));
+                    list.Add(new AiModelInfo("gemini-3.6-flash"));
                     list.Add(new AiModelInfo("gemini-3.5-flash"));
                     list.Add(new AiModelInfo("gemini-3.5-flash-lite"));
-                    // Stable (2.5 generation)
-                    list.Add(new AiModelInfo("gemini-2.5-pro"));
-                    list.Add(new AiModelInfo("gemini-2.5-flash"));
                     break;
                 case AiProviderType.OpenAI:
                     // GPT-5.6 family (latest flagship)
@@ -1180,11 +1200,18 @@ namespace PocketMC.Desktop.Features.Setup
                 return;
             }
 
-            string maskedKey = apiKey.Length > 8
-                ? apiKey[..4] + "..." + apiKey[^4..]
-                : "invalid/too-short";
-
-            AiKeyStatus.Text = $"⏳ Validating {_aiProviderFactory.GetDisplayName(provider)} with key {maskedKey}...";
+            if (provider == AiProviderType.Ollama)
+            {
+                string target = string.IsNullOrWhiteSpace(endpointUrl) ? "http://localhost:11434/api/chat" : endpointUrl;
+                AiKeyStatus.Text = $"⏳ Testing connection to Ollama at {target}...";
+            }
+            else
+            {
+                string maskedKey = apiKey.Length > 8
+                    ? apiKey[..4] + "..." + apiKey[^4..]
+                    : "invalid/too-short";
+                AiKeyStatus.Text = $"⏳ Validating {_aiProviderFactory.GetDisplayName(provider)} with key {maskedKey}...";
+            }
             AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
 
             try
@@ -1192,7 +1219,9 @@ namespace PocketMC.Desktop.Features.Setup
                 var result = await _aiProviderFactory.GetProvider(provider).ValidateKeyAsync(apiKey, modelName, endpointUrl);
                 if (result.Success)
                 {
-                    AiKeyStatus.Text = "✅ API key is valid! Connection successful.";
+                    AiKeyStatus.Text = provider == AiProviderType.Ollama
+                        ? "✅ Connection to Ollama successful!"
+                        : "✅ API key is valid! Connection successful.";
                     AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
                 }
                 else
