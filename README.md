@@ -384,7 +384,12 @@ Test Suite Execution: 680 / 680 Tests Passed (100% Pass Rate, 0 Skipped, 0 Faile
 
 <br>
 
+## Contact & Support
 
+- **Official Inquiries:** [contactdslabs@gmail.com](mailto:contactdslabs@gmail.com)
+- **Community Discord:** [discord.gg/mWdMr8Mc2m](https://discord.gg/mWdMr8Mc2m)
+- **Issue Tracker:** [GitHub Issues](https://github.com/PocketMC/pocket-mc-windows/issues)
+- **Security Disclosures:** See [SECURITY.md](SECURITY.md) or email [contactdslabs@gmail.com](mailto:contactdslabs@gmail.com)
 
 <br>
 

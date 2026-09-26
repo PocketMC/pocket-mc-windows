@@ -78,7 +78,7 @@ Extracting untrusted ZIP archives (such as Bedrock `.mcpack` files, mod packs, o
 
 ## 7. Reporting a Vulnerability
 If you discover a security vulnerability in PocketMC, please report it privately:
-* **Contact:** Open a confidential GitHub Security Advisory, or email the developer at [sahajitaliya33@gmail.com](mailto:sahajitaliya33@gmail.com).
+* **Contact:** Open a confidential GitHub Security Advisory, or email the team at [contactdslabs@gmail.com](mailto:contactdslabs@gmail.com).
 * Please do not report security issues via public GitHub issues, Discord chats, or YouTube comments. We will investigate and respond to all reports within 48 hours.
 
 ---
