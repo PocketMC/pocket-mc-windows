@@ -1131,7 +1131,6 @@
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock x:Name="AiApiKeyTitle" Text="API Key" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock x:Name="AiApiKeySubtitle" Text="Enter your API key for the selected provider. Keys are stored locally." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
-                                <TextBlock x:Name="AiKeyStatus" Text="" FontSize="12" Margin="0,4,0,0" Foreground="#A6E3A1"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <ui:PasswordBox x:Name="AiApiKeyInput" 
@@ -1140,12 +1139,12 @@
                                                 Margin="0,0,8,0"
                                                 AutomationProperties.Name="AI API Key"/>
                                 <ui:Button x:Name="BtnValidateAiKey" Content="Validate" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="Test the connection with a small API call"/>
-                                <ui:Button Content="Save" Appearance="Primary" Click="SaveAiKey_Click"/>
+                                <ui:Button Content="Save Key" Appearance="Primary" Click="SaveAiKey_Click"/>
                             </StackPanel>
                         </Grid>
 
                         <!-- Advanced Model Configuration -->
-                        <Grid Margin="0,16,0,0">
+                        <Grid x:Name="AiModelConfigPanel" Margin="0,16,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -1154,13 +1153,28 @@
                                 <TextBlock Text="Model Name" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Text="Leave empty to use the recommended default model for this provider." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <ComboBox x:Name="AiModelCombo" 
-                                      Grid.Column="1"
-                                      IsEditable="True" 
-                                      Width="250" 
-                                      VerticalAlignment="Center"
-                                      SelectionChanged="AiModelCombo_SelectionChanged"
-                                      TextBoxBase.TextChanged="AiModelCombo_TextChanged"/>
+                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="250"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:Button x:Name="BtnManageOllamaModels" Grid.Column="0" Content="Manage and Download Models" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary" Click="ManageOllamaModels_Click" Margin="0,0,8,0" Visibility="Collapsed"/>
+                                <Grid Grid.Column="1">
+                                    <ComboBox x:Name="AiModelCombo"
+                                              IsEditable="True"
+                                              VerticalAlignment="Center"
+                                              SelectionChanged="AiModelCombo_SelectionChanged"
+                                              TextBoxBase.TextChanged="AiModelCombo_TextChanged"/>
+                                    <TextBlock x:Name="AiModelPlaceholder"
+                                               Text="No downloaded models. Use Manage and Download Models."
+                                               Margin="8,0,32,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               IsHitTestVisible="False"
+                                               Visibility="Collapsed"/>
+                                </Grid>
+                            </Grid>
                         </Grid>
 
                         <!-- Endpoint URL -->
@@ -1173,7 +1187,7 @@
                                 <TextBlock Text="Endpoint URL" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Text="Override the default API endpoint. Required for local models like Ollama." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <ui:TextBox x:Name="AiEndpointUrlInput" Grid.Column="1" PlaceholderText="e.g. http://localhost:11434/api/chat" Width="300" VerticalAlignment="Center" KeyDown="AiEndpointUrlInput_KeyDown"/>
+                            <ui:TextBox x:Name="AiEndpointUrlInput" Grid.Column="1" PlaceholderText="e.g. http://localhost:11434/api/chat" Width="300" VerticalAlignment="Center" KeyDown="AiEndpointUrlInput_KeyDown" TextBoxBase.TextChanged="AiEndpointUrlInput_TextChanged"/>
                         </Grid>
 
                         <!-- Ollama Mode Selector -->
@@ -1203,12 +1217,6 @@
                                 <TextBlock x:Name="OllamaStatusText" Text="Checking..." FontSize="12" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             </StackPanel>
                         </Grid>
-
-                        <!-- Ollama Actions -->
-                        <StackPanel x:Name="OllamaActionsPanel" Orientation="Horizontal" Margin="0,12,0,0" Visibility="Collapsed">
-                            <ui:Button Content="Refresh Models" Icon="{ui:SymbolIcon ArrowClockwise24}" Appearance="Secondary" Click="RefreshOllamaModels_Click" Margin="0,0,8,0"/>
-                            <ui:Button x:Name="BtnManageOllamaModels" Content="Manage and Download Models" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary" Click="ManageOllamaModels_Click"/>
-                        </StackPanel>
 
                         <Separator Margin="0,16" Opacity="0.15"/>
 

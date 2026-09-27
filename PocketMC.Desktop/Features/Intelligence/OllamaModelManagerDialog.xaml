@@ -5,37 +5,57 @@
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  mc:Ignorable="d"
-                 Title="Ollama Model Manager" Height="550" Width="700"
+                 Title="Ollama Model Manager" Height="600" Width="760"
+                 MinHeight="480" MinWidth="600"
                  WindowStartupLocation="CenterOwner"
-                 ResizeMode="CanResize"
+                 ResizeMode="CanResizeWithGrip"
+                 WindowCornerPreference="Round"
                  ExtendsContentIntoTitleBar="True"
-                 WindowBackdropType="Mica"
+                 WindowBackdropType="None"
+                 Background="{DynamicResource ApplicationBackgroundBrush}"
                  Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
-    <Grid>
+    <Grid Margin="24,12,24,20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Ollama Model Manager" />
+        <ui:TitleBar Grid.Row="0" Margin="-24,-12,-24,0" Title="Ollama Model Manager" ShowMaximize="False" ShowMinimize="False" />
 
-        <TabControl Grid.Row="1" Margin="16,0,16,16" Background="Transparent">
-            <!-- Tab 1: Installed Models -->
-            <TabItem x:Name="TabInstalledModels" Header="Installed Models">
+        <Grid Grid.Row="1" Margin="0,16,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition x:Name="DownloadTabColumn" Width="*"/>
+                <ColumnDefinition x:Name="ManualTabColumn" Width="*"/>
+            </Grid.ColumnDefinitions>
+            <RadioButton x:Name="TabInstalledModels" Grid.Column="0" Content="Installed Models" Tag="Installed"
+                         GroupName="OllamaModelManagerTabs" Style="{StaticResource {x:Type ToggleButton}}"
+                         MinHeight="40" Margin="0,0,8,0" HorizontalAlignment="Stretch"
+                         HorizontalContentAlignment="Center" Checked="ManagerTab_Checked"/>
+            <RadioButton x:Name="TabDownloadModels" Grid.Column="1" Content="Download Models" Tag="Download"
+                         GroupName="OllamaModelManagerTabs" Style="{StaticResource {x:Type ToggleButton}}"
+                         MinHeight="40" Margin="4,0" HorizontalAlignment="Stretch"
+                         HorizontalContentAlignment="Center" Checked="ManagerTab_Checked"/>
+            <RadioButton x:Name="TabManualSteps" Grid.Column="2" Content="Manual Steps" Tag="Manual"
+                         GroupName="OllamaModelManagerTabs" Style="{StaticResource {x:Type ToggleButton}}"
+                         MinHeight="40" Margin="8,0,0,0" HorizontalAlignment="Stretch"
+                         HorizontalContentAlignment="Center" Checked="ManagerTab_Checked"/>
+        </Grid>
+
+        <Grid Grid.Row="2" ClipToBounds="True">
+            <!-- Installed models -->
+            <Grid x:Name="InstalledTabPanel" Visibility="Visible">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,8,0,16">
-                        <ui:Button Content="Refresh" Icon="{ui:SymbolIcon ArrowClockwise24}" Click="RefreshButton_Click" />
-                        <TextBlock x:Name="StatusText" Text="" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </StackPanel>
+                    <TextBlock x:Name="StatusText" Grid.Row="0" Text="" Margin="0,8,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
 
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                         <ItemsControl x:Name="InstalledModelsList">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -63,7 +83,11 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
                                             </StackPanel>
-                                            <ui:Button Grid.Column="1" Content="Select" VerticalAlignment="Center" Appearance="Primary" Click="SelectModelButton_Click" Tag="{Binding Name}"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ui:Button Content="Select" Appearance="Primary" Click="SelectModelButton_Click" Tag="{Binding Name}"/>
+                                                <ui:Button Content="Delete" Appearance="Secondary" Click="DeleteModelButton_Click" Tag="{Binding Name}"
+                                                           Visibility="{Binding DeleteVisibility}" Margin="8,0,0,0"/>
+                                            </StackPanel>
                                         </Grid>
                                     </ui:Card>
                                 </DataTemplate>
@@ -71,20 +95,41 @@
                         </ItemsControl>
                     </ScrollViewer>
                 </Grid>
-            </TabItem>
+            </Grid>
 
-            <!-- Tab 2: Download Models -->
-            <TabItem x:Name="TabDownloadModels" Header="Download Models">
-                <Grid Margin="0,8,0,0">
+            <!-- Download models -->
+            <Grid x:Name="DownloadTabPanel" Visibility="Collapsed" Margin="0,8,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                         <StackPanel>
-                            <TextBlock Text="Recommended Models" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                            <ui:Card Margin="0,0,0,16" Padding="12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Custom Model" FontSize="16" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Enter an Ollama model name to pull." Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <Grid Grid.Column="1" MinWidth="320" VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ui:TextBox x:Name="CustomModelTextBox" Grid.Column="0" PlaceholderText="e.g. llama3:8b" HorizontalAlignment="Stretch"/>
+                                        <ui:Button Grid.Column="1" Content="Pull" Margin="8,0,0,0" Appearance="Primary" Click="PullCustomModel_Click"/>
+                                    </Grid>
+                                </Grid>
+                            </ui:Card>
+
+                            <TextBlock x:Name="RecommendedModelsHeader" Text="Recommended Models" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                            <TextBlock x:Name="NoRecommendedModelsText" Text="All recommended models are already installed." Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
                             
-                            <ui:Card Margin="0,0,0,8">
+                            <ui:Card x:Name="RecommendedLlamaCard" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -98,7 +143,7 @@
                                 </Grid>
                             </ui:Card>
 
-                            <ui:Card Margin="0,0,0,8">
+                            <ui:Card x:Name="RecommendedQwenCard" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -112,7 +157,7 @@
                                 </Grid>
                             </ui:Card>
 
-                            <ui:Card Margin="0,0,0,8">
+                            <ui:Card x:Name="RecommendedDeepseekCard" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -126,7 +171,7 @@
                                 </Grid>
                             </ui:Card>
 
-                            <ui:Card Margin="0,0,0,8">
+                            <ui:Card x:Name="RecommendedPhiCard" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -140,7 +185,7 @@
                                 </Grid>
                             </ui:Card>
 
-                            <ui:Card Margin="0,0,0,16">
+                            <ui:Card x:Name="RecommendedMistralCard" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -154,11 +199,6 @@
                                 </Grid>
                             </ui:Card>
 
-                            <TextBlock Text="Custom Model" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                            <StackPanel Orientation="Horizontal">
-                                <ui:TextBox x:Name="CustomModelTextBox" PlaceholderText="e.g. llama3:8b" Width="300"/>
-                                <ui:Button Content="Pull" Margin="8,0,0,0" Appearance="Primary" Click="PullCustomModel_Click"/>
-                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
 
@@ -175,12 +215,10 @@
                             <ui:Button Grid.Column="1" Content="Cancel" Margin="12,0,0,0" Click="CancelPull_Click"/>
                         </Grid>
                     </ui:Card>
-                </Grid>
-            </TabItem>
+            </Grid>
 
-            <!-- Tab 3: Manual Steps -->
-            <TabItem x:Name="TabManualSteps" Header="Manual Steps">
-                <StackPanel Margin="0,8,0,0">
+            <!-- Manual steps -->
+            <StackPanel x:Name="ManualTabPanel" Visibility="Collapsed" Margin="0,8,0,0">
                     <TextBlock Text="Manually Install Models" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <TextBlock Text="You can download and install models manually using the Ollama command line interface. Run the following command in your terminal:" TextWrapping="Wrap" Margin="0,0,0,12"/>
                     
@@ -195,8 +233,7 @@
 
                     <TextBlock Text="Note: Models are downloaded to your default Ollama storage location (usually ~/.ollama/models or C:\Users\&lt;User&gt;\.ollama\models)." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,12"/>
                     <TextBlock Text="Find available models at ollama.com/library" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                </StackPanel>
-            </TabItem>
-        </TabControl>
+            </StackPanel>
+        </Grid>
     </Grid>
 </ui:FluentWindow>

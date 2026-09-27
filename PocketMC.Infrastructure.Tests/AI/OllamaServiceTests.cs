@@ -210,6 +210,43 @@ public class OllamaServiceTests
         Assert.Null(progress.Percent);
     }
 
+    [Fact]
+    public async System.Threading.Tasks.Task PullModelAsync_UsesOnlyAsynchronousStreamReads()
+    {
+        var response = new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new System.Net.Http.StreamContent(new AsyncOnlyReadStream(
+                System.Text.Encoding.UTF8.GetBytes("""{"status":"success"}\n""")))
+        };
+        var handler = new StaticResponseHttpMessageHandler(response);
+        using var httpClient = new System.Net.Http.HttpClient(handler);
+        var service = new OllamaService(
+            httpClient,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<OllamaService>.Instance);
+        var progress = new InlineProgress<OllamaPullProgress>();
+
+        await service.PullModelAsync("http://localhost:11434", "qwen3:8b", progress: progress);
+
+        Assert.Contains(progress.Values, update => update.IsComplete && update.ErrorMessage is null);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task DeleteModelAsync_SendsDeleteRequestWithModelName()
+    {
+        var handler = new CapturingHttpMessageHandler();
+        using var httpClient = new System.Net.Http.HttpClient(handler);
+        var service = new OllamaService(
+            httpClient,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<OllamaService>.Instance);
+
+        await service.DeleteModelAsync("http://localhost:11434", "qwen3:8b");
+
+        Assert.Equal(System.Net.Http.HttpMethod.Delete, handler.Method);
+        Assert.Equal("http://localhost:11434/api/delete", handler.RequestUri?.ToString());
+        using var body = JsonDocument.Parse(handler.Body!);
+        Assert.Equal("qwen3:8b", body.RootElement.GetProperty("name").GetString());
+    }
+
     // ── Ollama Error Response Parsing Tests ─────────────────────────────
 
     [Fact]
@@ -304,5 +341,92 @@ public class OllamaServiceTests
             };
             return System.Threading.Tasks.Task.FromResult(response);
         }
+    }
+
+    private sealed class StaticResponseHttpMessageHandler : System.Net.Http.HttpMessageHandler
+    {
+        private readonly System.Net.Http.HttpResponseMessage _response;
+
+        public StaticResponseHttpMessageHandler(System.Net.Http.HttpResponseMessage response)
+        {
+            _response = response;
+        }
+
+        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(
+            System.Net.Http.HttpRequestMessage request,
+            System.Threading.CancellationToken cancellationToken) =>
+            System.Threading.Tasks.Task.FromResult(_response);
+    }
+
+    private sealed class CapturingHttpMessageHandler : System.Net.Http.HttpMessageHandler
+    {
+        public System.Net.Http.HttpMethod? Method { get; private set; }
+        public Uri? RequestUri { get; private set; }
+        public string? Body { get; private set; }
+
+        protected override async System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(
+            System.Net.Http.HttpRequestMessage request,
+            System.Threading.CancellationToken cancellationToken)
+        {
+            Method = request.Method;
+            RequestUri = request.RequestUri;
+            Body = await request.Content!.ReadAsStringAsync(cancellationToken);
+            return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK);
+        }
+    }
+
+    private sealed class AsyncOnlyReadStream : System.IO.Stream
+    {
+        private readonly byte[] _content;
+        private int _position;
+
+        public AsyncOnlyReadStream(byte[] content)
+        {
+            _content = content;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) =>
+            throw new InvalidOperationException("Synchronous reads are not allowed.");
+
+        public override int Read(Span<byte> buffer) =>
+            throw new InvalidOperationException("Synchronous reads are not allowed.");
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var count = Math.Min(buffer.Length, _content.Length - _position);
+            _content.AsMemory(_position, count).CopyTo(buffer);
+            _position += count;
+            return ValueTask.FromResult(count);
+        }
+
+        public override System.Threading.Tasks.Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override void Flush() { }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    private sealed class InlineProgress<T> : System.IProgress<T>
+    {
+        public List<T> Values { get; } = new();
+
+        public void Report(T value) => Values.Add(value);
     }
 }
