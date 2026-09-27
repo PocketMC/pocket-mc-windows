@@ -73,6 +73,7 @@ Your servers reside on your machine, in the app root you select. PocketMC is not
 
 - Create isolated instances from the UI: server type, version, loader, seed, world type, gamemode, difficulty, player limit, EULA, custom world import.
 - Start, stop, restart, and hard-kill servers from the dashboard or tray.
+- Automated scheduled server reboots: daily maintenance times or recurring hourly intervals with staged in-game countdown warnings (`say`) and graceful cancellation.
 - Graceful shutdown via RCON with a console-input fallback.
 - Crash detection with sanitized output capture and optional auto-restart with backoff.
 - Per-instance port conflict checks before launch.
@@ -108,6 +109,8 @@ Your servers reside on your machine, in the app root you select. PocketMC is not
 - Live CPU / RAM / player metrics for running instances.
 - Dynamic Geyser/Floodgate and Simple Voice Chat badges.
 - Console output is buffered, sanitized, classified, and persisted across sessions.
+- Persistent AI session summaries: cached in memory and dynamically synchronized without duplicate API token consumption.
+- Seamless detail page navigation resumption: preserves active console or settings view when navigating between dashboard and settings.
 - Stopped or crashed servers can still open a read-only last-session log view.
 - Large logs are tailed, no loading a 500 MB log file into the UI.
 - Console tools: filter, search, command input, session history.
@@ -119,6 +122,8 @@ Your servers reside on your machine, in the app root you select. PocketMC is not
 <br>
 
 - Built-in Playit agent provisioning and setup flow (simplified two-step wizard).
+- Embedded Playit tunnel agent v1.0.10 with verified SHA-256 integrity verification.
+- Dedicated Playit live binary console window with colorized logs, real-time search filtering, and copy controls.
 - Automatic tunnel discovery for matching instance ports.
 - Auto-creates tunnels for Java, Bedrock, Geyser, PocketMine, and Simple Voice Chat when possible.
 - Interactive Ports Map with local ports, public addresses, roles, and live tunnel status.
@@ -147,6 +152,7 @@ Your servers reside on your machine, in the app root you select. PocketMC is not
 - Dependency resolution where provider metadata supports it.
 - Java metadata scanning: Fabric, Quilt, Forge, NeoForge, Bukkit/Paper plugin metadata, icons.
 - Add-on inventory: display names, versions, loader types, side-support labels, warnings, update status.
+- Three-dot (`···`) context menus and right-click options for add-on cards with direct Windows Explorer navigation (`/select`) into add-on and plugin configuration directories.
 - Enable/disable add-ons without manually renaming files.
 - Manual add-on update installation with compatibility checks.
 - Bedrock `.mcpack`, `.mcaddon`, `.zip` ingestion with manifest parsing and automatic pack registration.
@@ -211,6 +217,7 @@ Your servers reside on your machine, in the app root you select. PocketMC is not
 - Secure internet exposure via built-in **Cloudflare Quick Tunnels** or **Playit.gg HTTPS tunnels**, or restrict to LAN only.
 - QR code generated for both local and public URLs, scan to open on mobile instantly.
 - Configurable host port (default: 25580) and per-feature access controls (console commands, player actions).
+- Granular multi-user permissions: manage multiple user accounts with independent access scopes (Console, Player Actions, Server Settings, Add-ons, File Manager).
 - Password-protected sessions with token lifetime configuration and active session visibility.
 - **Discord integration:** link your Discord account and receive the public remote control URL directly in your DMs via the PocketMC Discord bot when a tunnel starts.
 - Pairing authorization flow with revocable device sessions.
@@ -223,9 +230,11 @@ Your servers reside on your machine, in the app root you select. PocketMC is not
 
 Generates structured session summaries from server logs using your own API key or a local endpoint.
 
-Supported providers: **Google Gemini**, **OpenAI**, **Anthropic Claude**, **Mistral AI**, **Groq**, **Ollama / compatible local endpoint**
+Supported providers: **Google Gemini** (Gemini 3.x generation default), **OpenAI** (GPT-5 and o-series support), **Anthropic Claude**, **Mistral AI**, **Groq**, **Ollama / compatible local endpoint**
 
-Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the API key and the provider choice. A desktop toast notification is shown when a summary completes, with a direct link to open it.
+- Built-in Ollama Model Manager: discover local daemons, pull models with live byte-level progress and transfer speeds, remove obsolete weights, and route to local or cloud Ollama endpoints without mandatory API keys.
+- Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the API key and the provider choice.
+- Desktop toast notifications alert you when a summary completes, with direct one-click opening into cached markdown reports.
 
 </details>
 
@@ -243,15 +252,17 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 <summary><b> &nbsp;Windows integration and app polish</b></summary>
 <br>
 
-- Toast notifications for server online, Playit agent connection, Remote Control availability, and AI summary completion — each individually toggleable in App Settings.
+- Toast notifications for server online, Playit agent connection, Remote Control availability, and AI summary completion: each individually toggleable in App Settings.
 - Tray integration, minimize-to-tray, and start-with-Windows.
 - Start minimized to tray on launch option.
 - Single-instance enforcement: launching the app a second time brings the existing window to the foreground.
 - `pocketmc://` custom URI protocol for deep linking (e.g., Discord bot integration).
-- Velopack update integration with automatic updates.
+- Velopack update integration with automatic background updates.
 - Windows UWP loopback helper for Minecraft Bedrock local access via `CheckNetIsolation.exe`.
-- Mica, Acrylic, Wallpaper Blur, custom background images, custom accent colors, and theme settings.
-- Discord Rich Presence: server type, version, player count, uptime, download button.
+- Mica, Acrylic, Wallpaper Blur, custom background images, Wallpaper Blur Intensity (0-120 px), Darkness & Dimming tint opacity (0-100%), and dynamic accent colors.
+- Fully customizable Discord Rich Presence: toggle idle state, custom server name, online players, address/tunnel, engine icons, download button, and live in-app preview card.
+- Hardware rendering optimizer: 120Hz/144Hz/240Hz display sync, GPU hardware acceleration, ClearType text, and skeleton loading states.
+- Window geometry persistence: restores window position, size, and maximized state across sessions.
 
 </details>
 
@@ -268,8 +279,8 @@ Logs are preprocessed and sanitized (IPs, emails) before being sent. You own the
 | **Mod Marketplace**<br><img src="docs/assets/screenshots/mod-marketplace.png" width="420" alt="Mod Marketplace" /> | **Mod Management**<br><img src="docs/assets/screenshots/screenshot-mod-management.png" width="420" alt="Mod Management" /> |
 | **Plugin Management**<br><img src="docs/assets/screenshots/screenshot-plugins.png" width="420" alt="Plugin Management" /> | **Java Runtimes**<br><img src="docs/assets/screenshots/java-runtimes.png" width="420" alt="Java Runtimes" /> |
 | **Public Tunnels**<br><img src="docs/assets/screenshots/tunnels.png" width="420" alt="Public Tunnels" /> | **Interactive Ports Map**<br><img src="docs/assets/screenshots/ports-map.png" width="420" alt="Interactive Ports Map" /> |
-| **Remote Control**<br><img src="docs/assets/screenshots/remote-control.png" width="420" alt="Remote Control" /> | **App Settings**<br><img src="docs/assets/screenshots/app-settings.png" width="420" alt="App Settings" /> |
-| **About Page**<br><img src="docs/assets/screenshots/about.png" width="420" alt="About Page" /> | |
+| **Remote Control**<br><img src="docs/assets/screenshots/remote-control.png" width="420" alt="Remote Control" /> | **Remote Permissions**<br><img src="docs/assets/screenshots/remote-control-permissions.png" width="420" alt="Remote Permissions" /> |
+| **App Settings**<br><img src="docs/assets/screenshots/app-settings.png" width="420" alt="App Settings" /> | **About Page**<br><img src="docs/assets/screenshots/about.png" width="420" alt="About Page" /> |
 
 ### Themes
 
@@ -377,7 +388,7 @@ PocketMC Windows is engineered following strict **Clean Architecture** principle
 | **`PocketMC.Desktop.Tests`** | Tests WPF ViewModels, UI navigation, dialog workflows, theme coordination, and XAML binding integrity. |
 
 ```
-Test Suite Execution: 680 / 680 Tests Passed (100% Pass Rate, 0 Skipped, 0 Failed)
+Test Suite Execution: 980+ Tests across Domain, Application, Infrastructure, RemoteControl, and Desktop layers
 ```
 
 </details>
