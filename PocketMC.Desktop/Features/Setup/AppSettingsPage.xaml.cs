@@ -1110,7 +1110,7 @@ namespace PocketMC.Desktop.Features.Setup
             if (AiModelConfigPanel != null)
                 AiModelConfigPanel.Visibility = showModelConfiguration ? Visibility.Visible : Visibility.Collapsed;
             if (EndpointUrlPanel != null)
-                EndpointUrlPanel.Visibility = isOllama && showModelConfiguration ? Visibility.Visible : Visibility.Collapsed;
+                EndpointUrlPanel.Visibility = isOllama ? Visibility.Visible : Visibility.Collapsed;
             if (BtnManageOllamaModels != null)
                 BtnManageOllamaModels.Visibility = isOllama && !isCloud && _isLocalOllamaAvailable
                     ? Visibility.Visible

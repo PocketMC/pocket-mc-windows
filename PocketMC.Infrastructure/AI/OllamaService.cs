@@ -124,7 +124,7 @@ public class OllamaService : IOllamaService
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"{baseUrl}/api/delete")
         {
             Content = new StringContent(
-                JsonSerializer.Serialize(new { name = modelName }),
+                JsonSerializer.Serialize(new { model = modelName }),
                 Encoding.UTF8,
                 "application/json")
         };

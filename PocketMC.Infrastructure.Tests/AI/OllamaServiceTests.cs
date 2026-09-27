@@ -244,7 +244,7 @@ public class OllamaServiceTests
         Assert.Equal(System.Net.Http.HttpMethod.Delete, handler.Method);
         Assert.Equal("http://localhost:11434/api/delete", handler.RequestUri?.ToString());
         using var body = JsonDocument.Parse(handler.Body!);
-        Assert.Equal("qwen3:8b", body.RootElement.GetProperty("name").GetString());
+        Assert.Equal("qwen3:8b", body.RootElement.GetProperty("model").GetString());
     }
 
     // ── Ollama Error Response Parsing Tests ─────────────────────────────
