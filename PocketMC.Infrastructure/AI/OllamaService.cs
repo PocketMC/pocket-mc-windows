@@ -111,6 +111,33 @@ public class OllamaService : IOllamaService
         }
     }
 
+    public async Task DeleteModelAsync(
+        string endpoint,
+        string modelName,
+        string? apiKey = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(modelName))
+            throw new ArgumentException("Model name cannot be empty.", nameof(modelName));
+
+        var baseUrl = NormalizeBaseUrl(endpoint);
+        using var request = new HttpRequestMessage(HttpMethod.Delete, $"{baseUrl}/api/delete")
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(new { model = modelName }),
+                Encoding.UTF8,
+                "application/json")
+        };
+        AttachAuthIfNeeded(request, baseUrl, apiKey);
+
+        using var response = await _httpClient.SendAsync(request, ct);
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        throw new InvalidOperationException(ParseHttpError(response, body));
+    }
+
     public async Task PullModelAsync(
         string endpoint,
         string modelName,
@@ -148,11 +175,13 @@ public class OllamaService : IOllamaService
             using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader = new StreamReader(stream);
 
-            while (!reader.EndOfStream)
+            while (true)
             {
                 ct.ThrowIfCancellationRequested();
 
                 var line = await reader.ReadLineAsync(ct);
+                if (line is null)
+                    break;
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 

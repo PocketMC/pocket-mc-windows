@@ -17,6 +17,12 @@ public interface IOllamaService
         string? apiKey = null,
         CancellationToken ct = default);
 
+    Task DeleteModelAsync(
+        string endpoint,
+        string modelName,
+        string? apiKey = null,
+        CancellationToken ct = default);
+
     Task PullModelAsync(
         string endpoint,
         string modelName,

@@ -73,6 +73,7 @@ namespace PocketMC.Desktop.Features.Setup
         private readonly IServerLifecycleService _serverLifecycleService;
         private readonly PlayitAgentService _playitAgentService;
         private readonly IOllamaService _ollamaService;
+        private bool _isLocalOllamaAvailable;
         private System.Windows.Threading.DispatcherTimer? _blurDebounceTimer;
         private bool _isInitializing = true;
         private static readonly (string Name, string Hex)[] AccentColorPresets =
@@ -218,16 +219,21 @@ namespace PocketMC.Desktop.Features.Setup
             var initialProviderType = _aiProviderFactory.ParseProvider(_applicationState.Settings.AiProvider ?? "Gemini");
             var (initialDefaultModel, initialDefaultEndpoint) = _aiProviderFactory.GetProviderDefaults(initialProviderType);
 
-            PopulateModelsForProvider(initialProviderType);
-            SetSelectedModel(_applicationState.Settings.GetCurrentAiModel() ?? initialDefaultModel);
-
-            AiEndpointUrlInput.Text = _applicationState.Settings.GetCurrentAiEndpoint() ?? initialDefaultEndpoint;
-
             if (OllamaModeCombo != null && initialProviderType == AiProviderType.Ollama)
             {
                 var isCloud = string.Equals(_applicationState.Settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase);
                 OllamaModeCombo.SelectedIndex = isCloud ? 1 : 0;
+                if (isCloud)
+                {
+                    initialDefaultEndpoint = "https://ollama.com/api/chat";
+                    initialDefaultModel = "deepseek-v4.1-flash";
+                }
             }
+
+            PopulateModelsForProvider(initialProviderType);
+            SetSelectedModel(_applicationState.Settings.GetCurrentAiModel() ?? initialDefaultModel);
+
+            AiEndpointUrlInput.Text = _applicationState.Settings.GetCurrentAiEndpoint() ?? initialDefaultEndpoint;
 
             UpdateAiApiKeyUI(initialProviderType);
 
@@ -1047,20 +1053,21 @@ namespace PocketMC.Desktop.Features.Setup
         private void UpdateAiApiKeyUI(AiProviderType providerType)
         {
             bool isOllama = providerType == AiProviderType.Ollama;
-            EndpointUrlPanel.Visibility = isOllama ? Visibility.Visible : Visibility.Collapsed;
+            var isCloud = isOllama && string.Equals(_applicationState.Settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase);
+            if (isOllama && !isCloud)
+                _isLocalOllamaAvailable = false;
+
+            UpdateLocalOllamaControlsVisibility();
 
             if (OllamaModePanel != null)
                 OllamaModePanel.Visibility = isOllama ? Visibility.Visible : Visibility.Collapsed;
             if (OllamaStatusPanel != null)
-                OllamaStatusPanel.Visibility = isOllama ? Visibility.Visible : Visibility.Collapsed;
-            if (OllamaActionsPanel != null)
-                OllamaActionsPanel.Visibility = isOllama ? Visibility.Visible : Visibility.Collapsed;
-
+                OllamaStatusPanel.Visibility = isOllama &&
+                    !string.Equals(_applicationState.Settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
             if (isOllama)
             {
-                var settings = _applicationState.Settings;
-                var isCloud = string.Equals(settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase);
-
                 if (OllamaModeCombo != null)
                 {
                     OllamaModeCombo.SelectedIndex = isCloud ? 1 : 0;
@@ -1072,10 +1079,6 @@ namespace PocketMC.Desktop.Features.Setup
                     AiApiKeySubtitle.Text = "Required for Ollama Cloud. Get your key at ollama.com/settings/keys.";
                     AiApiKeyInput.PlaceholderText = "Paste your Ollama Cloud API key...";
                     BtnValidateAiKey.Content = "Validate Key";
-                    if (OllamaStatusTitle != null)
-                        OllamaStatusTitle.Text = "Cloud Service Status";
-                    if (BtnManageOllamaModels != null)
-                        BtnManageOllamaModels.Content = "Browse Cloud Models";
                 }
                 else
                 {
@@ -1085,8 +1088,6 @@ namespace PocketMC.Desktop.Features.Setup
                     BtnValidateAiKey.Content = "Test Connection";
                     if (OllamaStatusTitle != null)
                         OllamaStatusTitle.Text = "Daemon Status";
-                    if (BtnManageOllamaModels != null)
-                        BtnManageOllamaModels.Content = "Manage and Download Models";
                 }
 
                 _ = RefreshOllamaDaemonStatusAsync();
@@ -1098,6 +1099,28 @@ namespace PocketMC.Desktop.Features.Setup
                 AiApiKeyInput.PlaceholderText = "Paste your API key here...";
                 BtnValidateAiKey.Content = "Validate";
             }
+        }
+
+        private void UpdateLocalOllamaControlsVisibility()
+        {
+            bool isOllama = _aiProviderFactory.ParseProvider(_applicationState.Settings.AiProvider ?? "Gemini") == AiProviderType.Ollama;
+            bool isCloud = string.Equals(_applicationState.Settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase);
+            bool showModelConfiguration = !isOllama || isCloud || _isLocalOllamaAvailable;
+
+            if (AiModelConfigPanel != null)
+                AiModelConfigPanel.Visibility = showModelConfiguration ? Visibility.Visible : Visibility.Collapsed;
+            if (EndpointUrlPanel != null)
+                EndpointUrlPanel.Visibility = isOllama ? Visibility.Visible : Visibility.Collapsed;
+            if (BtnManageOllamaModels != null)
+                BtnManageOllamaModels.Visibility = isOllama && !isCloud && _isLocalOllamaAvailable
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            if (AiModelCombo != null)
+                AiModelCombo.IsEditable = !isOllama || isCloud;
+            if (AiModelPlaceholder != null)
+                AiModelPlaceholder.Visibility = isOllama && !isCloud && _isLocalOllamaAvailable && AiModelCombo?.Items.Count == 0
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
         }
 
         private void OllamaModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1120,6 +1143,15 @@ namespace PocketMC.Desktop.Features.Setup
                 AiEndpointUrlInput.Text = "http://localhost:11434/api/chat";
             }
 
+            PopulateModelsForProvider(AiProviderType.Ollama);
+
+            var currentModel = AiModelCombo?.Text?.Trim();
+            if (AiModelCombo != null && !ContainsModel(AiModelCombo, currentModel ?? string.Empty))
+            {
+                var defaultModel = isCloud ? "deepseek-v4.1-flash" : "qwen3:8b";
+                SetSelectedModel(defaultModel);
+            }
+
             _isInitializing = wasInit;
 
             UpdateAiApiKeyUI(AiProviderType.Ollama);
@@ -1130,24 +1162,37 @@ namespace PocketMC.Desktop.Features.Setup
         {
             if (OllamaStatusText == null) return;
 
-            var endpoint = AiEndpointUrlInput?.Text?.Trim() ?? "http://localhost:11434";
             var isCloud = OllamaModeCombo?.SelectedIndex == 1 ||
                 string.Equals(_applicationState.Settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase);
+
+            var endpoint = AiEndpointUrlInput?.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(endpoint))
+            {
+                endpoint = isCloud ? "https://ollama.com/api/chat" : "http://localhost:11434";
+            }
 
             if (OllamaStatusTitle != null)
                 OllamaStatusTitle.Text = isCloud ? "Cloud Service Status" : "Daemon Status";
 
-            if (BtnManageOllamaModels != null)
-                BtnManageOllamaModels.Content = isCloud ? "Browse Cloud Models" : "Manage and Download Models";
-
             OllamaStatusText.Text = isCloud ? "Checking Ollama Cloud connection..." : "Checking Ollama status...";
             OllamaStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x89, 0xB4, 0xFA));
+            if (!isCloud)
+            {
+                _isLocalOllamaAvailable = false;
+                UpdateLocalOllamaControlsVisibility();
+            }
 
             try
             {
                 var status = await _ollamaService.CheckDaemonHealthAsync(endpoint);
                 if (status.IsRunning)
                 {
+                    if (!isCloud)
+                    {
+                        _isLocalOllamaAvailable = true;
+                        UpdateLocalOllamaControlsVisibility();
+                    }
+
                     if (isCloud)
                     {
                         OllamaStatusText.Text = "Connected - Ollama Cloud API";
@@ -1161,6 +1206,12 @@ namespace PocketMC.Desktop.Features.Setup
                 }
                 else
                 {
+                    if (!isCloud)
+                    {
+                        _isLocalOllamaAvailable = false;
+                        UpdateLocalOllamaControlsVisibility();
+                    }
+
                     if (isCloud)
                     {
                         OllamaStatusText.Text = "Ollama Cloud API unreachable.";
@@ -1170,12 +1221,26 @@ namespace PocketMC.Desktop.Features.Setup
                         OllamaStatusText.Text = status.ErrorMessage ?? "Ollama is not running.";
                     }
                     OllamaStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                    if (isCloud && (AiModelCombo?.Items.Count ?? 0) == 0)
+                    {
+                        PopulateModelsForProvider(AiProviderType.Ollama);
+                    }
                 }
             }
             catch (Exception ex)
             {
+                if (!isCloud)
+                {
+                    _isLocalOllamaAvailable = false;
+                    UpdateLocalOllamaControlsVisibility();
+                }
+
                 OllamaStatusText.Text = $"Error: {ex.Message}";
                 OllamaStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                if (isCloud && (AiModelCombo?.Items.Count ?? 0) == 0)
+                {
+                    PopulateModelsForProvider(AiProviderType.Ollama);
+                }
             }
         }
 
@@ -1184,9 +1249,10 @@ namespace PocketMC.Desktop.Features.Setup
             if (AiModelCombo == null) return;
 
             var apiKey = AiApiKeyInput?.Password?.Trim();
-            var models = await _ollamaService.GetInstalledModelsAsync(endpoint, apiKey);
+            var isCloud = OllamaModeCombo?.SelectedIndex == 1 ||
+                string.Equals(_applicationState.Settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase);
 
-            if (models.Count == 0) return;
+            var models = await _ollamaService.GetInstalledModelsAsync(endpoint, apiKey);
 
             bool wasInit = _isInitializing;
             _isInitializing = true;
@@ -1198,14 +1264,11 @@ namespace PocketMC.Desktop.Features.Setup
             {
                 if (model.SupportsCompletion)
                 {
-                    var label = !string.IsNullOrWhiteSpace(model.ParameterSize)
-                        ? $"{model.Name}  ({model.ParameterSize}, {model.FormattedSize})"
-                        : model.Name;
                     AiModelCombo.Items.Add(new AiModelInfo(model.Name));
                 }
             }
 
-            var staticModels = GetModelsForProvider(AiProviderType.Ollama);
+            var staticModels = isCloud ? GetOllamaCloudModels() : new System.Collections.Generic.List<AiModelInfo>();
             foreach (var staticModel in staticModels)
             {
                 bool alreadyExists = false;
@@ -1222,23 +1285,56 @@ namespace PocketMC.Desktop.Features.Setup
                     AiModelCombo.Items.Add(staticModel);
             }
 
-            if (!string.IsNullOrWhiteSpace(currentText))
+            if (!string.IsNullOrWhiteSpace(currentText) && ContainsModel(AiModelCombo, currentText))
+            {
                 SetSelectedModel(currentText);
+            }
+            else if (isCloud)
+            {
+                var preferred = ContainsModel(AiModelCombo, "deepseek-v4.1-flash")
+                    ? "deepseek-v4.1-flash"
+                    : (AiModelCombo.Items.Count > 0 && AiModelCombo.Items[0] is AiModelInfo first ? first.ModelName : "");
+                if (!string.IsNullOrEmpty(preferred))
+                    SetSelectedModel(preferred);
+            }
             else if (AiModelCombo.Items.Count > 0)
+            {
                 AiModelCombo.SelectedIndex = 0;
+            }
+            else
+            {
+                AiModelCombo.SelectedIndex = -1;
+                AiModelCombo.Text = string.Empty;
+            }
 
             _isInitializing = wasInit;
+            UpdateLocalOllamaControlsVisibility();
         }
 
-        private async void RefreshOllamaModels_Click(object sender, RoutedEventArgs e)
+        private static bool ContainsModel(ComboBox combo, string modelName)
         {
-            await RefreshOllamaDaemonStatusAsync();
+            if (string.IsNullOrWhiteSpace(modelName)) return false;
+            foreach (var item in combo.Items)
+            {
+                if (item is AiModelInfo info && string.Equals(info.ModelName, modelName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
-        private void ManageOllamaModels_Click(object sender, RoutedEventArgs e)
+        private async void ManageOllamaModels_Click(object sender, RoutedEventArgs e)
         {
             var endpoint = AiEndpointUrlInput?.Text?.Trim() ?? "http://localhost:11434";
             var apiKey = AiApiKeyInput?.Password?.Trim();
+
+            var isCloud = OllamaModeCombo?.SelectedIndex == 1 ||
+                string.Equals(_applicationState.Settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase);
+
+            if (isCloud)
+            {
+                await RefreshOllamaDaemonStatusAsync();
+                return;
+            }
 
             var dialog = new OllamaModelManagerDialog(_ollamaService, endpoint, apiKey);
             dialog.Owner = Window.GetWindow(this);
@@ -1343,30 +1439,38 @@ namespace PocketMC.Desktop.Features.Setup
                     list.Add(new AiModelInfo("mixtral-8x7b-32768"));
                     break;
                 case AiProviderType.Ollama:
-                    // Qwen family
-                    list.Add(new AiModelInfo("qwen3.8"));
-                    list.Add(new AiModelInfo("qwen3.6"));
-                    list.Add(new AiModelInfo("qwen3-coder"));
-                    list.Add(new AiModelInfo("qwen2.5"));
-                    // Llama family
-                    list.Add(new AiModelInfo("llama4"));
-                    list.Add(new AiModelInfo("llama3.3"));
-                    list.Add(new AiModelInfo("llama3.2"));
-                    // DeepSeek
-                    list.Add(new AiModelInfo("deepseek-r1"));
-                    list.Add(new AiModelInfo("deepseek-v4-flash"));
-                    // Microsoft Phi
-                    list.Add(new AiModelInfo("phi4"));
-                    list.Add(new AiModelInfo("phi4-mini"));
-                    // Google Gemma
-                    list.Add(new AiModelInfo("gemma4"));
-                    list.Add(new AiModelInfo("gemma2"));
-                    // Others
-                    list.Add(new AiModelInfo("mistral"));
-                    list.Add(new AiModelInfo("codellama"));
-                    break;
+                    var isCloud = OllamaModeCombo?.SelectedIndex == 1 ||
+                        string.Equals(_applicationState.Settings.OllamaMode, "Cloud", StringComparison.OrdinalIgnoreCase);
+                    return isCloud ? GetOllamaCloudModels() : list;
             }
             return list;
+        }
+
+        private static System.Collections.Generic.List<AiModelInfo> GetOllamaCloudModels()
+        {
+            return new System.Collections.Generic.List<AiModelInfo>
+            {
+                new("deepseek-v4.1-flash"),
+                new("gpt-oss:20b"),
+                new("gpt-oss:120b"),
+                new("minimax-m2.7"),
+                new("minimax-m3"),
+                new("mistral-large-3:675b"),
+                new("nemotron-3-super"),
+                new("nemotron-3-ultra"),
+                new("nemotron-3-nano:30b"),
+                new("kimi-k2.7-code"),
+                new("kimi-k3"),
+                new("kimi-k2.6"),
+                new("glm-5.3"),
+                new("glm-5.3-flash"),
+                new("glm-5.2"),
+                new("deepseek-v4-pro:0813"),
+                new("gemma4:31b"),
+                new("qwen2.5:cloud"),
+                new("llama3.3:cloud"),
+                new("deepseek-r1:cloud")
+            };
         }
 
         private void SetSelectedModel(string modelName)
@@ -1397,57 +1501,76 @@ namespace PocketMC.Desktop.Features.Setup
 
             if ((provider != AiProviderType.Ollama || isOllamaCloud) && string.IsNullOrWhiteSpace(apiKey))
             {
-                AiKeyStatus.Text = isOllamaCloud
+                var message = isOllamaCloud
                     ? "Please enter your Ollama Cloud API key first."
                     : "Please enter an API key first.";
-                AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
+                AppDialog.ShowWarning("API Key Required", message);
                 return;
             }
 
-            if (provider == AiProviderType.Ollama && !isOllamaCloud)
-            {
-                string target = string.IsNullOrWhiteSpace(endpointUrl) ? "http://localhost:11434/api/chat" : endpointUrl;
-                AiKeyStatus.Text = $"Testing connection to Ollama at {target}...";
-            }
-            else
-            {
-                string maskedKey = apiKey.Length > 8
-                    ? apiKey[..4] + "..." + apiKey[^4..]
-                    : "provided key";
-                var providerName = isOllamaCloud ? "Ollama Cloud" : _aiProviderFactory.GetDisplayName(provider);
-                AiKeyStatus.Text = $"Validating {providerName} with key {maskedKey}...";
-            }
-            AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0xB4, 0xFA));
+            var originalContent = BtnValidateAiKey.Content;
+            BtnValidateAiKey.IsEnabled = false;
+            BtnValidateAiKey.Content = "Validating...";
 
             try
             {
                 var result = await _aiProviderFactory.GetProvider(provider).ValidateKeyAsync(apiKey, modelName, endpointUrl);
                 if (result.Success)
                 {
-                    AiKeyStatus.Text = isOllamaCloud
+                    var title = isOllamaCloud
+                        ? "Ollama Cloud Connected"
+                        : provider == AiProviderType.Ollama
+                            ? "Ollama Connected"
+                            : $"{_aiProviderFactory.GetDisplayName(provider)} Connected";
+
+                    var message = isOllamaCloud
                         ? "Ollama Cloud API key is valid. Connection successful."
                         : provider == AiProviderType.Ollama
                             ? "Connection to Ollama successful."
-                            : "API key is valid. Connection successful.";
-                    AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
+                            : $"{_aiProviderFactory.GetDisplayName(provider)} API key is valid. Connection successful.";
+
+                    if (provider == AiProviderType.Ollama)
+                    {
+                        _ = RefreshOllamaDaemonStatusAsync();
+                    }
+
+                    AppDialog.ShowInfo(title, message);
                 }
                 else
                 {
-                    AiKeyStatus.Text = result.Error;
-                    AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
+                    var title = isOllamaCloud
+                        ? "Ollama Cloud Validation Failed"
+                        : provider == AiProviderType.Ollama
+                            ? "Connection Failed"
+                            : $"{_aiProviderFactory.GetDisplayName(provider)} Validation Failed";
+
+                    var errorMessage = string.IsNullOrWhiteSpace(result.Error)
+                        ? "Validation failed. Please verify your API key and connection settings."
+                        : result.Error;
+
+                    AppDialog.ShowError(title, errorMessage);
                 }
             }
             catch (Exception ex)
             {
-                AiKeyStatus.Text = $"Error: {ex.Message}";
-                AiKeyStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
+                AppDialog.ShowError(
+                    "Connection Error",
+                    $"An error occurred while validating:\n\n{ex.Message}");
+            }
+            finally
+            {
+                BtnValidateAiKey.IsEnabled = true;
+                BtnValidateAiKey.Content = originalContent;
             }
         }
 
         private void SaveAiKey_Click(object sender, RoutedEventArgs e)
         {
-            SaveAiSettings();
-            _dialogService.ShowMessage("Saved", "AI Summarization configuration saved successfully.");
+            var settings = _applicationState.Settings;
+            var provider = GetSelectedProvider().ToString();
+            settings.AiApiKeys[provider] = AiApiKeyInput.Password.Trim();
+            _settingsManager.Save(settings);
+            _dialogService.ShowMessage("Saved", "AI API key saved successfully.");
         }
 
         private void ToggleAiSummarization_Changed(object sender, RoutedEventArgs e)
@@ -1472,6 +1595,12 @@ namespace PocketMC.Desktop.Features.Setup
             e.Handled = true;
         }
 
+        private void AiEndpointUrlInput_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+            SaveAiSettings();
+        }
+
         private void SaveAiSettings()
         {
             var settings = _applicationState.Settings;
@@ -1482,7 +1611,6 @@ namespace PocketMC.Desktop.Features.Setup
             {
                 settings.OllamaMode = OllamaModeCombo.SelectedIndex == 1 ? "Cloud" : "Local";
             }
-            settings.AiApiKeys[provider] = AiApiKeyInput.Password.Trim();
             settings.AiModels[provider] = AiModelCombo.Text.Trim();
             settings.AiEndpoints[provider] = AiEndpointUrlInput.Text.Trim();
 
