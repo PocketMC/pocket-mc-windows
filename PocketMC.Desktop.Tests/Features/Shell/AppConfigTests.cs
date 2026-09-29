@@ -1,5 +1,6 @@
 using PocketMC.Desktop;
 using PocketMC.Infrastructure.Configuration;
+using PocketMC.Infrastructure.Tunnel;
 using System;
 using System.IO;
 using System.Net;
@@ -58,7 +59,8 @@ public sealed class AppConfigTests
         Assert.False(string.IsNullOrWhiteSpace(AppConfig.HealthCheckPlayit));
         Assert.False(string.IsNullOrWhiteSpace(AppConfig.HealthCheckAdoptium));
         Assert.False(string.IsNullOrWhiteSpace(AppConfig.HealthCheckModrinth));
-        Assert.False(string.IsNullOrWhiteSpace(AppConfig.BinaryPlayitDownloadUrl));
+        Assert.Contains($"/v{PlayitRuntimeManifest.TargetVersion}/", PlayitRuntimeManifest.DownloadUrl, StringComparison.Ordinal);
+        Assert.Equal(64, PlayitRuntimeManifest.ExpectedSha256.Length);
         Assert.False(string.IsNullOrWhiteSpace(AppConfig.BinaryCloudflaredDownloadUrl));
     }
 

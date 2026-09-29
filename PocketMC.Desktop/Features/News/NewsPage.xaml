@@ -1,0 +1,112 @@
+<Page x:Class="PocketMC.Desktop.Features.News.NewsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="News">
+    <Grid Margin="28,20,28,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <ui:TextBlock FontTypography="Title"
+                              Text="News"
+                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                              Margin="0,0,0,4"/>
+                <TextBlock Text="PocketMC announcements and service notices"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           FontSize="13"/>
+            </StackPanel>
+            <ui:Button x:Name="BtnRefresh"
+                       Grid.Column="1"
+                       Content="Refresh"
+                       Icon="{ui:SymbolIcon ArrowSync24}"
+                       Appearance="Secondary"
+                       Click="BtnRefresh_Click"
+                       AutomationProperties.Name="Refresh PocketMC news"/>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="18"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="NewsList"
+                     Grid.Column="0"
+                     SelectionChanged="NewsList_SelectionChanged"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="12,10" Margin="0,0,0,6"
+                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1" CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse Grid.Column="0" Width="7" Height="7" Margin="0,6,9,0"
+                                         Fill="{DynamicResource AccentFillColorDefaultBrush}"
+                                         Visibility="{Binding UnreadVisibility}"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding TypeAndPriority}" FontSize="11" Margin="0,4,0,0"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock Text="{Binding PublishedLabel}" FontSize="11" Margin="0,2,0,0"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Grid Grid.Column="2">
+                <Border x:Name="NewsArticleSurface"
+                        Padding="22"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="8"
+                        Visibility="Collapsed">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="TxtArticleMeta" Grid.Row="0" Margin="0,0,0,14"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled" Padding="0,0,12,0">
+                            <StackPanel x:Name="ArticleContent"/>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+                <StackPanel x:Name="EmptyPanel" VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="Visible">
+                    <ui:SymbolIcon Symbol="Megaphone24" FontSize="32" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    <TextBlock x:Name="TxtEmpty" Text="No news is available yet."
+                               Margin="0,10,0,0" FontSize="14" TextAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <TextBlock x:Name="TxtSyncStatus" Grid.Row="2" Margin="0,10,0,0"
+                   FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+    </Grid>
+</Page>

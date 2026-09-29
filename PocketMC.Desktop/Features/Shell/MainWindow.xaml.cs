@@ -24,6 +24,8 @@ using PocketMC.Application.Services.Instances;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Application.Interfaces.Instances;
 using PocketMC.Desktop.Features.RemoteControl.UI;
+using PocketMC.Desktop.Features.News;
+using PocketMC.Infrastructure.News;
 using PocketMC.Infrastructure;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.OS;
@@ -51,6 +53,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         typeof(TunnelPage),
         typeof(PortsMapPage),
         typeof(RemoteControlPage),
+        typeof(NewsPage),
         typeof(JavaSetupPage),
         typeof(AboutPage),
         typeof(AppSettingsPage)
@@ -236,6 +239,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
                 GetOrCreateShellPage(typeof(JavaSetupPage));
                 GetOrCreateShellPage(typeof(AboutPage));
                 GetOrCreateShellPage(typeof(RemoteControlPage));
+                GetOrCreateShellPage(typeof(NewsPage));
             }
             catch (Exception ex)
             {
@@ -273,7 +277,8 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         pageType == typeof(JavaSetupPage) ||
         pageType == typeof(AboutPage) ||
         pageType == typeof(AppSettingsPage) ||
-        pageType == typeof(RemoteControlPage);
+        pageType == typeof(RemoteControlPage) ||
+        pageType == typeof(NewsPage);
 
     public bool ShowShellPage(Type pageType, object? parameter = null)
     {
@@ -386,6 +391,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         SetNavigationItemActiveState(NavAbout, ReferenceEquals(targetItem, NavAbout));
         SetNavigationItemActiveState(NavSettings, ReferenceEquals(targetItem, NavSettings));
         SetNavigationItemActiveState(NavRemoteControl, ReferenceEquals(targetItem, NavRemoteControl));
+        SetNavigationItemActiveState(NavNews, ReferenceEquals(targetItem, NavNews));
     }
 
     private NavigationViewItem? GetShellNavigationItem(Type? pageType)
@@ -396,6 +402,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         if (pageType == typeof(AboutPage)) return NavAbout;
         if (pageType == typeof(AppSettingsPage)) return NavSettings;
         if (pageType == typeof(RemoteControlPage)) return NavRemoteControl;
+        if (pageType == typeof(NewsPage)) return NavNews;
         return null;
     }
 
@@ -460,7 +467,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             DetachTitleBarContextSource();
             _viewModel.IsPaneVisible = false;
             _viewModel.IsPaneToggleVisible = false;
-            NavDashboard.IsEnabled = NavTunnel.IsEnabled = NavJavaSetup.IsEnabled =
+            NavDashboard.IsEnabled = NavTunnel.IsEnabled = NavNews.IsEnabled = NavJavaSetup.IsEnabled =
                 NavAbout.IsEnabled = NavSettings.IsEnabled = NavRemoteControl.IsEnabled = false;
             _uiStateService.UpdateBreadcrumb(null);
         }
@@ -468,7 +475,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         {
             _viewModel.IsPaneVisible = true;
             _viewModel.IsPaneToggleVisible = true;
-            NavDashboard.IsEnabled = NavTunnel.IsEnabled = NavJavaSetup.IsEnabled =
+            NavDashboard.IsEnabled = NavTunnel.IsEnabled = NavNews.IsEnabled = NavJavaSetup.IsEnabled =
                 NavAbout.IsEnabled = NavSettings.IsEnabled = NavRemoteControl.IsEnabled = true;
         }
     }
@@ -529,6 +536,23 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         }
 
         window.ShowDialog();
+    }
+
+    public void ShowNewsPopup(NewsItem item)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => ShowNewsPopup(item));
+            return;
+        }
+
+        NewsPopupWindow window = new(item);
+        if (IsLoaded && IsVisible) window.Owner = this;
+        window.ShowDialog();
+        if (window.WasAcknowledged)
+        {
+            _serviceProvider.GetRequiredService<NewsService>().Acknowledge(item.Metadata.Id);
+        }
     }
 
     public void ShowMinimizedToTray()
@@ -839,6 +863,10 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
                     case Key.D6:
                     case Key.NumPad6:
                         handled = nav.NavigateToShellPage(typeof(AboutPage));
+                        break;
+                    case Key.D7:
+                    case Key.NumPad7:
+                        handled = nav.NavigateToNews();
                         break;
                     case Key.OemComma:
                         handled = nav.NavigateToShellPage(typeof(AppSettingsPage));

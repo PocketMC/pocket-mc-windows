@@ -45,6 +45,10 @@ namespace PocketMC.Infrastructure.Configuration
             _settingsFilePath = settingsFilePath;
         }
 
+        public string GetPersistentDataDirectory()
+            => Path.GetDirectoryName(Path.GetFullPath(_settingsFilePath))
+                ?? throw new InvalidOperationException("Settings file does not have a parent directory.");
+
         public AppSettings Load()
         {
             lock (_settingsLock)

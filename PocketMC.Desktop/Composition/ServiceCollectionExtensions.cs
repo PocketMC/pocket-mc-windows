@@ -6,6 +6,8 @@ using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Features.Shell;
 using PocketMC.Infrastructure.WhatsNew;
+using PocketMC.Infrastructure.News;
+using PocketMC.Desktop.Features.News;
 using System;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -105,6 +107,14 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
             services.AddSingleton<UpdateService>();
             services.AddSingleton<IApplicationLifecycleService, ApplicationLifecycleService>();
             services.AddSingleton<WhatsNewService>();
+            services.AddSingleton<NewsTextParser>();
+            services.AddHttpClient("PocketMC.News", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(20);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd($"PocketMC-Desktop/{AppConfig.AppVersion}");
+                client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+            }).AddStandardResilience();
+            services.AddSingleton<NewsService>();
 
             return services;
         }
@@ -127,6 +137,7 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
             services.AddTransient<PlayitStatusViewModel>();
             services.AddTransient<PortsMapPage>();
             services.AddTransient<AboutPage>();
+            services.AddTransient<NewsPage>();
             services.AddTransient<AppSettingsPage>();
             services.AddTransient<RootDirectorySetupPage>();
             services.AddTransient<PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage>();

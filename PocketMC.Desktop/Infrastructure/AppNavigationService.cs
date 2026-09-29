@@ -22,6 +22,7 @@ using PocketMC.Infrastructure.Marketplace;
 using PocketMC.Application.Services.Mods;
 using PocketMC.Desktop.Features.InstanceCreation;
 using PocketMC.Desktop.Features.Players;
+using PocketMC.Desktop.Features.News;
 
 namespace PocketMC.Desktop.Infrastructure
 {
@@ -97,6 +98,11 @@ namespace PocketMC.Desktop.Infrastructure
         public bool NavigateToTunnel()
         {
             return NavigateToShellPage(typeof(TunnelPage));
+        }
+
+        public bool NavigateToNews()
+        {
+            return NavigateToShellPage(typeof(NewsPage));
         }
 
         public bool NavigateToShellPage(Type pageType)
@@ -285,6 +291,7 @@ namespace PocketMC.Desktop.Infrastructure
             {
                 nameof(DashboardPage) => "Dashboard",
                 nameof(TunnelPage) => "Tunnel",
+                nameof(NewsPage) => "News",
                 nameof(JavaSetupPage) => "Runtimes",
                 nameof(AboutPage) => "About",
                 nameof(AppSettingsPage) => "Settings",
