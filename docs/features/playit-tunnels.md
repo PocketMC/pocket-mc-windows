@@ -6,7 +6,7 @@ PocketMC features a first-class, built-in integration with **Playit.gg**, allowi
 
 ## Features
 - **Zero Configuration:** Instantly provision public TCP/UDP endpoints from the user interface.
-- **Managed Lifecycle:** PocketMC automatically downloads, validates, launches, monitors, and stops the local Playit.gg client agent in the background alongside your Minecraft instances.
+- **Managed Lifecycle:** PocketMC automatically downloads, validates, launches, monitors, and stops the local Playit.gg client agent in the background alongside your Minecraft instances. On startup, PocketMC checks the actual executable against its supported runtime policy and repairs outdated or corrupt binaries without deleting saved credentials or agent configuration.
 - **Port Matching & Discovery:** Discovers and binds existing tunnels or automatically registers fresh ones matching your Java (`25565`) or Bedrock (`19132`) listener ports.
 - **Real-Time Diagnostics:** The dashboard monitors the agent state and displays public numerical and custom domain addresses as clickable cards.
 - **Unclaimed Account Routing:** Generates and presents claims URLs dynamically to link provisioned agents safely to a personal Playit profile.

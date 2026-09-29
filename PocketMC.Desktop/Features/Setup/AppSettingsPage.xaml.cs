@@ -2117,7 +2117,10 @@ namespace PocketMC.Desktop.Features.Setup
                 {
                     if (playitWasRunning)
                     {
-                        _playitAgentService.Start();
+                        if (await _playitAgentService.EnsurePlayitRuntimeAsync())
+                        {
+                            _playitAgentService.Start();
+                        }
                     }
                 }
             }

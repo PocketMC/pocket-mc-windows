@@ -8,6 +8,8 @@ namespace PocketMC.Domain.Models
     public enum PlayitAgentState
     {
         Stopped,
+        CheckingRuntime,
+        UpdatingRuntime,
         AwaitingSetupCode,
         ProvisioningAgent,
         Starting,

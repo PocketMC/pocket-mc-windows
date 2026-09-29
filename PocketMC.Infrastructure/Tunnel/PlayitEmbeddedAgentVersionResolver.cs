@@ -1,7 +1,5 @@
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 
 namespace PocketMC.Infrastructure.Tunnel;
 
@@ -11,23 +9,23 @@ public static class PlayitEmbeddedAgentVersionResolver
     {
         if (!string.IsNullOrWhiteSpace(executablePath) && File.Exists(executablePath))
         {
-            FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(executablePath);
-            if (versionInfo.FileMajorPart > 0 || versionInfo.FileMinorPart > 0 || versionInfo.FileBuildPart > 0)
+            Version? version = PlayitRuntimeManifest.GetExecutableVersion(executablePath);
+            if (version != null)
             {
                 return new PlayitPartnerAgentVersion
                 {
-                    VersionMajor = Math.Max(0, versionInfo.FileMajorPart),
-                    VersionMinor = Math.Max(0, versionInfo.FileMinorPart),
-                    VersionPatch = Math.Max(0, versionInfo.FileBuildPart)
+                    VersionMajor = Math.Max(0, version.Major),
+                    VersionMinor = Math.Max(0, version.Minor),
+                    VersionPatch = Math.Max(0, version.Build)
                 };
             }
         }
 
         return new PlayitPartnerAgentVersion
         {
-            VersionMajor = 1,
-            VersionMinor = 0,
-            VersionPatch = 10
+            VersionMajor = PlayitRuntimeManifest.MinimumSupportedVersion.Major,
+            VersionMinor = PlayitRuntimeManifest.MinimumSupportedVersion.Minor,
+            VersionPatch = PlayitRuntimeManifest.MinimumSupportedVersion.Build
         };
     }
 }

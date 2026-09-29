@@ -428,7 +428,7 @@ namespace PocketMC.Infrastructure.Tunnel
                 AccountId = currentConn?.AccountId,
                 ConnectedEmail = currentConn?.ConnectedEmail,
                 Platform = "windows",
-                AgentVersion = currentConn?.AgentVersion ?? "1.0.10",
+                AgentVersion = currentConn?.AgentVersion ?? PlayitRuntimeManifest.TargetVersion,
                 ConnectedAtUtc = currentConn?.ConnectedAtUtc ?? DateTimeOffset.UtcNow
             };
 
