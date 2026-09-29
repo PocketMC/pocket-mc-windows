@@ -33,6 +33,9 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             Missing,
             Downloading,
+            CheckingRuntime,
+            UpdatingRuntime,
+            UpdateRequired,
             AwaitingSetupCode,
             Provisioning,
             Ready,
@@ -207,8 +210,24 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                 if (isDownloading)
                 {
-                    SetUiState(TunnelUiState.Downloading, "Downloading", "PocketMC is downloading the Playit.gg agent.", Brushes.DeepSkyBlue);
+                    SetUiState(TunnelUiState.UpdatingRuntime, "Updating Playit...", "PocketMC is downloading and verifying a compatible Playit runtime.", Brushes.DeepSkyBlue);
                     ShowNoTunnels("The tunnel list will appear after the agent is downloaded and connected.");
+                    UpdateActionButtons(binaryExists);
+                    return;
+                }
+
+                if (_playitAgentService.State == PlayitAgentState.CheckingRuntime)
+                {
+                    SetUiState(TunnelUiState.CheckingRuntime, "Checking Playit...", "PocketMC is validating the installed Playit runtime.", Brushes.DeepSkyBlue);
+                    ShowNoTunnels("Waiting for Playit runtime validation.");
+                    UpdateActionButtons(binaryExists);
+                    return;
+                }
+
+                if (_playitAgentService.State == PlayitAgentState.UpdatingRuntime)
+                {
+                    SetUiState(TunnelUiState.UpdatingRuntime, "Updating Playit...", "PocketMC is replacing the incompatible Playit runtime.", Brushes.DeepSkyBlue);
+                    ShowNoTunnels("Waiting for Playit runtime repair.");
                     UpdateActionButtons(binaryExists);
                     return;
                 }
@@ -221,6 +240,18 @@ namespace PocketMC.Desktop.Features.Tunnel
                     SetUiState(TunnelUiState.Missing, "Missing", detail, Brushes.Orange);
                     ShowNoTunnels("Download the Playit agent to begin tunnel setup.");
                     UpdateActionButtons(binaryExists: false);
+                    return;
+                }
+
+                if (!_playitAgentService.IsRuntimeReady)
+                {
+                    SetUiState(
+                        TunnelUiState.UpdateRequired,
+                        "Playit update required",
+                        _playitAgentService.LastErrorMessage ?? "The installed Playit runtime has not passed compatibility verification. Retry the update before connecting.",
+                        Brushes.Orange);
+                    ShowNoTunnels("Repair the Playit runtime before managing tunnels.");
+                    UpdateActionButtons(binaryExists);
                     return;
                 }
 
@@ -824,13 +855,14 @@ namespace PocketMC.Desktop.Features.Tunnel
             bool isDownloading = _playitAgentService.IsDownloadingBinary;
             bool hasSavedConnection = !string.IsNullOrWhiteSpace(_playitAgentService.PartnerConnection?.AgentSecretKey);
 
-            BtnDownloadAgent.Visibility = binaryExists ? Visibility.Collapsed : Visibility.Visible;
+            bool runtimeReady = _playitAgentService.IsRuntimeReady;
+            BtnDownloadAgent.Visibility = binaryExists && runtimeReady ? Visibility.Collapsed : Visibility.Visible;
             BtnDownloadAgent.IsEnabled = !isDownloading;
-            BtnDownloadAgent.Content = partialExists ? "Resume Download" : "Download Agent";
+            BtnDownloadAgent.Content = partialExists ? "Resume Download" : binaryExists ? "Repair Playit" : "Download Agent";
 
             // Setup Agent is ONLY shown when no saved connection exists (needs setup)
-            BtnSetupAgent.Visibility = (!hasSavedConnection && binaryExists) ? Visibility.Visible : Visibility.Collapsed;
-            BtnSetupAgent.IsEnabled = !isDownloading && binaryExists;
+            BtnSetupAgent.Visibility = (!hasSavedConnection && binaryExists && runtimeReady) ? Visibility.Visible : Visibility.Collapsed;
+            BtnSetupAgent.IsEnabled = !isDownloading && binaryExists && runtimeReady;
 
             // Connect is shown when there IS a saved connection (just needs to start the agent)
             BtnConnect.Visibility = hasSavedConnection ? Visibility.Visible : Visibility.Collapsed;
@@ -838,6 +870,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             BtnConnect.IsEnabled =
                 !isDownloading &&
                 binaryExists &&
+                runtimeReady &&
                 _currentUiState is TunnelUiState.Ready or TunnelUiState.AwaitingSetupCode;
 
             BtnDisconnect.Visibility = hasSavedConnection ? Visibility.Visible : Visibility.Collapsed;
@@ -882,7 +915,19 @@ namespace PocketMC.Desktop.Features.Tunnel
         /// </summary>
         private async void BtnConnect_Click(object sender, RoutedEventArgs e)
         {
-            if (!_applicationState.IsConfigured || !File.Exists(_applicationState.GetPlayitExecutablePath()) || _playitAgentService.IsDownloadingBinary)
+            if (!_applicationState.IsConfigured || _playitAgentService.IsDownloadingBinary)
+            {
+                await RefreshStatusAsync();
+                return;
+            }
+
+            if (!await _playitAgentService.EnsurePlayitRuntimeAsync())
+            {
+                await RefreshStatusAsync();
+                return;
+            }
+
+            if (!File.Exists(_applicationState.GetPlayitExecutablePath()))
             {
                 await RefreshStatusAsync();
                 return;
@@ -911,7 +956,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Manual Playit connection attempt failed.");
-                SetUiState(TunnelUiState.Ready, "Ready", $"PocketMC could not start the agent: {ex.Message}", Brushes.Orange);
+                SetUiState(TunnelUiState.UpdateRequired, "Playit update required", $"PocketMC could not start the validated agent: {ex.Message}", Brushes.Orange);
             }
 
             UpdateActionButtons(binaryExists: true);

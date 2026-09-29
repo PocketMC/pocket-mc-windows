@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using PocketMC.Domain.Models;
 using PocketMC.Domain.Storage;
+using PocketMC.Infrastructure.Tunnel;
 using System.IO;
 using System.Net.Http;
 using System.Net;
@@ -15,11 +16,10 @@ namespace PocketMC.Infrastructure.Instances;
 public class DownloaderService
 {
     private const string DownloadClientName = "PocketMC.Downloads";
-    public const string PlayitAgentVersion = "1.0.10";
     public const string CloudflaredVersion = "2026.8.1";
 
-    private static string PlayitDownloadUrl => PocketMC.Infrastructure.Configuration.AppConfig.BinaryPlayitDownloadUrl;
-    private static string? PlayitExpectedSha256 => PocketMC.Infrastructure.Configuration.AppConfig.BinaryPlayitSha256;
+    private static string PlayitDownloadUrl => PlayitRuntimeManifest.DownloadUrl;
+    private static string? PlayitExpectedSha256 => PlayitRuntimeManifest.ExpectedSha256;
     private static string CloudflaredDownloadUrl => PocketMC.Infrastructure.Configuration.AppConfig.BinaryCloudflaredDownloadUrl;
     private static bool _cloudflaredExpectedSha256IsOverridden;
     private static string? _cloudflaredExpectedSha256Override;
@@ -179,28 +179,34 @@ public class DownloaderService
     }
 
     /// <summary>
-    /// Downloads playit.exe into &lt;appRoot&gt;/tunnel/playit.exe if not already present.
-    /// The executable is staged first and must pass configured verification before promotion.
+    /// Downloads or repairs the Playit runtime under the configured app root.
+    /// The current executable remains untouched until the staged candidate is verified.
     /// </summary>
-    public async Task EnsurePlayitDownloadedAsync(string appRootPath, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+    public async Task EnsurePlayitDownloadedAsync(
+        string appRootPath,
+        IProgress<DownloadProgress>? progress = null,
+        CancellationToken cancellationToken = default,
+        Func<CancellationToken, Task>? beforeReplace = null)
     {
         string tunnelDir = Path.Combine(appRootPath, "tunnel");
-        string playitPath = Path.Combine(tunnelDir, "playit.exe");
+        string playitPath = Path.Combine(tunnelDir, PlayitRuntimeManifest.ExecutableName);
 
         if (File.Exists(playitPath))
         {
-            if (await ValidatePlayitExecutableAsync(playitPath, cancellationToken))
+            if (await IsPlayitExecutableCompatibleAsync(playitPath, cancellationToken))
             {
+                _logger.LogInformation("Installed Playit runtime {PlayitPath} is compatible.", playitPath);
                 return;
             }
 
-            _logger.LogWarning("Existing Playit agent at {PlayitPath} failed validation and will be replaced.", playitPath);
-            TryDeleteFile(playitPath);
+            _logger.LogWarning("Installed Playit runtime at {PlayitPath} is missing, corrupt, or below the supported version.", playitPath);
         }
 
         Directory.CreateDirectory(tunnelDir);
 
-        string stagedPath = Path.Combine(tunnelDir, $"playit-{PlayitAgentVersion}-{Guid.NewGuid():N}.exe");
+        string stagedPath = Path.Combine(tunnelDir, $"playit-{PlayitRuntimeManifest.TargetVersion}-{Guid.NewGuid():N}.candidate.exe");
+        string backupPath = Path.Combine(tunnelDir, $"playit-{Guid.NewGuid():N}.backup.exe");
+        bool originalMovedToBackup = false;
         try
         {
             await DownloadFileAsync(
@@ -211,18 +217,99 @@ public class DownloaderService
                 progress,
                 cancellationToken);
 
-            if (!await ValidatePlayitExecutableAsync(stagedPath, cancellationToken))
+            if (!await IsPlayitExecutableCompatibleAsync(stagedPath, cancellationToken))
             {
-                throw new CryptographicException("Downloaded Playit agent failed executable signature validation.");
+                throw new CryptographicException("Downloaded Playit agent failed version, signature, or checksum validation.");
             }
 
-            await PromoteCompletedDownloadAsync(stagedPath, playitPath, cancellationToken);
+            if (beforeReplace != null)
+            {
+                await beforeReplace(cancellationToken);
+            }
+
+            if (File.Exists(playitPath))
+            {
+                File.Replace(stagedPath, playitPath, backupPath, ignoreMetadataErrors: true);
+                originalMovedToBackup = true;
+            }
+            else
+            {
+                File.Move(stagedPath, playitPath);
+            }
+
+            if (!await IsPlayitExecutableCompatibleAsync(playitPath, cancellationToken))
+            {
+                throw new CryptographicException("Playit runtime verification failed after installation.");
+            }
+
+            if (originalMovedToBackup)
+            {
+                TryDeleteFile(backupPath);
+                _logger.LogInformation("Replaced and independently verified Playit runtime at {PlayitPath}.", playitPath);
+            }
+            else
+            {
+                _logger.LogInformation("Installed and independently verified Playit runtime at {PlayitPath}.", playitPath);
+            }
         }
         catch
         {
+            if (originalMovedToBackup && File.Exists(backupPath))
+            {
+                try
+                {
+                    File.Replace(backupPath, playitPath, null, ignoreMetadataErrors: true);
+                    _logger.LogWarning("Restored the previous Playit runtime after replacement verification failed.");
+                }
+                catch (Exception restoreException)
+                {
+                    _logger.LogCritical(restoreException, "Failed to restore the previous Playit runtime from {BackupPath}.", backupPath);
+                }
+            }
+
             TryDeleteFile(stagedPath);
             TryDeleteFile(stagedPath + ".partial");
             throw;
+        }
+    }
+
+    public async Task<bool> IsPlayitExecutableCompatibleAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
+        {
+            return false;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!string.IsNullOrWhiteSpace(PlayitExpectedSha256) &&
+            await VerifyHashAsync(filePath, PlayitExpectedSha256, "SHA256", cancellationToken))
+        {
+            Version? artifactVersion = PlayitRuntimeManifest.GetExecutableVersion(filePath);
+            return artifactVersion == null || PlayitRuntimeManifest.IsCompatibleVersion(artifactVersion);
+        }
+
+        Version? actualVersion = PlayitRuntimeManifest.GetExecutableVersion(filePath);
+        if (actualVersion == null || !PlayitRuntimeManifest.IsCompatibleVersion(actualVersion))
+        {
+            _logger.LogWarning("Playit executable {FilePath} has unsupported or unreadable version {Version}.", filePath, actualVersion);
+            return false;
+        }
+
+        try
+        {
+            using X509Certificate certificate = X509Certificate.CreateFromSignedFile(filePath);
+            bool signed = !string.IsNullOrWhiteSpace(certificate.Subject);
+            if (!signed)
+            {
+                _logger.LogWarning("Compatible Playit executable {FilePath} has no signer certificate.", filePath);
+            }
+
+            return signed;
+        }
+        catch (Exception ex) when (ex is CryptographicException or FileNotFoundException or ArgumentException)
+        {
+            _logger.LogWarning(ex, "Compatible-version Playit executable failed signature inspection: {FilePath}", filePath);
+            return false;
         }
     }
 
@@ -265,44 +352,6 @@ public class DownloaderService
             TryDeleteFile(stagedPath);
             TryDeleteFile(stagedPath + ".partial");
             throw;
-        }
-    }
-
-    private async Task<bool> ValidatePlayitExecutableAsync(string filePath, CancellationToken cancellationToken)
-    {
-        if (!File.Exists(filePath))
-        {
-            return false;
-        }
-
-        if (!string.IsNullOrWhiteSpace(PlayitExpectedSha256))
-        {
-            return await VerifyHashAsync(filePath, PlayitExpectedSha256, "SHA256", cancellationToken);
-        }
-
-        try
-        {
-            using X509Certificate certificate = X509Certificate.CreateFromSignedFile(filePath);
-            string subject = certificate.Subject ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(subject))
-            {
-                _logger.LogWarning("Playit agent signature exists but has an empty certificate subject: {FilePath}", filePath);
-                return false;
-            }
-
-            FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(filePath);
-            _logger.LogInformation(
-                "Validated signed Playit agent {FilePath}. Publisher={Publisher}, Product={ProductName}, FileVersion={FileVersion}",
-                filePath,
-                subject,
-                versionInfo.ProductName,
-                versionInfo.FileVersion);
-            return true;
-        }
-        catch (Exception ex) when (ex is CryptographicException or FileNotFoundException or ArgumentException)
-        {
-            _logger.LogError(ex, "Playit agent executable failed signed-file validation: {FilePath}", filePath);
-            return false;
         }
     }
 

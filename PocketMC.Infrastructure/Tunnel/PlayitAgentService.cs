@@ -69,7 +69,11 @@ namespace PocketMC.Infrastructure.Tunnel
         private CancellationTokenSource? _downloadCancellation;
         private CancellationTokenSource? _networkChangeCancellation;
         private readonly object _networkEventLock = new();
+        private readonly SemaphoreSlim _runtimeCheckGate = new(1, 1);
         private volatile bool _isDownloadingBinary;
+        private string? _validatedRuntimePath;
+        private long _validatedRuntimeLength;
+        private DateTime _validatedRuntimeWriteTimeUtc;
 
         private const int MaxUnexpectedRestartAttempts = 5;
         private const int BaseUnexpectedRestartDelaySeconds = 2;
@@ -77,6 +81,7 @@ namespace PocketMC.Infrastructure.Tunnel
         public PlayitAgentState State => _stateMachine.State;
         public bool IsDownloadingBinary => _isDownloadingBinary;
         public bool IsBinaryAvailable => _applicationState.IsConfigured && File.Exists(_applicationState.GetPlayitExecutablePath());
+        public bool IsRuntimeReady => IsValidatedRuntimeCurrent();
         public bool IsRunning => _processManager.IsRunning;
         public string? LastErrorMessage { get; private set; }
         public PlayitPartnerConnection? PartnerConnection => _applicationState.Settings.PlayitPartnerConnection;
@@ -135,6 +140,14 @@ namespace PocketMC.Infrastructure.Tunnel
             }
 
             string playitPath = _applicationState.GetPlayitExecutablePath();
+            if (!IsValidatedRuntimeCurrent())
+            {
+                LastErrorMessage = "Playit update required. Retry the runtime check from the Tunnel page before connecting.";
+                _stateMachine.TransitionTo(PlayitAgentState.Error);
+                _processManager.Log("ERROR: Playit runtime has not passed compatibility verification.");
+                return;
+            }
+
             if (!File.Exists(playitPath))
             {
                 LastErrorMessage = "playit.exe is missing.";
@@ -196,6 +209,11 @@ namespace PocketMC.Infrastructure.Tunnel
             {
                 LastErrorMessage = "PocketMC is not configured yet.";
                 _stateMachine.TransitionTo(PlayitAgentState.Error);
+                return new PlayitPartnerCreateAgentResult { Success = false, ErrorMessage = LastErrorMessage };
+            }
+
+            if (!await EnsurePlayitRuntimeAsync(token))
+            {
                 return new PlayitPartnerCreateAgentResult { Success = false, ErrorMessage = LastErrorMessage };
             }
 
@@ -368,7 +386,7 @@ namespace PocketMC.Infrastructure.Tunnel
                 settings.PlayitPartnerConnection.AgentId = agentId;
                 if (string.IsNullOrWhiteSpace(settings.PlayitPartnerConnection.AgentVersion))
                 {
-                    settings.PlayitPartnerConnection.AgentVersion = "1.0.10";
+                    settings.PlayitPartnerConnection.AgentVersion = PlayitRuntimeManifest.TargetVersion;
                 }
                 _settingsManager.Save(settings);
                 _applicationState.ApplySettings(settings);
@@ -537,7 +555,7 @@ namespace PocketMC.Infrastructure.Tunnel
             }
 
             string agentId = _applicationState.Settings.PlayitPartnerConnection?.AgentId ?? string.Empty;
-            string agentVersion = _applicationState.Settings.PlayitPartnerConnection?.AgentVersion ?? "1.0.10";
+            string agentVersion = _applicationState.Settings.PlayitPartnerConnection?.AgentVersion ?? PlayitRuntimeManifest.TargetVersion;
 
             if (string.IsNullOrWhiteSpace(agentId) && _playitApiClient != null)
             {
@@ -597,17 +615,162 @@ namespace PocketMC.Infrastructure.Tunnel
 
         public async Task DownloadAgentAsync()
         {
-            if (IsBinaryAvailable || _isDownloadingBinary) return;
+            if (_isDownloadingBinary) return;
             _downloadCancellation?.Cancel();
             _downloadCancellation = new CancellationTokenSource();
-            _isDownloadingBinary = true;
-            OnDownloadStatusChanged?.Invoke(this, true);
             try
             {
-                var progress = new Progress<DownloadProgress>(p => OnDownloadProgressChanged?.Invoke(this, p));
-                await _downloaderService.EnsurePlayitDownloadedAsync(_applicationState.GetRequiredAppRootPath(), progress, _downloadCancellation.Token);
+                await EnsurePlayitRuntimeAsync(_downloadCancellation.Token);
             }
-            finally { _isDownloadingBinary = false; OnDownloadStatusChanged?.Invoke(this, false); }
+            finally { _downloadCancellation?.Dispose(); _downloadCancellation = null; }
+        }
+
+        public async Task<bool> EnsurePlayitRuntimeAsync(CancellationToken token = default)
+        {
+            await _runtimeCheckGate.WaitAsync(token);
+            try
+            {
+                return await EnsurePlayitRuntimeCoreAsync(token);
+            }
+            finally
+            {
+                _runtimeCheckGate.Release();
+            }
+        }
+
+        private async Task<bool> EnsurePlayitRuntimeCoreAsync(CancellationToken token)
+        {
+            if (!_applicationState.IsConfigured)
+            {
+                LastErrorMessage = "PocketMC is not configured yet.";
+                _stateMachine.TransitionTo(PlayitAgentState.Error);
+                return false;
+            }
+
+            string executablePath = _applicationState.GetPlayitExecutablePath();
+            _stateMachine.TransitionTo(PlayitAgentState.CheckingRuntime);
+            _logger.LogInformation("Checking installed Playit runtime at {PlayitPath}.", executablePath);
+
+            try
+            {
+                if (await _downloaderService.IsPlayitExecutableCompatibleAsync(executablePath, token))
+                {
+                    MarkRuntimeValidated(executablePath);
+                    SaveValidatedRuntimeVersion(executablePath);
+                    LastErrorMessage = null;
+                    _logger.LogInformation("Installed Playit runtime passed compatibility validation.");
+                    _stateMachine.TransitionTo(PlayitAgentState.Stopped);
+                    return true;
+                }
+
+                _logger.LogWarning("Playit runtime is missing or incompatible; beginning automatic repair.");
+                _stateMachine.TransitionTo(PlayitAgentState.UpdatingRuntime);
+                _isDownloadingBinary = true;
+                OnDownloadStatusChanged?.Invoke(this, true);
+                var progress = new Progress<DownloadProgress>(p => OnDownloadProgressChanged?.Invoke(this, p));
+                await _downloaderService.EnsurePlayitDownloadedAsync(
+                    _applicationState.GetRequiredAppRootPath(),
+                    progress,
+                    token,
+                    StopPlayitProcessesForReplacementAsync);
+
+                if (!await _downloaderService.IsPlayitExecutableCompatibleAsync(executablePath, token))
+                {
+                    throw new InvalidDataException("The installed Playit runtime did not pass post-install verification.");
+                }
+
+                MarkRuntimeValidated(executablePath);
+                SaveValidatedRuntimeVersion(executablePath);
+                LastErrorMessage = null;
+                _logger.LogInformation("Playit runtime repair completed and the installed executable was revalidated.");
+                _stateMachine.TransitionTo(PlayitAgentState.Stopped);
+                return true;
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                InvalidateRuntimeValidation();
+                LastErrorMessage = "Playit runtime repair was canceled. Retry the update before connecting.";
+                _stateMachine.TransitionTo(PlayitAgentState.Error);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                InvalidateRuntimeValidation();
+                LastErrorMessage = $"Playit update required. PocketMC could not verify or repair the agent: {ex.Message}";
+                _logger.LogError(ex, "Playit runtime validation or repair failed.");
+                _stateMachine.TransitionTo(PlayitAgentState.Error);
+                return false;
+            }
+            finally
+            {
+                if (_isDownloadingBinary)
+                {
+                    _isDownloadingBinary = false;
+                    OnDownloadStatusChanged?.Invoke(this, false);
+                }
+            }
+        }
+
+        private async Task StopPlayitProcessesForReplacementAsync(CancellationToken token)
+        {
+            _manualStopRequested = true;
+            CancelPendingRestart();
+            await _processManager.StopAsync(token);
+            await StopOrphanPlayitProcessesAsync(_applicationState.GetPlayitExecutablePath(), token);
+            if (_processManager.IsRunning)
+            {
+                throw new IOException("The running Playit process could not be stopped before runtime replacement.");
+            }
+        }
+
+        private bool IsValidatedRuntimeCurrent()
+        {
+            if (string.IsNullOrWhiteSpace(_validatedRuntimePath) || !_applicationState.IsConfigured)
+            {
+                return false;
+            }
+
+            string currentPath = _applicationState.GetPlayitExecutablePath();
+            if (!string.Equals(Path.GetFullPath(currentPath), _validatedRuntimePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            try
+            {
+                var file = new FileInfo(currentPath);
+                return file.Exists &&
+                       file.Length == _validatedRuntimeLength &&
+                       file.LastWriteTimeUtc == _validatedRuntimeWriteTimeUtc;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+        }
+
+        private void MarkRuntimeValidated(string executablePath)
+        {
+            var file = new FileInfo(executablePath);
+            _validatedRuntimePath = Path.GetFullPath(executablePath);
+            _validatedRuntimeLength = file.Length;
+            _validatedRuntimeWriteTimeUtc = file.LastWriteTimeUtc;
+        }
+
+        private void InvalidateRuntimeValidation()
+        {
+            _validatedRuntimePath = null;
+            _validatedRuntimeLength = 0;
+            _validatedRuntimeWriteTimeUtc = default;
+        }
+
+        private void SaveValidatedRuntimeVersion(string executablePath)
+        {
+            Version? actualVersion = PlayitRuntimeManifest.GetExecutableVersion(executablePath);
+            var settings = _settingsManager.Load();
+            settings.PlayitVersion = actualVersion?.ToString(3) ?? PlayitRuntimeManifest.TargetVersion;
+            _settingsManager.Save(settings);
+            _applicationState.ApplySettings(settings);
         }
 
         public async Task<bool> DeleteAgentBinaryAsync(CancellationToken token = default)
@@ -695,6 +858,7 @@ namespace PocketMC.Infrastructure.Tunnel
 
             foreach (Process process in Process.GetProcessesByName("playit"))
             {
+                bool matchedTarget = false;
                 try
                 {
                     string? processPath = process.MainModule?.FileName;
@@ -707,15 +871,25 @@ namespace PocketMC.Infrastructure.Tunnel
                         continue;
                     }
 
+                    matchedTarget = true;
                     if (!process.HasExited)
                     {
                         process.Kill(entireProcessTree: true);
                         await process.WaitForExitAsync(token);
                     }
+
+                    if (!process.HasExited)
+                    {
+                        throw new IOException($"Playit process {process.Id} did not exit.");
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogDebug(ex, "Failed to inspect or terminate orphan playit process.");
+                    if (matchedTarget)
+                    {
+                        throw new IOException("A Playit process is still using the executable and could not be stopped.", ex);
+                    }
                 }
                 finally
                 {

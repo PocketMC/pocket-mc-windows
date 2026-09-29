@@ -93,8 +93,6 @@ namespace PocketMC.Infrastructure.Configuration
         public static string HealthCheckModrinth { get; private set; } = "https://api.modrinth.com/";
 
         // Agent Binary Endpoints & Checksums
-        public static string BinaryPlayitDownloadUrl { get; private set; } = "https://github.com/playit-cloud/playit-agent/releases/download/v1.0.10/playit-windows-x86_64-signed.exe";
-        public static string? BinaryPlayitSha256 { get; private set; } = "2dbdaad119844cbbc062cc9774b8b462afa5f1b4b7832a9fc5ef4676cae887cf";
         public static string BinaryCloudflaredDownloadUrl { get; private set; } = "https://github.com/cloudflare/cloudflared/releases/download/2026.8.1/cloudflared-windows-amd64.exe";
         public static string? BinaryCloudflaredSha256 { get; private set; } = "8f1d6f87b8756dbf37064b16e2c8251b69d816305e4f4373e1b80efb28d13b83";
 
@@ -398,12 +396,6 @@ namespace PocketMC.Infrastructure.Configuration
 
                             var hcModrinth = Regex.Match(trimmed, @"health_check_modrinth:\s*""?([^""\r\n]+)""?");
                             if (hcModrinth.Success) HealthCheckModrinth = hcModrinth.Groups[1].Value;
-
-                            var bPlayitUrl = Regex.Match(trimmed, @"binary_playit_download_url:\s*""?([^""\r\n]+)""?");
-                            if (bPlayitUrl.Success) BinaryPlayitDownloadUrl = bPlayitUrl.Groups[1].Value;
-
-                            var bPlayitSha = Regex.Match(trimmed, @"binary_playit_sha256:\s*""?([^""\r\n]+)""?");
-                            if (bPlayitSha.Success) BinaryPlayitSha256 = bPlayitSha.Groups[1].Value;
 
                             var bCloudflaredUrl = Regex.Match(trimmed, @"binary_cloudflared_download_url:\s*""?([^""\r\n]+)""?");
                             if (bCloudflaredUrl.Success) BinaryCloudflaredDownloadUrl = bCloudflaredUrl.Groups[1].Value;

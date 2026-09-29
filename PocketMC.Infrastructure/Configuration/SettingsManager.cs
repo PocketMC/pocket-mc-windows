@@ -45,6 +45,10 @@ namespace PocketMC.Infrastructure.Configuration
             _settingsFilePath = settingsFilePath;
         }
 
+        public string GetPersistentDataDirectory()
+            => Path.GetDirectoryName(Path.GetFullPath(_settingsFilePath))
+                ?? throw new InvalidOperationException("Settings file does not have a parent directory.");
+
         public AppSettings Load()
         {
             lock (_settingsLock)
@@ -260,11 +264,6 @@ namespace PocketMC.Infrastructure.Configuration
             settings.PlayitConfigDirectory ??= Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "playit_gg");
-
-            if (string.IsNullOrWhiteSpace(settings.PlayitVersion))
-            {
-                settings.PlayitVersion = "1.0.10";
-            }
 
             // Migration: Move old single API key to the dictionary under Gemini
             if (!string.IsNullOrEmpty(settings.AiApiKey))

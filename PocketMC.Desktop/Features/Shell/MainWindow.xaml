@@ -9,6 +9,7 @@
         xmlns:setup="clr-namespace:PocketMC.Desktop.Features.Setup"
         xmlns:shell="clr-namespace:PocketMC.Desktop.Features.Shell"
         xmlns:remote="clr-namespace:PocketMC.Desktop.Features.RemoteControl.UI"
+        xmlns:news="clr-namespace:PocketMC.Desktop.Features.News"
         xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
         mc:Ignorable="d"
         Title="PocketMC"
@@ -217,6 +218,12 @@
                                            TargetPageType="{x:Type tunnel:TunnelPage}"
                                            AutomationProperties.Name="Tunnel (Ctrl+2)"
                                            AutomationProperties.HelpText="Configure Playit.gg public tunnels for multiplayer connectivity."/>
+                    <ui:NavigationViewItem x:Name="NavNews"
+                                           Content="News"
+                                           Icon="{ui:SymbolIcon Megaphone24}"
+                                           TargetPageType="{x:Type news:NewsPage}"
+                                           AutomationProperties.Name="News (Ctrl+7)"
+                                           AutomationProperties.HelpText="Read PocketMC announcements and service notices."/>
                     <ui:NavigationViewItem x:Name="NavRemoteControl"
                                            Content="Remote Control"
                                            Icon="{ui:SymbolIcon PhoneDesktop24}"

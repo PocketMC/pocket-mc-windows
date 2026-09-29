@@ -31,6 +31,7 @@ namespace PocketMC.Desktop.Core.Interfaces
         void Initialize(IShellHost shellHost);
         bool NavigateToDashboard();
         bool NavigateToTunnel();
+        bool NavigateToNews();
         bool NavigateToShellPage(Type pageType);
         bool NavigateToDetailPage(
             Page page,

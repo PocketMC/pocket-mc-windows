@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Configuration;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
 using PocketMC.Infrastructure.Telemetry;
 using PocketMC.Infrastructure.WhatsNew;
+using PocketMC.Infrastructure.News;
 
 namespace PocketMC.Desktop.Features.Shell
 {
@@ -35,6 +37,7 @@ namespace PocketMC.Desktop.Features.Shell
         private readonly IDiscordRpcService _discordRpcService;
         private readonly ITelemetryService _telemetryService;
         private readonly WhatsNewService _whatsNewService;
+        private readonly NewsService _newsService;
         private readonly AppStartupOptions _startupOptions;
         private readonly ILogger<ShellStartupCoordinator> _logger;
         private IStartupShellHost? _host;
@@ -56,6 +59,7 @@ namespace PocketMC.Desktop.Features.Shell
             IDiscordRpcService discordRpcService,
             ITelemetryService telemetryService,
             WhatsNewService whatsNewService,
+            NewsService newsService,
             AppStartupOptions startupOptions,
             ILogger<ShellStartupCoordinator> logger)
         {
@@ -72,6 +76,7 @@ namespace PocketMC.Desktop.Features.Shell
             _discordRpcService = discordRpcService;
             _telemetryService = telemetryService;
             _whatsNewService = whatsNewService;
+            _newsService = newsService;
             _startupOptions = startupOptions;
             _logger = logger;
         }
@@ -80,6 +85,7 @@ namespace PocketMC.Desktop.Features.Shell
         {
             _host = host;
             _playitAgentService.OnTunnelRunning += OnPlayitTunnelRunning;
+            _newsService.PopupNewsAvailable += OnNewsPopupAvailable;
         }
 
         public void Start()
@@ -183,6 +189,8 @@ namespace PocketMC.Desktop.Features.Shell
 
             _settingsManager.SettingsSaved -= OnSettingsSaved;
             _playitAgentService.OnTunnelRunning -= OnPlayitTunnelRunning;
+            _newsService.PopupNewsAvailable -= OnNewsPopupAvailable;
+            _newsService.Stop();
             _backupScheduler.Stop();
             _rebootScheduler.Stop();
             _healthMonitor.StopMonitoring();
@@ -206,6 +214,7 @@ namespace PocketMC.Desktop.Features.Shell
             _applicationState.ApplySettings(settings);
             _host.ApplyTheme();
             _host.RequestMicaUpdate();
+            _newsService.Start();
 
             if (!_startupServicesStarted)
             {
@@ -213,11 +222,6 @@ namespace PocketMC.Desktop.Features.Shell
                 _rebootScheduler.Start();
                 _healthMonitor.StartMonitoring();
                 _javaProvisioningService.StartBackgroundProvisioning();
-
-                if (!settings.HasCompletedFirstLaunch)
-                {
-                    _ = _playitAgentService.DownloadAgentAsync();
-                }
 
                 _discordRpcService.Initialize();
                 _telemetryService.Initialize();
@@ -236,31 +240,32 @@ namespace PocketMC.Desktop.Features.Shell
             else
             {
                 ShowWhatsNewIfNeeded();
-                TriggerServerAutoStarts();
             }
 
             if (!_playitStartupAttempted)
             {
                 _playitStartupAttempted = true;
-                TryStartPlayitAgentOnLaunch();
+                _ = InitializePlayitAndAutoStartServersAsync(settings.HasCompletedFirstLaunch);
             }
         }
 
-        private void TryStartPlayitAgentOnLaunch()
+        private async Task InitializePlayitAndAutoStartServersAsync(bool startServers)
         {
             try
             {
-                if (!File.Exists(_applicationState.GetPlayitExecutablePath()))
+                if (await _playitAgentService.EnsurePlayitRuntimeAsync())
                 {
-                    _logger.LogInformation("Playit agent binary is missing; startup auto-connect was skipped.");
-                    return;
+                    _playitAgentService.Start();
                 }
-
-                _playitAgentService.Start();
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Playit auto-connect failed during app startup. The user can retry from the Tunnel page.");
+            }
+
+            if (startServers)
+            {
+                TriggerServerAutoStarts();
             }
         }
 
@@ -301,6 +306,22 @@ namespace PocketMC.Desktop.Features.Shell
             _settingsManager.Save(settings);
             _applicationState.ApplySettings(settings);
             _host.NavigateToDashboard();
+        }
+
+        private void OnNewsPopupAvailable(IReadOnlyList<NewsItem> items)
+        {
+            foreach (NewsItem item in items)
+            {
+                if (_isDisposed) return;
+                try
+                {
+                    _host?.ShowNewsPopup(item);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not show new PocketMC news item {NewsId}.", item.Metadata.Id);
+                }
+            }
         }
 
         private void HandleStartupFailure(Exception ex)

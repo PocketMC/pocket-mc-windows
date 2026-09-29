@@ -1,0 +1,40 @@
+---
+id: playit-agent-stuck-ready-2026-09-29
+type: quick-fix
+priority: critical
+popup: true
+published: 2026-09-29T18:00:00Z
+expires: 2026-10-10T00:00:00Z
+minVersion: 1.9.9
+maxVersion: 1.9.9.1
+---
+title: Playit Agent Stuck at Ready
+
+subtitle: A quick fix for affected PocketMC 1.9.9 installations
+
+heading: What happened
+
+paragraph:
+Some users may see their Playit agent remain at Ready without connecting after updating PocketMC.
+
+paragraph:
+The Playit executable is stored with PocketMC user data and is downloaded separately from the application. Updating PocketMC did not always replace an older Playit executable already on the computer.
+
+heading: Quick fix
+
+paragraph:
+If your agent is stuck at Ready, remove the old local Playit executable from the Tunnel page, download it again, and press Connect.
+
+list:
+- Open the Tunnel page in PocketMC
+- Select Delete Agent to remove only the local executable
+- Select Download Agent to download it again
+- Press Connect and keep your saved agent credentials
+
+warning:
+You do not need to delete your Playit agent or credentials from your Playit account for this workaround.
+
+heading: Permanent fix
+
+paragraph:
+PocketMC is being updated to check the installed Playit executable at startup and repair an outdated copy automatically while preserving your credentials.
