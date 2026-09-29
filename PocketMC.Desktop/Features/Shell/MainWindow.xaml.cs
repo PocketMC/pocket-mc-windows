@@ -551,7 +551,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         window.ShowDialog();
         if (window.WasAcknowledged)
         {
-            _serviceProvider.GetRequiredService<NewsService>().Acknowledge(item.Metadata.Id);
+            _serviceProvider.GetRequiredService<NewsService>().MarkRead(item.Metadata.Id);
         }
     }
 

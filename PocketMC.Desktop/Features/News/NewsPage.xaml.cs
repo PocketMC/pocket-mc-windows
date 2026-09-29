@@ -71,14 +71,14 @@ public partial class NewsPage : Page
         TxtArticleMeta.Text = $"{entry.TypeAndPriority}  ·  {entry.Item.Metadata.PublishedUtc.ToLocalTime():g}";
         NewsArticleSurface.Visibility = Visibility.Visible;
         EmptyPanel.Visibility = Visibility.Collapsed;
-        _newsService.Acknowledge(entry.Item.Metadata.Id);
+        _newsService.MarkRead(entry.Item.Metadata.Id);
         entry.MarkRead();
     }
 
     private void RefreshEntries(string? selectedId = null)
     {
         string? previousId = selectedId ?? (NewsList.SelectedItem as NewsListEntry)?.Item.Metadata.Id;
-        var readIds = _newsService.GetAcknowledgedNewsIds();
+        var readIds = _newsService.GetReadNewsIds();
         var items = _newsService.GetCachedNews()
             .OrderByDescending(item => item.Metadata.PublishedUtc)
             .ThenBy(item => item.Metadata.Id, StringComparer.Ordinal)

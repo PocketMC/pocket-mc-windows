@@ -45,7 +45,8 @@ public sealed record NewsMetadata(
     DateTimeOffset PublishedUtc,
     DateTimeOffset? ExpiresUtc,
     Version? MinimumVersion,
-    Version? MaximumVersion);
+    Version? MaximumVersion,
+    bool IsRead = false);
 
 public sealed record NewsContentBlock(
     NewsBlockType Type,
@@ -63,10 +64,28 @@ public sealed class NewsTextParser
 {
     private static readonly HashSet<string> MetadataKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        "id", "type", "priority", "popup", "published", "expires", "minVersion", "maxVersion"
+        "id", "type", "priority", "popup", "published", "expires", "minVersion", "maxVersion", "read"
     };
 
     public NewsItem Parse(string fileName, string source)
+        => ParseCore(fileName, source, allowLocalReadState: false);
+
+    public NewsItem ParseCached(string fileName, string source)
+        => ParseCore(fileName, source, allowLocalReadState: true);
+
+    public string MarkRead(string fileName, string source)
+    {
+        NewsItem cachedItem = ParseCached(fileName, source);
+        if (cachedItem.Metadata.IsRead) return cachedItem.RawText;
+
+        List<string> lines = cachedItem.RawText.Split('\n').ToList();
+        int metadataEnd = lines.FindIndex(1, line => line.Trim() == "---");
+        if (metadataEnd < 0) throw new InvalidDataException("News metadata section is not closed.");
+        lines.Insert(metadataEnd, "read: true");
+        return string.Join('\n', lines);
+    }
+
+    private NewsItem ParseCore(string fileName, string source, bool allowLocalReadState)
     {
         if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName ||
             !fileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
@@ -92,8 +111,8 @@ public sealed class NewsTextParser
             throw new InvalidDataException("News metadata section is not closed.");
         }
 
-        Dictionary<string, string> values = ParseMetadata(lines, metadataEnd);
-        NewsMetadata metadata = BuildMetadata(values);
+        Dictionary<string, string> values = ParseMetadata(lines, metadataEnd, allowLocalReadState);
+        NewsMetadata metadata = BuildMetadata(values, allowLocalReadState);
         IReadOnlyList<NewsContentBlock> blocks = ParseContent(lines, metadataEnd + 1);
         if (!blocks.Any(block => block.Type == NewsBlockType.Title))
         {
@@ -123,10 +142,10 @@ public sealed class NewsTextParser
             throw new InvalidDataException("News metadata section is not closed.");
         }
 
-        return BuildMetadata(ParseMetadata(lines, metadataEnd));
+        return BuildMetadata(ParseMetadata(lines, metadataEnd, allowLocalReadState: false), allowLocalReadState: false);
     }
 
-    private static Dictionary<string, string> ParseMetadata(string[] lines, int metadataEnd)
+    private static Dictionary<string, string> ParseMetadata(string[] lines, int metadataEnd, bool allowLocalReadState)
     {
         Dictionary<string, string> values = new(StringComparer.OrdinalIgnoreCase);
         for (int index = 1; index < metadataEnd; index++)
@@ -150,6 +169,11 @@ public sealed class NewsTextParser
                 throw new InvalidDataException($"Unsupported metadata field '{key}'.");
             }
 
+            if (key.Equals("read", StringComparison.OrdinalIgnoreCase) && !allowLocalReadState)
+            {
+                throw new InvalidDataException("The read field is reserved for PocketMC's local cached news files.");
+            }
+
             if (!values.TryAdd(key, value))
             {
                 throw new InvalidDataException($"Metadata field '{key}' is duplicated.");
@@ -159,7 +183,7 @@ public sealed class NewsTextParser
         return values;
     }
 
-    private static NewsMetadata BuildMetadata(IReadOnlyDictionary<string, string> values)
+    private static NewsMetadata BuildMetadata(IReadOnlyDictionary<string, string> values, bool allowLocalReadState)
     {
         string id = Required(values, "id");
         if (id.Length > 128 || !Regex.IsMatch(id, @"^[A-Za-z0-9][A-Za-z0-9._-]*$", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)))
@@ -184,6 +208,13 @@ public sealed class NewsTextParser
             throw new InvalidDataException("News popup must be true or false.");
         }
 
+        bool isRead = false;
+        if (allowLocalReadState && values.TryGetValue("read", out string? readValue) &&
+            !bool.TryParse(readValue, out isRead))
+        {
+            throw new InvalidDataException("Cached news read state must be true or false.");
+        }
+
         DateTimeOffset published = ParseUtcTimestamp(Required(values, "published"), "published");
         DateTimeOffset? expires = Optional(values, "expires") is { Length: > 0 } expiryValue
             ? ParseUtcTimestamp(expiryValue, "expires")
@@ -200,7 +231,7 @@ public sealed class NewsTextParser
             throw new InvalidDataException("expires must be later than published.");
         }
 
-        return new NewsMetadata(id, type, priority, popup, published, expires, minimumVersion, maximumVersion);
+        return new NewsMetadata(id, type, priority, popup, published, expires, minimumVersion, maximumVersion, isRead);
     }
 
     private static IReadOnlyList<NewsContentBlock> ParseContent(string[] lines, int startIndex)

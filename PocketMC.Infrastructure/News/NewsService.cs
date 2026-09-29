@@ -46,6 +46,7 @@ public sealed class NewsService : IDisposable
     private readonly string _statePath;
     private readonly SemaphoreSlim _syncGate = new(1, 1);
     private readonly object _stateLock = new();
+    private readonly object _cacheLock = new();
     private NewsPersistentState? _state;
     private bool _stateIsCorrupt;
     private CancellationTokenSource? _lifetime;
@@ -84,7 +85,7 @@ public sealed class NewsService : IDisposable
         {
             try
             {
-                NewsItem item = _parser.Parse(Path.GetFileName(path), File.ReadAllText(path, Encoding.UTF8));
+                NewsItem item = _parser.ParseCached(Path.GetFileName(path), File.ReadAllText(path, Encoding.UTF8));
                 if (currentVersion == null || IsForVersion(item.Metadata, currentVersion)) items.Add(item);
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -96,23 +97,41 @@ public sealed class NewsService : IDisposable
         return items.OrderBy(item => item.Metadata.PublishedUtc).ThenBy(item => item.Metadata.Id, StringComparer.Ordinal).ToArray();
     }
 
-    public IReadOnlySet<string> GetAcknowledgedNewsIds()
-    {
-        lock (_stateLock)
-        {
-            NewsPersistentState state = LoadStateLocked();
-            return new HashSet<string>(state.AcknowledgedNewsIds, StringComparer.Ordinal);
-        }
-    }
+    public IReadOnlySet<string> GetReadNewsIds()
+        => GetCachedNews()
+            .Where(item => item.Metadata.IsRead)
+            .Select(item => item.Metadata.Id)
+            .ToHashSet(StringComparer.Ordinal);
 
-    public void Acknowledge(string newsId)
+    public void MarkRead(string newsId)
     {
         if (string.IsNullOrWhiteSpace(newsId)) return;
-        lock (_stateLock)
+
+        string[] cachedPaths = Directory.Exists(_cacheDirectory)
+            ? Directory.GetFiles(_cacheDirectory, "*.txt", SearchOption.TopDirectoryOnly)
+            : Array.Empty<string>();
+        foreach (string path in cachedPaths)
         {
-            NewsPersistentState state = LoadStateLocked();
-            if (_stateIsCorrupt) return;
-            if (state.AcknowledgedNewsIds.Add(newsId)) SaveStateLocked(state);
+            try
+            {
+                lock (_cacheLock)
+                {
+                    string source = File.ReadAllText(path, Encoding.UTF8);
+                    NewsItem item = _parser.ParseCached(Path.GetFileName(path), source);
+                    if (!string.Equals(item.Metadata.Id, newsId, StringComparison.Ordinal) || item.Metadata.IsRead)
+                    {
+                        continue;
+                    }
+
+                    FileUtils.AtomicWriteAllText(path, _parser.MarkRead(item.FileName, source));
+                    _logger.LogInformation("Marked cached news item {NewsId} as read.", newsId);
+                    return;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                _logger.LogWarning(ex, "Could not mark cached news file {NewsPath} as read.", path);
+            }
         }
     }
 
@@ -176,7 +195,9 @@ public sealed class NewsService : IDisposable
                 state.KnownRemoteBlobShas.Remove(removedFile);
             }
 
-            HashSet<string> cachedIds = GetCachedNews().Select(item => item.Metadata.Id).ToHashSet(StringComparer.Ordinal);
+            Dictionary<string, NewsItem> cachedItemsById = GetCachedNews()
+                .ToDictionary(item => item.Metadata.Id, StringComparer.Ordinal);
+            HashSet<string> cachedIds = cachedItemsById.Keys.ToHashSet(StringComparer.Ordinal);
             List<NewsCandidate> candidates = new();
             int invalidCount = 0;
             bool metadataDiscoveryIncomplete = false;
@@ -197,7 +218,7 @@ public sealed class NewsService : IDisposable
                         byte[] cachedBytes = await File.ReadAllBytesAsync(cachePath, token);
                         if (string.Equals(GetGitBlobSha(cachedBytes), remoteFile.Sha, StringComparison.OrdinalIgnoreCase))
                         {
-                            NewsItem cachedItem = _parser.Parse(remoteFile.Name, new UTF8Encoding(false, true).GetString(cachedBytes));
+                            NewsItem cachedItem = _parser.ParseCached(remoteFile.Name, new UTF8Encoding(false, true).GetString(cachedBytes));
                             cachedIds.Add(cachedItem.Metadata.Id);
                             state.KnownRemoteBlobShas[remoteFile.Name] = remoteFile.Sha;
                             if (cachedItem.Metadata.PublishedUtc <= DateTimeOffset.UtcNow &&
@@ -339,6 +360,13 @@ public sealed class NewsService : IDisposable
                     break;
                 }
 
+                if (cachedItemsById.TryGetValue(item.Metadata.Id, out NewsItem? previousItem) && previousItem.Metadata.IsRead)
+                {
+                    string readText = _parser.MarkRead(item.FileName, item.RawText);
+                    contentBytes = new UTF8Encoding(false, true).GetBytes(readText);
+                    item = _parser.ParseCached(item.FileName, readText);
+                }
+
                 if (cachedIds.Contains(item.Metadata.Id) && !File.Exists(GetCachePath(item.FileName)))
                 {
                     invalidCount++;
@@ -366,11 +394,10 @@ public sealed class NewsService : IDisposable
             }
 
             SaveState(state);
-            HashSet<string> acknowledgedIds = new(GetAcknowledgedNewsIds(), StringComparer.Ordinal);
             DateTimeOffset now = DateTimeOffset.UtcNow;
             IReadOnlyList<NewsItem> popupResult = GetCachedNews()
                 .Where(item => item.Metadata.Popup &&
-                               !acknowledgedIds.Contains(item.Metadata.Id) &&
+                               !item.Metadata.IsRead &&
                                (item.Metadata.ExpiresUtc == null || item.Metadata.ExpiresUtc > now))
                 .OrderBy(item => item.Metadata.PublishedUtc)
                 .ThenBy(item => item.Metadata.Id, StringComparer.Ordinal)
@@ -561,13 +588,16 @@ public sealed class NewsService : IDisposable
         return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
 
-    private static async Task WriteCacheAtomicallyAsync(string path, byte[] content, CancellationToken cancellationToken)
+    private async Task WriteCacheAtomicallyAsync(string path, byte[] content, CancellationToken cancellationToken)
     {
         string tempPath = path + $".{Guid.NewGuid():N}.tmp";
         try
         {
             await File.WriteAllBytesAsync(tempPath, content, cancellationToken);
-            File.Move(tempPath, path, overwrite: true);
+            lock (_cacheLock)
+            {
+                File.Move(tempPath, path, overwrite: true);
+            }
         }
         finally
         {
@@ -586,7 +616,6 @@ public sealed class NewsService : IDisposable
             string content = File.ReadAllText(_statePath);
             _state = JsonSerializer.Deserialize<NewsPersistentState>(content) ?? new NewsPersistentState();
             _state.KnownRemoteBlobShas ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            _state.AcknowledgedNewsIds ??= new HashSet<string>(StringComparer.Ordinal);
             return _state;
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
@@ -605,11 +634,6 @@ public sealed class NewsService : IDisposable
     private void SaveStateLocked(NewsPersistentState state)
     {
         if (_stateIsCorrupt) return;
-        if (_state != null)
-        {
-            state.AcknowledgedNewsIds.UnionWith(_state.AcknowledgedNewsIds);
-        }
-
         Directory.CreateDirectory(_newsRoot);
         NewsPersistentState snapshot = CloneState(state);
         string json = JsonSerializer.Serialize(snapshot, StateJsonOptions);
@@ -622,7 +646,6 @@ public sealed class NewsService : IDisposable
         {
             LastFetchedNewsId = state.LastFetchedNewsId,
             LastFetchedPublishedUtc = state.LastFetchedPublishedUtc,
-            AcknowledgedNewsIds = new HashSet<string>(state.AcknowledgedNewsIds, StringComparer.Ordinal),
             KnownRemoteBlobShas = new Dictionary<string, string>(state.KnownRemoteBlobShas, StringComparer.OrdinalIgnoreCase),
             LastEvaluatedAppVersion = state.LastEvaluatedAppVersion
         };
@@ -686,9 +709,6 @@ public sealed class NewsService : IDisposable
 
         [JsonPropertyName("lastFetchedPublishedUtc")]
         public DateTimeOffset? LastFetchedPublishedUtc { get; set; }
-
-        [JsonPropertyName("acknowledgedNewsIds")]
-        public HashSet<string> AcknowledgedNewsIds { get; set; } = new(StringComparer.Ordinal);
 
         [JsonPropertyName("knownRemoteBlobShas")]
         public Dictionary<string, string> KnownRemoteBlobShas { get; set; } = new(StringComparer.OrdinalIgnoreCase);

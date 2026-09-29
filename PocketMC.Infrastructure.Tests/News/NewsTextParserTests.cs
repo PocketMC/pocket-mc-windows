@@ -38,6 +38,16 @@ public sealed class NewsTextParserTests
     }
 
     [Fact]
+    public void Parse_OnlyAllowsReadMarkerInLocalCachedNews()
+    {
+        string locallyRead = ValidNews.Replace("maxVersion: 1.9.9", "maxVersion: 1.9.9\nread: true", StringComparison.Ordinal);
+
+        Assert.Throws<InvalidDataException>(() => _parser.Parse("news.txt", locallyRead));
+        Assert.True(_parser.ParseCached("news.txt", locallyRead).Metadata.IsRead);
+        Assert.Contains("read: true", _parser.MarkRead("news.txt", ValidNews), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Parse_RejectsDuplicateIdsInContentAndInvalidTargetRange()
     {
         string duplicateTitle = ValidNews.Replace("heading: What happened", "title: Duplicate\n\nheading: What happened", StringComparison.Ordinal);

@@ -48,6 +48,6 @@ Supported `type` values are `announcement`, `quick-fix`, `critical`, `maintenanc
 
 The app lists repository TXT files and uses Git blob hashes as a local discovery cursor. It reads bounded frontmatter first, then downloads full text only for relevant new or changed items. Items are ordered by `published`; a failed read or download does not advance past unfinished newer news. Invalid files are logged and ignored until their repository contents change.
 
-The original TXT and one small state file are stored under `%LOCALAPPDATA%\PocketMC\news\`, alongside PocketMC's existing `settings.json` data directory. Cache and acknowledgement state survive application updates; cached news remains readable offline. A popup stays eligible until the user acknowledges it with **Got it**.
+The original TXT and one small sync-state file are stored under `%LOCALAPPDATA%\PocketMC\news\`, alongside PocketMC's existing `settings.json` data directory. The local cached TXT gets a `read: true` frontmatter field when opened or acknowledged; the repository file is never changed. The sync-state file stores discovery cursors and Git blob hashes, not per-item read metadata. Cached news remains readable offline, and an unread popup stays eligible until the user acknowledges it with **Got it**.
 
 Remote content is rendered as native text and list controls. Only HTTP and HTTPS links are openable. News files cannot define application styling, markup, scripts, or executable actions.

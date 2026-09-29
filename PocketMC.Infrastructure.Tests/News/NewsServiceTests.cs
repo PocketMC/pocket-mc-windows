@@ -107,7 +107,7 @@ public sealed class NewsServiceTests : IDisposable
         NewsFixture fixture = CreateFixture();
         fixture.Remote.Add("popup.txt", CreateNews("important-news", "2026-09-20T10:00:00Z", popup: true));
         NewsSyncResult initial = await fixture.Service.SynchronizeAsync();
-        fixture.Service.Acknowledge("important-news");
+        fixture.Service.MarkRead("important-news");
         NewsSyncResult acknowledgedSync = await fixture.Service.SynchronizeAsync();
         fixture.Handler.IsOffline = true;
 
@@ -115,10 +115,51 @@ public sealed class NewsServiceTests : IDisposable
 
         Assert.Single(initial.PopupItems);
         Assert.Empty(acknowledgedSync.PopupItems);
+        Assert.Equal(1, fixture.Handler.FullDownloadCount);
         Assert.False(offline.Succeeded);
-        Assert.Contains("important-news", fixture.Service.GetAcknowledgedNewsIds());
+        Assert.Contains("important-news", fixture.Service.GetReadNewsIds());
+        Assert.Contains("read: true", File.ReadAllText(Path.Combine(fixture.Service.CacheDirectory, "popup.txt")), StringComparison.Ordinal);
+        Assert.DoesNotContain("acknowledgedNewsIds", File.ReadAllText(fixture.Service.StateFilePath), StringComparison.Ordinal);
         Assert.Single(fixture.Service.GetCachedNews());
         Assert.Equal("important-news", ReadState(fixture.Service.StateFilePath).GetProperty("lastFetchedNewsId").GetString());
+    }
+
+    [Fact]
+    public async Task SynchronizeAsync_RemoteContentRefreshPreservesLocalReadMarker()
+    {
+        NewsFixture fixture = CreateFixture();
+        fixture.Remote.Add("item.txt", CreateNews("stable-news-id", "2026-09-20T10:00:00Z", popup: true));
+        await fixture.Service.SynchronizeAsync();
+        fixture.Service.MarkRead("stable-news-id");
+        fixture.Remote["item.txt"] = CreateNews("stable-news-id", "2026-09-21T10:00:00Z", popup: true)
+            .Replace("Test content for stable-news-id.", "Updated text for this same news item.", StringComparison.Ordinal);
+
+        NewsSyncResult refreshed = await fixture.Service.SynchronizeAsync();
+        NewsItem cached = Assert.Single(fixture.Service.GetCachedNews());
+
+        Assert.True(refreshed.Succeeded, refreshed.ErrorMessage);
+        Assert.True(cached.Metadata.IsRead);
+        Assert.Contains("read: true", File.ReadAllText(Path.Combine(fixture.Service.CacheDirectory, "item.txt")), StringComparison.Ordinal);
+        Assert.Empty(refreshed.PopupItems);
+        Assert.Contains("Updated text", cached.RawText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SynchronizeAsync_CachedReadMarkerSurvivesServiceRestart()
+    {
+        NewsFixture firstLaunch = CreateFixture();
+        firstLaunch.Remote.Add("popup.txt", CreateNews("persistent-read", "2026-09-20T10:00:00Z", popup: true));
+        await firstLaunch.Service.SynchronizeAsync();
+        firstLaunch.Service.MarkRead("persistent-read");
+
+        NewsFixture nextLaunch = CreateFixture();
+        nextLaunch.Remote.Add("popup.txt", CreateNews("persistent-read", "2026-09-20T10:00:00Z", popup: true));
+        NewsSyncResult result = await nextLaunch.Service.SynchronizeAsync();
+
+        Assert.True(result.Succeeded, result.ErrorMessage);
+        Assert.Empty(result.PopupItems);
+        Assert.Contains("persistent-read", nextLaunch.Service.GetReadNewsIds());
+        Assert.Equal(0, nextLaunch.Handler.FullDownloadCount);
     }
 
     [Fact]
