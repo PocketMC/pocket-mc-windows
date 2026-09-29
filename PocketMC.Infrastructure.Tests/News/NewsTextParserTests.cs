@@ -73,6 +73,21 @@ public sealed class NewsTextParserTests
         Assert.Equal(new Version(1, 9, 9, 1), item.Metadata.MaximumVersion);
     }
 
+    [Fact]
+    public void Parse_AllRepositoryNewsFiles()
+    {
+        string newsDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "news"));
+        string[] files = Directory.GetFiles(newsDirectory, "*.txt", SearchOption.TopDirectoryOnly);
+
+        Assert.NotEmpty(files);
+        foreach (string file in files)
+        {
+            NewsItem item = _parser.Parse(Path.GetFileName(file), File.ReadAllText(file));
+            Assert.False(string.IsNullOrWhiteSpace(item.Metadata.Id));
+            Assert.Contains(item.Blocks, block => block.Type == NewsBlockType.Title);
+        }
+    }
+
     private const string ValidNews = """
         ---
         id: playit-agent-fix
