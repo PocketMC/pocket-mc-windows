@@ -4,7 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
-- `v1.9.9...v1.9.9.5`: Adds in-app remote News, expands local Ollama model management, checks and repairs incompatible Playit runtimes, migrates settings to a structured format while retaining legacy compatibility, and fixes maximized-window restoration.
+- `v1.9.9...v1.9.10`: Adds in-app remote News, expands local Ollama model management, checks and repairs incompatible Playit runtimes, migrates settings to a structured format while retaining legacy compatibility, and fixes maximized-window restoration.
 
 - `v1.9.8...v1.9.9`: Focuses on scheduled server reboot automation with in-game warnings, built-in Ollama local and cloud model manager with progress tracking, persistent AI session summaries, seamless detail page navigation resumption, add-on card three-dot context menus, Playit v1.0.10 agent upgrade with dedicated binary console, customizable Discord Rich Presence with live preview, wallpaper theme blur and dimming controls, process concurrency and file locking stabilization, window geometry remembrance, and centralized configuration architecture.
 - `v1.9.7...v1.9.8`: Focuses on safe add-on inventory management (eliminated background auto-deletion), granular local add-on upload diagnostics with user-choice overrides, unified clean warning badges, accurate delta update download size calculation, and Windows auto-hide taskbar reveal support on maximized windows.
@@ -25,15 +25,15 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ---
 
-## v1.9.9.5 - Remote News, Ollama Management, Playit Repair & Settings Safety
+## v1.9.10 - Remote News, Ollama Management, Playit Repair & Settings Safety
 
 ### Summary
 
-v1.9.9.5 adds an in-app News page with cached announcements and unread popups, extends local Ollama model management, validates and repairs the Playit runtime, and migrates settings without replacing existing user preferences. It also corrects restoration of maximized windows.
+v1.9.10 adds an in-app News page with cached announcements and unread popups, extends local Ollama model management, validates and repairs the Playit runtime, and migrates settings without replacing existing user preferences. It also corrects restoration of maximized windows.
 
 ### Diff Basis
 
-Compared the `v1.9.9` tag (`216b174`) with the release-candidate source commit `debd674` (67 changed paths; 4,633 insertions and 384 deletions). Temporary news showcase files added during development were removed before this endpoint and are not included as release content.
+Compared the `v1.9.9` tag (`216b174`) with candidate source commit `af12ea6`. Temporary news showcase files added during development were removed before this endpoint and are not included as release content.
 
 ### Added
 

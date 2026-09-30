@@ -1,4 +1,4 @@
-VERSION=1.9.9.5
+VERSION=1.9.10
 
 [NEW FEATURES]
 Read PocketMC announcements and service notices in the new News page. News syncs in the background, stays cached for offline reading, and can show unread popup notices.
