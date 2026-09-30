@@ -1,0 +1,19 @@
+---
+id: live-demo-quick-fix-2026-09-30
+type: quick-fix
+priority: important
+popup: false
+published: 2026-09-30T06:30:00Z
+expires: 2026-10-07T00:00:00Z
+minVersion: 1.9.9.1
+maxVersion: 1.9.9.1
+---
+title: Demo Notice 5: Quick Fix
+
+numbered-list:
+1. Open this item from the News list
+2. Confirm the title, type, priority, and date are visible
+3. Mark it read to test local cached read state
+
+code:
+This is display-only sample text; PocketMC does not execute news content.

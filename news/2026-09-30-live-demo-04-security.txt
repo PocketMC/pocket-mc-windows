@@ -1,0 +1,17 @@
+---
+id: live-demo-security-2026-09-30
+type: security
+priority: critical
+popup: false
+published: 2026-09-30T06:30:00Z
+expires: 2026-10-07T00:00:00Z
+minVersion: 1.9.9.1
+maxVersion: 1.9.9.1
+---
+title: Demo Notice 4: Security
+
+paragraph:
+This temporary item checks security type and critical priority presentation. It is not a real security alert.
+
+warning:
+No action is required. This is test content only.

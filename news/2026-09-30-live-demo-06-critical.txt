@@ -1,0 +1,21 @@
+---
+id: live-demo-critical-2026-09-30
+type: critical
+priority: normal
+popup: false
+published: 2026-09-30T06:30:00Z
+expires: 2026-10-07T00:00:00Z
+minVersion: 1.9.9.1
+maxVersion: 1.9.9.1
+---
+title: Demo Notice 6: Critical Type, Normal Priority
+
+paragraph:
+This temporary sample checks that news type, priority, and popup behavior are independent settings.
+
+link: PocketMC website | https://pocketmc.github.io/
+
+divider:
+
+paragraph:
+This is demonstration content only and does not indicate an active incident.
