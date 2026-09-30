@@ -337,30 +337,15 @@ namespace PocketMC.Infrastructure.Configuration
 
             if (!settings.HasMigratedToGreenWallpaperBlurTheme)
             {
-                // Only overwrite settings if this is an existing installation being migrated.
-                // For new installations (!HasCompletedFirstLaunch), the defaults are already correct
-                // because of the property initializers in AppSettings.cs.
-                if (settings.HasCompletedFirstLaunch)
-                {
-                    settings.WindowBackdrop = "FakeMica";
-                    settings.AccentColorMode = "Custom";
-                    settings.CustomAccentColor = "#008B00";
-                }
                 settings.HasMigratedToGreenWallpaperBlurTheme = true;
             }
 
             if (!settings.HasMigratedToDefaultImageWallpaper)
             {
-                if (settings.HasCompletedFirstLaunch)
+                if (!settings.HasCompletedFirstLaunch && string.IsNullOrWhiteSpace(settings.CustomBackgroundImagePath))
                 {
-                    // Apply the new PocketMC default wallpaper to existing users on this update
-                    settings.WindowBackdrop = "FakeMica";
-                    settings.AccentColorMode = "Custom";
-                    settings.CustomAccentColor = "#008B00";
+                    settings.CustomBackgroundImagePath = "pack://application:,,,/Assets/default_wallpaper.png";
                 }
-                // For new users, defaults are already provided via AppSettings.cs initializers,
-                // but we must set the dynamic image path here.
-                settings.CustomBackgroundImagePath = "pack://application:,,,/Assets/default_wallpaper.png";
                 settings.HasMigratedToDefaultImageWallpaper = true;
             }
 

@@ -197,6 +197,39 @@ public sealed class SettingsManagerSecurityTests : IDisposable
     }
 
     [Fact]
+    public void Load_LegacySettingsWithUnsetAppearanceMigrationFlagsPreservesUserAppearance()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        File.WriteAllText(settingsPath, """
+        {
+          "SchemaVersion": 2,
+          "HasCompletedFirstLaunch": true,
+          "WindowBackdrop": "Mica",
+          "AccentColorMode": "Automatic",
+          "CustomAccentColor": "#13579B",
+          "CustomBackgroundImagePath": null,
+          "HasMigratedToGreenWallpaperBlurTheme": false,
+          "HasMigratedToDefaultImageWallpaper": false
+        }
+        """);
+
+        AppSettings loaded = new SettingsManager(settingsPath).Load();
+
+        Assert.Equal("Mica", loaded.WindowBackdrop);
+        Assert.Equal("Automatic", loaded.AccentColorMode);
+        Assert.Equal("#13579B", loaded.CustomAccentColor);
+        Assert.Null(loaded.CustomBackgroundImagePath);
+        Assert.True(loaded.HasMigratedToGreenWallpaperBlurTheme);
+        Assert.True(loaded.HasMigratedToDefaultImageWallpaper);
+
+        JsonObject persisted = JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject();
+        Assert.Equal("Mica", persisted["appearance"]!["windowBackdrop"]!.GetValue<string>());
+        Assert.Equal("Automatic", persisted["appearance"]!["accentColorMode"]!.GetValue<string>());
+        Assert.Null(persisted["appearance"]!["customBackgroundImagePath"]);
+    }
+
+    [Fact]
     public void Load_AfterOlderBuildSavesFlatSettings_MergesChangesAndPreservesSectionOnlyData()
     {
         Directory.CreateDirectory(_tempDirectory);
