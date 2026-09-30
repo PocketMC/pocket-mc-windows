@@ -46,6 +46,34 @@ public sealed class SettingsDocumentCodecTests
     }
 
     [Fact]
+    public void ToLegacyFlat_PreservesRemoteControlSettingsFromSectionedDocument()
+    {
+        AppSettings original = new();
+        original.RemoteControl.Enabled = true;
+        original.RemoteControl.Username = "saved-user";
+        original.RemoteControl.PasswordHash = "saved-password-hash";
+        original.RemoteControl.ProtectedPassword = "saved-protected-password";
+        original.RemoteControl.RequireAuthentication = false;
+        original.RemoteControl.Users.Add(new RemoteControlUser
+        {
+            Username = "saved-subuser",
+            PasswordHash = "saved-subuser-hash"
+        });
+
+        JsonObject document = SettingsDocumentCodec.Serialize(original);
+        AppSettings loaded = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(document));
+
+        Assert.True(loaded.RemoteControl.Enabled);
+        Assert.Equal("saved-user", loaded.RemoteControl.Username);
+        Assert.Equal("saved-password-hash", loaded.RemoteControl.PasswordHash);
+        Assert.Equal("saved-protected-password", loaded.RemoteControl.ProtectedPassword);
+        Assert.False(loaded.RemoteControl.RequireAuthentication);
+        Assert.Single(loaded.RemoteControl.Users);
+        Assert.Equal("saved-subuser", loaded.RemoteControl.Users[0].Username);
+        Assert.Equal("saved-subuser-hash", loaded.RemoteControl.Users[0].PasswordHash);
+    }
+
+    [Fact]
     public void MergeLegacyValues_AppliesKnownChangesAndPreservesNewerSections()
     {
         AppSettings original = new()

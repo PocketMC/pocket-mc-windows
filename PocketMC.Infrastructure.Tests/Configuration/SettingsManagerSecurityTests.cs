@@ -38,14 +38,33 @@ public sealed class SettingsManagerSecurityTests : IDisposable
     }
 
     [Fact]
+    public void Load_MigratesUnprefixedDpapiSecretWithoutChangingItsPlaintext()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        string versionedPayload = DataProtector.Protect("legacy-unprefixed-secret");
+        string unprefixedPayload = versionedPayload["dpapi:v2:".Length..];
+        var settings = new AppSettings { CurseForgeApiKey = unprefixedPayload };
+        File.WriteAllText(settingsPath, JsonSerializer.Serialize(settings));
+
+        var manager = new SettingsManager(settingsPath);
+        AppSettings loaded = manager.Load();
+
+        Assert.Equal("legacy-unprefixed-secret", loaded.CurseForgeApiKey);
+        JsonObject persisted = JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject();
+        Assert.StartsWith("dpapi:v2:", persisted["marketplace"]!["curseForgeApiKey"]!.GetValue<string>(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Load_ClearsOnlyCorruptedProtectedSecretAndPreservesOtherSettings()
     {
         Directory.CreateDirectory(_tempDirectory);
         string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        string protectedPayload = CreateCorruptedProtectedPayload();
         var settings = new AppSettings
         {
             AppRootPath = @"D:\PocketMC\Instances",
-            CurseForgeApiKey = CreateCorruptedProtectedPayload(),
+            CurseForgeApiKey = protectedPayload,
             WindowBackdrop = "Mica",
             EnableAiSummarization = true
         };
@@ -59,6 +78,10 @@ public sealed class SettingsManagerSecurityTests : IDisposable
         Assert.Equal("Mica", loaded.WindowBackdrop);
         Assert.True(loaded.EnableAiSummarization);
         Assert.Equal("plain-gemini-key", loaded.AiApiKeys["Gemini"]);
+        string[] recoveryBackups = Directory.GetFiles(_tempDirectory, "settings.json.secret-recovery.*.bak");
+        Assert.Single(recoveryBackups);
+        JsonObject recoveryDocument = JsonNode.Parse(File.ReadAllText(recoveryBackups[0]))!.AsObject();
+        Assert.Equal(protectedPayload, recoveryDocument["marketplace"]!["curseForgeApiKey"]!.GetValue<string>());
     }
 
     [Fact]
@@ -194,6 +217,70 @@ public sealed class SettingsManagerSecurityTests : IDisposable
         Assert.Equal(@"D:\PocketMC\CustomInstances", migrated[nameof(AppSettings.AppRootPath)]!.GetValue<string>());
         Assert.Equal("keep-me", migrated["FutureRootOption"]!.GetValue<string>());
         Assert.True(File.Exists(SettingsDocumentCodec.GetSnapshotPath(settingsPath)));
+    }
+
+    [Fact]
+    public void Load_VersionTwoMigrationKeepsExactPreMigrationBackup()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        const string original = """
+        {
+          "formatVersion": 2,
+          "SchemaVersion": 2,
+          "AppRootPath": "D:\\PocketMC\\Instances"
+        }
+        """;
+        File.WriteAllText(settingsPath, original);
+
+        new SettingsManager(settingsPath).Load();
+
+        string[] backups = Directory.GetFiles(_tempDirectory, "settings.json.legacy.*.bak");
+        Assert.Single(backups);
+        Assert.Equal(original, File.ReadAllText(backups[0]));
+    }
+
+    [Fact]
+    public void Save_VersionTwoSettingsKeepsExactPreMigrationBackup()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        const string original = """
+        {
+          "formatVersion": 2,
+          "SchemaVersion": 2,
+          "AppRootPath": "D:\\PocketMC\\Instances"
+        }
+        """;
+        File.WriteAllText(settingsPath, original);
+
+        new SettingsManager(settingsPath).Save(new AppSettings
+        {
+            AppRootPath = @"D:\PocketMC\Instances"
+        });
+
+        string[] backups = Directory.GetFiles(_tempDirectory, "settings.json.legacy.*.bak");
+        Assert.Single(backups);
+        Assert.Equal(original, File.ReadAllText(backups[0]));
+    }
+
+    [Fact]
+    public void Load_PreservesLegacyAiKeyWhenGeminiKeyAlreadyExists()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        var settings = new AppSettings { AiApiKey = "legacy-ai-key" };
+        settings.AiApiKeys["Gemini"] = "current-gemini-key";
+        File.WriteAllText(settingsPath, JsonSerializer.Serialize(settings));
+
+        var manager = new SettingsManager(settingsPath);
+        AppSettings loaded = manager.Load();
+
+        Assert.Equal("legacy-ai-key", loaded.AiApiKey);
+        Assert.Equal("current-gemini-key", loaded.AiApiKeys["Gemini"]);
+        JsonObject persisted = JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject();
+        Assert.StartsWith("dpapi:v2:", persisted["ai"]!["aiApiKey"]!.GetValue<string>(), StringComparison.Ordinal);
+        Assert.DoesNotContain("legacy-ai-key", File.ReadAllText(settingsPath), StringComparison.Ordinal);
     }
 
     [Fact]

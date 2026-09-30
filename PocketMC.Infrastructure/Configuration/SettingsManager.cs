@@ -20,6 +20,7 @@ namespace PocketMC.Infrastructure.Configuration
         private readonly ILogger<SettingsManager>? _logger;
         private readonly object _settingsLock = new();
         private bool _settingsWritesBlocked;
+        private bool _secretRecoveryBackupCreated;
 
         public event EventHandler<AppSettings>? SettingsSaved;
 
@@ -55,6 +56,7 @@ namespace PocketMC.Infrastructure.Configuration
         {
             lock (_settingsLock)
             {
+                _secretRecoveryBackupCreated = false;
                 if (!File.Exists(_settingsFilePath))
                 {
                     _settingsWritesBlocked = false;
@@ -65,23 +67,24 @@ namespace PocketMC.Infrastructure.Configuration
                 JsonObject? previousDocument = null;
                 string originalJson = string.Empty;
                 bool canWrite = true;
+                int sourceFormatVersion = 0;
                 try
                 {
                     originalJson = File.ReadAllText(_settingsFilePath);
                     JsonObject sourceDocument = SettingsDocumentCodec.ParseObject(originalJson);
-                    int formatVersion = SettingsDocumentCodec.GetFormatVersion(sourceDocument);
+                    sourceFormatVersion = SettingsDocumentCodec.GetFormatVersion(sourceDocument);
 
-                    if (formatVersion > SettingsDocumentCodec.CurrentFormatVersion)
+                    if (sourceFormatVersion > SettingsDocumentCodec.CurrentFormatVersion)
                     {
                         _settingsWritesBlocked = true;
                         canWrite = false;
                         _logger?.LogWarning(
                             "Settings file format {FormatVersion} is newer than supported format {SupportedVersion}. Writes are disabled to protect user data.",
-                            formatVersion,
+                            sourceFormatVersion,
                             SettingsDocumentCodec.CurrentFormatVersion);
                         settings = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(sourceDocument));
                     }
-                    else if (formatVersion == SettingsDocumentCodec.CurrentFormatVersion)
+                    else if (sourceFormatVersion == SettingsDocumentCodec.CurrentFormatVersion)
                     {
                         _settingsWritesBlocked = false;
                         previousDocument = sourceDocument;
@@ -124,13 +127,17 @@ namespace PocketMC.Infrastructure.Configuration
                         string snapshotPath = SettingsDocumentCodec.GetSnapshotPath(_settingsFilePath);
                         if (normalizedJson != originalJson || !File.Exists(snapshotPath))
                         {
-                            if (SettingsDocumentCodec.GetFormatVersion(previousDocument ?? new JsonObject()) == 0 &&
-                                originalJson.Length > 0)
+                            if (sourceFormatVersion < SettingsDocumentCodec.CurrentFormatVersion &&
+                                originalJson.Length > 0 &&
+                                !CreateSettingsBackup("legacy"))
                             {
-                                CreateSettingsBackup("legacy");
+                                _settingsWritesBlocked = true;
+                                _logger?.LogError("Settings migration was not written because the pre-migration backup could not be created.");
                             }
-
-                            WriteSettingsDocument(normalizedJson);
+                            else
+                            {
+                                WriteSettingsDocument(normalizedJson);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -161,6 +168,7 @@ namespace PocketMC.Infrastructure.Configuration
                 var cloned = CloneSettings(settings);
                 JsonObject? previousDocument = null;
                 AppSettings? existingSettings = null;
+                bool needsPreMigrationBackup = false;
 
                 if (File.Exists(_settingsFilePath))
                 {
@@ -182,6 +190,8 @@ namespace PocketMC.Infrastructure.Configuration
                         _settingsWritesBlocked = true;
                         throw new InvalidOperationException("The settings file was created by a newer application version; refusing to overwrite it.");
                     }
+
+                    needsPreMigrationBackup = formatVersion < SettingsDocumentCodec.CurrentFormatVersion;
 
                     if (formatVersion == SettingsDocumentCodec.CurrentFormatVersion)
                     {
@@ -233,6 +243,11 @@ namespace PocketMC.Infrastructure.Configuration
                 var normalizedSettings = Normalize(cloned);
                 ProtectSecrets(normalizedSettings);
                 JsonObject outputDocument = SettingsDocumentCodec.Serialize(normalizedSettings, previousDocument);
+                if (needsPreMigrationBackup && !CreateSettingsBackup("legacy"))
+                {
+                    _settingsWritesBlocked = true;
+                    throw new InvalidOperationException("Settings were not migrated because the pre-migration backup could not be created.");
+                }
                 WriteSettingsDocument(outputDocument.ToJsonString(SettingsJsonOptions));
             }
 
@@ -303,13 +318,13 @@ namespace PocketMC.Infrastructure.Configuration
             FileUtils.AtomicWriteAllText(_settingsFilePath, content);
         }
 
-        private void CreateSettingsBackup(string reason)
+        private bool CreateSettingsBackup(string reason)
         {
             try
             {
                 if (!File.Exists(_settingsFilePath))
                 {
-                    return;
+                    return false;
                 }
 
                 string directory = Path.GetDirectoryName(_settingsFilePath) ?? string.Empty;
@@ -318,10 +333,12 @@ namespace PocketMC.Infrastructure.Configuration
                     $"settings.json.{reason}.{DateTime.UtcNow:yyyyMMddHHmmssfff}.bak");
                 File.Copy(_settingsFilePath, backupPath, overwrite: false);
                 _logger?.LogInformation("Preserved settings backup at {BackupPath}.", backupPath);
+                return true;
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Failed to preserve settings backup for {SettingsFilePath}.", _settingsFilePath);
+                return false;
             }
         }
 
@@ -398,10 +415,19 @@ namespace PocketMC.Infrastructure.Configuration
             // Migration: Move old single API key to the dictionary under Gemini
             if (!string.IsNullOrEmpty(settings.AiApiKey))
             {
-                if (!settings.AiApiKeys.ContainsKey("Gemini"))
+                if (!settings.AiApiKeys.TryGetValue("Gemini", out string? geminiKey) || string.IsNullOrEmpty(geminiKey))
+                {
                     settings.AiApiKeys["Gemini"] = settings.AiApiKey;
-
-                settings.AiApiKey = null; // Clear it out so it stops writing to JSON
+                    settings.AiApiKey = null;
+                }
+                else if (string.Equals(geminiKey, settings.AiApiKey, StringComparison.Ordinal))
+                {
+                    settings.AiApiKey = null;
+                }
+                else
+                {
+                    _logger?.LogWarning("Legacy AI API key conflicts with AiApiKeys.Gemini; both values were preserved.");
+                }
             }
 
             return settings;
@@ -409,20 +435,13 @@ namespace PocketMC.Infrastructure.Configuration
 
         private void ProtectSecrets(AppSettings settings)
         {
-            if (!string.IsNullOrEmpty(settings.CurseForgeApiKey))
-            {
-                settings.CurseForgeApiKey = DataProtector.Protect(settings.CurseForgeApiKey);
-            }
+            settings.AiApiKey = ProtectSecret(settings.AiApiKey);
+            settings.CurseForgeApiKey = ProtectSecret(settings.CurseForgeApiKey);
+            settings.DiscordApiKey = ProtectSecret(settings.DiscordApiKey);
 
-            if (!string.IsNullOrEmpty(settings.PlayitPartnerConnection?.AgentSecretKey))
+            if (settings.PlayitPartnerConnection != null)
             {
-                settings.PlayitPartnerConnection.AgentSecretKey =
-                    DataProtector.Protect(settings.PlayitPartnerConnection.AgentSecretKey);
-            }
-
-            if (!string.IsNullOrEmpty(settings.DiscordApiKey))
-            {
-                settings.DiscordApiKey = DataProtector.Protect(settings.DiscordApiKey);
+                settings.PlayitPartnerConnection.AgentSecretKey = ProtectSecret(settings.PlayitPartnerConnection.AgentSecretKey);
             }
 
             foreach (var key in new System.Collections.Generic.List<string>(settings.AiApiKeys.Keys))
@@ -430,7 +449,7 @@ namespace PocketMC.Infrastructure.Configuration
                 string value = settings.AiApiKeys[key];
                 if (!string.IsNullOrEmpty(value))
                 {
-                    settings.AiApiKeys[key] = DataProtector.Protect(value);
+                    settings.AiApiKeys[key] = ProtectSecret(value)!;
                 }
             }
 
@@ -443,20 +462,14 @@ namespace PocketMC.Infrastructure.Configuration
                     continue;
                 }
 
-                if (!string.IsNullOrEmpty(tokenSet.AccessToken))
-                {
-                    tokenSet.AccessToken = DataProtector.Protect(tokenSet.AccessToken);
-                }
-
-                if (!string.IsNullOrEmpty(tokenSet.RefreshToken))
-                {
-                    tokenSet.RefreshToken = DataProtector.Protect(tokenSet.RefreshToken);
-                }
+                tokenSet.AccessToken = ProtectSecret(tokenSet.AccessToken);
+                tokenSet.RefreshToken = ProtectSecret(tokenSet.RefreshToken);
             }
         }
 
         private void UnprotectSecrets(AppSettings settings)
         {
+            settings.AiApiKey = TryUnprotectSetting(settings.AiApiKey, nameof(settings.AiApiKey));
             settings.CurseForgeApiKey = TryUnprotectSetting(settings.CurseForgeApiKey, nameof(settings.CurseForgeApiKey));
             settings.DiscordApiKey = TryUnprotectSetting(settings.DiscordApiKey, nameof(settings.DiscordApiKey));
 
@@ -502,8 +515,35 @@ namespace PocketMC.Infrastructure.Configuration
             }
             catch (CryptographicException ex)
             {
+                PreserveSettingsForSecretRecovery();
                 _logger?.LogWarning(ex, "Failed to decrypt protected setting {SettingName}. Clearing only that value.", settingName);
                 return null;
+            }
+        }
+
+        private string? ProtectSecret(string? value)
+        {
+            if (string.IsNullOrEmpty(value) ||
+                value.StartsWith("dpapi:v1:", StringComparison.Ordinal) ||
+                value.StartsWith("dpapi:v2:", StringComparison.Ordinal))
+            {
+                return value;
+            }
+
+            return DataProtector.Protect(DataProtector.Unprotect(value));
+        }
+
+        private void PreserveSettingsForSecretRecovery()
+        {
+            if (_secretRecoveryBackupCreated)
+            {
+                return;
+            }
+
+            _secretRecoveryBackupCreated = true;
+            if (!CreateSettingsBackup("secret-recovery"))
+            {
+                _settingsWritesBlocked = true;
             }
         }
 
@@ -539,6 +579,7 @@ namespace PocketMC.Infrastructure.Configuration
             }
             catch (CryptographicException ex)
             {
+                PreserveSettingsForSecretRecovery();
                 _logger?.LogWarning(ex, "Failed to decrypt protected setting {SettingName}. Removing that cloud token provider.", settingName);
                 unprotected = null;
                 return false;

@@ -157,7 +157,9 @@ internal static class SettingsDocumentCodec
 
         foreach ((string propertyName, JsonNode? value) in document)
         {
-            if (propertyName == FormatVersionProperty || PropertySections.ContainsKey(propertyName))
+            if (propertyName == FormatVersionProperty ||
+                PropertySections.ContainsKey(propertyName) ||
+                SectionProperties.ContainsKey(propertyName))
             {
                 continue;
             }
