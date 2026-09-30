@@ -117,7 +117,28 @@
                       HorizontalScrollBarVisibility="Disabled"
                       Padding="24,0,24,24"
                       Visibility="{Binding IsLoading, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InvertedVisibilityConverter}}">
-            <StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                    <TextBlock Text="Essentials" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="Core app behavior and appearance" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Row="2" Margin="0,12,0,12">
+                    <TextBlock Text="Connections" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="Services, integrations, and AI" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1">
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>
                         <Grid>
@@ -602,6 +623,10 @@
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
+
+                </StackPanel>
+
+                <StackPanel Grid.Row="3">
 
                 <!-- DISCORD RICH PRESENCE SECTION -->
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Games24}" Margin="0,0,0,12">
@@ -1259,6 +1284,12 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                </StackPanel>
+
+                <StackPanel Grid.Row="4">
+                    <TextBlock Text="Maintenance" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="Updates, recovery, and support" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,12"/>
+
                 <!-- UPDATES -->
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>
@@ -1594,7 +1625,8 @@
                     </StackPanel>
                 </ui:CardExpander>
 
-            </StackPanel>
+                </StackPanel>
+            </Grid>
         </ScrollViewer>
     </Grid>
 </Page>
