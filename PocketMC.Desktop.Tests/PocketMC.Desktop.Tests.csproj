@@ -77,10 +77,4 @@
     <ProjectReference Include="..\PocketMC.RemoteControl\PocketMC.RemoteControl.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\news\2026-09-30-format-showcase.txt"
-          Link="NewsFixtures\2026-09-30-format-showcase.txt"
-          CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
 </Project>
