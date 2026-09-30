@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using PocketMC.Domain.Models;
 using PocketMC.Infrastructure.Configuration;
 using Xunit;
@@ -186,5 +188,84 @@ public sealed class SettingsBackupServiceTests
 
         Assert.NotNull(package.AppVersion);
         Assert.Equal(AppConfig.AppVersion, package.AppVersion);
+    }
+
+    [Fact]
+    public void RestoreLegacyVersionOneBackup_PreservesSelectedAppearanceAndWritesSectionedSettings()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "PocketMC.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string settingsPath = Path.Combine(directory, "settings.json");
+        try
+        {
+            var settingsManager = new SettingsManager(settingsPath);
+            settingsManager.Save(new AppSettings
+            {
+                AppRootPath = @"D:\PocketMC\Instances",
+                HasCompletedFirstLaunch = true,
+                HasMigratedToGreenWallpaperBlurTheme = true,
+                HasMigratedToDefaultImageWallpaper = true,
+                WindowBackdrop = "Current"
+            });
+
+            const string legacyBackup = """
+            {
+              "Version": 1,
+              "AppVersion": "1.2.0",
+              "IncludedCategories": { "IncludeAppearance": true, "IncludeAiConfiguration": true, "IncludeAiApiKeys": true },
+              "Appearance": {
+                "WindowBackdrop": "Mica",
+                "AccentColorMode": "Custom",
+                "CustomAccentColor": "#123456",
+                "CustomBackgroundImagePath": null
+              },
+              "AiConfiguration": {
+                "AiProvider": "Gemini",
+                "EnableAiSummarization": true,
+                "AiApiKeys": { "Gemini": "legacy-backup-api-key" }
+              }
+            }
+            """;
+
+            SettingsBackupPackage package = _service.DeserializePackage(legacyBackup);
+            SettingsBackupCategories categories = _service.GetAvailableCategories(package);
+            AppSettings current = settingsManager.Load();
+            AppSettings restored = _service.RestoreFromPackage(current, package, categories);
+            settingsManager.Save(restored);
+
+            AppSettings reloaded = settingsManager.Load();
+            Assert.Equal("Mica", reloaded.WindowBackdrop);
+            Assert.Equal("Custom", reloaded.AccentColorMode);
+            Assert.Equal("#123456", reloaded.CustomAccentColor);
+            Assert.True(reloaded.HasMigratedToGreenWallpaperBlurTheme);
+            Assert.True(reloaded.HasMigratedToDefaultImageWallpaper);
+            Assert.Equal("legacy-backup-api-key", reloaded.AiApiKeys["Gemini"]);
+            Assert.Equal(@"D:\PocketMC\Instances", reloaded.AppRootPath);
+
+            JsonObject persisted = JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject();
+            Assert.Equal(SettingsDocumentCodec.CurrentFormatVersion, persisted[SettingsDocumentCodec.FormatVersionProperty]!.GetValue<int>());
+            Assert.Equal("Mica", persisted["appearance"]!["windowBackdrop"]!.GetValue<string>());
+            Assert.DoesNotContain("legacy-backup-api-key", persisted.ToJsonString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void DeserializePackage_RejectsUnsupportedFutureVersion()
+    {
+        const string futureBackup = """
+        {
+          "Version": 2,
+          "Appearance": { "WindowBackdrop": "Mica" }
+        }
+        """;
+
+        Assert.Throws<JsonException>(() => _service.DeserializePackage(futureBackup));
     }
 }

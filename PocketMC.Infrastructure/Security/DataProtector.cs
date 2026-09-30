@@ -18,6 +18,11 @@ namespace PocketMC.Infrastructure.Security
         public static string Protect(string plainText)
         {
             if (string.IsNullOrEmpty(plainText)) return plainText;
+            if (plainText.StartsWith(ProtectedPrefix, StringComparison.Ordinal) ||
+                plainText.StartsWith(LegacyProtectedPrefix, StringComparison.Ordinal))
+            {
+                return plainText;
+            }
 
             byte[]? plainBytes = null;
             byte[]? cipherBytes = null;

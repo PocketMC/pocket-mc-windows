@@ -16,6 +16,14 @@ public sealed class DataProtectorTests
     }
 
     [Fact]
+    public void Protect_DoesNotEncryptAnAlreadyProtectedPayloadAgain()
+    {
+        string protectedValue = DataProtector.Protect("secret-value");
+
+        Assert.Equal(protectedValue, DataProtector.Protect(protectedValue));
+    }
+
+    [Fact]
     public void Unprotect_RoundTrips_LegacyStaticEntropyPayload()
     {
         string protectedValue = ProtectWithLegacyEntropy("legacy-protected-secret");

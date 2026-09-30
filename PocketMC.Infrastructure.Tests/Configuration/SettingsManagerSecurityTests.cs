@@ -3,6 +3,7 @@ using PocketMC.Infrastructure.Backups;
 using PocketMC.Domain.Models;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace PocketMC.Infrastructure.Tests.Configuration;
 
@@ -149,6 +150,156 @@ public sealed class SettingsManagerSecurityTests : IDisposable
         Assert.Equal(25580, loaded.RemoteControl.Port);
         Assert.NotNull(loaded.RemoteControl.Users);
         Assert.False(string.IsNullOrWhiteSpace(loaded.RemoteControl.SecurityStamp));
+    }
+
+    [Fact]
+    public void Load_MigratesFlatSettingsToSectionedFormatWithoutChangingValuesOrProtectedSecrets()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        string protectedApiKey = DataProtector.Protect("existing-api-key");
+        var settings = new AppSettings
+        {
+            AppRootPath = @"D:\PocketMC\CustomInstances",
+            HasCompletedFirstLaunch = true,
+            HasMigratedToGreenWallpaperBlurTheme = true,
+            HasMigratedToDefaultImageWallpaper = true,
+            WindowBackdrop = "Mica",
+            CustomAccentColor = "#123456",
+            EnableAiSummarization = false,
+            CurseForgeApiKey = protectedApiKey
+        };
+        settings.AiApiKeys["Gemini"] = protectedApiKey;
+        JsonObject legacyDocument = JsonNode.Parse(JsonSerializer.Serialize(settings))!.AsObject();
+        legacyDocument["FutureRootOption"] = "keep-me";
+        File.WriteAllText(settingsPath, legacyDocument.ToJsonString());
+
+        AppSettings loaded = new SettingsManager(settingsPath).Load();
+
+        Assert.Equal(@"D:\PocketMC\CustomInstances", loaded.AppRootPath);
+        Assert.Equal("Mica", loaded.WindowBackdrop);
+        Assert.Equal("#123456", loaded.CustomAccentColor);
+        Assert.False(loaded.EnableAiSummarization);
+        Assert.Equal("existing-api-key", loaded.CurseForgeApiKey);
+        Assert.Equal("existing-api-key", loaded.AiApiKeys["Gemini"]);
+
+        JsonObject migrated = JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject();
+        Assert.Equal(3, migrated[SettingsDocumentCodec.FormatVersionProperty]!.GetValue<int>());
+        Assert.Equal(@"D:\PocketMC\CustomInstances", migrated["application"]!["appRootPath"]!.GetValue<string>());
+        Assert.Equal("Mica", migrated["appearance"]!["windowBackdrop"]!.GetValue<string>());
+        Assert.False(migrated["ai"]!["enableAiSummarization"]!.GetValue<bool>());
+        Assert.True(migrated["marketplace"]?["curseForgeApiKey"] is JsonValue, migrated.ToJsonString());
+        Assert.Equal(protectedApiKey, migrated["marketplace"]!["curseForgeApiKey"]!.GetValue<string>());
+        Assert.Equal(protectedApiKey, migrated["ai"]!["aiApiKeys"]!["Gemini"]!.GetValue<string>());
+        Assert.Equal(@"D:\PocketMC\CustomInstances", migrated[nameof(AppSettings.AppRootPath)]!.GetValue<string>());
+        Assert.Equal("keep-me", migrated["FutureRootOption"]!.GetValue<string>());
+        Assert.True(File.Exists(SettingsDocumentCodec.GetSnapshotPath(settingsPath)));
+    }
+
+    [Fact]
+    public void Load_AfterOlderBuildSavesFlatSettings_MergesChangesAndPreservesSectionOnlyData()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        var manager = new SettingsManager(settingsPath);
+        var initial = new AppSettings
+        {
+            AppRootPath = @"D:\PocketMC\Original",
+            HasMigratedToGreenWallpaperBlurTheme = true,
+            HasMigratedToDefaultImageWallpaper = true,
+            WindowBackdrop = "Mica"
+        };
+        initial.AiApiKeys["Gemini"] = "existing-ai-key";
+        manager.Save(initial);
+
+        JsonObject sectioned = JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject();
+        sectioned["appearance"]!["futureWallpaperMode"] = "Prismatic";
+        sectioned["futureFeature"] = new JsonObject { ["enabled"] = true };
+        string snapshotContent = sectioned.ToJsonString();
+        File.WriteAllText(settingsPath, snapshotContent);
+        File.WriteAllText(SettingsDocumentCodec.GetSnapshotPath(settingsPath), snapshotContent);
+
+        AppSettings olderSettings = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(sectioned));
+        olderSettings.AppRootPath = @"E:\PocketMC\Updated";
+        olderSettings.WindowBackdrop = "FakeMica";
+        File.WriteAllText(settingsPath, JsonSerializer.Serialize(olderSettings));
+
+        AppSettings reloaded = manager.Load();
+
+        Assert.Equal(@"E:\PocketMC\Updated", reloaded.AppRootPath);
+        Assert.Equal("FakeMica", reloaded.WindowBackdrop);
+        Assert.Equal("existing-ai-key", reloaded.AiApiKeys["Gemini"]);
+        JsonObject upgraded = JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject();
+        Assert.Equal("Prismatic", upgraded["appearance"]!["futureWallpaperMode"]!.GetValue<string>());
+        Assert.True(upgraded["futureFeature"]!["enabled"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    public void Load_CorruptSettingsBlocksSaveAndPreservesOriginalFile()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        const string corruptContents = "{ invalid json corrupt content !!! ";
+        File.WriteAllText(settingsPath, corruptContents);
+        var manager = new SettingsManager(settingsPath);
+
+        manager.Load();
+
+        Assert.Throws<InvalidOperationException>(() => manager.Save(new AppSettings()));
+        Assert.Equal(corruptContents, File.ReadAllText(settingsPath));
+        Assert.Single(Directory.GetFiles(_tempDirectory, "settings.json.corrupted.*.bak"));
+    }
+
+    [Fact]
+    public void Load_FutureFormatAllowsKnownValuesButBlocksWrites()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        const string futureContents = """
+        {
+          "formatVersion": 4,
+          "application": { "appRootPath": "D:\\PocketMC\\Future" },
+          "AppRootPath": "D:\\PocketMC\\Future",
+          "SchemaVersion": 2
+        }
+        """;
+        File.WriteAllText(settingsPath, futureContents);
+        var manager = new SettingsManager(settingsPath);
+
+        AppSettings loaded = manager.Load();
+
+        Assert.Equal(@"D:\PocketMC\Future", loaded.AppRootPath);
+        Assert.Throws<InvalidOperationException>(() => manager.Save(loaded));
+        Assert.Equal(futureContents, File.ReadAllText(settingsPath));
+    }
+
+    [Fact]
+    public void Save_WithCorruptRecoverySnapshot_RefusesToOverwriteLegacySettings()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        const string existingContents = "{ \"AppRootPath\": \"D:\\\\PocketMC\\\\Instances\" }";
+        File.WriteAllText(settingsPath, existingContents);
+        File.WriteAllText(SettingsDocumentCodec.GetSnapshotPath(settingsPath), "not json");
+        var manager = new SettingsManager(settingsPath);
+
+        Assert.Throws<InvalidOperationException>(() => manager.Save(new AppSettings()));
+        Assert.Equal(existingContents, File.ReadAllText(settingsPath));
+    }
+
+    [Fact]
+    public void Load_InvalidFormatVersionPreservesFileAndBlocksWrites()
+    {
+        Directory.CreateDirectory(_tempDirectory);
+        string settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        const string invalidVersion = "{ \"formatVersion\": \"three\", \"AppRootPath\": \"D:\\\\PocketMC\" }";
+        File.WriteAllText(settingsPath, invalidVersion);
+        var manager = new SettingsManager(settingsPath);
+
+        manager.Load();
+
+        Assert.Throws<InvalidOperationException>(() => manager.Save(new AppSettings()));
+        Assert.Equal(invalidVersion, File.ReadAllText(settingsPath));
     }
 
     private static string CreateCorruptedProtectedPayload()
