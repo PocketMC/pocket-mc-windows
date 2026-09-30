@@ -1,0 +1,55 @@
+---
+id: popup-news-format-showcase-2026-09-30
+type: announcement
+priority: important
+popup: true
+published: 2026-09-30T06:14:35Z
+expires: 2026-10-07T00:00:00Z
+minVersion: 1.9.9.1
+maxVersion: 1.9.9.1
+---
+title: PocketMC News Popup Showcase
+
+subtitle: Temporary display test for PocketMC 1.9.9.1
+
+heading: Why am I seeing this?
+
+paragraph:
+This is a temporary test popup. It verifies that PocketMC can discover a new news file from the master branch and display a first-received popup.
+
+paragraph:
+The article also demonstrates each supported content style. The same article can be opened later from the News page, and marking it as read stores that status in your local cached copy only.
+
+heading: Bullet list example
+
+list:
+- News can include several short points
+- Each point is rendered as a native PocketMC list item
+- Long text wraps inside the article without changing the layout
+
+heading: Numbered steps example
+
+numbered-list:
+1. Open the News page to see the cached article
+2. Select Refresh to check for newer articles
+3. Mark this item read to dismiss future popup reminders
+
+warning:
+This is a display test, not a service outage or required action.
+
+important:
+Only PocketMC version 1.9.9.1 receives this targeted showcase, and it expires automatically.
+
+heading: Display-only code example
+
+code:
+PocketMC news text is displayed only; commands are never executed.
+
+link: PocketMC website | https://pocketmc.github.io/
+
+divider:
+
+heading: Test complete
+
+paragraph:
+Thanks for helping verify the News popup and article rendering. You can close this window with Got it; the item will then be marked read in your local cache.
