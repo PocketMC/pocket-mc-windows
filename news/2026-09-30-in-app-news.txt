@@ -3,7 +3,7 @@ id: in-app-news-v1-9-10
 type: announcement
 priority: normal
 popup: false
-published: 2026-09-30T18:00:00Z
+published: 2026-09-30T00:00:00Z
 expires:
 minVersion: 1.9.10
 maxVersion:
