@@ -1,13 +1,28 @@
-VERSION=1.9.9.5
+VERSION=1.9.9
 
 [NEW FEATURES]
-Read PocketMC announcements and service notices in the new News page. News syncs in the background, stays cached for offline reading, and can show unread popup notices.
-
-[IMPROVEMENTS]
-Manage local Ollama models in separate Installed, Download, and Manual tabs. Pull recommended or custom models with progress and cancellation, and delete local models you no longer use.
-PocketMC checks the Playit agent at startup and before connecting. If the runtime is incompatible, PocketMC attempts a verified repair while keeping your saved agent credentials.
-Existing flat settings and version 1 PocketMC backups are converted to the organized format without resetting saved appearance or credentials.
+Automated server reboots on a daily schedule or hourly interval with customizable in-game countdown warnings
+Built-in Ollama Model Manager to download, browse, and delete local and cloud AI models with live progress
+Fully customizable Discord Rich Presence with live preview, software logos, player counts, and join buttons
+Live Playit Tunnel console window to monitor connection logs, search events, and diagnose network status
+Personalize your wallpaper theme with adjustable background blur intensity and darkness dimming sliders
 
 [FIXES & STABILITY]
-A window saved as maximized now reopens maximized instead of sometimes opening as a large, normal window.
-Updating settings no longer replaces an existing backdrop, accent color, or wallpaper path with migration defaults.
+Fixed server process crashes caused by simultaneous console commands and background status checks
+Fixed file-lock errors when saving server properties while a server is actively running
+Fixed Bedrock Dedicated Server status detection so servers reliably show as Online upon startup
+Fixed remote control settings so saved passwords and user permissions are never accidentally cleared
+Corrupted configuration files are now safely backed up automatically instead of lost on launch
+Local Ollama instances no longer require a dummy API key to validate connections or generate summaries
+
+[IMPROVEMENTS]
+Instant UI responsiveness with skeleton loading screens across runtimes, players, ports, and tunnels
+Sleek three-dot options menu for server add-ons with quick access to open folders and select files in Explorer
+Cached AI session summaries so leaving and returning to the console preserves your analysis without re-running
+PocketMC now resumes your exact server page when returning from App Settings instead of resetting to the dashboard
+PocketMC now remembers your custom window size and maximized state across application restarts
+Updated AI models with Google Gemini 3.x generation (Gemini 3.8 Flash) and OpenAI GPT-5/o-series support
+Improved crash diagnostics that pinpoint the exact missing mod or Java error behind server startup failures
+Pressing Enter in server settings instantly commits changes, exits the field, and saves your configuration
+Upgraded embedded Playit tunnel agent to v1.0.10 with longer connection timeouts to prevent false dropouts
+Expanded About page with interactive contributor cards, community links, and support options
