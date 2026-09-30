@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows.Controls;
@@ -17,8 +16,7 @@ public sealed class NewsContentRendererTests
     {
         RunInSta(() =>
         {
-            string newsPath = Path.Combine(AppContext.BaseDirectory, "NewsFixtures", "2026-09-30-format-showcase.txt");
-            NewsItem item = new NewsTextParser().Parse(Path.GetFileName(newsPath), File.ReadAllText(newsPath));
+            NewsItem item = new NewsTextParser().Parse("format-showcase.txt", FormatShowcaseNews);
 
             StackPanel rendered = NewsContentRenderer.Build(item);
 
@@ -53,6 +51,51 @@ public sealed class NewsContentRendererTests
             Assert.Equal("Consolas", codeText.FontFamily.Source);
         });
     }
+
+    private const string FormatShowcaseNews = """
+        ---
+        id: renderer-format-showcase-test
+        type: announcement
+        priority: important
+        popup: false
+        published: 2026-09-30T00:00:00Z
+        ---
+        title: News Format Showcase
+
+        subtitle: Supported content sample
+
+        heading: Plain text
+
+        paragraph:
+        This sample exercises supported News content elements.
+
+        heading: Bullet list
+
+        list:
+        - First bullet item
+        - Second bullet item
+
+        heading: Numbered list
+
+        numbered-list:
+        1. First ordered step
+        2. Second ordered step
+
+        warning:
+        This warning is display-only.
+
+        important:
+        Popup behavior is configured separately in metadata.
+
+        heading: Displayed code
+
+        code:
+        echo "News code blocks are display-only"
+
+        link: PocketMC website | https://pocketmc.github.io/
+
+        divider:
+        """;
 
     private static void RunInSta(Action action)
     {

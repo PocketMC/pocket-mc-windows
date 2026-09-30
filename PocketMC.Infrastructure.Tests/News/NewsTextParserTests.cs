@@ -91,10 +91,7 @@ public sealed class NewsTextParserTests
     [Fact]
     public void Parse_FormatShowcaseExercisesEverySupportedContentElement()
     {
-        string newsPath = Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..", "..", "..", "..", "news", "2026-09-30-format-showcase.txt"));
-        NewsItem item = _parser.Parse(Path.GetFileName(newsPath), File.ReadAllText(newsPath));
+        NewsItem item = _parser.Parse("format-showcase.txt", FormatShowcaseNews);
         HashSet<NewsBlockType> parsedTypes = item.Blocks.Select(block => block.Type).ToHashSet();
 
         Assert.Equal(Enum.GetValues<NewsBlockType>().ToHashSet(), parsedTypes);
@@ -129,5 +126,53 @@ public sealed class NewsTextParserTests
         Keep your saved credentials.
 
         link: Help | https://pocketmc.example/help
+        """;
+
+    private const string FormatShowcaseNews = """
+        ---
+        id: format-showcase-test
+        type: announcement
+        priority: important
+        popup: false
+        published: 2026-09-30T00:00:00Z
+        expires: 2026-10-07T00:00:00Z
+        minVersion: 1.9.9.1
+        maxVersion: 1.9.9.1
+        ---
+        title: News Format Showcase
+
+        subtitle: Supported content sample
+
+        heading: Plain text
+
+        paragraph:
+        This sample exercises every supported News content element.
+
+        heading: Bullet list
+
+        list:
+        - First bullet item
+        - Second bullet item
+
+        heading: Numbered list
+
+        numbered-list:
+        1. First ordered step
+        2. Second ordered step
+
+        warning:
+        This warning is display-only.
+
+        important:
+        Popup behavior is controlled separately by metadata.
+
+        heading: Displayed code
+
+        code:
+        echo "News code blocks are display-only"
+
+        link: PocketMC website | https://pocketmc.github.io/
+
+        divider:
         """;
 }
