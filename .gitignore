@@ -15,5 +15,6 @@ agent_schema.ts
 .agent/
 Portable/
 architecture_verification.md
+changelog_prompt.txt
 bugs_review.md
 docs/superpowers/

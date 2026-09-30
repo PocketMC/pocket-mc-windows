@@ -4,6 +4,7 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
+- `v1.9.9...v1.9.9.5`: Adds in-app remote News, expands local Ollama model management, checks and repairs incompatible Playit runtimes, migrates settings to a structured format while retaining legacy compatibility, and fixes maximized-window restoration.
 - `v1.9.8...v1.9.9`: Focuses on scheduled server reboot automation with in-game warnings, built-in Ollama local and cloud model manager with progress tracking, persistent AI session summaries, seamless detail page navigation resumption, add-on card three-dot context menus, Playit v1.0.10 agent upgrade with dedicated binary console, customizable Discord Rich Presence with live preview, wallpaper theme blur and dimming controls, process concurrency and file locking stabilization, window geometry remembrance, and centralized configuration architecture.
 - `v1.9.7...v1.9.8`: Focuses on safe add-on inventory management (eliminated background auto-deletion), granular local add-on upload diagnostics with user-choice overrides, unified clean warning badges, accurate delta update download size calculation, and Windows auto-hide taskbar reveal support on maximized windows.
 - `v1.9.6...v1.9.7`: 84 commits focused on multi-user remote control permissions, fluid responsive dashboard grid, real-time player activity tracking and gamemode persistence, automated AI server crash analysis, granular settings backup/restore, accessibility/keyboard navigation, and deep security/concurrency hardening.
@@ -20,6 +21,68 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
+
+---
+
+## v1.9.9.5 - Remote News, Ollama Management, Playit Repair & Settings Safety
+
+### Summary
+
+v1.9.9.5 adds an in-app News page with cached announcements and unread popups, extends local Ollama model management, validates and repairs the Playit runtime, and migrates settings without replacing existing user preferences. It also corrects restoration of maximized windows.
+
+### Diff Basis
+
+Compared the `v1.9.9` tag (`216b174`) with the release-candidate source commit `debd674` (67 changed paths; 4,633 insertions and 384 deletions). Temporary news showcase files added during development were removed before this endpoint and are not included as release content.
+
+### Added
+
+- **Remote News page and notifications**
+  - Added a News page, native article renderer, and popup window for PocketMC announcements and service notices.
+  - Added background synchronization at startup and every six hours, plus manual refresh. Eligible news is cached under the PocketMC local-data directory and remains available offline.
+  - Added unread counts, local read acknowledgement, and metadata-controlled unread popups. Read state is written to the local cached article, not the repository copy.
+- **Remote News format and validation**
+  - Added a plain-text format with required metadata, version and expiry filters, and title, subtitle, heading, paragraph, list, warning, important, code, link, and divider content elements.
+  - Remote names, metadata, content size, download URLs, and Git blob hashes are checked before eligible articles are cached; HTML and executable content are not rendered or run.
+
+### Changed
+
+- **Ollama Model Manager**
+  - Reorganized local model management into Installed, Download, and Manual tabs.
+  - Added local model deletion through Ollama's `/api/delete` endpoint. Installed local models can be selected; recommended and custom model pulls show progress and can be canceled.
+  - Kept cloud model selection in App Settings and hid local download/manual-install controls in cloud mode.
+- **Settings persistence and migration**
+  - Added a version-3, sectioned camelCase `settings.json` representation while leaving the runtime `AppSettings` API and portable backup package version 1 unchanged.
+  - Kept PascalCase compatibility properties for released builds and a sectioned sidecar snapshot so known changes from older builds can be merged without discarding newer fields.
+  - Preserved unknown fields and protected credential payloads during conversion. DPAPI protection now leaves already protected v1/v2 payloads intact.
+  - Existing version-1 PocketMC backups remain restorable and are written through the current settings serializer. Future or malformed settings/backup formats are rejected or protected from overwrite rather than silently downgraded.
+
+### Fixed
+
+- **Appearance preservation during settings migration**
+  - One-time appearance flags are marked complete without replacing a completed user's saved backdrop, accent color, or wallpaper path with defaults.
+- **Maximized-window restoration**
+  - Deferred applying the saved maximized state until after the native window handle and sizing hook are installed. A saved maximized window is no longer restored as a large normal window when its saved dimensions match the work area.
+
+### Improved
+
+- **Playit runtime compatibility and repair**
+  - PocketMC checks the installed agent runtime during startup and before connection. It attempts to repair missing, corrupt, or unsupported copies before the agent starts; existing agent credentials are retained.
+  - Runtime replacement is staged and validated before promotion. The existing executable is backed up and restored if post-install verification fails.
+
+### Build & Release
+
+- Moved the Playit download URL and expected SHA-256 out of `pocketmc.yml` and `AppConfig` into `PlayitRuntimeManifest`, alongside the minimum supported version and platform filename. The application configuration no longer supplies a default release channel.
+
+### Tests
+
+- Added tests for News metadata/content parsing, remote synchronization and caching, and local read-state handling.
+- Added Ollama model API tests, including deletion and pull behavior, and Playit runtime compatibility and failed-download-preservation tests.
+- Expanded settings and credential tests for sectioned migration, legacy-build merging, future/corrupt format protection, backup restore, and idempotent DPAPI protection.
+
+### Documentation
+
+- Added a remote News publishing guide covering metadata, supported content, synchronization, cache, and read-state behavior; updated Playit runtime documentation.
+- Refreshed README feature descriptions, screenshots, and the demonstration video link.
 
 ---
 
