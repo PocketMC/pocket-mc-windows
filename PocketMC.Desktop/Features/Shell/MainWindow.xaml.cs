@@ -47,6 +47,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private ITitleBarContextSource? _titleBarContextSource;
     private readonly Dictionary<Type, Page> _shellPageCache = new();
     private bool _explicitExitRequested;
+    private bool _shouldStartMaximized;
     private Page? _currentPage;
     private static readonly HashSet<Type> ShellOwnedScrollPageTypes = new()
     {
@@ -103,10 +104,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             var handle = new WindowInteropHelper(this).Handle;
             HwndSource.FromHwnd(handle)?.AddHook(HwndHook);
 
-            var settingsManager = _serviceProvider.GetService<SettingsManager>();
-            var appState = _serviceProvider.GetService<ApplicationState>();
-            var settings = appState?.Settings ?? settingsManager?.Load();
-            if (settings?.IsWindowMaximized == true)
+            if (_shouldStartMaximized)
             {
                 WindowState = WindowState.Maximized;
             }
@@ -151,9 +149,23 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             Height = targetHeight;
         }
 
-        if (settings?.IsWindowMaximized == true)
+        bool savedSizeCoversWorkArea = settings != null &&
+            settings.WindowWidth.HasValue && settings.WindowHeight.HasValue &&
+            settings.WindowWidth.Value >= screenWidth &&
+            settings.WindowHeight.Value >= screenHeight;
+
+        _shouldStartMaximized = settings?.IsWindowMaximized == true || savedSizeCoversWorkArea;
+        if (savedSizeCoversWorkArea && settings?.IsWindowMaximized != true)
         {
-            WindowState = WindowState.Maximized;
+            settings!.IsWindowMaximized = true;
+            try
+            {
+                settingsManager?.Save(settings);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to repair persisted maximized window state.");
+            }
         }
     }
 
@@ -166,23 +178,26 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             var settings = appState?.Settings ?? settingsManager?.Load();
             if (settings == null || settingsManager == null) return;
 
-            bool isMaximized = WindowState == WindowState.Maximized;
-            settings.IsWindowMaximized = isMaximized;
+            if (WindowState != WindowState.Minimized)
+            {
+                bool isMaximized = WindowState == WindowState.Maximized;
+                settings.IsWindowMaximized = isMaximized;
 
-            if (isMaximized)
-            {
-                if (RestoreBounds.Width >= 1024 && RestoreBounds.Height >= 680)
+                if (isMaximized)
                 {
-                    settings.WindowWidth = RestoreBounds.Width;
-                    settings.WindowHeight = RestoreBounds.Height;
+                    if (RestoreBounds.Width >= 1024 && RestoreBounds.Height >= 680)
+                    {
+                        settings.WindowWidth = RestoreBounds.Width;
+                        settings.WindowHeight = RestoreBounds.Height;
+                    }
                 }
-            }
-            else if (WindowState == WindowState.Normal)
-            {
-                if (Width >= 1024 && Height >= 680)
+                else if (WindowState == WindowState.Normal)
                 {
-                    settings.WindowWidth = Width;
-                    settings.WindowHeight = Height;
+                    if (Width >= 1024 && Height >= 680)
+                    {
+                        settings.WindowWidth = Width;
+                        settings.WindowHeight = Height;
+                    }
                 }
             }
 
