@@ -53,6 +53,7 @@ public sealed class NewsService : IDisposable
     private int _isStarted;
 
     public event Action<IReadOnlyList<NewsItem>>? PopupNewsAvailable;
+    public event Action? NewsStateChanged;
 
     public NewsService(
         SettingsManager settingsManager,
@@ -103,6 +104,14 @@ public sealed class NewsService : IDisposable
             .Select(item => item.Metadata.Id)
             .ToHashSet(StringComparer.Ordinal);
 
+    public int GetUnreadNewsCount()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        return GetCachedNews().Count(item =>
+            !item.Metadata.IsRead &&
+            (item.Metadata.ExpiresUtc == null || item.Metadata.ExpiresUtc > now));
+    }
+
     public void MarkRead(string newsId)
     {
         if (string.IsNullOrWhiteSpace(newsId)) return;
@@ -125,6 +134,7 @@ public sealed class NewsService : IDisposable
 
                     FileUtils.AtomicWriteAllText(path, _parser.MarkRead(item.FileName, source));
                     _logger.LogInformation("Marked cached news item {NewsId} as read.", newsId);
+                    NotifyNewsStateChanged();
                     return;
                 }
             }
@@ -394,6 +404,7 @@ public sealed class NewsService : IDisposable
             }
 
             SaveState(state);
+            NotifyNewsStateChanged();
             DateTimeOffset now = DateTimeOffset.UtcNow;
             IReadOnlyList<NewsItem> popupResult = GetCachedNews()
                 .Where(item => item.Metadata.Popup &&
@@ -420,6 +431,18 @@ public sealed class NewsService : IDisposable
         {
             _logger.LogWarning(ex, "News synchronization failed; cached news and local state were retained.");
             return new NewsSyncResult(false, 0, 0, Array.Empty<NewsItem>(), ex.Message);
+        }
+    }
+
+    private void NotifyNewsStateChanged()
+    {
+        try
+        {
+            NewsStateChanged?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "A News state-change subscriber failed.");
         }
     }
 

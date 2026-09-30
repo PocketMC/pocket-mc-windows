@@ -66,9 +66,7 @@ public partial class NewsPage : Page
             return;
         }
 
-        ArticleContent.Children.Clear();
-        ArticleContent.Children.Add(NewsContentRenderer.Build(entry.Item));
-        TxtArticleMeta.Text = $"{entry.TypeAndPriority}  ·  {entry.Item.Metadata.PublishedUtc.ToLocalTime():g}";
+        ArticleView.Display(entry.Item);
         NewsArticleSurface.Visibility = Visibility.Visible;
         EmptyPanel.Visibility = Visibility.Collapsed;
         _newsService.MarkRead(entry.Item.Metadata.Id);
@@ -90,9 +88,10 @@ public partial class NewsPage : Page
             _entries.Add(new NewsListEntry(item, readIds.Contains(item.Metadata.Id)));
         }
 
-        NewsList.SelectedItem = previousId == null
-            ? null
-            : _entries.FirstOrDefault(entry => entry.Item.Metadata.Id == previousId);
+        NewsList.SelectedItem = (previousId == null
+                ? null
+                : _entries.FirstOrDefault(entry => entry.Item.Metadata.Id == previousId))
+            ?? _entries.FirstOrDefault();
 
         if (_entries.Count == 0)
         {
@@ -124,7 +123,8 @@ public partial class NewsPage : Page
     {
         public NewsItem Item { get; }
         public string Title { get; }
-        public string TypeAndPriority { get; }
+        public string TypeLabel { get; }
+        public string PriorityLabel { get; }
         public string PublishedLabel { get; }
         public Visibility UnreadVisibility { get; private set; }
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -133,7 +133,8 @@ public partial class NewsPage : Page
         {
             Item = item;
             Title = item.Blocks.FirstOrDefault(block => block.Type == NewsBlockType.Title)?.Text ?? item.Metadata.Id;
-            TypeAndPriority = $"{Format(item.Metadata.Type)}  ·  {Format(item.Metadata.Priority)}";
+            TypeLabel = Format(item.Metadata.Type);
+            PriorityLabel = Format(item.Metadata.Priority);
             PublishedLabel = item.Metadata.PublishedUtc.ToLocalTime().ToString("d");
             UnreadVisibility = isRead ? Visibility.Collapsed : Visibility.Visible;
         }

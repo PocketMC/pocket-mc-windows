@@ -10,8 +10,7 @@ public partial class NewsPopupWindow : Wpf.Ui.Controls.FluentWindow
     public NewsPopupWindow(NewsItem item)
     {
         InitializeComponent();
-        TxtNewsType.Text = $"{item.Metadata.Type}  ·  {item.Metadata.Priority}  ·  {item.Metadata.PublishedUtc.ToLocalTime():g}";
-        NewsContent.Children.Add(NewsContentRenderer.Build(item));
+        ArticleView.Display(item);
         Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
             .GetService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services)
             ?.ApplyThemeToDialog(this);

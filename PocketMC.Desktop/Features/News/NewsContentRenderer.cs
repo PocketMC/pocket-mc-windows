@@ -56,12 +56,13 @@ internal static class NewsContentRenderer
                         Text = block.Text,
                         IsReadOnly = true,
                         BorderThickness = new Thickness(0),
+                        Padding = new Thickness(0),
                         Background = Brushes.Transparent,
                         Foreground = Brush("TextFillColorPrimaryBrush"),
                         FontFamily = new FontFamily("Consolas"),
                         FontSize = 13,
-                        TextWrapping = TextWrapping.NoWrap,
-                        HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                        TextWrapping = TextWrapping.Wrap,
+                        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
                         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled
                     }
                 };

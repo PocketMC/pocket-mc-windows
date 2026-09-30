@@ -43,6 +43,14 @@ public sealed class NewsContentRendererTests
             TextBlock linkText = Assert.IsType<TextBlock>(rendered.Children[12]);
             Hyperlink link = Assert.IsType<Hyperlink>(Assert.Single(linkText.Inlines));
             Assert.Equal(Uri.UriSchemeHttps, link.NavigateUri!.Scheme);
+
+            Border codeBlock = Assert.IsType<Border>(rendered.Children[11]);
+            TextBox codeText = Assert.IsType<TextBox>(codeBlock.Child);
+            Assert.True(codeText.IsReadOnly);
+            Assert.Equal(TextWrapping.Wrap, codeText.TextWrapping);
+            Assert.Equal(ScrollBarVisibility.Disabled, codeText.HorizontalScrollBarVisibility);
+            Assert.Equal(ScrollBarVisibility.Disabled, codeText.VerticalScrollBarVisibility);
+            Assert.Equal("Consolas", codeText.FontFamily.Source);
         });
     }
 

@@ -81,7 +81,7 @@ Content is plain text, not Markdown or HTML. Use only these directives; PocketMC
 - `numbered-list:` [optional, repeatable]: Ordered steps. Each item is a separate line beginning `1. `, `2. `, and so on.
 - `warning:` [optional, repeatable]: Caution callout.
 - `important:` [optional, repeatable]: Important-notice callout.
-- `code:` [optional, repeatable]: Monospaced displayed text. It is never executed.
+- `code:` [optional, repeatable]: Selectable, wrapping monospace text. It is never executed and does not create a nested scrollbar.
 - `link: Label | https://example.com` [optional, repeatable]: Clickable link. Only absolute `http` and `https` links are accepted.
 - `divider:` [optional, repeatable]: Horizontal separator; no value is allowed after the colon.
 

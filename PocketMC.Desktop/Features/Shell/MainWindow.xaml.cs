@@ -41,6 +41,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private readonly ShellStartupCoordinator _startupCoordinator;
     private readonly ShellViewModel _viewModel;
     private readonly ILogger<MainWindow> _logger;
+    private readonly NewsService _newsService;
 
     private Type _lastShellPageType = typeof(DashboardPage);
     private ITitleBarContextSource? _titleBarContextSource;
@@ -77,6 +78,10 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         DataContext = _viewModel;
 
         InitializeComponent();
+        _newsService = _serviceProvider.GetRequiredService<NewsService>();
+        _newsService.NewsStateChanged += OnNewsStateChanged;
+        Closed += OnMainWindowClosed;
+        UpdateNewsUnreadBadge();
         Title = PocketMC.Infrastructure.Configuration.AppConfig.AppName;
         AppTitleBar.Title = PocketMC.Infrastructure.Configuration.AppConfig.AppName;
         ApplyDynamicWindowSize();
@@ -247,6 +252,30 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
             }
         }));
     }
+
+    private void OnNewsStateChanged()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(new Action(UpdateNewsUnreadBadge));
+            return;
+        }
+
+        UpdateNewsUnreadBadge();
+    }
+
+    private void UpdateNewsUnreadBadge()
+    {
+        int unreadCount = _newsService.GetUnreadNewsCount();
+        NewsUnreadBadge.Visibility = unreadCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        TxtNewsUnreadCount.Text = unreadCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        System.Windows.Automation.AutomationProperties.SetName(
+            NavNews,
+            unreadCount > 0 ? $"News, {unreadCount} unread (Ctrl+7)" : "News (Ctrl+7)");
+    }
+
+    private void OnMainWindowClosed(object? sender, EventArgs e)
+        => _newsService.NewsStateChanged -= OnNewsStateChanged;
 
     private void Window_Activated(object? sender, EventArgs e) =>
         _visualService.SetWindowActive(true);

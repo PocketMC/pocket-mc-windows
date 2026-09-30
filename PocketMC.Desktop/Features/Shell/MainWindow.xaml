@@ -219,11 +219,39 @@
                                            AutomationProperties.Name="Tunnel (Ctrl+2)"
                                            AutomationProperties.HelpText="Configure Playit.gg public tunnels for multiplayer connectivity."/>
                     <ui:NavigationViewItem x:Name="NavNews"
-                                           Content="News"
                                            Icon="{ui:SymbolIcon Megaphone24}"
                                            TargetPageType="{x:Type news:NewsPage}"
                                            AutomationProperties.Name="News (Ctrl+7)"
-                                           AutomationProperties.HelpText="Read PocketMC announcements and service notices."/>
+                                           AutomationProperties.HelpText="Read PocketMC announcements and service notices.">
+                        <ui:NavigationViewItem.Content>
+                            <Grid Width="148">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="News"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                <Border x:Name="NewsUnreadBadge"
+                                        Grid.Column="1"
+                                        MinWidth="18"
+                                        Height="18"
+                                        Padding="5,0"
+                                        CornerRadius="9"
+                                        Background="{DynamicResource SystemFillColorCriticalBrush}"
+                                        VerticalAlignment="Center"
+                                        Visibility="Collapsed">
+                                    <TextBlock x:Name="TxtNewsUnreadCount"
+                                               Text="0"
+                                               FontSize="10"
+                                               FontWeight="Bold"
+                                               Foreground="White"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </ui:NavigationViewItem.Content>
+                    </ui:NavigationViewItem>
                     <ui:NavigationViewItem x:Name="NavRemoteControl"
                                            Content="Remote Control"
                                            Icon="{ui:SymbolIcon PhoneDesktop24}"

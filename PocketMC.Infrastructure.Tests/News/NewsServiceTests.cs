@@ -163,6 +163,26 @@ public sealed class NewsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetUnreadNewsCount_CountsOnlyActiveVersionEligibleUnreadItems()
+    {
+        NewsFixture fixture = CreateFixture();
+        fixture.Remote.Add("unread-a.txt", CreateNews("unread-a", "2026-09-20T10:00:00Z"));
+        fixture.Remote.Add("unread-b.txt", CreateNews("unread-b", "2026-09-21T10:00:00Z"));
+        fixture.Remote.Add("expired.txt", CreateNews("expired", "2026-09-19T10:00:00Z", expires: "2026-09-20T10:00:00Z"));
+        fixture.Remote.Add("wrong-version.txt", CreateNews("wrong-version", "2026-09-22T10:00:00Z", minVersion: "2.0.0"));
+        int stateChanges = 0;
+        fixture.Service.NewsStateChanged += () => stateChanges++;
+
+        await fixture.Service.SynchronizeAsync();
+
+        Assert.Equal(2, fixture.Service.GetUnreadNewsCount());
+        Assert.Equal(1, stateChanges);
+        fixture.Service.MarkRead("unread-a");
+        Assert.Equal(1, fixture.Service.GetUnreadNewsCount());
+        Assert.Equal(2, stateChanges);
+    }
+
+    [Fact]
     public async Task SynchronizeAsync_UnacknowledgedPopupIsOfferedAgainWithoutRedownloading()
     {
         NewsFixture fixture = CreateFixture();
