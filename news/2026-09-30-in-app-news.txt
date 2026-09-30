@@ -1,0 +1,30 @@
+---
+id: in-app-news-v1-9-10
+type: announcement
+priority: normal
+popup: false
+published: 2026-09-30T18:00:00Z
+expires:
+minVersion: 1.9.10
+maxVersion:
+---
+title: Meet PocketMC News
+
+subtitle: New in PocketMC 1.9.10
+
+heading: Updates, where you need them
+
+paragraph:
+PocketMC now has a News page for official announcements, fixes, maintenance notices, and security updates. Important information can reach you inside the app, so you do not have to keep checking external pages to find out what has changed.
+
+heading: Made to be useful
+
+list:
+- See news that applies to your PocketMC version
+- Refresh the News page whenever you want, or let it sync in the background
+- Keep cached news available when you are offline
+- Track what you have read, so an unread popup can be acknowledged and will not keep returning
+- Find quick steps for some issues that you can try yourself, without waiting for the next PocketMC update
+
+paragraph:
+News gives PocketMC a direct way to share timely, relevant information and any steps users may need to take, while keeping it easy to find later in the app.
