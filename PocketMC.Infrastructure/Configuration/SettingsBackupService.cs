@@ -7,6 +7,8 @@ namespace PocketMC.Infrastructure.Configuration
 {
     public class SettingsBackupService
     {
+        private const int CurrentBackupVersion = 1;
+
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = true,
@@ -23,7 +25,7 @@ namespace PocketMC.Infrastructure.Configuration
 
             var package = new SettingsBackupPackage
             {
-                Version = 1,
+                Version = CurrentBackupVersion,
                 CreatedAtUtc = DateTimeOffset.UtcNow,
                 AppVersion = string.IsNullOrWhiteSpace(appVersion) ? AppConfig.AppVersion : appVersion,
                 IncludedCategories = categories
@@ -203,6 +205,11 @@ namespace PocketMC.Infrastructure.Configuration
                 throw new JsonException("Failed to deserialize settings backup package.");
             }
 
+            if (package.Version < 1 || package.Version > CurrentBackupVersion)
+            {
+                throw new JsonException($"Settings backup version {package.Version} is not supported.");
+            }
+
             return package;
         }
 
@@ -259,8 +266,8 @@ namespace PocketMC.Infrastructure.Configuration
                 targetSettings.AccentColorMode = package.Appearance.AccentColorMode;
                 targetSettings.CustomAccentColor = package.Appearance.CustomAccentColor;
                 targetSettings.CustomBackgroundImagePath = package.Appearance.CustomBackgroundImagePath;
-                targetSettings.HasMigratedToGreenWallpaperBlurTheme = package.Appearance.HasMigratedToGreenWallpaperBlurTheme;
-                targetSettings.HasMigratedToDefaultImageWallpaper = package.Appearance.HasMigratedToDefaultImageWallpaper;
+                targetSettings.HasMigratedToGreenWallpaperBlurTheme = true;
+                targetSettings.HasMigratedToDefaultImageWallpaper = true;
             }
 
             // Storage Paths

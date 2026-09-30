@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using PocketMC.Domain.Models;
 using PocketMC.Domain.Security;
@@ -18,6 +19,7 @@ namespace PocketMC.Infrastructure.Configuration
         private readonly string _settingsFilePath;
         private readonly ILogger<SettingsManager>? _logger;
         private readonly object _settingsLock = new();
+        private bool _settingsWritesBlocked;
 
         public event EventHandler<AppSettings>? SettingsSaved;
 
@@ -55,58 +57,85 @@ namespace PocketMC.Infrastructure.Configuration
             {
                 if (!File.Exists(_settingsFilePath))
                 {
+                    _settingsWritesBlocked = false;
                     return CreateDefaultSettings();
                 }
 
-                AppSettings? settings = null;
+                AppSettings settings;
+                JsonObject? previousDocument = null;
+                string originalJson = string.Empty;
+                bool canWrite = true;
                 try
                 {
-                    var content = File.ReadAllText(_settingsFilePath);
-                    settings = JsonSerializer.Deserialize<AppSettings>(content);
-                }
-                catch (Exception ex)
-                {
-                    var directory = Path.GetDirectoryName(_settingsFilePath) ?? "";
-                    string backupPath = Path.Combine(directory, $"settings.json.corrupted.{DateTime.UtcNow:yyyyMMddHHmmssfff}.bak");
-                    try
+                    originalJson = File.ReadAllText(_settingsFilePath);
+                    JsonObject sourceDocument = SettingsDocumentCodec.ParseObject(originalJson);
+                    int formatVersion = SettingsDocumentCodec.GetFormatVersion(sourceDocument);
+
+                    if (formatVersion > SettingsDocumentCodec.CurrentFormatVersion)
                     {
-                        if (File.Exists(_settingsFilePath))
+                        _settingsWritesBlocked = true;
+                        canWrite = false;
+                        _logger?.LogWarning(
+                            "Settings file format {FormatVersion} is newer than supported format {SupportedVersion}. Writes are disabled to protect user data.",
+                            formatVersion,
+                            SettingsDocumentCodec.CurrentFormatVersion);
+                        settings = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(sourceDocument));
+                    }
+                    else if (formatVersion == SettingsDocumentCodec.CurrentFormatVersion)
+                    {
+                        _settingsWritesBlocked = false;
+                        previousDocument = sourceDocument;
+                        settings = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(sourceDocument));
+                    }
+                    else
+                    {
+                        _settingsWritesBlocked = false;
+                        JsonObject? snapshot = TryLoadSectionedSnapshot();
+                        if (snapshot != null)
                         {
-                            File.Copy(_settingsFilePath, backupPath, overwrite: true);
-                            _logger?.LogError(ex, "Failed to deserialize {SettingsFilePath}. Created rescue backup at {BackupPath} and falling back to defaults.", _settingsFilePath, backupPath);
+                            previousDocument = SettingsDocumentCodec.MergeLegacyValues(snapshot, sourceDocument);
+                            settings = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(previousDocument));
                         }
-                    }
-                    catch (Exception copyEx)
-                    {
-                        _logger?.LogError(copyEx, "Failed to create rescue backup for corrupted settings file at {SettingsFilePath}.", _settingsFilePath);
-                    }
+                        else
+                        {
+                            previousDocument = sourceDocument;
+                            settings = SettingsDocumentCodec.DeserializeFlat(sourceDocument);
+                        }
 
-                    return CreateDefaultSettings();
+                        canWrite = !_settingsWritesBlocked;
+                    }
                 }
-
-                if (settings == null)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
                 {
+                    CreateSettingsBackup("corrupted");
+                    _settingsWritesBlocked = true;
+                    _logger?.LogError(ex, "Could not safely load {SettingsFilePath}. Its contents were preserved and settings writes are disabled.", _settingsFilePath);
                     return CreateDefaultSettings();
                 }
 
-                var originalJson = JsonSerializer.Serialize(settings, SettingsJsonOptions);
                 settings = Normalize(settings);
-                var normalizedJson = JsonSerializer.Serialize(settings, SettingsJsonOptions);
-
-                if (originalJson != normalizedJson)
+                if (canWrite)
                 {
                     try
                     {
-                        var directory = Path.GetDirectoryName(_settingsFilePath);
-                        if (!Directory.Exists(directory) && directory != null)
+                        ProtectSecrets(settings);
+                        JsonObject document = SettingsDocumentCodec.Serialize(settings, previousDocument);
+                        string normalizedJson = document.ToJsonString(SettingsJsonOptions);
+                        string snapshotPath = SettingsDocumentCodec.GetSnapshotPath(_settingsFilePath);
+                        if (normalizedJson != originalJson || !File.Exists(snapshotPath))
                         {
-                            Directory.CreateDirectory(directory);
+                            if (SettingsDocumentCodec.GetFormatVersion(previousDocument ?? new JsonObject()) == 0 &&
+                                originalJson.Length > 0)
+                            {
+                                CreateSettingsBackup("legacy");
+                            }
+
+                            WriteSettingsDocument(normalizedJson);
                         }
-                        FileUtils.AtomicWriteAllText(_settingsFilePath, normalizedJson);
                     }
                     catch (Exception ex)
                     {
-                        _logger?.LogWarning(ex, "Failed to persist normalized settings to {SettingsFilePath}.", _settingsFilePath);
+                        _logger?.LogWarning(ex, "Failed to migrate or normalize settings at {SettingsFilePath}; the original content was retained.", _settingsFilePath);
                     }
                 }
 
@@ -124,40 +153,91 @@ namespace PocketMC.Infrastructure.Configuration
 
             lock (_settingsLock)
             {
-                var cloned = CloneSettings(settings);
-
-                // Safeguard: Never overwrite an existing configured AppRootPath with null
-                if (string.IsNullOrWhiteSpace(cloned.AppRootPath) && File.Exists(_settingsFilePath))
+                if (_settingsWritesBlocked)
                 {
+                    throw new InvalidOperationException("Settings writes are disabled because the existing settings file requires recovery or a newer application version.");
+                }
+
+                var cloned = CloneSettings(settings);
+                JsonObject? previousDocument = null;
+                AppSettings? existingSettings = null;
+
+                if (File.Exists(_settingsFilePath))
+                {
+                    JsonObject existingDocument;
                     try
                     {
-                        var existingContent = File.ReadAllText(_settingsFilePath);
-                        var existingSettings = JsonSerializer.Deserialize<AppSettings>(existingContent);
-                        if (existingSettings != null && !string.IsNullOrWhiteSpace(existingSettings.AppRootPath))
+                        existingDocument = SettingsDocumentCodec.ParseObject(File.ReadAllText(_settingsFilePath));
+                    }
+                    catch (Exception ex) when (ex is JsonException or InvalidOperationException or IOException or UnauthorizedAccessException)
+                    {
+                        CreateSettingsBackup("corrupted");
+                        _settingsWritesBlocked = true;
+                        throw new InvalidOperationException("The settings file could not be parsed and was preserved. Restore or repair it before saving settings.", ex);
+                    }
+
+                    int formatVersion = SettingsDocumentCodec.GetFormatVersion(existingDocument);
+                    if (formatVersion > SettingsDocumentCodec.CurrentFormatVersion)
+                    {
+                        _settingsWritesBlocked = true;
+                        throw new InvalidOperationException("The settings file was created by a newer application version; refusing to overwrite it.");
+                    }
+
+                    if (formatVersion == SettingsDocumentCodec.CurrentFormatVersion)
+                    {
+                        previousDocument = existingDocument;
+                        existingSettings = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(existingDocument));
+                    }
+                    else
+                    {
+                        previousDocument = TryLoadSectionedSnapshot();
+                        if (_settingsWritesBlocked)
                         {
-                            cloned.AppRootPath = existingSettings.AppRootPath;
-                            cloned.HasCompletedFirstLaunch = existingSettings.HasCompletedFirstLaunch;
+                            throw new InvalidOperationException("The settings recovery snapshot is unreadable; refusing to overwrite user data.");
+                        }
+
+                        if (previousDocument != null)
+                        {
+                            previousDocument = SettingsDocumentCodec.MergeLegacyValues(previousDocument, existingDocument);
+                            existingSettings = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(previousDocument));
+                        }
+                        else
+                        {
+                            previousDocument = existingDocument;
+                            existingSettings = SettingsDocumentCodec.DeserializeFlat(existingDocument);
                         }
                     }
-                    catch { }
+                }
+                else
+                {
+                    previousDocument = TryLoadSectionedSnapshot();
+                    if (_settingsWritesBlocked)
+                    {
+                        throw new InvalidOperationException("The settings recovery snapshot is unreadable; refusing to overwrite user data.");
+                    }
+
+                    if (previousDocument != null)
+                    {
+                        existingSettings = SettingsDocumentCodec.DeserializeFlat(SettingsDocumentCodec.ToLegacyFlat(previousDocument));
+                    }
+                }
+
+                // Preserve essential setup state if a caller submits an incomplete settings object.
+                if (existingSettings != null && string.IsNullOrWhiteSpace(cloned.AppRootPath) &&
+                    !string.IsNullOrWhiteSpace(existingSettings.AppRootPath))
+                {
+                    cloned.AppRootPath = existingSettings.AppRootPath;
+                    cloned.HasCompletedFirstLaunch = existingSettings.HasCompletedFirstLaunch;
                 }
 
                 var normalizedSettings = Normalize(cloned);
-                var directory = Path.GetDirectoryName(_settingsFilePath);
-                if (!Directory.Exists(directory) && directory != null)
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
                 ProtectSecrets(normalizedSettings);
-
-                var content = JsonSerializer.Serialize(normalizedSettings, SettingsJsonOptions);
-                FileUtils.AtomicWriteAllText(_settingsFilePath, content);
+                JsonObject outputDocument = SettingsDocumentCodec.Serialize(normalizedSettings, previousDocument);
+                WriteSettingsDocument(outputDocument.ToJsonString(SettingsJsonOptions));
             }
 
             SettingsSaved?.Invoke(this, CloneSettings(settings));
         }
-
         public string GetPlayitTomlPath(AppSettings? settings = null)
         {
             var effectiveSettings = Normalize(settings == null ? Load() : CloneSettings(settings));
@@ -166,7 +246,6 @@ namespace PocketMC.Infrastructure.Configuration
 
         public System.Collections.Generic.IReadOnlyList<string> GetPlayitPartnerBackendUrls(AppSettings? settings = null)
         {
-            // Dev override only — never exposed to users
             string? fromEnvironment = Environment.GetEnvironmentVariable("POCKETMC_PLAYIT_BACKEND_URL");
             if (!string.IsNullOrWhiteSpace(fromEnvironment))
             {
@@ -178,6 +257,72 @@ namespace PocketMC.Infrastructure.Configuration
         private AppSettings CreateDefaultSettings()
         {
             return Normalize(new AppSettings());
+        }
+
+        private JsonObject? TryLoadSectionedSnapshot()
+        {
+            string snapshotPath = SettingsDocumentCodec.GetSnapshotPath(_settingsFilePath);
+            if (!File.Exists(snapshotPath))
+            {
+                return null;
+            }
+
+            try
+            {
+                JsonObject snapshot = SettingsDocumentCodec.ParseObject(File.ReadAllText(snapshotPath));
+                if (SettingsDocumentCodec.GetFormatVersion(snapshot) != SettingsDocumentCodec.CurrentFormatVersion)
+                {
+                    throw new JsonException("The settings recovery snapshot has an unsupported format.");
+                }
+
+                return snapshot;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+            {
+                _settingsWritesBlocked = true;
+                _logger?.LogError(ex, "Settings recovery snapshot {SnapshotPath} is unreadable. Settings writes are disabled.", snapshotPath);
+                return null;
+            }
+        }
+
+        private void WriteSettingsDocument(string content)
+        {
+            string? directory = Path.GetDirectoryName(_settingsFilePath);
+            if (!Directory.Exists(directory) && directory != null)
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            if (File.Exists(_settingsFilePath))
+            {
+                string lastKnownGoodPath = _settingsFilePath + ".last-known-good.json";
+                FileUtils.AtomicWriteAllText(lastKnownGoodPath, File.ReadAllText(_settingsFilePath));
+            }
+
+            FileUtils.AtomicWriteAllText(SettingsDocumentCodec.GetSnapshotPath(_settingsFilePath), content);
+            FileUtils.AtomicWriteAllText(_settingsFilePath, content);
+        }
+
+        private void CreateSettingsBackup(string reason)
+        {
+            try
+            {
+                if (!File.Exists(_settingsFilePath))
+                {
+                    return;
+                }
+
+                string directory = Path.GetDirectoryName(_settingsFilePath) ?? string.Empty;
+                string backupPath = Path.Combine(
+                    directory,
+                    $"settings.json.{reason}.{DateTime.UtcNow:yyyyMMddHHmmssfff}.bak");
+                File.Copy(_settingsFilePath, backupPath, overwrite: false);
+                _logger?.LogInformation("Preserved settings backup at {BackupPath}.", backupPath);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to preserve settings backup for {SettingsFilePath}.", _settingsFilePath);
+            }
         }
 
         private static AppSettings CloneSettings(AppSettings settings)
@@ -192,30 +337,15 @@ namespace PocketMC.Infrastructure.Configuration
 
             if (!settings.HasMigratedToGreenWallpaperBlurTheme)
             {
-                // Only overwrite settings if this is an existing installation being migrated.
-                // For new installations (!HasCompletedFirstLaunch), the defaults are already correct
-                // because of the property initializers in AppSettings.cs.
-                if (settings.HasCompletedFirstLaunch)
-                {
-                    settings.WindowBackdrop = "FakeMica";
-                    settings.AccentColorMode = "Custom";
-                    settings.CustomAccentColor = "#008B00";
-                }
                 settings.HasMigratedToGreenWallpaperBlurTheme = true;
             }
 
             if (!settings.HasMigratedToDefaultImageWallpaper)
             {
-                if (settings.HasCompletedFirstLaunch)
+                if (!settings.HasCompletedFirstLaunch && string.IsNullOrWhiteSpace(settings.CustomBackgroundImagePath))
                 {
-                    // Apply the new PocketMC default wallpaper to existing users on this update
-                    settings.WindowBackdrop = "FakeMica";
-                    settings.AccentColorMode = "Custom";
-                    settings.CustomAccentColor = "#008B00";
+                    settings.CustomBackgroundImagePath = "pack://application:,,,/Assets/default_wallpaper.png";
                 }
-                // For new users, defaults are already provided via AppSettings.cs initializers,
-                // but we must set the dynamic image path here.
-                settings.CustomBackgroundImagePath = "pack://application:,,,/Assets/default_wallpaper.png";
                 settings.HasMigratedToDefaultImageWallpaper = true;
             }
 
