@@ -47,21 +47,23 @@ link: Service status | https://status.example.com/
 
 Do not add a `read` field to repository news. PocketMC adds `read: true` only to the user's local cached copy when the user reads or acknowledges the item.
 
+In the field lists below, `[required]` and `[optional]` are documentation labels only. Do not type the bracketed labels into a news file. For optional metadata, keep the key and leave its value empty when unused, as shown in the template.
+
 ## Metadata Fields
 
-These fields are required in every remote news file:
+These metadata fields are required in every remote news file:
 
-- `id`: Permanent unique identifier, independent of the filename. Use letters, numbers, `.`, `_`, or `-`; maximum 128 characters. Do not reuse or rename an ID after publishing.
-- `type`: One of `announcement`, `quick-fix`, `critical`, `maintenance`, `update`, or `security`. Type is descriptive; it does not alone decide popup behavior.
-- `priority`: One of `normal`, `important`, or `critical`. The app displays priority independently from type; it does not by itself decide whether a popup appears.
-- `popup`: `true` or `false`. `true` makes the item eligible for a popup until that user reads/acknowledges it; set it independently of `type` and `priority`.
-- `published`: Publication time in UTC, written as an ISO timestamp ending in `Z`, such as `2026-10-02T18:00:00Z`. This controls ordering, not the filename.
+- `id` [required]: Permanent unique identifier, independent of the filename. Use letters, numbers, `.`, `_`, or `-`; maximum 128 characters. Do not reuse or rename an ID after publishing.
+- `type` [required]: One of `announcement`, `quick-fix`, `critical`, `maintenance`, `update`, or `security`. Type is descriptive; it does not alone decide popup behavior.
+- `priority` [required]: One of `normal`, `important`, or `critical`. The app displays priority independently from type; it does not by itself decide whether a popup appears.
+- `popup` [required]: `true` or `false`. `true` makes the item eligible for a popup until that user reads/acknowledges it; set it independently of `type` and `priority`.
+- `published` [required]: Publication time in UTC, written as an ISO timestamp ending in `Z`, such as `2026-10-02T18:00:00Z`. This controls ordering, not the filename.
 
-These fields are optional; leave the value blank when unused:
+These metadata fields are optional:
 
-- `expires`: Optional UTC timestamp. It must be later than `published`. An expired item is not a new active notice and will not popup; previously cached history is retained.
-- `minVersion`: Optional inclusive minimum PocketMC version, for example `1.9.9`.
-- `maxVersion`: Optional inclusive maximum PocketMC version, for example `1.9.9.1`.
+- `expires` [optional]: UTC timestamp later than `published`. An expired item is not an active notice and will not popup; previously cached history is retained. Leave blank for no expiry.
+- `minVersion` [optional]: Inclusive minimum PocketMC version, for example `1.9.9`. Leave blank for no minimum.
+- `maxVersion` [optional]: Inclusive maximum PocketMC version, for example `1.9.9.1`. Leave blank for no maximum.
 
 When both version limits are present, `minVersion` must not exceed `maxVersion`. Versions are compared numerically. An item without either limit applies to all PocketMC versions.
 
@@ -71,17 +73,17 @@ Every metadata key must occur at most once. Unknown keys, invalid values, missin
 
 Content is plain text, not Markdown or HTML. Use only these directives; PocketMC chooses the visual style.
 
-- `title: Text`: Required exactly once. The title can be inline after the colon or on following lines.
-- `subtitle: Text`: Optional short supporting line.
-- `heading: Text`: Section heading; may be repeated.
-- `paragraph:`: Normal prose. Put paragraph text on the following lines. It can span multiple lines.
-- `list:`: Bullet list. Each item is a separate line beginning `- `.
-- `numbered-list:`: Ordered steps. Each item is a separate line beginning `1. `, `2. `, and so on.
-- `warning:`: Caution callout.
-- `important:`: Important-notice callout.
-- `code:`: Monospaced displayed text. It is never executed.
-- `link: Label | https://example.com`: Clickable link. Only absolute `http` and `https` links are accepted.
-- `divider:`: Horizontal separator; no value is allowed after the colon.
+- `title: Text` [required, exactly once]: The title can be inline after the colon or on following lines.
+- `subtitle: Text` [optional]: Short supporting line.
+- `heading: Text` [optional, repeatable]: Section heading.
+- `paragraph:` [optional, repeatable]: Normal prose follows on the next lines and can span multiple lines.
+- `list:` [optional, repeatable]: Bullet list. Each item is a separate line beginning `- `.
+- `numbered-list:` [optional, repeatable]: Ordered steps. Each item is a separate line beginning `1. `, `2. `, and so on.
+- `warning:` [optional, repeatable]: Caution callout.
+- `important:` [optional, repeatable]: Important-notice callout.
+- `code:` [optional, repeatable]: Monospaced displayed text. It is never executed.
+- `link: Label | https://example.com` [optional, repeatable]: Clickable link. Only absolute `http` and `https` links are accepted.
+- `divider:` [optional, repeatable]: Horizontal separator; no value is allowed after the colon.
 
 Separate content blocks with a blank line. Text blocks continue until a blank line or the next directive. Lists consume consecutive matching bullet/number lines. Every file must contain exactly one title; other content blocks are optional. Unsupported directives, duplicate titles, and HTML-like markup in text blocks are rejected.
 

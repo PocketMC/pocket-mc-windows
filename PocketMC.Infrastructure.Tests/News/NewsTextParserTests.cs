@@ -88,6 +88,21 @@ public sealed class NewsTextParserTests
         }
     }
 
+    [Fact]
+    public void Parse_FormatShowcaseExercisesEverySupportedContentElement()
+    {
+        string newsPath = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..", "news", "2026-09-30-format-showcase.txt"));
+        NewsItem item = _parser.Parse(Path.GetFileName(newsPath), File.ReadAllText(newsPath));
+        HashSet<NewsBlockType> parsedTypes = item.Blocks.Select(block => block.Type).ToHashSet();
+
+        Assert.Equal(Enum.GetValues<NewsBlockType>().ToHashSet(), parsedTypes);
+        Assert.False(item.Metadata.Popup);
+        Assert.Equal(new Version(1, 9, 9, 1), item.Metadata.MinimumVersion);
+        Assert.Equal(item.Metadata.MinimumVersion, item.Metadata.MaximumVersion);
+    }
+
     private const string ValidNews = """
         ---
         id: playit-agent-fix

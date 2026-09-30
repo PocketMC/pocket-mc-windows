@@ -1,0 +1,45 @@
+---
+id: live-format-showcase-2026-09-30
+type: announcement
+priority: important
+popup: false
+published: 2026-09-30T05:22:30Z
+expires: 2026-10-07T00:00:00Z
+minVersion: 1.9.9.1
+maxVersion: 1.9.9.1
+---
+title: News Format Showcase
+
+subtitle: Examples of every supported content element
+
+heading: Plain text
+
+paragraph:
+This showcase exercises the supported News content tags. PocketMC renders these elements with its own native styles. No Markdown or HTML is used.
+
+heading: Bullet list
+
+list:
+- First bullet item
+- Second bullet item
+
+heading: Numbered list
+
+numbered-list:
+1. First ordered step
+2. Second ordered step
+
+warning:
+This warning is displayed text only. Nothing in a news item runs commands.
+
+important:
+Priority and popup behavior are configured separately in this file's metadata.
+
+heading: Displayed code
+
+code:
+echo "News code blocks are display-only"
+
+link: PocketMC website | https://pocketmc.github.io/
+
+divider:
