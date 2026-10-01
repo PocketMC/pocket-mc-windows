@@ -13,13 +13,21 @@ title: Supporting the Future of PocketMC
 
 subtitle: Help keep PocketMC updated, running smoothly, and free for everyone
 
+divider:
+
 heading: Built for the community
 
 paragraph:
 PocketMC was created to make hosting and managing Minecraft servers effortless for everyone. The project is completely free, open-source, and dedicated to staying clean without any ads or paywalls.
 
+divider:
+
+heading: Why community support matters
+
 paragraph:
 To keep PocketMC actively maintained, we rely on the support of our community. Your contributions help ensure continuous updates, faster bug fixes, and the steady development of new features requested by users.
+
+divider:
 
 heading: What your donations support
 
@@ -29,9 +37,15 @@ list:
 - Developing new features and quality-of-life tools requested by the community
 - Keeping PocketMC completely free and open-source for everyone
 
+divider:
+
 important:
 Whether it is the price of a coffee or regular support, every contribution directly helps keep PocketMC active and growing. Thank you for supporting the project!
 
+divider:
+
 link: Support PocketMC on Buy Me a Coffee | https://www.buymeacoffee.com/sahaj33
+
+divider:
 
 link: Join our Community Discord | https://discord.gg/mWdMr8Mc2m
