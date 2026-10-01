@@ -1,0 +1,37 @@
+---
+id: support-pocketmc-development
+type: announcement
+priority: important
+popup: false
+published: 2026-10-01T19:00:00Z
+expires:
+minVersion:
+maxVersion:
+---
+
+title: Supporting the Future of PocketMC
+
+subtitle: Help keep PocketMC updated, running smoothly, and free for everyone
+
+heading: Built for the community
+
+paragraph:
+PocketMC was created to make hosting and managing Minecraft servers effortless for everyone. The project is completely free, open-source, and dedicated to staying clean without any ads or paywalls.
+
+paragraph:
+To keep PocketMC actively maintained, we rely on the support of our community. Your contributions help ensure continuous updates, faster bug fixes, and the steady development of new features requested by users.
+
+heading: What your donations support
+
+list:
+- Continuous maintenance and stability improvements
+- Fast bug fixes and regular updates
+- Developing new features and quality-of-life tools requested by the community
+- Keeping PocketMC completely free and open-source for everyone
+
+important:
+Whether it is the price of a coffee or regular support, every contribution directly helps keep PocketMC active and growing. Thank you for supporting the project!
+
+link: Support PocketMC on Buy Me a Coffee | https://www.buymeacoffee.com/sahaj33
+
+link: Join our Community Discord | https://discord.gg/mWdMr8Mc2m
