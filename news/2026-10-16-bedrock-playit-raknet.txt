@@ -1,0 +1,43 @@
+---
+id: bedrock-playit-raknet-transport
+type: quick-fix
+priority: important
+popup: true
+published: 2026-10-16T10:00:00Z
+expires:
+minVersion:
+maxVersion:
+---
+
+title: Bedrock Dedicated Server Requires RakNet for Playit Tunnels
+
+subtitle: Fix connection issues for Bedrock servers using Playit.gg tunnels
+
+divider:
+
+heading: What changed
+
+paragraph:
+Recent updates to Minecraft Bedrock Dedicated Server (BDS) introduced NetherNet transport by default. Standard Playit.gg Bedrock tunnels currently support RakNet UDP traffic only. If a Bedrock server runs with default transport settings, players attempting to connect via Playit may fail to connect.
+
+divider:
+
+heading: How to fix
+
+paragraph:
+To restore connections through Playit tunnels, configure the server to use RakNet transport:
+
+numbered-list:
+1. Stop your Bedrock server in PocketMC.
+2. Open server.properties in your server folder.
+3. Add or update the following setting: transport=raknet
+4. Save the file and restart your server.
+
+divider:
+
+important:
+Setting transport=raknet restores compatibility with standard UDP tunnels without affecting gameplay or client features.
+
+divider:
+
+link: Playit Bedrock Guide | https://playit.gg/support
