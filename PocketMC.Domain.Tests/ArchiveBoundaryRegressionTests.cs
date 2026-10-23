@@ -34,10 +34,18 @@ public sealed class ArchiveBoundaryRegressionTests : IDisposable
             process!.WaitForExit(); Assert.Equal(0, process.ExitCode);
         }
         else Directory.CreateSymbolicLink(link, outside);
-        string archive = Path.Combine(_root, "link.zip");
-        using (var zip = ZipFile.Open(archive, ZipArchiveMode.Create)) zip.CreateEntry("redirect/escape.txt");
-        await Assert.ThrowsAsync<InvalidDataException>(() => SafeZipExtractor.ExtractAsync(archive, output));
-        Assert.False(File.Exists(Path.Combine(outside, "escape.txt")));
+        try
+        {
+            string archive = Path.Combine(_root, "link.zip");
+            using (var zip = ZipFile.Open(archive, ZipArchiveMode.Create)) zip.CreateEntry("redirect/escape.txt");
+            await Assert.ThrowsAsync<InvalidDataException>(() => SafeZipExtractor.ExtractAsync(archive, output));
+            Assert.False(File.Exists(Path.Combine(outside, "escape.txt")));
+        }
+        finally
+        {
+            // Remove the junction before recursive fixture cleanup can delete its target.
+            Directory.Delete(link);
+        }
     }
 
     [Fact]
