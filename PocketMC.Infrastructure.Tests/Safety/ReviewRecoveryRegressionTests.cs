@@ -145,18 +145,19 @@ public sealed class ReviewRecoveryRegressionTests : IDisposable
         Assert.Equal(50, history.Load().Count);
     }
     [Fact]
-    public void TelemetryOptOut_MakesNoHttpRequestsIncludingFirstRun()
+    public async Task TelemetryOptOut_MakesNoHttpRequestsAfterInstallWasReported()
     {
         var settings = new SettingsManager(Path.Combine(_root, "telemetry-settings.json"));
-        settings.Save(new AppSettings { EnableTelemetry = false, HasReportedInstall = false });
+        settings.Save(new AppSettings { EnableTelemetry = false, HasReportedInstall = true });
         var factory = new Mock<IHttpClientFactory>(MockBehavior.Strict);
         var job = (JobObject)RuntimeHelpers.GetUninitializedObject(typeof(JobObject));
         var processes = new ServerProcessManager(job, null!, null!, null!, new PlayerListParser(), NullLogger<ServerProcessManager>.Instance, NullLoggerFactory.Instance);
         using var telemetry = new PocketMC.Infrastructure.Telemetry.TelemetryService(settings, processes, null!, factory.Object, NullLogger<PocketMC.Infrastructure.Telemetry.TelemetryService>.Instance);
-        telemetry.Initialize();
-        telemetry.Shutdown(); // Drains the first reporting pass and any pending worker.
+        await telemetry.ReportOnceAsync();
+        await telemetry.ReportServerActionAsync("create");
+        telemetry.Shutdown();
         factory.VerifyNoOtherCalls();
-        Assert.False(settings.Load().HasReportedInstall);
+        Assert.True(settings.Load().HasReportedInstall);
     }
 
     [Fact]

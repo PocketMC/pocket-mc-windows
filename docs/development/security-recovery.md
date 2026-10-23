@@ -16,6 +16,7 @@ This change addresses the 24 findings reviewed against commit `daacbd3`. It pres
 - Updates atomically commit artifacts and metadata with rollback. Each staging operation has a unique directory. Stopping during runtime setup cancels startup before a child can launch.
 - Exports default to sharing mode: plugin/configuration secrets and player administration files are excluded, RCON secrets are removed, and RCON is disabled. The explicit **Private backup** checkbox includes sensitive configuration. Unknown configuration embedded in world data or executable add-ons can still be sensitive; inspect before sharing.
 - Cloud folders now use immutable instance IDs. Listing also discovers legacy name-ID folders, including folders from before a rename, and follows pagination.
+- First-run installation reporting, including country lookup, is required and runs regardless of the usage telemetry setting. Failed installation reports remain pending and retry on later reporting passes or the next launch. After a successful install report, disabling optional usage telemetry stops further country lookups, heartbeats, and server-action reports.
 - Root relocation drains coordinated operations, blocks new starts/mutations, rewrites contained instance paths, and verifies persisted settings before deleting original data.
 
 ## Finding-to-fix map
@@ -37,7 +38,7 @@ This change addresses the 24 findings reviewed against commit `daacbd3`. It pres
 | 13. Download integrity | Range/length/empty checks, resource binding, digest-gated resume, atomic replacement, cancellation propagation | Invalid range and empty-response regressions |
 | 14. Nontransactional update | Journaled artifacts + metadata commit and unique staging | Shared transaction failure/recovery tests; Windows build |
 | 15. Nested restore | Normalize an unambiguous legacy world root | Nested archive restore regression |
-| 16. Telemetry opt-out | Gate country, install and heartbeat requests before sending | First-run opt-out makes no HTTP requests |
+| 16. Telemetry policy | Required one-time install/country reporting; gate ongoing country lookups, heartbeats and server actions with the usage setting | Required install with usage disabled, acknowledged-install silence, HTTPS fallback and failed-install retries |
 | 17. Lost cloud history | Lock the entire read/modify/write | Concurrent history writers |
 | 18. Rename-dependent cloud lookup | Immutable ID identity and legacy discovery | Build/provider contracts; real cloud account validation remains required |
 | 19. Thread-affine power API | Dedicated persistent owner thread | Calls from different callers use one owner |
