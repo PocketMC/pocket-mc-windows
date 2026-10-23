@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
 using System;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
@@ -31,6 +34,8 @@ public sealed class SleepPreventionService : IDisposable
     private readonly IExecutionStateApi _executionStateApi;
     private readonly ILogger<SleepPreventionService> _logger;
     private readonly object _gate = new();
+    private readonly BlockingCollection<Action> _requests = new();
+    private readonly Thread _ownerThread;
     private bool _isActive;
     private bool _disposed;
 
@@ -40,6 +45,8 @@ public sealed class SleepPreventionService : IDisposable
     {
         _executionStateApi = executionStateApi;
         _logger = logger;
+        _ownerThread = new Thread(() => { foreach (var request in _requests.GetConsumingEnumerable()) request(); }) { IsBackground = true, Name = "PocketMC power requests" };
+        _ownerThread.Start();
     }
 
     public bool IsActive
@@ -76,6 +83,7 @@ public sealed class SleepPreventionService : IDisposable
     {
         lock (_gate)
         {
+            if (_disposed) return;
             ReleaseIfActive();
         }
     }
@@ -91,6 +99,9 @@ public sealed class SleepPreventionService : IDisposable
 
             ReleaseIfActive();
             _disposed = true;
+            _requests.CompleteAdding();
+            _ownerThread.Join();
+            _requests.Dispose();
         }
     }
 
@@ -111,13 +122,24 @@ public sealed class SleepPreventionService : IDisposable
 
     private bool TrySetExecutionState(ExecutionState flags, string operation)
     {
-        uint result = _executionStateApi.SetThreadExecutionState((uint)flags);
+        var completed = new TaskCompletionSource<(uint Result, int Error)>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _requests.Add(() =>
+        {
+            try
+            {
+                uint result = _executionStateApi.SetThreadExecutionState((uint)flags);
+                completed.SetResult((result, Marshal.GetLastWin32Error()));
+            }
+            catch (Exception ex) { completed.SetException(ex); }
+        });
+        var response = completed.Task.GetAwaiter().GetResult();
+        uint result = response.Result;
         if (result != 0)
         {
             return true;
         }
 
-        int errorCode = Marshal.GetLastWin32Error();
+        int errorCode = response.Error;
         _logger.LogWarning(
             "SetThreadExecutionState failed while attempting to {Operation}. Flags={Flags}; LastWin32Error={ErrorCode}.",
             operation,

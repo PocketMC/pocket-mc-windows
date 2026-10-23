@@ -164,7 +164,7 @@ public class OneDriveBackupProvider : ICloudBackupProvider
 
             string sanitizedInstance = CloudPathSanitizer.SanitizeFolderName(request.InstanceName);
             string safeName = CloudPathSanitizer.SanitizeFolderName(request.BackupFileName);
-            string remotePath = $"/{sanitizedInstance}-{request.InstanceId}/{safeName}";
+            string remotePath = $"/{request.InstanceId}/{safeName}";
 
             var createSessionUrl = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:{remotePath}:/createUploadSession";
 
@@ -232,38 +232,35 @@ public class OneDriveBackupProvider : ICloudBackupProvider
 
     public async Task<IReadOnlyList<CloudRemoteBackupItem>> ListBackupsAsync(Guid instanceId, string instanceName, CancellationToken ct)
     {
-        string sanitizedInstance = CloudPathSanitizer.SanitizeFolderName(instanceName);
-        string folderPath = $"/{sanitizedInstance}-{instanceId}";
-        string url = $"https://graph.microsoft.com/v1.0/me/drive/special/approot:{folderPath}:/children";
-
         string? token = await GetValidAccessTokenAsync(ct);
         if (token == null) return Array.Empty<CloudRemoteBackupItem>();
-
-        var requestMsg = new HttpRequestMessage(HttpMethod.Get, url);
-        requestMsg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await _httpClient.SendAsync(requestMsg, ct);
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return Array.Empty<CloudRemoteBackupItem>();
-        response.EnsureSuccessStatusCode();
-
-        var json = await response.Content.ReadAsStringAsync(ct);
-        using var doc = JsonDocument.Parse(json);
-
-        var list = new List<CloudRemoteBackupItem>();
-        if (doc.RootElement.TryGetProperty("value", out var items))
+        async Task<List<System.Text.Json.JsonElement>> Children(string initialUrl)
         {
-            foreach (var item in items.EnumerateArray())
+            var result = new List<System.Text.Json.JsonElement>();
+            string? url = initialUrl;
+            while (url != null)
             {
-                list.Add(new CloudRemoteBackupItem
-                {
-                    Provider = ProviderType,
-                    ProviderFileId = item.GetProperty("id").GetString()!,
-                    FileName = item.GetProperty("name").GetString()!,
-                    RemotePath = folderPath + "/" + item.GetProperty("name").GetString(),
-                    SizeBytes = item.GetProperty("size").GetInt64(),
-                    CreatedUtc = item.GetProperty("createdDateTime").GetDateTimeOffset()
-                });
+                if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https" || uri.Host != "graph.microsoft.com") throw new InvalidDataException("Unexpected cloud pagination URL.");
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                using var response = await _httpClient.SendAsync(request, ct);
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound) break;
+                response.EnsureSuccessStatusCode();
+                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+                if (doc.RootElement.TryGetProperty("value", out var values)) result.AddRange(values.EnumerateArray().Select(v => v.Clone()));
+                url = doc.RootElement.TryGetProperty("@odata.nextLink", out var next) ? next.GetString() : null;
             }
+            return result;
+        }
+        var roots = await Children("https://graph.microsoft.com/v1.0/me/drive/special/approot/children");
+        var list = new List<CloudRemoteBackupItem>();
+        foreach (var folder in roots)
+        {
+            string name = folder.GetProperty("name").GetString()!;
+            if (!folder.TryGetProperty("folder", out _) || (name != instanceId.ToString() && !name.EndsWith("-" + instanceId, StringComparison.OrdinalIgnoreCase))) continue;
+            string id = Uri.EscapeDataString(folder.GetProperty("id").GetString()!);
+            foreach (var item in await Children($"https://graph.microsoft.com/v1.0/me/drive/items/{id}/children"))
+                if (item.TryGetProperty("file", out _)) list.Add(new CloudRemoteBackupItem { Provider = ProviderType, ProviderFileId = item.GetProperty("id").GetString()!, FileName = item.GetProperty("name").GetString()!, RemotePath = $"/{name}/" + item.GetProperty("name").GetString(), SizeBytes = item.GetProperty("size").GetInt64(), CreatedUtc = item.GetProperty("createdDateTime").GetDateTimeOffset() });
         }
         return list;
     }
@@ -297,11 +294,11 @@ public class OneDriveBackupProvider : ICloudBackupProvider
 
         using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
         using var downloadStream = await response.Content.ReadAsStreamAsync(ct);
-        
+
         var buffer = new byte[81920];
         int bytesRead;
         long totalRead = 0;
-        
+
         while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
         {
             await stream.WriteAsync(buffer, 0, bytesRead, ct);

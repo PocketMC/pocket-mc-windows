@@ -61,12 +61,12 @@ public static class JavaRuntimeResolver
             return 17;
         }
 
-        if (IsVersionInRange(version, "1.20.5", "1.21.1"))
+        if (IsVersionInRange(version, "1.20.5", "1.21.99"))
         {
             return 21;
         }
 
-        // Minecraft 1.21.2+ (in 2026) requires Java 25
+        // Calendar-versioned Minecraft 26.x uses Java 25. Java 1.21.x uses 21.
         return 25;
     }
 

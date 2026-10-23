@@ -41,6 +41,8 @@ public class ServerProcess : IServerProcess, IDisposable
     private readonly PlayerListParser _playerListParser;
     private readonly ILogger<ServerProcess> _logger;
     private CancellationTokenSource? _startupCts;
+    private readonly object _launchLock = new();
+    private readonly InstanceOperationCoordinator _operations = new();
     private bool _disposed;
     private volatile bool _intentionalStop;
     private readonly ConcurrentDictionary<TaskCompletionSource<bool>, Regex> _outputWaiters = new();
@@ -120,6 +122,9 @@ public class ServerProcess : IServerProcess, IDisposable
 
     public async Task StartAsync(InstanceMetadata meta, string workingDir, string appRootPath)
     {
+        using var operation = await _operations.AcquireAsync(workingDir, requiresStopped: true);
+        if (InstanceFileTransaction.Recover(workingDir))
+            throw new InvalidOperationException("Interrupted file changes were recovered. Reload the instance before starting.");
         if (State != ServerState.Stopped && State != ServerState.Crashed)
             throw new InvalidOperationException($"Cannot start server — current state is {State}.");
 
@@ -141,13 +146,17 @@ public class ServerProcess : IServerProcess, IDisposable
                 onStateChange: s => SetState(s),
                 cancellationToken: _startupCts.Token);
 
-            // After ConfigureAsync returns (installer and downloads done), transition to Starting
-            SetState(ServerState.Starting);
-
-            _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            _process.Exited += OnProcessExited;
-            _process.Start();
-            StartTime = DateTime.UtcNow;
+            lock (_launchLock)
+            {
+                _startupCts.Token.ThrowIfCancellationRequested();
+                if (_intentionalStop) throw new OperationCanceledException(_startupCts.Token);
+                SetState(ServerState.Starting);
+                _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+                _process.Exited += OnProcessExited;
+                _operations.SetRunning(WorkingDirectory, true);
+                _process.Start();
+                StartTime = DateTime.UtcNow;
+            }
 
             try { _jobObject.AddProcess(_process.Handle); }
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to assign process to job object."); }
@@ -159,9 +168,12 @@ public class ServerProcess : IServerProcess, IDisposable
         {
             _logger.LogInformation("Server startup was cancelled.");
             SetState(ServerState.Stopped);
+            CloseSessionLog();
+            throw;
         }
         catch
         {
+            _operations.SetRunning(WorkingDirectory, false);
             SetState(ServerState.Stopped);
             CloseSessionLog();
             throw;
@@ -264,10 +276,14 @@ public class ServerProcess : IServerProcess, IDisposable
     public async Task StopAsync(int timeoutMs = 15000)
     {
         if (State == ServerState.Stopped || State == ServerState.Stopping) return;
-        _intentionalStop = true;
-        SetState(ServerState.Stopping);
-        _startupCts?.Cancel();
+        lock (_launchLock)
+        {
+            _intentionalStop = true;
+            _startupCts?.Cancel();
+            SetState(ServerState.Stopping);
+        }
 
+        using var operation = string.IsNullOrEmpty(WorkingDirectory) ? null : await _operations.AcquireAsync(WorkingDirectory);
         if (_process == null || _process.HasExited)
         {
             SetState(ServerState.Stopped);
@@ -554,6 +570,7 @@ public class ServerProcess : IServerProcess, IDisposable
 
     private void OnProcessExited(object? sender, EventArgs e)
     {
+        _operations.SetRunning(WorkingDirectory, false);
         int exitCode = _process?.ExitCode ?? -1;
         var snapshotLines = _outputBuffer.ToArray();
 

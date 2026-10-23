@@ -198,8 +198,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Help improve PocketMC" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Help us make PocketMC even better! Sharing anonymous usage data allows us to identify bugs and improve performance for all users."
+                                <TextBlock Text="Optional usage telemetry" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="Share app activity and server usage to help improve PocketMC. The first-run installation report, including country, is always sent."
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
