@@ -18,7 +18,7 @@ public sealed class RemoteConsoleWebSocketHandler
         _lifecycleService = lifecycleService;
     }
 
-    public async Task HandleAsync(HttpContext context, Guid instanceId)
+    public async Task HandleAsync(HttpContext context, Guid instanceId, Func<bool>? isAuthorized = null)
     {
         if (!context.WebSockets.IsWebSocketRequest)
         {
@@ -37,6 +37,18 @@ public sealed class RemoteConsoleWebSocketHandler
 
         using WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
+        var authorizationTask = Task.Run(async () =>
+        {
+            try
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1), cts.Token);
+                    if (isAuthorized != null && !isAuthorized()) { cts.Cancel(); socket.Abort(); break; }
+                }
+            }
+            catch (OperationCanceledException) { }
+        });
 
         var channel = Channel.CreateBounded<(string type, string line)>(new BoundedChannelOptions(500)
         {
@@ -65,7 +77,8 @@ public sealed class RemoteConsoleWebSocketHandler
                 {
                     while (channel.Reader.TryRead(out var msg))
                     {
-                        if (socket.State != WebSocketState.Open) return;
+                        if (socket.State != WebSocketState.Open || (isAuthorized != null && !isAuthorized()))
+                        { cts.Cancel(); socket.Abort(); return; }
 
                         byte[] payload = JsonSerializer.SerializeToUtf8Bytes(
                             new
@@ -96,9 +109,8 @@ public sealed class RemoteConsoleWebSocketHandler
                 }
             }
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
+        catch (WebSocketException) when (cts.IsCancellationRequested) { }
         finally
         {
             process.OnOutputLine -= OnOutput;
@@ -106,10 +118,13 @@ public sealed class RemoteConsoleWebSocketHandler
             channel.Writer.TryComplete();
             cts.Cancel();
             await sendTask;
+            await authorizationTask;
 
             if (socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
             {
-                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                using var closeTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                try { await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", closeTimeout.Token); }
+                catch (OperationCanceledException) { socket.Abort(); }
             }
         }
     }

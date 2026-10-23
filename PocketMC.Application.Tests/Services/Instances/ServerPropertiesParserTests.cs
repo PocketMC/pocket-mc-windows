@@ -9,7 +9,7 @@ public sealed class ServerPropertiesParserTests : IDisposable
     private readonly string _tempDirectory = Path.Combine(Path.GetTempPath(), "PocketMC.Tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void Read_IgnoresInlineCommentsInPropertyValues()
+    public void Read_PreservesLiteralHashInsidePropertyValues()
     {
         Directory.CreateDirectory(_tempDirectory);
         string filePath = Path.Combine(_tempDirectory, "server.properties");
@@ -17,11 +17,11 @@ public sealed class ServerPropertiesParserTests : IDisposable
 
         var properties = ServerPropertiesParser.Read(filePath);
 
-        Assert.Equal("Hello world", properties["motd"]);
+        Assert.Equal("Hello world # keep this comment", properties["motd"]);
     }
 
     [Fact]
-    public void Write_PreservesInlineCommentsAndUntouchedLines()
+    public void Write_PreservesCommentLinesAndReplacesWholeValues()
     {
         Directory.CreateDirectory(_tempDirectory);
         string filePath = Path.Combine(_tempDirectory, "server.properties");
@@ -45,7 +45,7 @@ public sealed class ServerPropertiesParserTests : IDisposable
 
         string[] lines = File.ReadAllLines(filePath);
         Assert.Equal("# Minecraft server properties", lines[0]);
-        Assert.Equal("motd=New name # visible comment", lines[1]);
+        Assert.Equal("motd=New name", lines[1]);
         Assert.Equal("difficulty=hard", lines[2]);
     }
 

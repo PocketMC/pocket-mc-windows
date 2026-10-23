@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using PocketMC.Domain.Security;
 
 namespace PocketMC.Domain.Storage
 {
@@ -12,6 +13,20 @@ namespace PocketMC.Domain.Storage
     /// </summary>
     public static class FileUtils
     {
+        public static IEnumerable<string> EnumerateFilesNoLinks(string root)
+        {
+            var pending = new Stack<string>();
+            pending.Push(root);
+            while (pending.Count > 0)
+            {
+                string directory = pending.Pop();
+                PathSafety.RequireNoLinks(directory);
+                foreach (string file in Directory.EnumerateFiles(directory))
+                { PathSafety.RequireNoLinks(file); yield return file; }
+                foreach (string child in Directory.EnumerateDirectories(directory))
+                { PathSafety.RequireNoLinks(child); pending.Push(child); }
+            }
+        }
         /// <summary>
         /// Recursively copies a directory tree. Safe across drive boundaries
         /// (unlike Directory.Move which fails cross-volume).
@@ -36,8 +51,9 @@ namespace PocketMC.Domain.Storage
             if (!Directory.Exists(dirPath)) return 0;
             long size = 0;
             var dirInfo = new DirectoryInfo(dirPath);
-            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+            foreach (var filePath in EnumerateFilesNoLinks(dirPath))
             {
+                var file = new FileInfo(filePath);
                 try
                 {
                     size += file.Length;
@@ -52,10 +68,13 @@ namespace PocketMC.Domain.Storage
 
         private static void CopyDirectoryRecursive(string source, string dest)
         {
+            PathSafety.RequireNoLinks(source);
+            PathSafety.RequireNoLinks(dest);
             Directory.CreateDirectory(dest);
 
             foreach (var file in Directory.GetFiles(source))
             {
+                PathSafety.RequireNoLinks(file);
                 var destFile = Path.Combine(dest, Path.GetFileName(file));
                 File.Copy(file, destFile, overwrite: true);
             }
@@ -69,23 +88,26 @@ namespace PocketMC.Domain.Storage
 
         private static async Task CopyDirectoryRecursiveAsync(string source, string dest, long totalBytes, long[] copiedBytes, IProgress<double> progress)
         {
+            PathSafety.RequireNoLinks(source);
+            PathSafety.RequireNoLinks(dest);
             Directory.CreateDirectory(dest);
 
             foreach (var file in Directory.GetFiles(source))
             {
+                PathSafety.RequireNoLinks(file);
                 var destFile = Path.Combine(dest, Path.GetFileName(file));
-                
+
                 // Using Stream for fine-grained progress tracking
                 await using var sourceStream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
                 await using var destinationStream = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
-                
+
                 var buffer = new byte[81920];
                 int bytesRead;
                 while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
                     await destinationStream.WriteAsync(buffer, 0, bytesRead);
                     Interlocked.Add(ref copiedBytes[0], bytesRead);
-                    
+
                     if (totalBytes > 0)
                     {
                         double percentage = ((double)Interlocked.Read(ref copiedBytes[0]) / totalBytes) * 100.0;
@@ -104,6 +126,8 @@ namespace PocketMC.Domain.Storage
 
         public static async Task CopyFileAsync(string sourcePath, string destinationPath, bool overwrite = true)
         {
+            PathSafety.RequireNoLinks(sourcePath);
+            PathSafety.RequireNoLinks(destinationPath);
             var destinationDirectory = Path.GetDirectoryName(destinationPath);
             if (!string.IsNullOrEmpty(destinationDirectory))
             {
@@ -197,6 +221,12 @@ namespace PocketMC.Domain.Storage
             File.Move(tempPath, targetPath, overwrite: true);
         }
 
+        public static void PromoteFile(string stagedPath, string destinationPath)
+        {
+            PathSafety.RequireNoLinks(destinationPath);
+            ReplaceWithTempFile(stagedPath, destinationPath);
+        }
+
         private static void TryDeleteFile(string filePath)
         {
             try
@@ -231,8 +261,12 @@ namespace PocketMC.Domain.Storage
 
         private static void StripReadOnly(string dirPath)
         {
-            foreach (var file in Directory.GetFiles(dirPath, "*", SearchOption.AllDirectories))
+            PathSafety.RequireNoLinks(dirPath);
+            // Preflight the whole tree before recursive deletion can follow a reparse point.
+            var files = EnumerateFilesNoLinks(dirPath).ToArray();
+            foreach (var file in files)
             {
+                PathSafety.RequireNoLinks(file);
                 var attrs = File.GetAttributes(file);
                 if ((attrs & FileAttributes.ReadOnly) != 0)
                     File.SetAttributes(file, attrs & ~FileAttributes.ReadOnly);

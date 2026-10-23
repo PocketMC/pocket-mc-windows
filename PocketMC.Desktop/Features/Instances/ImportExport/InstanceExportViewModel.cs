@@ -21,6 +21,8 @@ public sealed class InstanceExportViewModel : ObservableObject
     private string? _errorMessage;
     private string? _skippedFilesSummary;
     private bool _includeWorlds = true;
+    private bool _includeSensitiveConfiguration;
+    public bool IncludeSensitiveConfiguration { get => _includeSensitiveConfiguration; set => SetProperty(ref _includeSensitiveConfiguration, value); }
     private bool _isExporting;
     private bool _isComplete;
     private bool _hasError;
@@ -163,7 +165,8 @@ public sealed class InstanceExportViewModel : ObservableObject
                     Metadata = _metadata,
                     InstancePath = _instancePath,
                     DestinationZipPath = DestinationZipPath.Trim(),
-                    IncludeWorlds = IncludeWorlds
+                    IncludeWorlds = IncludeWorlds,
+                    IncludeSensitiveConfiguration = IncludeSensitiveConfiguration
                 },
                 progress,
                 cancellation.Token);

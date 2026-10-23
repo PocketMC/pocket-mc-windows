@@ -166,6 +166,9 @@ namespace PocketMC.Infrastructure.Java
             }
 
             string appRootPath = _applicationState.GetRequiredAppRootPath();
+            using var operation = await new PocketMC.Application.Services.Instances.InstanceOperationCoordinator().AcquireAsync(Path.Combine(appRootPath, "runtime"), cancellationToken: cancellationToken);
+            if (!string.Equals(appRootPath, _applicationState.GetRequiredAppRootPath(), StringComparison.OrdinalIgnoreCase))
+                throw new OperationCanceledException("Application location changed during runtime preparation.");
             string runtimeDir = Path.Combine(appRootPath, "runtime");
             string tempZipPath = Path.Combine(runtimeDir, $"temp_java{version}.zip");
             string extractPath = Path.Combine(runtimeDir, $"java{version}_ext");

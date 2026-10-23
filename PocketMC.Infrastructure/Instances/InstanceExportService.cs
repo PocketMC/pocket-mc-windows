@@ -78,11 +78,11 @@ public sealed class InstanceExportService : IInstanceExportService
             InstanceExportManifest manifest = await _manifestBuilder.BuildManifestAsync(metadata, instanceRoot, isJava, linkedToken)
                 .ConfigureAwait(false);
 
-            long totalBytes = _fileEnumerator.EstimateExportBytes(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken);
+            long totalBytes = _fileEnumerator.EstimateExportBytes(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken, request.IncludeSensitiveConfiguration);
 
-            var files = _fileEnumerator.EnumerateExportFilesAsync(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken);
+            var files = _fileEnumerator.EnumerateExportFilesAsync(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken, request.IncludeSensitiveConfiguration);
 
-            await _zipWriter.WriteZipAsync(tempZipPath, manifest, metadata, instanceRoot, isJava, totalBytes, files, progress, linkedToken)
+            await _zipWriter.WriteZipAsync(tempZipPath, manifest, metadata, instanceRoot, isJava, totalBytes, files, progress, linkedToken, request.IncludeSensitiveConfiguration)
                 .ConfigureAwait(false);
 
             ReplaceDestination(tempZipPath, destinationZipPath);

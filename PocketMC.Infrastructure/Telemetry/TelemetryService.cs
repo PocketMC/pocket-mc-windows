@@ -108,6 +108,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
 
     private async Task EnsureCountryFetchedAsync()
     {
+        if (!_settingsManager.Load().EnableTelemetry) return;
         if (_hasFetchedCountry && _cachedCountry != "Unknown")
         {
             return;
@@ -118,8 +119,8 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         {
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(5);
-            var res = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("http://ip-api.com/json/?fields=country");
-            if (res.TryGetProperty("country", out var cc) && cc.ValueKind == System.Text.Json.JsonValueKind.String)
+            var res = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("https://ipapi.co/json/");
+            if (res.TryGetProperty("country_name", out var cc) && cc.ValueKind == System.Text.Json.JsonValueKind.String)
             {
                 var country = cc.GetString()?.Trim();
                 if (!string.IsNullOrWhiteSpace(country) && !country.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
@@ -197,7 +198,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
     private async Task EnsureInstallReportedAsync()
     {
         var settings = _settingsManager.Load();
-        if (settings.HasReportedInstall)
+        if (!settings.EnableTelemetry || settings.HasReportedInstall)
         {
             return;
         }
@@ -238,6 +239,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(15);
 
+            if (!_settingsManager.Load().EnableTelemetry) return;
             var response = await PostTelemetryAsJsonAsync(client, "/api/telemetry/install", payload, _cts.Token);
             if (response.IsSuccessStatusCode)
             {
@@ -258,6 +260,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
 
     private async Task SendHeartbeatAsync(AppSettings settings, bool isAppClosed = false)
     {
+        if (!_settingsManager.Load().EnableTelemetry) return;
         try
         {
             var activeProcesses = isAppClosed ? new System.Collections.Generic.List<ServerProcess>() : _processManager.ActiveProcesses.Values
@@ -360,33 +363,33 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         }
     }
 
-        private async Task<HttpResponseMessage> PostTelemetryAsJsonAsync<TValue>(HttpClient client, string path, TValue payload, CancellationToken ct = default)
+    private async Task<HttpResponseMessage> PostTelemetryAsJsonAsync<TValue>(HttpClient client, string path, TValue payload, CancellationToken ct = default)
+    {
+        var proxies = AppConfig.TelemetryProxies;
+        Exception? lastException = null;
+
+        foreach (var proxy in proxies)
         {
-            var proxies = AppConfig.TelemetryProxies;
-            Exception? lastException = null;
+            if (string.IsNullOrWhiteSpace(proxy)) continue;
 
-            foreach (var proxy in proxies)
+            try
             {
-                if (string.IsNullOrWhiteSpace(proxy)) continue;
+                var response = await client.PostAsJsonAsync($"{proxy.TrimEnd('/')}{path}", payload, ct);
+                if (response.IsSuccessStatusCode)
+                    return response;
 
-                try
-                {
-                    var response = await client.PostAsJsonAsync($"{proxy.TrimEnd('/')}{path}", payload, ct);
-                    if (response.IsSuccessStatusCode)
-                        return response;
-                    
-                    if (proxy == proxies[proxies.Count - 1]) return response;
-                    response.Dispose();
-                }
-                catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
-                {
-                    _logger.LogDebug(ex, "Proxy {Proxy} request failed, trying next...", proxy);
-                    lastException = ex;
-                }
+                if (proxy == proxies[proxies.Count - 1]) return response;
+                response.Dispose();
             }
-
-            if (lastException != null) throw lastException;
-            throw new HttpRequestException("All telemetry proxies failed.");
+            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
+            {
+                _logger.LogDebug(ex, "Proxy {Proxy} request failed, trying next...", proxy);
+                lastException = ex;
+            }
         }
+
+        if (lastException != null) throw lastException;
+        throw new HttpRequestException("All telemetry proxies failed.");
+    }
 }
 

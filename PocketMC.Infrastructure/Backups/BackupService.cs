@@ -41,19 +41,25 @@ public class BackupService
     private readonly SettingsManager _settingsManager;
     private readonly CloudBackupService _cloudBackupService;
     private readonly ILogger<BackupService> _logger;
+    private readonly InstanceOperationCoordinator _operations;
+
+    public BackupService(ServerProcessManager processManager, ServerConfigurationService configurationService,
+        SettingsManager settingsManager, CloudBackupService cloudService, ILogger<BackupService> logger)
+        : this(processManager, configurationService, settingsManager, cloudService, logger, null) { }
 
     public BackupService(
         ServerProcessManager serverProcessManager,
         ServerConfigurationService configService,
         SettingsManager settingsManager,
         CloudBackupService cloudBackupService,
-        ILogger<BackupService> logger)
+        ILogger<BackupService> logger, InstanceOperationCoordinator? operations)
     {
         _serverProcessManager = serverProcessManager;
         _configService = configService;
         _settingsManager = settingsManager;
         _cloudBackupService = cloudBackupService;
         _logger = logger;
+        _operations = operations ?? new();
     }
 
     private static readonly HashSet<string> SkipFiles = new(StringComparer.OrdinalIgnoreCase)
@@ -63,6 +69,8 @@ public class BackupService
 
     public virtual async Task RunBackupAsync(InstanceMetadata metadata, string serverDir, bool isManualBackup = true, Action<string>? onProgress = null, IProgress<double>? progress = null)
     {
+        using var operation = await _operations.AcquireAsync(serverDir);
+        InstanceFileTransaction.Recover(serverDir);
         var localResult = await CreateLocalBackupAsync(metadata, serverDir, onProgress, progress);
 
         if (!localResult.Success || string.IsNullOrEmpty(localResult.ZipPath))
@@ -95,7 +103,7 @@ public class BackupService
 
         // Prune old backups
         var backupDir = GetBackupDirectory(serverDir, metadata);
-        PruneOldBackups(backupDir, metadata.MaxBackupsToKeep);
+        PruneOldBackups(backupDir, Math.Max(1, metadata.MaxBackupsToKeep), metadata.Id);
 
         // Purge manifest entries whose files were pruned
         try
@@ -132,7 +140,7 @@ public class BackupService
                 Version = manifest.GetNextVersion(),
                 SizeDeltaBytes = previousEntry != null ? fi.Length - previousEntry.SizeBytes : null,
                 Sha256Checksum = ComputeSha256(zipPath),
-                IntegrityVerified = true
+                IntegrityVerified = false // A checksum is not a restore drill.
             };
 
             manifest.Entries.Add(entry);
@@ -263,8 +271,16 @@ public class BackupService
         var backupDir = GetBackupDirectory(serverDir, metadata);
         Directory.CreateDirectory(backupDir);
 
-        string timestamp = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-        string zipPath = Path.Combine(backupDir, $"world-{timestamp}.zip");
+        string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss-fffffff");
+        string completedPath = Path.Combine(backupDir, $"world-{metadata.Id:N}-{timestamp}-{Guid.NewGuid():N}.zip");
+        string zipPath = completedPath + ".partial";
+        var roots = WorldInventory.Resolve(serverDir, metadata);
+        foreach (var root in roots)
+        {
+            string rel = Path.GetRelativePath(root.DirectoryPath, Path.GetFullPath(backupDir));
+            if (!rel.StartsWith(".." + Path.DirectorySeparatorChar) && rel != ".." && !Path.IsPathRooted(rel))
+                throw new InvalidOperationException("The backup destination cannot be inside a world directory.");
+        }
 
         // Safely delete pre-existing file if one exists at the same timestamp (or from a prior partial run)
         if (File.Exists(zipPath))
@@ -287,32 +303,14 @@ public class BackupService
         {
             if (isRunning && process != null)
             {
-                bool syncSuccess = await TrySyncSaveViaRconAsync(serverDir, onProgress);
-
-                if (!syncSuccess)
-                {
-                    _logger.LogInformation("RCON sync not available or failed; falling back to console ingestion for server {ServerName}.", metadata.Name);
-
-                    onProgress?.Invoke("Disabling auto-save (Console)...");
-                    await process.WriteInputAsync("save-off");
-                    await Task.Delay(500);
-
-                    onProgress?.Invoke("Flushing world to disk (Console)...");
-                    await process.WriteInputAsync("save-all");
-
-                    onProgress?.Invoke("Waiting for save to complete...");
-                    bool saved = await process.WaitForConsoleOutputAsync(SaveCompletedRegex, TimeSpan.FromSeconds(15));
-
-                    if (!saved)
-                    {
-                        _logger.LogWarning("Server {ServerName} did not emit a recognized save confirmation. Proceeding after a short settle delay.", metadata.Name);
-                        await Task.Delay(TimeSpan.FromSeconds(2));
-                    }
-                }
+                if (!metadata.Compatibility.IsJavaEngine)
+                    throw new InvalidOperationException("Stop Bedrock or PocketMine before backing up. Live snapshots require an engine-specific save protocol.");
+                if (!await TrySyncSaveViaRconAsync(serverDir, onProgress))
+                    throw new InvalidOperationException("Live backups require RCON and a confirmed flushed save. Stop the server or configure RCON.");
             }
 
             onProgress?.Invoke("Compressing world...");
-            await Task.Run(() => CreateZipWithLockedFileSkip(worldDir, zipPath, skippedFiles, progress));
+            await Task.Run(() => CreateWorldArchive(roots, zipPath, progress));
 
             var zipInfo = new FileInfo(zipPath);
             if (!zipInfo.Exists || zipInfo.Length == 0)
@@ -326,7 +324,8 @@ public class BackupService
             else
                 onProgress?.Invoke("Backup complete!");
 
-            return new LocalBackupResult { Success = true, ZipPath = zipPath };
+            FileUtils.PromoteFile(zipPath, completedPath);
+            return new LocalBackupResult { Success = true, ZipPath = completedPath };
         }
         catch (Exception ex)
         {
@@ -339,15 +338,23 @@ public class BackupService
         }
         finally
         {
-            if (isRunning && process != null)
+            if (isRunning && process != null && metadata.Compatibility.IsJavaEngine && _serverProcessManager.IsRunning(metadata.Id))
             {
                 try
                 {
-                    await process.WriteInputAsync("save-on");
+                    if (!_configService.TryGetProperty(serverDir, "rcon.password", out string? password) || string.IsNullOrEmpty(password))
+                        throw new InvalidOperationException("RCON credentials are missing.");
+                    _configService.TryGetProperty(serverDir, "rcon.port", out string? rawPort);
+                    using var rcon = new RconClient("127.0.0.1", int.Parse(rawPort ?? "25575"), password);
+                    await rcon.ConnectAsync();
+                    string response = await rcon.ExecuteCommandAsync("save-on");
+                    if (!response.Contains("enabled", StringComparison.OrdinalIgnoreCase) && !response.Contains("already", StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("The server did not confirm save-on.");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to re-enable auto-save.");
+                    _logger.LogCritical(ex, "World saving could not be resumed. Run save-on on the server immediately.");
+                    throw new InvalidOperationException("World saving could not be resumed. Run save-on on the server immediately.", ex);
                 }
             }
         }
@@ -380,7 +387,7 @@ public class BackupService
             return resolved;
         }
 
-        return Path.Combine(serverDir, "world");
+        return WorldInventory.Resolve(serverDir, metadata)[0].DirectoryPath;
     }
 
     internal static string ValidateBedrockLevelName(string levelName)
@@ -442,12 +449,13 @@ public class BackupService
             await rcon.ConnectAsync();
 
             onProgress?.Invoke("Syncing via RCON: save-off");
-            await rcon.ExecuteCommandAsync("save-off");
+            string disabled = await rcon.ExecuteCommandAsync("save-off");
+            if (!disabled.Contains("disabled", StringComparison.OrdinalIgnoreCase) && !disabled.Contains("already", StringComparison.OrdinalIgnoreCase)) return false;
 
             onProgress?.Invoke("Syncing via RCON: save-all");
-            var response = await rcon.ExecuteCommandAsync("save-all");
+            var response = await rcon.ExecuteCommandAsync("save-all flush");
 
-            return true;
+            return response.Contains("saved", StringComparison.OrdinalIgnoreCase);
         }
         catch (Exception ex)
         {
@@ -456,64 +464,31 @@ public class BackupService
         }
     }
 
-    private void CreateZipWithLockedFileSkip(string sourceDir, string zipPath, List<string> skippedFiles, IProgress<double>? progress)
+    private static void CreateWorldArchive(IReadOnlyList<WorldRoot> roots, string zipPath, IProgress<double>? progress)
     {
         using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
-        var allFiles = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
-
-        long totalBytes = 0;
-        foreach (var filePath in allFiles)
+        using (var manifest = archive.CreateEntry(".pocketmc-worlds.json").Open())
+            System.Text.Json.JsonSerializer.Serialize(manifest, roots.Select(r => r.RelativePath).ToArray());
+        foreach (var root in roots)
         {
-            if (!SkipFiles.Contains(Path.GetFileName(filePath)))
+            PathSafety.RequireNoLinks(root.DirectoryPath);
+            foreach (var file in FileUtils.EnumerateFilesNoLinks(root.DirectoryPath))
             {
-                totalBytes += new FileInfo(filePath).Length;
+                if (SkipFiles.Contains(Path.GetFileName(file))) continue;
+                using var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var entry = archive.CreateEntry(root.RelativePath + "/" + Path.GetRelativePath(root.DirectoryPath, file).Replace('\\', '/'), CompressionLevel.Fastest);
+                using var output = entry.Open();
+                input.CopyTo(output); // Any required-file failure aborts the entire candidate.
             }
         }
-
-        long copiedBytes = 0;
-        byte[] buffer = new byte[81920]; // 80KB buffer
-
-        foreach (var filePath in allFiles)
-        {
-            string relativePath = Path.GetRelativePath(sourceDir, filePath);
-            string fileName = Path.GetFileName(filePath);
-
-            if (SkipFiles.Contains(fileName))
-            {
-                skippedFiles.Add(relativePath);
-                continue;
-            }
-
-            try
-            {
-                var entry = archive.CreateEntry(relativePath, CompressionLevel.Fastest);
-                using var entryStream = entry.Open();
-                using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                
-                int bytesRead;
-                while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    entryStream.Write(buffer, 0, bytesRead);
-                    copiedBytes += bytesRead;
-                    if (totalBytes > 0)
-                    {
-                        progress?.Report((double)copiedBytes / totalBytes * 100);
-                    }
-                }
-            }
-            catch (IOException)
-            {
-                skippedFiles.Add(relativePath);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                skippedFiles.Add(relativePath);
-            }
-        }
+        progress?.Report(100);
     }
 
     public async Task RestoreBackupAsync(InstanceMetadata metadata, string backupZipPath, string serverDir, Action<string>? onProgress = null, IProgress<double>? progress = null)
     {
+        using var operation = await _operations.AcquireAsync(serverDir, requiresStopped: true);
+        if (_serverProcessManager?.IsRunning(metadata.Id) == true) throw new InvalidOperationException("Stop the server before restoring a backup.");
+        InstanceFileTransaction.Recover(serverDir);
         string worldDir = ResolveWorldDirectory(metadata, serverDir);
 
         if (string.IsNullOrWhiteSpace(backupZipPath) || !File.Exists(backupZipPath))
@@ -563,75 +538,43 @@ public class BackupService
             throw new InvalidDataException($"Failed to extract backup ZIP: {ex.Message}", ex);
         }
 
-        onProgress?.Invoke("Validating world structure...");
-        if (!HasLevelDat(stageDir))
-        {
-            await TryCleanDirectoryAsync(stageDir, "restore staging directory");
-            throw new InvalidDataException("Could not find level.dat in the backup. This doesn't appear to be a valid Minecraft world backup.");
-        }
-
-        var backupWorldDir = Path.Combine(serverDir, $".restore-backup-{DateTime.Now:yyyyMMddHHmmss}");
-        if (Directory.Exists(backupWorldDir))
-        {
-            await TryCleanDirectoryAsync(backupWorldDir, "pre-existing restore backup directory");
-        }
-
-        bool oldWorldExisted = Directory.Exists(worldDir);
-        if (oldWorldExisted)
-        {
-            onProgress?.Invoke("Backing up current world...");
-            try
-            {
-                Directory.Move(worldDir, backupWorldDir);
-            }
-            catch (Exception ex)
-            {
-                await TryCleanDirectoryAsync(stageDir, "restore staging directory");
-                throw new IOException($"Failed to backup current world: {ex.Message}", ex);
-            }
-        }
-
-        onProgress?.Invoke("Applying restored world...");
         try
         {
-            Directory.Move(stageDir, worldDir);
-        }
-        catch (Exception ex)
-        {
-            onProgress?.Invoke("Restore failed, rolling back to original world...");
-            if (oldWorldExisted && Directory.Exists(backupWorldDir))
+            var replacements = new List<InstanceFileTransaction.Replacement>();
+            string layout = Path.Combine(stageDir, ".pocketmc-worlds.json");
+            if (File.Exists(layout))
             {
-                try
+                var roots = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(layout)) ?? throw new InvalidDataException("Missing world layout.");
+                if (roots.Length == 0 || roots.Distinct(StringComparer.OrdinalIgnoreCase).Count() != roots.Length) throw new InvalidDataException("Invalid world layout.");
+                foreach (string relative in roots)
                 {
-                    if (Directory.Exists(worldDir))
-                    {
-                        await TryCleanDirectoryAsync(worldDir, "failed restore world directory");
-                    }
-                    Directory.Move(backupWorldDir, worldDir);
-                }
-                catch (Exception rollbackEx)
-                {
-                    _logger.LogCritical(rollbackEx, "CRITICAL: Failed to roll back original world after restore failure.");
+                    string source = PathSafety.ValidateContainedPath(stageDir, relative) ?? throw new InvalidDataException("Unsafe world root.");
+                    if (!HasLevelDat(source)) throw new InvalidDataException("Backup world is missing level.dat.");
+                    // Never permit an archive layout to replace the instance/config/runtime roots.
+                    string first = relative.Split('/', '\\')[0];
+                    if (first.StartsWith('.') || new[] { "plugins", "mods", "libraries", "config", "backups", "runtime" }.Contains(first, StringComparer.OrdinalIgnoreCase))
+                        throw new InvalidDataException("Backup layout contains a protected directory.");
+                    replacements.Add(new(source, relative));
                 }
             }
-            await TryCleanDirectoryAsync(stageDir, "restore staging directory");
-            throw new IOException($"Failed to move restored world into place: {ex.Message}", ex);
-        }
-
-        if (oldWorldExisted && Directory.Exists(backupWorldDir))
-        {
-            onProgress?.Invoke("Cleaning up backup...");
-            try
+            else
             {
-                await FileUtils.CleanDirectoryAsync(backupWorldDir);
+                string source = stageDir;
+                // Legacy flat backups and one wrapped world are accepted; ambiguous nesting is rejected.
+                if (!File.Exists(Path.Combine(source, "level.dat")) && metadata.Compatibility.Family != EngineFamily.Pocketmine)
+                {
+                    var candidates = Directory.GetFiles(stageDir, "level.dat", SearchOption.AllDirectories);
+                    if (candidates.Length != 1) throw new InvalidDataException("Backup has no unambiguous world root.");
+                    source = Path.GetDirectoryName(candidates[0])!;
+                }
+                if (!HasLevelDat(source)) throw new InvalidDataException("Backup is missing level.dat.");
+                replacements.Add(new(source, Path.GetRelativePath(serverDir, worldDir)));
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to clean up backup world directory at {BackupWorldDir}", backupWorldDir);
-            }
+            onProgress?.Invoke("Applying restored world...");
+            InstanceFileTransaction.Commit(serverDir, replacements);
+            onProgress?.Invoke("World restored successfully!");
         }
-
-        onProgress?.Invoke("World restored successfully!");
+        finally { if (Directory.Exists(stageDir)) await TryCleanDirectoryAsync(stageDir, "restore staging directory"); }
     }
 
     private bool HasLevelDat(string dir)
@@ -648,10 +591,10 @@ public class BackupService
         return false;
     }
 
-    private void PruneOldBackups(string backupDirectory, int maxToKeep)
+    private void PruneOldBackups(string backupDirectory, int maxToKeep, Guid instanceId)
     {
         var files = new DirectoryInfo(backupDirectory)
-            .GetFiles("world-*.zip")
+            .GetFiles($"world-{instanceId:N}-*.zip")
             .OrderByDescending(f => f.CreationTime)
             .ToList();
 

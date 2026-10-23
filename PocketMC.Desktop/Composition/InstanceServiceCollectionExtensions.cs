@@ -44,6 +44,7 @@ namespace PocketMC.Desktop.Composition
                 client.Timeout = TimeSpan.FromMinutes(20);
             }).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
 
+            services.AddSingleton<InstanceOperationCoordinator>();
             services.AddSingleton<DownloaderService>();
             services.AddSingleton<JavaAdoptiumClient>();
             services.AddSingleton<JavaRuntimeValidator>();
@@ -83,7 +84,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<CloudBackupService>();
 
             services.AddHttpClient("OneDrive").AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            
+
             services.AddHttpClient("GoogleDriveProxy", client =>
             {
                 client.DefaultRequestHeaders.Add("User-Agent", "PocketMC-Desktop/1.0");

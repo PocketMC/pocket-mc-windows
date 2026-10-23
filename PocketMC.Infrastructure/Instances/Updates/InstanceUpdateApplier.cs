@@ -63,11 +63,40 @@ public sealed class InstanceUpdateApplier
             await _lifecycleService.StopAsync(plan.InstanceId);
         }
 
-        onProgress?.Invoke("Applying server update...");
-        await ApplyServerArtifactAsync(plan, stagedArtifacts.ServerArtifactPath, cancellationToken);
-
+        using var operation = await new InstanceOperationCoordinator().AcquireAsync(plan.ServerDir, requiresStopped: true, cancellationToken: cancellationToken);
+        if (_lifecycleService.IsRunning(plan.InstanceId)) throw new InvalidOperationException("The server did not stop; update was cancelled.");
+        if (InstanceFileTransaction.Recover(plan.ServerDir))
+            throw new InvalidOperationException("Interrupted file changes were recovered. Reload the instance and plan the update again.");
+        ValidateNonEmptyFile(stagedArtifacts.ServerArtifactPath);
+        var replacements = new List<InstanceFileTransaction.Replacement>();
+        if (plan.TargetMetadata.ServerType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase))
+        {
+            string extracted = Path.Combine(stagedArtifacts.StagingDirectory, $"bedrock-{Guid.NewGuid():N}");
+            await SafeZipExtractor.ExtractAsync(stagedArtifacts.ServerArtifactPath, extracted, cancellationToken: cancellationToken);
+            foreach (string source in Directory.EnumerateFileSystemEntries(extracted))
+            {
+                string name = Path.GetFileName(source);
+                if (!BedrockPreservedEntries.Contains(name, StringComparer.OrdinalIgnoreCase)) replacements.Add(new(source, name));
+            }
+        }
+        else
+        {
+            replacements.Add(new(stagedArtifacts.ServerArtifactPath, plan.ServerArtifactFileName));
+            if (plan.TargetMetadata.ServerType is "Forge" or "NeoForge")
+            {
+                foreach (string name in new[] { "libraries", "win_args.txt", "unix_args.txt", "user_jvm_args.txt", "run.bat", "run.sh" })
+                    replacements.Add(new(null, name));
+                foreach (string jar in Directory.EnumerateFiles(plan.ServerDir, "*.jar"))
+                    if (Path.GetFileName(jar) != "installer.jar" && Path.GetFileName(jar).Contains("forge", StringComparison.OrdinalIgnoreCase))
+                        replacements.Add(new(null, Path.GetFileName(jar)));
+            }
+        }
+        string metadataFile = Path.Combine(stagedArtifacts.StagingDirectory, "updated-metadata.json");
+        FileUtils.AtomicWriteAllText(metadataFile, JsonSerializer.Serialize(plan.TargetMetadata, MetadataJsonOptions));
+        replacements.Add(new(metadataFile, ".pocket-mc.json"));
+        onProgress?.Invoke("Committing verified server update...");
+        InstanceFileTransaction.Commit(plan.ServerDir, replacements, cancellationToken);
         SaveMetadata(plan.TargetMetadata, plan.ServerDir);
-
         await CleanStagingAsync(stagedArtifacts, cancellationToken);
 
         return new InstanceUpdateApplyResult
@@ -75,113 +104,6 @@ public sealed class InstanceUpdateApplier
             OperationId = plan.OperationId,
             UpdatedMetadata = plan.TargetMetadata
         };
-    }
-
-    private async Task ApplyServerArtifactAsync(
-        InstanceUpdatePlan plan,
-        string stagedServerArtifactPath,
-        CancellationToken cancellationToken)
-    {
-        ValidateNonEmptyFile(stagedServerArtifactPath);
-
-        if (plan.TargetMetadata.ServerType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase))
-        {
-            await ApplyBedrockArtifactAsync(plan, stagedServerArtifactPath, cancellationToken);
-            return;
-        }
-
-        string targetPath = PathSafety.ValidateContainedPath(plan.ServerDir, plan.ServerArtifactFileName)
-            ?? throw new InvalidOperationException($"Server artifact target '{plan.ServerArtifactFileName}' is invalid.");
-        await FileUtils.CopyFileAsync(stagedServerArtifactPath, targetPath, overwrite: true);
-
-        if (plan.TargetMetadata.ServerType.Equals("Forge", StringComparison.OrdinalIgnoreCase) ||
-            plan.TargetMetadata.ServerType.Equals("NeoForge", StringComparison.OrdinalIgnoreCase))
-        {
-            await ClearInstallerOutputsAsync(plan.ServerDir, cancellationToken);
-        }
-    }
-
-    private async Task ApplyBedrockArtifactAsync(
-        InstanceUpdatePlan plan,
-        string stagedZipPath,
-        CancellationToken cancellationToken)
-    {
-        string extractionDirectory = PathSafety.ValidateContainedPath(
-            Path.GetDirectoryName(stagedZipPath) ?? plan.ServerDir,
-            "bedrock-extracted")
-            ?? throw new InvalidOperationException("Bedrock staging extraction path is invalid.");
-
-        if (Directory.Exists(extractionDirectory))
-        {
-            await FileUtils.CleanDirectoryAsync(extractionDirectory, cancellationToken);
-        }
-
-        await SafeZipExtractor.ExtractAsync(stagedZipPath, extractionDirectory);
-
-        foreach (string sourcePath in Directory.EnumerateFileSystemEntries(extractionDirectory))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            string name = Path.GetFileName(sourcePath);
-            if (BedrockPreservedEntries.Contains(name, StringComparer.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            string targetPath = PathSafety.ValidateContainedPath(plan.ServerDir, name)
-                ?? throw new InvalidOperationException($"Bedrock update target '{name}' is invalid.");
-
-            if (Directory.Exists(sourcePath))
-            {
-                if (Directory.Exists(targetPath))
-                {
-                    await FileUtils.CleanDirectoryAsync(targetPath, cancellationToken);
-                }
-
-                await FileUtils.CopyDirectoryAsync(sourcePath, targetPath);
-            }
-            else
-            {
-                await FileUtils.CopyFileAsync(sourcePath, targetPath, overwrite: true);
-            }
-        }
-    }
-
-    private static async Task ClearInstallerOutputsAsync(
-        string serverDir,
-        CancellationToken cancellationToken)
-    {
-        foreach (string directoryName in new[] { "libraries" })
-        {
-            string? directory = PathSafety.ValidateContainedPath(serverDir, directoryName);
-            if (directory != null && Directory.Exists(directory))
-            {
-                await FileUtils.CleanDirectoryAsync(directory, cancellationToken);
-            }
-        }
-
-        foreach (string fileName in new[] { "win_args.txt", "unix_args.txt", "user_jvm_args.txt", "run.bat", "run.sh" })
-        {
-            string? filePath = PathSafety.ValidateContainedPath(serverDir, fileName);
-            if (filePath != null && File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-        }
-
-        foreach (string jarPath in Directory.EnumerateFiles(serverDir, "*.jar", SearchOption.TopDirectoryOnly))
-        {
-            string fileName = Path.GetFileName(jarPath);
-            if (fileName.Equals("installer.jar", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            if (fileName.Contains("forge", StringComparison.OrdinalIgnoreCase) ||
-                fileName.Contains("neoforge", StringComparison.OrdinalIgnoreCase))
-            {
-                File.Delete(jarPath);
-            }
-        }
     }
 
     private void SaveMetadata(InstanceMetadata metadata, string serverDir)
