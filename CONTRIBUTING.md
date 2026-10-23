@@ -167,6 +167,3 @@ Before submitting a pull request, verify:
 ## Code of Conduct
 
 All participants in the PocketMC community are expected to follow the standards outlined in our [Code of Conduct](CODE_OF_CONDUCT.md). Please report any unacceptable behavior to [contactdslabs@gmail.com](mailto:contactdslabs@gmail.com).
-## Security and recovery verification
-
-Use a .NET 10 SDK selected by `global.json` and the .NET 8 Windows Desktop/ASP.NET runtimes for tests. CI installs the same SDK policy. See [the recovery changes and migration notes](docs/development/security-recovery.md) before testing snapshots, restores, exports, or root relocation.
