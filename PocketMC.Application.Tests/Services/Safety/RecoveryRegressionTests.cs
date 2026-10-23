@@ -62,6 +62,17 @@ public sealed class RecoveryRegressionTests : IDisposable
     }
 
     [Fact]
+    public async Task WaitingForOneInstance_DoesNotBlockItsRuntimeOrAnotherInstance()
+    {
+        var coordinator = new InstanceOperationCoordinator();
+        using var owner = await coordinator.AcquireAsync(_root);
+        Task<IDisposable> queued = coordinator.AcquireAsync(_root);
+        using (await coordinator.AcquireAsync(Path.Combine(_root, "runtime")).WaitAsync(TimeSpan.FromSeconds(2))) { }
+        owner.Dispose();
+        using var next = await queued.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
     public async Task Coordinator_BlocksMutationOfRunningWorld_AndDrainsMaintenance()
     {
         var coordinator = new InstanceOperationCoordinator();

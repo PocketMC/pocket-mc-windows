@@ -7,7 +7,8 @@ public sealed class InstanceOperationCoordinator
 {
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> Gates = new(StringComparer.OrdinalIgnoreCase);
     private static readonly ConcurrentDictionary<string, byte> Running = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly SemaphoreSlim Maintenance = new(1, 1);
+    private static readonly SemaphoreSlim Admissions = new(1, 1);
+    private static readonly SemaphoreSlim MaintenanceSession = new(1, 1);
     private static int _maintenanceRequested;
     private static int _generation;
 
@@ -16,10 +17,18 @@ public sealed class InstanceOperationCoordinator
         if (Volatile.Read(ref _maintenanceRequested) != 0) throw new InvalidOperationException("File operations are paused for maintenance.");
         int generation = Volatile.Read(ref _generation);
         string key = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar);
-        await Maintenance.WaitAsync(cancellationToken);
-        SemaphoreSlim gate = Gates.GetOrAdd(key, _ => new(1, 1));
-        try { await gate.WaitAsync(cancellationToken); }
-        finally { Maintenance.Release(); }
+        await Admissions.WaitAsync(cancellationToken);
+        SemaphoreSlim gate;
+        try
+        {
+            if (generation != Volatile.Read(ref _generation) || Volatile.Read(ref _maintenanceRequested) != 0)
+                throw new InvalidOperationException("File operations are paused for maintenance.");
+            gate = Gates.GetOrAdd(key, _ => new(1, 1));
+        }
+        finally { Admissions.Release(); }
+        // Never hold the admissions lock while waiting for a busy instance. Its
+        // owner may need a different gate (for example Java provisioning) to finish.
+        await gate.WaitAsync(cancellationToken);
         if (generation != Volatile.Read(ref _generation) || Volatile.Read(ref _maintenanceRequested) != 0 || (requiresStopped && Running.ContainsKey(key)))
         {
             gate.Release();
@@ -36,13 +45,24 @@ public sealed class InstanceOperationCoordinator
 
     public async Task<IDisposable> BeginMaintenanceAsync(CancellationToken cancellationToken = default)
     {
-        await Maintenance.WaitAsync(cancellationToken);
-        Interlocked.Exchange(ref _maintenanceRequested, 1);
-        Interlocked.Increment(ref _generation);
+        await MaintenanceSession.WaitAsync(cancellationToken);
+        SemaphoreSlim[] gates;
+        try
+        {
+            await Admissions.WaitAsync(cancellationToken);
+            try
+            {
+                Interlocked.Exchange(ref _maintenanceRequested, 1);
+                Interlocked.Increment(ref _generation);
+                gates = Gates.OrderBy(p => p.Key, StringComparer.OrdinalIgnoreCase).Select(p => p.Value).ToArray();
+            }
+            finally { Admissions.Release(); }
+        }
+        catch { MaintenanceSession.Release(); throw; }
         var held = new List<SemaphoreSlim>();
         try
         {
-            foreach (var gate in Gates.OrderBy(p => p.Key, StringComparer.OrdinalIgnoreCase).Select(p => p.Value))
+            foreach (var gate in gates)
             { await gate.WaitAsync(cancellationToken); held.Add(gate); }
             if (!Running.IsEmpty) throw new InvalidOperationException("All servers must be stopped before maintenance.");
             return new MaintenanceRelease(held);
@@ -51,7 +71,7 @@ public sealed class InstanceOperationCoordinator
         {
             foreach (var gate in held) gate.Release();
             Interlocked.Exchange(ref _maintenanceRequested, 0);
-            Maintenance.Release();
+            MaintenanceSession.Release();
             throw;
         }
     }
@@ -76,7 +96,7 @@ public sealed class InstanceOperationCoordinator
             if (Interlocked.Exchange(ref _released, 1) != 0) return;
             foreach (var gate in held) gate.Release();
             Interlocked.Exchange(ref _maintenanceRequested, 0);
-            Maintenance.Release();
+            MaintenanceSession.Release();
         }
     }
 }
