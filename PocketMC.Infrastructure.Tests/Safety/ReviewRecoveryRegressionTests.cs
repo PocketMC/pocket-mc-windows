@@ -9,6 +9,7 @@ using Moq;
 using PocketMC.Application.Services.Instances;
 using PocketMC.Application.Services.Players;
 using PocketMC.Domain.Models;
+using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Backups;
 using PocketMC.Infrastructure.Configuration;
 using PocketMC.Infrastructure.Instances;
@@ -53,6 +54,19 @@ public sealed class ReviewRecoveryRegressionTests : IDisposable
         Assert.Empty(Directory.GetFiles(Path.Combine(_root, "backups"), "*.zip"));
         Assert.Empty(BackupManifest.Load(_root).Entries);
     }
+
+    [Theory]
+    [InlineData(10, 10, 10)]
+    [InlineData(1024, 1, 10)]
+    [InlineData(1024, 10, 1)]
+    public void BackupCandidate_EnforcesTheSameSafetyLimitsAsRestore(long maxBytes, int maxEntries, int maxDepth)
+    {
+        Write("world/level.dat", "required world data");
+        var roots = new[] { new WorldRoot(Path.Combine(_root, "world"), "world") };
+        var limits = new ArchiveLimits(maxBytes, maxEntries, maxDepth);
+        Assert.Throws<InvalidDataException>(() => BackupService.CreateWorldArchive(roots, Path.Combine(_root, "candidate.partial"), null, limits));
+    }
+
     [Fact]
     public async Task SharedBackupDestination_DoesNotPruneAnotherInstancesArchives()
     {

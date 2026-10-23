@@ -455,7 +455,7 @@ public class BackupService
             onProgress?.Invoke("Syncing via RCON: save-all");
             var response = await rcon.ExecuteCommandAsync("save-all flush");
 
-            return response.Contains("saved", StringComparison.OrdinalIgnoreCase);
+            return SaveCompletedRegex.IsMatch(response);
         }
         catch (Exception ex)
         {
@@ -464,11 +464,22 @@ public class BackupService
         }
     }
 
-    private static void CreateWorldArchive(IReadOnlyList<WorldRoot> roots, string zipPath, IProgress<double>? progress)
+    internal static void CreateWorldArchive(IReadOnlyList<WorldRoot> roots, string zipPath, IProgress<double>? progress, ArchiveLimits? limits = null)
     {
+        limits ??= new ArchiveLimits();
+        long bytes = 0;
+        int entries = 0;
+        void CheckLimits(string name, long length)
+        {
+            bytes = checked(bytes + length);
+            if (++entries > limits.MaxEntries || bytes > limits.MaxBytes || name.Count(c => c is '/' or '\\') + 1 > limits.MaxDepth)
+                throw new InvalidDataException("World exceeds the archive safety limits. The previous backups have been preserved.");
+        }
+        byte[] layout = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(roots.Select(r => r.RelativePath).ToArray());
+        CheckLimits(".pocketmc-worlds.json", layout.Length);
         using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create);
         using (var manifest = archive.CreateEntry(".pocketmc-worlds.json").Open())
-            System.Text.Json.JsonSerializer.Serialize(manifest, roots.Select(r => r.RelativePath).ToArray());
+            manifest.Write(layout);
         foreach (var root in roots)
         {
             PathSafety.RequireNoLinks(root.DirectoryPath);
@@ -476,9 +487,13 @@ public class BackupService
             {
                 if (SkipFiles.Contains(Path.GetFileName(file))) continue;
                 using var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var entry = archive.CreateEntry(root.RelativePath + "/" + Path.GetRelativePath(root.DirectoryPath, file).Replace('\\', '/'), CompressionLevel.Fastest);
+                string name = root.RelativePath + "/" + Path.GetRelativePath(root.DirectoryPath, file).Replace('\\', '/');
+                long expectedLength = input.Length;
+                CheckLimits(name, expectedLength);
+                var entry = archive.CreateEntry(name, CompressionLevel.Fastest);
                 using var output = entry.Open();
                 input.CopyTo(output); // Any required-file failure aborts the entire candidate.
+                if (input.Position != expectedLength) throw new IOException($"World file changed while being backed up: {file}");
             }
         }
         progress?.Report(100);

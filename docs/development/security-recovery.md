@@ -10,6 +10,7 @@ This change addresses the 24 findings reviewed against commit `daacbd3`. It pres
 - Public-tunnel modes bind the origin to loopback and issue Secure cookies. LAN-only mode remains explicit HTTP access; use it only on a trusted network. File-manager and private-export permissions confer access to sensitive configuration and executable server content.
 - Backups include the configured Java world, sibling dimensions, and detected additional world roots. New archives contain a world-layout manifest. Custom backup folders can be shared: names and retention are scoped by immutable instance IDs.
 - An unreadable required world file aborts the backup. A partial candidate is never promoted. A checksum does not label a backup as restore-verified.
+- Backup creation and extraction share limits of 64 GiB uncompressed, 500,000 entries, and 64 path components. A backup exceeding these limits fails before promotion or retention; previous recovery points remain available.
 - Live Java backups require RCON and a confirmed `save-all flush`. Bedrock and PocketMine backups require an offline server until an engine-specific snapshot protocol is validated. An inability to resume saving is reported as a critical failure.
 - Restores and world imports use staging, durable rollback journals, and same-volume promotion. Nested legacy single-world archives are normalized to their actual world root. Existing legacy flat backups remain readable. Legacy Java backups do not contain missing dimensions retroactively.
 - Updates atomically commit artifacts and metadata with rollback. Each staging operation has a unique directory. Stopping during runtime setup cancels startup before a child can launch.
@@ -25,7 +26,7 @@ This change addresses the 24 findings reviewed against commit `daacbd3`. It pres
 | 2. Property injection | DTO validation and properties escaping | Real HTTP rejection; round-trip codec tests |
 | 3. Incomplete verified backups | Required-file failures abort; atomic candidate promotion; no restore-verification claim | Locked region regression |
 | 4. Missing world roots | Shared WorldInventory used by backup, export and primary-world resolution | Custom world + Paper dimensions |
-| 5. Unconfirmed live snapshot | Confirm RCON disable/flush; reject unsupported live modes; verify resume | Snapshot contract and offline regression coverage; native engine validation still needed |
+| 5. Unconfirmed live snapshot | Confirm RCON disable/flush; reject unsupported live modes; verify resume | Actual Java 1.21.4 start/RCON/live backup/restore/restart; unsupported engines require offline snapshots |
 | 6. Backup overlap/collision | Shared operation gate, unique names and ID-scoped retention | Two instances sharing one destination |
 | 7. Startup after Stop | Propagated cancellation and locked pre-launch check; conditional process removal | Delayed provisioning regression |
 | 8. Destructive world import | Stage replacement and durable rollback transaction | Multi-root failure and crash-journal recovery |
