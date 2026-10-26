@@ -1959,3 +1959,9 @@ if (createBackupBtn) {
   });
 }
 
+
+// Signing out revokes the server-side session, including open console connections.
+document.getElementById("logoutButton")?.addEventListener("click", async () => {
+  try { await api("/api/logout", { method: "POST" }); window.location.reload(); }
+  catch (error) { showSnackbar(formatFriendlyError(error), "error"); }
+});

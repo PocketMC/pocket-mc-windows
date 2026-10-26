@@ -845,7 +845,7 @@ namespace PocketMC.Desktop.Features.Setup
                 CustomBgPathLabel.Text = "PocketMC Default Wallpaper";
                 BtnUseDesktopBg.Visibility = Visibility.Visible;
                 CustomBgPlaceholderIcon.Visibility = Visibility.Collapsed;
-                
+
                 try
                 {
                     var bi = new System.Windows.Media.Imaging.BitmapImage();
@@ -2046,6 +2046,7 @@ namespace PocketMC.Desktop.Features.Setup
                     return;
                 }
 
+                using var maintenance = await new PocketMC.Application.Services.Instances.InstanceOperationCoordinator().BeginMaintenanceAsync();
                 bool playitWasRunning = _playitAgentService.IsRunning;
                 if (playitWasRunning)
                 {
@@ -2076,12 +2077,31 @@ namespace PocketMC.Desktop.Features.Setup
                             return;
                         }
 
+                        // Rewrite only paths contained in the old root; genuine external paths stay external.
+                        foreach (string metadataPath in (Directory.Exists(Path.Combine(targetPath, "servers")) ? Directory.EnumerateFiles(Path.Combine(targetPath, "servers"), ".pocket-mc.json", SearchOption.AllDirectories) : Array.Empty<string>()))
+                        {
+                            var metadata = System.Text.Json.JsonSerializer.Deserialize<PocketMC.Domain.Models.InstanceMetadata>(File.ReadAllText(metadataPath));
+                            if (metadata == null) continue;
+                            string? Relocate(string? value)
+                            {
+                                if (string.IsNullOrWhiteSpace(value) || !Path.IsPathRooted(value)) return value;
+                                string relative = Path.GetRelativePath(currentRoot, value);
+                                return PocketMC.Domain.Security.PathSafety.ValidateContainedPath(targetPath, relative) ?? value;
+                            }
+                            metadata.CustomJavaPath = Relocate(metadata.CustomJavaPath);
+                            metadata.CustomBackupDirectory = Relocate(metadata.CustomBackupDirectory);
+                            metadata.SimpleVoiceChatConfigPath = Relocate(metadata.SimpleVoiceChatConfigPath);
+                            PocketMC.Domain.Storage.FileUtils.AtomicWriteAllText(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata));
+                        }
                         // Update Settings
                         var settings = _settingsManager.Load();
                         settings.AppRootPath = targetPath;
                         _settingsManager.Save(settings);
                         _applicationState.ApplySettings(settings);
                         _registry.Refresh();
+
+                        if (!string.Equals(_settingsManager.Load().AppRootPath, targetPath, StringComparison.OrdinalIgnoreCase))
+                            throw new IOException("The new location could not be persisted. Original files have been preserved.");
 
                         // Try delete old directory
                         try

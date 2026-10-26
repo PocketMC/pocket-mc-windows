@@ -8,22 +8,26 @@ on:
     branches:
       - master
 
+concurrency:
+  group: pocketmc-publication
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
 jobs:
   release-build:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: windows-latest
     env:
-      DOTNET_VERSION: "8.0.x"
+      DOTNET_VERSION: "10.0.x"
       RUNTIME: win-x64
       APP_ID: PocketMC
 
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Parse Root Configuration
         id: config
@@ -63,7 +67,7 @@ jobs:
 
       - name: Install Velopack
         if: steps.check_channel.outputs.skip == 'false'
-        run: dotnet tool install -g vpk
+        run: dotnet tool install -g vpk --version 0.0.1298
 
       - name: Restore (win-x64 RID)
         if: steps.check_channel.outputs.skip == 'false'

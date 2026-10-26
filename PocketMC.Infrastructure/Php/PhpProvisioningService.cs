@@ -234,6 +234,9 @@ namespace PocketMC.Infrastructure.Php
             var def = PhpRuntimeResolver.GetDefinition(version);
             string displayName = def?.DisplayName ?? $"PHP {version}";
             string appRoot = _applicationState.GetRequiredAppRootPath();
+            using var operation = await new PocketMC.Application.Services.Instances.InstanceOperationCoordinator().AcquireAsync(Path.Combine(appRoot, "runtime"), cancellationToken: cancellationToken);
+            if (!string.Equals(appRoot, _applicationState.GetRequiredAppRootPath(), StringComparison.OrdinalIgnoreCase))
+                throw new OperationCanceledException("Application location changed during runtime preparation.");
             string runtimeDir = Path.Combine(appRoot, "runtime");
             string phpDir = Path.Combine(runtimeDir, $"php{version}");
             string tempZipPath = Path.Combine(runtimeDir, $"php{version}_temp.zip");

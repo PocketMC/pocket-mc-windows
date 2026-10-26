@@ -25,8 +25,8 @@ public class DownloaderService
     private static string? _cloudflaredExpectedSha256Override;
     public static string? CloudflaredExpectedSha256
     {
-        get => _cloudflaredExpectedSha256IsOverridden 
-            ? _cloudflaredExpectedSha256Override 
+        get => _cloudflaredExpectedSha256IsOverridden
+            ? _cloudflaredExpectedSha256Override
             : PocketMC.Infrastructure.Configuration.AppConfig.BinaryCloudflaredSha256;
         set
         {
@@ -63,6 +63,12 @@ public class DownloaderService
         CancellationToken cancellationToken = default)
     {
         string partialPath = destinationPath + ".partial";
+        string identityPath = partialPath + ".identity";
+        if (!File.Exists(identityPath) || File.ReadAllText(identityPath) != url)
+        {
+            TryDeleteFile(partialPath);
+            PocketMC.Domain.Storage.FileUtils.AtomicWriteAllText(identityPath, url);
+        }
         string? directory = Path.GetDirectoryName(destinationPath);
         if (!string.IsNullOrEmpty(directory))
         {
@@ -81,6 +87,8 @@ public class DownloaderService
                 using HttpClient client = _httpClientFactory.CreateClient(DownloadClientName);
                 long existingBytes = GetExistingPartialLength(partialPath);
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
+                // A digest binds resumed bytes to the requested object. Without one, restart.
+                if (existingBytes > 0 && string.IsNullOrEmpty(expectedHash)) { TryDeleteFile(partialPath); existingBytes = 0; }
                 if (existingBytes > 0)
                 {
                     request.Headers.Range = new RangeHeaderValue(existingBytes, null);
@@ -103,6 +111,11 @@ public class DownloaderService
                     response.EnsureSuccessStatusCode();
 
                     bool isResuming = existingBytes > 0 && response.StatusCode == HttpStatusCode.PartialContent;
+                    if (response.StatusCode == HttpStatusCode.PartialContent &&
+                        (response.Content.Headers.ContentRange?.From != existingBytes ||
+                         response.Content.Headers.ContentRange?.To is not long lastByte ||
+                         response.Content.Headers.ContentRange?.Length is not long objectLength || lastByte != objectLength - 1))
+                    { TryDeleteFile(partialPath); throw new InvalidDataException("The server returned an invalid download range."); }
                     if (existingBytes > 0 && !isResuming)
                     {
                         _logger.LogInformation("Resume is not supported for {Url}; restarting download from scratch.", url);
@@ -113,6 +126,7 @@ public class DownloaderService
                     await DownloadToPartialAsync(response, partialPath, existingBytes, progress, cancellationToken);
                 }
 
+                if (new FileInfo(partialPath).Length == 0) throw new InvalidDataException("Downloaded artifact is empty.");
                 if (!string.IsNullOrEmpty(expectedHash))
                 {
                     string hashType = NormalizeHashType(expectedHash, expectedHashType);
@@ -127,8 +141,10 @@ public class DownloaderService
                 }
 
                 await PromoteCompletedDownloadAsync(partialPath, destinationPath, cancellationToken);
+                TryDeleteFile(identityPath);
                 return;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex) when (IsRetryable(ex) && attempt < maxAttempts)
             {
                 lastException = ex;
@@ -372,6 +388,7 @@ public class DownloaderService
 
     private static bool IsRetryable(Exception ex)
     {
+        if (ex is InvalidDataException or CryptographicException) return false;
         if (ex is HttpRequestException httpRequestException &&
             httpRequestException.StatusCode is HttpStatusCode statusCode)
         {
@@ -450,6 +467,7 @@ public class DownloaderService
         }
 
         await fileStream.FlushAsync(cancellationToken);
+        if (totalBytes >= 0 && totalRead != totalBytes) throw new IOException("Downloaded artifact has an unexpected length.");
     }
 
     private static async Task PromoteCompletedDownloadAsync(string partialPath, string destinationPath, CancellationToken cancellationToken)
@@ -462,12 +480,7 @@ public class DownloaderService
 
             try
             {
-                if (File.Exists(destinationPath))
-                {
-                    File.Delete(destinationPath);
-                }
-
-                File.Move(partialPath, destinationPath, overwrite: true);
+                FileUtils.PromoteFile(partialPath, destinationPath);
                 return;
             }
             catch (Exception ex) when (attempt < maxPromotionAttempts && ex is IOException or UnauthorizedAccessException)
@@ -476,7 +489,7 @@ public class DownloaderService
             }
         }
 
-        File.Move(partialPath, destinationPath, overwrite: true);
+        FileUtils.PromoteFile(partialPath, destinationPath);
     }
 
     private static TimeSpan GetRetryDelay(int attempt) => attempt switch

@@ -36,7 +36,7 @@ namespace PocketMC.Domain.Models
         public double WallpaperTintOpacity { get; set; } = 0.72;
         public string? CurseForgeApiKey { get; set; }
 
-        // Telemetry
+        // Optional ongoing telemetry. The one-time installation/country report is required.
         public bool EnableTelemetry { get; set; } = true;
         public Guid? TelemetryClientId { get; set; }
         public bool HasReportedInstall { get; set; }

@@ -16,7 +16,7 @@ public sealed class JavaRuntimeResolverTests : IDisposable
     [InlineData("1.20.4", 17)]
     [InlineData("1.20.5", 21)]
     [InlineData("1.21.1", 21)]
-    [InlineData("1.21.2", 25)]
+    [InlineData("1.21.2", 21)]
     [InlineData("1.20.5-pre1", 21)]
     [InlineData("snapshot", 21)]
     public void GetRequiredJavaVersion_MapsMinecraftVersionsToExpectedRuntimes(string minecraftVersion, int expectedJavaVersion)

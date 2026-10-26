@@ -62,6 +62,12 @@ public class ServerProcessManager
         var instancePath = _registry.GetPath(meta.Id)
             ?? throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
 
+        if (InstanceFileTransaction.Recover(instancePath))
+        {
+            _registry.Refresh();
+            meta = _registry.GetById(meta.Id) ?? throw new InvalidOperationException("Recovered instance metadata could not be reloaded.");
+        }
+
         var serverProcess = new ServerProcess(
             meta.Id,
             _jobObject,
@@ -86,7 +92,7 @@ public class ServerProcessManager
         {
             OnInstanceStateChanged?.Invoke(meta.Id, state);
             if (state == ServerState.Stopped || state == ServerState.Crashed)
-                _activeProcesses.TryRemove(meta.Id, out _);
+                ((ICollection<KeyValuePair<Guid, ServerProcess>>)_activeProcesses).Remove(new(meta.Id, serverProcess));
         };
 
         serverProcess.OnServerCrashed += crashLog => OnServerCrashed?.Invoke(meta.Id, crashLog);
@@ -100,7 +106,7 @@ public class ServerProcessManager
         }
         catch
         {
-            _activeProcesses.TryRemove(meta.Id, out _);
+            ((ICollection<KeyValuePair<Guid, ServerProcess>>)_activeProcesses).Remove(new(meta.Id, serverProcess));
             serverProcess.Dispose();
             throw;
         }

@@ -28,10 +28,12 @@ public class CloudBackupUploadHistoryStore
     private readonly ILogger<CloudBackupUploadHistoryStore> _logger;
     private readonly object _lock = new();
 
-    public CloudBackupUploadHistoryStore(ILogger<CloudBackupUploadHistoryStore> logger)
+    public CloudBackupUploadHistoryStore(ILogger<CloudBackupUploadHistoryStore> logger) : this(logger, null) { }
+
+    public CloudBackupUploadHistoryStore(ILogger<CloudBackupUploadHistoryStore> logger, string? historyFilePath)
     {
         _logger = logger;
-        _historyFilePath = Path.Combine(
+        _historyFilePath = historyFilePath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "PocketMC",
             "cloud-backup-history.json");
@@ -84,8 +86,11 @@ public class CloudBackupUploadHistoryStore
 
     public void AddRecord(UploadHistoryRecord record)
     {
-        var records = Load();
-        records.Add(record);
-        Save(records);
+        lock (_lock)
+        {
+            var records = Load();
+            records.Add(record);
+            Save(records);
+        }
     }
 }

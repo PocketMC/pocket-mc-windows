@@ -48,11 +48,12 @@ public class JavaLaunchConfigurator
         CancellationToken cancellationToken = default)
     {
         int requiredJavaVersion = JavaRuntimeResolver.GetRequiredJavaVersion(meta);
-        string javaPath = await EnsureAndResolveJavaPathAsync(meta, requiredJavaVersion, appRootPath, onLog);
+        string javaPath = await EnsureAndResolveJavaPathAsync(meta, requiredJavaVersion, appRootPath, onLog, cancellationToken);
 
         // Forge/NeoForge auto-installation
         await _forgeInstaller.HandleInstallerBasedSetupAsync(meta, workingDir, javaPath, onLog, onStateChange, cancellationToken);
 
+        cancellationToken.ThrowIfCancellationRequested();
         var psi = new ProcessStartInfo
         {
             FileName = javaPath,
@@ -75,7 +76,7 @@ public class JavaLaunchConfigurator
         return psi;
     }
 
-    private async Task<string> EnsureAndResolveJavaPathAsync(InstanceMetadata meta, int requiredVersion, string appRootPath, Action<string> onLog)
+    private async Task<string> EnsureAndResolveJavaPathAsync(InstanceMetadata meta, int requiredVersion, string appRootPath, Action<string> onLog, CancellationToken cancellationToken)
     {
         bool expectsBundled = string.IsNullOrWhiteSpace(meta.CustomJavaPath) ||
                               JavaRuntimeResolver.IsBundledJavaPath(meta.CustomJavaPath, requiredVersion, appRootPath);
@@ -86,7 +87,7 @@ public class JavaLaunchConfigurator
         {
             if (!_javaProvisioning.IsJavaVersionPresent(requiredVersion))
             {
-                bool confirmed = await ConfirmJavaDownloadPrompt(requiredVersion, meta.Name);
+                bool confirmed = await ConfirmJavaDownloadPrompt(requiredVersion, meta.Name).WaitAsync(cancellationToken);
                 if (!confirmed)
                 {
                     throw new InvalidOperationException($"Startup aborted: Java {requiredVersion} is required but was not downloaded.");
@@ -95,7 +96,7 @@ public class JavaLaunchConfigurator
                 onLog($"[PocketMC] Required Java {requiredVersion} is missing. Starting download...");
                 try
                 {
-                    await _javaProvisioning.EnsureJavaAsync(requiredVersion, isManualUserTriggered: true);
+                    await _javaProvisioning.EnsureJavaAsync(requiredVersion, isManualUserTriggered: true, cancellationToken: cancellationToken).WaitAsync(cancellationToken);
                     onLog($"[PocketMC] Java {requiredVersion} installed successfully.");
                 }
                 catch (Exception ex)

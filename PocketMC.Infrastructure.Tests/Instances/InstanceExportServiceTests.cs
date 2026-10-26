@@ -57,6 +57,7 @@ public sealed class InstanceExportServiceTests : IDisposable
                 MinecraftVersion = "1.20.4"
             },
             InstancePath = instanceRoot,
+            IncludeSensitiveConfiguration = true,
             DestinationZipPath = exportPath
         });
 
@@ -124,6 +125,7 @@ public sealed class InstanceExportServiceTests : IDisposable
                 MinecraftVersion = "1.20.4"
             },
             InstancePath = instanceRoot,
+            IncludeSensitiveConfiguration = true,
             DestinationZipPath = exportPath
         });
 
@@ -187,6 +189,7 @@ public sealed class InstanceExportServiceTests : IDisposable
                 MinecraftVersion = "1.20.4"
             },
             InstancePath = instanceRoot,
+            IncludeSensitiveConfiguration = true,
             DestinationZipPath = exportPath
         });
 
@@ -237,6 +240,7 @@ public sealed class InstanceExportServiceTests : IDisposable
         {
             Metadata = sourceMetadata,
             InstancePath = instanceRoot,
+            IncludeSensitiveConfiguration = true,
             DestinationZipPath = exportPath
         });
 
@@ -298,6 +302,7 @@ public sealed class InstanceExportServiceTests : IDisposable
                 MinecraftVersion = "1.20.80"
             },
             InstancePath = instanceRoot,
+            IncludeSensitiveConfiguration = true,
             DestinationZipPath = exportPath
         });
 
@@ -368,6 +373,7 @@ public sealed class InstanceExportServiceTests : IDisposable
                 MinecraftVersion = "1.20.4"
             },
             InstancePath = instanceRoot,
+            IncludeSensitiveConfiguration = true,
             DestinationZipPath = exportPath
         });
 
@@ -428,7 +434,7 @@ public sealed class InstanceExportServiceTests : IDisposable
 
     private static void WriteFile(string root, string relativePath, string content)
     {
-        string path = Path.Combine(root, relativePath);
+        string path = Path.Combine(root, relativePath.Replace('\\', Path.DirectorySeparatorChar));
         string? directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory))
         {

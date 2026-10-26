@@ -113,13 +113,13 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             return;
         }
 
-        // Attempt 1: ip-api.com
+        // Required for the one-time installation report; also reused by optional heartbeats.
         try
         {
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(5);
-            var res = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("http://ip-api.com/json/?fields=country");
-            if (res.TryGetProperty("country", out var cc) && cc.ValueKind == System.Text.Json.JsonValueKind.String)
+            var res = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("https://ipapi.co/json/", _cts.Token);
+            if (res.TryGetProperty("country_name", out var cc) && cc.ValueKind == System.Text.Json.JsonValueKind.String)
             {
                 var country = cc.GetString()?.Trim();
                 if (!string.IsNullOrWhiteSpace(country) && !country.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
@@ -130,9 +130,10 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
                 }
             }
         }
+        catch (OperationCanceledException) when (_cts.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Failed to fetch country from ip-api.");
+            _logger.LogDebug(ex, "Failed to fetch country from ipapi.co.");
         }
 
         // Attempt 2: HTTPS fallback via ipapi.co
@@ -140,13 +141,14 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         {
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(5);
-            var country = await client.GetStringAsync("https://ipapi.co/country_name/");
+            var country = await client.GetStringAsync("https://ipapi.co/country_name/", _cts.Token);
             if (!string.IsNullOrWhiteSpace(country) && !country.Contains("error", StringComparison.OrdinalIgnoreCase))
             {
                 _cachedCountry = country.Trim();
                 _hasFetchedCountry = true;
             }
         }
+        catch (OperationCanceledException) when (_cts.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Failed to fetch country from ipapi.co fallback.");
@@ -155,29 +157,15 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
 
     private async Task ReportingLoopAsync()
     {
-        // 0. Fetch Country Location
-        await EnsureCountryFetchedAsync();
-
-        // 1. Check/Report one-time installation
-        await EnsureInstallReportedAsync();
-
-        // 2. Loop every 5 minutes for heartbeat telemetry
+        // Attempt the required installation report immediately, retrying failures on later passes.
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
         while (!_cts.Token.IsCancellationRequested)
         {
             try
             {
-                if (_cachedCountry == "Unknown")
-                {
-                    await EnsureCountryFetchedAsync();
-                }
-
-                var settings = _settingsManager.Load();
-                if (settings.EnableTelemetry)
-                {
-                    await SendHeartbeatAsync(settings);
-                }
+                await ReportOnceAsync();
             }
+            catch (OperationCanceledException) when (_cts.IsCancellationRequested) { break; }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to run periodic telemetry heartbeat.");
@@ -191,6 +179,20 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             {
                 break;
             }
+        }
+    }
+
+    internal async Task ReportOnceAsync()
+    {
+        _cts.Token.ThrowIfCancellationRequested();
+        await EnsureInstallReportedAsync();
+
+        // The usage setting controls ongoing reports, independently of the installation report.
+        var settings = _settingsManager.Load();
+        if (settings.EnableTelemetry)
+        {
+            await EnsureCountryFetchedAsync();
+            await SendHeartbeatAsync(settings);
         }
     }
 
@@ -238,9 +240,11 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(15);
 
-            var response = await PostTelemetryAsJsonAsync(client, "/api/telemetry/install", payload, _cts.Token);
+            using var response = await PostTelemetryAsJsonAsync(client, "/api/telemetry/install", payload, _cts.Token);
             if (response.IsSuccessStatusCode)
             {
+                // Preserve preferences changed while the network request was in flight.
+                settings = _settingsManager.Load();
                 settings.HasReportedInstall = true;
                 _settingsManager.Save(settings);
                 _logger.LogInformation("Installation/upgrade reported successfully.");
@@ -258,6 +262,7 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
 
     private async Task SendHeartbeatAsync(AppSettings settings, bool isAppClosed = false)
     {
+        if (!_settingsManager.Load().EnableTelemetry) return;
         try
         {
             var activeProcesses = isAppClosed ? new System.Collections.Generic.List<ServerProcess>() : _processManager.ActiveProcesses.Values
@@ -360,33 +365,33 @@ public sealed class TelemetryService : ITelemetryService, IDisposable
         }
     }
 
-        private async Task<HttpResponseMessage> PostTelemetryAsJsonAsync<TValue>(HttpClient client, string path, TValue payload, CancellationToken ct = default)
+    private async Task<HttpResponseMessage> PostTelemetryAsJsonAsync<TValue>(HttpClient client, string path, TValue payload, CancellationToken ct = default)
+    {
+        var proxies = AppConfig.TelemetryProxies;
+        Exception? lastException = null;
+
+        foreach (var proxy in proxies)
         {
-            var proxies = AppConfig.TelemetryProxies;
-            Exception? lastException = null;
+            if (string.IsNullOrWhiteSpace(proxy)) continue;
 
-            foreach (var proxy in proxies)
+            try
             {
-                if (string.IsNullOrWhiteSpace(proxy)) continue;
+                var response = await client.PostAsJsonAsync($"{proxy.TrimEnd('/')}{path}", payload, ct);
+                if (response.IsSuccessStatusCode)
+                    return response;
 
-                try
-                {
-                    var response = await client.PostAsJsonAsync($"{proxy.TrimEnd('/')}{path}", payload, ct);
-                    if (response.IsSuccessStatusCode)
-                        return response;
-                    
-                    if (proxy == proxies[proxies.Count - 1]) return response;
-                    response.Dispose();
-                }
-                catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
-                {
-                    _logger.LogDebug(ex, "Proxy {Proxy} request failed, trying next...", proxy);
-                    lastException = ex;
-                }
+                if (proxy == proxies[proxies.Count - 1]) return response;
+                response.Dispose();
             }
-
-            if (lastException != null) throw lastException;
-            throw new HttpRequestException("All telemetry proxies failed.");
+            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
+            {
+                _logger.LogDebug(ex, "Proxy {Proxy} request failed, trying next...", proxy);
+                lastException = ex;
+            }
         }
+
+        if (lastException != null) throw lastException;
+        throw new HttpRequestException("All telemetry proxies failed.");
+    }
 }
 

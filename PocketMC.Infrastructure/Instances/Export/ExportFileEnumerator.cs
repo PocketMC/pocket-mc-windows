@@ -1,3 +1,5 @@
+using PocketMC.Application.Services.Instances;
+using PocketMC.Domain.Storage;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -71,9 +73,9 @@ public class ExportFileEnumerator
         bool isJava,
         bool includeWorlds,
         List<string> skippedFiles,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, bool includeSensitiveConfiguration = false)
     {
-        foreach (ExportFile file in EnumerateExportFiles(instanceRoot, isJava, includeWorlds, skippedFiles, cancellationToken))
+        foreach (ExportFile file in EnumerateExportFiles(instanceRoot, isJava, includeWorlds, skippedFiles, cancellationToken, includeSensitiveConfiguration))
         {
             yield return file;
             await Task.Yield();
@@ -85,25 +87,29 @@ public class ExportFileEnumerator
         bool isJava,
         bool includeWorlds,
         List<string> skippedFiles,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool includeSensitiveConfiguration = false)
     {
         string[] rootFiles = isJava ? JavaRootFiles : BedrockRootFiles;
         foreach (string fileName in rootFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
             string path = Path.Combine(instanceRoot, fileName);
+            if (!includeSensitiveConfiguration && fileName is "ops.json" or "whitelist.json" or "banned-players.json" or "banned-ips.json") continue;
             if (File.Exists(path) && ShouldIncludeFile(path, isJava))
             {
                 yield return CreateExportFile(instanceRoot, path);
             }
         }
 
-        string[] directories = isJava ? JavaDirectories : BedrockDirectories;
+        var metadata = new PocketMC.Domain.Models.InstanceMetadata { ServerType = isJava ? "Vanilla" : "Bedrock" };
+        var worldDirectories = isJava ? WorldInventory.Resolve(instanceRoot, metadata).Select(r => r.RelativePath).ToArray() : new[] { "worlds" };
+        string[] directories = (isJava ? JavaDirectories.Where(d => !IsWorldDirectory(d, true)) : BedrockDirectories.Where(d => d != "worlds"))
+            .Concat(includeWorlds ? worldDirectories : Array.Empty<string>()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         foreach (string directoryName in directories)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!includeWorlds && IsWorldDirectory(directoryName, isJava))
+            if ((!includeSensitiveConfiguration && directoryName == "config") || (!includeWorlds && IsWorldDirectory(directoryName, isJava)))
             {
                 continue;
             }
@@ -114,12 +120,14 @@ public class ExportFileEnumerator
                 continue;
             }
 
-            foreach (string file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            foreach (string file in FileUtils.EnumerateFilesNoLinks(directory))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string relativePath = Path.GetRelativePath(instanceRoot, file);
 
-                if (ShouldSkipFile(file, isJava))
+                bool addonConfiguration = isJava && (directoryName == "plugins" || directoryName == "mods") &&
+                    !file.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) && !file.EndsWith(".jar.disabled", StringComparison.OrdinalIgnoreCase);
+                if (ShouldSkipFile(file, isJava) || (!includeSensitiveConfiguration && addonConfiguration))
                 {
                     skippedFiles.Add(ToPortableRelativePath(relativePath));
                     continue;
@@ -135,11 +143,11 @@ public class ExportFileEnumerator
         bool isJava,
         bool includeWorlds,
         List<string> skippedFiles,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool includeSensitiveConfiguration = false)
     {
         long totalBytes = 0;
 
-        foreach (ExportFile file in EnumerateExportFiles(instanceRoot, isJava, includeWorlds, skippedFiles, cancellationToken))
+        foreach (ExportFile file in EnumerateExportFiles(instanceRoot, isJava, includeWorlds, skippedFiles, cancellationToken, includeSensitiveConfiguration))
         {
             totalBytes += file.SizeBytes;
         }

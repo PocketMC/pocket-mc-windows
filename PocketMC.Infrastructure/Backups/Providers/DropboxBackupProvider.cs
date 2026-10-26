@@ -194,7 +194,7 @@ public class DropboxBackupProvider : ICloudBackupProvider
             string sanitizedInstance = CloudPathSanitizer.SanitizeFolderName(request.InstanceName);
             string safeName = CloudPathSanitizer.SanitizeFolderName(request.BackupFileName);
 
-            string remotePath = $"/{sanitizedInstance}-{request.InstanceId}/{safeName}";
+            string remotePath = $"/{request.InstanceId}/{safeName}";
 
             var fileInfo = new FileInfo(request.LocalZipPath);
             long totalBytes = fileInfo.Length;
@@ -256,32 +256,30 @@ public class DropboxBackupProvider : ICloudBackupProvider
         var client = await GetClientAsync(ct);
         if (client == null) return Array.Empty<CloudRemoteBackupItem>();
 
-        string sanitizedInstance = CloudPathSanitizer.SanitizeFolderName(instanceName);
-        string remotePath = $"/{sanitizedInstance}-{instanceId}";
-
-        try
+        var results = new List<CloudRemoteBackupItem>();
+        // Discover both stable-ID folders and all legacy name-ID folders, including old names.
+        var folders = await client.Files.ListFolderAsync("");
+        var paths = new List<string>();
+        while (true)
         {
-            var list = await client.Files.ListFolderAsync(remotePath);
-            var results = new List<CloudRemoteBackupItem>();
-
-            foreach (var item in list.Entries.Where(i => i.IsFile))
+            paths.AddRange(folders.Entries.Where(e => e.IsFolder && (e.Name == instanceId.ToString() || e.Name.EndsWith("-" + instanceId, StringComparison.OrdinalIgnoreCase))).Select(e => e.PathLower));
+            if (!folders.HasMore) break;
+            ct.ThrowIfCancellationRequested();
+            folders = await client.Files.ListFolderContinueAsync(folders.Cursor);
+        }
+        foreach (string path in paths)
+        {
+            var page = await client.Files.ListFolderAsync(path);
+            while (true)
             {
-                results.Add(new CloudRemoteBackupItem
-                {
-                    Provider = ProviderType,
-                    ProviderFileId = item.AsFile.Id,
-                    FileName = item.Name,
-                    RemotePath = item.PathDisplay,
-                    SizeBytes = (long)item.AsFile.Size,
-                    CreatedUtc = item.AsFile.ClientModified
-                });
+                foreach (var item in page.Entries.Where(i => i.IsFile))
+                    results.Add(new CloudRemoteBackupItem { Provider = ProviderType, ProviderFileId = item.AsFile.Id, FileName = item.Name, RemotePath = item.PathDisplay, SizeBytes = (long)item.AsFile.Size, CreatedUtc = item.AsFile.ClientModified });
+                if (!page.HasMore) break;
+                ct.ThrowIfCancellationRequested();
+                page = await client.Files.ListFolderContinueAsync(page.Cursor);
             }
-            return results;
         }
-        catch (ApiException<ListFolderError> ex) when (ex.ErrorResponse.IsPath && ex.ErrorResponse.AsPath.Value.IsNotFound)
-        {
-            return Array.Empty<CloudRemoteBackupItem>();
-        }
+        return results;
     }
 
     public async Task DeleteBackupAsync(string providerFileId, CancellationToken ct)
@@ -298,14 +296,14 @@ public class DropboxBackupProvider : ICloudBackupProvider
 
         using var response = await client.Files.DownloadAsync(providerFileId);
         long totalSize = (long)response.Response.Size;
-        
+
         using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
         using var downloadStream = await response.GetContentAsStreamAsync();
-        
+
         var buffer = new byte[81920];
         int bytesRead;
         long totalRead = 0;
-        
+
         while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
         {
             await stream.WriteAsync(buffer, 0, bytesRead, ct);

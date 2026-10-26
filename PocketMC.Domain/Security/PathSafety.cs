@@ -49,10 +49,36 @@ namespace PocketMC.Domain.Security
                 return null;
             }
 
-            string root = EnsureTrailingDirectorySeparator(Path.GetFullPath(rootDirectory));
+            try
+            {
+                string root = EnsureTrailingDirectorySeparator(Path.GetFullPath(rootDirectory));
+                string portable = relativePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+                string resolved = Path.GetFullPath(Path.Combine(rootDirectory, portable));
+                return resolved.StartsWith(root, GetPathComparison()) && !HasReparsePoint(resolved) ? resolved : null;
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                return null;
+            }
+        }
 
-            string resolved = Path.GetFullPath(Path.Combine(rootDirectory, relativePath));
-            return resolved.StartsWith(root, GetPathComparison()) ? resolved : null;
+        public static bool HasReparsePoint(string path)
+        {
+            for (string? current = Path.GetFullPath(path); current != null; current = Path.GetDirectoryName(current))
+            {
+                try
+                {
+                    if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0) return true;
+                }
+                catch (FileNotFoundException) { }
+                catch (DirectoryNotFoundException) { }
+            }
+            return false;
+        }
+
+        public static void RequireNoLinks(string path)
+        {
+            if (HasReparsePoint(path)) throw new InvalidDataException("Symbolic links and reparse points are not allowed in managed file operations.");
         }
 
         private static bool IsUnsafeRelativePath(string relativePath)
@@ -74,7 +100,14 @@ namespace PocketMC.Domain.Security
                     return true;
                 }
 
-                if (segment.Contains(':', StringComparison.Ordinal))
+                string stem = segment.Split('.')[0];
+                if (segment.Any(c => char.IsControl(c) || "<>:\"|?*".Contains(c)) ||
+                    segment.EndsWith(' ') || segment.EndsWith('.') ||
+                    stem.Equals("CON", StringComparison.OrdinalIgnoreCase) ||
+                    stem.Equals("PRN", StringComparison.OrdinalIgnoreCase) ||
+                    stem.Equals("AUX", StringComparison.OrdinalIgnoreCase) ||
+                    stem.Equals("NUL", StringComparison.OrdinalIgnoreCase) ||
+                    (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || stem.StartsWith("LPT", StringComparison.OrdinalIgnoreCase)) && stem[3] is >= '1' and <= '9'))
                 {
                     return true;
                 }

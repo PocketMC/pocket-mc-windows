@@ -5,6 +5,8 @@ namespace PocketMC.RemoteControl.Services;
 
 public sealed class RemoteAuthenticationService
 {
+    public static string CredentialVersion(string? hash, string? username) =>
+        Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes($"{username}:{hash}")));
     private const int Iterations = 100000;
     private const int SaltSize = 16;
     private const int HashSize = 32;

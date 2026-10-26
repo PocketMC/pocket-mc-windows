@@ -45,7 +45,7 @@ public sealed class InstanceArtifactStager
         ArgumentNullException.ThrowIfNull(plan);
 
         // Simple staging directory inside server dir
-        string stagingDirectory = Path.Combine(plan.ServerDir, "pocketmc-staging");
+        string stagingDirectory = Path.Combine(plan.ServerDir, $".pocketmc-staging-{plan.OperationId:N}-{Guid.NewGuid():N}");
         if (Directory.Exists(stagingDirectory))
         {
             await FileUtils.CleanDirectoryAsync(stagingDirectory, cancellationToken);
@@ -58,7 +58,7 @@ public sealed class InstanceArtifactStager
             ?? throw new InvalidOperationException($"Server artifact file name '{plan.ServerArtifactFileName}' is invalid.");
 
         string actualLoaderVersion = await DownloadServerArtifactAsync(plan, serverArtifactPath, progress, cancellationToken);
-        
+
         if (!string.IsNullOrEmpty(actualLoaderVersion) && string.IsNullOrEmpty(plan.TargetMetadata.LoaderVersion))
         {
             plan.TargetMetadata.LoaderVersion = actualLoaderVersion;

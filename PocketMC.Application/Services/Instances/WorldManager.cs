@@ -28,10 +28,12 @@ namespace PocketMC.Application.Services.Instances;
 public class WorldManager
 {
     private readonly ILogger<WorldManager> _logger;
+    private readonly InstanceOperationCoordinator _operations;
 
-    public WorldManager(ILogger<WorldManager> logger)
+    public WorldManager(ILogger<WorldManager> logger, InstanceOperationCoordinator? operations = null)
     {
         _logger = logger;
+        _operations = operations ?? new();
     }
 
     /// <summary>
@@ -55,6 +57,9 @@ public class WorldManager
         Action<double, string>? onDetailedProgress = null)
     {
         ValidateArchiveExtension(archivePath);
+        string instanceRoot = InstanceOperationCoordinator.FindInstanceRoot(targetWorldPath);
+        using var operation = await _operations.AcquireAsync(instanceRoot, requiresStopped: true);
+        InstanceFileTransaction.Recover(instanceRoot);
 
         var tempDir = Path.Combine(Path.GetTempPath(), "PocketMC", $"Extraction-{Guid.NewGuid()}");
 
@@ -88,16 +93,16 @@ public class WorldManager
                 Directory.CreateDirectory(parentDir);
             }
 
-            // Clean existing world directory
-            if (Directory.Exists(targetWorldPath))
+            string staged = Path.Combine(instanceRoot, $".world-import-{Guid.NewGuid():N}");
+            try
             {
-                onDetailedProgress?.Invoke(80.0, "Removing old world files...");
-                await FileUtils.CleanDirectoryAsync(targetWorldPath);
+                onDetailedProgress?.Invoke(80.0, "Preparing replacement world...");
+                await FileUtils.CopyDirectoryAsync(worldRoot, staged);
+                onDetailedProgress?.Invoke(85.0, "Installing world...");
+                string relative = Path.GetRelativePath(instanceRoot, targetWorldPath);
+                InstanceFileTransaction.Commit(instanceRoot, new[] { new InstanceFileTransaction.Replacement(staged, relative) });
             }
-
-            // Copy the true world root to the target
-            onDetailedProgress?.Invoke(85.0, "Installing world...");
-            await FileUtils.CopyDirectoryAsync(worldRoot, targetWorldPath);
+            finally { if (Directory.Exists(staged)) await FileUtils.CleanDirectoryAsync(staged); }
 
             onDetailedProgress?.Invoke(100.0, "World imported successfully!");
         }

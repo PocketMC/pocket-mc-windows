@@ -33,7 +33,7 @@ public class ExportZipWriter
         long totalBytes,
         IAsyncEnumerable<ExportFile> files,
         IProgress<InstanceTransferProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool includeSensitiveConfiguration = false)
     {
         long copiedBytes = 0;
 
@@ -48,7 +48,7 @@ public class ExportZipWriter
         using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: false))
         {
             await AddJsonEntryAsync(archive, "manifest.json", manifest, cancellationToken).ConfigureAwait(false);
-            await AddMetadataEntryAsync(archive, metadata, instanceRoot, _applicationState, cancellationToken).ConfigureAwait(false);
+            await AddMetadataEntryAsync(archive, metadata, instanceRoot, _applicationState, cancellationToken, includeSensitiveConfiguration).ConfigureAwait(false);
             await AddIconEntryAsync(archive, instanceRoot, cancellationToken).ConfigureAwait(false);
 
             await foreach (ExportFile file in files.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -56,7 +56,20 @@ public class ExportZipWriter
                 string entryName = ToZipEntryName(Path.Combine("server", file.RelativePath));
                 Report(progress, $"Exporting {file.RelativePath}...", CalculateProgress(copiedBytes, totalBytes), file.RelativePath);
 
-                await AddFileEntryAsync(archive, file.FullPath, entryName, cancellationToken).ConfigureAwait(false);
+                if (!includeSensitiveConfiguration && file.RelativePath.Equals("server.properties", StringComparison.OrdinalIgnoreCase))
+                {
+                    var properties = PocketMC.Application.Services.Instances.ServerPropertiesParser.Read(file.FullPath);
+                    foreach (string key in properties.Keys.Where(k => k.Contains("password", StringComparison.OrdinalIgnoreCase) || k.Contains("secret", StringComparison.OrdinalIgnoreCase) || k.Contains("token", StringComparison.OrdinalIgnoreCase)).ToArray()) properties.Remove(key);
+                    properties["enable-rcon"] = "false";
+                    string temporary = Path.Combine(Path.GetTempPath(), $"pocketmc-properties-{Guid.NewGuid():N}");
+                    try
+                    {
+                        PocketMC.Application.Services.Instances.ServerPropertiesParser.Write(temporary, properties);
+                        await AddFileEntryAsync(archive, temporary, entryName, cancellationToken).ConfigureAwait(false);
+                    }
+                    finally { File.Delete(temporary); }
+                }
+                else await AddFileEntryAsync(archive, file.FullPath, entryName, cancellationToken).ConfigureAwait(false);
                 copiedBytes += file.SizeBytes;
             }
         }
@@ -82,9 +95,9 @@ public class ExportZipWriter
         InstanceMetadata metadata,
         string instanceRoot,
         ApplicationState applicationState,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool includeSensitiveConfiguration)
     {
-        InstanceMetadata portableMetadata = await CreatePortableMetadataSnapshotAsync(metadata, instanceRoot, applicationState, cancellationToken)
+        InstanceMetadata portableMetadata = await CreatePortableMetadataSnapshotAsync(metadata, instanceRoot, applicationState, cancellationToken, includeSensitiveConfiguration)
             .ConfigureAwait(false);
         await AddJsonEntryAsync(archive, ExportedMetadataFileName, portableMetadata, cancellationToken).ConfigureAwait(false);
     }
@@ -93,7 +106,7 @@ public class ExportZipWriter
         InstanceMetadata requestMetadata,
         string instanceRoot,
         ApplicationState applicationState,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool includeSensitiveConfiguration)
     {
         InstanceMetadata source = requestMetadata;
         string metadataPath = Path.Combine(instanceRoot, SourceMetadataFileName);
@@ -137,6 +150,11 @@ public class ExportZipWriter
         snapshot.CustomJavaPath = MakePathPortable(snapshot.CustomJavaPath, appRoot);
         snapshot.SimpleVoiceChatConfigPath = MakePathPortable(snapshot.SimpleVoiceChatConfigPath, appRoot);
         snapshot.CustomBackupDirectory = null;
+        if (!includeSensitiveConfiguration)
+        {
+            snapshot.CustomJavaPath = null;
+            snapshot.AdvancedJvmArgs = string.Empty;
+        }
 
         return snapshot;
     }

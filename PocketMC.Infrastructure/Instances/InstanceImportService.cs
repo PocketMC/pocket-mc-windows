@@ -190,6 +190,7 @@ public sealed class InstanceImportService : IInstanceImportService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        using var operation = await new InstanceOperationCoordinator().AcquireAsync(Path.Combine(_applicationState.GetRequiredAppRootPath(), ".import-operation"), cancellationToken: cancellationToken);
 
         InstanceImportStagingResult? stagingResult = null;
         bool promoted = false;
@@ -1363,6 +1364,8 @@ public sealed class InstanceImportService : IInstanceImportService
         if (request == null)
             throw new ArgumentNullException(nameof(request));
 
+        using var operation = await new InstanceOperationCoordinator().AcquireAsync(Path.Combine(_applicationState.GetRequiredAppRootPath(), ".import-operation"), cancellationToken: cancellationToken);
+
         string sourceFolderPath = request.SourceFolderPath;
         string requestedName = request.RequestedName;
         string serverType = request.ServerType;
@@ -1438,7 +1441,7 @@ public sealed class InstanceImportService : IInstanceImportService
                 if (!File.Exists(serverJarPath))
                 {
                     var rootJars = Directory.GetFiles(destinationPath, "*.jar", SearchOption.TopDirectoryOnly);
-                    
+
                     // Filter out installers
                     var candidateJars = rootJars
                         .Where(f => !Path.GetFileName(f).Contains("installer", StringComparison.OrdinalIgnoreCase))
@@ -1459,7 +1462,7 @@ public sealed class InstanceImportService : IInstanceImportService
                         }
                         else if (serverType.Equals("Vanilla", StringComparison.OrdinalIgnoreCase))
                         {
-                            targetJar = candidateJars.FirstOrDefault(f => Path.GetFileName(f).Contains("vanilla", StringComparison.OrdinalIgnoreCase) || 
+                            targetJar = candidateJars.FirstOrDefault(f => Path.GetFileName(f).Contains("vanilla", StringComparison.OrdinalIgnoreCase) ||
                                                                          Path.GetFileName(f).Contains("minecraft_server", StringComparison.OrdinalIgnoreCase));
                         }
 
@@ -1587,7 +1590,7 @@ public sealed class InstanceImportService : IInstanceImportService
             cancellationToken.ThrowIfCancellationRequested();
             string relativePath = Path.GetRelativePath(sourceDir, dirPath);
             Directory.CreateDirectory(Path.Combine(targetDir, relativePath));
-            
+
             completedItems++;
             if (totalItems > 0 && progress != null)
             {

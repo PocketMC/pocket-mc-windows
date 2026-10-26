@@ -46,6 +46,8 @@ public sealed class RemoteDashboardHost
     private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, bool> _activeBackups = new();
     private readonly SemaphoreSlim _startGate = new(1, 1);
     private WebApplication? _app;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTimeOffset> _revokedSessions = new();
+    private readonly InstanceOperationCoordinator _operations = new();
 
     public RemoteDashboardHost(
         ApplicationState applicationState,
@@ -94,7 +96,7 @@ public sealed class RemoteDashboardHost
             }
 
             RemoteControlSettings settings = _applicationState.Settings.RemoteControl;
-            string bindAddress = "0.0.0.0";
+            string bindAddress = settings.AccessMode == RemoteAccessMode.LanOnly ? "0.0.0.0" : "127.0.0.1";
 
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -120,6 +122,7 @@ public sealed class RemoteDashboardHost
                 {
                     options.Cookie.Name = "PocketMCRemoteAuth";
                     options.Cookie.HttpOnly = true;
+                    options.Cookie.SecurePolicy = settings.AccessMode == RemoteAccessMode.LanOnly ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
                     options.Cookie.SameSite = SameSiteMode.Strict;
                     options.ExpireTimeSpan = TimeSpan.FromHours(24);
                     options.Events.OnRedirectToLogin = context =>
@@ -129,25 +132,7 @@ public sealed class RemoteDashboardHost
                     };
                     options.Events.OnValidatePrincipal = context =>
                     {
-                        var settings = _applicationState.Settings.RemoteControl;
-                        var expectedStamp = settings.SecurityStamp;
-                        var actualStamp = context.Principal?.FindFirstValue("SecurityStamp");
-                        if (actualStamp != expectedStamp)
-                        {
-                            context.RejectPrincipal();
-                            return Task.CompletedTask;
-                        }
-
-                        var userId = context.Principal?.FindFirstValue("UserId");
-                        if (userId != null && userId != "Admin")
-                        {
-                            bool userExists = settings.Users?.Any(u => u.Id == userId) ?? false;
-                            if (!userExists)
-                            {
-                                context.RejectPrincipal();
-                            }
-                        }
-
+                        if (!IsSessionValid(context.Principal)) context.RejectPrincipal();
                         return Task.CompletedTask;
                     };
                 });
@@ -213,22 +198,22 @@ public sealed class RemoteDashboardHost
         {
             FileProvider = new EmbeddedFileProvider(typeof(RemoteDashboardHost).Assembly, "PocketMC.RemoteControl.Web"),
             RequestPath = "/remote",
-                ContentTypeProvider = new FileExtensionContentTypeProvider(),
-                OnPrepareResponse = ctx =>
+            ContentTypeProvider = new FileExtensionContentTypeProvider(),
+            OnPrepareResponse = ctx =>
+            {
+                var path = ctx.Context.Request.Path.Value ?? "";
+                if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase) || path.EndsWith("/", StringComparison.OrdinalIgnoreCase))
                 {
-                    var path = ctx.Context.Request.Path.Value ?? "";
-                    if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase) || path.EndsWith("/", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Require revalidation for HTML entry points so changes are picked up immediately
-                        ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
-                    }
-                    else
-                    {
-                        // Cache other static assets (JS, CSS, images) for up to 1 day, easily bypassed via browser force-reload
-                        ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=86400";
-                    }
+                    // Require revalidation for HTML entry points so changes are picked up immediately
+                    ctx.Context.Response.Headers["Cache-Control"] = "no-cache";
                 }
-            });
+                else
+                {
+                    // Cache other static assets (JS, CSS, images) for up to 1 day, easily bypassed via browser force-reload
+                    ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+                }
+            }
+        });
 
         app.MapGet("/", () => Results.Redirect("/remote/index.html"));
         app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
@@ -251,11 +236,16 @@ public sealed class RemoteDashboardHost
                     return Results.Unauthorized();
                 }
             }
-            return await next(context);
+            try { return await next(context); }
+            catch (JsonException) { return Results.BadRequest(new { error = "Invalid JSON payload." }); }
+            catch (InvalidDataException ex) { return Results.BadRequest(new { error = ex.Message }); }
+            catch (ArgumentException) { return Results.BadRequest(new { error = "Invalid request value." }); }
+            catch (InvalidOperationException ex) { return Results.Conflict(new { error = ex.Message }); }
         });
 
         api.MapPost("/login", async (HttpContext context) =>
         {
+            foreach (var expired in _revokedSessions.Where(p => p.Value < DateTimeOffset.UtcNow)) _revokedSessions.TryRemove(expired.Key, out _);
             var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             if (!_requestLimiter.TryConsume("login:remote", clientIp, 5, TimeSpan.FromMinutes(1)))
             {
@@ -279,6 +269,8 @@ public sealed class RemoteDashboardHost
 
                 bool isAdmin = string.Equals(request.Username.Trim(), settings.Username?.Trim(), StringComparison.OrdinalIgnoreCase);
                 bool valid = false;
+                string? credentialHash = settings.PasswordHash;
+                string? credentialName = settings.Username;
                 string role = "User";
                 string userId = "Admin";
 
@@ -301,6 +293,8 @@ public sealed class RemoteDashboardHost
                         {
                             role = "User";
                             userId = subUser.Id;
+                            credentialHash = subUser.PasswordHash;
+                            credentialName = subUser.Username;
                         }
                     }
                 }
@@ -315,7 +309,9 @@ public sealed class RemoteDashboardHost
                     new Claim(ClaimTypes.Name, request.Username.Trim()),
                     new Claim(ClaimTypes.Role, role),
                     new Claim("UserId", userId),
-                    new Claim("SecurityStamp", settings.SecurityStamp)
+                    new Claim("SecurityStamp", settings.SecurityStamp),
+                    new Claim("CredentialVersion", RemoteAuthenticationService.CredentialVersion(credentialHash, credentialName)),
+                    new Claim("SessionId", Guid.NewGuid().ToString("N"))
                 };
                 var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
                 var authProperties = new AuthenticationProperties
@@ -333,7 +329,9 @@ public sealed class RemoteDashboardHost
                     new Claim(ClaimTypes.Name, "Admin"),
                     new Claim(ClaimTypes.Role, "Admin"),
                     new Claim("UserId", "Admin"),
-                    new Claim("SecurityStamp", settings.SecurityStamp)
+                    new Claim("SecurityStamp", settings.SecurityStamp),
+                    new Claim("CredentialVersion", RemoteAuthenticationService.CredentialVersion(settings.PasswordHash, settings.Username)),
+                    new Claim("SessionId", Guid.NewGuid().ToString("N"))
                 };
                 var claimsIdentity = new ClaimsIdentity(claims, "RemoteCookies");
                 var authProperties = new AuthenticationProperties
@@ -345,6 +343,14 @@ public sealed class RemoteDashboardHost
                 await context.SignInAsync("RemoteCookies", new ClaimsPrincipal(claimsIdentity), authProperties);
             }
 
+            return Results.Ok(new { success = true });
+        });
+
+        api.MapPost("/logout", async (HttpContext context) =>
+        {
+            string? id = context.User.FindFirstValue("SessionId");
+            if (id != null) _revokedSessions[id] = DateTimeOffset.UtcNow.AddHours(24);
+            await context.SignOutAsync("RemoteCookies");
             return Results.Ok(new { success = true });
         });
 
@@ -381,7 +387,7 @@ public sealed class RemoteDashboardHost
             }
 
             var result = await _instanceControlService.StartAsync(instanceId);
-            _auditLogService.Log("remote", "instance.start", instanceId, null, result.Success, result.Success ? null : result.Message);
+            _auditLogService.Log(context.User.Identity?.Name, "instance.start", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
@@ -393,7 +399,7 @@ public sealed class RemoteDashboardHost
             }
 
             var result = await _instanceControlService.StopAsync(instanceId);
-            _auditLogService.Log("remote", "instance.stop", instanceId, null, result.Success, result.Success ? null : result.Message);
+            _auditLogService.Log(context.User.Identity?.Name, "instance.stop", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
@@ -405,7 +411,7 @@ public sealed class RemoteDashboardHost
             }
 
             var result = await _instanceControlService.RestartAsync(instanceId);
-            _auditLogService.Log("remote", "instance.restart", instanceId, null, result.Success, result.Success ? null : result.Message);
+            _auditLogService.Log(context.User.Identity?.Name, "instance.restart", instanceId, null, result.Success, result.Success ? null : result.Message);
             return ToActionResult(result);
         });
 
@@ -447,8 +453,8 @@ public sealed class RemoteDashboardHost
             }
 
             await process.WriteInputAsync(request.Command.Trim());
-            
-            _auditLogService.Log("remote", "console.command", instanceId);
+
+            _auditLogService.Log(context.User.Identity?.Name, "console.command", instanceId);
             return Results.Ok(new { sent = true });
         });
 
@@ -481,7 +487,7 @@ public sealed class RemoteDashboardHost
                 }
 
                 RemotePlayerActionRequest? request = await ReadJsonAsync<RemotePlayerActionRequest>(context);
-                RemoteControlActionResult result = await _playerActionService.ExecuteAsync(instanceId, name, action, request, "remote");
+                RemoteControlActionResult result = await _playerActionService.ExecuteAsync(instanceId, name, action, request, context.User.Identity?.Name);
                 return ToActionResult(result);
             });
         }
@@ -539,9 +545,9 @@ public sealed class RemoteDashboardHost
             }
 
             var request = await ReadJsonAsync<RemoteServerPropertiesDto>(context);
-            if (request == null)
+            if (request == null || !request.IsValid())
             {
-                return Results.BadRequest(new { error = "Invalid properties payload" });
+                return Results.BadRequest(new { error = "Invalid properties payload or unsupported values." });
             }
 
             var config = _serverConfigurationService?.Load(metadata, serverDir) ?? new ServerConfiguration();
@@ -557,8 +563,9 @@ public sealed class RemoteDashboardHost
             if (!string.IsNullOrWhiteSpace(request.ViewDistance)) config.ViewDistance = request.ViewDistance;
             if (!string.IsNullOrWhiteSpace(request.Seed)) config.Seed = request.Seed;
 
+            using var operation = await _operations.AcquireAsync(serverDir, cancellationToken: context.RequestAborted);
             _serverConfigurationService?.Save(metadata, serverDir, config);
-            _auditLogService.Log("remote", "instance.properties_update", instanceId);
+            _auditLogService.Log(context.User.Identity?.Name, "instance.properties_update", instanceId);
 
             return Results.Ok(new { success = true });
         });
@@ -599,24 +606,25 @@ public sealed class RemoteDashboardHost
                 return Results.BadRequest(new { error = "Addon path is required." });
             }
 
-            string fullServerDir = Path.GetFullPath(serverDir);
-            string targetPath = Path.GetFullPath(Path.Combine(serverDir, request.AddonPathOrId.TrimStart('/', '\\')));
+            string? targetPath = ResolveInstalledAddon(serverDir, request.AddonPathOrId);
 
-            if (!targetPath.StartsWith(fullServerDir, StringComparison.OrdinalIgnoreCase))
+            if (targetPath == null)
             {
                 return Results.BadRequest(new { error = "Path is outside instance folder." });
             }
 
+            using var operation = await _operations.AcquireAsync(serverDir, requiresStopped: true, cancellationToken: context.RequestAborted);
+            if (_lifecycleService.IsRunning(instanceId)) return Results.Conflict(new { error = "Stop the server before removing add-ons." });
             if (File.Exists(targetPath))
             {
                 File.Delete(targetPath);
-                _auditLogService.Log("remote", "addon.uninstall", instanceId, request.AddonPathOrId);
+                _auditLogService.Log(context.User.Identity?.Name, "addon.uninstall", instanceId, request.AddonPathOrId);
                 return Results.Ok(new { success = true });
             }
             else if (Directory.Exists(targetPath))
             {
                 Directory.Delete(targetPath, recursive: true);
-                _auditLogService.Log("remote", "addon.uninstall", instanceId, request.AddonPathOrId);
+                _auditLogService.Log(context.User.Identity?.Name, "addon.uninstall", instanceId, request.AddonPathOrId);
                 return Results.Ok(new { success = true });
             }
 
@@ -757,13 +765,14 @@ public sealed class RemoteDashboardHost
             if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
 
             var req = await ReadJsonAsync<SaveRemoteFileContentRequest>(context);
-            if (req == null || string.IsNullOrWhiteSpace(req.RelativePath)) return Results.BadRequest(new { error = "RelativePath is required." });
+            if (req == null || string.IsNullOrWhiteSpace(req.RelativePath) || req.Content?.Length > 1_048_576) return Results.BadRequest(new { error = "RelativePath is required." });
 
             string? targetPath = GetSanitizedPath(serverDir, req.RelativePath);
             if (targetPath == null) return Results.BadRequest(new { error = "Invalid file path." });
 
-            await File.WriteAllTextAsync(targetPath, req.Content ?? string.Empty);
-            _auditLogService.Log("remote", "file.save", instanceId, req.RelativePath);
+            using var operation = await _operations.AcquireAsync(serverDir, cancellationToken: context.RequestAborted);
+            await PocketMC.Domain.Storage.FileUtils.AtomicWriteAllTextAsync(targetPath, req.Content ?? string.Empty, cancellationToken: context.RequestAborted);
+            _auditLogService.Log(context.User.Identity?.Name, "file.save", instanceId, req.RelativePath);
             return Results.Ok(new { success = true });
         });
 
@@ -788,13 +797,13 @@ public sealed class RemoteDashboardHost
             if (File.Exists(targetPath))
             {
                 File.Delete(targetPath);
-                _auditLogService.Log("remote", "file.delete", instanceId, path);
+                _auditLogService.Log(context.User.Identity?.Name, "file.delete", instanceId, path);
                 return Results.Ok(new { success = true });
             }
             else if (Directory.Exists(targetPath))
             {
                 Directory.Delete(targetPath, recursive: true);
-                _auditLogService.Log("remote", "file.delete_dir", instanceId, path);
+                _auditLogService.Log(context.User.Identity?.Name, "file.delete_dir", instanceId, path);
                 return Results.Ok(new { success = true });
             }
 
@@ -840,10 +849,17 @@ public sealed class RemoteDashboardHost
                 string? destinationPath = GetSanitizedPath(serverDir, Path.Combine(targetFolderRel, fileName));
                 if (destinationPath == null) continue;
 
-                using var targetStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
-                await file.CopyToAsync(targetStream);
+                using var operation = await _operations.AcquireAsync(serverDir, cancellationToken: context.RequestAborted);
+                string staged = destinationPath + $".{Guid.NewGuid():N}.upload";
+                try
+                {
+                    await using (var targetStream = new FileStream(staged, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                        await file.CopyToAsync(targetStream, context.RequestAborted);
+                    PocketMC.Domain.Storage.FileUtils.PromoteFile(staged, destinationPath);
+                }
+                finally { if (File.Exists(staged)) File.Delete(staged); }
                 uploadedCount++;
-                _auditLogService.Log("remote", "file.upload", instanceId, Path.GetRelativePath(serverDir, destinationPath));
+                _auditLogService.Log(context.User.Identity?.Name, "file.upload", instanceId, Path.GetRelativePath(serverDir, destinationPath));
             }
 
             return Results.Ok(new { success = true, uploaded = uploadedCount });
@@ -942,7 +958,7 @@ public sealed class RemoteDashboardHost
             var serverDir = _instanceRegistry?.GetPath(instanceId);
             var metadata = _instanceRegistry?.GetById(instanceId);
             if (string.IsNullOrEmpty(serverDir) || metadata == null || !Directory.Exists(serverDir)) return Results.NotFound(new { error = "Instance folder not found" });
-            
+
             if (_backupService == null) return Results.BadRequest(new { error = "Backup service is unavailable" });
 
             if (!_activeBackups.TryAdd(instanceId, true))
@@ -950,9 +966,9 @@ public sealed class RemoteDashboardHost
                 return Results.Conflict(new { error = "A backup is already running for this instance." });
             }
 
-            _auditLogService.Log("remote", "backup.create", instanceId, "Background Backup");
-            
-            _ = Task.Run(async () => 
+            _auditLogService.Log(context.User.Identity?.Name, "backup.create", instanceId, "Background Backup");
+
+            _ = Task.Run(async () =>
             {
                 try
                 {
@@ -979,7 +995,7 @@ public sealed class RemoteDashboardHost
                 return;
             }
 
-            await _webSocketHandler.HandleAsync(context, instanceId);
+            await _webSocketHandler.HandleAsync(context, instanceId, () => IsSessionValid(context.User) && HasInstanceAccess(context, instanceId) && HasPermission(context, u => u.AllowRemoteConsoleCommands));
         });
     }
 
@@ -1023,6 +1039,32 @@ public sealed class RemoteDashboardHost
             AllowRemoteFileManager = HasPermission(context, u => u.AllowRemoteFileManager),
             AllowRemoteServerBackups = HasPermission(context, u => u.AllowRemoteServerBackups)
         };
+    }
+
+    private bool IsSessionValid(ClaimsPrincipal? principal)
+    {
+        var settings = _applicationState.Settings.RemoteControl;
+        if (!settings.RequireAuthentication) return true;
+        if (principal?.Identity?.IsAuthenticated != true || principal.FindFirstValue("SecurityStamp") != settings.SecurityStamp) return false;
+        string? session = principal.FindFirstValue("SessionId");
+        if (session == null || _revokedSessions.ContainsKey(session)) return false;
+        string? userId = principal.FindFirstValue("UserId");
+        string? hash = settings.PasswordHash, name = settings.Username;
+        if (userId != "Admin")
+        {
+            var user = settings.Users?.FirstOrDefault(u => u.Id == userId);
+            if (user == null) return false;
+            hash = user.PasswordHash; name = user.Username;
+        }
+        return principal.FindFirstValue("CredentialVersion") == RemoteAuthenticationService.CredentialVersion(hash, name);
+    }
+
+    private static string? ResolveInstalledAddon(string serverDir, string relativePath)
+    {
+        string? target = PathSafety.ValidateContainedPath(serverDir, relativePath);
+        if (target == null) return null;
+        string normalized = Path.GetRelativePath(serverDir, target).Replace('\\', '/');
+        return GetInstalledAddonsForInstance(serverDir).Any(a => string.Equals(a.FilePath, normalized, StringComparison.OrdinalIgnoreCase)) ? target : null;
     }
 
     private bool IsAdmin(HttpContext context)
@@ -1072,7 +1114,18 @@ public sealed class RemoteDashboardHost
             return default;
         }
 
-        return await JsonSerializer.DeserializeAsync<T>(context.Request.Body, JsonOptions);
+        int limit = context.Request.Path.Value?.EndsWith("/files/content", StringComparison.Ordinal) == true ? 1_100_000 : 16_384;
+        if (context.Request.ContentLength > limit) throw new InvalidDataException("JSON payload exceeds 16 KB.");
+        using var buffer = new MemoryStream();
+        byte[] chunk = new byte[4096];
+        int read;
+        while ((read = await context.Request.Body.ReadAsync(chunk, context.RequestAborted)) > 0)
+        {
+            if (buffer.Length + read > limit) throw new InvalidDataException("JSON payload exceeds 16 KB.");
+            buffer.Write(chunk, 0, read);
+        }
+        if (buffer.Length == 0) return default;
+        return JsonSerializer.Deserialize<T>(buffer.ToArray(), JsonOptions);
     }
 
     private static List<RemoteAddonDto> GetInstalledAddonsForInstance(string serverDir)
@@ -1144,7 +1197,7 @@ public sealed class RemoteDashboardHost
 
     private static string? GetSanitizedPath(string baseDir, string relativePath)
     {
-        if (string.IsNullOrWhiteSpace(baseDir) || !Directory.Exists(baseDir)) return null;
+        if (string.IsNullOrWhiteSpace(baseDir) || !Directory.Exists(baseDir) || PathSafety.HasReparsePoint(baseDir)) return null;
 
         var normalizedRel = (relativePath ?? string.Empty).TrimStart('/', '\\');
         if (string.IsNullOrWhiteSpace(normalizedRel))

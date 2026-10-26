@@ -19,6 +19,7 @@ public sealed class InstanceExportRequest
     public string InstancePath { get; set; } = string.Empty;
     public string DestinationZipPath { get; set; } = string.Empty;
     public bool IncludeWorlds { get; set; } = true;
+    public bool IncludeSensitiveConfiguration { get; set; } // Private backup only; exports are shareable by default.
 }
 
 public sealed class InstanceExportResult

@@ -136,6 +136,7 @@
                                 <CheckBox IsChecked="{Binding IncludeWorlds}"
                                           Margin="0,18,0,0"
                                           Content="Include world folders"/>
+                                <CheckBox IsChecked="{Binding IncludeSensitiveConfiguration}" Content="Private backup: include credentials and plugin configuration (do not share)" Margin="0,10,0,0" />
                                 <TextBlock Text="Disable this for a compact configuration-only export, or when the server is running."
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
