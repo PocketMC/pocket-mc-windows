@@ -47,6 +47,8 @@ namespace PocketMC.Domain.Models
         public bool HasGeyser { get; set; } = false;
         public int? GeyserBedrockPort { get; set; } = 19132;
         public int? ServerPort { get; set; }
+          /// <summary>Pumpkin's native Bedrock NetherNet port; also reserves IPv6 UDP on the next port.</summary>
+          public int? PumpkinBedrockPort { get; set; } = 19132;
 
         // Simple Voice Chat tunnel state
         public bool SimpleVoiceChatDetected { get; set; }

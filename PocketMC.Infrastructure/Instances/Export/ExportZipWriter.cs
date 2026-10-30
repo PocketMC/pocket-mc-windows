@@ -56,7 +56,16 @@ public class ExportZipWriter
                 string entryName = ToZipEntryName(Path.Combine("server", file.RelativePath));
                 Report(progress, $"Exporting {file.RelativePath}...", CalculateProgress(copiedBytes, totalBytes), file.RelativePath);
 
-                if (!includeSensitiveConfiguration && file.RelativePath.Equals("server.properties", StringComparison.OrdinalIgnoreCase))
+                if (!includeSensitiveConfiguration && metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase) &&
+                    file.RelativePath.Equals("pumpkin.toml", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Rebuild from the supported allowlist; management credentials and private keys never leave by default.
+                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.Fastest);
+                    await using Stream target = entry.Open();
+                    byte[] configuration = System.Text.Encoding.UTF8.GetBytes(PocketMC.Application.Services.Instances.PumpkinConfiguration.CreateSafeExport(instanceRoot));
+                    await target.WriteAsync(configuration, cancellationToken).ConfigureAwait(false);
+                }
+                else if (!includeSensitiveConfiguration && file.RelativePath.Equals("server.properties", StringComparison.OrdinalIgnoreCase))
                 {
                     var properties = PocketMC.Application.Services.Instances.ServerPropertiesParser.Read(file.FullPath);
                     foreach (string key in properties.Keys.Where(k => k.Contains("password", StringComparison.OrdinalIgnoreCase) || k.Contains("secret", StringComparison.OrdinalIgnoreCase) || k.Contains("token", StringComparison.OrdinalIgnoreCase)).ToArray()) properties.Remove(key);

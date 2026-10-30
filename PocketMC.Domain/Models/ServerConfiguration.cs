@@ -5,6 +5,13 @@ namespace PocketMC.Domain.Models
 {
     public sealed class ServerConfiguration
     {
+        public ServerConfiguration() : this(null) { }
+
+        public ServerConfiguration(StringComparer? propertyComparer)
+        {
+            AdvancedProperties = new(propertyComparer ?? StringComparer.OrdinalIgnoreCase);
+            AllProperties = new(propertyComparer ?? StringComparer.OrdinalIgnoreCase);
+        }
         public int MinRamMb { get; set; } = 1024;
         public int MaxRamMb { get; set; } = 4096;
         public string? CustomJavaPath { get; set; }
@@ -26,6 +33,7 @@ namespace PocketMC.Domain.Models
         public string SpawnProtection { get; set; } = "16";
         public string MaxPlayers { get; set; } = "20";
         public string ServerPort { get; set; } = "25565";
+        public string PumpkinBedrockPort { get; set; } = "19132";
         public string ServerPortV6 { get; set; } = "19133";
         public string ServerIp { get; set; } = "";
         public string LevelType { get; set; } = "minecraft:normal";
@@ -45,7 +53,7 @@ namespace PocketMC.Domain.Models
         public string ViewDistance { get; set; } = "10";
         public string SimulationDistance { get; set; } = "10";
 
-        public Dictionary<string, string> AdvancedProperties { get; } = new(StringComparer.OrdinalIgnoreCase);
-        public Dictionary<string, string> AllProperties { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string> AdvancedProperties { get; }
+        public Dictionary<string, string> AllProperties { get; }
     }
 }

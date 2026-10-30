@@ -64,6 +64,7 @@ provider_neoforge_meta: "https://meta.prismlauncher.org/v1/net.neoforged/index.j
 provider_neoforge_maven: "https://maven.neoforged.net/releases/net/neoforged/neoforge" # [Dynamic Cloud] Live-updates NeoForge installer maven URL
 provider_bedrock_kittizz: "https://raw.githubusercontent.com/kittizz/bedrock-server-downloads/main/bedrock-server-downloads.json" # [Dynamic Cloud] Live-updates Bedrock BDS index
 provider_pocketmine_releases: "https://api.github.com/repos/pmmp/PocketMine-MP/releases" # [Dynamic Cloud] Live-updates PocketMine releases API
+provider_pumpkin_releases: "https://api.github.com/repos/Pumpkin-MC/Pumpkin/releases" # [Dynamic Cloud] Official stable Pumpkin releases API
 provider_php_releases: "https://api.github.com/repos/pmmp/PHP-Binaries/releases" # [Dynamic Cloud] Live-updates PHP binaries releases API
 provider_adoptium_api: "https://api.adoptium.net/v3"                  # [Dynamic Cloud] Live-updates Adoptium OpenJDK API v3
 provider_modrinth_api: "https://api.modrinth.com/v2"                  # [Dynamic Cloud] Live-updates Modrinth API v2

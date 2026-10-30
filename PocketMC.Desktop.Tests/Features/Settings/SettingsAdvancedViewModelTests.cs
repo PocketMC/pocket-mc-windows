@@ -12,6 +12,20 @@ using PocketMC.Desktop.Tests.TestSupport.Fixtures;
 
 public class SettingsAdvancedViewModelTests : IDisposable
 {
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("custom.key")]
+    [InlineData(" custom.key ")]
+    public void ValidateProperties_RejectsBlankOrDuplicateKeys(string key)
+    {
+        var vm = new SettingsAdvancedVM("unused", _workspace.ConfigurationService, () => { });
+        vm.AdvancedProperties.Add(vm.CreatePropertyItem("custom.key", "first"));
+        vm.AdvancedProperties.Add(vm.CreatePropertyItem(key, "second"));
+
+        Assert.Throws<FormatException>(() => vm.ValidateProperties());
+    }
+
     private readonly PortReliabilityTestWorkspace _workspace = new();
 
     public void Dispose() => _workspace.Dispose();

@@ -35,7 +35,17 @@ namespace PocketMC.Desktop.Features.Networking
             ArgumentNullException.ThrowIfNull(server);
             ArgumentNullException.ThrowIfNull(serverDir);
 
-            if (role == PortBindingRole.GeyserBedrock)
+            if (role == PortBindingRole.PumpkinBedrock)
+            {
+                if (newPort < 1 || newPort > 65534)
+                    throw new ArgumentOutOfRangeException(nameof(newPort), "Pumpkin Bedrock also uses the next UDP port.");
+                var properties = PumpkinConfiguration.Load(serverDir);
+                properties["pumpkin-bedrock-port"] = newPort.ToString();
+                PumpkinConfiguration.Save(serverDir, properties);
+                server.PumpkinBedrockPort = newPort;
+                _instanceManager.SaveMetadata(server, serverDir);
+            }
+            else if (role == PortBindingRole.GeyserBedrock)
             {
                 server.GeyserBedrockPort = newPort;
                 _instanceManager.SaveMetadata(server, serverDir);
@@ -67,6 +77,7 @@ namespace PocketMC.Desktop.Features.Networking
             {
                 "Geyser" => PortBindingRole.GeyserBedrock,
                 "Voice" => PortBindingRole.SimpleVoiceChat,
+                "PumpkinBedrock" => PortBindingRole.PumpkinBedrock,
                 _ => PortBindingRole.PrimaryServer
             };
 

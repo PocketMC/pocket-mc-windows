@@ -67,7 +67,32 @@ public class ServerLaunchConfigurator
             throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
         }
 
-        if (meta.ServerType != null && meta.ServerType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase))
+          if (meta.ServerType != null && meta.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+          {
+              cancellationToken.ThrowIfCancellationRequested();
+              string executable = Path.Combine(workingDir, "pumpkin.exe");
+              if (!File.Exists(executable))
+                  throw new FileNotFoundException("Pumpkin executable is missing. Reinstall the server software.", executable);
+              PocketMC.Application.Services.Instances.PumpkinConfiguration.PrepareForLaunch(workingDir);
+              onLog("[PocketMC] Launching Pumpkin native server...");
+              var pumpkinStartInfo = new ProcessStartInfo
+              {
+                  FileName = executable,
+                  WorkingDirectory = workingDir,
+                  UseShellExecute = false,
+                  RedirectStandardInput = true,
+                  RedirectStandardOutput = true,
+                  RedirectStandardError = true,
+                  CreateNoWindow = true,
+                  StandardOutputEncoding = System.Text.Encoding.UTF8,
+                  StandardErrorEncoding = System.Text.Encoding.UTF8
+              };
+              pumpkinStartInfo.Environment["RUST_LOG"] = "info";
+              pumpkinStartInfo.Environment["NO_COLOR"] = "1";
+              return pumpkinStartInfo;
+          }
+
+          if (meta.ServerType != null && meta.ServerType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase))
         {
             return _bedrockConfigurator.Configure(meta, workingDir, onLog);
         }

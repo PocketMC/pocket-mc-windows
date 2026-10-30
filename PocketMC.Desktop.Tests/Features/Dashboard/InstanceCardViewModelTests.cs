@@ -10,6 +10,16 @@ namespace PocketMC.Desktop.Tests.Features.Dashboard;
 public sealed class InstanceCardViewModelTests
 {
     [Fact]
+    public void NativeBedrockTunnelNotice_ShowsConciseCompatibilityRequirement()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var metadata = workspace.CreateInstance("Pumpkin", serverType: "Pumpkin");
+        var vm = CreateViewModel(workspace, metadata);
+
+        Assert.Equal("Playit NetherNet is not compatible with this Pumpkin release.", vm.NativeBedrockTunnelNotice);
+    }
+
+    [Fact]
     public void Constructor_WithGeyserBedrockPort_SetsBedrockLocalPort()
     {
         using var workspace = new PortReliabilityTestWorkspace();

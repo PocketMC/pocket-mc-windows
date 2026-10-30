@@ -79,6 +79,7 @@ namespace PocketMC.Infrastructure.Configuration
         public static string ProviderNeoForgeMaven { get; private set; } = "https://maven.neoforged.net/releases/net/neoforged/neoforge";
         public static string ProviderBedrockKittizz { get; private set; } = "https://raw.githubusercontent.com/kittizz/bedrock-server-downloads/main/bedrock-server-downloads.json";
         public static string ProviderPocketmineReleases { get; private set; } = "https://api.github.com/repos/pmmp/PocketMine-MP/releases";
+        public static string ProviderPumpkinReleases { get; private set; } = "https://api.github.com/repos/Pumpkin-MC/Pumpkin/releases";
         public static string ProviderPhpReleases { get; private set; } = "https://api.github.com/repos/pmmp/PHP-Binaries/releases";
         public static string ProviderAdoptiumApi { get; private set; } = "https://api.adoptium.net/v3";
         public static string ProviderModrinthApi { get; private set; } = "https://api.modrinth.com/v2";
@@ -366,6 +367,9 @@ namespace PocketMC.Infrastructure.Configuration
 
                             var pPocketmine = Regex.Match(trimmed, @"provider_pocketmine_releases:\s*""?([^""\r\n]+)""?");
                             if (pPocketmine.Success) ProviderPocketmineReleases = pPocketmine.Groups[1].Value;
+
+                            var pPumpkin = Regex.Match(trimmed, @"provider_pumpkin_releases:\s*""?([^""\r\n]+)""?");
+                            if (pPumpkin.Success) ProviderPumpkinReleases = pPumpkin.Groups[1].Value;
 
                             var pPhp = Regex.Match(trimmed, @"provider_php_releases:\s*""?([^""\r\n]+)""?");
                             if (pPhp.Success) ProviderPhpReleases = pPhp.Groups[1].Value;

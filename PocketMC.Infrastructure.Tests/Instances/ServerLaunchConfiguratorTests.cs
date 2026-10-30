@@ -141,6 +141,28 @@ public sealed class ServerLaunchConfiguratorTests : IDisposable
         _javaMock.Verify(x => x.EnsureJavaAsync(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<IProgress<DownloadProgress>>(), It.IsAny<System.Threading.CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task ConfigureAsync_Pumpkin_LaunchesNativeExecutableWithoutJava()
+    {
+        string executable = Path.Combine(_tempDirectory, "pumpkin.exe");
+        File.WriteAllText(executable, "native executable fixture");
+        var metadata = new InstanceMetadata { ServerType = "Pumpkin", MinecraftVersion = "0.2.1+26.3-26.51" };
+        _javaMock.Setup(x => x.IsJavaVersionPresent(It.IsAny<int>())).Returns(false);
+
+        var startInfo = await _configurator.ConfigureAsync(metadata, _tempDirectory, _tempDirectory, _ => { });
+
+        Assert.Equal(executable, startInfo.FileName);
+        Assert.Equal(_tempDirectory, startInfo.WorkingDirectory);
+        Assert.False(startInfo.UseShellExecute);
+        Assert.True(startInfo.RedirectStandardInput);
+        Assert.True(startInfo.RedirectStandardOutput);
+        Assert.True(startInfo.RedirectStandardError);
+        Assert.True(startInfo.CreateNoWindow);
+        Assert.Empty(startInfo.ArgumentList);
+        _javaMock.Verify(x => x.IsJavaVersionPresent(It.IsAny<int>()), Times.Never);
+        _javaMock.Verify(x => x.EnsureJavaAsync(It.IsAny<int>(), It.IsAny<bool>(), It.IsAny<IProgress<DownloadProgress>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))

@@ -47,6 +47,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         private readonly NeoForgeProvider _neoForgeProvider;
         private readonly BedrockBdsProvider _bedrockProvider;
         private readonly PocketmineProvider _pocketmineProvider;
+        private readonly PumpkinProvider _pumpkinProvider;
         private readonly GeyserProvisioningService _geyserProvisioning;
         private readonly DownloaderService _downloader;
         private readonly ILogger<NewInstancePage> _logger;
@@ -83,6 +84,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             NeoForgeProvider neoForgeProvider,
             BedrockBdsProvider bedrockProvider,
             PocketmineProvider pocketmineProvider,
+            PumpkinProvider pumpkinProvider,
             GeyserProvisioningService geyserProvisioning,
             DownloaderService downloader,
             ILogger<NewInstancePage> logger,
@@ -102,6 +104,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             _neoForgeProvider = neoForgeProvider;
             _bedrockProvider = bedrockProvider;
             _pocketmineProvider = pocketmineProvider;
+            _pumpkinProvider = pumpkinProvider;
             _geyserProvisioning = geyserProvisioning;
             _downloader = downloader;
             _logger = logger;
@@ -216,7 +219,16 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
         private void UpdateAddonPanelVisibility(string serverType)
         {
+            bool isPumpkin = serverType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase);
+            PumpkinPanel.Visibility = isPumpkin ? Visibility.Visible : Visibility.Collapsed;
+            TxtVersionLabel.Text = isPumpkin ? "Pumpkin Release" : "Minecraft Version";
+            CmbLevelType.IsEnabled = !isPumpkin;
+            CmbLevelType.ToolTip = isPumpkin ? "Pumpkin uses its native world generator." : null;
+            TxtCustomWorldPath.IsEnabled = !isPumpkin;
+            BtnBrowseWorld.IsEnabled = !isPumpkin;
+            if (isPumpkin) TxtCustomWorldPath.Clear();
             if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) ||
+                isPumpkin ||
                 serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) ||
                 serverType.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) ||
                 serverType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase))
@@ -514,6 +526,15 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             string? createdInstancePath = null;
             string? createdFolderName = null;
 
+            if (serverType == "Pumpkin" &&
+                (!int.TryParse(TxtPumpkinJavaPort.Text, out int javaPort) || javaPort < 1 || javaPort > 65535 ||
+                 !int.TryParse(TxtPumpkinBedrockPort.Text, out int bedrockPort) || bedrockPort < 1 || bedrockPort > 65534 ||
+                 javaPort == bedrockPort))
+            {
+                ShowError("Choose different Java (1–65535) and Bedrock (1–65534) ports. Bedrock also reserves its next UDP port.");
+                return;
+            }
+
             SetCreationState(true);
             _downloadCts = new CancellationTokenSource();
             var ct = _downloadCts.Token;
@@ -539,6 +560,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 string jarFile = "server.jar";
                 if (serverType == "Forge" || serverType == "NeoForge") jarFile = "installer.jar";
                 else if (serverType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase)) jarFile = "PocketMine-MP.phar";
+                else if (serverType == "Pumpkin") jarFile = "pumpkin.exe";
                 string jarPath = Path.Combine(createdInstancePath, jarFile);
 
                 IServerSoftwareProvider provider = GetProvider(serverType);
@@ -601,8 +623,9 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 // Apply World & Gameplay Settings
                 if (createdInstancePath != null)
                 {
+                    bool isPumpkin = serverType == "Pumpkin";
                     string propsFile = Path.Combine(createdInstancePath, "server.properties");
-                    var props = ServerPropertiesParser.Read(propsFile);
+                    var props = isPumpkin ? PumpkinConfiguration.Load(createdInstancePath) : ServerPropertiesParser.Read(propsFile);
 
                     if (!string.IsNullOrWhiteSpace(TxtSeed.Text))
                     {
@@ -635,7 +658,15 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     props["allow-list"] = "false";
                     props["white-list"] = "false";
 
-                    ServerPropertiesParser.Write(propsFile, props);
+                    if (isPumpkin)
+                    {
+                        props["server-port"] = TxtPumpkinJavaPort.Text.Trim();
+                        props["pumpkin-bedrock-port"] = TxtPumpkinBedrockPort.Text.Trim();
+                        PumpkinConfiguration.Save(createdInstancePath, props);
+                        metadata.ServerPort = int.Parse(props["server-port"]);
+                        metadata.PumpkinBedrockPort = int.Parse(props["pumpkin-bedrock-port"]);
+                    }
+                    else ServerPropertiesParser.Write(propsFile, props);
 
                     // Import Custom World if selected
                     if (!string.IsNullOrWhiteSpace(customWorldPath))
@@ -854,6 +885,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
         private IServerSoftwareProvider GetProvider(string serverType)
         {
+            if (serverType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase)) return _pumpkinProvider;
             if (string.Equals(serverType, "Paper", StringComparison.OrdinalIgnoreCase))
             {
                 return _paperProvider;

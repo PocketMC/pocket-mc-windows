@@ -1393,6 +1393,28 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         try
         {
+            if (_metadata.Compatibility.Family == EngineFamily.Pumpkin)
+            {
+                if (!IsServerOnline)
+                {
+                    _dialogService.ShowMessage("Start Pumpkin First", "Pumpkin must resolve the player's identity before adding them to its whitelist. Start the server and try again.", DialogType.Warning);
+                    return;
+                }
+                await _serverProcess!.WriteInputAsync($"whitelist add {CommandFormatter.FormatPlayerName(username, _metadata.ServerType)}");
+                for (int attempt = 0; attempt < 25; attempt++)
+                {
+                    var entries = await _whitelistService.GetWhitelistedPlayersAsync(_metadata);
+                    if (entries.Any(entry => entry.Name.Equals(username, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        WhitelistAddUsername = string.Empty;
+                        await LoadWhitelistAsync();
+                        return;
+                    }
+                    await Task.Delay(200);
+                }
+                _dialogService.ShowMessage("Whitelist Update Unconfirmed", "Pumpkin has not confirmed this player in its whitelist. Check the server console for the command result.", DialogType.Warning);
+                return;
+            }
             // Always write the file directly so the UI refreshes instantly.
             // When online, also send the runtime command so the running server picks it up.
             var result = await _whitelistService.AddPlayerAsync(_metadata, username);

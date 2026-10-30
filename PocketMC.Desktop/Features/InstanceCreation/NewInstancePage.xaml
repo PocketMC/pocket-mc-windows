@@ -264,13 +264,39 @@
                             <ComboBoxItem Tag="NeoForge" Content="NeoForge"/>
                             <ComboBoxItem Tag="Bedrock (BDS)" Content="Bedrock (BDS)"/>
                             <ComboBoxItem Tag="Pocketmine (PHP)" Content="Pocketmine (PHP)"/>
+                            <ComboBoxItem Tag="Pumpkin" Content="Pumpkin (Java + Bedrock)"/>
                         </ComboBox>
 
                         <!-- Minecraft Version -->
-                        <TextBlock Text="Minecraft Version" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock x:Name="TxtVersionLabel" Text="Minecraft Version" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <ComboBox x:Name="CmbVersion" Margin="0,0,0,8" HorizontalAlignment="Stretch" MinHeight="40" DisplayMemberPath="Id" SelectionChanged="CmbVersion_SelectionChanged"/>
                         
                         <TextBlock x:Name="TxtVersionState" Text="Choose a server type to load available versions." FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                        <StackPanel x:Name="PumpkinPanel" Visibility="Collapsed" Margin="0,0,0,16">
+                            <TextBlock Text="Pumpkin runs without Java or Geyser. Choose a release that supports your Minecraft version."
+                                       TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,12"/>
+                            <TextBlock Text="Java port (TCP)" Margin="0,0,0,4"/>
+                            <ui:TextBox x:Name="TxtPumpkinJavaPort" Text="25565" ClearButtonEnabled="False" Margin="0,0,0,12"/>
+                            <TextBlock Text="Bedrock port (TCP + UDP)" Margin="0,0,0,4"/>
+                            <ui:TextBox x:Name="TxtPumpkinBedrockPort" Text="19132" ClearButtonEnabled="False" Margin="0,0,0,4"/>
+                            <TextBlock Text="Pumpkin also reserves the following UDP port for IPv6. Native Pumpkin plugins use their own API; Java mods and Bukkit plugins are incompatible."
+                                       TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <Border x:Name="PumpkinPremiumCallout" Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                                    BorderBrush="#FFFFB347" BorderThickness="3,0,0,0" CornerRadius="6" Padding="14,12" Margin="0,12,0,0"
+                                    ToolTip="Playit 1.2.0+ uses NXS signaling with an endpoint and tunnel token. This Pumpkin release has no NXS configuration, so PocketMC does not create its Bedrock tunnel.">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Symbol="Warning24" Foreground="#FFFFB347" Margin="0,2,12,0" VerticalAlignment="Top"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Free Playit NetherNet requires NXS support." FontWeight="SemiBold" FontSize="14"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextWrapping="Wrap"/>
+                                        <TextBlock Text="Playit 1.2.0+ supports free NetherNet tunnels, but this Pumpkin release lacks the required NXS signaling. Use the Bedrock LAN address for local play." FontSize="13" Margin="0,4,0,0"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
 
                         <!-- Snapshots & Warnings -->
                         <CheckBox x:Name="ChkShowSnapshots" Content="Show snapshots and pre-releases" Checked="ChkShowSnapshots_Changed" Unchecked="ChkShowSnapshots_Changed" Margin="0,0,0,16"/>

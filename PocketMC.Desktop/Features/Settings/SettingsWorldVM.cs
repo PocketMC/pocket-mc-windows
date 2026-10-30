@@ -138,9 +138,9 @@ namespace PocketMC.Desktop.Features.Settings
             Gamemodes = profile.Gamemodes;
             Difficulties = profile.Difficulties;
 
-            UploadWorldCommand = new RelayCommand(async _ => await UploadWorldAsync(), _ => !_isRunningCheck());
+            UploadWorldCommand = new RelayCommand(async _ => await UploadWorldAsync(), _ => !_profile.IsPumpkin && !_isRunningCheck());
             DeleteWorldCommand = new RelayCommand(async _ => await DeleteWorldAsync(), _ => !_isRunningCheck());
-            BrowseMapsCommand = new RelayCommand(_ => BrowseMaps());
+            BrowseMapsCommand = new RelayCommand(_ => BrowseMaps(), _ => !_profile.IsPumpkin);
         }
 
         /// <summary>
