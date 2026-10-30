@@ -33,5 +33,8 @@ public enum PortBindingRole
     /// <summary>
     /// The Simple Voice Chat UDP listener used by the voice chat mod/plugin.
     /// </summary>
-    SimpleVoiceChat
+    SimpleVoiceChat,
+
+    /// <summary>Pumpkin NetherNet signaling, ICE, and discovery listeners.</summary>
+    PumpkinBedrock
 }

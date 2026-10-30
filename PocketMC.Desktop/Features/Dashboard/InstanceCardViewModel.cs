@@ -65,7 +65,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         _geyserDetector = geyserDetector;
         _voiceChatDetector = voiceChatDetector;
         _localNetworkAddressService = localNetworkAddressService ?? new PocketMC.Infrastructure.Networking.LocalNetworkAddressService();
-        _bedrockLocalPort = metadata.GeyserBedrockPort ?? 19132;
+        _bedrockLocalPort = (metadata.Compatibility.Family == EngineFamily.Pumpkin ? metadata.PumpkinBedrockPort : metadata.GeyserBedrockPort) ?? 19132;
 
         _tunnelAddress = appState.GetTunnelAddress(metadata.Id);
         _numericTunnelAddress = appState.GetNumericTunnelAddress(metadata.Id);
@@ -145,10 +145,13 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     }
     public string CreatedText => $"Created: {_metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}";
     public string CreatedValueText => _metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
-    public bool ShowCrossPlayBadge => HasGeyser;
+    public bool IsPumpkinServer => _metadata.Compatibility.Family == EngineFamily.Pumpkin;
+    public bool ShowCrossPlayBadge => HasGeyser || (IsPumpkinServer && IsPumpkinListenerEnabled(java: true) && IsPumpkinListenerEnabled(java: false));
     public Visibility CrossPlayBadgeVisibility => ShowCrossPlayBadge ? Visibility.Visible : Visibility.Collapsed;
     public string CrossPlayBadgeText => "Cross-play";
-    public string CrossPlayBadgeTooltip => "Java and Bedrock players can join through Geyser/Floodgate.";
+    public string CrossPlayBadgeTooltip => IsPumpkinServer
+        ? "Native Java and Bedrock listeners are enabled. Bedrock uses NetherNet."
+        : "Java and Bedrock players can join through Geyser/Floodgate.";
 
     public void NotifyUptimeChanged()
     {
@@ -198,7 +201,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
 
     public string PlatformSummaryText => ShowCrossPlayBadge
         ? "Java + Bedrock"
-        : IsBedrockServer ? "Bedrock network" : "Java network";
+        : IsBedrockServer || (IsPumpkinServer && IsPumpkinListenerEnabled(java: false)) ? "Bedrock network" : "Java network";
     public bool HasTunnelAddress => !string.IsNullOrEmpty(_tunnelAddress);
     public bool HasBedrockTunnelAddress => !string.IsNullOrEmpty(_bedrockTunnelAddress);
     public bool HasVoiceChatTunnelAddress => !string.IsNullOrEmpty(_voiceChatTunnelAddress);
@@ -256,6 +259,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     {
         get
         {
+            if (_metadata.Compatibility.Family == EngineFamily.Pumpkin) return false;
             try
             {
                 string? path = _registry.GetPath(Id);
@@ -272,14 +276,44 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     /// Only meaningful for Java servers with Geyser cross-play enabled, where
     /// Java players and Bedrock players reach the server on different addresses.
     /// Native BDS / PocketMine servers have a single address — no second row needed.</summary>
-    public bool ShowBedrockIp => !IsBedrockServer && HasGeyser;
+    public bool ShowBedrockIp => _metadata.Compatibility.Family == EngineFamily.Pumpkin
+        ? IsPumpkinListenerEnabled(java: false) : !IsBedrockServer && HasGeyser;
 
     /// <summary>Label prefix for the secondary IP row.</summary>
-    public string BedrockIpLabel => "Bedrock (Geyser):";
+    public string BedrockIpLabel => _metadata.Compatibility.Family == EngineFamily.Pumpkin ? "Bedrock (NetherNet):" : "Bedrock (Geyser):";
 
     public int PrimaryPort => _metadata.ServerPort ?? (IsBedrockServer ? 19132 : 25565);
     public string LanAddressDisplayText => $"{_localNetworkAddressService.GetPrimaryLanIpAddress()}:{PrimaryPort}";
-    public bool HasLanAddress => IsRunning;
+    public bool HasLanAddress => IsRunning && (_metadata.Compatibility.Family != EngineFamily.Pumpkin || IsPumpkinListenerEnabled(java: true));
+    public bool ShowNativeBedrockLanAddress => IsRunning && IsPumpkinServer && IsPumpkinListenerEnabled(java: false);
+    public string NativeBedrockLanAddress
+    {
+        get
+        {
+            int port = _metadata.PumpkinBedrockPort ?? 19132;
+            try
+            {
+                string? path = _registry.GetPath(Id);
+                if (path != null) port = PumpkinConfiguration.ReadBedrockPort(path, port);
+            }
+            catch (Exception) { }
+            return $"{_localNetworkAddressService.GetPrimaryLanIpAddress()}:{port}";
+        }
+    }
+    public string NativeBedrockTunnelNotice => "Playit NetherNet is not compatible with this Pumpkin release.";
+
+    private bool IsPumpkinListenerEnabled(bool java)
+    {
+        try
+        {
+            string? path = _registry.GetPath(Id);
+            return path != null && (java ? PumpkinConfiguration.IsJavaEnabled(path) : PumpkinConfiguration.IsBedrockEnabled(path));
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
     public int BedrockLocalPort => _bedrockLocalPort;
 
@@ -289,6 +323,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         get
         {
             if (_bedrockIpDisplayTextOverride != null) return _bedrockIpDisplayTextOverride;
+            if (IsPumpkinServer) return NativeBedrockLanAddress;
 
             if (IsBedrockServer && !string.IsNullOrEmpty(_tunnelAddress))
             {
@@ -500,6 +535,12 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(StoppedControlsVisibility));
             OnPropertyChanged(nameof(StopButtonText));
             OnPropertyChanged(nameof(HasLanAddress));
+            OnPropertyChanged(nameof(ShowNativeBedrockLanAddress));
+            OnPropertyChanged(nameof(NativeBedrockLanAddress));
+            OnPropertyChanged(nameof(ShowBedrockIp));
+            OnPropertyChanged(nameof(ShowCrossPlayBadge));
+            OnPropertyChanged(nameof(CrossPlayBadgeVisibility));
+            OnPropertyChanged(nameof(PlatformSummaryText));
             OnPropertyChanged(nameof(IsBusy));
             OnPropertyChanged(nameof(BusySpinnerVisibility));
         }
@@ -584,6 +625,11 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(HasGeyser));
         OnPropertyChanged(nameof(IsBedrockServer));
         OnPropertyChanged(nameof(ShowBedrockIp));
+        OnPropertyChanged(nameof(IsPumpkinServer));
+        OnPropertyChanged(nameof(BedrockIpLabel));
+        OnPropertyChanged(nameof(ShowNativeBedrockLanAddress));
+        OnPropertyChanged(nameof(NativeBedrockLanAddress));
+        OnPropertyChanged(nameof(NativeBedrockTunnelNotice));
         OnPropertyChanged(nameof(ShowCrossPlayBadge));
         OnPropertyChanged(nameof(CrossPlayBadgeVisibility));
         OnPropertyChanged(nameof(CrossPlayBadgeText));
@@ -600,6 +646,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(PlatformSummaryText));
         OnPropertyChanged(nameof(PrimaryPort));
         OnPropertyChanged(nameof(LanAddressDisplayText));
+        OnPropertyChanged(nameof(HasLanAddress));
         OnPropertyChanged(nameof(BedrockIpDisplayText));
     }
 

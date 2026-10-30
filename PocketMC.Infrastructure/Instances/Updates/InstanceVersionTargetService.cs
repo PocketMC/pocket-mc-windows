@@ -23,6 +23,17 @@ public sealed class InstanceVersionTargetService
         List<MinecraftVersion> versions = await provider.GetAvailableVersionsAsync();
         cancellationToken.ThrowIfCancellationRequested();
 
+        // Pumpkin versions are exact upstream release tags, not Minecraft semantic versions.
+        if (metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+        {
+            var releases = versions.Where(version => string.IsNullOrWhiteSpace(version.Type) ||
+                version.Type.Equals("release", StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (string.IsNullOrWhiteSpace(metadata.MinecraftVersion) || metadata.MinecraftVersion.Equals("unknown", StringComparison.OrdinalIgnoreCase))
+                return releases;
+            int currentIndex = Array.FindIndex(releases, version => version.Id.Equals(metadata.MinecraftVersion, StringComparison.Ordinal));
+            return currentIndex > 0 ? releases.Take(currentIndex).ToArray() : Array.Empty<MinecraftVersion>();
+        }
+
         return SelectVersionsAfterCurrent(versions, metadata.MinecraftVersion);
     }
 
@@ -58,6 +69,11 @@ public sealed class InstanceVersionTargetService
     private IServerSoftwareProvider ResolveProvider(string serverType)
     {
         string normalizedServerType = serverType ?? "Vanilla";
+
+        if (normalizedServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+        {
+            return FindProvider("Pumpkin");
+        }
 
         if (normalizedServerType.StartsWith("Paper", StringComparison.OrdinalIgnoreCase) ||
             normalizedServerType.StartsWith("Spigot", StringComparison.OrdinalIgnoreCase))

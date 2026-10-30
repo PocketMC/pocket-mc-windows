@@ -170,6 +170,12 @@ namespace PocketMC.Desktop.Features.Settings
         public bool SupportsModrinth => _metadata.Compatibility.SupportsModrinth;
         public bool SupportsModpacks => _metadata.Compatibility.SupportsModpacks;
         public bool SupportsBedrockAddons => _metadata.Compatibility.SupportsBedrockAddons;
+        public bool HasSupportedAddonTypes => SupportsPlugins || SupportsMods || SupportsBedrockAddons;
+        public bool IsAddonManagementUnsupported => !HasSupportedAddonTypes && !ShowVanillaWarning;
+        public string UnsupportedAddonTitle => "Add-ons are not available for this server";
+        public string UnsupportedAddonMessage => _metadata.Compatibility.Family == EngineFamily.Pumpkin
+            ? "Pumpkin uses its own plugin API. PocketMC does not currently manage Pumpkin plugins. Java mods, Bukkit/Paper plugins, PocketMine plugins, and Bedrock add-on packages are not compatible with this server."
+            : "PocketMC does not support installing plugins, mods, or add-on packages for this server type.";
 
         // ── Commands ─────────────────────────────────────────────────────
         // Shared / Java

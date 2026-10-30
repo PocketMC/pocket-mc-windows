@@ -102,6 +102,9 @@ namespace PocketMC.Desktop.Features.Settings
 
         public bool HasGeyser => _geyserDetector.IsGeyserInstalled(ServerDir);
         public bool IsJavaSettings => Profile.IsJava;
+        public bool IsPumpkinSettings => Profile.IsPumpkin;
+        public bool SupportsLegacyProperties => !Profile.IsPumpkin;
+        public bool SupportsWorldImport => !Profile.IsPumpkin;
         public bool IsBedrockSettings => Profile.SupportsBedrockRules;
         public bool SupportsJavaRuntimeSettings => Profile.SupportsJavaRuntimeSettings;
         public bool SupportsJavaWorldGenerator => Profile.SupportsJavaWorldGenerator;
@@ -226,6 +229,7 @@ namespace PocketMC.Desktop.Features.Settings
             General.ServerPort = cfg.ServerPort;
             General.ServerIp = cfg.ServerIp;
             General.GeyserBedrockPort = Metadata.GeyserBedrockPort?.ToString() ?? "19132";
+            General.PumpkinBedrockPort = cfg.PumpkinBedrockPort;
             General.AutoStartWithApp = Metadata.AutoStartWithApp;
             Addons.AutoUpdateAddons = Metadata.AutoUpdateAddons;
             General.LoadIcon();
@@ -273,6 +277,7 @@ namespace PocketMC.Desktop.Features.Settings
             Advanced.ScheduledRebootWarning = cfg.ScheduledRebootWarning;
             Advanced.ScheduledRebootWarningSeconds = (cfg.ScheduledRebootWarningSeconds > 0 ? cfg.ScheduledRebootWarningSeconds : 60).ToString();
             Advanced.LoadRawProperties();
+            Advanced.SetPumpkinEditor(IsPumpkinSettings);
             Advanced.AdvancedProperties.Clear();
             foreach (var kvp in cfg.AllProperties) Advanced.AdvancedProperties.Add(Advanced.CreatePropertyItem(kvp.Key, kvp.Value));
 
@@ -292,7 +297,7 @@ namespace PocketMC.Desktop.Features.Settings
 
             IsLoading = false;
             string? initialJavaPath = cfg.CustomJavaPath;
-            if (string.IsNullOrWhiteSpace(initialJavaPath))
+            if (SupportsJavaRuntimeSettings && string.IsNullOrWhiteSpace(initialJavaPath))
             {
                 int requiredVersion = JavaRuntimeResolver.GetRequiredJavaVersion(Metadata);
                 initialJavaPath = JavaRuntimeResolver.GetExpectedBundledJavaPath(_appRootPath, requiredVersion);
@@ -481,6 +486,30 @@ namespace PocketMC.Desktop.Features.Settings
 
         private void SaveConfigurations()
         {
+            try
+            {
+                Advanced.ValidateProperties();
+            }
+            catch (FormatException ex)
+            {
+                _dialogService.ShowMessage("Invalid Advanced Parameter", ex.Message, DialogType.Error);
+                return;
+            }
+            if (IsPumpkinSettings)
+            {
+                try
+                {
+                    if (!int.TryParse(General.ServerPort, out int javaPort) || javaPort < 1 || javaPort > 65535 ||
+                        !int.TryParse(General.PumpkinBedrockPort, out int bedrockPort) || bedrockPort < 1 || bedrockPort > 65534 || javaPort == bedrockPort)
+                        throw new FormatException("Use different Java (1–65535) and Bedrock (1–65534) ports. Bedrock reserves the following UDP port too.");
+                    if (Advanced.IsRawServerPropertiesDirty) PumpkinConfiguration.ValidateRaw(Advanced.RawServerProperties);
+                }
+                catch (Exception ex)
+                {
+                    _dialogService.ShowMessage("Invalid Pumpkin Configuration", ex.Message, DialogType.Error);
+                    return;
+                }
+            }
             bool nameChanged = !string.Equals(Metadata.Name, General.InstanceName, StringComparison.Ordinal);
 
             if (nameChanged && IsRunning)
@@ -491,28 +520,14 @@ namespace PocketMC.Desktop.Features.Settings
 
             string currentServerDir = ServerDir;
 
-            if (nameChanged)
-            {
-                try
-                {
-                    currentServerDir = _instanceManager.RenameInstance(Metadata.Id, General.InstanceName, General.InstanceDescription);
-                    UpdateServerDir(currentServerDir);
-                }
-                catch (Exception ex)
-                {
-                    _dialogService.ShowMessage("Rename Failed", ex.Message, DialogType.Error);
-                    return;
-                }
-            }
-
             string? customJavaPathToSave = Performance.JavaPath;
-            if (string.IsNullOrWhiteSpace(customJavaPathToSave))
+            if (SupportsJavaRuntimeSettings && string.IsNullOrWhiteSpace(customJavaPathToSave))
             {
                 int requiredVersion = PocketMC.Infrastructure.Java.JavaRuntimeResolver.GetRequiredJavaVersion(Metadata);
                 customJavaPathToSave = PocketMC.Infrastructure.Java.JavaRuntimeResolver.GetExpectedBundledJavaPath(_appRootPath, requiredVersion);
             }
 
-            var cfg = new ServerConfiguration
+            var cfg = new ServerConfiguration(IsPumpkinSettings ? StringComparer.Ordinal : null)
             {
                 MinRamMb = (int)Performance.MinRam,
                 MaxRamMb = (int)Performance.MaxRam,
@@ -534,6 +549,7 @@ namespace PocketMC.Desktop.Features.Settings
                 SpawnProtection = World.SpawnProtection,
                 MaxPlayers = World.MaxPlayers,
                 ServerPort = General.ServerPort,
+                PumpkinBedrockPort = General.PumpkinBedrockPort,
                 ServerIp = General.ServerIp ?? "",
                 LevelType = World.LevelType,
                 OnlineMode = World.OnlineMode,
@@ -559,23 +575,65 @@ namespace PocketMC.Desktop.Features.Settings
             foreach (var item in Advanced.AdvancedProperties)
             {
                 if (!string.IsNullOrWhiteSpace(item.Key) && (!ServerConfigurationService.IsCoreProperty(item.Key) || item.IsDirty))
-                    cfg.AdvancedProperties[item.Key] = item.Value;
+                    cfg.AdvancedProperties[item.Key.Trim()] = item.Value;
             }
 
-            Metadata.GeyserBedrockPort = int.TryParse(General.GeyserBedrockPort, out int gPort) ? gPort : 19132;
-            Metadata.Name = General.InstanceName;
-            Metadata.Description = General.InstanceDescription;
-            Metadata.AutoStartWithApp = General.AutoStartWithApp;
-            Metadata.AutoUpdateAddons = Addons.AutoUpdateAddons;
-            Metadata.CustomBackupDirectory = Backups.CustomBackupDirectory;
-            Metadata.BackupIntervalHours = Backups.BackupIntervalHours;
-            Metadata.MaxBackupsToKeep = Backups.MaxBackupsToKeep;
-
-            _serverConfigurationService.Save(Metadata, currentServerDir, cfg);
-            if (Advanced.IsRawServerPropertiesDirty)
+            try
             {
-                _serverConfigurationService.SaveRawProperties(currentServerDir, Advanced.RawServerProperties);
-                Advanced.ClearDirtyRaw();
+                _serverConfigurationService.Validate(Metadata, currentServerDir, cfg);
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Could Not Save Configuration", ex.Message, DialogType.Error);
+                return;
+            }
+
+            if (nameChanged)
+            {
+                try
+                {
+                    currentServerDir = _instanceManager.RenameInstance(Metadata.Id, General.InstanceName, General.InstanceDescription);
+                    UpdateServerDir(currentServerDir);
+                }
+                catch (Exception ex)
+                {
+                    _dialogService.ShowMessage("Rename Failed", ex.Message, DialogType.Error);
+                    return;
+                }
+            }
+
+            try
+            {
+                _serverConfigurationService.Save(Metadata, currentServerDir, cfg);
+                Metadata.GeyserBedrockPort = int.TryParse(General.GeyserBedrockPort, out int gPort) ? gPort : 19132;
+                Metadata.Name = General.InstanceName;
+                Metadata.Description = General.InstanceDescription;
+                Metadata.AutoStartWithApp = General.AutoStartWithApp;
+                Metadata.AutoUpdateAddons = Addons.AutoUpdateAddons;
+                Metadata.CustomBackupDirectory = Backups.CustomBackupDirectory;
+                Metadata.BackupIntervalHours = Backups.BackupIntervalHours;
+                Metadata.MaxBackupsToKeep = Backups.MaxBackupsToKeep;
+
+                _instanceManager.SaveMetadata(Metadata, currentServerDir);
+                if (Advanced.IsRawServerPropertiesDirty)
+                {
+                    _serverConfigurationService.SaveRawProperties(currentServerDir, Advanced.RawServerProperties);
+                    Advanced.ClearDirtyRaw();
+                    if (IsPumpkinSettings)
+                    {
+                        _serverConfigurationService.Load(Metadata, currentServerDir);
+                        Metadata.PumpkinBedrockPort = PumpkinConfiguration.ReadBedrockPort(currentServerDir);
+                        _instanceManager.SaveMetadata(Metadata, currentServerDir);
+                        // Refresh form controls too, so a later Save cannot restore values from before the raw edit.
+                        LoadAll();
+                    }
+                }
+                Advanced.LoadRawProperties();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowMessage("Could Not Save Configuration", ex.Message, DialogType.Error);
+                return;
             }
 
             if (IsRunning)

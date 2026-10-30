@@ -15,6 +15,40 @@ namespace PocketMC.Desktop.Tests.Features.Tunnel;
 public sealed class InstanceTunnelOrchestratorTunnelFlowTests
 {
     [Fact]
+    public async Task EnsureTunnelFlowAsync_PumpkinBedrock_ExplainsIncompatibilityWithoutCreatingTunnel()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        InstanceMetadata metadata = workspace.CreateInstance("Pumpkin Bedrock", serverType: "Pumpkin");
+        workspace.WriteFile(metadata.Id, "pumpkin.toml", """
+            [networking.java]
+            enabled = false
+            [networking.bedrock]
+            enabled = true
+            [networking.bedrock.nethernet]
+            enabled = true
+            address = "0.0.0.0:19132"
+            """);
+        workspace.WritePlayitSecret();
+        workspace.EnsurePlayitBinaryExists();
+        int apiRequests = 0;
+        PlayitApiClient apiClient = workspace.CreatePlayitApiClient(_ =>
+        {
+            apiRequests++;
+            return JsonResponse("""{"status":"success","data":{"tunnels":[]}}""");
+        });
+        InstanceTunnelOrchestrator orchestrator = CreateOrchestrator(workspace, apiClient);
+        InstanceCardViewModel vm = CreateCard(workspace, metadata);
+        vm.UpdateState(ServerState.Online);
+
+        await orchestrator.EnsureTunnelFlowAsync(vm);
+
+        Assert.True(vm.ShowNativeBedrockLanAddress);
+        Assert.Contains("not compatible", vm.NativeBedrockTunnelNotice, StringComparison.Ordinal);
+        Assert.Equal(0, apiRequests);
+        Assert.False(vm.HasBedrockTunnelAddress);
+    }
+
+    [Fact]
     public async Task EnsureTunnelFlowAsync_WhenResolutionFails_KeepsPreviousTunnelAddress()
     {
         using var workspace = new PortReliabilityTestWorkspace();

@@ -15,6 +15,23 @@ public sealed class ServerConfigurationServiceTests : IDisposable
     private readonly string _tempDirectory = Path.Combine(Path.GetTempPath(), "PocketMC.Tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
+    public void Save_InvalidPumpkinValue_DoesNotMutateMetadata()
+    {
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager, Mock.Of<IGeyserDetector>());
+        var metadata = manager.CreateInstance("Rejected save", "", "Pumpkin");
+        string dir = registry.GetPath(metadata.Id)!;
+        var configuration = service.Load(metadata, dir);
+        string originalMetadata = JsonSerializer.Serialize(metadata);
+        configuration.ServerPort = "29992";
+        configuration.Motd = "Do not publish";
+        configuration.AdvancedProperties["logging.level"] = "invalid unquoted text";
+
+        Assert.Throws<FormatException>(() => service.Save(metadata, dir, configuration));
+        Assert.Equal(originalMetadata, JsonSerializer.Serialize(metadata));
+    }
+
+    [Fact]
     public void Load_SeparatesCoreAndAdvancedServerProperties()
     {
         var manager = CreateManager(out var registry, out _);
@@ -253,6 +270,63 @@ public sealed class ServerConfigurationServiceTests : IDisposable
         Assert.Equal(12, savedMetadata.ScheduledRebootIntervalHours);
         Assert.True(savedMetadata.ScheduledRebootWarning);
         Assert.Equal(120, savedMetadata.ScheduledRebootWarningSeconds);
+    }
+
+    [Fact]
+    public void Save_PumpkinEditorValueCannotInjectAnotherParameter()
+    {
+        string serverDir = Path.Combine(_tempDirectory, "quote-validation");
+        Directory.CreateDirectory(serverDir);
+        string path = Path.Combine(serverDir, "pumpkin.toml");
+        File.WriteAllText(path, "[logging]\nlevel = \"info\"\n");
+        string original = File.ReadAllText(path);
+
+        Assert.Throws<FormatException>(() => PumpkinConfiguration.SaveEditorProperties(serverDir,
+            new Dictionary<string, string>(), new Dictionary<string, string>
+            {
+                ["logging.level"] = "\"debug\"\nnetworking.java.enabled = false"
+            }));
+        Assert.Equal(original, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void Save_PumpkinAdvancedRows_RoundTripsNativeTypedValues()
+    {
+        var manager = CreateManager(out var registry, out _);
+        var service = new ServerConfigurationService(manager, Mock.Of<IGeyserDetector>());
+        var metadata = manager.CreateInstance("Pumpkin editor", "", "Pumpkin");
+        string serverDir = registry.GetPath(metadata.Id)!;
+        File.WriteAllText(Path.Combine(serverDir, "pumpkin.toml"), """
+            [logging]
+            enabled = true
+            level = "info"
+            [custom]
+            retry_count = 3
+            hosts = ["first", "second"]
+            keep = "untouched"
+            "literal.key" = false
+            remove_me = true
+            """);
+
+        var configuration = service.Load(metadata, serverDir);
+        Assert.Equal("true", configuration.AllProperties["logging.enabled"]);
+        configuration.AdvancedProperties["logging.enabled"] = "false";
+        configuration.AdvancedProperties["logging.level"] = "\"debug\"";
+        configuration.AdvancedProperties["custom.retry_count"] = "7";
+        configuration.AdvancedProperties["custom.hosts"] = "[\"updated\"]";
+        configuration.AdvancedProperties["custom.\"literal.key\""] = "true";
+        configuration.AdvancedProperties.Remove("custom.remove_me");
+
+        service.Save(metadata, serverDir, configuration);
+
+        var saved = service.Load(metadata, serverDir);
+        Assert.Equal("false", saved.AllProperties["logging.enabled"]);
+        Assert.Equal("\"debug\"", saved.AllProperties["logging.level"]);
+        Assert.Equal("7", saved.AllProperties["custom.retry_count"]);
+        Assert.Contains("updated", saved.AllProperties["custom.hosts"]);
+        Assert.Equal("\"untouched\"", saved.AllProperties["custom.keep"]);
+        Assert.Equal("true", saved.AllProperties["custom.\"literal.key\""]);
+        Assert.DoesNotContain("custom.remove_me", saved.AllProperties.Keys);
     }
 
     private sealed class MockAssetProvider : PocketMC.Application.Interfaces.IAssetProvider

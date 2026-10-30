@@ -26,6 +26,7 @@ namespace PocketMC.Desktop.Features.Settings
         }
 
         private bool _isCore;
+        public bool IsValueEditable { get; set; } = true;
         public bool IsCore
         {
             get => _isCore;

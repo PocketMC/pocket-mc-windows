@@ -8,6 +8,49 @@ namespace PocketMC.Infrastructure.Tests.Networking;
 
 public sealed class PortPreflightServiceTests
 {
+    [Fact]
+    public void Check_MalformedStoppedPumpkin_DoesNotBlockOtherInstances()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var broken = workspace.CreateInstance("Broken stopped Pumpkin", serverType: "Pumpkin");
+        workspace.WriteFile(broken.Id, "pumpkin.toml", "[logging\n");
+        var target = workspace.CreateInstance("Healthy Java", serverType: "Paper");
+        var service = workspace.CreatePortPreflightService();
+
+        Assert.True(service.Check(target, workspace.GetInstancePath(target.Id)).IsSuccessful);
+    }
+
+    [Fact]
+    public void Check_PumpkinBedrockConflict_TargetsBedrockPortForRecovery()
+    {
+        using var workspace = new PortReliabilityTestWorkspace();
+        var processManager = workspace.CreateServerProcessManager();
+        var service = workspace.CreatePortPreflightService(processManager);
+        var running = workspace.CreateInstance("Running Pumpkin", serverType: "Pumpkin");
+        var starting = workspace.CreateInstance("Starting Pumpkin", serverType: "Pumpkin");
+        workspace.WriteFile(running.Id, "pumpkin.toml", """
+            [networking.java]
+            address = "0.0.0.0:25565"
+            [networking.bedrock.nethernet]
+            address = "0.0.0.0:19132"
+            """);
+        workspace.WriteFile(starting.Id, "pumpkin.toml", """
+            [networking.java]
+            address = "0.0.0.0:25592"
+            [networking.bedrock.nethernet]
+            address = "0.0.0.0:19132"
+            """);
+        processManager.SetRunningForTest(running.Id);
+
+        var result = service.Check(starting, workspace.GetInstancePath(starting.Id));
+
+        Assert.False(result.IsSuccessful);
+        Assert.Equal(19132, result.Request.Port);
+        Assert.Equal(PortBindingRole.PumpkinBedrock, result.Request.BindingRole);
+        Assert.Equal(PortProtocol.TcpAndUdp, result.Request.Protocol);
+        Assert.Equal(PortEngine.PumpkinBedrock, result.Request.Engine);
+    }
+
     [Theory]
     [InlineData("-1")]
     [InlineData("0")]

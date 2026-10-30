@@ -18,6 +18,7 @@ public sealed class InstanceArtifactStager
     private readonly PaperProvider _paperProvider;
     private readonly PocketmineProvider _pocketmineProvider;
     private readonly BedrockBdsProvider _bedrockProvider;
+    private readonly PumpkinProvider? _pumpkinProvider;
 
     public InstanceArtifactStager(
         VanillaProvider vanillaProvider,
@@ -26,7 +27,8 @@ public sealed class InstanceArtifactStager
         NeoForgeProvider neoForgeProvider,
         PaperProvider paperProvider,
         PocketmineProvider pocketmineProvider,
-        BedrockBdsProvider bedrockProvider)
+        BedrockBdsProvider bedrockProvider,
+        PumpkinProvider? pumpkinProvider = null)
     {
         _vanillaProvider = vanillaProvider;
         _fabricProvider = fabricProvider;
@@ -35,6 +37,7 @@ public sealed class InstanceArtifactStager
         _paperProvider = paperProvider;
         _pocketmineProvider = pocketmineProvider;
         _bedrockProvider = bedrockProvider;
+        _pumpkinProvider = pumpkinProvider;
     }
 
     public async Task<InstanceUpdateStagedArtifacts> StageAsync(
@@ -98,6 +101,11 @@ public sealed class InstanceArtifactStager
 
     private IServerSoftwareProvider ResolveProvider(string serverType)
     {
+        if (serverType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+        {
+            return _pumpkinProvider ?? throw new InvalidOperationException("No Pumpkin server software provider is registered.");
+        }
+
         if (serverType.StartsWith("Paper", StringComparison.OrdinalIgnoreCase) ||
             serverType.StartsWith("Spigot", StringComparison.OrdinalIgnoreCase))
         {

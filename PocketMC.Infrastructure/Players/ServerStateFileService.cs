@@ -46,7 +46,7 @@ public sealed class ServerStateFileService
                 return await ReadPlainNameFileAsync(Path.Combine(serverRoot, "ops.txt"));
             }
 
-            return await ReadJsonNamesAsync(Path.Combine(serverRoot, "ops.json"));
+            return await ReadJsonNamesAsync(Path.Combine(GetStateDirectory(serverRoot, instance), "ops.json"));
         }
         catch (Exception ex)
         {
@@ -98,7 +98,7 @@ public sealed class ServerStateFileService
                 return entries;
             }
 
-            return await ReadJavaBansAsync(Path.Combine(serverRoot, "banned-players.json"));
+            return await ReadJavaBansAsync(Path.Combine(GetStateDirectory(serverRoot, instance), "banned-players.json"));
         }
         catch (Exception ex)
         {
@@ -128,7 +128,7 @@ public sealed class ServerStateFileService
 
         var watcher = new FileSystemWatcher(serverRoot)
         {
-            IncludeSubdirectories = false,
+            IncludeSubdirectories = instance.Compatibility.Family == EngineFamily.Pumpkin,
             NotifyFilter = NotifyFilters.FileName |
                            NotifyFilters.LastWrite |
                            NotifyFilters.CreationTime |
@@ -169,6 +169,9 @@ public sealed class ServerStateFileService
             debouncer.Dispose();
         });
     }
+
+    private static string GetStateDirectory(string serverRoot, InstanceMetadata instance) =>
+        instance.Compatibility.Family == EngineFamily.Pumpkin ? Path.Combine(serverRoot, "data") : serverRoot;
 
     private static IEnumerable<string> GetWatchedFileNames(InstanceMetadata instance)
     {

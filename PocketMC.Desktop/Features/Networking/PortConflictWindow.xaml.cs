@@ -90,7 +90,7 @@ namespace PocketMC.Desktop.Features.Networking
             if (_suggestedPort.HasValue && _suggestedPort.Value != _currentPort)
             {
                 BorderSuggestedPort.Visibility = Visibility.Visible;
-                string protoText = _request.Protocol == PortProtocol.Udp ? "UDP" : "TCP";
+                string protoText = FormatProtocol(_request.Protocol);
                 TxtSuggestedPortDescription.Text = $"Port {_suggestedPort.Value} ({protoText}) is verified available";
                 TxtPortInput.Text = _suggestedPort.Value.ToString();
             }
@@ -143,6 +143,13 @@ namespace PocketMC.Desktop.Features.Networking
                 return;
             }
 
+            bool isPumpkinBedrock = _request?.Engine == PortEngine.PumpkinBedrock;
+            if (isPumpkinBedrock && port > 65534)
+            {
+                ShowValidationError("Pumpkin Bedrock also needs the following IPv6 UDP port. Choose a port below 65535.");
+                return;
+            }
+
             if (port == _currentPort)
             {
                 ShowValidationError($"Port {port} is the current conflicting port. Choose a different one.");
@@ -160,6 +167,12 @@ namespace PocketMC.Desktop.Features.Networking
                 if (holder != null && holder.InstanceId != _request?.InstanceId)
                 {
                     ShowValidationError($"Port {port} is currently leased by running instance '{holder.InstanceName}'.");
+                    return;
+                }
+                var discoveryHolder = isPumpkinBedrock ? _leaseRegistry.FindHolder(port + 1, PortProtocol.Udp, PortIpMode.IPv6, null) : null;
+                if (discoveryHolder != null && discoveryHolder.InstanceId != _request?.InstanceId)
+                {
+                    ShowValidationError($"Pumpkin's following IPv6 UDP port {port + 1} is leased by '{discoveryHolder.InstanceName}'.");
                     return;
                 }
             }
@@ -219,6 +232,11 @@ namespace PocketMC.Desktop.Features.Networking
                     ShowValidationError($"Port {port} is not available on Windows — it may already be in use by another program.");
                     return;
                 }
+                if (isPumpkinBedrock && !_probeService.Probe(new PortCheckRequest(port + 1, PortProtocol.Udp, PortIpMode.IPv6)).IsSuccessful)
+                {
+                    ShowValidationError($"Pumpkin's following IPv6 UDP port {port + 1} is already in use. Choose another Bedrock port.");
+                    return;
+                }
             }
             catch (Exception ex)
             {
@@ -226,11 +244,20 @@ namespace PocketMC.Desktop.Features.Networking
                 return;
             }
 
-            string protoLabel = protocol == PortProtocol.Udp ? "UDP" : "TCP";
-            TxtSuccess.Text = $"✓ Port {port} ({protoLabel}) is available.";
+            string protoLabel = FormatProtocol(protocol);
+            TxtSuccess.Text = isPumpkinBedrock
+                ? $"✓ Port {port} ({protoLabel}) and IPv6 UDP {port + 1} are available."
+                : $"✓ Port {port} ({protoLabel}) is available.";
             TxtSuccess.Visibility = Visibility.Visible;
             BtnConfirm.IsEnabled = true;
         }
+
+        private static string FormatProtocol(PortProtocol protocol) => protocol switch
+        {
+            PortProtocol.Udp => "UDP",
+            PortProtocol.TcpAndUdp => "TCP/UDP",
+            _ => "TCP"
+        };
 
         private static bool ProtocolsOverlap(PortProtocol left, PortProtocol right)
         {

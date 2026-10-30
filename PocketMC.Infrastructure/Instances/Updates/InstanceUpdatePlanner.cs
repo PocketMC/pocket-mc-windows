@@ -44,7 +44,11 @@ public sealed class InstanceUpdatePlanner
         int targetJava = 0;
         string runtimeChangeText;
 
-        if (targetMetadata.ServerType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
+        if (targetMetadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+        {
+            runtimeChangeText = "Native Pumpkin executable; Java is not required";
+        }
+        else if (targetMetadata.ServerType.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase))
         {
             string currentPhp = PhpRuntimeResolver.GetRequiredPhpVersion(currentMetadata);
             string targetPhp = PhpRuntimeResolver.GetRequiredPhpVersion(targetMetadata);
@@ -82,6 +86,11 @@ public sealed class InstanceUpdatePlanner
 
     public static string ResolveServerArtifactFileName(string serverType)
     {
+        if (serverType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+        {
+            return "pumpkin.exe";
+        }
+
         if (serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase))
         {
             return "bedrock-server.zip";

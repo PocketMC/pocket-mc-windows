@@ -51,7 +51,7 @@ public class ExportManifestBuilder
 
     private static ServerSoftwareManifest BuildSoftwareManifest(InstanceMetadata metadata, bool isJava)
     {
-        ServerSoftwareManifest software = isJava
+        ServerSoftwareManifest software = isJava || metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase)
             ? new JavaServerSoftwareManifest()
             : new BedrockServerSoftwareManifest();
 
@@ -63,7 +63,7 @@ public class ExportManifestBuilder
 
     private static InstanceRuntimeManifest BuildRuntimeManifest(InstanceMetadata metadata, bool isJava)
     {
-        if (!isJava)
+        if (!isJava || metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
         {
             return new InstanceRuntimeManifest { Type = InstanceRuntimeType.Native };
         }
