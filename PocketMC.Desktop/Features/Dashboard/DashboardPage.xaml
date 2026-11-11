@@ -3,7 +3,8 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"
-      Title="Dashboard">
+      xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
+      Title="{loc:Tr 'Dashboard'}">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -88,8 +89,8 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,24" Orientation="Horizontal">
-            <ui:TextBlock FontTypography="Title" Text="Instances" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-            <ui:Button Content="New Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand" VerticalAlignment="Center" Margin="0,6,0,0"/>
+            <ui:TextBlock FontTypography="Title" Text="{loc:Tr Instances}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center"/>
+            <ui:Button Content="{loc:Tr New Instance}" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" Cursor="Hand" VerticalAlignment="Center" Margin="0,6,0,0"/>
         </StackPanel>
 
         <ScrollViewer x:Name="DashboardScrollViewer"
@@ -187,10 +188,10 @@
                             <ui:SymbolIcon Symbol="Box24" FontSize="40" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         
-                        <ui:TextBlock FontTypography="Title" Text="No instances found" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                        <ui:TextBlock Text="Get started by creating your first local Minecraft server instance." FontSize="14" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,32"/>
+                        <ui:TextBlock FontTypography="Title" Text="{loc:Tr No instances found}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <ui:TextBlock Text="{loc:Tr Get started by creating your first local Minecraft server instance.}" FontSize="14" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,32"/>
                         
-                        <ui:Button Content="Create Instance" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" HorizontalAlignment="Center" Cursor="Hand" Padding="32,10" FontSize="14" FontWeight="SemiBold"/>
+                        <ui:Button Content="{loc:Tr Create Instance}" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" Command="{Binding DataContext.NewInstanceCommand, RelativeSource={RelativeSource AncestorType=Page}}" HorizontalAlignment="Center" Cursor="Hand" Padding="32,10" FontSize="14" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Border>
 
@@ -263,7 +264,7 @@
                                         <StackPanel Grid.Column="0">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 <ui:TextBlock FontTypography="Subtitle" Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                                <ui:SymbolIcon Symbol="Pin24" FontSize="15" Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}" Margin="6,2,0,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center" ToolTip="Pinned to Top"/>
+                                                <ui:SymbolIcon Symbol="Pin24" FontSize="15" Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}" Margin="6,2,0,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center" ToolTip="{loc:Tr Pinned to Top}"/>
                                             </StackPanel>
                                             <WrapPanel Margin="0,6,0,0">
                                                 <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,5,3">
@@ -288,17 +289,15 @@
                                                 <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </StackPanel>
-                                        <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}" Click="BtnMoreOptions_Click" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Page}}" ToolTip="More options" AutomationProperties.Name="{Binding Name, StringFormat='More options for {0}'}" VerticalAlignment="Top" Padding="6,4">
+                                        <ui:Button Grid.Column="1" Appearance="Transparent" Icon="{ui:SymbolIcon MoreVertical24}" Click="BtnMoreOptions_Click" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Page}}" ToolTip="{loc:Tr More options}" AutomationProperties.Name="{Binding Name, StringFormat='More options for {0}'}" VerticalAlignment="Top" Padding="6,4">
                                             <ui:Button.ContextMenu>
                                                 <ContextMenu>
-                                                    <MenuItem Command="{Binding PlacementTarget.Tag.TogglePinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}">
+                                                    <MenuItem Command="{Binding PlacementTarget.Tag.TogglePinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" Header="{Binding PinActionText}">
                                                         <MenuItem.Style>
                                                             <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                                                                <Setter Property="Header" Value="Pin Instance" />
                                                                 <Setter Property="Icon" Value="{ui:SymbolIcon Pin24}" />
                                                                 <Style.Triggers>
                                                                     <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                                        <Setter Property="Header" Value="Unpin Instance" />
                                                                         <Setter Property="Icon" Value="{ui:SymbolIcon PinOff24}" />
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
@@ -306,11 +305,11 @@
                                                         </MenuItem.Style>
                                                     </MenuItem>
                                                     <Separator/>
-                                                    <MenuItem Header="Copy Crash Report" Command="{Binding PlacementTarget.Tag.CopyCrashReportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                                    <MenuItem Header="Open Folder" Command="{Binding PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
-                                                    <MenuItem Header="Export Instance" Command="{Binding PlacementTarget.Tag.ExportInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                    <MenuItem Header="{loc:Tr Copy Crash Report}" Command="{Binding PlacementTarget.Tag.CopyCrashReportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                    <MenuItem Header="{loc:Tr Open Folder}" Command="{Binding PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                    <MenuItem Header="{loc:Tr Export Instance}" Command="{Binding PlacementTarget.Tag.ExportInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                                     <Separator/>
-                                                    <MenuItem Header="Delete Instance" Command="{Binding PlacementTarget.Tag.DeleteInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
+                                                    <MenuItem Header="{loc:Tr Delete Instance}" Command="{Binding PlacementTarget.Tag.DeleteInstanceCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}" />
                                                 </ContextMenu>
                                             </ui:Button.ContextMenu>
                                         </ui:Button>
@@ -325,12 +324,12 @@
                                             </StackPanel>
 
                                             <StackPanel Margin="4,0,4,0" HorizontalAlignment="Stretch">
-                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Created" TextAlignment="Center"/>
+                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="{loc:Tr Created}" TextAlignment="Center"/>
                                                 <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding CreatedValueText}" TextAlignment="Center"/>
                                             </StackPanel>
 
                                             <StackPanel Margin="8,0,0,0">
-                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="Platform" TextAlignment="Right"/>
+                                                <TextBlock Style="{StaticResource MetadataItemLabel}" Text="{loc:Tr Platform}" TextAlignment="Right"/>
                                                 <TextBlock Style="{StaticResource MetadataItemValue}" Text="{Binding PlatformSummaryText}" TextAlignment="Right"/>
                                             </StackPanel>
                                         </UniformGrid>
@@ -339,11 +338,11 @@
                                     <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,0,12">
                                         <UniformGrid Columns="3">
                                             <StackPanel HorizontalAlignment="Center">
-                                                <TextBlock Text="CPU" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'CPU'}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                 <TextBlock Text="{Binding CpuText}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                             </StackPanel>
                                             <StackPanel HorizontalAlignment="Center">
-                                                <TextBlock Text="RAM" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr RAM}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                 <TextBlock Text="{Binding RamText}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                             </StackPanel>
                                             <ui:Button Appearance="Transparent"
@@ -354,11 +353,11 @@
                                                        VerticalAlignment="Center"
                                                        Command="{Binding DataContext.OpenPlayersCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                        CommandParameter="{Binding}"
-                                                       ToolTip="Manage online players"
+                                                       ToolTip="{loc:Tr Manage online players}"
                                                        AutomationProperties.Name="{Binding Name, StringFormat='Manage online players for {0}'}"
                                                        Cursor="Hand">
                                                 <StackPanel HorizontalAlignment="Center">
-                                                    <TextBlock Text="PLAYERS" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="{loc:Tr PLAYERS}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
                                                     <TextBlock Text="{Binding PlayerStatus}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                                 </StackPanel>
                                             </ui:Button>
@@ -396,7 +395,7 @@
                                                 </ui:SymbolIcon.Style>
                                             </ui:SymbolIcon>
                                             <TextBlock Grid.Column="1" Text="{Binding TunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click" ToolTip="Copy IP address" AutomationProperties.Name="{Binding Name, StringFormat='Copy primary IP address for {0}'}"/>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyIp_Click" ToolTip="{loc:Tr Copy IP address}" AutomationProperties.Name="{Binding Name, StringFormat='Copy primary IP address for {0}'}"/>
                                         </Grid>
                                     </Border>
 
@@ -411,10 +410,10 @@
                                             </Grid.ColumnDefinitions>
                                             <ui:SymbolIcon Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="Local Network (LAN)" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="Bold"/>
+                                                <TextBlock Text="{loc:Tr Local Network (LAN)}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="Bold"/>
                                                 <TextBlock Text="{Binding LanAddressDisplayText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
-                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyLanIp_Click" ToolTip="Copy Local Network LAN IP" AutomationProperties.Name="{Binding Name, StringFormat='Copy Local Network LAN IP for {0}'}"/>
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyLanIp_Click" ToolTip="{loc:Tr Copy Local Network LAN IP}" AutomationProperties.Name="{Binding Name, StringFormat='Copy Local Network LAN IP for {0}'}"/>
                                         </Grid>
                                     </Border>
 
@@ -433,7 +432,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding NumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyNumericIp_Click" ToolTip="Copy Numeric IP address" AutomationProperties.Name="{Binding Name, StringFormat='Copy numeric IP for {0}'}"/>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyNumericIp_Click" ToolTip="{loc:Tr Copy Numeric IP address}" AutomationProperties.Name="{Binding Name, StringFormat='Copy numeric IP for {0}'}"/>
                                             </Grid>
                                         </Border>
                                     </StackPanel>
@@ -452,10 +451,10 @@
                                                 </Grid.ColumnDefinitions>
                                                 <ui:SymbolIcon Grid.Column="0" Symbol="Cube24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="Bedrock" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
+                                                    <TextBlock Text="{loc:Tr Bedrock}" FontSize="10" Foreground="{DynamicResource SystemFillColorCautionBrush}" FontWeight="Bold"/>
                                                     <TextBlock Text="{Binding BedrockTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click" ToolTip="Copy Bedrock IP address" AutomationProperties.Name="{Binding Name, StringFormat='Copy Bedrock IP address for {0}'}"/>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click" ToolTip="{loc:Tr Copy Bedrock IP address}" AutomationProperties.Name="{Binding Name, StringFormat='Copy Bedrock IP address for {0}'}"/>
                                             </Grid>
                                         </Border>
                                         <!-- Skeleton: Geyser Bedrock numeric -->
@@ -470,7 +469,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <ui:SymbolIcon Grid.Column="0" Symbol="NumberSymbol24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding BedrockNumericTunnelAddress}" FontSize="12" Foreground="{DynamicResource SystemFillColorCautionBrush}" Opacity="0.7" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockNumericIp_Click" ToolTip="Copy Bedrock numeric IP" AutomationProperties.Name="{Binding Name, StringFormat='Copy Bedrock numeric IP for {0}'}"/>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockNumericIp_Click" ToolTip="{loc:Tr Copy Bedrock numeric IP}" AutomationProperties.Name="{Binding Name, StringFormat='Copy Bedrock numeric IP for {0}'}"/>
                                             </Grid>
                                         </Border>
                                     </StackPanel>
@@ -479,16 +478,16 @@
                                 <!-- Actions -->
                                  <Grid Grid.Row="4">
                                      <UniformGrid Columns="2" Visibility="{Binding StoppedControlsVisibility}">
-                                         <ui:Button Content="Start" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Start server {0}'}"/>
-                                         <ui:Button Content="Logs" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open logs for {0}'}"/>
-                                         <ui:Button Content="Files" Appearance="Secondary" Icon="{ui:SymbolIcon Folder24}" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open files folder for {0}'}"/>
-                                         <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open settings for {0}'}"/>
+                                         <ui:Button Content="{loc:Tr Start}" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Start server {0}'}"/>
+                                         <ui:Button Content="{loc:Tr Logs}" Appearance="Secondary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open logs for {0}'}"/>
+                                         <ui:Button Content="{loc:Tr Files}" Appearance="Secondary" Icon="{ui:SymbolIcon Folder24}" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open files folder for {0}'}"/>
+                                         <ui:Button Content="{loc:Tr Settings}" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open settings for {0}'}"/>
                                      </UniformGrid>
                                      <UniformGrid Columns="2" Visibility="{Binding RunningControlsVisibility}">
                                          <ui:Button Content="{Binding StopButtonText}" Appearance="Danger" Icon="{ui:SymbolIcon Stop24}" Command="{Binding DataContext.StopServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Stop server {0}'}"/>
-                                         <ui:Button Content="Restart" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding DataContext.RestartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Restart server {0}'}"/>
-                                         <ui:Button Content="Console" Appearance="Primary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open live console for {0}'}"/>
-                                         <ui:Button Content="Settings" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open settings for {0}'}"/>
+                                         <ui:Button Content="{loc:Tr Restart}" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding DataContext.RestartServerCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Restart server {0}'}"/>
+                                         <ui:Button Content="{loc:Tr Console}" Appearance="Primary" Icon="{ui:SymbolIcon WindowConsole20}" Command="{Binding DataContext.OpenConsoleCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open live console for {0}'}"/>
+                                         <ui:Button Content="{loc:Tr Settings}" Appearance="Secondary" Icon="{ui:SymbolIcon Settings24}" Command="{Binding DataContext.ServerSettingsCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="2" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding Name, StringFormat='Open settings for {0}'}"/>
                                      </UniformGrid>
                                  </Grid>
                             </Grid>

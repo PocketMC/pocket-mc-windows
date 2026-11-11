@@ -1,5 +1,6 @@
 ﻿using PocketMC.Desktop.Infrastructure;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -440,7 +441,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             return lastResult ?? new TunnelResolutionResult
             {
                 Status = TunnelResolutionResult.TunnelStatus.Error,
-                ErrorMessage = "Tunnel resolution did not complete."
+                ErrorMessage = L.T("Tunnel resolution did not complete.")
             };
         }
 

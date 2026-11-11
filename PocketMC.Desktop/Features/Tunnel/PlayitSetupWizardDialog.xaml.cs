@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using PocketMC.Desktop.Localization;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Threading;
@@ -180,7 +181,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             TxtWizardSetupCode.IsEnabled = false;
             TxtConnectStatus.Visibility = Visibility.Collapsed;
             ConnectingPanel.Visibility = Visibility.Visible;
-            TxtConnectingStatus.Text = "Provisioning agent...";
+            TxtConnectingStatus.Text = L.T("Provisioning agent...");
 
             try
             {
@@ -189,7 +190,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                 if (result.Success)
                 {
-                    TxtConnectingStatus.Text = "Agent connected! Closing...";
+                    TxtConnectingStatus.Text = L.T("Agent connected! Closing...");
                     // Give the agent state change event a moment to fire
                     await Task.Delay(1500);
                     ShowConnectSuccess();
@@ -231,7 +232,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             SetupCompleted = true;
 
             ConnectingPanel.Visibility = Visibility.Collapsed;
-            TxtConnectStatus.Text = "✓ Agent connected successfully!";
+            TxtConnectStatus.Text = L.T("✓ Agent connected successfully!");
             TxtConnectStatus.Foreground = Brushes.LimeGreen;
             TxtConnectStatus.Visibility = Visibility.Visible;
 

@@ -1,5 +1,6 @@
 using PocketMC.Application.Services.Networking;
 using PocketMC.Application.Services.Instances;
+using PocketMC.Desktop.Localization;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Domain.Models;
 using System;
@@ -92,10 +93,10 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         try
         {
             if (_processManager.IsRunning(meta.Id))
-                throw new InvalidOperationException($"Server '{meta.Name}' is already running.");
+                throw new InvalidOperationException(L.F("Server '{0}' is already running.", meta.Name));
 
             string instancePath = _registry.GetPath(meta.Id)
-                ?? throw new DirectoryNotFoundException($"Could not locate directory for instance {meta.Name}.");
+                ?? throw new DirectoryNotFoundException(L.F("Could not locate directory for instance {0}.", meta.Name));
 
             if (_geyserDetector.IsGeyserInstalled(instancePath))
             {
@@ -369,14 +370,14 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         if (proc?.LastCrashAnalysis?.IsFatalModConfigurationError == true)
         {
             _logger.LogInformation("Auto-restart skipped for '{ServerName}' due to fatal mod/dependency configuration error.", meta.Name);
-            _notificationService.ShowInformation("Auto-Restart Paused", $"Server '{meta.Name}' stopped due to a missing mod or dependency error. Fix the required mods before restarting.");
+            _notificationService.ShowInformation("Auto-Restart Paused", L.F("Server '{0}' stopped due to a missing mod or dependency error. Fix the required mods before restarting.", meta.Name));
             return;
         }
 
         int attempts = _consecutiveRestarts.GetOrAdd(instanceId, 0);
         if (attempts >= meta.MaxAutoRestarts)
         {
-            _notificationService.ShowInformation("Restart Limit Reached", $"Server '{meta.Name}' stopped after {attempts} failed restarts.");
+            _notificationService.ShowInformation("Restart Limit Reached", L.F("Server '{0}' stopped after {1} failed restarts.", meta.Name, attempts));
             return;
         }
 
@@ -402,12 +403,12 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
         }
         catch (PortReliabilityException ex)
         {
-            _notificationService.ShowInformation("Restart Blocked", $"Server '{meta.Name}' could not restart.\n\n{ex.Message}");
+            _notificationService.ShowInformation("Restart Blocked", L.F("Server '{0}' could not restart.\n\n{1}", meta.Name, ex.Message));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Auto-restart failed for server '{ServerName}'.", meta.Name);
-            _notificationService.ShowInformation("Restart Failed", $"Server '{meta.Name}' could not restart automatically.");
+            _notificationService.ShowInformation("Restart Failed", L.F("Server '{0}' could not restart automatically.", meta.Name));
         }
         finally
         {
@@ -462,14 +463,14 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
                 existingLease: conflictingLease,
                 details: conflictingLease?.InstanceName == null
                     ? "Another PocketMC startup already reserved the required port binding."
-                    : $"Instance '{conflictingLease.InstanceName}' already reserved the required port binding.");
+                    : L.F("Instance '{0}' already reserved the required port binding.", conflictingLease.InstanceName));
 
             var recommendation = new PortRecoveryRecommendation(
                 PortFailureCode.InUseByPocketMcInstance,
                 "Release the competing PocketMC lease",
                 conflictingLease?.InstanceName == null
                     ? "Wait for the other PocketMC startup to finish or change this instance to a different port."
-                    : $"Stop '{conflictingLease.InstanceName}' or change this instance to a different port.",
+                    : L.F("Stop '{0}' or change this instance to a different port.", conflictingLease.InstanceName),
                 suggestedProtocol: request.Protocol,
                 suggestedIpMode: request.IpMode,
                 canAutoApply: false,
@@ -480,7 +481,7 @@ public class ServerLifecycleService : IServerLifecycleService, IDisposable
                 isSuccessful: false,
                 canBindLocally: false,
                 failureCode: PortFailureCode.InUseByPocketMcInstance,
-                failureMessage: $"Port {request.Port} is already reserved by another PocketMC instance.",
+                failureMessage: L.F("Port {0} is already reserved by another PocketMC instance.", request.Port),
                 lease: null,
                 conflicts: new[] { conflict },
                 recommendations: new[] { recommendation });

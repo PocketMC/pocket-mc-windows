@@ -47,7 +47,7 @@ public class VanillaProvider : IServerSoftwareProvider
             var response = await _httpClient.GetStringAsync(url);
             var manifest = JsonSerializer.Deserialize<VersionManifest>(response, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            var minVersion = new Version(1, 8, 8);
+            var minVersion = new Version(1, 7, 10);
             return manifest?.Versions
                 .Where(v => JavaRuntimeResolver.TryParseVersion(v.Id, out var version) && version >= minVersion)
                 .ToList() ?? new List<MinecraftVersion>();

@@ -1,8 +1,8 @@
-<Page x:Class="PocketMC.Desktop.Features.Tunnel.TunnelPage"
+<Page x:Class="PocketMC.Desktop.Features.Tunnel.TunnelPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      Title="Tunnel">
+      Title="{loc:Tr 'Tunnel'}">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -22,30 +22,30 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
-                <ui:TextBlock FontTypography="Title" Text="Tunnel" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
-                <TextBlock Text="Manage the Playit.gg agent, download the tunnel binary, and retry connections without leaving PocketMC."
+                <ui:TextBlock FontTypography="Title" Text="{loc:Tr 'Tunnel'}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+                <TextBlock Text="{loc:Tr 'Manage the Playit.gg agent, download the tunnel binary, and retry connections without leaving PocketMC.'}"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                            TextWrapping="Wrap"
                            FontSize="13"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <ui:Button x:Name="BtnNetworkStatus"
-                           Content="Network Status"
+                           Content="{loc:Tr 'Network Status'}"
                            Icon="{ui:SymbolIcon Pulse24}"
                            Appearance="Secondary"
                            FontSize="12"
                            Padding="12,6"
                            Margin="0,0,8,0"
-                           AutomationProperties.Name="Open Network Status diagnostics"
+                           AutomationProperties.Name="{loc:Tr 'Open Network Status diagnostics'}"
                            Click="BtnNetworkStatus_Click"
                            Cursor="Hand"/>
                 <ui:Button x:Name="BtnPortsMap"
-                           Content="Interactive Ports Map"
+                           Content="{loc:Tr 'Interactive Ports Map'}"
                            Icon="{ui:SymbolIcon Grid24}"
                            Appearance="Secondary"
                            FontSize="12"
                            Padding="12,6"
-                           AutomationProperties.Name="Open Interactive Ports Map"
+                           AutomationProperties.Name="{loc:Tr 'Open Interactive Ports Map'}"
                            Click="BtnPortsMap_Click"
                            Cursor="Hand"/>
             </StackPanel>
@@ -75,7 +75,7 @@
 
                     <StackPanel Grid.Row="0" Margin="0,0,0,12">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                            <TextBlock Text="Agent Status"
+                            <TextBlock Text="{loc:Tr 'Agent Status'}"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        FontSize="12"/>
                             <ui:SymbolIcon x:Name="AgentPathInfoIcon"
@@ -83,15 +83,15 @@
                                            FontSize="14"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            Margin="6,0,0,0"
-                                           ToolTipService.ToolTip="Agent Path: Not configured"/>
+                                           ToolTipService.ToolTip="{loc:Tr 'Agent Path: Not configured'}"/>
                         </StackPanel>
                         <TextBlock x:Name="TxtStatusValue"
-                                   Text="Checking..."
+                                   Text="{loc:Tr 'Checking...'}"
                                    Foreground="{DynamicResource SystemFillColorCautionBrush}"
                                    FontSize="26"
                                    FontWeight="SemiBold"/>
                         <TextBlock x:Name="TxtStatusDetail"
-                                   Text="Preparing tunnel diagnostics..."
+                                   Text="{loc:Tr 'Preparing tunnel diagnostics...'}"
                                    Margin="0,6,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"/>
@@ -113,66 +113,66 @@
 
                     <StackPanel Grid.Row="3" Orientation="Horizontal">
                         <ui:Button x:Name="BtnDownloadAgent"
-                                   Content="Download Agent"
+                                   Content="{loc:Tr 'Download Agent'}"
                                    Icon="{ui:SymbolIcon ArrowDownload24}"
                                    Appearance="Primary"
-                                   AutomationProperties.Name="Download Playit agent binary"
+                                   AutomationProperties.Name="{loc:Tr 'Download Playit agent binary'}"
                                    Click="BtnDownloadAgent_Click"
                                    Cursor="Hand"
                                    Visibility="Collapsed"
                                    Margin="0,0,8,0"/>
                         <ui:Button x:Name="BtnSetupAgent"
-                                   Content="Setup Agent"
+                                   Content="{loc:Tr 'Setup Agent'}"
                                    Icon="{ui:SymbolIcon PersonAdd24}"
                                    Appearance="Secondary"
-                                   AutomationProperties.Name="Setup Playit agent"
+                                   AutomationProperties.Name="{loc:Tr 'Setup Playit agent'}"
                                    Click="BtnSetupAgent_Click"
                                    Cursor="Hand"
                                    Visibility="Collapsed"
                                    Margin="0,0,8,0"/>
                         <ui:Button x:Name="BtnConnect"
-                                   Content="Connect"
+                                   Content="{loc:Tr 'Connect'}"
                                    Icon="{ui:SymbolIcon Play24}"
                                    Appearance="Secondary"
-                                   AutomationProperties.Name="Connect Playit tunnel"
+                                   AutomationProperties.Name="{loc:Tr 'Connect Playit tunnel'}"
                                    Click="BtnConnect_Click"
                                    Cursor="Hand"
                                    Visibility="Collapsed"
                                    Margin="0,0,8,0"/>
                         <ui:Button x:Name="BtnDisconnect"
-                                   Content="Disconnect"
+                                   Content="{loc:Tr 'Disconnect'}"
                                    Icon="{ui:SymbolIcon Stop24}"
                                    Appearance="Secondary"
-                                   AutomationProperties.Name="Disconnect Playit tunnel"
+                                   AutomationProperties.Name="{loc:Tr 'Disconnect Playit tunnel'}"
                                    Click="BtnDisconnect_Click"
                                    Cursor="Hand"
                                    Visibility="Collapsed"
                                    Margin="0,0,8,0"/>
                         <ui:Button x:Name="BtnDeleteAgent"
-                                   Content="Delete Agent"
+                                   Content="{loc:Tr 'Delete Agent'}"
                                    Icon="{ui:SymbolIcon Delete24}"
                                    Appearance="Secondary"
-                                   AutomationProperties.Name="Delete Playit agent binary"
+                                   AutomationProperties.Name="{loc:Tr 'Delete Playit agent binary'}"
                                    Click="BtnDeleteAgent_Click"
                                    Cursor="Hand"
                                    Visibility="Collapsed"
                                    Margin="0,0,8,0"/>
                         <ui:Button x:Name="BtnRefresh"
-                                   Content="Refresh"
+                                   Content="{loc:Tr 'Refresh'}"
                                    Icon="{ui:SymbolIcon ArrowSync24}"
                                    Appearance="Secondary"
-                                   AutomationProperties.Name="Refresh Playit tunnel status"
+                                   AutomationProperties.Name="{loc:Tr 'Refresh Playit tunnel status'}"
                                    Click="BtnRefresh_Click"
                                    Cursor="Hand"
                                    Margin="0,0,8,0"/>
                         <ui:Button x:Name="BtnViewLogs"
-                                   Content="Console Logs"
+                                   Content="{loc:Tr 'Console Logs'}"
                                    Icon="{ui:SymbolIcon WindowDevTools24}"
                                    Appearance="Secondary"
-                                   AutomationProperties.Name="View Playit agent console logs"
+                                   AutomationProperties.Name="{loc:Tr 'View Playit agent console logs'}"
                                    Click="BtnViewLogs_Click"
                                    Cursor="Hand"
-                                   ToolTip="View live Playit agent console logs"/>
+                                   ToolTip="{loc:Tr 'View live Playit agent console logs'}"/>
                     </StackPanel>
                 </Grid>
 
@@ -181,7 +181,7 @@
                             VerticalAlignment="Top"
                             HorizontalAlignment="Right"
                             Margin="20,0,0,0">
-                    <TextBlock Text="Special Thanks to Playit.gg"
+                    <TextBlock Text="{loc:Tr 'Special Thanks to Playit.gg'}"
                                FontSize="13"
                                FontWeight="Medium"
                                HorizontalAlignment="Right"
@@ -194,21 +194,21 @@
                         </TextBlock.Foreground>
                     </TextBlock>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <ui:Button Content="Manage Agents"
+                        <ui:Button Content="{loc:Tr 'Manage Agents'}"
                                    Icon="{ui:SymbolIcon Link24}"
                                    Appearance="Secondary"
                                    FontSize="11"
                                    Padding="10,5"
                                    Margin="0,0,8,0"
-                                   AutomationProperties.Name="Manage Playit agents online"
+                                   AutomationProperties.Name="{loc:Tr 'Manage Playit agents online'}"
                                    Click="BtnManageAgents_Click"
                                    Cursor="Hand"/>
-                        <ui:Button Content="Visit Playit.gg"
+                        <ui:Button Content="{loc:Tr 'Visit Playit.gg'}"
                                    Icon="{ui:SymbolIcon Open24}"
                                    Appearance="Secondary"
                                    FontSize="11"
                                    Padding="10,5"
-                                   AutomationProperties.Name="Visit Playit.gg website"
+                                   AutomationProperties.Name="{loc:Tr 'Visit Playit.gg website'}"
                                    Click="BtnVisitPlayit_Click"
                                    Cursor="Hand"/>
                     </StackPanel>
@@ -239,13 +239,13 @@
 
                     <ui:TextBlock Grid.Column="0"
                                   FontTypography="Subtitle"
-                                  Text="Active Tunnels"
+                                  Text="{loc:Tr 'Active Tunnels'}"
                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                   VerticalAlignment="Center"/>
 
                     <ui:Button Grid.Column="1"
                                x:Name="BtnCreateTunnel"
-                               Content="Create Tunnel"
+                               Content="{loc:Tr 'Create Tunnel'}"
                                Icon="{ui:SymbolIcon Add24}"
                                Appearance="Primary"
                                FontSize="12"
@@ -257,7 +257,7 @@
 
                 <TextBlock x:Name="TxtTunnelListStatus"
                            Grid.Row="1"
-                           Text="No tunnel data yet."
+                           Text="{loc:Tr 'No tunnel data yet.'}"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                            Margin="0,0,0,12"
                            TextWrapping="Wrap"/>
@@ -265,8 +265,8 @@
                 <ui:Card x:Name="EmptyStateCard" Grid.Row="1" Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}" Visibility="Collapsed" Margin="0,0,0,24">
                     <StackPanel HorizontalAlignment="Center">
                         <ui:SymbolIcon Symbol="GlobeSearch24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                        <TextBlock Text="No tunnels created" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                        <TextBlock x:Name="TxtEmptyStateMessage" Text="Click 'Create Tunnel' to expose your server to the internet." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
+                        <TextBlock Text="{loc:Tr 'No tunnels created'}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock x:Name="TxtEmptyStateMessage" Text="{loc:Tr &quot;Click 'Create Tunnel' to expose your server to the internet.&quot;}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
                     </StackPanel>
                 </ui:Card>
 
@@ -378,11 +378,11 @@
                                                  Padding="4,4"
                                                  TextChanged="TunnelName_TextChanged"
                                                  KeyDown="TunnelName_KeyDown"
-                                                 ToolTip="Edit the tunnel name, then click Save"/>
+                                                 ToolTip="{loc:Tr 'Edit the tunnel name, then click Save'}"/>
 
                                         <!-- Save name button -->
                                         <ui:Button Grid.Column="4"
-                                                   Content="Save"
+                                                   Content="{loc:Tr 'Save'}"
                                                    Appearance="Primary"
                                                    FontSize="11"
                                                    Padding="10,4"
@@ -391,7 +391,7 @@
                                                    Tag="{Binding Id}"
                                                    Cursor="Hand"
                                                    VerticalAlignment="Center"
-                                                   ToolTip="Save the new tunnel name"/>
+                                                   ToolTip="{loc:Tr 'Save the new tunnel name'}"/>
 
                                         <!-- Enable/disable toggle (native ToggleSwitch) -->
                                         <ui:ToggleSwitch Grid.Column="6"
@@ -399,12 +399,12 @@
                                                          Tag="{Binding Id}"
                                                          Checked="ToggleEnabled_Changed"
                                                          Unchecked="ToggleEnabled_Changed"
-                                                         ToolTip="Enable or disable this tunnel"
+                                                         ToolTip="{loc:Tr 'Enable or disable this tunnel'}"
                                                          VerticalAlignment="Center"/>
 
                                         <!-- Delete button -->
                                         <ui:Button Grid.Column="8"
-                                                   ToolTip="Delete this tunnel"
+                                                   ToolTip="{loc:Tr 'Delete this tunnel'}"
                                                    Icon="{ui:SymbolIcon Delete24}"
                                                    Appearance="Secondary"
                                                    Padding="6"
@@ -415,7 +415,7 @@
 
                                         <!-- Copy address -->
                                         <ui:Button Grid.Column="10"
-                                                   ToolTip="Copy public address"
+                                                   ToolTip="{loc:Tr 'Copy public address'}"
                                                    Appearance="Secondary"
                                                    Icon="{ui:SymbolIcon Copy24}"
                                                    Padding="6"
@@ -445,7 +445,7 @@
                                                 CornerRadius="6"
                                                 Padding="6,4">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Port"
+                                                <TextBlock Text="{loc:Tr 'Port'}"
                                                            FontSize="11"
                                                            Foreground="{DynamicResource SystemFillColorSuccessBrush}"
                                                            FontWeight="Medium"
@@ -465,13 +465,13 @@
                                                          TextChanged="TunnelPort_TextChanged"
                                                          KeyDown="TunnelPort_KeyDown"
                                                          IsEnabled="{Binding HasAgentOrigin}"
-                                                         ToolTip="Edit local port, then click Save"/>
+                                                         ToolTip="{loc:Tr 'Edit local port, then click Save'}"/>
                                             </StackPanel>
                                         </Border>
 
                                         <!-- Save port button -->
                                         <ui:Button Grid.Column="2"
-                                                   Content="Save"
+                                                   Content="{loc:Tr 'Save'}"
                                                    Appearance="Primary"
                                                    FontSize="11"
                                                    Padding="10,4"
@@ -480,7 +480,7 @@
                                                    Tag="{Binding Id}"
                                                    Cursor="Hand"
                                                    VerticalAlignment="Center"
-                                                   ToolTip="Save the new local port"/>
+                                                   ToolTip="{loc:Tr 'Save the new local port'}"/>
 
                                         <!-- Tunnel Type (read-only) -->
                                         <Border Grid.Column="4"

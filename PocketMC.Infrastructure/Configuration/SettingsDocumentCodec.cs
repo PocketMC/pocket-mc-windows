@@ -32,7 +32,10 @@ internal static class SettingsDocumentCodec
                 nameof(AppSettings.StartMinimizedToTray), nameof(AppSettings.MinimizeToTrayOnClose),
                 nameof(AppSettings.KeepComputerAwakeWhileServersRunning), nameof(AppSettings.PlayitConfigDirectory),
                 nameof(AppSettings.PlayitVersion), nameof(AppSettings.ExternalBackupDirectory),
-                nameof(AppSettings.ConsoleBufferSize), nameof(AppSettings.LastSeenChangelogVersion)
+                nameof(AppSettings.ConsoleBufferSize), nameof(AppSettings.LastSeenChangelogVersion),
+                nameof(AppSettings.Language),
+                nameof(AppSettings.UseDownloadMirrors), nameof(AppSettings.CustomDownloadMirror),
+                nameof(AppSettings.DownloadThreads), nameof(AppSettings.DownloadConcurrency)
             ],
             ["appearance"] =
             [

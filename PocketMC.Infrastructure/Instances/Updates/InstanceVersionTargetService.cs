@@ -23,36 +23,40 @@ public sealed class InstanceVersionTargetService
         List<MinecraftVersion> versions = await provider.GetAvailableVersionsAsync();
         cancellationToken.ThrowIfCancellationRequested();
 
-        return SelectVersionsAfterCurrent(versions, metadata.MinecraftVersion);
+        return versions
+            .Where(version => !string.IsNullOrWhiteSpace(version.Id))
+            .Where(version => version.Type.Equals("release", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(version.Type))
+            .DistinctBy(version => version.Id, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(version => ParseSortableVersion(version.Id))
+            .ThenByDescending(version => version.Id, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
+    /// <summary>Returns every loader build published for the given Minecraft version.</summary>
     public async Task<IReadOnlyList<ModLoaderVersion>> GetAvailableLoaderVersionsAsync(
         InstanceMetadata metadata,
+        string? minecraftVersion = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(metadata);
 
+        string targetVersion = string.IsNullOrWhiteSpace(minecraftVersion)
+            ? metadata.MinecraftVersion
+            : minecraftVersion;
+
         IServerSoftwareProvider provider = ResolveProvider(metadata.ServerType);
-        List<ModLoaderVersion> builds = await provider.GetBuildsAsync(metadata.MinecraftVersion);
+        List<ModLoaderVersion> builds = await provider.GetBuildsAsync(targetVersion);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (string.IsNullOrWhiteSpace(metadata.LoaderVersion))
-        {
-            return builds.ToArray();
-        }
+        return builds
+            .Where(build => !string.IsNullOrWhiteSpace(build.Version))
+            .DistinctBy(build => build.Version, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 
-        int currentIndex = builds.FindIndex(b => b.Version.Equals(metadata.LoaderVersion, StringComparison.OrdinalIgnoreCase));
-        
-        if (currentIndex > 0)
-        {
-            return builds.Take(currentIndex).ToArray();
-        }
-        else if (currentIndex == -1)
-        {
-            return builds.ToArray();
-        }
-
-        return Array.Empty<ModLoaderVersion>();
+    private static Version ParseSortableVersion(string versionId)
+    {
+        return JavaRuntimeResolver.TryParseVersion(versionId, out Version parsed) ? parsed : new Version(0, 0);
     }
 
     private IServerSoftwareProvider ResolveProvider(string serverType)
@@ -99,41 +103,5 @@ public sealed class InstanceVersionTargetService
             provider.DisplayName.StartsWith(displayNamePrefix, StringComparison.OrdinalIgnoreCase));
 
         return provider ?? throw new InvalidOperationException($"No {displayNamePrefix} version provider is registered.");
-    }
-
-    private static IReadOnlyList<MinecraftVersion> SelectVersionsAfterCurrent(
-        IReadOnlyList<MinecraftVersion> versions,
-        string currentVersion)
-    {
-        var releaseVersions = versions
-            .Where(version => !string.IsNullOrWhiteSpace(version.Id))
-            .Where(version => version.Type.Equals("release", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(version.Type))
-            .ToArray();
-
-        if (JavaRuntimeResolver.TryParseVersion(currentVersion, out Version parsedCurrent))
-        {
-            return releaseVersions
-                .Select(version => new
-                {
-                    Version = version,
-                    Parsed = JavaRuntimeResolver.TryParseVersion(version.Id, out Version parsed)
-                        ? parsed
-                        : null
-                })
-                .Where(item => item.Parsed != null && item.Parsed > parsedCurrent)
-                .OrderByDescending(item => item.Parsed)
-                .Select(item => item.Version)
-                .DistinctBy(version => version.Id, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-        }
-
-        int currentIndex = Array.FindIndex(releaseVersions, version =>
-            version.Id.Equals(currentVersion, StringComparison.OrdinalIgnoreCase));
-        if (currentIndex > 0)
-        {
-            return releaseVersions.Take(currentIndex).ToArray();
-        }
-
-        return Array.Empty<MinecraftVersion>();
     }
 }

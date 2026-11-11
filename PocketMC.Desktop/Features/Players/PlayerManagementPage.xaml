@@ -1,9 +1,9 @@
-<Page x:Class="PocketMC.Desktop.Features.Players.PlayerManagementPage"
+<Page x:Class="PocketMC.Desktop.Features.Players.PlayerManagementPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"
-      Title="Player Management"
+      Title="{loc:Tr 'Player Management'}"
       Background="Transparent">
 
     <Page.Resources>
@@ -61,7 +61,7 @@
                                      IsIndeterminate="True"
                                      Visibility="{Binding IsRefreshingState, Converter={StaticResource BoolToVis}}"
                                      Margin="0,0,10,0"/>
-                    <ui:Button Content="Refresh"
+                    <ui:Button Content="{loc:Tr 'Refresh'}"
                                Appearance="Secondary"
                                Icon="{ui:SymbolIcon ArrowClockwise24}"
                                Command="{Binding RefreshCommand}"/>
@@ -82,9 +82,9 @@
                                    IsPaneToggleVisible="False"
                                    IsBackButtonVisible="Collapsed">
                     <ui:NavigationView.MenuItems>
-                        <ui:NavigationViewItem Content="Online Players" Icon="{ui:SymbolIcon People24}" Click="NavItem_Click" IsActive="True"/>
-                        <ui:NavigationViewItem Content="Ban List" Icon="{ui:SymbolIcon ShieldDismiss24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Whitelist" Icon="{ui:SymbolIcon Shield24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'Online Players'}" Icon="{ui:SymbolIcon People24}" Click="NavItem_Click" IsActive="True"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'Ban List'}" Icon="{ui:SymbolIcon ShieldDismiss24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'Whitelist'}" Icon="{ui:SymbolIcon Shield24}" Click="NavItem_Click"/>
                     </ui:NavigationView.MenuItems>
                 </ui:NavigationView>
 
@@ -96,7 +96,7 @@
                         <TabControl.Resources><Style TargetType="TabPanel"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
 
                         <!-- TAB 1: ONLINE PLAYERS -->
-                        <TabItem Header="Online">
+                        <TabItem Header="{loc:Tr 'Online'}">
                             <ScrollViewer x:Name="OnlineScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <Grid>
                                     <!-- Skeleton Rows while Refreshing -->
@@ -121,10 +121,10 @@
                                                     <ColumnDefinition Width="180"/>
                                                     <ColumnDefinition Width="260"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="Name" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="1" Text="Op Status" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="2" Text="Gamemode" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="3" Text="Actions" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Name'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{loc:Tr 'Op Status'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="2" Text="{loc:Tr 'Gamemode'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="3" Text="{loc:Tr 'Actions'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Grid>
                                         </Border>
 
@@ -216,7 +216,7 @@
                                                             </StackPanel>
 
                                                             <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <ui:Button Content="Kick"
+                                                                <ui:Button Content="{loc:Tr 'Kick'}"
                                                                            Appearance="Secondary"
                                                                            Icon="{ui:SymbolIcon People24}"
                                                                            Command="{Binding KickCommand}"
@@ -255,17 +255,17 @@
 
                                                                     <ui:TextBox Grid.Column="1"
                                                                                 Text="{Binding PendingReason, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                                PlaceholderText="Optional reason"
+                                                                                PlaceholderText="{loc:Tr 'Optional reason'}"
                                                                                 Margin="0,0,8,0"/>
 
                                                                     <ui:Button Grid.Column="2"
-                                                                               Content="Send"
+                                                                               Content="{loc:Tr 'Send'}"
                                                                                Appearance="Primary"
                                                                                Command="{Binding ConfirmReasonCommand}"
                                                                                Margin="0,0,8,0"/>
 
                                                                     <ui:Button Grid.Column="3"
-                                                                               Content="Cancel"
+                                                                               Content="{loc:Tr 'Cancel'}"
                                                                                Appearance="Secondary"
                                                                                Command="{Binding CancelReasonCommand}"/>
                                                                 </Grid>
@@ -309,7 +309,7 @@
                         </TabItem>
 
                         <!-- TAB 2: BAN LIST -->
-                        <TabItem Header="BanList">
+                        <TabItem Header="{loc:Tr 'BanList'}">
                             <ScrollViewer x:Name="BanListScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <Grid>
                                     <!-- Skeleton Rows while Refreshing -->
@@ -335,11 +335,11 @@
                                                     <ColumnDefinition Width="140"/>
                                                     <ColumnDefinition Width="110"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="Name" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="1" Text="Reason" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="2" Text="Banned By" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="3" Text="Expires" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="4" Text="Actions" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Name'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{loc:Tr 'Reason'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="2" Text="{loc:Tr 'Banned By'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="3" Text="{loc:Tr 'Expires'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="4" Text="{loc:Tr 'Actions'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Grid>
                                         </Border>
 
@@ -408,7 +408,7 @@
                                                                        TextTrimming="CharacterEllipsis"
                                                                        VerticalAlignment="Center"/>
                                                             <ui:Button Grid.Column="4"
-                                                                       Content="Pardon"
+                                                                       Content="{loc:Tr 'Pardon'}"
                                                                        Appearance="Secondary"
                                                                        Command="{Binding PardonCommand}"
                                                                        IsEnabled="{Binding IsServerOnline}"/>
@@ -451,7 +451,7 @@
                         </TabItem>
 
                         <!-- TAB 3: WHITELIST -->
-                        <TabItem Header="Whitelist">
+                        <TabItem Header="{loc:Tr 'Whitelist'}">
                             <ScrollViewer x:Name="WhitelistScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <Grid>
                                     <!-- Skeleton Rows while Refreshing -->
@@ -474,11 +474,11 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <StackPanel VerticalAlignment="Center">
-                                                    <TextBlock Text="Whitelist Enforcement"
+                                                    <TextBlock Text="{loc:Tr 'Whitelist Enforcement'}"
                                                                FontSize="14"
                                                                FontWeight="SemiBold"
                                                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                    <TextBlock Text="When enabled, only whitelisted players can join the server."
+                                                    <TextBlock Text="{loc:Tr 'When enabled, only whitelisted players can join the server.'}"
                                                                FontSize="12"
                                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                Margin="0,4,0,0"/>
@@ -503,21 +503,21 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <ui:TextBox Text="{Binding WhitelistAddUsername, UpdateSourceTrigger=PropertyChanged}"
-                                                            PlaceholderText="Enter player name"
+                                                            PlaceholderText="{loc:Tr 'Enter player name'}"
                                                             Margin="0,0,8,0"
                                                             VerticalAlignment="Center"/>
                                                 <ui:Button Grid.Column="1"
-                                                           Content="Add"
+                                                           Content="{loc:Tr 'Add'}"
                                                            Appearance="Primary"
                                                            Icon="{ui:SymbolIcon Add20}"
                                                            Command="{Binding AddToWhitelistCommand}"
                                                            Margin="0,0,8,0"/>
                                                 <ui:Button Grid.Column="2"
-                                                           Content="Reload"
+                                                           Content="{loc:Tr 'Reload'}"
                                                            Appearance="Secondary"
                                                            Icon="{ui:SymbolIcon ArrowClockwise24}"
                                                            Command="{Binding ReloadWhitelistCommand}"
-                                                           ToolTip="Reload whitelist from disk (server must be online)"/>
+                                                           ToolTip="{loc:Tr 'Reload whitelist from disk (server must be online)'}"/>
                                             </Grid>
                                         </Border>
 
@@ -532,8 +532,8 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="110"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="Player Name" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="1" Text="Actions" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Player Name'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{loc:Tr 'Actions'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </Grid>
                                         </Border>
 
@@ -575,7 +575,7 @@
                                                                        TextTrimming="CharacterEllipsis"
                                                                        VerticalAlignment="Center"/>
                                                             <ui:Button Grid.Column="1"
-                                                                       Content="Remove"
+                                                                       Content="{loc:Tr 'Remove'}"
                                                                        Appearance="Secondary"
                                                                        Command="{Binding RemoveCommand}"
                                                                        CommandParameter="{Binding Name}"/>

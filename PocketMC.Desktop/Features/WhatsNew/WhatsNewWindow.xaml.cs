@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using PocketMC.Desktop.Localization;
 using System.Windows;
 
 using PocketMC.Infrastructure.WhatsNew;
@@ -49,8 +50,8 @@ namespace PocketMC.Desktop.Features.WhatsNew
 
         private void ConfigureWithChangelog(ChangelogEntry changelog)
         {
-            TxtHeader.Text = $"What's New in v{_version}";
-            TxtSubheader.Text = "Here's what changed in this update.";
+            TxtHeader.Text = L.F("What's New in v{0}", _version);
+            TxtSubheader.Text = L.T("Here's what changed in this update.");
 
             SectionsPanel.ItemsSource = changelog.Sections;
             SectionsPanel.Visibility = Visibility.Visible;
@@ -59,7 +60,7 @@ namespace PocketMC.Desktop.Features.WhatsNew
 
         private void ConfigureWithFallback()
         {
-            TxtHeader.Text = $"Updated to v{_version}";
+            TxtHeader.Text = L.F("Updated to v{0}", _version);
             TxtSubheader.Text = string.Empty;
 
             TxtFallback.Text = "PocketMC has been updated successfully.\nThank you for updating!";

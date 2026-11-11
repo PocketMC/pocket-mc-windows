@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Core.Interfaces;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -63,7 +64,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             _isRunning = true;
             _cts = new CancellationTokenSource();
-            BtnCancel.Content = "Cancel";
+            BtnCancel.Content = L.T("Cancel");
 
             try
             {
@@ -92,7 +93,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
                 else
                 {
-                    ShowAlert($"Failed to install modpack: {ex.Message}");
+                    ShowAlert(L.F("Failed to install modpack: {0}", ex.Message));
                 }
             }
             finally
@@ -100,7 +101,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 _isRunning = false;
                 if (!string.IsNullOrEmpty(TxtAlert.Text) || BtnCancel.Content.ToString() == "Cancel")
                 {
-                    BtnCancel.Content = "Close";
+                    BtnCancel.Content = L.T("Close");
                 }
             }
         }
@@ -136,8 +137,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             // 4. Populate UI Tasks
             var coreTask = new ModDownloadTaskViewModel
             {
-                ProjectTitle = $"{parsedPack.Loader} Server Software",
-                FileName = $"Minecraft {parsedPack.MinecraftVersion} ({parsedPack.LoaderVersion})",
+                ProjectTitle = L.F("{0} Server Software", parsedPack.Loader),
+                FileName = L.F("Minecraft {0} ({1})", parsedPack.MinecraftVersion, parsedPack.LoaderVersion),
                 IsCoreItem = true
             };
             _items.Add(coreTask);
@@ -154,7 +155,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             // 5. Execute Import via ModpackService
-            UpdateOverallStatus($"Downloading {parsedPack.Mods.Count} mods...", 30);
+            UpdateOverallStatus(L.F("Downloading {0} mods...", parsedPack.Mods.Count), 30);
             
             var importProgress = new Progress<PocketMC.Application.Interfaces.Instances.InstanceTransferProgress>(p =>
             {

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using PocketMC.Desktop.Localization;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -54,7 +55,7 @@ namespace PocketMC.Desktop.Features.Setup
             else
             {
                 _selectedRootPath = null;
-                TxtSuggestedPath.Text = "Please click 'Select Directory' to select a home folder.";
+                TxtSuggestedPath.Text = L.T("Please click 'Select Directory' to select a home folder.");
                 ContinueButton.IsEnabled = false;
             }
             TxtSuggestedFolderName.Text = RootDirectorySetupHelper.SuggestedFolderName;
@@ -89,7 +90,7 @@ namespace PocketMC.Desktop.Features.Setup
 
             var dialog = new OpenFolderDialog
             {
-                Title = "Choose where to create the PocketMC root folder",
+                Title = L.T("Choose where to create the PocketMC root folder"),
                 Multiselect = false,
                 InitialDirectory = suggestedFullPath,
                 DefaultDirectory = defaultParentDirectory,
@@ -123,7 +124,7 @@ namespace PocketMC.Desktop.Features.Setup
                 }
                 catch (Exception ex)
                 {
-                    PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", $"Failed to create directory: {ex.Message}");
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", L.F("Failed to create directory: {0}", ex.Message));
                     return;
                 }
             }
@@ -135,7 +136,7 @@ namespace PocketMC.Desktop.Features.Setup
         {
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
-                Title = "Select PocketMC Settings Backup File",
+                Title = L.T("Select PocketMC Settings Backup File"),
                 Filter = "PocketMC Settings Backup (*.json)|*.json|All Files (*.*)|*.*",
                 CheckFileExists = true
             };
@@ -157,7 +158,7 @@ namespace PocketMC.Desktop.Features.Setup
                 {
                     _dialogService.ShowMessage(
                         "Invalid Backup File",
-                        $"The selected file is not a valid PocketMC settings backup package.\n\nDetails: {ex.Message}",
+                        L.F("The selected file is not a valid PocketMC settings backup package.\n\nDetails: {0}", ex.Message),
                         DialogType.Error);
                     return;
                 }
@@ -204,15 +205,13 @@ namespace PocketMC.Desktop.Features.Setup
                 }
                 else
                 {
-                    _dialogService.ShowMessage(
-                        "Settings Restored",
-                        "Your settings have been restored successfully. Please choose a home folder to finish setup.",
+                    _dialogService.ShowMessage(L.T("Settings Restored"), L.T("Your settings have been restored successfully. Please choose a home folder to finish setup."),
                         DialogType.Information);
                 }
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Restore Failed", $"Could not restore settings:\n{ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Restore Failed", L.F("Could not restore settings:\n{0}", ex.Message), DialogType.Error);
             }
         }
     }
