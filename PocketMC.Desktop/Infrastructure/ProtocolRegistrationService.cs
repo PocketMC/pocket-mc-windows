@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Diagnostics;
 using System.IO;
 
@@ -8,7 +9,7 @@ namespace PocketMC.Desktop.Infrastructure
     public static class ProtocolRegistrationService
     {
         private const string ProtocolScheme = "pocketmc";
-        private const string ProtocolDescription = "PocketMC URL Protocol";
+        private static readonly string ProtocolDescription = L.T("PocketMC URL Protocol");
 
         public static void Register()
         {

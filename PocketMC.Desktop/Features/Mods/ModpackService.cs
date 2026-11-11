@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Application.Services.Mods;
+using PocketMC.Desktop.Localization;
 using PocketMC.Application.Services.Instances;
 using PocketMC.Infrastructure.Marketplace;
 using System;
@@ -164,7 +165,7 @@ namespace PocketMC.Desktop.Features.Mods
                 if (coreTask != null)
                 {
                     coreTask.IsDownloading = false;
-                    coreTask.StatusText = "✓ Complete";
+                    coreTask.StatusText = L.T("✓ Complete");
                     coreTask.StatusForeground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
                     coreTask.ProgressValue = 100;
                 }
@@ -176,7 +177,7 @@ namespace PocketMC.Desktop.Features.Mods
                 {
                     progress?.Report(new InstanceTransferProgress
                     {
-                        CurrentStep = $"Downloading mods (0/{totalMods})...",
+                        CurrentStep = L.F("Downloading mods (0/{0})...", totalMods),
                         OverallProgress = 0
                     });
                 }
@@ -209,13 +210,13 @@ namespace PocketMC.Desktop.Features.Mods
                                     {
                                         Name = mod.Name,
                                         Success = false,
-                                        ErrorMessage = "Download URL was not resolved. The author may have disabled 3rd-party distribution."
+                                        ErrorMessage = L.T("Download URL was not resolved. The author may have disabled 3rd-party distribution.")
                                     });
                                 }
                                 if (uiTask != null)
                                 {
                                     uiTask.IsDownloading = false;
-                                    uiTask.StatusText = "✗ Failed";
+                                    uiTask.StatusText = L.T("✗ Failed");
                                     uiTask.StatusForeground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
                                 }
                                 return;
@@ -224,7 +225,7 @@ namespace PocketMC.Desktop.Features.Mods
                             string? dest = PathSafety.ValidateContainedPath(instancePath, mod.DestinationPath);
                             if (dest == null)
                             {
-                                string traversalMsg = $"Blocked mod download with path-traversal: {mod.DestinationPath}";
+                                string traversalMsg = L.F("Blocked mod download with path-traversal: {0}", mod.DestinationPath);
                                 _logger.LogWarning(traversalMsg);
                                 lock (lockObj)
                                 {
@@ -238,7 +239,7 @@ namespace PocketMC.Desktop.Features.Mods
                                 if (uiTask != null)
                                 {
                                     uiTask.IsDownloading = false;
-                                    uiTask.StatusText = "✗ Blocked";
+                                    uiTask.StatusText = L.T("✗ Blocked");
                                     uiTask.StatusForeground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
                                 }
                                 return;
@@ -272,7 +273,7 @@ namespace PocketMC.Desktop.Features.Mods
                                         
                                         if (hashStr != mod.HashSha512.ToLowerInvariant())
                                         {
-                                            throw new InvalidOperationException($"Hash mismatch for {mod.Name}. Expected {mod.HashSha512}, got {hashStr}");
+                                            throw new InvalidOperationException(L.F("Hash mismatch for {0}. Expected {1}, got {2}", mod.Name, mod.HashSha512, hashStr));
                                         }
                                     }
 
@@ -287,7 +288,7 @@ namespace PocketMC.Desktop.Features.Mods
                                     {
                                         try { File.Delete(dest); } catch { }
                                     }
-                                    if (uiTask != null) uiTask.StatusText = $"Failed (Attempt {attempt}), Retrying...";
+                                    if (uiTask != null) uiTask.StatusText = L.F("Failed (Attempt {0}), Retrying...", attempt);
                                     if (attempt < 3) await Task.Delay(1000, ct); // Backoff before retry
                                 }
                             }
@@ -321,7 +322,7 @@ namespace PocketMC.Desktop.Features.Mods
                                 if (uiTask != null)
                                 {
                                     uiTask.IsDownloading = false;
-                                    uiTask.StatusText = "✓ Complete";
+                                    uiTask.StatusText = L.T("✓ Complete");
                                     uiTask.StatusForeground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xA6, 0xE3, 0xA1));
                                     uiTask.ProgressValue = 100;
                                 }
@@ -334,13 +335,13 @@ namespace PocketMC.Desktop.Features.Mods
                                     {
                                         Name = mod.Name,
                                         Success = false,
-                                        ErrorMessage = $"Failed after 3 attempts: {lastError}"
+                                        ErrorMessage = L.F("Failed after 3 attempts: {0}", lastError)
                                     });
                                 }
                                 if (uiTask != null)
                                 {
                                     uiTask.IsDownloading = false;
-                                    uiTask.StatusText = "✗ Failed";
+                                    uiTask.StatusText = L.T("✗ Failed");
                                     uiTask.StatusForeground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF3, 0x8B, 0xA8));
                                 }
                             }
@@ -352,7 +353,7 @@ namespace PocketMC.Desktop.Features.Mods
                             {
                                 progress?.Report(new InstanceTransferProgress
                                 {
-                                    CurrentStep = $"Downloading mods ({currentCompleted}/{totalMods})...",
+                                    CurrentStep = L.F("Downloading mods ({0}/{1})...", currentCompleted, totalMods),
                                     OverallProgress = (double)currentCompleted / totalMods * 100.0
                                 });
                             }
@@ -419,11 +420,11 @@ namespace PocketMC.Desktop.Features.Mods
                 }
                 catch (Exception ex)
                 {
-                    throw new IOException($"Failed to open modpack archive '{zipPath}': {ex.Message}", ex);
+                    throw new IOException(L.F("Failed to open modpack archive '{0}': {1}", zipPath, ex.Message), ex);
                 }
             }
             
-            if (archive == null) throw new IOException($"Could not open archive '{zipPath}' because it is in use.");
+            if (archive == null) throw new IOException(L.F("Could not open archive '{0}' because it is in use.", zipPath));
 
             using (archive)
             {
@@ -492,7 +493,7 @@ namespace PocketMC.Desktop.Features.Mods
                         
                         if (!success)
                         {
-                            throw new IOException($"Failed to extract override file to '{destinationPath}'. The file might be locked by another process (like an Antivirus) or you lack permissions.", lastEx);
+                            throw new IOException(L.F("Failed to extract override file to '{0}'. The file might be locked by another process (like an Antivirus) or you lack permissions.", destinationPath), lastEx);
                         }
                         
                         result.ExtractedOverrideCount++;

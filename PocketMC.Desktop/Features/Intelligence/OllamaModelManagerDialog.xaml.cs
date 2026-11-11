@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PocketMC.Desktop.Localization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,8 +56,8 @@ namespace PocketMC.Desktop.Features.Intelligence
 
             if (_isCloud)
             {
-                Title = "Ollama Cloud Models";
-                TabInstalledModels.Content = "Cloud Models";
+                Title = L.T("Ollama Cloud Models");
+                TabInstalledModels.Content = L.T("Cloud Models");
                 TabDownloadModels.Visibility = Visibility.Collapsed;
                 TabManualSteps.Visibility = Visibility.Collapsed;
                 DownloadTabColumn.Width = new GridLength(0);
@@ -85,7 +86,7 @@ namespace PocketMC.Desktop.Features.Intelligence
         {
             try
             {
-                StatusText.Text = "Loading models...";
+                StatusText.Text = L.T("Loading models...");
                 var models = await _ollamaService.GetInstalledModelsAsync(_endpoint, _apiKey);
                 _installedModelNames = models
                     .Select(model => model.Name)
@@ -144,11 +145,11 @@ namespace PocketMC.Desktop.Features.Intelligence
 
             if (!AppDialog.Confirm(
                     "Delete Ollama Model",
-                    $"Permanently delete '{modelName}' from Ollama's local model storage?"))
+                    L.F("Permanently delete '{0}' from Ollama's local model storage?", modelName)))
                 return;
 
             button.IsEnabled = false;
-            StatusText.Text = $"Deleting {modelName}...";
+            StatusText.Text = L.F("Deleting {0}...", modelName);
             try
             {
                 await _ollamaService.DeleteModelAsync(_endpoint, modelName, _apiKey);
@@ -156,7 +157,7 @@ namespace PocketMC.Desktop.Features.Intelligence
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Could not delete {modelName}.";
+                StatusText.Text = L.F("Could not delete {0}.", modelName);
                 AppDialog.ShowError("Delete Model Failed", ex.Message);
             }
             finally
@@ -194,7 +195,7 @@ namespace PocketMC.Desktop.Features.Intelligence
             _activeProgress = pullProgress;
             ProgressPanel.Visibility = Visibility.Visible;
             DownloadProgressBar.Value = 0;
-            ProgressStatusText.Text = $"Starting download: {modelName}...";
+            ProgressStatusText.Text = L.F("Starting download: {0}...", modelName);
             _progressTimer.Start();
 
             try
@@ -206,14 +207,14 @@ namespace PocketMC.Desktop.Features.Intelligence
                 if (!IsLoaded)
                     return;
 
-                ProgressStatusText.Text = "Download complete.";
+                ProgressStatusText.Text = L.T("Download complete.");
                 DownloadProgressBar.Value = 100;
                 await LoadInstalledModelsAsync();
             }
             catch (OperationCanceledException)
             {
                 if (IsLoaded)
-                    ProgressStatusText.Text = "Download cancelled.";
+                    ProgressStatusText.Text = L.T("Download cancelled.");
             }
             catch (Exception ex)
             {

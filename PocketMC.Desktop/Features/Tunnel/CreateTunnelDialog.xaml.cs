@@ -1,5 +1,6 @@
 ﻿using PocketMC.Desktop.Infrastructure;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -139,7 +140,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             catch (Exception ex)
             {
                 Close();
-                AppDialog.ShowError("Tunnel Creation Failed", $"Tunnel creation failed: {ex.Message}");
+                AppDialog.ShowError("Tunnel Creation Failed", L.F("Tunnel creation failed: {0}", ex.Message));
             }
         }
 

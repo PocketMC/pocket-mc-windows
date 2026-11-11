@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Core.Interfaces;
 using System.IO;
 using System.Windows;
@@ -54,7 +55,7 @@ public partial class InstanceImportPage : Page, ISupportsKeyboardBackNavigation
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Select PocketMC Instance Export",
+            Title = L.T("Select PocketMC Instance Export"),
             Filter = "PocketMC Instance Export (*.zip)|*.zip|All Files (*.*)|*.*",
             Multiselect = false
         };
@@ -75,7 +76,7 @@ public partial class InstanceImportPage : Page, ISupportsKeyboardBackNavigation
     {
         var dialog = new OpenFolderDialog
         {
-            Title = "Select Existing Minecraft Server Folder"
+            Title = L.T("Select Existing Minecraft Server Folder")
         };
 
         if (dialog.ShowDialog() != true)

@@ -17,6 +17,7 @@ using PocketMC.Infrastructure.Backups;
 using PocketMC.Infrastructure.Tunnel;
 using PocketMC.Desktop.Features.Tunnel;
 using System.Threading.Tasks;
+using PocketMC.Desktop.Localization;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -194,7 +195,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         private void NavigateToNewInstance()
         {
             var page = ActivatorUtilities.CreateInstance<NewInstancePage>(_serviceProvider);
-            _navigationService.NavigateToDetailPage(page, "New Instance", DetailRouteKind.NewInstance, DetailBackNavigation.Dashboard, true);
+            _navigationService.NavigateToDetailPage(page, L.T("New Instance"), DetailRouteKind.NewInstance, DetailBackNavigation.Dashboard, true);
         }
 
         private void UpdateAllLiveMetrics()
@@ -282,7 +283,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to pre-resolve offline tunnels on dashboard load: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine(L.F("Failed to pre-resolve offline tunnels on dashboard load: {0}", ex.Message));
             }
         }
     }

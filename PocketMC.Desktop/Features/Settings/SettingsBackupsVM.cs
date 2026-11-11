@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
+using PocketMC.Desktop.Localization;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -234,7 +235,7 @@ namespace PocketMC.Desktop.Features.Settings
                 string timeAgo = ago.TotalHours < 1 ? $"{(int)ago.TotalMinutes}m ago"
                     : ago.TotalDays < 1 ? $"{(int)ago.TotalHours}h ago"
                     : $"{(int)ago.TotalDays}d ago";
-                warnings.Add($"Last backup failed ({timeAgo}): {manifest.LastFailureReason ?? "Unknown error"}");
+                warnings.Add(L.F("Last backup failed ({0}): {1}", timeAgo, manifest.LastFailureReason ?? L.T("Unknown error")));
                 critical = true;
             }
 
@@ -246,17 +247,17 @@ namespace PocketMC.Desktop.Features.Settings
                 double totalGb = driveInfo.TotalSize / (1024.0 * 1024.0 * 1024.0);
                 double usedPercent = ((totalGb - freeGb) / totalGb) * 100;
 
-                DiskSpaceText = $"{freeGb:F1} GB free of {totalGb:F0} GB";
+                DiskSpaceText = L.F("{0} GB free of {1} GB", freeGb.ToString("F1"), totalGb.ToString("F0"));
                 ShowDiskWarning = freeGb < 2.0;
 
                 if (freeGb < 1.0)
                 {
-                    warnings.Add($"Critical: Only {freeGb:F1} GB disk space remaining. Backups may fail.");
+                    warnings.Add(L.F("Critical: Only {0} GB disk space remaining. Backups may fail.", freeGb.ToString("F1")));
                     critical = true;
                 }
                 else if (freeGb < 2.0)
                 {
-                    warnings.Add($"Low disk space: {freeGb:F1} GB remaining. Consider freeing space.");
+                    warnings.Add(L.F("Low disk space: {0} GB remaining. Consider freeing space.", freeGb.ToString("F1")));
                 }
             }
             catch { /* Ignore drive info errors */ }
@@ -271,7 +272,7 @@ namespace PocketMC.Desktop.Features.Settings
                     string overdueText = overdue.TotalHours < 1 ? $"{(int)overdue.TotalMinutes}m"
                         : overdue.TotalDays < 1 ? $"{(int)overdue.TotalHours}h"
                         : $"{(int)overdue.TotalDays}d";
-                    warnings.Add($"Scheduled backup is overdue by {overdueText}.");
+                    warnings.Add(L.F("Scheduled backup is overdue by {0}.", overdueText));
                 }
             }
 
@@ -284,21 +285,21 @@ namespace PocketMC.Desktop.Features.Settings
             // 5. Total size display
             double totalSizeMb = BackupList.Sum(b => b.SizeMb);
             TotalBackupsSizeText = totalSizeMb >= 1024
-                ? $"{totalSizeMb / 1024.0:F1} GB across {BackupList.Count} backup(s)"
-                : $"{totalSizeMb:F1} MB across {BackupList.Count} backup(s)";
+                ? L.F("{0:F1} GB across {1} backup(s)", totalSizeMb / 1024.0, BackupList.Count)
+                : L.F("{0:F1} MB across {1} backup(s)", totalSizeMb, BackupList.Count);
 
             // 6. Last backup time
             if (_metadata.LastBackupTime.HasValue)
             {
                 var ago = DateTime.UtcNow - _metadata.LastBackupTime.Value;
                 if (ago.TotalMinutes < 1)
-                    LastBackupTimeText = "Just now";
+                    LastBackupTimeText = L.T("Just now");
                 else if (ago.TotalHours < 1)
-                    LastBackupTimeText = $"{(int)ago.TotalMinutes} minutes ago";
+                    LastBackupTimeText = L.F("{0} minutes ago", (int)ago.TotalMinutes);
                 else if (ago.TotalDays < 1)
-                    LastBackupTimeText = $"{(int)ago.TotalHours} hours ago";
+                    LastBackupTimeText = L.F("{0} hours ago", (int)ago.TotalHours);
                 else
-                    LastBackupTimeText = $"{(int)ago.TotalDays} days ago ({_metadata.LastBackupTime.Value.ToLocalTime():g})";
+                    LastBackupTimeText = L.F("{0} days ago ({1})", (int)ago.TotalDays, _metadata.LastBackupTime.Value.ToLocalTime().ToString("g"));
             }
             else
             {
@@ -315,7 +316,7 @@ namespace PocketMC.Desktop.Features.Settings
             IsBackingUp = true;
             IsBackupProgressIndeterminate = true;
             BackupProgressValue = 0;
-            BackupStatusText = "Starting backup...";
+            BackupStatusText = L.T("Starting backup...");
 
             try
             {
@@ -348,10 +349,10 @@ namespace PocketMC.Desktop.Features.Settings
                         progress: doubleProgress);
                 });
                 
-                BackupStatusText = "Backup completed successfully!";
+                BackupStatusText = L.T("Backup completed successfully!");
                 LoadBackups();
             }
-            catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); BackupStatusText = "Backup failed."; }
+            catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); BackupStatusText = L.T("Backup failed."); }
             finally { IsBackingUp = false; }
         }
 
@@ -386,9 +387,9 @@ namespace PocketMC.Desktop.Features.Settings
                             progress: doubleProgress);
                     });
                     
-                    _dialogService.ShowMessage("Success", "Backup restored successfully."); 
+                    _dialogService.ShowMessage(L.T("Success"), L.T("Backup restored successfully.")); 
                 }
-                catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); BackupStatusText = "Restore failed."; }
+                catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); BackupStatusText = L.T("Restore failed."); }
                 finally { IsBackingUp = false; }
             }
         }
@@ -430,11 +431,11 @@ namespace PocketMC.Desktop.Features.Settings
                         manifest.Save(_serverDir);
                     }
                 });
-                _dialogService.ShowMessage("Saved", "Backup label updated.");
+                _dialogService.ShowMessage(L.T("Saved"), L.T("Backup label updated."));
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Error", $"Failed to save label: {ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Error", L.F("Failed to save label: {0}", ex.Message), DialogType.Error);
             }
         }
 
@@ -448,20 +449,20 @@ namespace PocketMC.Desktop.Features.Settings
 
                 if (result == null)
                 {
-                    item.IntegrityStatusText = "⚠ No checksum available";
+                    item.IntegrityStatusText = L.T("⚠ No checksum available");
                     item.IntegrityVerified = false;
                 }
                 else if (result == true)
                 {
-                    item.IntegrityStatusText = "✓ Integrity verified";
+                    item.IntegrityStatusText = L.T("✓ Integrity verified");
                     item.IntegrityVerified = true;
                 }
                 else
                 {
-                    item.IntegrityStatusText = "✗ CORRUPT — checksum mismatch!";
+                    item.IntegrityStatusText = L.T("✗ CORRUPT — checksum mismatch!");
                     item.IntegrityVerified = false;
                     _dialogService.ShowMessage("Integrity Check Failed",
-                        $"Backup \"{item.Name}\" may be corrupted. The SHA-256 checksum does not match the original. This backup may not restore correctly.",
+                        L.F("Backup \"{0}\" may be corrupted. The SHA-256 checksum does not match the original. This backup may not restore correctly.", item.Name),
                         DialogType.Warning);
                 }
             }
@@ -503,7 +504,7 @@ namespace PocketMC.Desktop.Features.Settings
         public string VersionText => Version > 0 ? $"v{Version}" : "";
 
         /// <summary>Formatted creation time for the UI.</summary>
-        public string CreatedAtText => CreatedAt.ToString("MMM dd, yyyy  hh:mm tt");
+        public string CreatedAtText => CreatedAt.ToString(L.T("MMM dd, yyyy  hh:mm tt"));
 
         /// <summary>Formatted size for the UI.</summary>
         public string SizeText => SizeMb >= 1024 ? $"{SizeMb / 1024.0:F1} GB" : $"{SizeMb:F1} MB";

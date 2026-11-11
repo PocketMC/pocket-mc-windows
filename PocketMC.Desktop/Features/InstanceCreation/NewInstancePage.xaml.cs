@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Instances.ImportExport;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Diagnostics;
@@ -307,7 +308,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 CmbVersion.IsEnabled = false;
                 CmbVersion.ItemsSource = null;
                 CmbVersion.SelectedItem = null;
-                TxtVersionState.Text = $"Loading {serverType} versions...";
+                TxtVersionState.Text = L.F("Loading {0} versions...", serverType);
 
                 if (serverType == "Forge" || serverType == "NeoForge")
                 {
@@ -338,11 +339,11 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 if (versions.Count > 0)
                 {
                     CmbVersion.SelectedIndex = 0;
-                    TxtVersionState.Text = $"{versions.Count} version{(versions.Count == 1 ? string.Empty : "s")} available for {serverType}.";
+                    TxtVersionState.Text = L.F("{0} version(s) available for {1}.", versions.Count, serverType);
                 }
                 else
                 {
-                    TxtVersionState.Text = $"No versions are currently available for {serverType}.";
+                    TxtVersionState.Text = L.F("No versions are currently available for {0}.", serverType);
                 }
             }
             catch (Exception ex)
@@ -352,8 +353,8 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     return;
                 }
 
-                TxtVersionState.Text = "Could not load versions right now.";
-                ShowError($"Failed to load versions: {ex.Message}");
+                TxtVersionState.Text = L.T("Could not load versions right now.");
+                ShowError(L.F("Failed to load versions: {0}", ex.Message));
                 _logger.LogWarning(ex, "Failed to load versions for server type {ServerType}.", serverType);
             }
             finally
@@ -383,7 +384,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to browse for custom world archive.");
-                ShowError($"Failed to browse for world: {ex.Message}");
+                ShowError(L.F("Failed to browse for world: {0}", ex.Message));
             }
         }
 
@@ -407,7 +408,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to open the instance import page.");
-                ShowError($"PocketMC could not open the import page: {ex.Message}");
+                ShowError(L.F("PocketMC could not open the import page: {0}", ex.Message));
             }
         }
 
@@ -554,7 +555,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     });
                 });
 
-                TxtProgress.Text = "Downloading server software...";
+                TxtProgress.Text = L.T("Downloading server software...");
 
                 bool isBedrock = serverType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase);
 
@@ -572,7 +573,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     {
                         // DownloadSoftwareAsync writes the ZIP to tempZip, then we extract.
                         actualLoaderVersion = await provider.DownloadSoftwareAsync(selectedVersion.Id, tempZip, targetLoaderVersion, progress, ct);
-                        Dispatcher.Invoke(() => TxtProgress.Text = "Extracting Bedrock server files...");
+                        Dispatcher.Invoke(() => TxtProgress.Text = L.T("Extracting Bedrock server files..."));
                         await _downloader.ExtractZipAsync(tempZip, createdInstancePath, progress);
                     }
                     finally
@@ -641,7 +642,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                     if (!string.IsNullOrWhiteSpace(customWorldPath))
                     {
                         string targetWorldPath = WorldPathResolver.Resolve(createdInstancePath, metadata, null);
-                        Dispatcher.Invoke(() => TxtProgress.Text = "Importing custom world...");
+                        Dispatcher.Invoke(() => TxtProgress.Text = L.T("Importing custom world..."));
                         await _worldManager.ImportWorldZipAsync(
                             customWorldPath,
                             targetWorldPath,
@@ -656,7 +657,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 {
                     try
                     {
-                        TxtProgress.Text = "Setting up Geyser cross-play...";
+                        TxtProgress.Text = L.T("Setting up Geyser cross-play...");
                         await _geyserProvisioning.EnsureGeyserSetupAsync(createdInstancePath, serverType, selectedVersion.Id, progress, ct);
 
                         // Persist the HasGeyser flag so the dashboard shows the Bedrock IP row
@@ -679,7 +680,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                         {
                             PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
                                 "Cross-play Unavailable",
-                                $"Cross-play Setup Failed\n\n{geyserEx.Message}\n\nYour server was created without cross-play. You can add it later from Server Settings.");
+                                L.F("Cross-play Setup Failed\n\n{0}\n\nYour server was created without cross-play. You can add it later from Server Settings.", geyserEx.Message));
                         });
                     }
                 }
@@ -689,9 +690,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 if (!NavigateToDashboard())
                 {
                     _logger.LogWarning("Instance {InstanceName} was created, but PocketMC could not navigate back to the dashboard automatically.", TxtName.Text);
-                    PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo(
-                        "Instance Created",
-                        "The instance was created successfully, but PocketMC could not return to the Dashboard automatically.");
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo(L.T("Instance Created"), L.T("The instance was created successfully, but PocketMC could not return to the Dashboard automatically."));
                 }
             }
             catch (Exception ex)
@@ -705,7 +704,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                 }
                 else
                 {
-                    ShowError($"Could not create the instance: {ex.Message}");
+                    ShowError(L.F("Could not create the instance: {0}", ex.Message));
                     _logger.LogError(ex, "Failed to create a new instance named {InstanceName}.", TxtName.Text);
                 }
             }
@@ -729,14 +728,14 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             }
             if (isCreating)
             {
-                BtnCreate.Content = "Creating...";
+                BtnCreate.Content = L.T("Creating...");
                 PrgDownload.IsIndeterminate = true;
                 PrgDownload.Value = 0;
-                TxtProgress.Text = "Preparing server files...";
+                TxtProgress.Text = L.T("Preparing server files...");
             }
             else
             {
-                BtnCreate.Content = "Create and Download";
+                BtnCreate.Content = L.T("Create and Download");
                 PrgDownload.IsIndeterminate = false;
             }
 

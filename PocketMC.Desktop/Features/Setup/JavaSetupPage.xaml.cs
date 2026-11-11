@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Configuration;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Localization;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -471,7 +472,7 @@ namespace PocketMC.Desktop.Features.Setup
                 javaList.Add(new JavaRuntimeEntry
                 {
                     Version = version,
-                    DisplayName = $"Java {version} Runtime  ({mcRange})",
+                    DisplayName = L.F("Java {0} Runtime  ({1})", version, mcRange),
                     IsInstalled = installed,
                     IsCustom = false,
                     Path = runtimeDir,
@@ -501,7 +502,7 @@ namespace PocketMC.Desktop.Features.Setup
                         Path = dir,
                         DetailText = exists
                             ? $"{dir}  •  {GetDirectorySizeMb(dir):F1} MB"
-                            : $"{dir}  •  java.exe not found"
+                            : L.F("{0}  •  java.exe not found", dir)
                     });
                 }
             }
@@ -520,7 +521,7 @@ namespace PocketMC.Desktop.Features.Setup
                 }
                 else
                 {
-                    detail = $"Target: {def.TargetPocketMineVersion}. Missing runtime.";
+                    detail = L.F("Target: {0}. Missing runtime.", def.TargetPocketMineVersion);
                 }
 
                 phpList.Add(new PhpRuntimeEntry
@@ -555,7 +556,7 @@ namespace PocketMC.Desktop.Features.Setup
             try
             {
                 BtnDownloadMissing.IsEnabled = false;
-                TxtGlobalStatus.Text = "Checking and downloading missing runtimes...";
+                TxtGlobalStatus.Text = L.T("Checking and downloading missing runtimes...");
                 TxtGlobalStatus.Foreground = Brushes.Silver;
 
                 var javaTask = _javaProvisioning.EnsureBundledRuntimesAsync();
@@ -583,7 +584,7 @@ namespace PocketMC.Desktop.Features.Setup
         {
             var dialog = new OpenFolderDialog
             {
-                Title = "Select a Java runtime folder (must contain bin/java.exe)"
+                Title = L.T("Select a Java runtime folder (must contain bin/java.exe)")
             };
 
             if (dialog.ShowDialog() == true)
@@ -609,20 +610,20 @@ namespace PocketMC.Desktop.Features.Setup
                     {
                         PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
                             "Duplicate",
-                            $"A runtime named 'custom-{folderName}' already exists.");
+                            L.F("A runtime named 'custom-{0}' already exists.", folderName));
                         return;
                     }
 
                     CopyDirectory(selectedPath, destPath);
                     ScanRuntimes();
-                    TxtGlobalStatus.Text = $"Added custom runtime: {folderName}";
+                    TxtGlobalStatus.Text = L.F("Added custom runtime: {0}", folderName);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to add custom runtime.");
                     PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                         "Error",
-                        $"Failed to add runtime: {ex.Message}");
+                        L.F("Failed to add runtime: {0}", ex.Message));
                 }
             }
         }
@@ -659,13 +660,13 @@ namespace PocketMC.Desktop.Features.Setup
                 {
                     PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
                         "Cannot Delete",
-                        $"Cannot delete {entry.DisplayName} because it is currently in use by a running server.");
+                        L.F("Cannot delete {0} because it is currently in use by a running server.", entry.DisplayName));
                     return;
                 }
 
                 bool confirmed = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
                     "Confirm Delete",
-                    $"Delete {entry.DisplayName}?\n\nPath: {entry.Path}\n\nYou can re-download bundled runtimes at any time.");
+                    L.F("Delete {0}?\n\nPath: {1}\n\nYou can re-download bundled runtimes at any time.", entry.DisplayName, entry.Path));
 
                 if (confirmed)
                 {
@@ -682,7 +683,7 @@ namespace PocketMC.Desktop.Features.Setup
                             Directory.Delete(entry.Path, true);
 
                         ScanRuntimes();
-                        TxtGlobalStatus.Text = $"Deleted {entry.DisplayName}";
+                        TxtGlobalStatus.Text = L.F("Deleted {0}", entry.DisplayName);
                     }
                     catch (Exception ex)
                     {
@@ -696,7 +697,7 @@ namespace PocketMC.Desktop.Features.Setup
                         _logger.LogError(ex, "Failed to delete runtime at {Path}.", entry.Path);
                         PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                             "Error",
-                            $"Failed to delete: {ex.Message}");
+                            L.F("Failed to delete: {0}", ex.Message));
                     }
                 }
             }
@@ -729,13 +730,13 @@ namespace PocketMC.Desktop.Features.Setup
                 {
                     PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
                         "Cannot Delete",
-                        $"Cannot delete {entry.DisplayName} because it is currently in use by a running PocketMine server.");
+                        L.F("Cannot delete {0} because it is currently in use by a running PocketMine server.", entry.DisplayName));
                     return;
                 }
 
                 bool confirmed = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
                     "Confirm Delete",
-                    $"Delete {entry.DisplayName}?\n\nPath: {entry.Path}\n\nYou can re-download it at any time.");
+                    L.F("Delete {0}?\n\nPath: {1}\n\nYou can re-download it at any time.", entry.DisplayName, entry.Path));
 
                 if (confirmed)
                 {
@@ -744,12 +745,12 @@ namespace PocketMC.Desktop.Features.Setup
                         await _phpProvisioning.DeletePhpVersionAsync(entry.Version);
                         ScanRuntimes();
                         ApplyProvisioningStatuses();
-                        TxtGlobalStatus.Text = $"Deleted {entry.DisplayName}";
+                        TxtGlobalStatus.Text = L.F("Deleted {0}", entry.DisplayName);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to delete PHP runtime at {Path}.", entry.Path);
-                        PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", $"Failed to delete PHP runtime: {ex.Message}");
+                        PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", L.F("Failed to delete PHP runtime: {0}", ex.Message));
                     }
                 }
             }
@@ -772,7 +773,7 @@ namespace PocketMC.Desktop.Features.Setup
                     _logger.LogWarning(ex, "Failed to download single runtime.");
                     PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                         "Error",
-                        $"Failed to start download: {ex.Message}");
+                        L.F("Failed to start download: {0}", ex.Message));
                 }
                 finally
                 {
@@ -798,7 +799,7 @@ namespace PocketMC.Desktop.Features.Setup
                     _logger.LogWarning(ex, "Failed to download single PHP runtime.");
                     PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                         "Error",
-                        $"Failed to download PHP {entry.Version}: {ex.Message}");
+                        L.F("Failed to download PHP {0}: {1}", entry.Version, ex.Message));
                 }
                 finally
                 {
@@ -923,7 +924,7 @@ namespace PocketMC.Desktop.Features.Setup
             }
             else if (!entry.IsInstalled)
             {
-                entry.DetailText = "Missing runtime. PocketMC will download it automatically.";
+                entry.DetailText = L.T("Missing runtime. PocketMC will download it automatically.");
             }
             else if (!string.IsNullOrWhiteSpace(entry.Path))
             {
@@ -958,7 +959,7 @@ namespace PocketMC.Desktop.Features.Setup
             }
             else if (!entry.IsInstalled)
             {
-                entry.DetailText = $"Target: {entry.TargetPocketMineVersion}. Missing runtime.";
+                entry.DetailText = L.F("Target: {0}. Missing runtime.", entry.TargetPocketMineVersion);
             }
             else if (!string.IsNullOrWhiteSpace(entry.Path))
             {
@@ -990,7 +991,7 @@ namespace PocketMC.Desktop.Features.Setup
                 int remaining = busyJava.Count + busyPhp.Count - 1;
                 TxtGlobalStatus.Text = remaining == 0
                     ? $"{active} is downloading..."
-                    : $"{active} and {remaining} more runtime(s) are downloading...";
+                    : L.F("{0} and {1} more runtime(s) are downloading...", active, remaining);
                 TxtGlobalStatus.Foreground = Brushes.Silver;
                 return;
             }
@@ -1002,7 +1003,7 @@ namespace PocketMC.Desktop.Features.Setup
                 return;
             }
 
-            TxtGlobalStatus.Text = $"{installedJava}/{totalJava} Java runtimes, {installedPhp}/{totalPhp} PHP runtimes installed";
+            TxtGlobalStatus.Text = L.F("{0}/{1} Java runtimes, {2}/{3} PHP runtimes installed", installedJava, totalJava, installedPhp, totalPhp);
             TxtGlobalStatus.Foreground = Brushes.Silver;
         }
 

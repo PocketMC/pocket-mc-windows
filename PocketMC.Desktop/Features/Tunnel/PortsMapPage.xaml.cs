@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -164,7 +165,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 if (route.IsOnline)
                 {
-                    AppDialog.ShowWarning("Server is Running", "Cannot change port while the server is running. Please stop the server first.");
+                    AppDialog.ShowWarning(L.T("Server is Running"), L.T("Cannot change port while the server is running. Please stop the server first."));
                     return;
                 }
 
@@ -200,13 +201,13 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 if (!int.TryParse(route.EditingPortText, out int newPort) || newPort < 1 || newPort > 65535)
                 {
-                    AppDialog.ShowError("Invalid Port", "Please enter a valid port number between 1 and 65535.");
+                    AppDialog.ShowError(L.T("Invalid Port"), L.T("Please enter a valid port number between 1 and 65535."));
                     return;
                 }
 
                 if (route.IsOnline)
                 {
-                    AppDialog.ShowWarning("Server is Running", "Cannot change port while the server is running. Please stop the server first.");
+                    AppDialog.ShowWarning(L.T("Server is Running"), L.T("Cannot change port while the server is running. Please stop the server first."));
                     return;
                 }
 
@@ -224,17 +225,17 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                     if (s.ServerPort == newPort && serverMainProto == targetProtocol && (s.Id != route.ServerId || route.PortType != "Main"))
                     {
-                        AppDialog.ShowError("Port Collision", $"Port {newPort} ({targetProtocol}) is already assigned as the main port for server '{s.Name}'.");
+                        AppDialog.ShowError("Port Collision", L.F("Port {0} ({1}) is already assigned as the main port for server '{2}'.", newPort, targetProtocol, s.Name));
                         return;
                     }
                     if (_geyserDetector.IsGeyserInstalled(_instanceRegistry.GetPath(s.Id)) && s.GeyserBedrockPort == newPort && targetProtocol == PortProtocol.Udp && (s.Id != route.ServerId || route.PortType != "Geyser"))
                     {
-                        AppDialog.ShowError("Port Collision", $"Port {newPort} (UDP) is already assigned as the Geyser bedrock bridge port for server '{s.Name}'.");
+                        AppDialog.ShowError("Port Collision", L.F("Port {0} (UDP) is already assigned as the Geyser bedrock bridge port for server '{1}'.", newPort, s.Name));
                         return;
                     }
                     if (s.SimpleVoiceChatDetected && s.SimpleVoiceChatPort == newPort && targetProtocol == PortProtocol.Udp && (s.Id != route.ServerId || route.PortType != "Voice"))
                     {
-                        AppDialog.ShowError("Port Collision", $"Port {newPort} (UDP) is already assigned as the Simple Voice Chat port for server '{s.Name}'.");
+                        AppDialog.ShowError("Port Collision", L.F("Port {0} (UDP) is already assigned as the Simple Voice Chat port for server '{1}'.", newPort, s.Name));
                         return;
                     }
                 }
@@ -247,7 +248,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                     var probeResult = probeService.Probe(probeReq);
                     if (!probeResult.IsSuccessful)
                     {
-                        AppDialog.ShowError("Port Already In Use", $"Port {newPort} ({targetProtocol}) is currently being used by another application on your computer.");
+                        AppDialog.ShowError("Port Already In Use", L.F("Port {0} ({1}) is currently being used by another application on your computer.", newPort, targetProtocol));
                         return;
                     }
                 }
@@ -265,14 +266,14 @@ namespace PocketMC.Desktop.Features.Tunnel
                         route.LocalPortLabel = $"{newPort} / {route.Protocol}";
                         route.IsEditingPort = false;
 
-                        AppDialog.ShowInfo("Port Updated", $"Successfully updated {route.ServiceRoleName} port to {newPort}.");
+                        AppDialog.ShowInfo("Port Updated", L.F("Successfully updated {0} port to {1}.", route.ServiceRoleName, newPort));
                         await RefreshMapAsync();
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to update port.");
-                    AppDialog.ShowError("Error Updating Port", $"An error occurred while saving the port configuration: {ex.Message}");
+                    AppDialog.ShowError("Error Updating Port", L.F("An error occurred while saving the port configuration: {0}", ex.Message));
                 }
             }
         }
@@ -310,11 +311,11 @@ namespace PocketMC.Desktop.Features.Tunnel
                     if (state == ServerState.Online)
                     {
                         serverInfo = $"{server.ServerType} {server.MinecraftVersion} - Online";
-                        playerMetrics = $"{process?.PlayerCount ?? 0} / {server.MaxPlayers} Players";
+                        playerMetrics = L.F("{0} / {1} Players", process?.PlayerCount ?? 0, server.MaxPlayers);
                         activeColor = ActiveGreenBrush;
                         isOnline = true;
                         isExpanded = true;
-                        actionBtnText = "View Console";
+                        actionBtnText = L.T("View Console");
                         actionBtnIcon = Wpf.Ui.Controls.SymbolRegular.Code24;
                     }
                     else if (state is ServerState.Starting or ServerState.SettingUp or ServerState.Installing or ServerState.Stopping)
@@ -324,7 +325,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                         activeColor = WarningYellowBrush;
                         isOnline = true;
                         isExpanded = true;
-                        actionBtnText = "View Console";
+                        actionBtnText = L.T("View Console");
                         actionBtnIcon = Wpf.Ui.Controls.SymbolRegular.Code24;
                     }
                     else if (state == ServerState.Crashed)
@@ -334,7 +335,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                         activeColor = WarningYellowBrush;
                         isOnline = false;
                         isExpanded = true;
-                        actionBtnText = "Manage Server";
+                        actionBtnText = L.T("Manage Server");
                         actionBtnIcon = Wpf.Ui.Controls.SymbolRegular.Settings24;
                     }
                     else
@@ -344,7 +345,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                         activeColor = OfflineGreyBrush;
                         isOnline = false;
                         isExpanded = false;
-                        actionBtnText = "Manage Server";
+                        actionBtnText = L.T("Manage Server");
                         actionBtnIcon = Wpf.Ui.Controls.SymbolRegular.Settings24;
                     }
 

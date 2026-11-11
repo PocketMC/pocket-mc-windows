@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using PocketMC.Desktop.Localization;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -122,7 +123,7 @@ namespace PocketMC.Desktop.Infrastructure
             {
                 _cts.Cancel();
                 BtnCancel.IsEnabled = false;
-                BtnCancel.Content = "Cancelling...";
+                BtnCancel.Content = L.T("Cancelling...");
             }
         }
 

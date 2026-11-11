@@ -47,12 +47,12 @@ public class KeyboardNavigationAndAccessibilityTests
         string xamlPath = TestSourceFileResolver.Resolve("PocketMC.Desktop", "Features", "Shell", "MainWindow.xaml");
         string content = File.ReadAllText(xamlPath);
 
-        Assert.Contains("AutomationProperties.Name=\"Dashboard (Ctrl+1)\"", content);
-        Assert.Contains("AutomationProperties.Name=\"Tunnel (Ctrl+2)\"", content);
-        Assert.Contains("AutomationProperties.Name=\"Remote Control (Ctrl+3)\"", content);
-        Assert.Contains("AutomationProperties.Name=\"Runtimes (Ctrl+4)\"", content);
-        Assert.Contains("AutomationProperties.Name=\"Settings (Ctrl+5 or Ctrl+,)\"", content);
-        Assert.Contains("AutomationProperties.Name=\"About (Ctrl+6)\"", content);
+        Assert.Contains("AutomationProperties.Name=\"{loc:Tr Dashboard (Ctrl+1)}\"", content);
+        Assert.Contains("AutomationProperties.Name=\"{loc:Tr Tunnel (Ctrl+2)}\"", content);
+        Assert.Contains("AutomationProperties.Name=\"{loc:Tr Remote Control (Ctrl+3)}\"", content);
+        Assert.Contains("AutomationProperties.Name=\"{loc:Tr Runtimes (Ctrl+4)}\"", content);
+        Assert.Contains("AutomationProperties.Name=\"{loc:Tr 'Settings (Ctrl+5 or Ctrl+,)'}\"", content);
+        Assert.Contains("AutomationProperties.Name=\"{loc:Tr About (Ctrl+6)}\"", content);
     }
 
     [Fact]

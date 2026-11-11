@@ -1,5 +1,6 @@
 using PocketMC.Application.Interfaces;
 using PocketMC.Application.Interfaces.Backups;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Core.Mvvm;
 using PocketMC.Domain.Models;
@@ -65,7 +66,7 @@ public class CloudProviderViewModel : ViewModelBase
             if (account != null && account.Status == CloudBackupConnectionStatus.Connected)
             {
                 Status = CloudBackupConnectionStatus.Connected;
-                AccountInfo = $"Connected as {account.Email ?? account.DisplayName}";
+                AccountInfo = L.F("Connected as {0}", account.Email ?? account.DisplayName);
             }
             else
             {
@@ -92,11 +93,11 @@ public class CloudProviderViewModel : ViewModelBase
         {
             await _provider.ConnectAsync(CancellationToken.None);
             await RefreshStatusAsync();
-            _dialogService.ShowMessage("Success", $"Successfully connected to {ProviderType}.");
+            _dialogService.ShowMessage("Success", L.F("Successfully connected to {0}.", ProviderType));
         }
         catch (Exception ex)
         {
-            string userFriendlyMessage = GetUserFriendlyErrorMessage(ex, $"Failed to connect to {ProviderType}. Please check your connection.");
+            string userFriendlyMessage = GetUserFriendlyErrorMessage(ex, L.F("Failed to connect to {0}. Please check your connection.", ProviderType));
             _dialogService.ShowMessage("Connection Failed", userFriendlyMessage, DialogType.Error);
             await RefreshStatusAsync();
         }
@@ -116,7 +117,7 @@ public class CloudProviderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            string userFriendlyMessage = GetUserFriendlyErrorMessage(ex, $"Failed to disconnect from {ProviderType}.");
+            string userFriendlyMessage = GetUserFriendlyErrorMessage(ex, L.F("Failed to disconnect from {0}.", ProviderType));
             _dialogService.ShowMessage("Disconnection Error", userFriendlyMessage, DialogType.Error);
             await RefreshStatusAsync();
         }

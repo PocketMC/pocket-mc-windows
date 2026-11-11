@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Mods;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
 using System;
@@ -109,7 +110,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         public bool IsServerRunning => _isRunningCheck();
         public bool ShowServerRunningAddonMessage => IsServerRunning && (_allMods.Count > 0 || _allPlugins.Count > 0 || _allBehaviorPacks.Count > 0 || _allResourcePacks.Count > 0);
-        public string ServerRunningAddonMessage => "Stop the server before enabling or disabling mods/plugins/packs.";
+        public string ServerRunningAddonMessage => L.T("Stop the server before enabling or disabling mods/plugins/packs.");
 
         private bool _autoUpdateAddons;
         public bool AutoUpdateAddons { get => _autoUpdateAddons; set { if (SetProperty(ref _autoUpdateAddons, value)) _onAddonChanged(); } }
@@ -155,7 +156,7 @@ namespace PocketMC.Desktop.Features.Settings
         }
 
         public ICommand SelectBedrockTabCommand { get; }
-        public string SearchPlaceholder => IsBedrockDedicated ? "Search add-ons and packs..." : "Search plugins and mods...";
+        public string SearchPlaceholder => IsBedrockDedicated ? L.T("Search add-ons and packs...") : L.T("Search plugins and mods...");
 
         // ── Engine predicates ────────────────────────────────────────────
         public bool ShowVanillaWarning => _metadata.ServerType?.StartsWith("Vanilla", StringComparison.OrdinalIgnoreCase) == true;
@@ -395,7 +396,7 @@ namespace PocketMC.Desktop.Features.Settings
                 }
                 catch (Exception ex)
                 {
-                    _dialogService.ShowMessage("Error", $"Could not delete {mod.FileName}: {ex.Message}", DialogType.Error);
+                    _dialogService.ShowMessage("Error", L.F("Could not delete {0}: {1}", mod.FileName, ex.Message), DialogType.Error);
                 }
             }
 
@@ -408,7 +409,7 @@ namespace PocketMC.Desktop.Features.Settings
                 }
                 catch (Exception ex)
                 {
-                    _dialogService.ShowMessage("Error", $"Could not delete {plugin.FileName}: {ex.Message}", DialogType.Error);
+                    _dialogService.ShowMessage("Error", L.F("Could not delete {0}: {1}", plugin.FileName, ex.Message), DialogType.Error);
                 }
             }
 
@@ -511,7 +512,7 @@ namespace PocketMC.Desktop.Features.Settings
                 {
                     IncompatibleWarningMessage = incompatibleCount == 1
                         ? "1 of your installed add-ons appears to be incompatible with this server. Would you like to automatically remove it?"
-                        : $"{incompatibleCount} of your installed add-ons appear to be incompatible with this server. Would you like to automatically remove them?";
+                        : L.F("{0} of your installed add-ons appear to be incompatible with this server. Would you like to automatically remove them?", incompatibleCount);
                     ShowIncompatibleWarning = true;
                 }
                 else
@@ -717,7 +718,7 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 // Revert on failure
                 pack.IsEnabled = !targetState;
-                _dialogService.ShowMessage("Error", $"Could not toggle pack: {ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Error", L.F("Could not toggle pack: {0}", ex.Message), DialogType.Error);
             }
         }
 
@@ -760,7 +761,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Error", $"Could not reorder pack: {ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Error", L.F("Could not reorder pack: {0}", ex.Message), DialogType.Error);
             }
         }
 
@@ -785,7 +786,7 @@ namespace PocketMC.Desktop.Features.Settings
             if (pack == null) return;
 
             string packTypeStr = pack.PackType == BedrockPackType.Behavior ? "behavior" : "resource";
-            if (await _dialogService.ShowDialogAsync("Confirm Delete", $"Permanently remove {packTypeStr} pack '{pack.DisplayName}'?\n\nThis will remove it from your world and delete the pack files from disk.", DialogType.Question) != DialogResult.Yes)
+            if (await _dialogService.ShowDialogAsync("Confirm Delete", L.F("Permanently remove {0} pack '{1}'?\n\nThis will remove it from your world and delete the pack files from disk.", packTypeStr, pack.DisplayName), DialogType.Question) != DialogResult.Yes)
                 return;
 
             try
@@ -805,7 +806,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Error", $"Could not delete pack: {ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Error", L.F("Could not delete pack: {0}", ex.Message), DialogType.Error);
             }
         }
 
@@ -837,7 +838,7 @@ namespace PocketMC.Desktop.Features.Settings
                         progress.Report(new ProgressDialogUpdate
                         {
                             Percentage = pct,
-                            Message = $"Importing ({i + 1}/{files.Length}): {fileName}..."
+                            Message = L.F("Importing ({0}/{1}): {2}...", i + 1, files.Length, fileName)
                         });
 
                         try
@@ -854,7 +855,7 @@ namespace PocketMC.Desktop.Features.Settings
                     progress.Report(new ProgressDialogUpdate
                     {
                         Percentage = 100.0,
-                        Message = "Finalizing add-on import..."
+                        Message = L.T("Finalizing add-on import...")
                     });
                 });
 
@@ -869,7 +870,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
             else if (successCount > 0)
             {
-                _dialogService.ShowMessage("Installed", $"{successCount} Bedrock pack(s) installed and registered in your world successfully.", DialogType.Information);
+                _dialogService.ShowMessage("Installed", L.F("{0} Bedrock pack(s) installed and registered in your world successfully.", successCount), DialogType.Information);
             }
         }
 
@@ -983,7 +984,7 @@ namespace PocketMC.Desktop.Features.Settings
                         progress.Report(new ProgressDialogUpdate
                         {
                             Percentage = pct,
-                            Message = $"Importing ({i + 1}/{files.Length}): {currentFileName}..."
+                            Message = L.F("Importing ({0}/{1}): {2}...", i + 1, files.Length, currentFileName)
                         });
 
                         PocketMC.Domain.Models.JavaModMetadata? metadata = null;
@@ -995,28 +996,28 @@ namespace PocketMC.Desktop.Features.Settings
                             if (metadata.IsCorrupt)
                             {
                                 var res = await _dialogService.ShowDialogAsync("Corrupt JAR Archive",
-                                    $"The file '{System.IO.Path.GetFileName(f)}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?",
+                                    L.F("The file '{0}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?", System.IO.Path.GetFileName(f)),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (metadata.LoaderType != "Plugin" && metadata.LoaderType != "Unknown")
                             {
                                 var res = await _dialogService.ShowDialogAsync("Incompatible Add-on",
-                                    $"The file '{System.IO.Path.GetFileName(f)}' is a {metadata.LoaderType} mod, not a server plugin. This server is running {_metadata.ServerType} which requires plugins (Paper/Spigot/Bukkit).\n\nDo you want to install it anyway?",
+                                    L.F("The file '{0}' is a {1} mod, not a server plugin. This server is running {2} which requires plugins (Paper/Spigot/Bukkit).\n\nDo you want to install it anyway?", System.IO.Path.GetFileName(f), metadata.LoaderType, _metadata.ServerType),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (metadata.LoaderType == "Unknown")
                             {
                                 var res = await _dialogService.ShowDialogAsync("Missing Metadata",
-                                    $"The file '{System.IO.Path.GetFileName(f)}' does not contain plugin metadata (plugin.yml or paper-plugin.yml). Are you sure that this is a valid plugin you want to install?",
+                                    L.F("The file '{0}' does not contain plugin metadata (plugin.yml or paper-plugin.yml). Are you sure that this is a valid plugin you want to install?", System.IO.Path.GetFileName(f)),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (metadata.IsClientOnly)
                             {
                                 var res = await _dialogService.ShowDialogAsync("Client-Only Add-on",
-                                    $"The file '{System.IO.Path.GetFileName(f)}' appears to be client-side only.\n\nDo you want to install it anyway?",
+                                    L.F("The file '{0}' appears to be client-side only.\n\nDo you want to install it anyway?", System.IO.Path.GetFileName(f)),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
@@ -1027,7 +1028,7 @@ namespace PocketMC.Desktop.Features.Settings
                                 if (IsApiVersionIncompatible(metadata.ApiVersion, _metadata.MinecraftVersion))
                                 {
                                     var res = await _dialogService.ShowDialogAsync("Incompatible API Version",
-                                        $"'{System.IO.Path.GetFileName(f)}' requires api-version {metadata.ApiVersion}, but this server is running Minecraft {_metadata.MinecraftVersion}. The plugin may not load correctly.\n\nDo you want to install it anyway?",
+                                        L.F("'{0}' requires api-version {1}, but this server is running Minecraft {2}. The plugin may not load correctly.\n\nDo you want to install it anyway?", System.IO.Path.GetFileName(f), metadata.ApiVersion, _metadata.MinecraftVersion),
                                         DialogType.Question);
                                     if (res != DialogResult.Yes) continue;
                                 }
@@ -1042,8 +1043,8 @@ namespace PocketMC.Desktop.Features.Settings
                                 foreach (var dep in metadata.OptionalDependencies)
                                     depList.Add($"[Optional] {dep}");
 
-                                _dialogService.ShowMessage("Plugin Dependencies",
-                                    $"The plugin '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the plugin to work properly:\n\n{string.Join("\n", depList)}",
+                                _dialogService.ShowMessage(L.T("Plugin Dependencies"),
+                                    L.F("The plugin '{0}' has the following dependencies. You must download and install them separately for the plugin to work properly:\n\n{1}", metadata.DisplayName, string.Join("\n", depList)),
                                     DialogType.Information);
                             }
                         }
@@ -1073,7 +1074,7 @@ namespace PocketMC.Desktop.Features.Settings
                         if (existingPlugin != null)
                         {
                             var overwriteRes = await _dialogService.ShowDialogAsync("Plugin Already Exists", 
-                                $"The plugin '{displayName}' appears to be already installed as '{existingPlugin.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
+                                L.F("The plugin '{0}' appears to be already installed as '{1}'.\n\nDo you want to replace it?", displayName, existingPlugin.FileName), DialogType.Warning);
                             
                             if (overwriteRes != DialogResult.Yes) continue;
                             
@@ -1099,7 +1100,7 @@ namespace PocketMC.Desktop.Features.Settings
                     progress.Report(new ProgressDialogUpdate
                     {
                         Percentage = 100.0,
-                        Message = "Finalizing plugin import..."
+                        Message = L.T("Finalizing plugin import...")
                     });
                 });
 
@@ -1178,7 +1179,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task DeletePluginAsync(string? path)
         {
-            if (path != null && await _dialogService.ShowDialogAsync("Confirm", $"Delete {System.IO.Path.GetFileName(path)}?", DialogType.Question) == DialogResult.Yes)
+            if (path != null && await _dialogService.ShowDialogAsync(L.T("Confirm"), L.F("Delete {0}?", System.IO.Path.GetFileName(path)), DialogType.Question) == DialogResult.Yes)
             {
                 try
                 {
@@ -1310,7 +1311,7 @@ namespace PocketMC.Desktop.Features.Settings
                         progress.Report(new ProgressDialogUpdate
                         {
                             Percentage = pct,
-                            Message = $"Importing ({i + 1}/{files.Length}): {fileName}..."
+                            Message = L.F("Importing ({0}/{1}): {2}...", i + 1, files.Length, fileName)
                         });
 
                         PocketMC.Domain.Models.JavaModMetadata? metadata = null;
@@ -1325,49 +1326,49 @@ namespace PocketMC.Desktop.Features.Settings
                             if (metadata.IsCorrupt)
                             {
                                 var res = await _dialogService.ShowDialogAsync("Corrupt JAR Archive",
-                                    $"The file '{fileName}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?",
+                                    L.F("The file '{0}' appears to be corrupt or is not a valid JAR file.\n\nDo you want to install it anyway?", fileName),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (metadata.LoaderType == "Plugin" || metadata.HasPluginMetadata)
                             {
                                 var res = await _dialogService.ShowDialogAsync("Invalid Mod",
-                                    $"The file '{fileName}' is a Bukkit/Paper plugin, not a {_metadata.ServerType} mod. Plugins must be placed in the plugins folder.\n\nDo you want to install it anyway?",
+                                    L.F("The file '{0}' is a Bukkit/Paper plugin, not a {1} mod. Plugins must be placed in the plugins folder.\n\nDo you want to install it anyway?", fileName, _metadata.ServerType),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (metadata.LoaderType == "Unknown")
                             {
                                 var res = await _dialogService.ShowDialogAsync("Missing Metadata",
-                                    $"The file '{fileName}' does not contain mod metadata. Are you sure that this is a valid mod you want to install?",
+                                    L.F("The file '{0}' does not contain mod metadata. Are you sure that this is a valid mod you want to install?", fileName),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (!IsLoaderCompatible(metadata.LoaderType))
                             {
                                 var res = await _dialogService.ShowDialogAsync("Incompatible Mod Loader",
-                                    $"The mod '{fileName}' requires {metadata.LoaderType} mod loader, but this server is running {_metadata.ServerType}.\n\nDo you want to install it anyway?",
+                                    L.F("The mod '{0}' requires {1} mod loader, but this server is running {2}.\n\nDo you want to install it anyway?", fileName, metadata.LoaderType, _metadata.ServerType),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (metadata.IsClientOnly)
                             {
                                 var res = await _dialogService.ShowDialogAsync("Client-Only Mod",
-                                    $"The mod '{fileName}' is a client-side only mod and may not work on a dedicated server.\n\nDo you want to install it anyway?",
+                                    L.F("The mod '{0}' is a client-side only mod and may not work on a dedicated server.\n\nDo you want to install it anyway?", fileName),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion))
                             {
                                 var res = await _dialogService.ShowDialogAsync("Incompatible Minecraft Version",
-                                    $"The mod '{fileName}' requires Minecraft {metadata.RequiredMinecraftVersion}, but this server is running {_metadata.MinecraftVersion}.\n\nDo you want to install it anyway?",
+                                    L.F("The mod '{0}' requires Minecraft {1}, but this server is running {2}.\n\nDo you want to install it anyway?", fileName, metadata.RequiredMinecraftVersion, _metadata.MinecraftVersion),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
                             else if (!PocketMC.Domain.Models.SemanticVersionHelper.IsCompatible(metadata.RequiredLoaderVersion, _metadata.LoaderVersion))
                             {
                                 var res = await _dialogService.ShowDialogAsync("Incompatible Loader Version",
-                                    $"The mod '{fileName}' requires {metadata.LoaderType} Loader {metadata.RequiredLoaderVersion}, but this server is running {_metadata.LoaderVersion}.\n\nDo you want to install it anyway?",
+                                    L.F("The mod '{0}' requires {1} Loader {2}, but this server is running {3}.\n\nDo you want to install it anyway?", fileName, metadata.LoaderType, metadata.RequiredLoaderVersion, _metadata.LoaderVersion),
                                     DialogType.Warning);
                                 if (res != DialogResult.Yes) continue;
                             }
@@ -1380,8 +1381,8 @@ namespace PocketMC.Desktop.Features.Settings
                                 foreach (var dep in metadata.OptionalDependencies)
                                     depList.Add($"[Optional] {dep}");
 
-                                _dialogService.ShowMessage("Mod Dependencies",
-                                    $"The mod '{metadata.DisplayName}' has the following dependencies. You must download and install them separately for the mod to work properly:\n\n{string.Join("\n", depList)}",
+                                _dialogService.ShowMessage(L.T("Mod Dependencies"),
+                                    L.F("The mod '{0}' has the following dependencies. You must download and install them separately for the mod to work properly:\n\n{1}", metadata.DisplayName, string.Join("\n", depList)),
                                     DialogType.Information);
                             }
                         }
@@ -1411,7 +1412,7 @@ namespace PocketMC.Desktop.Features.Settings
                         if (existingMod != null)
                         {
                             var overwriteRes = await _dialogService.ShowDialogAsync("Mod Already Exists", 
-                                $"The mod '{displayName}' appears to be already installed as '{existingMod.FileName}'.\n\nDo you want to replace it?", DialogType.Warning);
+                                L.F("The mod '{0}' appears to be already installed as '{1}'.\n\nDo you want to replace it?", displayName, existingMod.FileName), DialogType.Warning);
                             
                             if (overwriteRes != DialogResult.Yes) continue;
                             
@@ -1435,7 +1436,7 @@ namespace PocketMC.Desktop.Features.Settings
                     progress.Report(new ProgressDialogUpdate
                     {
                         Percentage = 100.0,
-                        Message = "Finalizing mod import..."
+                        Message = L.T("Finalizing mod import...")
                     });
                 });
 
@@ -1445,7 +1446,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private async Task DeleteModAsync(string? path)
         {
-            if (path != null && await _dialogService.ShowDialogAsync("Confirm", $"Delete {System.IO.Path.GetFileName(path)}?", DialogType.Question) == DialogResult.Yes)
+            if (path != null && await _dialogService.ShowDialogAsync(L.T("Confirm"), L.F("Delete {0}?", System.IO.Path.GetFileName(path)), DialogType.Question) == DialogResult.Yes)
             {
                 try
                 {
@@ -1467,9 +1468,7 @@ namespace PocketMC.Desktop.Features.Settings
             // For BDS, we never show the web browser — use local import instead.
             if (IsBedrockDedicated)
             {
-                _dialogService.ShowMessage(
-                    "Local Import Required",
-                    "Bedrock add-ons cannot be browsed from a URL. Use the 'Import Local Add-on' button to install .mcpack or .mcaddon files.",
+                _dialogService.ShowMessage(L.T("Local Import Required"), L.T("Bedrock add-ons cannot be browsed from a URL. Use the 'Import Local Add-on' button to install .mcpack or .mcaddon files."),
                     DialogType.Information);
                 return;
             }
@@ -1569,7 +1568,7 @@ namespace PocketMC.Desktop.Features.Settings
                     LoaderType = loaderType,
                     Version = version,
                     SideSupport = ModSideSupport.Unknown,
-                    SideLabel = "Side unknown",
+                    SideLabel = L.T("Side unknown"),
                     Dependencies = Array.Empty<string>(),
 
                 };
@@ -1600,7 +1599,7 @@ namespace PocketMC.Desktop.Features.Settings
                     
                     if (!checkDialog.UpdatesFound && !checkDialog.IsCancelled)
                     {
-                        _dialogService.ShowMessage("Up to Date", $"{displayName} is already up to date.", DialogType.Information);
+                        _dialogService.ShowMessage("Up to Date", L.F("{0} is already up to date.", displayName), DialogType.Information);
                     }
                     
                     return; // User cancelled or closed the dialog without proceeding, or it was auto-closed due to being up-to-date
@@ -1628,8 +1627,8 @@ namespace PocketMC.Desktop.Features.Settings
                                 manifestEntry.ProjectId,
                                 displayName,
                                 setUpdateStatus);
-                            _dialogService.ShowMessage("Update Installed",
-                                $"'{displayName}' has been updated to {result.UpdateInfo.LatestVersionName ?? result.UpdateInfo.LatestVersionId ?? "the latest version"}.",
+                            _dialogService.ShowMessage(L.T("Update Installed"),
+                                L.F("'{0}' has been updated to {1}.", displayName, result.UpdateInfo.LatestVersionName ?? result.UpdateInfo.LatestVersionId ?? L.T("the latest version")),
                                 DialogType.Information);
                             LoadAddons();
                             _onAddonChanged();
@@ -1637,7 +1636,7 @@ namespace PocketMC.Desktop.Features.Settings
                         catch (Exception installEx)
                         {
                             _dialogService.ShowMessage("Update Failed",
-                                $"Could not install update for '{displayName}': {installEx.Message}",
+                                L.F("Could not install update for '{0}': {1}", displayName, installEx.Message),
                                 DialogType.Error);
                         }
                     }
@@ -1719,7 +1718,7 @@ namespace PocketMC.Desktop.Features.Settings
                 AddonUpdateStatus.UnsupportedProvider => result.Message ?? "Unsupported provider",
                 AddonUpdateStatus.ProviderError => result.Message ?? "Provider error",
                 AddonUpdateStatus.PossiblyIncompatible => result.Message ?? "Possibly incompatible",
-                AddonUpdateStatus.UpdateAvailable => result.Message ?? $"Update available for {displayName}",
+                AddonUpdateStatus.UpdateAvailable => result.Message ?? L.F("Update available for {0}", displayName),
                 AddonUpdateStatus.UpToDate => "Up to date",
                 AddonUpdateStatus.Checking => "Checking...",
                 _ => result.Message ?? "Update status unknown"
@@ -1803,8 +1802,7 @@ namespace PocketMC.Desktop.Features.Settings
                 {
                     if (!suppressEmptyMessage)
                     {
-                        _dialogService.ShowMessage("No Tracked Addons",
-                            "No addons were installed from a marketplace. Update checking is only available for marketplace-installed items.",
+                        _dialogService.ShowMessage(L.T("No Tracked Addons"), L.T("No addons were installed from a marketplace. Update checking is only available for marketplace-installed items."),
                             DialogType.Information);
                     }
                     return;
@@ -1849,7 +1847,7 @@ namespace PocketMC.Desktop.Features.Settings
                 }
                 else if (!checkDialog.UpdatesFound && !checkDialog.IsCancelled)
                 {
-                    _dialogService.ShowMessage("Up to Date", "All checked addons are already up to date.", DialogType.Information);
+                    _dialogService.ShowMessage(L.T("Up to Date"), L.T("All checked addons are already up to date."), DialogType.Information);
                 }
             }
             catch (Exception ex)
@@ -1968,7 +1966,7 @@ namespace PocketMC.Desktop.Features.Settings
         public static string BuildUpdateConfirmationMessage(string displayName, string installedVersion, string latestVersion, List<string> warnings)
         {
             string warningText = FormatAddonUpdateWarningText(warnings);
-            return $"A new version of '{displayName}' is available.\n\n" +
+            return L.F("A new version of '{0}' is available.\n\n", displayName) +
                    $"Installed: {installedVersion}\n" +
                    $"Latest: {latestVersion}\n\n" +
                    "Do you want to update now?" + warningText;
@@ -1977,7 +1975,7 @@ namespace PocketMC.Desktop.Features.Settings
         public static string BuildReinstallConfirmationMessage(string displayName, string latestVersion, List<string> warnings)
         {
             string warningText = FormatAddonUpdateWarningText(warnings);
-            return $"'{displayName}' is already on the latest version ({latestVersion}).\n\n" +
+            return L.F("'{0}' is already on the latest version ({1}).\n\n", displayName, latestVersion) +
                    "Would you like to reinstall (re-download) the current version anyway?" + warningText;
         }
 
@@ -1988,7 +1986,7 @@ namespace PocketMC.Desktop.Features.Settings
 
             string warningText = FormatAddonUpdateWarningText(allWarnings);
 
-            return $"{updateCount} of {totalTrackedCount} addon(s) have updates:\n\n{nameList}\n\nDo you want to install all updates now?" + warningText;
+            return L.F("{0} of {1} addon(s) have updates:\n\n{2}\n\nDo you want to install all updates now?", updateCount, totalTrackedCount, nameList) + warningText;
         }
 
         public void ApplyFiltersAndSort()
@@ -2473,7 +2471,7 @@ namespace PocketMC.Desktop.Features.Settings
         public string LoaderTypeForUpdate => ApiVersion;
         public string ToggleActionLabel => IsDisabled ? "Enable" : "Disable";
         public string ToggleToolTip => CanEnable || CanDisable
-            ? $"{ToggleActionLabel} this plugin"
+            ? L.F("{0} this plugin", ToggleActionLabel)
             : "Stop the server before enabling or disabling mods/plugins.";
         public bool IsEnabled => !IsDisabled;
         public bool CanToggle => CanEnable || CanDisable;
@@ -2537,7 +2535,7 @@ namespace PocketMC.Desktop.Features.Settings
         public bool HasVersion => !string.IsNullOrEmpty(Version);
         public string ToggleActionLabel => IsDisabled ? "Enable" : "Disable";
         public string ToggleToolTip => CanEnable || CanDisable
-            ? $"{ToggleActionLabel} this mod"
+            ? L.F("{0} this mod", ToggleActionLabel)
             : "Stop the server before enabling or disabling mods/plugins.";
         public bool IsEnabled => !IsDisabled;
         public bool CanToggle => CanEnable || CanDisable;
