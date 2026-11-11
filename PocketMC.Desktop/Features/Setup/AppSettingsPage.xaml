@@ -4,9 +4,10 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       mc:Ignorable="d"
       d:DesignHeight="600" d:DesignWidth="800"
-      Title="Settings">
+      Title="{loc:Tr 'Settings'}">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="VisibleIfTrue"/>
@@ -20,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="App Settings"
+                   Text="{loc:Tr App Settings}"
                    FontSize="28"
                    FontWeight="SemiBold"
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -125,8 +126,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="App Behavior" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Control startup and tray behavior." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'App Behavior'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Control startup and tray behavior.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
@@ -138,8 +139,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Start PocketMC with Windows" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Automatically launch PocketMC when you sign into Windows."
+                                <TextBlock Text="{loc:Tr 'Start PocketMC with Windows'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Automatically launch PocketMC when you sign into Windows.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -158,8 +159,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Start minimized to tray" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="When Windows starts PocketMC, keep the dashboard hidden and show the tray icon."
+                                <TextBlock Text="{loc:Tr 'Start minimized to tray'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'When Windows starts PocketMC, keep the dashboard hidden and show the tray icon.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -178,8 +179,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Minimize to tray on close" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Keep PocketMC running in the tray when the main window is closed."
+                                <TextBlock Text="{loc:Tr 'Minimize to tray on close'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Keep PocketMC running in the tray when the main window is closed.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -198,8 +199,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Optional usage telemetry" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Share app activity and server usage to help improve PocketMC. The first-run installation report, including country, is always sent."
+                                <TextBlock Text="{loc:Tr 'Optional usage telemetry'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Share app activity and server usage to help improve PocketMC. The first-run installation report, including country, is always sent.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -218,8 +219,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Keep this PC awake while servers are running" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Allows the screen to turn off, but prevents Windows from sleeping so servers and tunnels stay online."
+                                <TextBlock Text="{loc:Tr 'Keep this PC awake while servers are running'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Allows the screen to turn off, but prevents Windows from sleeping so servers and tunnels stay online.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -234,6 +235,77 @@
                     </StackPanel>
                 </ui:CardExpander>
 
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Globe24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr 'Language &amp; Region'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Choose the interface language for PocketMC.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <TextBlock Text="{loc:Tr Language}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{loc:Tr 'Some pages are still being translated and may appear in English.'}"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,4,0,8"
+                                   TextWrapping="Wrap"/>
+                        <ComboBox x:Name="LanguageCombo"
+                                  MinWidth="220"
+                                  HorizontalAlignment="Left"
+                                  DisplayMemberPath="DisplayName"
+                                  SelectionChanged="LanguageCombo_SelectionChanged"/>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr 'Downloads &amp; Mirrors'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Route blocked or slow downloads through mirror tunnels.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr 'Use download mirrors'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Retry downloads through public mirror tunnels and BMCLAPI when the official host is unreachable.'}"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,0,0"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="1" x:Name="DownloadMirrorsToggle" VerticalAlignment="Top" Margin="16,0,0,0"
+                                             Checked="ToggleUseDownloadMirrors_Changed" Unchecked="ToggleUseDownloadMirrors_Changed"/>
+                        </Grid>
+
+                        <TextBlock Text="{loc:Tr 'Custom download mirror'}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{loc:Tr 'Optional template containing {url}, for example https://ghfast.top/{url}. Leave empty to use the built-in tunnels.'}"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,4,0,8"
+                                   TextWrapping="Wrap"/>
+                        <ui:TextBox x:Name="CustomDownloadMirrorInput" MinWidth="320" HorizontalAlignment="Left"
+                                    PlaceholderText="https://ghfast.top/{url}"
+                                    LostFocus="CustomDownloadMirrorInput_LostFocus"/>
+                    </StackPanel>
+                </ui:CardExpander>
+
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon FolderOpen24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>
                         <Grid>
@@ -241,15 +313,15 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Storage &amp; Root Directory" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Change or transfer the PocketMC root storage folder." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'Storage &amp; Root Directory'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Change or transfer the PocketMC root storage folder.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
-                        <TextBlock Text="PocketMC Root Folder Path" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="This folder holds your Minecraft server instances, Java/PHP runtimes, and network tunnel binaries." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+                        <TextBlock Text="{loc:Tr 'PocketMC Root Folder Path'}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{loc:Tr 'This folder holds your Minecraft server instances, Java/PHP runtimes, and network tunnel binaries.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
 
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
@@ -257,7 +329,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <ui:TextBox x:Name="RootDirectoryPathInput" IsReadOnly="True" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ui:Button Grid.Column="1" x:Name="BtnChangeRootDirectory" Content="Change Location" Icon="{ui:SymbolIcon FolderOpen24}" Click="ChangeRootDirectory_Click" VerticalAlignment="Center"/>
+                            <ui:Button Grid.Column="1" x:Name="BtnChangeRootDirectory" Content="{loc:Tr 'Change Location'}" Icon="{ui:SymbolIcon FolderOpen24}" Click="ChangeRootDirectory_Click" VerticalAlignment="Center"/>
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
@@ -269,8 +341,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Appearance" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Customize how the application looks." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'Appearance'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Customize how the application looks.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
@@ -283,8 +355,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Window Background Theme" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Select your preferred window background effect." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{loc:Tr 'Window Background Theme'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Select your preferred window background effect.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ComboBox x:Name="BackdropCombo" Grid.Column="1" Width="260" VerticalAlignment="Center" SelectionChanged="BackdropCombo_SelectionChanged">
                                 <!-- Items populated dynamically based on OS version -->
@@ -301,8 +373,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Custom Background Image" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Use a custom image instead of your desktop wallpaper. The image will be blurred and darkened automatically." 
+                                    <TextBlock Text="{loc:Tr 'Custom Background Image'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Use a custom image instead of your desktop wallpaper. The image will be blurred and darkened automatically.'}" 
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 
@@ -337,7 +409,7 @@
                                     <!-- Controls -->
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock x:Name="CustomBgPathLabel"
-                                                   Text="PocketMC Default Wallpaper"
+                                                   Text="{loc:Tr 'PocketMC Default Wallpaper'}"
                                                    FontSize="12"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                    TextTrimming="CharacterEllipsis"
@@ -345,20 +417,20 @@
                                                    MaxWidth="260"/>
                                         <StackPanel Orientation="Horizontal">
                                             <ui:Button x:Name="BtnBrowseCustomBg"
-                                                       Content="Browse Image"
+                                                       Content="{loc:Tr 'Browse Image'}"
                                                        Icon="{ui:SymbolIcon FolderOpen24}"
                                                        Appearance="Secondary"
                                                        Click="BrowseCustomBackground_Click"
                                                        Margin="0,0,8,0"/>
                                             <ui:Button x:Name="BtnClearCustomBg"
-                                                       Content="Reset to Default Wallpaper"
+                                                       Content="{loc:Tr 'Reset to Default Wallpaper'}"
                                                        Icon="{ui:SymbolIcon ArrowReset24}"
                                                        Appearance="Secondary"
                                                        Click="ClearCustomBackground_Click"
                                                        Visibility="Collapsed"
                                                        Margin="0,0,8,0"/>
                                             <ui:Button x:Name="BtnUseDesktopBg"
-                                                       Content="Use Desktop Wallpaper"
+                                                       Content="{loc:Tr 'Use Desktop Wallpaper'}"
                                                        Icon="{ui:SymbolIcon Desktop24}"
                                                        Appearance="Secondary"
                                                        Click="UseDesktopBackground_Click"
@@ -375,8 +447,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Blur Intensity" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Adjust the background blur strength. Set to 0 for a crisp wallpaper."
+                                    <TextBlock Text="{loc:Tr 'Blur Intensity'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Adjust the background blur strength. Set to 0 for a crisp wallpaper.'}"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                                 </StackPanel>
 
@@ -392,7 +464,7 @@
                                             VerticalAlignment="Center"
                                             ValueChanged="WallpaperBlurSlider_ValueChanged"/>
                                     <TextBlock x:Name="WallpaperBlurValueText"
-                                               Text="80 px"
+                                               Text="{loc:Tr '80 px'}"
                                                Width="55"
                                                TextAlignment="Right"
                                                VerticalAlignment="Center"
@@ -410,8 +482,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Darkness &amp; Dimming" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Adjust dark overlay opacity for text contrast and readability."
+                                    <TextBlock Text="{loc:Tr 'Darkness &amp; Dimming'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Adjust dark overlay opacity for text contrast and readability.'}"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                                 </StackPanel>
 
@@ -441,7 +513,7 @@
                             <!-- Reset Effects Action -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
                                 <ui:Button x:Name="BtnResetWallpaperEffects"
-                                           Content="Reset Blur &amp; Dimming"
+                                           Content="{loc:Tr 'Reset Blur &amp; Dimming'}"
                                            Icon="{ui:SymbolIcon ArrowReset24}"
                                            Appearance="Secondary"
                                            Click="ResetWallpaperEffects_Click"/>
@@ -457,8 +529,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Accent Color Mode" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Choose the accent color used for interactive controls, highlights, and selections."
+                                <TextBlock Text="{loc:Tr 'Accent Color Mode'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Choose the accent color used for interactive controls, highlights, and selections.'}"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
                                            Margin="0,4,24,0"
@@ -472,36 +544,36 @@
                                         CornerRadius="10"
                                         Margin="0,0,12,0"
                                         VerticalAlignment="Center"
-                                        ToolTipService.ToolTip="Active Accent Color"/>
+                                        ToolTipService.ToolTip="{loc:Tr 'Active Accent Color'}"/>
                                 <ComboBox x:Name="AccentModeCombo" 
                                           Width="230" 
                                           SelectionChanged="AccentModeCombo_SelectionChanged">
-                                    <ComboBoxItem Content="Automatic (Windows)" Tag="Automatic"/>
-                                    <ComboBoxItem Content="Custom Color" Tag="Custom"/>
+                                    <ComboBoxItem Content="{loc:Tr 'Automatic (Windows)'}" Tag="Automatic"/>
+                                    <ComboBoxItem Content="{loc:Tr 'Custom Color'}" Tag="Custom"/>
                                 </ComboBox>
                             </StackPanel>
                         </Grid>
 
                         <StackPanel x:Name="CustomAccentPanel" Visibility="Collapsed" Margin="0,16,0,0">
-                            <TextBlock Text="Preset Colors"
+                            <TextBlock Text="{loc:Tr 'Preset Colors'}"
                                        FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        Margin="0,0,0,6"/>
                             <WrapPanel x:Name="ColorSwatchPanel" Margin="0,0,0,12"/>
 
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Custom Hex:"
+                                <TextBlock Text="{loc:Tr 'Custom Hex:'}"
                                            VerticalAlignment="Center"
                                            FontSize="12"
                                            Margin="0,0,8,0"/>
                                 <ui:TextBox x:Name="HexColorInput"
                                             Width="120"
-                                            PlaceholderText="#008B00"
+                                            PlaceholderText="{loc:Tr '#008B00'}"
                                             MaxLength="7"
                                             ClearButtonEnabled="False"
                                             KeyDown="HexColorInput_KeyDown"/>
                                 <ui:Button x:Name="BtnApplyHex"
-                                           Content="Apply"
+                                           Content="{loc:Tr 'Apply'}"
                                            Appearance="Primary"
                                            Margin="8,0,0,0"
                                            Click="ApplyHexColor_Click"/>
@@ -517,8 +589,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Manage desktop notifications." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'Notifications'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Manage desktop notifications.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
@@ -530,8 +602,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Server Online Notification" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show a notification when a server finishes starting up and becomes online."
+                                <TextBlock Text="{loc:Tr 'Server Online Notification'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Show a notification when a server finishes starting up and becomes online.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -549,8 +621,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Agent Connect Notification" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show a notification when the Playit agent successfully connects."
+                                <TextBlock Text="{loc:Tr 'Agent Connect Notification'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Show a notification when the Playit agent successfully connects.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -568,8 +640,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Remote Control Online Notification" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show a notification when the remote control service is online and a tunnel is found."
+                                <TextBlock Text="{loc:Tr 'Remote Control Online Notification'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Show a notification when the remote control service is online and a tunnel is found.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -587,8 +659,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="AI Summary Notification" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show a notification when AI session summarization starts and completes."
+                                <TextBlock Text="{loc:Tr 'AI Summary Notification'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Show a notification when AI session summarization starts and completes.'}"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
@@ -611,8 +683,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Discord Rich Presence" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Customize what is shown on your Discord profile when running servers."
+                                <TextBlock Text="{loc:Tr 'Discord Rich Presence'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Customize what is shown on your Discord profile when running servers.'}"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
@@ -626,8 +698,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Enable Discord Rich Presence" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Show your server status and details on your Discord profile."
+                                <TextBlock Text="{loc:Tr 'Enable Discord Rich Presence'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Show your server status and details on your Discord profile.'}"
                                            TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                             </StackPanel>
                             <ui:ToggleSwitch x:Name="ToggleDiscordRpc" Grid.Column="1" VerticalAlignment="Center"
@@ -646,7 +718,7 @@
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0"
-                                           Text="Live Profile Preview"
+                                           Text="{loc:Tr 'Live Profile Preview'}"
                                            FontSize="13"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -661,7 +733,7 @@
 
                                     <!-- Column 0: Active Server Preview -->
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="Active Server"
+                                        <TextBlock Text="{loc:Tr 'Active Server'}"
                                                    FontSize="12"
                                                    FontWeight="SemiBold"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -678,7 +750,7 @@
 
                                                 <!-- Header: Playing ... -->
                                                 <Grid Grid.Row="0" Margin="0,0,0,10">
-                                                    <TextBlock Text="Playing"
+                                                    <TextBlock Text="{loc:Tr 'Playing'}"
                                                                FontSize="12"
                                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                VerticalAlignment="Center"/>
@@ -735,20 +807,20 @@
 
                                                     <!-- Profile Metadata Lines -->
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                        <TextBlock Text="PocketMC"
+                                                        <TextBlock Text="{loc:Tr 'PocketMC'}"
                                                                    FontWeight="Bold"
                                                                    FontSize="13"
                                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                                    TextTrimming="CharacterEllipsis"/>
                                                         <TextBlock x:Name="PreviewOnlineDetails"
-                                                                   Text="Hosting Survival World"
+                                                                   Text="{loc:Tr 'Hosting Survival World'}"
                                                                    FontSize="12"
                                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                    Margin="0,2,0,0"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    TextWrapping="NoWrap"/>
                                                         <TextBlock x:Name="PreviewOnlineState"
-                                                                   Text="0/20 Players • cynthia-publishing.tun.ply.gg"
+                                                                   Text="{loc:Tr '0/20 Players • cynthia-publishing.tun.ply.gg'}"
                                                                    FontSize="12"
                                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                    Margin="0,1,0,0"
@@ -772,7 +844,7 @@
                                                 <!-- Download Action Button -->
                                                 <ui:Button x:Name="PreviewOnlineButton"
                                                            Grid.Row="2"
-                                                           Content="Download PocketMC"
+                                                           Content="{loc:Tr 'Download PocketMC'}"
                                                            Appearance="Secondary"
                                                            HorizontalAlignment="Stretch"
                                                            Height="32"
@@ -784,12 +856,12 @@
                                     <!-- Column 2: Idle Status Preview -->
                                     <StackPanel Grid.Column="2">
                                         <Grid Margin="2,0,0,6">
-                                            <TextBlock Text="Idle State"
+                                            <TextBlock Text="{loc:Tr 'Idle State'}"
                                                        FontSize="12"
                                                        FontWeight="SemiBold"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <TextBlock x:Name="PreviewIdleStatusText"
-                                                       Text="Hidden when idle"
+                                                       Text="{loc:Tr 'Hidden when idle'}"
                                                        FontSize="11"
                                                        Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                                                        HorizontalAlignment="Right"
@@ -807,7 +879,7 @@
 
                                                 <!-- Header: Playing ... -->
                                                 <Grid Grid.Row="0" Margin="0,0,0,10">
-                                                    <TextBlock Text="Playing"
+                                                    <TextBlock Text="{loc:Tr 'Playing'}"
                                                                FontSize="12"
                                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                VerticalAlignment="Center"/>
@@ -838,18 +910,18 @@
 
                                                     <!-- Profile Metadata Lines -->
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                        <TextBlock Text="PocketMC"
+                                                        <TextBlock Text="{loc:Tr 'PocketMC'}"
                                                                    FontWeight="Bold"
                                                                    FontSize="13"
                                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                                    TextTrimming="CharacterEllipsis"/>
-                                                        <TextBlock Text="Managing Servers"
+                                                        <TextBlock Text="{loc:Tr 'Managing Servers'}"
                                                                    FontSize="12"
                                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                    Margin="0,2,0,0"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    TextWrapping="NoWrap"/>
-                                                        <TextBlock Text="Idle"
+                                                        <TextBlock Text="{loc:Tr 'Idle'}"
                                                                    FontSize="12"
                                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                    Margin="0,1,0,0"
@@ -873,7 +945,7 @@
                                                 <!-- Download Action Button -->
                                                 <ui:Button x:Name="PreviewIdleButton"
                                                            Grid.Row="2"
-                                                           Content="Download PocketMC"
+                                                           Content="{loc:Tr 'Download PocketMC'}"
                                                            Appearance="Secondary"
                                                            HorizontalAlignment="Stretch"
                                                            Height="32"
@@ -893,8 +965,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Show status when idle" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Keep PocketMC visible on your Discord profile even when no servers are running."
+                                    <TextBlock Text="{loc:Tr 'Show status when idle'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Keep PocketMC visible on your Discord profile even when no servers are running.'}"
                                                TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                                 </StackPanel>
                                 <ui:ToggleSwitch x:Name="ToggleDiscordShowIdle" Grid.Column="1" VerticalAlignment="Center"
@@ -908,8 +980,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Show server instance name" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Display your custom server name instead of a generic Minecraft title."
+                                    <TextBlock Text="{loc:Tr 'Show server instance name'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Display your custom server name instead of a generic Minecraft title.'}"
                                                TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                                 </StackPanel>
                                 <ui:ToggleSwitch x:Name="ToggleDiscordShowServerName" Grid.Column="1" VerticalAlignment="Center"
@@ -923,8 +995,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Show online player count" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Display the number of connected players and total server capacity."
+                                    <TextBlock Text="{loc:Tr 'Show online player count'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Display the number of connected players and total server capacity.'}"
                                                TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                                 </StackPanel>
                                 <ui:ToggleSwitch x:Name="ToggleDiscordShowPlayerCount" Grid.Column="1" VerticalAlignment="Center"
@@ -938,8 +1010,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Show server connection address" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Display your server address so friends can see where to connect."
+                                    <TextBlock Text="{loc:Tr 'Show server connection address'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Display your server address so friends can see where to connect.'}"
                                                TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                                 </StackPanel>
                                 <ui:ToggleSwitch x:Name="ToggleDiscordShowServerAddress" Grid.Column="1" VerticalAlignment="Center"
@@ -953,8 +1025,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Show server software and version" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Display the server software platform and Minecraft version."
+                                    <TextBlock Text="{loc:Tr 'Show server software and version'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Display the server software platform and Minecraft version.'}"
                                                TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                                 </StackPanel>
                                 <ui:ToggleSwitch x:Name="ToggleDiscordShowVersionAndEngine" Grid.Column="1" VerticalAlignment="Center"
@@ -968,8 +1040,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Show server software logo" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Display the server software icon instead of the default PocketMC logo."
+                                    <TextBlock Text="{loc:Tr 'Show server software logo'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Display the server software icon instead of the default PocketMC logo.'}"
                                                TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                                 </StackPanel>
                                 <ui:ToggleSwitch x:Name="ToggleDiscordShowSoftwareIcon" Grid.Column="1" VerticalAlignment="Center"
@@ -983,8 +1055,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Show PocketMC download button" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Add a button on your profile linking friends to download PocketMC."
+                                    <TextBlock Text="{loc:Tr 'Show PocketMC download button'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Add a button on your profile linking friends to download PocketMC.'}"
                                                TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                                 </StackPanel>
                                 <ui:ToggleSwitch x:Name="ToggleDiscordShowDownloadButton" Grid.Column="1" VerticalAlignment="Center"
@@ -1001,8 +1073,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Cloud Backups" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Native cloud backup integration for disaster recovery." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'Cloud Backups'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Native cloud backup integration for disaster recovery.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
@@ -1015,8 +1087,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Enable Cloud Backups" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Master toggle to allow instances to upload backups to configured providers." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
+                                <TextBlock Text="{loc:Tr 'Enable Cloud Backups'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Master toggle to allow instances to upload backups to configured providers.'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0"/>
                             </StackPanel>
                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding EnableCloudBackups, Mode=TwoWay}"/>
                         </Grid>
@@ -1039,8 +1111,8 @@
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                             <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,12,0" Visibility="{Binding IsBusy, Converter={StaticResource VisibleIfTrue}}"/>
-                                            <ui:Button Content="Connect" Command="{Binding ConnectCommand}" Appearance="Primary" Margin="0,0,8,0" Visibility="{Binding IsConnected, Converter={StaticResource InvertedVisibilityConverter}}" />
-                                            <ui:Button Content="Disconnect" Command="{Binding DisconnectCommand}" Appearance="Danger" Visibility="{Binding IsConnected, Converter={StaticResource VisibleIfTrue}}" />
+                                            <ui:Button Content="{loc:Tr 'Connect'}" Command="{Binding ConnectCommand}" Appearance="Primary" Margin="0,0,8,0" Visibility="{Binding IsConnected, Converter={StaticResource InvertedVisibilityConverter}}" />
+                                            <ui:Button Content="{loc:Tr 'Disconnect'}" Command="{Binding DisconnectCommand}" Appearance="Danger" Visibility="{Binding IsConnected, Converter={StaticResource VisibleIfTrue}}" />
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
@@ -1056,8 +1128,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="API Configuration" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Configure third-party API keys for services like CurseForge." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'API Configuration'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Configure third-party API keys for services like CurseForge.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
@@ -1069,21 +1141,21 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
-                                <TextBlock Text="CurseForge API Key" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'CurseForge API Key'}" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap">
-                                    <Run Text="Obtain a free key from the "/>
+                                    <Run Text="{loc:Tr '从 '}"/>
                                     <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate"
                                                Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
-                                        <Run Text="CurseForge Console"/>
+                                        <Run Text="{loc:Tr 'CurseForge Console'}"/>
                                     </Hyperlink>
-                                    <Run Text=" to access CurseForge addons."/>
+                                    <Run Text="{loc:Tr ' 获取免费密钥以访问 CurseForge 附加内容。'}"/>
                                 </TextBlock>
                                 <ui:PasswordBox x:Name="CurseForgeKeyInput" 
                                                 Margin="0,8,0,0" 
-                                                PlaceholderText="$2a$10$..."
-                                                AutomationProperties.Name="CurseForge API Key"/>
+                                                PlaceholderText="{loc:Tr '$2a$10$...'}"
+                                                AutomationProperties.Name="{loc:Tr 'CurseForge API Key'}"/>
                             </StackPanel>
-                            <ui:Button Grid.Column="1" Content="Save Key" Appearance="Primary" VerticalAlignment="Bottom" Click="SaveApiKey_Click"/>
+                            <ui:Button Grid.Column="1" Content="{loc:Tr 'Save Key'}" Appearance="Primary" VerticalAlignment="Bottom" Click="SaveApiKey_Click"/>
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
@@ -1095,8 +1167,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="AI Session Summarization" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Generate AI-powered summaries of your server sessions when they stop." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'AI Session Summarization'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Generate AI-powered summaries of your server sessions when they stop.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
@@ -1109,16 +1181,16 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="AI Provider" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Select the AI service you have an API key for." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{loc:Tr 'AI Provider'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Select the AI service you have an API key for.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ComboBox x:Name="AiProviderCombo" Grid.Column="1" Width="200" VerticalAlignment="Center" SelectionChanged="AiProviderCombo_SelectionChanged">
-                                <ComboBoxItem Content="Google Gemini" IsSelected="True"/>
-                                <ComboBoxItem Content="OpenAI"/>
-                                <ComboBoxItem Content="Anthropic Claude"/>
-                                <ComboBoxItem Content="Mistral AI"/>
-                                <ComboBoxItem Content="Groq"/>
-                                <ComboBoxItem Content="Ollama"/>
+                                <ComboBoxItem Content="{loc:Tr 'Google Gemini'}" IsSelected="True"/>
+                                <ComboBoxItem Content="{loc:Tr 'OpenAI'}"/>
+                                <ComboBoxItem Content="{loc:Tr 'Anthropic Claude'}"/>
+                                <ComboBoxItem Content="{loc:Tr 'Mistral AI'}"/>
+                                <ComboBoxItem Content="{loc:Tr 'Groq'}"/>
+                                <ComboBoxItem Content="{loc:Tr 'Ollama'}"/>
                             </ComboBox>
                         </Grid>
 
@@ -1129,17 +1201,17 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock x:Name="AiApiKeyTitle" Text="API Key" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock x:Name="AiApiKeySubtitle" Text="Enter your API key for the selected provider. Keys are stored locally." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="AiApiKeyTitle" Text="{loc:Tr 'API Key'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock x:Name="AiApiKeySubtitle" Text="{loc:Tr 'Enter your API key for the selected provider. Keys are stored locally.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <ui:PasswordBox x:Name="AiApiKeyInput" 
-                                                PlaceholderText="Paste your API key here..." 
+                                                PlaceholderText="{loc:Tr 'Paste your API key here...'}" 
                                                 Width="250" 
                                                 Margin="0,0,8,0"
-                                                AutomationProperties.Name="AI API Key"/>
-                                <ui:Button x:Name="BtnValidateAiKey" Content="Validate" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="Test the connection with a small API call"/>
-                                <ui:Button Content="Save Key" Appearance="Primary" Click="SaveAiKey_Click"/>
+                                                AutomationProperties.Name="{loc:Tr 'AI API Key'}"/>
+                                <ui:Button x:Name="BtnValidateAiKey" Content="{loc:Tr 'Validate'}" Appearance="Secondary" Click="ValidateAiKey_Click" Margin="0,0,8,0" ToolTip="{loc:Tr 'Test the connection with a small API call'}"/>
+                                <ui:Button Content="{loc:Tr 'Save Key'}" Appearance="Primary" Click="SaveAiKey_Click"/>
                             </StackPanel>
                         </Grid>
 
@@ -1150,15 +1222,15 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Model Name" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Leave empty to use the recommended default model for this provider." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{loc:Tr 'Model Name'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Leave empty to use the recommended default model for this provider.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <Grid Grid.Column="1" VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="250"/>
                                 </Grid.ColumnDefinitions>
-                                <ui:Button x:Name="BtnManageOllamaModels" Grid.Column="0" Content="Manage and Download Models" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary" Click="ManageOllamaModels_Click" Margin="0,0,8,0" Visibility="Collapsed"/>
+                                <ui:Button x:Name="BtnManageOllamaModels" Grid.Column="0" Content="{loc:Tr 'Manage and Download Models'}" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary" Click="ManageOllamaModels_Click" Margin="0,0,8,0" Visibility="Collapsed"/>
                                 <Grid Grid.Column="1">
                                     <ComboBox x:Name="AiModelCombo"
                                               IsEditable="True"
@@ -1166,7 +1238,7 @@
                                               SelectionChanged="AiModelCombo_SelectionChanged"
                                               TextBoxBase.TextChanged="AiModelCombo_TextChanged"/>
                                     <TextBlock x:Name="AiModelPlaceholder"
-                                               Text="No downloaded models. Use Manage and Download Models."
+                                               Text="{loc:Tr 'No downloaded models. Use Manage and Download Models.'}"
                                                Margin="8,0,32,0"
                                                VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -1184,10 +1256,10 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Endpoint URL" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Override the default API endpoint. Required for local models like Ollama." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{loc:Tr 'Endpoint URL'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Override the default API endpoint. Required for local models like Ollama.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <ui:TextBox x:Name="AiEndpointUrlInput" Grid.Column="1" PlaceholderText="e.g. http://localhost:11434/api/chat" Width="300" VerticalAlignment="Center" KeyDown="AiEndpointUrlInput_KeyDown" TextBoxBase.TextChanged="AiEndpointUrlInput_TextChanged"/>
+                            <ui:TextBox x:Name="AiEndpointUrlInput" Grid.Column="1" PlaceholderText="{loc:Tr 'e.g. http://localhost:11434/api/chat'}" Width="300" VerticalAlignment="Center" KeyDown="AiEndpointUrlInput_KeyDown" TextBoxBase.TextChanged="AiEndpointUrlInput_TextChanged"/>
                         </Grid>
 
                         <!-- Ollama Mode Selector -->
@@ -1197,12 +1269,12 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Ollama Mode" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Choose between your local Ollama daemon or Ollama Cloud service." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{loc:Tr 'Ollama Mode'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Choose between your local Ollama daemon or Ollama Cloud service.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,24,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ComboBox x:Name="OllamaModeCombo" Grid.Column="1" Width="200" VerticalAlignment="Center" SelectionChanged="OllamaModeCombo_SelectionChanged">
-                                <ComboBoxItem Content="Local (Self-Hosted)" IsSelected="True"/>
-                                <ComboBoxItem Content="Ollama Cloud"/>
+                                <ComboBoxItem Content="{loc:Tr 'Local (Self-Hosted)'}" IsSelected="True"/>
+                                <ComboBoxItem Content="{loc:Tr 'Ollama Cloud'}"/>
                             </ComboBox>
                         </Grid>
 
@@ -1213,8 +1285,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock x:Name="OllamaStatusTitle" Text="Daemon Status" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock x:Name="OllamaStatusText" Text="Checking..." FontSize="12" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock x:Name="OllamaStatusTitle" Text="{loc:Tr 'Daemon Status'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock x:Name="OllamaStatusText" Text="{loc:Tr 'Checking...'}" FontSize="12" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             </StackPanel>
                         </Grid>
 
@@ -1227,8 +1299,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Enable AI Summarization" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="When enabled, you'll be prompted to generate a summary after each server session." 
+                                <TextBlock Text="{loc:Tr 'Enable AI Summarization'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr &quot;When enabled, you'll be prompted to generate a summary after each server session.&quot;}" 
                                            TextWrapping="Wrap" 
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                            FontSize="12" 
@@ -1245,8 +1317,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Automatic Summarization" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="Skip the confirmation dialog and always generate summaries automatically." 
+                                <TextBlock Text="{loc:Tr 'Automatic Summarization'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Skip the confirmation dialog and always generate summaries automatically.'}" 
                                            TextWrapping="Wrap" 
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                            FontSize="12" 
@@ -1267,16 +1339,16 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Software Updates" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Manage and check for application updates." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'Software Updates'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Manage and check for application updates.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
-                        <TextBlock Text="Check for Updates" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Looking for a newer version of PocketMC Desktop? Click below to check manually." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
-                        <ui:Button x:Name="BtnCheckUpdates" Content="Check for Updates" Icon="{ui:SymbolIcon ArrowSync24}" Appearance="Secondary" Click="CheckUpdates_Click"/>
+                        <TextBlock Text="{loc:Tr 'Check for Updates'}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{loc:Tr 'Looking for a newer version of PocketMC Desktop? Click below to check manually.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+                        <ui:Button x:Name="BtnCheckUpdates" Content="{loc:Tr 'Check for Updates'}" Icon="{ui:SymbolIcon ArrowSync24}" Appearance="Secondary" Click="CheckUpdates_Click"/>
                         <TextBlock x:Name="UpdateStatusText" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
 
 
@@ -1291,29 +1363,29 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Keyboard Shortcuts" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="View the keyboard shortcuts available in PocketMC." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'Keyboard Shortcuts'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'View the keyboard shortcuts available in PocketMC.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
                         <!-- Navigation Section -->
-                        <TextBlock Text="Navigation &amp; Views" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="{loc:Tr 'Navigation &amp; Views'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,0,8"/>
 
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Navigate Backward / Cancel" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Navigate Backward / Cancel'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="PageUp" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'PageUp'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
-                                <TextBlock Text="or" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="{loc:Tr 'or'}" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="Escape" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Escape'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -1323,10 +1395,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Navigate Forward" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Navigate Forward'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="PageDown" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'PageDown'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -1336,10 +1408,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Switch Views (Dashboard, Tunnel, Remote, Runtimes, Settings, About)" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Switch Views (Dashboard, Tunnel, Remote, Runtimes, Settings, About)'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Ctrl'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
@@ -1353,10 +1425,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Open Settings" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Open Settings'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Ctrl'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
@@ -1366,21 +1438,21 @@
                         </Grid>
 
                         <!-- Dashboard & Actions Section -->
-                        <TextBlock Text="Dashboard &amp; Actions" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,4,0,8"/>
+                        <TextBlock Text="{loc:Tr 'Dashboard &amp; Actions'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,4,0,8"/>
 
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Create New Instance" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Create New Instance'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Ctrl'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="N" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'N'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -1390,18 +1462,18 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Refresh Instances / Status" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Refresh Instances / Status'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="F5" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'F5'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
-                                <TextBlock Text="or" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="{loc:Tr 'or'}" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Ctrl'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="R" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'R'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -1411,14 +1483,14 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Open Focused Server Card Console" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Open Focused Server Card Console'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Enter" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Enter'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
-                                <TextBlock Text="or" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="{loc:Tr 'or'}" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="Space" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Space'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -1428,27 +1500,27 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Save Settings" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Save Settings'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Ctrl'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="S" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'S'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
 
                         <!-- Console Page Section -->
-                        <TextBlock Text="Server Console" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,4,0,8"/>
+                        <TextBlock Text="{loc:Tr 'Server Console'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,4,0,8"/>
 
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Focus Command Prompt" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Focus Command Prompt'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
                                     <TextBlock Text="/" FontSize="12" FontWeight="SemiBold"/>
@@ -1461,14 +1533,14 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Search Console Logs" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Search Console Logs'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Ctrl'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="F" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'F'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -1478,14 +1550,14 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Clear Console Logs" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Clear Console Logs'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Ctrl" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Ctrl'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="+" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="L" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'L'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -1495,14 +1567,14 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Command History Previous / Next" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Tr 'Command History Previous / Next'}" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,4,0">
-                                    <TextBlock Text="Up Arrow" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Up Arrow'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                                 <TextBlock Text="/" VerticalAlignment="Center" Margin="2,0,6,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="Down Arrow" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Down Arrow'}" FontSize="12" FontWeight="SemiBold"/>
                                 </Border>
                             </StackPanel>
                         </Grid>
@@ -1516,20 +1588,20 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Backup &amp; Restore Configuration" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Create granular backups of your settings, paths, and API keys or restore from a backup file." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'Backup &amp; Restore Configuration'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Create granular backups of your settings, paths, and API keys or restore from a backup file.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
-                        <TextBlock Text="Configuration Portability &amp; Recovery" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Export your settings into a portable JSON backup file with selectable categories, or restore individual categories into your active configuration without overwriting unselected settings." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,16" TextWrapping="Wrap"/>
+                        <TextBlock Text="{loc:Tr 'Configuration Portability &amp; Recovery'}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{loc:Tr 'Export your settings into a portable JSON backup file with selectable categories, or restore individual categories into your active configuration without overwriting unselected settings.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,16" TextWrapping="Wrap"/>
 
                         <WrapPanel>
-                            <ui:Button x:Name="BtnBackupSettings" Content="Backup Settings..." Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary" Margin="0,0,8,0" Click="BackupSettings_Click"/>
-                            <ui:Button x:Name="BtnRestoreSettings" Content="Restore from Backup..." Icon="{ui:SymbolIcon ArrowUpload24}" Appearance="Secondary" Margin="0,0,8,0" Click="RestoreSettings_Click"/>
-                            <ui:Button x:Name="BtnResetSettings" Content="Reset to Defaults" Icon="{ui:SymbolIcon ArrowReset24}" Appearance="Secondary" Click="ResetSettings_Click"/>
+                            <ui:Button x:Name="BtnBackupSettings" Content="{loc:Tr 'Backup Settings...'}" Icon="{ui:SymbolIcon ArrowDownload24}" Appearance="Primary" Margin="0,0,8,0" Click="BackupSettings_Click"/>
+                            <ui:Button x:Name="BtnRestoreSettings" Content="{loc:Tr 'Restore from Backup...'}" Icon="{ui:SymbolIcon ArrowUpload24}" Appearance="Secondary" Margin="0,0,8,0" Click="RestoreSettings_Click"/>
+                            <ui:Button x:Name="BtnResetSettings" Content="{loc:Tr 'Reset to Defaults'}" Icon="{ui:SymbolIcon ArrowReset24}" Appearance="Secondary" Click="ResetSettings_Click"/>
                         </WrapPanel>
                     </StackPanel>
                 </ui:CardExpander>
@@ -1541,15 +1613,15 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="Diagnostics &amp; Support" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Tools to help troubleshoot and report issues." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                <TextBlock Text="{loc:Tr 'Diagnostics &amp; Support'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Tools to help troubleshoot and report issues.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Grid>
                     </ui:CardExpander.Header>
 
                     <StackPanel Margin="16,8,16,16">
                         <!-- Dependency Health -->
-                        <TextBlock Text="External Services Availability" FontSize="14" FontWeight="Medium" Margin="0,0,0,4"/>
+                        <TextBlock Text="{loc:Tr 'External Services Availability'}" FontSize="14" FontWeight="Medium" Margin="0,0,0,4"/>
                         <ItemsControl x:Name="DependencyHealthList" Margin="0,0,0,16">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -1570,8 +1642,8 @@
                         <Separator Margin="0,4,0,12" Opacity="0.15"/>
 
                         <!-- Disaster Recovery -->
-                        <TextBlock Text="Disaster Recovery (Off-site Prep)" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Set a secondary external location (like a Google Drive or USB directory) where world backups should be replicated automatically when they run." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+                        <TextBlock Text="{loc:Tr 'Disaster Recovery (Off-site Prep)'}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{loc:Tr 'Set a secondary external location (like a Google Drive or USB directory) where world backups should be replicated automatically when they run.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
                         
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
@@ -1580,16 +1652,16 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             
-                            <ui:TextBox x:Name="ExternalBackupPathInput" PlaceholderText="Select an external path..." IsReadOnly="True" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ui:Button Grid.Column="1" Content="Browse" Click="BrowseExternalBackup_Click" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ui:Button Grid.Column="2" Content="Save" Appearance="Primary" Click="SaveExternalBackup_Click" VerticalAlignment="Center"/>
+                            <ui:TextBox x:Name="ExternalBackupPathInput" PlaceholderText="{loc:Tr 'Select an external path...'}" IsReadOnly="True" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ui:Button Grid.Column="1" Content="{loc:Tr 'Browse'}" Click="BrowseExternalBackup_Click" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ui:Button Grid.Column="2" Content="{loc:Tr 'Save'}" Appearance="Primary" Click="SaveExternalBackup_Click" VerticalAlignment="Center"/>
                         </Grid>
 
                         <Separator Margin="0,4,0,12" Opacity="0.15"/>
 
-                        <TextBlock Text="Export Support Bundle" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="Generates a ZIP archive containing redacted App logs, system information, and running server metrics. Attach this to GitHub issues or Discord help requests." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
-                        <ui:Button x:Name="BtnExportBundle" Content="Generate Support Bundle" Icon="{ui:SymbolIcon Archive24}" Appearance="Secondary" Click="ExportBundle_Click"/>
+                        <TextBlock Text="{loc:Tr 'Export Support Bundle'}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{loc:Tr 'Generates a ZIP archive containing redacted App logs, system information, and running server metrics. Attach this to GitHub issues or Discord help requests.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,12" TextWrapping="Wrap"/>
+                        <ui:Button x:Name="BtnExportBundle" Content="{loc:Tr 'Generate Support Bundle'}" Icon="{ui:SymbolIcon Archive24}" Appearance="Secondary" Click="ExportBundle_Click"/>
                         <TextBlock x:Name="ExportBundleStatusText" FontSize="12" Margin="0,8,0,0" Visibility="Collapsed"/>
                     </StackPanel>
                 </ui:CardExpander>

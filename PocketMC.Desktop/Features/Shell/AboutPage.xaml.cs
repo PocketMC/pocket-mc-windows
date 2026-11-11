@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Configuration;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Core.Interfaces;
 using System;
 using System.Diagnostics;
@@ -34,14 +35,14 @@ namespace PocketMC.Desktop.Features.Shell
             _dialogService = dialogService;
             _whatsNewService = whatsNewService;
 
-            TxtAboutTitle.Text = $"About {AppConfig.AppName}";
-            TxtVersion.Text = $"Version {AppConfig.AppVersion}";
+            TxtAboutTitle.Text = L.F("About {0}", AppConfig.AppName);
+            TxtVersion.Text = L.F("Version {0}", AppConfig.AppVersion);
             TxtAppTitle.Text = $"{AppConfig.AppName} Desktop";
             TxtAppDescription.Text = AppConfig.AppDescription;
             TxtOrgName.Text = AppConfig.OrganizationName;
             TxtOrgTagline.Text = AppConfig.OrganizationTagline;
-            TxtCommunityDesc.Text = $"Join our Discord server to get help, share tips, and connect with other {AppConfig.AppName} users.";
-            TxtDonationDesc.Text = $"Support the development of {AppConfig.AppName}! If you love this project and find it useful, consider buying us a coffee or submitting feedback.";
+            TxtCommunityDesc.Text = L.F("Join our Discord server to get help, share tips, and connect with other {0} users.", AppConfig.AppName);
+            TxtDonationDesc.Text = L.F("Support the development of {0}! If you love this project and find it useful, consider buying us a coffee or submitting feedback.", AppConfig.AppName);
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -80,9 +81,9 @@ namespace PocketMC.Desktop.Features.Shell
         {
             bool ok = await ClipboardHelper.TrySetTextAsync(AppConfig.LinkDiscord);
             if (ok)
-                _dialogService.ShowMessage("Copied", "Discord invite copied to clipboard.");
+                _dialogService.ShowMessage(L.T("Copied"), L.T("Discord invite copied to clipboard."));
             else
-                _dialogService.ShowMessage("Clipboard Error", "Failed to copy. The clipboard may be locked by another application.");
+                _dialogService.ShowMessage(L.T("Clipboard Error"), L.T("Failed to copy. The clipboard may be locked by another application."));
         }
 
         private void OpenFeedbackForm_Click(object sender, RoutedEventArgs e)
@@ -211,7 +212,7 @@ namespace PocketMC.Desktop.Features.Shell
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Error", $"Could not load changelog: {ex.Message}");
+                _dialogService.ShowMessage("Error", L.F("Could not load changelog: {0}", ex.Message));
             }
         }
 

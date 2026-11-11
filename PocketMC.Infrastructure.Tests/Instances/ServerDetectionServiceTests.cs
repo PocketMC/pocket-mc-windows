@@ -111,5 +111,42 @@ namespace PocketMC.Infrastructure.Tests.Instances
 
             Assert.Equal("1.18.2", version);
         }
+
+        [Theory]
+        [InlineData("mohist-1.20.1-101-server.jar", "Mohist", "1.20.1")]
+        [InlineData("arclight-forge-1.20.1-1.0.2.jar", "Arclight", "1.20.1")]
+        [InlineData("magma-1.12.2.jar", "Magma", "")]
+        [InlineData("catserver-1.16.5.jar", "CatServer", "1.16.5")]
+        [InlineData("purpur-1.20.4.jar", "Purpur", "1.20.4")]
+        [InlineData("spigot-1.21.1.jar", "Spigot", "1.21.1")]
+        [InlineData("craftbukkit-1.8.8.jar", "Spigot", "1.8.8")]
+        public async Task DetectServerType_JarBrand_ReturnsBrandAndVersion(string jarName, string expectedType, string expectedVersionPrefix)
+        {
+            var detector = new ServerDetectionService(NullLogger<ServerDetectionService>.Instance);
+            string serverPath = Path.Combine(_tempDirectory, "BrandServer");
+            Directory.CreateDirectory(serverPath);
+            File.WriteAllText(Path.Combine(serverPath, jarName), "fake_content");
+
+            var (serverType, version) = await detector.DetectServerTypeAndVersionAsync(serverPath);
+
+            Assert.Equal(expectedType, serverType);
+            if (expectedVersionPrefix.Length > 0)
+            {
+                Assert.StartsWith(expectedVersionPrefix, version);
+            }
+        }
+
+        [Fact]
+        public async Task DetectServerType_MohistWithForgeLibraries_StillReturnsMohist()
+        {
+            var detector = new ServerDetectionService(NullLogger<ServerDetectionService>.Instance);
+            string serverPath = Path.Combine(_tempDirectory, "MohistServer");
+            Directory.CreateDirectory(Path.Combine(serverPath, "libraries", "net", "minecraftforge"));
+            File.WriteAllText(Path.Combine(serverPath, "mohist-1.20.1-101-server.jar"), "fake_content");
+
+            var (serverType, _) = await detector.DetectServerTypeAndVersionAsync(serverPath);
+
+            Assert.Equal("Mohist", serverType);
+        }
     }
 }

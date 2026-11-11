@@ -40,6 +40,22 @@ namespace PocketMC.Infrastructure.Configuration
         
         public static IReadOnlyList<string> DiscordApiUrls { get; private set; } = new List<string>();
 
+        /// <summary>
+        /// Ordered mirror tunnel templates for blocked or slow download hosts.
+        /// A template must contain "{url}", e.g. "https://ghfast.top/{url}".
+        /// </summary>
+        public static IReadOnlyList<string> DownloadMirrorTunnels { get; private set; } = new List<string>
+        {
+            "https://ghfast.top/{url}",
+            "https://gh-proxy.com/{url}",
+            "https://ghproxy.net/{url}",
+            "https://hub.gitmirror.com/{url}",
+            "https://gh.llkk.cc/{url}",
+            "https://mirror.ghproxy.com/{url}",
+            "https://github.moeyy.xyz/{url}",
+            "https://cf.ghproxy.cc/{url}"
+        };
+
         public static string AppName { get; private set; } = "PocketMC";
         public static string AppTitle { get; private set; } = "PocketMC";
         public static string AppId { get; private set; } = "PocketMC";
@@ -193,10 +209,12 @@ namespace PocketMC.Infrastructure.Configuration
                     var authProxies = new List<string>();
                     var telemetryProxies = new List<string>();
                     var discordApiUrls = new List<string>();
+                    var downloadMirrors = new List<string>();
 
                     bool inAuth = false;
                     bool inTelemetry = false;
                     bool inDiscord = false;
+                    bool inMirrors = false;
 
                     foreach (var rawLine in content.Split('\n'))
                     {
@@ -209,6 +227,7 @@ namespace PocketMC.Infrastructure.Configuration
                             inAuth = true;
                             inTelemetry = false;
                             inDiscord = false;
+                            inMirrors = false;
                             continue;
                         }
                         if (trimmed.StartsWith("telemetry_proxies:"))
@@ -216,6 +235,7 @@ namespace PocketMC.Infrastructure.Configuration
                             inTelemetry = true;
                             inAuth = false;
                             inDiscord = false;
+                            inMirrors = false;
                             continue;
                         }
                         if (trimmed.StartsWith("discord_api_urls:"))
@@ -223,10 +243,19 @@ namespace PocketMC.Infrastructure.Configuration
                             inDiscord = true;
                             inAuth = false;
                             inTelemetry = false;
+                            inMirrors = false;
+                            continue;
+                        }
+                        if (trimmed.StartsWith("download_mirror_tunnels:"))
+                        {
+                            inMirrors = true;
+                            inAuth = false;
+                            inTelemetry = false;
+                            inDiscord = false;
                             continue;
                         }
 
-                        if (trimmed.StartsWith("-") && (inAuth || inTelemetry || inDiscord))
+                        if (trimmed.StartsWith("-") && (inAuth || inTelemetry || inDiscord || inMirrors))
                         {
                             var match = Regex.Match(trimmed, @"-\s*""?([^""\r\n]+)""?");
                             if (match.Success)
@@ -235,15 +264,17 @@ namespace PocketMC.Infrastructure.Configuration
                                 if (inAuth) authProxies.Add(url);
                                 if (inTelemetry) telemetryProxies.Add(url);
                                 if (inDiscord) discordApiUrls.Add(url);
+                                if (inMirrors) downloadMirrors.Add(url);
                             }
                         }
                         else if (!string.IsNullOrWhiteSpace(trimmed))
                         {
-                            if (inAuth || inTelemetry || inDiscord)
+                            if (inAuth || inTelemetry || inDiscord || inMirrors)
                             {
                                 inAuth = false;
                                 inTelemetry = false;
                                 inDiscord = false;
+                                inMirrors = false;
                             }
 
                             if (!preserveLocalVersion)
@@ -408,6 +439,7 @@ namespace PocketMC.Infrastructure.Configuration
                     if (authProxies.Count > 0) AuthProxies = authProxies;
                     if (telemetryProxies.Count > 0) TelemetryProxies = telemetryProxies;
                     if (discordApiUrls.Count > 0) DiscordApiUrls = discordApiUrls;
+                    if (downloadMirrors.Count > 0) DownloadMirrorTunnels = downloadMirrors;
                 }
                 catch (Exception ex)
                 {

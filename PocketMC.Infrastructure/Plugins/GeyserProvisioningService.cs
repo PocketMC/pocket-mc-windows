@@ -111,7 +111,9 @@ public class GeyserProvisioningService
             // Paper/Spigot: Modrinth doesn't list Floodgate for the spigot loader,
             // so we download directly from GeyserMC's official build API instead.
             bool isPaperLike = serverType.Equals("Paper", StringComparison.OrdinalIgnoreCase) ||
-                               serverType.Equals("Spigot", StringComparison.OrdinalIgnoreCase);
+                               serverType.Equals("Spigot", StringComparison.OrdinalIgnoreCase) ||
+                               serverType.Equals("Purpur", StringComparison.OrdinalIgnoreCase) ||
+                               serverType.Equals("CraftBukkit", StringComparison.OrdinalIgnoreCase);
 
             if (isPaperLike)
             {

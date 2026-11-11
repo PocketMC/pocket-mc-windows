@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildProjectDirectory)\..\pocketmc.yml" LogicalName="PocketMC.Desktop.pocketmc.yml" />
+    <EmbeddedResource Include="Assets\i18n\*.json" LogicalName="PocketMC.Desktop.i18n.%(Filename)%(Extension)" />
     <Resource Include="icon.ico" />
     <Resource Include="Assets\dark_dirt.png" />
     <Resource Include="Assets\logo.png" />

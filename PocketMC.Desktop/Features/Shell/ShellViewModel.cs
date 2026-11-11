@@ -1,5 +1,6 @@
 ﻿using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Localization;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Input;
@@ -22,7 +23,7 @@ namespace PocketMC.Desktop.Features.Shell
 {
     public class ShellViewModel : ViewModelBase
     {
-        private string _updateStatusMessage = "Checking for updates...";
+        private string _updateStatusMessage = L.T("Checking for updates...");
         private bool _isUpdateDownloading;
         private double _updateDownloadPercent;
         private string? _updateErrorMessage;
@@ -146,12 +147,12 @@ namespace PocketMC.Desktop.Features.Shell
         {
             if (!_updateService.HasPendingUpdate) return;
 
-            UpdateStatusMessage = "Shutting down active servers...";
+            UpdateStatusMessage = L.T("Shutting down active servers...");
             IsUpdateDownloading = true; // Use this as a general "busy" state for the banner
 
             await _applicationLifecycle.GracefulShutdownAsync();
 
-            UpdateStatusMessage = "Ready to update...";
+            UpdateStatusMessage = L.T("Ready to update...");
             _updateService.ApplyUpdateAndRestart();
         }
 
@@ -170,7 +171,7 @@ namespace PocketMC.Desktop.Features.Shell
                     {
                         IsUpdateBannerVisible = true;
                         IsUpdateDownloading = false;
-                        UpdateStatusMessage = "Checking for updates...";
+                        UpdateStatusMessage = L.T("Checking for updates...");
                         UpdateErrorMessage = null;
                     }
                     break;
@@ -180,7 +181,7 @@ namespace PocketMC.Desktop.Features.Shell
                     {
                         IsUpdateBannerVisible = true;
                         IsUpdateDownloading = true;
-                        UpdateStatusMessage = $"Downloading update {status.NewVersion}...";
+                        UpdateStatusMessage = L.F("Downloading update {0}...", status.NewVersion);
                         UpdateDownloadPercent = status.DownloadPercent;
                         UpdateErrorMessage = null;
                     }
@@ -189,7 +190,7 @@ namespace PocketMC.Desktop.Features.Shell
                 case UpdateStage.ReadyToRestart:
                     IsUpdateBannerVisible = true;
                     IsUpdateDownloading = false;
-                    UpdateStatusMessage = $"PocketMC {status.NewVersion} is ready to install";
+                    UpdateStatusMessage = L.F("PocketMC {0} is ready to install", status.NewVersion);
                     UpdateDownloadPercent = 100;
                     UpdateErrorMessage = null;
                     OnPropertyChanged(nameof(IsUpdateReadyToApply));
@@ -212,7 +213,7 @@ namespace PocketMC.Desktop.Features.Shell
                 case UpdateStage.Error:
                     IsUpdateDownloading = false;
                     UpdateErrorMessage = status.ErrorMessage;
-                    UpdateStatusMessage = $"Update error: {status.ErrorMessage}";
+                    UpdateStatusMessage = L.F("Update error: {0}", status.ErrorMessage);
                     _logger.LogWarning("Update pipeline error: {Error}", status.ErrorMessage);
                     // Keep banner visible to show error? or hide it?
                     // Let's keep it for a few seconds then hide or let user dismiss.

@@ -31,32 +31,7 @@ namespace PocketMC.Infrastructure.Instances
                 string detectedType = "Vanilla";
                 try
                 {
-                    if (File.Exists(Path.Combine(folderPath, "PocketMine-MP.phar")))
-                    {
-                        detectedType = "Pocketmine";
-                    }
-                    else if (File.Exists(Path.Combine(folderPath, "bedrock_server.exe")) || File.Exists(Path.Combine(folderPath, "bedrock_server")))
-                    {
-                        detectedType = "Bedrock";
-                    }
-                    else if (Directory.Exists(Path.Combine(folderPath, ".fabric")) || 
-                             (Directory.Exists(Path.Combine(folderPath, "mods")) && 
-                              Directory.GetFiles(Path.Combine(folderPath, "mods"), "*fabric*.jar", SearchOption.AllDirectories).Any()))
-                    {
-                        detectedType = "Fabric";
-                    }
-                    else if (File.Exists(Path.Combine(folderPath, "user_jvm_args.txt")) && Directory.Exists(Path.Combine(folderPath, "libraries/net/neoforged")))
-                    {
-                        detectedType = "NeoForge";
-                    }
-                    else if (File.Exists(Path.Combine(folderPath, "user_jvm_args.txt")) || Directory.Exists(Path.Combine(folderPath, "libraries/net/minecraftforge")))
-                    {
-                        detectedType = "Forge";
-                    }
-                    else if (Directory.GetFiles(folderPath, "*paper*.jar").Any() || Directory.Exists(Path.Combine(folderPath, ".paper-jar")))
-                    {
-                        detectedType = "Paper";
-                    }
+                    detectedType = DetectServerType(folderPath);
                 }
                 catch (Exception ex)
                 {
@@ -121,7 +96,7 @@ namespace PocketMC.Infrastructure.Instances
                         }
 
                         // B. Try to find version following a known brand suffix (e.g. paper-26.1.2, bedrock-server-1.26.33.1.zip)
-                        var brandMatch = Regex.Match(file.Name, @"(?:paper|forge|neoforge|spigot|purpur|vanilla|bds|bedrock|pocketmine)[._-](\d+(?:\.\d+)+)", RegexOptions.IgnoreCase);
+                        var brandMatch = Regex.Match(file.Name, @"(?:paper|purpur|spigot|forge|neoforge|mohist|arclight|magma|cat(?:server)?|fabric|vanilla|bds|bedrock|pocketmine)[._-](\d+(?:\.\d+)+)", RegexOptions.IgnoreCase);
                         if (brandMatch.Success)
                         {
                             detectedVersion = brandMatch.Groups[1].Value;
@@ -216,6 +191,94 @@ namespace PocketMC.Infrastructure.Instances
 
                 return (detectedType, detectedVersion);
             });
+        }
+
+        // Jar name brands, ordered so a hybrid (Mohist/Arclight) wins over the Forge it embeds.
+        private static readonly (string Token, string ServerType)[] JarBrands =
+        {
+            ("mohist", "Mohist"),
+            ("arclight", "Arclight"),
+            ("magma", "Magma"),
+            ("catserver", "CatServer"),
+            ("purpur", "Purpur"),
+            ("spigot", "Spigot"),
+            ("craftbukkit", "Spigot"),
+            ("paper", "Paper"),
+            ("neoforge", "NeoForge"),
+            ("fabric", "Fabric"),
+            ("forge", "Forge")
+        };
+
+        private static string DetectServerType(string folderPath)
+        {
+            if (File.Exists(Path.Combine(folderPath, "PocketMine-MP.phar")))
+            {
+                return "Pocketmine";
+            }
+
+            if (File.Exists(Path.Combine(folderPath, "bedrock_server.exe")) ||
+                File.Exists(Path.Combine(folderPath, "bedrock_server")))
+            {
+                return "Bedrock";
+            }
+
+            string? jarBrand = DetectJarBrand(folderPath);
+            if (jarBrand != null)
+            {
+                return jarBrand;
+            }
+
+            if (Directory.Exists(Path.Combine(folderPath, ".fabric")))
+            {
+                return "Fabric";
+            }
+
+            if (Directory.Exists(Path.Combine(folderPath, "libraries", "net", "neoforged")))
+            {
+                return "NeoForge";
+            }
+
+            if (Directory.Exists(Path.Combine(folderPath, "libraries", "net", "minecraftforge")))
+            {
+                return "Forge";
+            }
+
+            string modsPath = Path.Combine(folderPath, "mods");
+            if (Directory.Exists(modsPath) &&
+                Directory.GetFiles(modsPath, "*fabric*.jar", SearchOption.TopDirectoryOnly).Length > 0)
+            {
+                return "Fabric";
+            }
+
+            if (Directory.Exists(Path.Combine(folderPath, ".paper-jar")))
+            {
+                return "Paper";
+            }
+
+            return "Vanilla";
+        }
+
+        private static string? DetectJarBrand(string folderPath)
+        {
+            var jarNames = Directory.GetFiles(folderPath, "*.jar", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileName)
+                .Where(name => name != null)
+                .ToList();
+
+            if (jarNames.Count == 0)
+            {
+                return null;
+            }
+
+            foreach (var (token, serverType) in JarBrands)
+            {
+                if (jarNames.Any(name => name!.Contains(token, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return serverType;
+                }
+            }
+
+            return null;
         }
     }
 }

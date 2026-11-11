@@ -1,5 +1,6 @@
 using PocketMC.Domain.Models;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Linq;
 using System.Windows;
 using PocketMC.Desktop.Core.Mvvm;
@@ -19,7 +20,7 @@ namespace PocketMC.Desktop.Features.Shell
             UpdateTooltip();
         }
 
-        private string _tooltipText = "PocketMC Desktop";
+        private string _tooltipText = L.T("PocketMC Desktop");
         public string TooltipText
         {
             get => _tooltipText;
@@ -51,9 +52,9 @@ namespace PocketMC.Desktop.Features.Shell
                 p.Value.State == PocketMC.Domain.Models.ServerState.Starting);
 
             if (runningCount > 0)
-                TooltipText = $"PocketMC Desktop - {runningCount} server{(runningCount == 1 ? "" : "s")} running";
+                TooltipText = L.F("PocketMC Desktop - {0} server(s) running", runningCount);
             else
-                TooltipText = "PocketMC Desktop";
+                TooltipText = L.T("PocketMC Desktop");
         }
     }
 }

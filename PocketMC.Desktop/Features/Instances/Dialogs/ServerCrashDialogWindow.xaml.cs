@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using PocketMC.Desktop.Localization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -68,7 +69,7 @@ public partial class ServerCrashDialogWindow : FluentWindow
             CrashCategory.PocketMineFatal => "PocketMine Crash",
             CrashCategory.ServerTickException => "Crash Report",
             CrashCategory.StartupAborted => "Startup Failed",
-            CrashCategory.ProcessExitError => $"Exit Code {analysis.ExitCode}",
+            CrashCategory.ProcessExitError => L.F("Exit Code {0}", analysis.ExitCode),
             _ => "Crashed"
         };
         TxtCategoryBadge.Text = _categoryText;
@@ -106,7 +107,7 @@ public partial class ServerCrashDialogWindow : FluentWindow
         sb.AppendLine($"Summary: {_summaryText}");
         if (!string.IsNullOrWhiteSpace(_crashReportPath))
         {
-            sb.AppendLine($"Report File: {_crashReportPath}");
+            sb.AppendLine(L.F("Report File: {0}", _crashReportPath));
         }
 
         if (!string.IsNullOrWhiteSpace(_aiAnalysisResult))
@@ -131,7 +132,7 @@ public partial class ServerCrashDialogWindow : FluentWindow
             ShowAiContainer();
             AiMarkdownViewer.Markdown = "> [!WARNING]\n> **Application Settings Unavailable**\n>\n> PocketMC settings could not be accessed.";
             BtnToggleView.Visibility = Visibility.Visible;
-            BtnToggleView.Content = "View Logs";
+            BtnToggleView.Content = L.T("View Logs");
             _isShowingAiView = true;
             return;
         }
@@ -141,7 +142,7 @@ public partial class ServerCrashDialogWindow : FluentWindow
             ShowAiContainer();
             AiMarkdownViewer.Markdown = "> [!WARNING]\n> **AI Provider Not Configured**\n>\n> No API key was found for the configured AI provider (**" + (appSettings.AiProvider ?? "AI") + "**).\n>\n> Please open **App Settings > AI Intelligence** to enter your API key or select Ollama.";
             BtnToggleView.Visibility = Visibility.Visible;
-            BtnToggleView.Content = "View Logs";
+            BtnToggleView.Content = L.T("View Logs");
             _isShowingAiView = true;
             return;
         }
@@ -153,7 +154,7 @@ public partial class ServerCrashDialogWindow : FluentWindow
             ShowAiContainer();
             AiMarkdownViewer.Markdown = "> [!WARNING]\n> **AI Service Unavailable**\n>\n> PocketMC intelligence service is currently not available.";
             BtnToggleView.Visibility = Visibility.Visible;
-            BtnToggleView.Content = "View Logs";
+            BtnToggleView.Content = L.T("View Logs");
             _isShowingAiView = true;
             return;
         }
@@ -162,13 +163,13 @@ public partial class ServerCrashDialogWindow : FluentWindow
         LogContainer.Visibility = Visibility.Collapsed;
         AiMarkdownContainer.Visibility = Visibility.Collapsed;
         AiLoadingContainer.Visibility = Visibility.Visible;
-        TxtLogSectionTitle.Text = "AI Crash Intelligence";
+        TxtLogSectionTitle.Text = L.T("AI Crash Intelligence");
         BtnToggleView.Visibility = Visibility.Collapsed;
         BtnAnalyzeWithAi.IsEnabled = false;
 
         string providerName = appSettings.AiProvider ?? "AI Provider";
         string modelName = appSettings.GetCurrentAiModel() ?? "default model";
-        TxtAiProviderStatus.Text = $"Consulting {providerName} ({modelName}) to diagnose root cause and solution...";
+        TxtAiProviderStatus.Text = L.F("Consulting {0} ({1}) to diagnose root cause and solution...", providerName, modelName);
 
         try
         {
@@ -186,7 +187,7 @@ Explain clearly and concisely why the server crashed (specify offending mod ID, 
 ### 2. Recommended Fix
 Provide exact, numbered, step-by-step instructions for the user to resolve this issue (e.g. download required dependency version, remove conflicting mod, adjust memory/JVM arguments, etc.).";
 
-            string userContent = $"Server Name: {_serverName}\nServer Engine: {_serverType} {_mcVersion}\nCrash Category: {_categoryText}\nCrash Summary: {_summaryText}\n\nCrash Log Context:\n{_rawLogContent}";
+            string userContent = L.F("Server Name: {0}\nServer Engine: {1} {2}\nCrash Category: {3}\nCrash Summary: {4}\n\nCrash Log Context:\n{5}", _serverName, _serverType, _mcVersion, _categoryText, _summaryText, _rawLogContent);
 
             var result = await provider.GenerateCompletionAsync(apiKey, modelName, endpoint, systemPrompt, userContent);
 
@@ -199,21 +200,21 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
             else
             {
                 string errorMsg = !string.IsNullOrWhiteSpace(result.Error) ? result.Error : "AI provider did not return a response.";
-                AiMarkdownViewer.Markdown = $"> [!CAUTION]\n> **AI Analysis Failure**\n>\n> {errorMsg}";
+                AiMarkdownViewer.Markdown = L.F("> [!CAUTION]\n> **AI Analysis Failure**\n>\n> {0}", errorMsg);
             }
         }
         catch (Exception ex)
         {
-            AiMarkdownViewer.Markdown = $"> [!CAUTION]\n> **AI Analysis Error**\n>\n> {ex.Message}";
+            AiMarkdownViewer.Markdown = L.F("> [!CAUTION]\n> **AI Analysis Error**\n>\n> {0}", ex.Message);
         }
         finally
         {
             AiLoadingContainer.Visibility = Visibility.Collapsed;
             AiMarkdownContainer.Visibility = Visibility.Visible;
             BtnAnalyzeWithAi.IsEnabled = true;
-            BtnAnalyzeWithAi.Content = "Re-analyze with AI";
+            BtnAnalyzeWithAi.Content = L.T("Re-analyze with AI");
             BtnToggleView.Visibility = Visibility.Visible;
-            BtnToggleView.Content = "View Logs";
+            BtnToggleView.Content = L.T("View Logs");
             _isShowingAiView = true;
         }
     }
@@ -223,7 +224,7 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
         LogContainer.Visibility = Visibility.Collapsed;
         AiLoadingContainer.Visibility = Visibility.Collapsed;
         AiMarkdownContainer.Visibility = Visibility.Visible;
-        TxtLogSectionTitle.Text = "AI Crash Intelligence";
+        TxtLogSectionTitle.Text = L.T("AI Crash Intelligence");
     }
 
     private void BtnToggleView_Click(object sender, RoutedEventArgs e)
@@ -234,8 +235,8 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
             AiMarkdownContainer.Visibility = Visibility.Collapsed;
             AiLoadingContainer.Visibility = Visibility.Collapsed;
             LogContainer.Visibility = Visibility.Visible;
-            TxtLogSectionTitle.Text = "Diagnostic & Exception Log";
-            BtnToggleView.Content = "View AI Analysis";
+            TxtLogSectionTitle.Text = L.T("Diagnostic & Exception Log");
+            BtnToggleView.Content = L.T("View AI Analysis");
             _isShowingAiView = false;
         }
         else
@@ -244,8 +245,8 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
             LogContainer.Visibility = Visibility.Collapsed;
             AiLoadingContainer.Visibility = Visibility.Collapsed;
             AiMarkdownContainer.Visibility = Visibility.Visible;
-            TxtLogSectionTitle.Text = "AI Crash Intelligence";
-            BtnToggleView.Content = "View Logs";
+            TxtLogSectionTitle.Text = L.T("AI Crash Intelligence");
+            BtnToggleView.Content = L.T("View Logs");
             _isShowingAiView = true;
         }
     }
@@ -256,13 +257,13 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
         {
             Clipboard.SetText(_clipboardPayload);
             string originalText = BtnCopyLogs.Content?.ToString() ?? "Copy Crash Logs";
-            BtnCopyLogs.Content = "Copied to Clipboard!";
+            BtnCopyLogs.Content = L.T("Copied to Clipboard!");
             await Task.Delay(1800);
             BtnCopyLogs.Content = originalText;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to copy crash logs: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine(L.F("Failed to copy crash logs: {0}", ex.Message));
         }
     }
 
@@ -281,7 +282,7 @@ Provide exact, numbered, step-by-step instructions for the user to resolve this 
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to open crash report: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine(L.F("Failed to open crash report: {0}", ex.Message));
         }
     }
 

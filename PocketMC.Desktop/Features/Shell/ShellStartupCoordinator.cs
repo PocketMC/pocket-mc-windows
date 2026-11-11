@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Configuration;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -176,7 +177,7 @@ namespace PocketMC.Desktop.Features.Shell
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to persist the PocketMC root directory selection.");
-                _host!.ShowError("Root Folder Error", $"PocketMC could not save the selected root folder.\n\n{ex.Message}");
+                _host!.ShowError("Root Folder Error", L.F("PocketMC could not save the selected root folder.\n\n{0}", ex.Message));
             }
         }
 
@@ -330,7 +331,7 @@ namespace PocketMC.Desktop.Features.Shell
             string? logPath = WriteStartupFailureLog(ex);
             string message = logPath == null
                 ? "PocketMC could not initialize the main workflow. Check the debug log for details."
-                : $"PocketMC could not initialize the main workflow. Details were written to:{Environment.NewLine}{logPath}";
+                : L.F("PocketMC could not initialize the main workflow. Details were written to:{0}{1}", Environment.NewLine, logPath);
             _host?.ShowError("Initialization Error", message);
             _host?.ShutdownApplication();
         }

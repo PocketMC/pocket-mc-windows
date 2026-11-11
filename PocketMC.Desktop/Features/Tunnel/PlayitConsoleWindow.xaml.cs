@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using PocketMC.Desktop.Localization;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -131,25 +132,25 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 case PlayitAgentState.Connected:
                     StatusDot.Fill = Brushes.LimeGreen;
-                    TxtStatus.Text = "Connected";
+                    TxtStatus.Text = L.T("Connected");
                     break;
                 case PlayitAgentState.Starting:
                 case PlayitAgentState.ProvisioningAgent:
                     StatusDot.Fill = Brushes.Gold;
-                    TxtStatus.Text = "Starting...";
+                    TxtStatus.Text = L.T("Starting...");
                     break;
                 case PlayitAgentState.AwaitingSetupCode:
                     StatusDot.Fill = Brushes.Orange;
-                    TxtStatus.Text = "Awaiting Setup";
+                    TxtStatus.Text = L.T("Awaiting Setup");
                     break;
                 case PlayitAgentState.Error:
                 case PlayitAgentState.ReauthRequired:
                     StatusDot.Fill = Brushes.OrangeRed;
-                    TxtStatus.Text = "Error";
+                    TxtStatus.Text = L.T("Error");
                     break;
                 default:
                     StatusDot.Fill = Brushes.Gray;
-                    TxtStatus.Text = "Stopped";
+                    TxtStatus.Text = L.T("Stopped");
                     break;
             }
         }
@@ -293,7 +294,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             int displayed = LogParagraph.Inlines.Count;
             TxtLogCount.Text = string.IsNullOrEmpty(_searchTerm)
                 ? $"{total:N0} events"
-                : $"{displayed:N0} of {total:N0} events matching \"{_searchTerm}\"";
+                : L.F("{displayed:N0} of {total:N0} events matching \"{0}\"", _searchTerm);
         }
 
         private async void BtnCopyLogs_Click(object sender, RoutedEventArgs e)

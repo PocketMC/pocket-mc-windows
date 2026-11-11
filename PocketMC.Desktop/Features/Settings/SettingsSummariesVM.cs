@@ -1,5 +1,6 @@
 ﻿using PocketMC.Desktop.Core.Interfaces;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using PocketMC.Application.Interfaces;
@@ -111,7 +112,7 @@ public class SettingsSummariesVM : ViewModelBase
         var summary = _storageService.Read(_serverDir, item.FileName);
         if (summary == null)
         {
-            _dialogService.ShowMessage("Error", "Could not load this summary. The file may have been deleted.", DialogType.Error);
+            _dialogService.ShowMessage(L.T("Error"), L.T("Could not load this summary. The file may have been deleted."), DialogType.Error);
             return;
         }
 
@@ -128,7 +129,7 @@ public class SettingsSummariesVM : ViewModelBase
         if (item == null) return;
 
         var result = await _dialogService.ShowDialogAsync("Delete Summary",
-            $"Are you sure you want to delete this session summary from {item.SessionDate}?",
+            L.F("Are you sure you want to delete this session summary from {0}?", item.SessionDate),
             DialogType.Warning, false);
 
         if (result == DialogResult.Yes)

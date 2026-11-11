@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
+using PocketMC.Desktop.Localization;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using PocketMC.Application.Interfaces;
@@ -52,7 +53,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         _javaProvisioningService = javaProvisioningService;
         _onUpdateCompleted = onUpdateCompleted;
         
-        _targetVersionStatusText = "Checking for available updates...";
+        _targetVersionStatusText = L.T("Checking for available updates...");
 
         LoadTargetVersionsCommand = new AsyncRelayCommand(_ => LoadTargetVersionsAsync(), _ => !IsBusy && !IsLoadingTargetVersions);
         ApplyMinecraftUpdateCommand = new AsyncRelayCommand(_ => ApplyMinecraftUpdateAsync(), _ => CanApplyMinecraftUpdate);
@@ -176,8 +177,8 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
     private async Task LoadTargetVersionsAsync()
     {
         IsLoadingTargetVersions = true;
-        TargetVersionStatusText = $"Checking available {CurrentServerType} updates...";
-        StatusText = "Loading target version...";
+        TargetVersionStatusText = L.F("Checking available {0} updates...", CurrentServerType);
+        StatusText = L.T("Loading target version...");
 
         try
         {
@@ -203,8 +204,8 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
             SelectedTargetVersion = TargetVersions.FirstOrDefault();
             SelectedTargetLoaderVersion = TargetLoaderVersions.FirstOrDefault();
             TargetVersionStatusText = SelectedTargetVersion == null
-                ? $"No newer {CurrentServerType} release is available after {CurrentServerVersion}."
-                : $"{TargetVersions.Count} available {CurrentServerType} update(s) after {CurrentServerVersion}. Newest: {SelectedTargetVersion.Id}.";
+                ? L.F("No newer {0} release is available after {1}.", CurrentServerType, CurrentServerVersion)
+                : L.F("{0} available {1} update(s) after {2}. Newest: {3}.", TargetVersions.Count, CurrentServerType, CurrentServerVersion, SelectedTargetVersion.Id);
             StatusText = (SelectedTargetVersion == null && SelectedTargetLoaderVersion == null)
                 ? "No newer target version found."
                 : "Ready to update.";
@@ -219,8 +220,8 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
             OnPropertyChanged(nameof(HasTargetLoaderVersions));
             OnPropertyChanged(nameof(IsEmptyStateVisible));
             OnPropertyChanged(nameof(IsMainContentVisible));
-            TargetVersionStatusText = "Could not load server versions.";
-            StatusText = "Version lookup failed.";
+            TargetVersionStatusText = L.T("Could not load server versions.");
+            StatusText = L.T("Version lookup failed.");
             _dialogService.ShowMessage("Version Lookup Failed", ex.Message, DialogType.Warning);
         }
         finally
@@ -238,7 +239,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
 
         DialogResult confirm = await _dialogService.ShowDialogAsync(
             "Apply Update",
-            $"Update this server to {CurrentServerType} {targetMcVersion}?\n\nPocketMC will download the necessary files.",
+            L.F("Update this server to {0} {1}?\n\nPocketMC will download the necessary files.", CurrentServerType, targetMcVersion),
             DialogType.Question);
 
         if (confirm != DialogResult.Yes)
@@ -255,7 +256,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
 
         DialogResult confirm = await _dialogService.ShowDialogAsync(
             "Apply Update",
-            $"Update this server's loader to {targetLoaderVersion}?\n\nPocketMC will download the necessary files.",
+            L.F("Update this server's loader to {0}?\n\nPocketMC will download the necessary files.", targetLoaderVersion),
             DialogType.Question);
 
         if (confirm != DialogResult.Yes)
@@ -272,10 +273,10 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         IsUpdateProgressVisible = true;
         IsUpdateProgressIndeterminate = true;
         UpdateProgressValue = 0;
-        ProgressDetailText = "Preparing update.";
+        ProgressDetailText = L.T("Preparing update.");
         try
         {
-            StatusText = "Downloading update...";
+            StatusText = L.T("Downloading update...");
             var downloadProgress = new Progress<DownloadProgress>(progress =>
             {
                 IsUpdateProgressIndeterminate = progress.TotalBytes <= 0;
@@ -303,15 +304,15 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
             OnPropertyChanged(nameof(CurrentLoaderVersion));
             UpdateProgressValue = 100;
             IsUpdateProgressIndeterminate = false;
-            ProgressDetailText = "Update completed successfully.";
+            ProgressDetailText = L.T("Update completed successfully.");
             if (_onUpdateCompleted != null)
             {
-                StatusText = "Checking for addon updates...";
-                ProgressDetailText = "Looking for addon updates...";
+                StatusText = L.T("Checking for addon updates...");
+                ProgressDetailText = L.T("Looking for addon updates...");
                 await _onUpdateCompleted.Invoke(isMinecraftUpdate);
             }
 
-            _dialogService.ShowMessage("Update Complete", "The server update completed successfully.");
+            _dialogService.ShowMessage(L.T("Update Complete"), L.T("The server update completed successfully."));
             await LoadTargetVersionsAsync();
             StatusText = string.Empty;
             ProgressDetailText = string.Empty;
@@ -320,8 +321,8 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
         catch (Exception ex)
         {
             IsUpdateProgressIndeterminate = false;
-            ProgressDetailText = "Update failed.";
-            StatusText = "Update failed.";
+            ProgressDetailText = L.T("Update failed.");
+            StatusText = L.T("Update failed.");
             _dialogService.ShowMessage("Update Failed", ex.Message, DialogType.Error);
         }
         finally

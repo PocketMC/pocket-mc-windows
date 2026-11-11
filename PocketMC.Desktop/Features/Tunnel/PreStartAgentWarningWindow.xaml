@@ -1,8 +1,8 @@
-<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Tunnel.PreStartAgentWarningWindow"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Tunnel.PreStartAgentWarningWindow" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Agent Not Connected"
+        Title="{loc:Tr 'Agent Not Connected'}"
         Width="520" Height="280"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -18,7 +18,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
             <ui:SymbolIcon Symbol="Warning24" FontSize="18" Foreground="#F38BA8" Margin="0,0,8,0"/>
-            <TextBlock Text="Agent Not Connected"
+            <TextBlock Text="{loc:Tr 'Agent Not Connected'}"
                        FontSize="18" FontWeight="Bold"
                        Foreground="#F38BA8"/>
         </StackPanel>
@@ -28,12 +28,12 @@
                    Foreground="#BAC2DE" FontSize="13"
                    TextWrapping="Wrap"
                    Margin="0,0,0,16"
-                   Text="Your PlayIt.gg agent is not connected. Public addresses will not work until the agent is running."/>
+                   Text="{loc:Tr 'Your PlayIt.gg agent is not connected. Public addresses will not work until the agent is running.'}"/>
 
         <!-- Action Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="StartAnywayButton"
-                    Content="Start Anyway"
+                    Content="{loc:Tr 'Start Anyway'}"
                     Width="140" Height="32"
                     Background="#45475A" Foreground="#CDD6F4"
                     BorderThickness="0"
@@ -41,7 +41,7 @@
                     Click="StartAnywayButton_Click"/>
 
             <Button x:Name="ConnectAgentButton"
-                    Content="Connect Agent"
+                    Content="{loc:Tr 'Connect Agent'}"
                     Width="140" Height="32"
                     Background="#89B4FA" Foreground="#1E1E2E"
                     FontWeight="Bold"

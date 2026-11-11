@@ -1,8 +1,8 @@
-<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Networking.PortConflictWindow"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Networking.PortConflictWindow" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Port Conflict"
+        Title="{loc:Tr 'Port Conflict'}"
         Width="480"
         SizeToContent="Height"
         MinWidth="420" MaxWidth="540"
@@ -21,7 +21,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Port Conflict" ShowMaximize="False" ShowMinimize="False" />
+        <ui:TitleBar Grid.Row="0" Title="{loc:Tr 'Port Conflict'}" ShowMaximize="False" ShowMinimize="False" />
 
         <Grid Grid.Row="1" Margin="28,4,28,28">
             <Grid.RowDefinitions>
@@ -74,12 +74,12 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="RECOMMENDED REPLACEMENT"
+                        <TextBlock Text="{loc:Tr 'RECOMMENDED REPLACEMENT'}"
                                    FontSize="10"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                         <TextBlock x:Name="TxtSuggestedPortDescription"
-                                   Text="Port 25566 is verified available"
+                                   Text="{loc:Tr 'Port 25566 is verified available'}"
                                    FontSize="13"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -88,30 +88,30 @@
                     <ui:Button x:Name="BtnApplySuggested"
                                Grid.Column="1"
                                Style="{StaticResource AiActionButtonStyle}"
-                               Content="Use Port"
+                               Content="{loc:Tr 'Use Port'}"
                                Icon="{ui:SymbolIcon Sparkle24}"
                                Cursor="Hand"
                                Click="BtnApplySuggested_Click"
                                VerticalAlignment="Center"
-                               AutomationProperties.Name="Use recommended replacement port"
+                               AutomationProperties.Name="{loc:Tr 'Use recommended replacement port'}"
                                Padding="12,6"/>
                 </Grid>
             </Border>
 
             <!-- Port input section -->
             <StackPanel Grid.Row="3" Margin="0,0,0,6">
-                <TextBlock Text="Enter or modify port:"
+                <TextBlock Text="{loc:Tr 'Enter or modify port:'}"
                            FontSize="13"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                            Margin="0,0,0,8"/>
 
                 <ui:TextBox x:Name="TxtPortInput"
-                            PlaceholderText="e.g. 25566"
+                            PlaceholderText="{loc:Tr 'e.g. 25566'}"
                             FontSize="14"
                             MaxLength="5"
                             ClearButtonEnabled="False"
-                            AutomationProperties.Name="Server port number input"
+                            AutomationProperties.Name="{loc:Tr 'Server port number input'}"
                             TextChanged="TxtPortInput_TextChanged"/>
 
                 <!-- Validation message -->
@@ -133,20 +133,20 @@
 
             <!-- Action buttons -->
             <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-                <ui:Button Content="Cancel"
+                <ui:Button Content="{loc:Tr 'Cancel'}"
                            Appearance="Secondary"
                            MinWidth="80"
                            Margin="0,0,8,0"
                            Click="Cancel_Click"
-                           AutomationProperties.Name="Cancel port change"
+                           AutomationProperties.Name="{loc:Tr 'Cancel port change'}"
                            IsCancel="True"/>
                 <ui:Button x:Name="BtnConfirm"
-                           Content="Change Port &amp; Start"
+                           Content="{loc:Tr 'Change Port &amp; Start'}"
                            Appearance="Primary"
                            MinWidth="140"
                            Click="Confirm_Click"
                            IsDefault="True"
-                           AutomationProperties.Name="Change port and start server"
+                           AutomationProperties.Name="{loc:Tr 'Change port and start server'}"
                            IsEnabled="False"/>
             </StackPanel>
         </Grid>

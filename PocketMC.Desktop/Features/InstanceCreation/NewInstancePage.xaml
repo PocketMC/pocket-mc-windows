@@ -1,9 +1,9 @@
-<Page x:Class="PocketMC.Desktop.Features.InstanceCreation.NewInstancePage"
+<Page x:Class="PocketMC.Desktop.Features.InstanceCreation.NewInstancePage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"
-      Title="New Instance"
+      Title="{loc:Tr 'New Instance'}"
       SizeChanged="Page_SizeChanged">
 
     <Page.Resources>
@@ -25,7 +25,7 @@
             <StackPanel Grid.Column="0"
                         Orientation="Horizontal"
                         HorizontalAlignment="Left">
-                <ui:Button Content="Back"
+                <ui:Button Content="{loc:Tr 'Back'}"
                            Appearance="Secondary"
                            Icon="{ui:SymbolIcon ArrowLeft24}"
                            MinWidth="88"
@@ -33,7 +33,7 @@
                            Click="BtnBack_Click"/>
 
                 <ui:TextBlock FontTypography="Title"
-                              Text="Create a New Instance"
+                              Text="{loc:Tr 'Create a New Instance'}"
                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                               VerticalAlignment="Center"/>
             </StackPanel>
@@ -48,14 +48,14 @@
                            Click="BtnImportModpack_Click">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <ui:SymbolIcon Symbol="FolderZip24" Margin="0,0,8,0" />
-                        <TextBlock Text="Import Modpack" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="{loc:Tr 'Import Modpack'}" VerticalAlignment="Center" Margin="0,0,8,0" />
                         <Border Background="#33FFB347" BorderBrush="#FFFFB347" BorderThickness="1" CornerRadius="4" Padding="4,0" VerticalAlignment="Center">
-                            <TextBlock Text="BETA" FontSize="10" FontWeight="Bold" Foreground="#FFFFB347" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Tr 'BETA'}" FontSize="10" FontWeight="Bold" Foreground="#FFFFB347" VerticalAlignment="Center" />
                         </Border>
                     </StackPanel>
                 </ui:Button>
                 <ui:Button x:Name="BtnImportInstance"
-                           Content="Import Instance"
+                           Content="{loc:Tr 'Import Instance'}"
                            Appearance="Secondary"
                            Icon="{ui:SymbolIcon ArrowUpload24}"
                            MinWidth="136"
@@ -83,11 +83,11 @@
                         <CheckBox x:Name="ChkAcceptEula" VerticalAlignment="Center" Margin="0,0,12,0" Checked="ChkAcceptEula_Changed" Unchecked="ChkAcceptEula_Changed"/>
                         
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="I accept the Minecraft End User License Agreement" FontWeight="Medium" FontSize="13" Margin="0,0,0,2"/>
+                            <TextBlock Text="{loc:Tr 'I accept the Minecraft End User License Agreement'}" FontWeight="Medium" FontSize="13" Margin="0,0,0,2"/>
                             <TextBlock FontSize="12" Opacity="0.8" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap">
-                                <Run Text="PocketMC will write eula.txt automatically. Review "/>
-                                <Hyperlink NavigateUri="https://aka.ms/MinecraftEULA" RequestNavigate="MinecraftEulaLink_RequestNavigate">Mojang's EULA</Hyperlink>
-                                <Run Text=" before creating the instance."/>
+                                <Run Text="{loc:Tr 'PocketMC will write eula.txt automatically. Review'}"/>
+                                <Hyperlink NavigateUri="https://aka.ms/MinecraftEULA" RequestNavigate="MinecraftEulaLink_RequestNavigate"><Run Text="{loc:Tr 'Mojang EULA'}"/></Hyperlink>
+                                <Run Text="{loc:Tr 'before creating the instance.'}"/>
                             </TextBlock>
                         </StackPanel>
                     </StackPanel>
@@ -134,14 +134,14 @@
                                                  VerticalAlignment="Center"/>
                                 <ui:TextBlock x:Name="TxtDownloadStage"
                                            FontTypography="BodyStrong"
-                                           Text="Preparing Server..."
+                                           Text="{loc:Tr 'Preparing Server...'}"
                                            VerticalAlignment="Center"
                                            FontSize="13"/>
                             </StackPanel>
                             
                             <TextBlock x:Name="TxtProgress"
                                        Grid.Column="1"
-                                       Text="Waiting for download..."
+                                       Text="{loc:Tr 'Waiting for download...'}"
                                        FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        VerticalAlignment="Center"/>
@@ -161,14 +161,14 @@
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center">
                     <ui:Button x:Name="BtnCancel"
-                               Content="Cancel"
+                               Content="{loc:Tr 'Cancel'}"
                                Appearance="Secondary"
                                Margin="0,0,8,0"
                                Click="BtnBack_Click"
                                IsCancel="True"/>
 
                     <ui:Button x:Name="BtnCreate"
-                               Content="Create and Download"
+                               Content="{loc:Tr 'Create and Download'}"
                                Appearance="Primary"
                                Icon="{ui:SymbolIcon ArrowDownload24}"
                                Click="BtnCreate_Click"
@@ -241,43 +241,43 @@
                         <!-- Card Header -->
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
                             <ui:SymbolIcon Symbol="Server24" FontSize="20" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                            <ui:TextBlock Text="Server Identity &amp; Software" FontTypography="BodyStrong" FontSize="16" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <ui:TextBlock Text="{loc:Tr 'Server Identity &amp; Software'}" FontTypography="BodyStrong" FontSize="16" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         </StackPanel>
 
                         <!-- Server Name -->
-                        <TextBlock Text="Server Name" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:TextBox x:Name="TxtName" PlaceholderText="My Cool Server" Margin="0,0,0,16"/>
+                        <TextBlock Text="{loc:Tr 'Server Name'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ui:TextBox x:Name="TxtName" PlaceholderText="{loc:Tr 'My Cool Server'}" Margin="0,0,0,16"/>
 
                         <!-- Description -->
-                        <TextBlock Text="Description" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:TextBox x:Name="TxtDescription" PlaceholderText="What this instance is for" Margin="0,0,0,24"/>
+                        <TextBlock Text="{loc:Tr 'Description'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ui:TextBox x:Name="TxtDescription" PlaceholderText="{loc:Tr 'What this instance is for'}" Margin="0,0,0,24"/>
                         
                         <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,0,0,24"/>
 
                         <!-- Server Type -->
-                        <TextBlock Text="Server Type" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="{loc:Tr 'Server Type'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <ComboBox x:Name="CmbServerType" Margin="0,0,0,16" HorizontalAlignment="Stretch" MinHeight="40" SelectionChanged="CmbServerType_SelectionChanged">
-                            <ComboBoxItem Tag="Vanilla" Content="Vanilla" IsSelected="True"/>
-                            <ComboBoxItem Tag="Paper" Content="Paper"/>
-                            <ComboBoxItem Tag="Fabric" Content="Fabric"/>
-                            <ComboBoxItem Tag="Forge" Content="Forge"/>
-                            <ComboBoxItem Tag="NeoForge" Content="NeoForge"/>
-                            <ComboBoxItem Tag="Bedrock (BDS)" Content="Bedrock (BDS)"/>
-                            <ComboBoxItem Tag="Pocketmine (PHP)" Content="Pocketmine (PHP)"/>
+                            <ComboBoxItem Tag="Vanilla" Content="{loc:Tr 'Vanilla'}" IsSelected="True"/>
+                            <ComboBoxItem Tag="Paper" Content="{loc:Tr 'Paper'}"/>
+                            <ComboBoxItem Tag="Fabric" Content="{loc:Tr 'Fabric'}"/>
+                            <ComboBoxItem Tag="Forge" Content="{loc:Tr 'Forge'}"/>
+                            <ComboBoxItem Tag="NeoForge" Content="{loc:Tr 'NeoForge'}"/>
+                            <ComboBoxItem Tag="Bedrock (BDS)" Content="{loc:Tr 'Bedrock (BDS)'}"/>
+                            <ComboBoxItem Tag="Pocketmine (PHP)" Content="{loc:Tr 'Pocketmine (PHP)'}"/>
                         </ComboBox>
 
                         <!-- Minecraft Version -->
-                        <TextBlock Text="Minecraft Version" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="{loc:Tr 'Minecraft Version'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <ComboBox x:Name="CmbVersion" Margin="0,0,0,8" HorizontalAlignment="Stretch" MinHeight="40" DisplayMemberPath="Id" SelectionChanged="CmbVersion_SelectionChanged"/>
                         
-                        <TextBlock x:Name="TxtVersionState" Text="Choose a server type to load available versions." FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                        <TextBlock x:Name="TxtVersionState" Text="{loc:Tr 'Choose a server type to load available versions.'}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
                         <!-- Snapshots & Warnings -->
-                        <CheckBox x:Name="ChkShowSnapshots" Content="Show snapshots and pre-releases" Checked="ChkShowSnapshots_Changed" Unchecked="ChkShowSnapshots_Changed" Margin="0,0,0,16"/>
+                        <CheckBox x:Name="ChkShowSnapshots" Content="{loc:Tr 'Show snapshots and pre-releases'}" Checked="ChkShowSnapshots_Changed" Unchecked="ChkShowSnapshots_Changed" Margin="0,0,0,16"/>
 
                         <!-- Loader Version -->
                         <StackPanel x:Name="LoaderVersionPanel" Visibility="Collapsed" Margin="0,0,0,16">
-                            <TextBlock x:Name="TxtLoaderVersionLabel" Text="Loader Version" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,6"/>
+                            <TextBlock x:Name="TxtLoaderVersionLabel" Text="{loc:Tr 'Loader Version'}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,6"/>
                             <ComboBox x:Name="CmbLoaderVersion" HorizontalAlignment="Stretch" MinHeight="40" DisplayMemberPath="Version"/>
                         </StackPanel>
 
@@ -292,9 +292,9 @@
                                 <CheckBox x:Name="ChkEnableGeyser" Grid.Column="0" VerticalAlignment="Top" Margin="0,2,12,0"/>
                                 
                                 <StackPanel Grid.Column="1">
-                                    <TextBlock Text="Enable Cross-play (Geyser + Floodgate)" FontWeight="Medium" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{loc:Tr 'Enable Cross-play (Geyser + Floodgate)'}" FontWeight="Medium" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
                                     <TextBlock FontSize="12" Opacity="0.8" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap">
-                                        <Run Text="Allows Minecraft Bedrock players to join this Java server."/>
+                                        <Run Text="{loc:Tr 'Allows Minecraft Bedrock players to join this Java server.'}"/>
                                     </TextBlock>
                                 </StackPanel>
                             </Grid>
@@ -308,57 +308,57 @@
                         <!-- Card Header -->
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
                             <ui:SymbolIcon Symbol="Earth24" FontSize="20" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                            <ui:TextBlock Text="World &amp; Gameplay Settings" FontTypography="BodyStrong" FontSize="16" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <ui:TextBlock Text="{loc:Tr 'World &amp; Gameplay Settings'}" FontTypography="BodyStrong" FontSize="16" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         </StackPanel>
 
                         <!-- World Seed -->
-                        <TextBlock Text="World Seed" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <ui:TextBox x:Name="TxtSeed" PlaceholderText="Leave empty for random seed" Margin="0,0,0,16"/>
+                        <TextBlock Text="{loc:Tr 'World Seed'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <ui:TextBox x:Name="TxtSeed" PlaceholderText="{loc:Tr 'Leave empty for random seed'}" Margin="0,0,0,16"/>
 
                         <!-- World Generation Type -->
-                        <TextBlock Text="World Generation Type" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="{loc:Tr 'World Generation Type'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <ComboBox x:Name="CmbLevelType" Margin="0,0,0,16" HorizontalAlignment="Stretch" MinHeight="40">
-                            <ComboBoxItem Content="Default" IsSelected="True"/>
-                            <ComboBoxItem Content="Flat"/>
-                            <ComboBoxItem Content="LargeBiomes"/>
-                            <ComboBoxItem Content="Amplified"/>
+                            <ComboBoxItem Content="{loc:Tr 'Default'}" IsSelected="True"/>
+                            <ComboBoxItem Content="{loc:Tr 'Flat'}"/>
+                            <ComboBoxItem Content="{loc:Tr 'LargeBiomes'}"/>
+                            <ComboBoxItem Content="{loc:Tr 'Amplified'}"/>
                         </ComboBox>
                         
                         <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,8,0,24"/>
 
                         <!-- Default Gamemode -->
-                        <TextBlock Text="Default Gamemode" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="{loc:Tr 'Default Gamemode'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <ComboBox x:Name="CmbGamemode" Margin="0,0,0,16" HorizontalAlignment="Stretch" MinHeight="40">
-                            <ComboBoxItem Content="Survival" IsSelected="True"/>
-                            <ComboBoxItem Content="Creative"/>
-                            <ComboBoxItem Content="Adventure"/>
-                            <ComboBoxItem Content="Spectator"/>
+                            <ComboBoxItem Content="{loc:Tr 'Survival'}" IsSelected="True"/>
+                            <ComboBoxItem Content="{loc:Tr 'Creative'}"/>
+                            <ComboBoxItem Content="{loc:Tr 'Adventure'}"/>
+                            <ComboBoxItem Content="{loc:Tr 'Spectator'}"/>
                         </ComboBox>
 
                         <!-- World Difficulty -->
-                        <TextBlock Text="World Difficulty" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="{loc:Tr 'World Difficulty'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <ComboBox x:Name="CmbDifficulty" Margin="0,0,0,16" HorizontalAlignment="Stretch" MinHeight="40">
-                            <ComboBoxItem Content="Peaceful"/>
-                            <ComboBoxItem Content="Easy" IsSelected="True"/>
-                            <ComboBoxItem Content="Normal"/>
-                            <ComboBoxItem Content="Hard"/>
+                            <ComboBoxItem Content="{loc:Tr 'Peaceful'}"/>
+                            <ComboBoxItem Content="{loc:Tr 'Easy'}" IsSelected="True"/>
+                            <ComboBoxItem Content="{loc:Tr 'Normal'}"/>
+                            <ComboBoxItem Content="{loc:Tr 'Hard'}"/>
                         </ComboBox>
 
                         <!-- Players Limit -->
-                        <TextBlock Text="Players Limit" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="{loc:Tr 'Players Limit'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <ui:TextBox x:Name="TxtMaxPlayers" Text="20" ClearButtonEnabled="False" Margin="0,0,0,24"/>
                         
                         <Border Height="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" Margin="0,0,0,24"/>
 
                         <!-- Custom World Upload -->
-                        <TextBlock Text="Custom World Upload (.zip / .mcworld)" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                        <TextBlock Text="{loc:Tr 'Custom World Upload (.zip / .mcworld)'}" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <ui:TextBox x:Name="TxtCustomWorldPath" PlaceholderText="Optional (.zip / .mcworld)" IsReadOnly="True" Margin="0,0,8,0"/>
-                            <ui:Button x:Name="BtnBrowseWorld" Grid.Column="1" Content="Browse" Appearance="Secondary" MinHeight="40" Click="BtnBrowseWorld_Click"/>
+                            <ui:TextBox x:Name="TxtCustomWorldPath" PlaceholderText="{loc:Tr 'Optional (.zip / .mcworld)'}" IsReadOnly="True" Margin="0,0,8,0"/>
+                            <ui:Button x:Name="BtnBrowseWorld" Grid.Column="1" Content="{loc:Tr 'Browse'}" Appearance="Secondary" MinHeight="40" Click="BtnBrowseWorld_Click"/>
                         </Grid>
                     </StackPanel>
                 </ui:Card>

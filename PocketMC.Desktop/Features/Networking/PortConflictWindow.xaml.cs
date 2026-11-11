@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using PocketMC.Desktop.Localization;
 using System.Windows;
 using System.Windows.Controls;
 using PocketMC.Application.Services.Networking;
@@ -91,7 +92,7 @@ namespace PocketMC.Desktop.Features.Networking
             {
                 BorderSuggestedPort.Visibility = Visibility.Visible;
                 string protoText = _request.Protocol == PortProtocol.Udp ? "UDP" : "TCP";
-                TxtSuggestedPortDescription.Text = $"Port {_suggestedPort.Value} ({protoText}) is verified available";
+                TxtSuggestedPortDescription.Text = L.F("Port {0} ({1}) is verified available", _suggestedPort.Value, protoText);
                 TxtPortInput.Text = _suggestedPort.Value.ToString();
             }
             else
@@ -145,7 +146,7 @@ namespace PocketMC.Desktop.Features.Networking
 
             if (port == _currentPort)
             {
-                ShowValidationError($"Port {port} is the current conflicting port. Choose a different one.");
+                ShowValidationError(L.F("Port {0} is the current conflicting port. Choose a different one.", port));
                 return;
             }
 
@@ -159,7 +160,7 @@ namespace PocketMC.Desktop.Features.Networking
                 var holder = _leaseRegistry.FindHolder(port, protocol, ipMode, bindAddress);
                 if (holder != null && holder.InstanceId != _request?.InstanceId)
                 {
-                    ShowValidationError($"Port {port} is currently leased by running instance '{holder.InstanceName}'.");
+                    ShowValidationError(L.F("Port {0} is currently leased by running instance '{1}'.", port, holder.InstanceName));
                     return;
                 }
             }
@@ -180,19 +181,19 @@ namespace PocketMC.Desktop.Features.Networking
 
                     if (instance.ServerPort == port && ProtocolsOverlap(protocol, mainProto))
                     {
-                        ShowValidationError($"Port {port} is already assigned to instance '{instance.Name}'.");
+                        ShowValidationError(L.F("Port {0} is already assigned to instance '{1}'.", port, instance.Name));
                         return;
                     }
 
                     if (instance.GeyserBedrockPort.HasValue && instance.GeyserBedrockPort.Value == port && ProtocolsOverlap(protocol, PortProtocol.Udp))
                     {
-                        ShowValidationError($"Port {port} is assigned to Geyser on instance '{instance.Name}'.");
+                        ShowValidationError(L.F("Port {0} is assigned to Geyser on instance '{1}'.", port, instance.Name));
                         return;
                     }
 
                     if (instance.SimpleVoiceChatPort.HasValue && instance.SimpleVoiceChatPort.Value == port && ProtocolsOverlap(protocol, PortProtocol.Udp))
                     {
-                        ShowValidationError($"Port {port} is assigned to Simple Voice Chat on instance '{instance.Name}'.");
+                        ShowValidationError(L.F("Port {0} is assigned to Simple Voice Chat on instance '{1}'.", port, instance.Name));
                         return;
                     }
                 }
@@ -216,18 +217,18 @@ namespace PocketMC.Desktop.Features.Networking
                 var result = _probeService.Probe(checkRequest);
                 if (!result.IsSuccessful)
                 {
-                    ShowValidationError($"Port {port} is not available on Windows — it may already be in use by another program.");
+                    ShowValidationError(L.F("Port {0} is not available on Windows — it may already be in use by another program.", port));
                     return;
                 }
             }
             catch (Exception ex)
             {
-                ShowValidationError($"Could not check port {port}: {ex.Message}");
+                ShowValidationError(L.F("Could not check port {0}: {1}", port, ex.Message));
                 return;
             }
 
             string protoLabel = protocol == PortProtocol.Udp ? "UDP" : "TCP";
-            TxtSuccess.Text = $"✓ Port {port} ({protoLabel}) is available.";
+            TxtSuccess.Text = L.F("✓ Port {0} ({1}) is available.", port, protoLabel);
             TxtSuccess.Visibility = Visibility.Visible;
             BtnConfirm.IsEnabled = true;
         }
