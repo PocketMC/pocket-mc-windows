@@ -16,6 +16,7 @@ using PocketMC.Domain.Storage;
 using PocketMC.Application.Services.Networking;
 using PocketMC.Infrastructure.Configuration;
 using PocketMC.Infrastructure.Instances;
+using PocketMC.Infrastructure.Storage;
 using PocketMC.Infrastructure.Instances.Updates;
 using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Infrastructure.Java;
@@ -42,7 +43,16 @@ namespace PocketMC.Desktop.Composition
             {
                 client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 client.Timeout = TimeSpan.FromMinutes(20);
-            }).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            }).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
+
+            services.AddSingleton<DownloadMirrorService>(provider =>
+            {
+                var applicationState = provider.GetRequiredService<ApplicationState>();
+                return new DownloadMirrorService(() => DownloadMirrorOptions.FromSettings(
+                    applicationState.Settings.UseDownloadMirrors,
+                    applicationState.Settings.CustomDownloadMirror));
+            });
+            services.AddTransient<DownloadMirrorHandler>();
 
             services.AddSingleton<InstanceOperationCoordinator>();
             services.AddSingleton<DownloaderService>();
@@ -105,17 +115,17 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IGeyserDetector, GeyserDetector>();
             services.AddSingleton<ISimpleVoiceChatDetector, SimpleVoiceChatDetector>();
             services.AddSingleton<IImageProcessingService, ImageProcessingService>();
-            services.AddHttpClient<PhpProvisioningService>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<PhpProvisioningService>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
             services.AddSingleton<GeyserProvisioningService>();
             services.AddSingleton<BedrockAddonInstaller>();
 
-            services.AddHttpClient<VanillaProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<FabricProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<ForgeProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<NeoForgeProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<PaperProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<PocketmineProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
-            services.AddHttpClient<BedrockBdsProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<VanillaProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
+            services.AddHttpClient<FabricProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
+            services.AddHttpClient<ForgeProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
+            services.AddHttpClient<NeoForgeProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
+            services.AddHttpClient<PaperProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
+            services.AddHttpClient<PocketmineProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
+            services.AddHttpClient<BedrockBdsProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>().AddHttpMessageHandler<DownloadMirrorHandler>();
 
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<VanillaProvider>());
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<FabricProvider>());

@@ -68,6 +68,7 @@ public static class Program
         {
             var settings = new PocketMC.Infrastructure.Configuration.SettingsManager().Load();
             Localization.LocalizationService.Instance.SetLanguage(settings.Language);
+            PocketMC.Infrastructure.Storage.DownloadTuning.Apply(settings);
         }
         catch (Exception ex)
         {

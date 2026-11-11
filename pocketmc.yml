@@ -31,6 +31,7 @@ link_donation: "https://buymeacoffee.com/sahaj33"                     # [Dynamic
 link_contributor_divy: "https://github.com/divyviradiya2"                 # [Dynamic Cloud] Live-updates Divy Viradiya GitHub profile link
 link_contributor_sahaj: "https://github.com/SizWinz"                      # [Dynamic Cloud] Live-updates Sahaj Italiya GitHub profile link
 link_helper_johndinglesin: "https://github.com/Johndinglesin"             # [Dynamic Cloud] Live-updates Johndinglesin GitHub profile link
+link_helper_mingsiamz: "https://github.com/MingsiAmz"                     # [Dynamic Cloud] Live-updates MingsiAmz GitHub profile link
 link_donator_nexvice: "https://discord.com/users/524387761541742592"      # [Dynamic Cloud] Live-updates NexVice Discord profile link
 link_playit_website: "https://playit.gg"                              # [Dynamic Cloud] Live-updates Playit homepage link
 link_playit_setup: "https://playit.gg/l/setup-third-party"            # [Dynamic Cloud] Live-updates Playit third-party setup link
@@ -45,6 +46,17 @@ auth_proxies:                                                         # [Dynamic
 telemetry_proxies:                                                    # [Dynamic Cloud] Live-updates telemetry proxies
   - "https://pocket-mc-proxy-3fqm.onrender.com/"
   - "https://pocket-mc-proxy.onrender.com/"
+download_mirror_tunnels:                                              # [Dynamic Cloud] Live-updates download mirror tunnels ({url} = original link)
+  - "https://ghfast.top/{url}"
+  - "https://gh-proxy.com/{url}"
+  - "https://ghproxy.net/{url}"
+  - "https://hub.gitmirror.com/{url}"
+  - "https://gh.llkk.cc/{url}"
+  - "https://mirror.ghproxy.com/{url}"
+  - "https://github.moeyy.xyz/{url}"
+  - "https://cf.ghproxy.cc/{url}"
+download_maven_mirrors:                                                # [Dynamic Cloud] Maven mirrors for Forge/NeoForge installer downloads
+  - "https://bmclapi2.bangbang93.com/maven"
 discord_api_urls:                                                     # [Dynamic Cloud] Live-updates Discord bot notification webhooks
   - "https://pocketmc-welcome-bot-k1gq.onrender.com"
   - "https://pocketmc-welcome-bot-1e5d.onrender.com"
