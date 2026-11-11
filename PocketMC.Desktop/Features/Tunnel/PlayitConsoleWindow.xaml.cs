@@ -293,8 +293,8 @@ namespace PocketMC.Desktop.Features.Tunnel
             int total = _allEntries.Count;
             int displayed = LogParagraph.Inlines.Count;
             TxtLogCount.Text = string.IsNullOrEmpty(_searchTerm)
-                ? $"{total:N0} events"
-                : L.F("{displayed:N0} of {total:N0} events matching \"{0}\"", _searchTerm);
+                ? L.F("{0:N0} events", total)
+                : L.F("{0:N0} of {1:N0} events matching \"{2}\"", displayed, total, _searchTerm);
         }
 
         private async void BtnCopyLogs_Click(object sender, RoutedEventArgs e)

@@ -92,6 +92,14 @@ public sealed class LocalizationServiceTests
     }
 
     [Fact]
+    public void Format_ReturnsPatternInsteadOfThrowing_WhenPlaceholderIsMalformed()
+    {
+        LocalizationService service = CreateService("en", "English", "{}");
+
+        Assert.Equal("{total:N0} MB across {0}", service.Format("{total:N0} MB across {0}", 3));
+    }
+
+    [Fact]
     public void FormatDate_UsesCatalogDateFormat()
     {
         LocalizationService service = CreateService("zh-CN", "简体中文", "{}");

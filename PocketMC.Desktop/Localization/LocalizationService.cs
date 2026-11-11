@@ -90,7 +90,21 @@ public sealed class LocalizationService : INotifyPropertyChanged
     public string Format(string source, params object?[] args)
     {
         string pattern = Get(source);
-        return args.Length == 0 ? pattern : string.Format(Culture, pattern, args);
+        if (args.Length == 0)
+        {
+            return pattern;
+        }
+
+        try
+        {
+            return string.Format(Culture, pattern, args);
+        }
+        catch (FormatException ex)
+        {
+            // A broken placeholder must never crash the UI thread; fall back to the raw pattern.
+            Trace.TraceWarning($"Localization format failure for '{source}': {ex.Message}");
+            return pattern;
+        }
     }
 
     public string FormatDate(DateTime value) => value.ToString(ActiveDateFormat, Culture);

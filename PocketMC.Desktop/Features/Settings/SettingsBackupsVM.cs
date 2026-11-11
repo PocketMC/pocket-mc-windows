@@ -285,8 +285,8 @@ namespace PocketMC.Desktop.Features.Settings
             // 5. Total size display
             double totalSizeMb = BackupList.Sum(b => b.SizeMb);
             TotalBackupsSizeText = totalSizeMb >= 1024
-                ? L.F("{totalSizeMb / 1024.0:F1} GB across {0} backup(s)", BackupList.Count)
-                : L.F("{totalSizeMb:F1} MB across {0} backup(s)", BackupList.Count);
+                ? L.F("{0:F1} GB across {1} backup(s)", totalSizeMb / 1024.0, BackupList.Count)
+                : L.F("{0:F1} MB across {1} backup(s)", totalSizeMb, BackupList.Count);
 
             // 6. Last backup time
             if (_metadata.LastBackupTime.HasValue)
