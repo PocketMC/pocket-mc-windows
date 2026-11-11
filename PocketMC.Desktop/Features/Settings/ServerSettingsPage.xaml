@@ -1,4 +1,4 @@
-<Page x:Class="PocketMC.Desktop.Features.Settings.ServerSettingsPage"
+<Page x:Class="PocketMC.Desktop.Features.Settings.ServerSettingsPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -8,7 +8,7 @@
       xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
       mc:Ignorable="d"
       d:DesignHeight="1200" d:DesignWidth="950"
-      Title="Server Settings"
+      Title="{loc:Tr 'Server Settings'}"
       Background="Transparent">
 
     <Page.Resources>
@@ -58,11 +58,11 @@
                                Margin="0,0,12,0"
                                Padding="6" />
                     <ui:TextBlock FontTypography="Title"
-                                  Text="Server Configurations"
+                                  Text="{loc:Tr 'Server Configurations'}"
                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                   VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock Text="Modify your instance setup, install addons, configure automated tasks and manage world files."
+                <TextBlock Text="{loc:Tr 'Modify your instance setup, install addons, configure automated tasks and manage world files.'}"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                            FontSize="13"
                            Margin="48,0,0,0"
@@ -88,14 +88,14 @@
                                 Visibility="{Binding IsVersionUpdatesTabActive, Converter={StaticResource InvertedVisibilityConverter}}">
                         <!-- Auto-Start Toggle -->
                         <ui:ToggleSwitch IsChecked="{Binding General.AutoStartWithApp, Mode=TwoWay}" 
-                                         Content="Auto-start server at PocketMC startup" 
+                                         Content="{loc:Tr 'Auto-start server at PocketMC startup'}" 
                                          Margin="0,4,24,4"
                                          VerticalAlignment="Center"/>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                     Visibility="{Binding HasUnsavedChanges, Converter={StaticResource VisibleIfTrue}}" Margin="0,4,24,4">
                             <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,0,10,0"/>
-                            <TextBlock Text="Unsaved changes detected"
+                            <TextBlock Text="{loc:Tr 'Unsaved changes detected'}"
                                        Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                                        FontSize="13"
                                        FontWeight="SemiBold"
@@ -105,7 +105,7 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                     Visibility="{Binding IsRestartRequired, Converter={StaticResource VisibleIfTrue}}" Margin="0,4,24,4">
                             <ui:SymbolIcon Symbol="ArrowClockwise24" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" Margin="0,0,10,0"/>
-                            <TextBlock Text="Server restart required to apply changes"
+                            <TextBlock Text="{loc:Tr 'Server restart required to apply changes'}"
                                        Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"
                                        FontSize="13"
                                        FontWeight="SemiBold"
@@ -141,8 +141,8 @@
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
 
-                        <ui:Button Content="Discard" Appearance="Secondary" Margin="0,0,12,0" Command="{Binding CancelCommand}"/>
-                        <ui:Button Content="Save Changes" Appearance="Primary" Command="{Binding SaveCommand}" MinWidth="140"/>
+                        <ui:Button Content="{loc:Tr 'Discard'}" Appearance="Secondary" Margin="0,0,12,0" Command="{Binding CancelCommand}"/>
+                        <ui:Button Content="{loc:Tr 'Save Changes'}" Appearance="Primary" Command="{Binding SaveCommand}" MinWidth="140"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -161,16 +161,16 @@
                                    IsPaneToggleVisible="False"
                                    IsBackButtonVisible="Collapsed">
                     <ui:NavigationView.MenuItems>
-                        <ui:NavigationViewItem Content="Identity &amp; Performance" Icon="{ui:SymbolIcon Settings24}" Click="NavItem_Click" IsActive="True"/>
-                        <ui:NavigationViewItem Content="Version &amp; Updates" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"
+                        <ui:NavigationViewItem Content="{loc:Tr 'Identity &amp; Performance'}" Icon="{ui:SymbolIcon Settings24}" Click="NavItem_Click" IsActive="True"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'Version &amp; Updates'}" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"
                                                Visibility="{Binding VersionUpdates.IsUpdateSupported, Converter={StaticResource VisibleIfTrue}}"/>
-                        <ui:NavigationViewItem Content="Gameplay Rules" Icon="{ui:SymbolIcon Globe24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="World &amp; Files" Icon="{ui:SymbolIcon Folder24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Addons (Plugins/Mods)" Icon="{ui:SymbolIcon Add24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Automated Backups" Icon="{ui:SymbolIcon Save24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Restart &amp; Recovery" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="Advanced Editor" Icon="{ui:SymbolIcon Code24}" Click="NavItem_Click"/>
-                        <ui:NavigationViewItem Content="AI Summaries" Icon="{ui:SymbolIcon BrainCircuit24}" Click="NavItem_Click"
+                        <ui:NavigationViewItem Content="{loc:Tr 'Gameplay Rules'}" Icon="{ui:SymbolIcon Globe24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'World &amp; Files'}" Icon="{ui:SymbolIcon Folder24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'Addons (Plugins/Mods)'}" Icon="{ui:SymbolIcon Add24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'Automated Backups'}" Icon="{ui:SymbolIcon Save24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'Restart &amp; Recovery'}" Icon="{ui:SymbolIcon ArrowSync24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'Advanced Editor'}" Icon="{ui:SymbolIcon Code24}" Click="NavItem_Click"/>
+                        <ui:NavigationViewItem Content="{loc:Tr 'AI Summaries'}" Icon="{ui:SymbolIcon BrainCircuit24}" Click="NavItem_Click"
                                                Visibility="{Binding IsAiSummarizationAvailable, Converter={StaticResource VisibleIfTrue}}"/>
                     </ui:NavigationView.MenuItems>
                 </ui:NavigationView>
@@ -219,10 +219,10 @@
                             <TabControl.Resources><Style TargetType="TabPanel"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
 
                             <!-- TAB 1: IDENTITY & PERFORMANCE -->
-                            <TabItem Header="Identity">
+                            <TabItem Header="{loc:Tr 'Identity'}">
                             <ScrollViewer x:Name="GeneralScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
-                                    <ui:CardExpander Header="Visual Identity" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12" IsExpanded="True">
+                                    <ui:CardExpander Header="{loc:Tr 'Visual Identity'}" Icon="{ui:SymbolIcon Settings24}" Margin="0,0,0,12" IsExpanded="True">
                                         <StackPanel Margin="16,8,16,16">
                                             <!-- Instance Alias & Description -->
                                             <Grid Margin="0,0,0,16">
@@ -233,15 +233,15 @@
                                                 </Grid.ColumnDefinitions>
                                                 
                                                 <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="Instance Name (Label)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                                    <TextBlock Text="The display name for this instance in your dashboard." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                                    <ui:TextBox Text="{Binding General.InstanceName, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="My Epic Server"/>
+                                                    <TextBlock Text="{loc:Tr 'Instance Name (Label)'}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="{loc:Tr 'The display name for this instance in your dashboard.'}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                    <ui:TextBox Text="{Binding General.InstanceName, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'My Epic Server'}"/>
                                                 </StackPanel>
 
                                                 <StackPanel Grid.Column="2">
-                                                    <TextBlock Text="Instance Description" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                                    <TextBlock Text="A short note about this instance's purpose or configuration." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                                    <ui:TextBox Text="{Binding General.InstanceDescription, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Testing new mods..."/>
+                                                    <TextBlock Text="{loc:Tr 'Instance Description'}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="{loc:Tr &quot;A short note about this instance's purpose or configuration.&quot;}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                    <ui:TextBox Text="{Binding General.InstanceDescription, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Testing new mods...'}"/>
                                                 </StackPanel>
                                             </Grid>
 
@@ -263,7 +263,7 @@
                                                         <Border BorderThickness="1" BorderBrush="#333333" Background="#111">
                                                             <Image Source="{Binding General.ServerIcon}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
                                                         </Border>
-                                                        <ui:Button Appearance="Primary" Padding="4" Command="{Binding General.BrowseIconCommand}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="-8,-8,0,0" ToolTip="Change Server Icon">
+                                                        <ui:Button Appearance="Primary" Padding="4" Command="{Binding General.BrowseIconCommand}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="-8,-8,0,0" ToolTip="{loc:Tr 'Change Server Icon'}">
                                                             <ui:SymbolIcon Symbol="Edit16" />
                                                         </ui:Button>
                                                     </Grid>
@@ -293,7 +293,7 @@
                                                                             <DropShadowEffect BlurRadius="0" ShadowDepth="2" Opacity="1" Color="Black" />
                                                                         </ContentControl.Effect>
                                                                     </ContentControl>
-                                                                    <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Edit16}" Click="BtnEditMotd_Click" Margin="4,-2,0,0" Padding="2" ToolTip="Edit MOTD"/>
+                                                                    <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Edit16}" Click="BtnEditMotd_Click" Margin="4,-2,0,0" Padding="2" ToolTip="{loc:Tr 'Edit MOTD'}"/>
                                                                 </StackPanel>
                                                             </StackPanel>
                                                         </Grid>
@@ -328,47 +328,47 @@
 
                                                     <!-- Color Palette (left side) -->
                                                     <StackPanel Grid.Column="0">
-                                                        <TextBlock Text="Colors" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                                        <TextBlock Text="{loc:Tr 'Colors'}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
                                                         <WrapPanel MaxWidth="200">
-                                                            <Button Content="§0" ToolTip="Black" Click="BtnInsertMotdColor_Click" Tag="\u00A70" Background="#000000" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§1" ToolTip="Dark Blue" Click="BtnInsertMotdColor_Click" Tag="\u00A71" Background="#0000AA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§2" ToolTip="Dark Green" Click="BtnInsertMotdColor_Click" Tag="\u00A72" Background="#00AA00" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§3" ToolTip="Dark Aqua" Click="BtnInsertMotdColor_Click" Tag="\u00A73" Background="#00AAAA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§4" ToolTip="Dark Red" Click="BtnInsertMotdColor_Click" Tag="\u00A74" Background="#AA0000" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§5" ToolTip="Dark Purple" Click="BtnInsertMotdColor_Click" Tag="\u00A75" Background="#AA00AA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§6" ToolTip="Gold" Click="BtnInsertMotdColor_Click" Tag="\u00A76" Background="#FFAA00" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§7" ToolTip="Gray" Click="BtnInsertMotdColor_Click" Tag="\u00A77" Background="#AAAAAA" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§8" ToolTip="Dark Gray" Click="BtnInsertMotdColor_Click" Tag="\u00A78" Background="#555555" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§9" ToolTip="Blue" Click="BtnInsertMotdColor_Click" Tag="\u00A79" Background="#5555FF" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§a" ToolTip="Green" Click="BtnInsertMotdColor_Click" Tag="\u00A7a" Background="#55FF55" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§b" ToolTip="Aqua" Click="BtnInsertMotdColor_Click" Tag="\u00A7b" Background="#55FFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§c" ToolTip="Red" Click="BtnInsertMotdColor_Click" Tag="\u00A7c" Background="#FF5555" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§d" ToolTip="Light Purple" Click="BtnInsertMotdColor_Click" Tag="\u00A7d" Background="#FF55FF" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§e" ToolTip="Yellow" Click="BtnInsertMotdColor_Click" Tag="\u00A7e" Background="#FFFF55" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="§f" ToolTip="White" Click="BtnInsertMotdColor_Click" Tag="\u00A7f" Background="#FFFFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§0" ToolTip="{loc:Tr 'Black'}" Click="BtnInsertMotdColor_Click" Tag="\u00A70" Background="#000000" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§1" ToolTip="{loc:Tr 'Dark Blue'}" Click="BtnInsertMotdColor_Click" Tag="\u00A71" Background="#0000AA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§2" ToolTip="{loc:Tr 'Dark Green'}" Click="BtnInsertMotdColor_Click" Tag="\u00A72" Background="#00AA00" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§3" ToolTip="{loc:Tr 'Dark Aqua'}" Click="BtnInsertMotdColor_Click" Tag="\u00A73" Background="#00AAAA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§4" ToolTip="{loc:Tr 'Dark Red'}" Click="BtnInsertMotdColor_Click" Tag="\u00A74" Background="#AA0000" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§5" ToolTip="{loc:Tr 'Dark Purple'}" Click="BtnInsertMotdColor_Click" Tag="\u00A75" Background="#AA00AA" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§6" ToolTip="{loc:Tr 'Gold'}" Click="BtnInsertMotdColor_Click" Tag="\u00A76" Background="#FFAA00" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§7" ToolTip="{loc:Tr 'Gray'}" Click="BtnInsertMotdColor_Click" Tag="\u00A77" Background="#AAAAAA" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§8" ToolTip="{loc:Tr 'Dark Gray'}" Click="BtnInsertMotdColor_Click" Tag="\u00A78" Background="#555555" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="§9" ToolTip="{loc:Tr 'Blue'}" Click="BtnInsertMotdColor_Click" Tag="\u00A79" Background="#5555FF" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr '§a'}" ToolTip="{loc:Tr 'Green'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7a" Background="#55FF55" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr '§b'}" ToolTip="{loc:Tr 'Aqua'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7b" Background="#55FFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr '§c'}" ToolTip="{loc:Tr 'Red'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7c" Background="#FF5555" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr '§d'}" ToolTip="{loc:Tr 'Light Purple'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7d" Background="#FF55FF" Foreground="White" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr '§e'}" ToolTip="{loc:Tr 'Yellow'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7e" Background="#FFFF55" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr '§f'}" ToolTip="{loc:Tr 'White'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7f" Background="#FFFFFF" Foreground="Black" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
                                                         </WrapPanel>
-                                                        <TextBlock Text="Formatting" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,6,0,4"/>
+                                                        <TextBlock Text="{loc:Tr 'Formatting'}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,6,0,4"/>
                                                         <WrapPanel>
-                                                            <Button Content="B" ToolTip="Bold (§l)" Click="BtnInsertMotdColor_Click" Tag="\u00A7l" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
-                                                            <Button Content="I" ToolTip="Italic (§o)" Click="BtnInsertMotdColor_Click" Tag="\u00A7o" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontStyle="Italic" Cursor="Hand"/>
-                                                            <Button Content="U" ToolTip="Underline (§n)" Click="BtnInsertMotdColor_Click" Tag="\u00A7n" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand">
+                                                            <Button Content="{loc:Tr 'B'}" ToolTip="{loc:Tr 'Bold (§l)'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7l" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr 'I'}" ToolTip="{loc:Tr 'Italic (§o)'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7o" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontStyle="Italic" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr 'U'}" ToolTip="{loc:Tr 'Underline (§n)'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7n" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand">
                                                                 <Button.Resources><Style TargetType="TextBlock"><Setter Property="TextDecorations" Value="Underline"/></Style></Button.Resources>
                                                             </Button>
-                                                            <Button Content="S" ToolTip="Strikethrough (§m)" Click="BtnInsertMotdColor_Click" Tag="\u00A7m" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand">
+                                                            <Button Content="{loc:Tr 'S'}" ToolTip="{loc:Tr 'Strikethrough (§m)'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7m" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand">
                                                                 <Button.Resources><Style TargetType="TextBlock"><Setter Property="TextDecorations" Value="Strikethrough"/></Style></Button.Resources>
                                                             </Button>
-                                                            <Button Content="?" ToolTip="Obfuscated (§k)" Click="BtnInsertMotdColor_Click" Tag="\u00A7k" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
-                                                            <Button Content="R" ToolTip="Reset (§r)" Click="BtnInsertMotdColor_Click" Tag="\u00A7r" Background="#444" Foreground="#FF5555" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
-                                                            <Button Content="↵" ToolTip="New Line (\n)" Click="BtnInsertMotdColor_Click" Tag="\n" Background="#444" Foreground="#55FFFF" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="?" ToolTip="{loc:Tr 'Obfuscated (§k)'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7k" Background="#333" Foreground="Silver" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
+                                                            <Button Content="{loc:Tr 'R'}" ToolTip="{loc:Tr 'Reset (§r)'}" Click="BtnInsertMotdColor_Click" Tag="\u00A7r" Background="#444" Foreground="#FF5555" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" FontWeight="Bold" Cursor="Hand"/>
+                                                            <Button Content="↵" ToolTip="{loc:Tr 'New Line (\n)'}" Click="BtnInsertMotdColor_Click" Tag="\n" Background="#444" Foreground="#55FFFF" BorderThickness="0" Margin="0,0,2,2" Padding="4,2" FontFamily="Consolas" FontSize="11" Cursor="Hand"/>
                                                         </WrapPanel>
                                                     </StackPanel>
 
                                                     <!-- Text Input + Save (right side) -->
                                                     <StackPanel Grid.Column="2" VerticalAlignment="Top">
-                                                        <TextBlock Text="Raw MOTD Text" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
+                                                        <TextBlock Text="{loc:Tr 'Raw MOTD Text'}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
                                                         <ui:TextBox x:Name="TxtMotdRaw" Text="{Binding General.Motd, UpdateSourceTrigger=PropertyChanged}" FontFamily="Consolas" AcceptsReturn="False"/>
                                                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0" HorizontalAlignment="Right">
-                                                            <ui:Button Appearance="Primary" Content="Done" Icon="{ui:SymbolIcon Checkmark16}" Click="BtnSaveMotd_Click"/>
+                                                            <ui:Button Appearance="Primary" Content="{loc:Tr 'Done'}" Icon="{ui:SymbolIcon Checkmark16}" Click="BtnSaveMotd_Click"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                 </Grid>
@@ -377,15 +377,15 @@
                                             <!-- Simple MOTD Editor (Non-Java) -->
                                             <StackPanel Margin="0,0,0,16" Visibility="{Binding IsJavaSettings, Converter={StaticResource InvertedVisibilityConverter}}">
                                                 <TextBlock Text="{Binding DisplayNameLabel, FallbackValue='Server Message (MOTD)'}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                                <TextBlock Text="The message displayed to players in the server list." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                                <ui:TextBox Text="{Binding General.Motd, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="My Server" />
+                                                <TextBlock Text="{loc:Tr 'The message displayed to players in the server list.'}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                <ui:TextBox Text="{Binding General.Motd, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'My Server'}" />
                                             </StackPanel>
 
                                         </StackPanel>
                                     </ui:CardExpander>
 
                                     <!-- Port Configuration -->
-                                    <ui:CardExpander Header="Port Configuration" Icon="{ui:SymbolIcon Globe24}" Margin="0,0,0,12" IsExpanded="True">
+                                    <ui:CardExpander Header="{loc:Tr 'Port Configuration'}" Icon="{ui:SymbolIcon Globe24}" Margin="0,0,0,12" IsExpanded="True">
                                         <StackPanel Margin="16,8,16,16">
 
                                             <!-- Server Ports -->
@@ -397,9 +397,9 @@
                                                 </Grid.ColumnDefinitions>
                                                 
                                                 <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="Server Port" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="{loc:Tr 'Server Port'}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
                                                     <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap">
-                                                        <Run Text="The port your Minecraft server listens on. Default is "/>
+                                                        <Run Text="{loc:Tr 'Minecraft 服务器监听的端口，默认为 '}"/>
                                                         <Run Text="{Binding DefaultServerPortText, Mode=OneWay}"/>
                                                         <Run Text="."/>
                                                     </TextBlock>
@@ -408,8 +408,8 @@
                                                 </StackPanel>
 
                                                 <StackPanel Grid.Column="2" Visibility="{Binding SupportsGeyserSettings, Converter={StaticResource BoolToVis}}">
-                                                    <TextBlock Text="Geyser Bedrock Port (UDP)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
-                                                    <TextBlock Text="The UDP port used by Bedrock players to connect via Geyser."
+                                                    <TextBlock Text="{loc:Tr 'Geyser Bedrock Port (UDP)'}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="{loc:Tr 'The UDP port used by Bedrock players to connect via Geyser.'}"
                                                                FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
                                                     <ui:TextBox Text="{Binding General.GeyserBedrockPort, UpdateSourceTrigger=PropertyChanged}"
                                                                 PlaceholderText="19132" Width="160" ClearButtonEnabled="False" HorizontalAlignment="Left"/>
@@ -421,25 +421,25 @@
                                         </StackPanel>
                                     </ui:CardExpander>
 
-                                            <ui:CardExpander Header="Resource Allocation" Icon="{ui:SymbolIcon TopSpeed24}" Margin="0,0,0,12" IsExpanded="True"
+                                            <ui:CardExpander Header="{loc:Tr 'Resource Allocation'}" Icon="{ui:SymbolIcon TopSpeed24}" Margin="0,0,0,12" IsExpanded="True"
                                                              Visibility="{Binding SupportsJavaRuntimeSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel Margin="16,8,16,16">
-                                            <TextBlock Text="System RAM Limit:" Style="{StaticResource SettingsHeader}"/>
+                                            <TextBlock Text="{loc:Tr 'System RAM Limit:'}" Style="{StaticResource SettingsHeader}"/>
                                             <Grid Margin="0,5,0,15">
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                <TextBlock Text="0.5GB" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="11"/>
+                                                <TextBlock Text="{loc:Tr '0.5GB'}" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="11"/>
                                                 <Slider Grid.Column="1" Value="{Binding Performance.MaxRam}" Minimum="512" Maximum="{Binding Performance.TotalRamMb}" TickFrequency="512" SmallChange="512" LargeChange="1024" IsSnapToTickEnabled="True"/>
                                                 <TextBlock Grid.Column="2" Text="{Binding Performance.MaxRamDisplay}" Margin="12,0,0,0" FontWeight="Bold" VerticalAlignment="Center"/>
                                             </Grid>
 
-                                            <TextBlock Text="Startup JVM Arguments:" Style="{StaticResource SettingsHeader}" Margin="0,5,0,8"/>
-                                            <ui:TextBox Text="{Binding Performance.AdvancedJvmArgs, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="-XX:+UseG1GC ..."/>
+                                            <TextBlock Text="{loc:Tr 'Startup JVM Arguments:'}" Style="{StaticResource SettingsHeader}" Margin="0,5,0,8"/>
+                                            <ui:TextBox Text="{Binding Performance.AdvancedJvmArgs, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr '-XX:+UseG1GC ...'}"/>
 
-                                            <TextBlock Text="Custom Java Executable:" Style="{StaticResource SettingsHeader}" Margin="0,15,0,8"/>
+                                            <TextBlock Text="{loc:Tr 'Custom Java Executable:'}" Style="{StaticResource SettingsHeader}" Margin="0,15,0,8"/>
                                             <Grid>
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                <ui:TextBox Text="{Binding Performance.JavaPath, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Internal Java 17/21"/>
-                                                <ui:Button Grid.Column="1" Content="Browse" Command="{Binding Performance.BrowseJavaCommand}" Margin="8,0,0,0"/>
+                                                <ui:TextBox Text="{Binding Performance.JavaPath, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Internal Java 17/21'}"/>
+                                                <ui:Button Grid.Column="1" Content="{loc:Tr 'Browse'}" Command="{Binding Performance.BrowseJavaCommand}" Margin="8,0,0,0"/>
                                             </Grid>
                                         </StackPanel>
                                     </ui:CardExpander>
@@ -448,7 +448,7 @@
                             </ScrollViewer>
                         </TabItem>
 
-                        <TabItem Header="VersionUpdates" Visibility="{Binding VersionUpdates.IsUpdateSupported, Converter={StaticResource VisibleIfTrue}}">
+                        <TabItem Header="{loc:Tr 'VersionUpdates'}" Visibility="{Binding VersionUpdates.IsUpdateSupported, Converter={StaticResource VisibleIfTrue}}">
                             <Grid>
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,16,0"
                                               Visibility="{Binding VersionUpdates.IsMainContentVisible, Converter={StaticResource VisibleIfTrue}}">
@@ -466,7 +466,7 @@
 
                                                 <!-- Current Version Info -->
                                                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                    <TextBlock Text="Current Version" FontSize="12" 
+                                                    <TextBlock Text="{loc:Tr 'Current Version'}" FontSize="12" 
                                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding VersionUpdates.CurrentServerVersion}" 
@@ -500,29 +500,34 @@
 
                                                 <!-- Target Version Selector -->
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,24,0">
-                                                    <TextBlock Text="Update to" FontSize="12" 
+                                                    <TextBlock Text="{loc:Tr 'Update to'}" FontSize="12" 
                                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
-                                                    <Grid>
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*" MaxWidth="240"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <ComboBox ItemsSource="{Binding VersionUpdates.TargetVersions}"
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <ComboBox Width="110"
+                                                                  ItemsSource="{Binding VersionUpdates.TargetVersions}"
                                                                   SelectedItem="{Binding VersionUpdates.SelectedTargetVersion, Mode=TwoWay}"
                                                                   DisplayMemberPath="Id"
+                                                                  ToolTip="{loc:Tr 'Minecraft version'}"
                                                                   IsEnabled="{Binding VersionUpdates.HasTargetVersions}"/>
-                                                        <ui:Button Grid.Column="1"
-                                                                   Icon="{ui:SymbolIcon ArrowClockwise20}"
+                                                        <ComboBox Width="140"
+                                                                  ItemsSource="{Binding VersionUpdates.TargetLoaderVersions}"
+                                                                  SelectedItem="{Binding VersionUpdates.SelectedTargetLoaderVersion, Mode=TwoWay}"
+                                                                  DisplayMemberPath="Version"
+                                                                  ToolTip="{loc:Tr 'Loader build'}"
+                                                                  Margin="8,0,0,0"
+                                                                  Visibility="{Binding VersionUpdates.HasTargetLoaderVersions, Converter={StaticResource VisibleIfTrue}}"
+                                                                  IsEnabled="{Binding VersionUpdates.HasTargetLoaderVersions}"/>
+                                                        <ui:Button Icon="{ui:SymbolIcon ArrowClockwise20}"
                                                                    Appearance="Secondary"
                                                                    Command="{Binding VersionUpdates.LoadTargetVersionsCommand}"
                                                                    Margin="6,0,0,0"
-                                                                   ToolTip="Refresh available versions"/>
-                                                    </Grid>
+                                                                   ToolTip="{loc:Tr 'Refresh available versions'}"/>
+                                                    </StackPanel>
                                                 </StackPanel>
 
                                                 <!-- Update Button -->
                                                 <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                                                    <ui:Button Content="Update Server" 
+                                                    <ui:Button Content="{loc:Tr 'Update Server'}" 
                                                                Appearance="Primary" 
                                                                Command="{Binding VersionUpdates.ApplyMinecraftUpdateCommand}" 
                                                                Icon="{ui:SymbolIcon ArrowSync20}"/>
@@ -542,14 +547,14 @@
 
                                                 <!-- Current Loader Info -->
                                                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                    <TextBlock Text="Current Loader" FontSize="12" 
+                                                    <TextBlock Text="{loc:Tr 'Current Loader'}" FontSize="12" 
                                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding VersionUpdates.CurrentLoaderVersion}" 
                                                                    FontSize="22" FontWeight="SemiBold" 
                                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
                                                                    VerticalAlignment="Bottom"/>
-                                                        <TextBlock Text="Loader" 
+                                                        <TextBlock Text="{loc:Tr 'Loader'}" 
                                                                    FontSize="12" 
                                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                                                    VerticalAlignment="Bottom" Margin="8,0,0,2"/>
@@ -576,32 +581,64 @@
 
                                                 <!-- Target Loader Selector -->
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,24,0">
-                                                    <TextBlock Text="Update loader to" FontSize="12" 
+                                                    <TextBlock Text="{loc:Tr 'Update loader to'}" FontSize="12" 
                                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
                                                     <Grid>
                                                         <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*" MaxWidth="240"/>
+                                                            <ColumnDefinition Width="Auto" MaxWidth="240"/>
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
-                                                        <ComboBox ItemsSource="{Binding VersionUpdates.TargetLoaderVersions}"
+                                                        <ComboBox Width="150"
+                                                                  ItemsSource="{Binding VersionUpdates.TargetLoaderVersions}"
                                                                   SelectedItem="{Binding VersionUpdates.SelectedTargetLoaderVersion, Mode=TwoWay}"
                                                                   DisplayMemberPath="Version"
+                                                                  ToolTip="{loc:Tr 'Loader build'}"
                                                                   IsEnabled="{Binding VersionUpdates.HasTargetLoaderVersions}"/>
                                                         <ui:Button Grid.Column="1"
                                                                    Icon="{ui:SymbolIcon ArrowClockwise20}"
                                                                    Appearance="Secondary"
                                                                    Command="{Binding VersionUpdates.LoadTargetVersionsCommand}"
                                                                    Margin="6,0,0,0"
-                                                                   ToolTip="Refresh available versions"/>
+                                                                   ToolTip="{loc:Tr 'Refresh available versions'}"/>
                                                     </Grid>
                                                 </StackPanel>
 
                                                 <!-- Update Button -->
                                                 <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                                                    <ui:Button Content="Update Loader" 
+                                                    <ui:Button Content="{loc:Tr 'Update Loader'}" 
                                                                Appearance="Primary" 
                                                                Command="{Binding VersionUpdates.ApplyLoaderUpdateCommand}" 
                                                                Icon="{ui:SymbolIcon ArrowSync20}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </ui:Card>
+
+                                        <!-- Download Mirrors Card -->
+                                        <ui:Card Padding="24" Margin="0,0,0,16">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,24,0">
+                                                    <TextBlock Text="{loc:Tr 'Download Mirrors'}" FontSize="16" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                    <TextBlock Text="{loc:Tr 'Server files are downloaded from Mojang first. Enable mirrors when the official links are unreachable.'}"
+                                                               FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    <TextBlock Text="{loc:Tr 'Custom mirror supports the {url} placeholder or a trailing slash, e.g. https://ghfast.top/{url}'}"
+                                                               FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" MinWidth="260">
+                                                    <ui:ToggleSwitch Content="{loc:Tr 'Use download mirrors'}"
+                                                                     IsChecked="{Binding VersionUpdates.UseDownloadMirrors, Mode=TwoWay}"
+                                                                     HorizontalAlignment="Right"/>
+                                                    <ui:TextBox Text="{Binding VersionUpdates.CustomDownloadMirror, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                             PlaceholderText="{loc:Tr 'Custom mirror (optional)'}"
+                                                             Margin="0,8,0,0"/>
                                                 </StackPanel>
                                             </Grid>
                                         </ui:Card>
@@ -613,35 +650,35 @@
                                 <StackPanel Visibility="{Binding VersionUpdates.IsEmptyStateVisible, Converter={StaticResource VisibleIfTrue}}"
                                             VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-80,0,0">
                                     <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="48" Foreground="{DynamicResource SystemFillColorSuccessBrush}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="You're up to date!" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,8" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    <TextBlock Text="{loc:Tr &quot;You're up to date!&quot;}" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,8" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                     <TextBlock Text="{Binding VersionUpdates.TargetVersionStatusText}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
                         </TabItem>
 
                         <!-- TAB 3: GAMEPLAY RULES -->
-                        <TabItem Header="Gameplay">
+                        <TabItem Header="{loc:Tr 'Gameplay'}">
                             <ScrollViewer x:Name="GameplayScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <ui:Card Padding="24" Margin="0,0,0,16"
                                              Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <TextBlock Text="Core Rules" Style="{StaticResource SettingsHeader}" FontSize="18"/>
+                                            <TextBlock Text="{loc:Tr 'Core Rules'}" Style="{StaticResource SettingsHeader}" FontSize="18"/>
                                             <WrapPanel Margin="0,10,0,0">
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="Default Gamemode:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'Default Gamemode:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ComboBox ItemsSource="{Binding World.Gamemodes}" SelectedItem="{Binding World.Gamemode, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="World Difficulty:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'World Difficulty:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ComboBox ItemsSource="{Binding World.Difficulties}" SelectedItem="{Binding World.Difficulty, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'Maximum Players:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="Spawn Protection Radius:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'Spawn Protection Radius:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ui:TextBox Text="{Binding World.SpawnProtection, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                             </WrapPanel>
@@ -653,8 +690,8 @@
                                              Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
                                             <!-- Render & Simulation Distance Sliders -->
-                                            <TextBlock Text="World Simulation (Requires Restart)" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,4,0,2"/>
-                                            <TextBlock Text="Controls how far (in chunks) players can see and how far the server actively simulates game mechanics."
+                                            <TextBlock Text="{loc:Tr 'World Simulation (Requires Restart)'}" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,4,0,2"/>
+                                            <TextBlock Text="{loc:Tr 'Controls how far (in chunks) players can see and how far the server actively simulates game mechanics.'}"
                                                        Style="{StaticResource SettingsSubtext}" Margin="10,0,0,12"/>
                                             <Grid Margin="10,0,10,8">
                                                 <Grid.ColumnDefinitions>
@@ -663,9 +700,9 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="View Distance:" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'View Distance:'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                 <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                                    <Run Text="{Binding World.ViewDistance, Mode=OneWay}"/><Run Text=" chunks"/>
+                                                    <Run Text="{Binding World.ViewDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' 区块'}"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding World.ViewDistance}" Minimum="3" Maximum="32"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
@@ -678,9 +715,9 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="Simulation Distance:" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Simulation Distance:'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                 <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                                    <Run Text="{Binding World.SimulationDistance, Mode=OneWay}"/><Run Text=" chunks"/>
+                                                    <Run Text="{Binding World.SimulationDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' 区块'}"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding World.SimulationDistance}" Minimum="3" Maximum="32"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
@@ -693,17 +730,17 @@
                                     <ui:Card Padding="24" Margin="0,0,0,16"
                                              Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <TextBlock Text="Features &amp; Security" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,0,0,12"/>
+                                            <TextBlock Text="{loc:Tr 'Features &amp; Security'}" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,0,0,12"/>
                                             <WrapPanel>
                                                 <StackPanel Width="400" Margin="10">
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="Online Mode (Identity Auth)" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.Pvp}" Content="Enable PvP Damage" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.WhiteList}" Content="Enable Whitelist" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="{loc:Tr 'Online Mode (Identity Auth)'}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.Pvp}" Content="{loc:Tr 'Enable PvP Damage'}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.WhiteList}" Content="{loc:Tr 'Enable Whitelist'}" />
                                                 </StackPanel>
                                                 <StackPanel Width="400" Margin="10">
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowCommandBlock}" Content="Enable Command Blocks" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowFlight}" Content="Allow Cheat Flight" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowNether}" Content="Allow Dimension: Nether" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowCommandBlock}" Content="{loc:Tr 'Enable Command Blocks'}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowFlight}" Content="{loc:Tr 'Allow Cheat Flight'}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowNether}" Content="{loc:Tr 'Allow Dimension: Nether'}" />
                                                 </StackPanel>
                                             </WrapPanel>
                                         </StackPanel>
@@ -712,30 +749,30 @@
                                     <ui:Card Padding="24" Margin="0,0,0,16"
                                              Visibility="{Binding IsBedrockSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <TextBlock Text="Core Rules" Style="{StaticResource SettingsHeader}" FontSize="18"/>
+                                            <TextBlock Text="{loc:Tr 'Core Rules'}" Style="{StaticResource SettingsHeader}" FontSize="18"/>
                                             <WrapPanel Margin="0,10,0,8">
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="Default Gamemode:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'Default Gamemode:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ComboBox ItemsSource="{Binding World.Gamemodes}" SelectedItem="{Binding World.Gamemode, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="Difficulty:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'Difficulty:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ComboBox ItemsSource="{Binding World.Difficulties}" SelectedItem="{Binding World.Difficulty, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="Maximum Players:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'Maximum Players:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ui:TextBox Text="{Binding World.MaxPlayers, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="Tick Distance:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'Tick Distance:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ui:TextBox Text="{Binding Bedrock.TickDistance, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="Default Permission:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'Default Permission:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ComboBox ItemsSource="{Binding Bedrock.PermissionLevels}" SelectedItem="{Binding Bedrock.DefaultPlayerPermissionLevel, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
                                                 </StackPanel>
                                                 <StackPanel Width="280" Margin="10,0,10,20">
-                                                    <TextBlock Text="IPv6 Port:" Style="{StaticResource SettingsSubtext}"/>
+                                                    <TextBlock Text="{loc:Tr 'IPv6 Port:'}" Style="{StaticResource SettingsSubtext}"/>
                                                     <ui:TextBox Text="{Binding Bedrock.ServerPortV6, UpdateSourceTrigger=PropertyChanged}" ClearButtonEnabled="False" />
                                                 </StackPanel>
                                             </WrapPanel>
@@ -747,8 +784,8 @@
                                              Visibility="{Binding IsBedrockSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
                                             <!-- Bedrock Render Distance Slider -->
-                                            <TextBlock Text="World Simulation (Requires Restart)" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,4,0,2"/>
-                                            <TextBlock Text="The maximum distance in chunks that the server will send world data to players. Higher values increase network and memory usage."
+                                            <TextBlock Text="{loc:Tr 'World Simulation (Requires Restart)'}" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,4,0,2"/>
+                                            <TextBlock Text="{loc:Tr 'The maximum distance in chunks that the server will send world data to players. Higher values increase network and memory usage.'}"
                                                        Style="{StaticResource SettingsSubtext}" Margin="10,0,0,12" TextWrapping="Wrap"/>
                                             <Grid Margin="10,0,10,12">
                                                 <Grid.ColumnDefinitions>
@@ -757,9 +794,9 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="View Distance:" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'View Distance:'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                 <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                                    <Run Text="{Binding Bedrock.ViewDistance, Mode=OneWay}"/><Run Text=" chunks"/>
+                                                    <Run Text="{Binding Bedrock.ViewDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' 区块'}"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding Bedrock.ViewDistance}" Minimum="5" Maximum="96"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
@@ -772,17 +809,17 @@
                                     <ui:Card Padding="24" Margin="0,0,0,16"
                                              Visibility="{Binding IsBedrockSettings, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel>
-                                            <TextBlock Text="Features &amp; Security" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,0,0,12"/>
+                                            <TextBlock Text="{loc:Tr 'Features &amp; Security'}" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="10,0,0,12"/>
                                             <WrapPanel>
                                                 <StackPanel Width="400" Margin="10">
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="Online Mode" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.Pvp}" Content="Enable PvP Damage" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.WhiteList}" Content="Enable Whitelist" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.OnlineMode}" Content="{loc:Tr 'Online Mode'}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.Pvp}" Content="{loc:Tr 'Enable PvP Damage'}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.WhiteList}" Content="{loc:Tr 'Enable Whitelist'}" />
                                                 </StackPanel>
                                                 <StackPanel Width="400" Margin="10">
-                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.AllowCheats}" Content="Allow Cheats" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.TexturepackRequired}" Content="Require Resource Packs" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.ForceGamemode}" Content="Force Default Gamemode" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.AllowCheats}" Content="{loc:Tr 'Allow Cheats'}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.TexturepackRequired}" Content="{loc:Tr 'Require Resource Packs'}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding Bedrock.ForceGamemode}" Content="{loc:Tr 'Force Default Gamemode'}" />
                                                 </StackPanel>
                                             </WrapPanel>
                                         </StackPanel>
@@ -792,14 +829,14 @@
                         </TabItem>
 
                         <!-- TAB 3: WORLD & FILES -->
-                        <TabItem Header="World">
+                        <TabItem Header="{loc:Tr 'World'}">
                             <ScrollViewer x:Name="WorldScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <!-- 1. World Status CardControl -->
                                     <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon Folder24}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="Current World Status" FontSize="15" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Current World Status'}" FontSize="15" FontWeight="SemiBold"/>
                                                 <TextBlock Text="{Binding World.WorldSizeText}" Style="{StaticResource SettingsSubtext}" Margin="0,2,0,0"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
@@ -809,14 +846,14 @@
                                     <!-- 2. World Generation Settings -->
                                     <ui:Card Padding="24" Margin="0,0,0,16">
                                         <StackPanel>
-                                            <TextBlock Text="World Generation" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,16"/>
+                                            <TextBlock Text="{loc:Tr 'World Generation'}" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,16"/>
                                             <WrapPanel>
                                                 <StackPanel Width="300" Margin="0,0,24,16">
-                                                    <TextBlock Text="World Generation Seed:" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
-                                                    <ui:TextBox Text="{Binding World.Seed, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Leave empty for random"/>
+                                                    <TextBlock Text="{loc:Tr 'World Generation Seed:'}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                    <ui:TextBox Text="{Binding World.Seed, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Leave empty for random'}"/>
                                                 </StackPanel>
                                                 <StackPanel Width="300" Visibility="{Binding SupportsJavaWorldGenerator, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,16">
-                                                    <TextBlock Text="World Generator Type:" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
+                                                    <TextBlock Text="{loc:Tr 'World Generator Type:'}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,8"/>
                                                     <ComboBox ItemsSource="{Binding World.LevelTypes}" SelectedItem="{Binding World.LevelType, Mode=TwoWay}" HorizontalAlignment="Stretch"/>
                                                 </StackPanel>
                                             </WrapPanel>
@@ -826,12 +863,12 @@
                                     <!-- 3. File Management -->
                                     <ui:Card Padding="24" Margin="0,0,0,16">
                                         <StackPanel>
-                                            <TextBlock Text="File Management" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Import a new map from the web or wipe your existing data to start fresh." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,16"/>
+                                            <TextBlock Text="{loc:Tr 'File Management'}" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{loc:Tr 'Import a new map from the web or wipe your existing data to start fresh.'}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,16"/>
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:Button Content="{Binding World.ImportWorldButtonText}" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}"/>
-                                                <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,12,0"/>
-                                                <ui:Button Content="Wipe World Data" Command="{Binding World.DeleteWorldCommand}" Appearance="Danger" Margin="0,0,0,0" Icon="{ui:SymbolIcon Delete24}"/>
+                                                <ui:Button Content="{loc:Tr 'Browse Maps'}" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="{loc:Tr 'Find community maps on minecraftmaps.com'}" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,12,0"/>
+                                                <ui:Button Content="{loc:Tr 'Wipe World Data'}" Command="{Binding World.DeleteWorldCommand}" Appearance="Danger" Margin="0,0,0,0" Icon="{ui:SymbolIcon Delete24}"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </ui:Card>
@@ -840,7 +877,7 @@
                         </TabItem>
 
                         <!-- TAB 4: ADDONS -->
-                        <TabItem Header="Addons">
+                        <TabItem Header="{loc:Tr 'Addons'}">
                             <ScrollViewer x:Name="AddonsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <!-- Auto-Update Addons moved to minimal toggle near Update All -->
@@ -865,7 +902,7 @@
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="Sort:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{loc:Tr 'Sort:'}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <ComboBox Grid.Column="1" 
                                                       ItemsSource="{Binding Addons.SortOptions}" 
                                                       SelectedItem="{Binding Addons.SelectedSortOption}" 
@@ -894,26 +931,26 @@
 
                                             <!-- Title & Message -->
                                             <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="Incompatible Add-ons Detected" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Incompatible Add-ons Detected'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                 <TextBlock Text="{Binding Addons.IncompatibleWarningMessage}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                             </StackPanel>
 
                                             <!-- Action Buttons (Yes / No) -->
                                             <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                                                <ui:Button Content="Remove Incompatible"
+                                                <ui:Button Content="{loc:Tr 'Remove Incompatible'}"
                                                            Appearance="Primary"
                                                            Command="{Binding Addons.RemoveIncompatibleAddonsCommand}"
                                                            Margin="0,0,8,0"
-                                                           ToolTip="Automatically delete all incompatible add-ons from disk"/>
-                                                <ui:Button Content="Keep"
+                                                           ToolTip="{loc:Tr 'Automatically delete all incompatible add-ons from disk'}"/>
+                                                <ui:Button Content="{loc:Tr 'Keep'}"
                                                            Appearance="Secondary"
                                                            Command="{Binding Addons.DismissIncompatibleWarningCommand}"
-                                                           ToolTip="Keep incompatible add-ons and dismiss this notification"/>
+                                                           ToolTip="{loc:Tr 'Keep incompatible add-ons and dismiss this notification'}"/>
                                             </StackPanel>
 
                                             <!-- Don't ask again CheckBox -->
                                             <CheckBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
-                                                      Content="Don't ask again"
+                                                      Content="{loc:Tr &quot;Don't ask again&quot;}"
                                                       IsChecked="{Binding Addons.DontAskAgainIncompatible, Mode=TwoWay}"
                                                       FontSize="11" Margin="0,8,0,0" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                         </Grid>
@@ -933,8 +970,8 @@
                                              Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel HorizontalAlignment="Center">
                                             <ui:SymbolIcon Symbol="Prohibited24" FontSize="36" Foreground="#F38BA8" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                                            <TextBlock Text="Vanilla doesn't support mods, plugins, and addons." FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                            <TextBlock Text="To install plugins or mods, please change your server type to Paper, Fabric, Forge, or NeoForge."
+                                            <TextBlock Text="{loc:Tr &quot;Vanilla doesn't support mods, plugins, and addons.&quot;}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <TextBlock Text="{loc:Tr 'To install plugins or mods, please change your server type to Paper, Fabric, Forge, or NeoForge.'}"
                                                        HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,6,0,0" MaxWidth="360"/>
                                         </StackPanel>
@@ -942,26 +979,26 @@
 
                                     <!-- Server Plugins Section -->
                                     <StackPanel Visibility="{Binding Addons.SupportsPlugins, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,24">
-                                        <TextBlock Text="Server Plugins" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
+                                        <TextBlock Text="{loc:Tr 'Server Plugins'}" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
                                         <ui:Card Margin="0,0,0,16" Padding="20">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource VisibleIfTrue}}">
                                                     <ui:SymbolIcon Symbol="Info24" FontSize="12" Foreground="#89B4FA" Margin="0,0,8,0" VerticalAlignment="Top"/>
-                                                    <TextBlock Text="PocketMine plugins are .phar files. Use the Add Plugin button to install them." Foreground="#89B4FA" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                                                    <TextBlock Text="{loc:Tr 'PocketMine plugins are .phar files. Use the Add Plugin button to install them.'}" Foreground="#89B4FA" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Top"/>
                                                 </StackPanel>
                                                 <Grid>
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                                     <StackPanel Orientation="Horizontal">
-                                                        <ui:Button Content="Local File" Command="{Binding Addons.AddPluginCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
-                                                        <ui:Button Content="Plugin Marketplace" Command="{Binding Addons.BrowseModrinthPluginsCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Globe20}"
+                                                        <ui:Button Content="{loc:Tr 'Local File'}" Command="{Binding Addons.AddPluginCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
+                                                        <ui:Button Content="{loc:Tr 'Plugin Marketplace'}" Command="{Binding Addons.BrowseModrinthPluginsCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Globe20}"
                                                                    Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}"/>
                                                     </StackPanel>
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
                                                                 Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}">
-                                                        <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{loc:Tr 'Auto-Update'}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                         <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
                                                                          Margin="0,0,12,0" 
-                                                                         ToolTip="Automatically update on server start"
+                                                                         ToolTip="{loc:Tr 'Automatically update on server start'}"
                                                                          Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                         <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
                                                             <ui:ProgressRing.Style>
@@ -975,11 +1012,11 @@
                                                                 </Style>
                                                             </ui:ProgressRing.Style>
                                                         </ui:ProgressRing>
-                                                        <ui:Button Content="Update All" Style="{StaticResource AiActionButtonStyle}"
+                                                        <ui:Button Content="{loc:Tr 'Update All'}" Style="{StaticResource AiActionButtonStyle}"
                                                                    Command="{Binding Addons.UpdateAllPluginsCommand}"
                                                                    Icon="{ui:SymbolIcon ArrowSync20}"
                                                                    Cursor="Hand"
-                                                                   ToolTip="Check all installed plugins for updates"/>
+                                                                   ToolTip="{loc:Tr 'Check all installed plugins for updates'}"/>
                                                     </StackPanel>
                                                 </Grid>
 
@@ -1042,7 +1079,7 @@
                                                                         <ui:SymbolIcon Symbol="Power20"/>
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
-                                                                <MenuItem Header="Check for Updates"
+                                                                <MenuItem Header="{loc:Tr 'Check for Updates'}"
                                                                           Command="{Binding Path=PlacementTarget.Tag.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
@@ -1063,7 +1100,7 @@
                                                                         </Style>
                                                                     </MenuItem.Style>
                                                                 </MenuItem>
-                                                                <MenuItem Header="Open Folder" 
+                                                                <MenuItem Header="{loc:Tr 'Open Folder'}" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
@@ -1071,7 +1108,7 @@
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
                                                                 <Separator/>
-                                                                <MenuItem Header="Delete" 
+                                                                <MenuItem Header="{loc:Tr 'Delete'}" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
@@ -1107,7 +1144,7 @@
                                                                     <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
                                                                     <Border Visibility="{Binding IsDisabled, Converter={StaticResource VisibleIfTrue}}"
                                                                             Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
-                                                                        <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                                        <TextBlock Text="{loc:Tr 'Disabled'}" FontSize="10" FontWeight="Bold" Foreground="White"/>
                                                                     </Border>
                                                                 </StackPanel>
                                                                 
@@ -1117,7 +1154,7 @@
                                                                         <TextBlock Text="{Binding LoaderType}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                                     </Border>
                                                                     <StackPanel Orientation="Horizontal" Visibility="{Binding HasVersion, Converter={StaticResource VisibleIfTrue}}">
-                                                                        <TextBlock Text="v" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                        <TextBlock Text="{loc:Tr 'v'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                                         <TextBlock Text="{Binding Version}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                                         <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                                                     </StackPanel>
@@ -1158,12 +1195,12 @@
                                                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
                                                                 <ui:Button Appearance="Secondary" VerticalAlignment="Center"
                                                                            Icon="{ui:SymbolIcon MoreVertical20}"
-                                                                           ToolTip="More options"
+                                                                           ToolTip="{loc:Tr 'More options'}"
                                                                            Click="BtnAddonMoreOptions_Click"
                                                                            Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                                     <ui:Button.ContextMenu>
                                                                         <ContextMenu Opened="AddonContextMenu_Opened">
-                                                                            <MenuItem Header="Check for Updates"
+                                                                            <MenuItem Header="{loc:Tr 'Check for Updates'}"
                                                                                       Command="{Binding Path=PlacementTarget.Tag.UpdatePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                       CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
@@ -1184,7 +1221,7 @@
                                                                                     </Style>
                                                                                 </MenuItem.Style>
                                                                             </MenuItem>
-                                                                            <MenuItem Header="Open Folder" 
+                                                                            <MenuItem Header="{loc:Tr 'Open Folder'}" 
                                                                                       Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                       CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
@@ -1192,7 +1229,7 @@
                                                                                 </MenuItem.Icon>
                                                                             </MenuItem>
                                                                             <Separator/>
-                                                                            <MenuItem Header="Delete" 
+                                                                            <MenuItem Header="{loc:Tr 'Delete'}" 
                                                                                       Command="{Binding Path=PlacementTarget.Tag.DeletePluginCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                       CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
@@ -1228,8 +1265,8 @@
                                             <ui:Card Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <ui:SymbolIcon Symbol="Cube24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                                                    <TextBlock Text="No plugins installed" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                    <TextBlock Text="Click 'Plugin Marketplace' to discover and install new plugins." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}"/>
+                                                    <TextBlock Text="{loc:Tr 'No plugins installed'}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    <TextBlock Text="{loc:Tr &quot;Click 'Plugin Marketplace' to discover and install new plugins.&quot;}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="{Binding Addons.IsPocketmine, Converter={StaticResource InvertedVisibilityConverter}}"/>
                                                 </StackPanel>
                                             </ui:Card>
                                         </Grid>
@@ -1237,21 +1274,21 @@
 
                                     <!-- Server Mods Section -->
                                     <StackPanel Visibility="{Binding Addons.SupportsMods, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,24">
-                                        <TextBlock Text="Server Mods" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
+                                        <TextBlock Text="{loc:Tr 'Server Mods'}" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
                                         <ui:Card Margin="0,0,0,16" Padding="20">
                                             <StackPanel>
                                                 <Grid>
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                                     <StackPanel Orientation="Horizontal">
-                                                        <ui:Button Content="Add Mod JAR" Command="{Binding Addons.AddModCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
-                                                        <ui:Button Content="Browse Marketplace" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"
+                                                        <ui:Button Content="{loc:Tr 'Add Mod JAR'}" Command="{Binding Addons.AddModCommand}" Appearance="Secondary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Add20}"/>
+                                                        <ui:Button Content="{loc:Tr 'Browse Marketplace'}" Command="{Binding Addons.BrowseModrinthModsCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon Globe20}"
                                                                    Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                     </StackPanel>
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <TextBlock Text="Auto-Update" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{loc:Tr 'Auto-Update'}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                         <ui:ToggleSwitch IsChecked="{Binding Addons.AutoUpdateAddons, Mode=TwoWay}" 
                                                                          Margin="0,0,12,0" 
-                                                                         ToolTip="Automatically update on server start"
+                                                                         ToolTip="{loc:Tr 'Automatically update on server start'}"
                                                                          Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                         <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0">
                                                             <ui:ProgressRing.Style>
@@ -1265,11 +1302,11 @@
                                                                 </Style>
                                                             </ui:ProgressRing.Style>
                                                         </ui:ProgressRing>
-                                                        <ui:Button Content="Update All" Style="{StaticResource AiActionButtonStyle}"
+                                                        <ui:Button Content="{loc:Tr 'Update All'}" Style="{StaticResource AiActionButtonStyle}"
                                                                    Command="{Binding Addons.UpdateAllModsCommand}"
                                                                    Icon="{ui:SymbolIcon ArrowSync20}"
                                                                    Cursor="Hand"
-                                                                   ToolTip="Check all installed mods for updates"
+                                                                   ToolTip="{loc:Tr 'Check all installed mods for updates'}"
                                                                    Visibility="{Binding Addons.SupportsModrinth, Converter={StaticResource VisibleIfTrue}}"/>
                                                     </StackPanel>
                                                 </Grid>
@@ -1342,7 +1379,7 @@
                                                                         <ui:SymbolIcon Symbol="Power20"/>
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
-                                                                <MenuItem Header="Check for Updates"
+                                                                <MenuItem Header="{loc:Tr 'Check for Updates'}"
                                                                           Command="{Binding Path=PlacementTarget.Tag.UpdateModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
@@ -1366,7 +1403,7 @@
                                                                         </Style>
                                                                     </MenuItem.Style>
                                                                 </MenuItem>
-                                                                <MenuItem Header="Open Folder" 
+                                                                <MenuItem Header="{loc:Tr 'Open Folder'}" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
@@ -1374,7 +1411,7 @@
                                                                     </MenuItem.Icon>
                                                                 </MenuItem>
                                                                 <Separator/>
-                                                                <MenuItem Header="Delete" 
+                                                                <MenuItem Header="{loc:Tr 'Delete'}" 
                                                                           Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                           CommandParameter="{Binding}">
                                                                     <MenuItem.Icon>
@@ -1412,7 +1449,7 @@
                                                                     <!-- Disabled badge -->
                                                                     <Border Visibility="{Binding IsDisabled, Converter={StaticResource VisibleIfTrue}}"
                                                                             Background="#4F4F4F" CornerRadius="4" Margin="8,0,0,0" Padding="6,2" VerticalAlignment="Center">
-                                                                        <TextBlock Text="Disabled" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                                        <TextBlock Text="{loc:Tr 'Disabled'}" FontSize="10" FontWeight="Bold" Foreground="White"/>
                                                                     </Border>
                                                                 </StackPanel>
 
@@ -1425,7 +1462,7 @@
                                                                     </Border>
                                                                     
                                                                     <StackPanel Orientation="Horizontal" Visibility="{Binding HasVersion, Converter={StaticResource VisibleIfTrue}}">
-                                                                        <TextBlock Text="v" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                        <TextBlock Text="{loc:Tr 'v'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                                         <TextBlock Text="{Binding Version}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                                         <TextBlock Text=" • " FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                                                     </StackPanel>
@@ -1468,12 +1505,12 @@
                                                                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
                                                                 <ui:Button Appearance="Secondary" VerticalAlignment="Center"
                                                                            Icon="{ui:SymbolIcon MoreVertical20}"
-                                                                           ToolTip="More options"
+                                                                           ToolTip="{loc:Tr 'More options'}"
                                                                            Click="BtnAddonMoreOptions_Click"
                                                                            Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                                     <ui:Button.ContextMenu>
                                                                         <ContextMenu Opened="AddonContextMenu_Opened">
-                                                                            <MenuItem Header="Check for Updates"
+                                                                            <MenuItem Header="{loc:Tr 'Check for Updates'}"
                                                                                       Command="{Binding Path=PlacementTarget.Tag.UpdateModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                       CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
@@ -1497,7 +1534,7 @@
                                                                                     </Style>
                                                                                 </MenuItem.Style>
                                                                             </MenuItem>
-                                                                            <MenuItem Header="Open Folder" 
+                                                                            <MenuItem Header="{loc:Tr 'Open Folder'}" 
                                                                                       Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                       CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
@@ -1505,7 +1542,7 @@
                                                                                 </MenuItem.Icon>
                                                                             </MenuItem>
                                                                             <Separator/>
-                                                                            <MenuItem Header="Delete" 
+                                                                            <MenuItem Header="{loc:Tr 'Delete'}" 
                                                                                       Command="{Binding Path=PlacementTarget.Tag.DeleteModCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                       CommandParameter="{Binding}">
                                                                                 <MenuItem.Icon>
@@ -1541,8 +1578,8 @@
                                             <ui:Card Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
                                                 <StackPanel HorizontalAlignment="Center">
                                                     <ui:SymbolIcon Symbol="Cube24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                                                    <TextBlock Text="No mods installed" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                    <TextBlock Text="Click 'Browse Marketplace' to discover and install new mods." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                    <TextBlock Text="{loc:Tr 'No mods installed'}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    <TextBlock Text="{loc:Tr &quot;Click 'Browse Marketplace' to discover and install new mods.&quot;}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                                 </StackPanel>
                                             </ui:Card>
                                         </Grid>
@@ -1561,14 +1598,14 @@
                                             <!-- Segmented Switcher: Behavior vs Resource Packs -->
                                             <Border Background="{DynamicResource ControlFillColorSecondaryBrush}" CornerRadius="8" Padding="4">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <RadioButton Content="Behavior Packs"
+                                                    <RadioButton Content="{loc:Tr 'Behavior Packs'}"
                                                                  IsChecked="{Binding Addons.IsBehaviorPacksTabSelected, Mode=TwoWay}"
                                                                  GroupName="BedrockPacksTabs"
                                                                  Style="{StaticResource {x:Type ToggleButton}}"
                                                                  Padding="16,7"
                                                                  FontSize="13"
                                                                  FontWeight="SemiBold"/>
-                                                    <RadioButton Content="Resource Packs"
+                                                    <RadioButton Content="{loc:Tr 'Resource Packs'}"
                                                                  IsChecked="{Binding Addons.IsResourcePacksTabSelected, Mode=TwoWay}"
                                                                  GroupName="BedrockPacksTabs"
                                                                  Style="{StaticResource {x:Type ToggleButton}}"
@@ -1581,7 +1618,7 @@
 
                                             <!-- Right-side Action Toolbar -->
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <ui:Button Content="Import Add-on" Appearance="Primary" Icon="{ui:SymbolIcon Add20}"
+                                                <ui:Button Content="{loc:Tr 'Import Add-on'}" Appearance="Primary" Icon="{ui:SymbolIcon Add20}"
                                                            Command="{Binding Addons.ImportBedrockAddonCommand}" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Grid>
@@ -1632,7 +1669,7 @@
                                                         <ui:Card Margin="0,0,0,8" Padding="14,10" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                             <ui:Card.ContextMenu>
                                                                 <ContextMenu Opened="AddonContextMenu_Opened">
-                                                                    <MenuItem Header="Open Folder" 
+                                                                    <MenuItem Header="{loc:Tr 'Open Folder'}" 
                                                                               Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               CommandParameter="{Binding}">
                                                                         <MenuItem.Icon>
@@ -1640,7 +1677,7 @@
                                                                         </MenuItem.Icon>
                                                                     </MenuItem>
                                                                     <Separator/>
-                                                                    <MenuItem Header="Delete" 
+                                                                    <MenuItem Header="{loc:Tr 'Delete'}" 
                                                                               Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               CommandParameter="{Binding}">
                                                                         <MenuItem.Icon>
@@ -1676,13 +1713,13 @@
                                                                                CommandParameter="{Binding}"
                                                                                IsEnabled="{Binding IsEnabled}"
                                                                                Icon="{ui:SymbolIcon ArrowUp20}"
-                                                                               ToolTip="Increase Priority (Load Earlier)"/>
+                                                                               ToolTip="{loc:Tr 'Increase Priority (Load Earlier)'}"/>
                                                                     <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center" Padding="6,5"
                                                                                Command="{Binding DataContext.Addons.MoveBedrockPackDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                                CommandParameter="{Binding}"
                                                                                IsEnabled="{Binding IsEnabled}"
                                                                                Icon="{ui:SymbolIcon ArrowDown20}"
-                                                                               ToolTip="Decrease Priority (Load Later)"/>
+                                                                               ToolTip="{loc:Tr 'Decrease Priority (Load Later)'}"/>
 
                                                                     <!-- Enable / Disable Toggle -->
                                                                     <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
@@ -1694,12 +1731,12 @@
                                                                     <!-- Options Menu -->
                                                                     <ui:Button Appearance="Secondary" VerticalAlignment="Center" Padding="6,5"
                                                                                Icon="{ui:SymbolIcon MoreVertical20}"
-                                                                               ToolTip="More options"
+                                                                               ToolTip="{loc:Tr 'More options'}"
                                                                                Click="BtnAddonMoreOptions_Click"
                                                                                Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                                         <ui:Button.ContextMenu>
                                                                             <ContextMenu Opened="AddonContextMenu_Opened">
-                                                                                <MenuItem Header="Open Folder" 
+                                                                                <MenuItem Header="{loc:Tr 'Open Folder'}" 
                                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                           CommandParameter="{Binding}">
                                                                                     <MenuItem.Icon>
@@ -1707,7 +1744,7 @@
                                                                                     </MenuItem.Icon>
                                                                                 </MenuItem>
                                                                                 <Separator/>
-                                                                                <MenuItem Header="Delete" 
+                                                                                <MenuItem Header="{loc:Tr 'Delete'}" 
                                                                                           Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                           CommandParameter="{Binding}">
                                                                                     <MenuItem.Icon>
@@ -1743,8 +1780,8 @@
                                                 <ui:Card Padding="24" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
                                                     <StackPanel HorizontalAlignment="Center">
                                                         <ui:SymbolIcon Symbol="BrainCircuit24" FontSize="28" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                        <TextBlock Text="No Behavior Packs Installed" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                        <TextBlock Text="Import .mcpack or .mcaddon files to add custom entities, loot, and gameplay features." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                        <TextBlock Text="{loc:Tr 'No Behavior Packs Installed'}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{loc:Tr 'Import .mcpack or .mcaddon files to add custom entities, loot, and gameplay features.'}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                                                     </StackPanel>
                                                 </ui:Card>
                                             </Grid>
@@ -1760,8 +1797,8 @@
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel VerticalAlignment="Center">
-                                                        <TextBlock Text="Require Players to Accept Resource Packs" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                        <TextBlock Text="Forces connecting Minecraft players to download and accept server texture packs before joining (texturepack-required)."
+                                                        <TextBlock Text="{loc:Tr 'Require Players to Accept Resource Packs'}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        <TextBlock Text="{loc:Tr 'Forces connecting Minecraft players to download and accept server texture packs before joining (texturepack-required).'}"
                                                                    FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
                                                     </StackPanel>
                                                     <ui:ToggleSwitch Grid.Column="1"
@@ -1815,7 +1852,7 @@
                                                         <ui:Card Margin="0,0,0,8" Padding="14,10" Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                             <ui:Card.ContextMenu>
                                                                 <ContextMenu Opened="AddonContextMenu_Opened">
-                                                                    <MenuItem Header="Open Folder" 
+                                                                    <MenuItem Header="{loc:Tr 'Open Folder'}" 
                                                                               Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               CommandParameter="{Binding}">
                                                                         <MenuItem.Icon>
@@ -1823,7 +1860,7 @@
                                                                         </MenuItem.Icon>
                                                                     </MenuItem>
                                                                     <Separator/>
-                                                                    <MenuItem Header="Delete" 
+                                                                    <MenuItem Header="{loc:Tr 'Delete'}" 
                                                                               Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                               CommandParameter="{Binding}">
                                                                         <MenuItem.Icon>
@@ -1859,13 +1896,13 @@
                                                                                CommandParameter="{Binding}"
                                                                                IsEnabled="{Binding IsEnabled}"
                                                                                Icon="{ui:SymbolIcon ArrowUp20}"
-                                                                               ToolTip="Increase Priority (Load Earlier)"/>
+                                                                               ToolTip="{loc:Tr 'Increase Priority (Load Earlier)'}"/>
                                                                     <ui:Button Appearance="Secondary" Margin="0,0,8,0" VerticalAlignment="Center" Padding="6,5"
                                                                                Command="{Binding DataContext.Addons.MoveBedrockPackDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                                CommandParameter="{Binding}"
                                                                                IsEnabled="{Binding IsEnabled}"
                                                                                Icon="{ui:SymbolIcon ArrowDown20}"
-                                                                               ToolTip="Decrease Priority (Load Later)"/>
+                                                                               ToolTip="{loc:Tr 'Decrease Priority (Load Later)'}"/>
 
                                                                     <!-- Enable / Disable Toggle -->
                                                                     <ui:ToggleSwitch IsChecked="{Binding IsEnabled, Mode=OneWay}"
@@ -1877,12 +1914,12 @@
                                                                     <!-- Options Menu -->
                                                                     <ui:Button Appearance="Secondary" VerticalAlignment="Center" Padding="6,5"
                                                                                Icon="{ui:SymbolIcon MoreVertical20}"
-                                                                               ToolTip="More options"
+                                                                               ToolTip="{loc:Tr 'More options'}"
                                                                                Click="BtnAddonMoreOptions_Click"
                                                                                Tag="{Binding DataContext.Addons, RelativeSource={RelativeSource AncestorType=Page}}">
                                                                         <ui:Button.ContextMenu>
                                                                             <ContextMenu Opened="AddonContextMenu_Opened">
-                                                                                <MenuItem Header="Open Folder" 
+                                                                                <MenuItem Header="{loc:Tr 'Open Folder'}" 
                                                                                           Command="{Binding Path=PlacementTarget.Tag.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                           CommandParameter="{Binding}">
                                                                                     <MenuItem.Icon>
@@ -1890,7 +1927,7 @@
                                                                                     </MenuItem.Icon>
                                                                                 </MenuItem>
                                                                                 <Separator/>
-                                                                                <MenuItem Header="Delete" 
+                                                                                <MenuItem Header="{loc:Tr 'Delete'}" 
                                                                                           Command="{Binding Path=PlacementTarget.Tag.DeleteBedrockAddonCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                                           CommandParameter="{Binding}">
                                                                                     <MenuItem.Icon>
@@ -1926,8 +1963,8 @@
                                                 <ui:Card Padding="24" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
                                                     <StackPanel HorizontalAlignment="Center">
                                                         <ui:SymbolIcon Symbol="Color24" FontSize="28" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                        <TextBlock Text="No Resource Packs Installed" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                        <TextBlock Text="Import .mcpack or .mcaddon files to stream custom textures, models, and audio to connecting players." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                        <TextBlock Text="{loc:Tr 'No Resource Packs Installed'}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{loc:Tr 'Import .mcpack or .mcaddon files to stream custom textures, models, and audio to connecting players.'}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                                                     </StackPanel>
                                                 </ui:Card>
                                             </Grid>
@@ -1938,7 +1975,7 @@
                         </TabItem>
 
                         <!-- TAB 5: BACKUPS -->
-                        <TabItem Header="Backups">
+                        <TabItem Header="{loc:Tr 'Backups'}">
                             <ScrollViewer x:Name="BackupsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
 
@@ -1981,12 +2018,12 @@
                                                 <TextBlock FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
-                                                            <Setter Property="Text" Value="Backup Health Warning"/>
+                                                            <Setter Property="Text" Value="{loc:Tr Backup Health Warning}"/>
                                                             <Setter Property="Foreground" Value="#F9A825"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Backups.HasHealthCritical}" Value="True">
                                                                     <Setter Property="Foreground" Value="#F38BA8"/>
-                                                                    <Setter Property="Text" Value="Backup Health Alert"/>
+                                                                    <Setter Property="Text" Value="{loc:Tr Backup Health Alert}"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
@@ -2002,17 +2039,17 @@
                                     <Border Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                                         <UniformGrid Columns="3">
                                             <StackPanel HorizontalAlignment="Center">
-                                                <TextBlock Text="TOTAL SIZE" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{loc:Tr 'TOTAL SIZE'}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
                                                 <TextBlock Text="{Binding Backups.TotalBackupsSizeText, FallbackValue='—'}" FontSize="13" FontWeight="Bold"
                                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                             </StackPanel>
                                             <StackPanel HorizontalAlignment="Center">
-                                                <TextBlock Text="LAST BACKUP" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{loc:Tr 'LAST BACKUP'}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
                                                 <TextBlock Text="{Binding Backups.LastBackupTimeText, FallbackValue='Never'}" FontSize="13" FontWeight="Bold"
                                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
                                             </StackPanel>
                                             <StackPanel HorizontalAlignment="Center">
-                                                <TextBlock Text="DISK SPACE" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{loc:Tr 'DISK SPACE'}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
                                                 <TextBlock Text="{Binding Backups.DiskSpaceText, FallbackValue='—'}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
@@ -2039,16 +2076,16 @@
 
                                             <!-- Location config -->
                                             <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                                                <TextBlock Text="Local Storage Destination" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                <TextBlock Text="{loc:Tr 'Local Storage Destination'}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <ui:TextBox Grid.Column="0" Text="{Binding Backups.CustomBackupDirectory, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Default: [Server Folder]\backups" IsReadOnly="True" Margin="0,0,8,0"/>
+                                                    <ui:TextBox Grid.Column="0" Text="{Binding Backups.CustomBackupDirectory, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Default: [Server Folder]\backups'}" IsReadOnly="True" Margin="0,0,8,0"/>
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                        <ui:Button Content="Browse" Command="{Binding Backups.BrowseBackupDirCommand}" Margin="0,0,8,0"/>
-                                                        <ui:Button Content="Reset" Command="{Binding Backups.ResetBackupDirCommand}"/>
+                                                        <ui:Button Content="{loc:Tr 'Browse'}" Command="{Binding Backups.BrowseBackupDirCommand}" Margin="0,0,8,0"/>
+                                                        <ui:Button Content="{loc:Tr 'Reset'}" Command="{Binding Backups.ResetBackupDirCommand}"/>
                                                     </StackPanel>
                                                 </Grid>
                                             </StackPanel>
@@ -2056,8 +2093,8 @@
                                             <!-- Manual Action -->
                                             <Border Grid.Column="1" VerticalAlignment="Center" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="1,0,0,0" Padding="16,0,0,0">
                                                 <StackPanel>
-                                                    <TextBlock Text="Manual Action" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" HorizontalAlignment="Center"/>
-                                                    <ui:Button Content="Create Backup Now" Command="{Binding Backups.CreateBackupCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Save20}"/>
+                                                    <TextBlock Text="{loc:Tr 'Manual Action'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" HorizontalAlignment="Center"/>
+                                                    <ui:Button Content="{loc:Tr 'Create Backup Now'}" Command="{Binding Backups.CreateBackupCommand}" Appearance="Primary" Icon="{ui:SymbolIcon Save20}"/>
                                                     <TextBlock Text="{Binding Backups.BackupStatusText}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" HorizontalAlignment="Center" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
                                                     <ProgressBar Minimum="0" Maximum="100" Value="{Binding Backups.BackupProgressValue}" IsIndeterminate="{Binding Backups.IsBackupProgressIndeterminate}" Height="2" Margin="0,2,0,0" Visibility="{Binding Backups.IsBackingUp, Converter={StaticResource VisibleIfTrue}}"/>
                                                 </StackPanel>
@@ -2069,14 +2106,14 @@
                                     <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon Timer24}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="Automated Data Retention" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Backup interval and maximum archives to keep" Style="{StaticResource SettingsSubtext}" Margin="0,2,0,0"/>
+                                                <TextBlock Text="{loc:Tr 'Automated Data Retention'}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Backup interval and maximum archives to keep'}" Style="{StaticResource SettingsSubtext}" Margin="0,2,0,0"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="Interval (Hours):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{loc:Tr 'Interval (Hours):'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <ui:TextBox Text="{Binding Backups.BackupIntervalHours, Mode=TwoWay}" Width="80" ClearButtonEnabled="False" PlaceholderText="0" Margin="0,0,16,0"/>
-                                            <TextBlock Text="Keep limit:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{loc:Tr 'Keep limit:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <ui:TextBox Text="{Binding Backups.MaxBackupsToKeep, Mode=TwoWay}" Width="80" ClearButtonEnabled="False"/>
                                         </StackPanel>
                                     </ui:CardControl>
@@ -2084,8 +2121,8 @@
                                     <ui:Card Padding="16,12" Margin="0,0,0,16"
                                              Visibility="{Binding CloudBackups.IsCloudBackupsEnabled, Converter={StaticResource VisibleIfTrue}}">
                                         <StackPanel DataContext="{Binding CloudBackups}">
-                                            <TextBlock Text="Cloud Off-site Sync" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Enable cloud retention. Requires a connected provider in App Settings." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,0,0,12"/>
+                                            <TextBlock Text="{loc:Tr 'Cloud Off-site Sync'}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="{loc:Tr 'Enable cloud retention. Requires a connected provider in App Settings.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,0,0,12"/>
 
                                             <StackPanel Visibility="{Binding IsRefreshingProviders, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,0,12">
                                                 <ProgressBar IsIndeterminate="True" Height="2"/>
@@ -2112,7 +2149,7 @@
                                                                 </Grid.ColumnDefinitions>
                                                                 <ui:ToggleSwitch Grid.Column="0" Content="{Binding ProviderType}" IsChecked="{Binding IsEnabled, Mode=TwoWay}" VerticalAlignment="Center" FontSize="13" Margin="0,0,12,0"/>
                                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="{Binding IsEnabled, Converter={StaticResource VisibleIfTrue}}">
-                                                                    <TextBlock Text="Retention:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                    <TextBlock Text="{loc:Tr 'Retention:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                                     <ui:TextBox Text="{Binding RetentionCount, Mode=TwoWay}" Width="70" VerticalAlignment="Center" ClearButtonEnabled="False"/>
                                                                 </StackPanel>
                                                             </Grid>
@@ -2127,8 +2164,8 @@
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="Remote Backups" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                    <ui:Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshRemoteBackupsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync20}" VerticalAlignment="Center" Padding="8,4"/>
+                                                    <TextBlock Text="{loc:Tr 'Remote Backups'}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    <ui:Button Grid.Column="1" Content="{loc:Tr 'Refresh'}" Command="{Binding RefreshRemoteBackupsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync20}" VerticalAlignment="Center" Padding="8,4"/>
                                                 </Grid>
 
                                                 <ScrollViewer Margin="0,12,0,0" MaxHeight="250" VerticalScrollBarVisibility="Auto">
@@ -2151,7 +2188,7 @@
                                                                             </TextBlock>
                                                                         </StackPanel>
                                                                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                            <ui:Button Content="Restore" Appearance="Secondary" Command="{Binding DataContext.RestoreRemoteBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Margin="0,0,8,0"/>
+                                                                            <ui:Button Content="{loc:Tr 'Restore'}" Appearance="Secondary" Command="{Binding DataContext.RestoreRemoteBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Margin="0,0,8,0"/>
                                                                             <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger" Command="{Binding DataContext.DeleteRemoteBackupCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
                                                                         </StackPanel>
                                                                     </Grid>
@@ -2165,7 +2202,7 @@
                                     </ui:Card>
 
                                     <!-- BACKUP HISTORY (Versioned Cards) -->
-                                    <TextBlock Text="Backup History" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
+                                    <TextBlock Text="{loc:Tr 'Backup History'}" Style="{StaticResource SettingsHeader}" Margin="4,0,0,12"/>
                                     <ItemsControl ItemsSource="{Binding Backups.BackupList}" Margin="0,0,0,24">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -2216,11 +2253,11 @@
                                                             <!-- Label Editor -->
                                                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
                                                                         Visibility="{Binding HasMetadata, Converter={StaticResource VisibleIfTrue}}">
-                                                                <ui:TextBox Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Add a label..."
+                                                                <ui:TextBox Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Add a label...'}"
                                                                             MinHeight="30" FontSize="12" Width="280" Margin="0,0,8,0"/>
                                                                 <ui:Button Icon="{ui:SymbolIcon Save16}" Appearance="Transparent" Padding="4"
                                                                            Command="{Binding DataContext.Backups.SaveLabelCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                           CommandParameter="{Binding}" ToolTip="Save label"/>
+                                                                           CommandParameter="{Binding}" ToolTip="{loc:Tr 'Save label'}"/>
                                                             </StackPanel>
 
                                                             <!-- Integrity Status -->
@@ -2232,8 +2269,8 @@
                                                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
                                                             <ui:Button Icon="{ui:SymbolIcon ShieldCheckmark20}" Appearance="Transparent" Padding="6"
                                                                        Command="{Binding DataContext.Backups.VerifyIntegrityCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                                                       CommandParameter="{Binding}" ToolTip="Verify integrity" Margin="0,0,4,0"/>
-                                                            <ui:Button Content="Restore" Appearance="Secondary"
+                                                                       CommandParameter="{Binding}" ToolTip="{loc:Tr 'Verify integrity'}" Margin="0,0,4,0"/>
+                                                            <ui:Button Content="{loc:Tr 'Restore'}" Appearance="Secondary"
                                                                        Command="{Binding DataContext.Backups.RestoreBackupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                        CommandParameter="{Binding FullPath}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                                             <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger"
@@ -2261,8 +2298,8 @@
                                         <ui:Card Padding="32" Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource ControlElevationBorderBrush}">
                                             <StackPanel HorizontalAlignment="Center">
                                                 <ui:SymbolIcon Symbol="FolderZip24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                                                <TextBlock Text="No backups found" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Text="Click 'Create Backup Now' or enable automated backups to protect your server data." FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                <TextBlock Text="{loc:Tr 'No backups found'}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr &quot;Click 'Create Backup Now' or enable automated backups to protect your server data.&quot;}" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                             </StackPanel>
                                         </ui:Card>
                                     </Grid>
@@ -2271,16 +2308,16 @@
                         </TabItem>
 
                         <!-- TAB 6: RESTART & RECOVERY -->
-                        <TabItem Header="RestartAndRecovery">
+                        <TabItem Header="{loc:Tr 'RestartAndRecovery'}">
                             <ScrollViewer x:Name="RestartScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
-                                    <TextBlock Text="Crash Recovery" Style="{StaticResource SettingsHeader}" Margin="0,0,0,8"/>
+                                    <TextBlock Text="{loc:Tr 'Crash Recovery'}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,8"/>
 
                                     <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon ArrowSync24}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="Auto-Restart Engine" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Automatically restart the server if it crashes unexpectedly." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Auto-Restart Engine'}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Automatically restart the server if it crashes unexpectedly.'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <ui:ToggleSwitch IsChecked="{Binding Advanced.EnableAutoRestart}" VerticalAlignment="Center"/>
@@ -2289,12 +2326,12 @@
                                     <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Warning24}" IsEnabled="{Binding Advanced.EnableAutoRestart}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="Failure Tolerance" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Maximum number of consecutive crash restarts before giving up." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Failure Tolerance'}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Maximum number of consecutive crash restarts before giving up.'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="Attempts:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{loc:Tr 'Attempts:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <ui:TextBox Text="{Binding Advanced.MaxAutoRestarts}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
@@ -2302,24 +2339,24 @@
                                     <ui:CardControl Margin="0,0,0,16" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.EnableAutoRestart}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="Restart Cooldown" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Delay between crash and restart to allow resources to release." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Restart Cooldown'}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Delay between crash and restart to allow resources to release.'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{loc:Tr 'Seconds:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <ui:TextBox Text="{Binding Advanced.AutoRestartDelay}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
 
                                     <!-- Scheduled Maintenance -->
-                                    <TextBlock Text="Scheduled Maintenance" Style="{StaticResource SettingsHeader}" Margin="0,8,0,8"/>
+                                    <TextBlock Text="{loc:Tr 'Scheduled Maintenance'}" Style="{StaticResource SettingsHeader}" Margin="0,8,0,8"/>
 
                                     <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon ArrowClockwise24}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="Scheduled Reboot" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Periodically reboot the server to clear memory leaks and maintain peak responsiveness." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Scheduled Reboot'}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Periodically reboot the server to clear memory leaks and maintain peak responsiveness.'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <ui:ToggleSwitch IsChecked="{Binding Advanced.EnableScheduledReboot}" VerticalAlignment="Center"/>
@@ -2328,8 +2365,8 @@
                                     <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.EnableScheduledReboot}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="Reboot Frequency" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Configure whether the server reboots at a fixed daily time (24-hour format) or after a recurring interval." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Reboot Frequency'}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Configure whether the server reboots at a fixed daily time (24-hour format) or after a recurring interval.'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -2338,12 +2375,12 @@
                                                       Width="110" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsDailyMode, Converter={StaticResource VisibleIfTrue}}">
-                                                <TextBlock Text="Time (24h):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootTime}" Width="110" ClearButtonEnabled="False" PlaceholderText="04:00 (24h)" ToolTip="24-hour time format (00:00 - 23:59), e.g. 04:00 or 16:30" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{loc:Tr 'Time (24h):'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <ui:TextBox Text="{Binding Advanced.ScheduledRebootTime}" Width="110" ClearButtonEnabled="False" PlaceholderText="{loc:Tr '04:00 (24h)'}" ToolTip="{loc:Tr '24-hour time format (00:00 - 23:59), e.g. 04:00 or 16:30'}" VerticalAlignment="Center"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                                         Visibility="{Binding Advanced.IsIntervalMode, Converter={StaticResource VisibleIfTrue}}">
-                                                <TextBlock Text="Every (Hours):" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Every (Hours):'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                 <ui:TextBox Text="{Binding Advanced.ScheduledRebootIntervalHours}" Width="80" ClearButtonEnabled="False" PlaceholderText="24" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </StackPanel>
@@ -2352,8 +2389,8 @@
                                     <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Chat24}" IsEnabled="{Binding Advanced.EnableScheduledReboot}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="In-Game Warning" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Broadcast countdown notifications in Minecraft server chat before restarting." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'In-Game Warning'}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Broadcast countdown notifications in Minecraft server chat before restarting.'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <ui:ToggleSwitch IsChecked="{Binding Advanced.ScheduledRebootWarning}" VerticalAlignment="Center"/>
@@ -2362,12 +2399,12 @@
                                     <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Timer24}" IsEnabled="{Binding Advanced.IsWarningSettingsEnabled}">
                                         <ui:CardControl.Header>
                                             <StackPanel>
-                                                <TextBlock Text="Warning Countdown" FontSize="14" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Duration in seconds to alert online players before the reboot begins." FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Warning Countdown'}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{loc:Tr 'Duration in seconds to alert online players before the reboot begins.'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             </StackPanel>
                                         </ui:CardControl.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="Seconds:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{loc:Tr 'Seconds:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <ui:TextBox Text="{Binding Advanced.ScheduledRebootWarningSeconds}" Width="80" ClearButtonEnabled="False" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </ui:CardControl>
@@ -2376,14 +2413,14 @@
                         </TabItem>
 
                         <!-- TAB 7: ADVANCED EDITOR -->
-                        <TabItem Header="Advanced">
+                        <TabItem Header="{loc:Tr 'Advanced'}">
                             <ScrollViewer x:Name="AdvancedScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <StackPanel>
                                     <ui:Card Padding="24" Margin="0,0,0,16">
                                         <StackPanel>
-                                            <TextBlock Text="Internal Properties (server.properties)" Style="{StaticResource SettingsHeader}"/>
-                                            <TextBlock Text="Directly modify internal key-value pairs. Core properties are protected." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,20"/>
-                                            <ui:Button Content="Append Parameter" Command="{Binding Advanced.AddPropertyCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Add20}"/>
+                                            <TextBlock Text="{loc:Tr 'Internal Properties (server.properties)'}" Style="{StaticResource SettingsHeader}"/>
+                                            <TextBlock Text="{loc:Tr 'Directly modify internal key-value pairs. Core properties are protected.'}" Style="{StaticResource SettingsSubtext}" Margin="0,0,0,20"/>
+                                            <ui:Button Content="{loc:Tr 'Append Parameter'}" Command="{Binding Advanced.AddPropertyCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Add20}"/>
                                         </StackPanel>
                                     </ui:Card>
 
@@ -2404,15 +2441,15 @@
                         </TabItem>
 
                         <!-- TAB 8: AI SUMMARIES -->
-                        <TabItem Header="AISummaries">
+                        <TabItem Header="{loc:Tr 'AISummaries'}">
                             <ScrollViewer x:Name="SummariesScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,16,0">
                                 <Grid>
                                     <!-- Summary List View -->
                                     <StackPanel Visibility="{Binding Summaries.IsViewingSummary, Converter={StaticResource InvertedVisibilityConverter}}">
                                         <ui:Card Padding="24" Margin="0,0,0,16">
                                             <StackPanel>
-                                                <TextBlock Text="Session Summaries" Style="{StaticResource SettingsHeader}" FontSize="18"/>
-                                                <TextBlock Text="AI-generated summaries of your server play sessions. Each summary captures player activity, deaths, events, and highlights."
+                                                <TextBlock Text="{loc:Tr 'Session Summaries'}" Style="{StaticResource SettingsHeader}" FontSize="18"/>
+                                                <TextBlock Text="{loc:Tr 'AI-generated summaries of your server play sessions. Each summary captures player activity, deaths, events, and highlights.'}"
                                                            Style="{StaticResource SettingsSubtext}" TextWrapping="Wrap" Margin="0,0,0,4"/>
                                             </StackPanel>
                                         </ui:Card>
@@ -2422,8 +2459,8 @@
                                                  Visibility="{Binding Summaries.HasSummaries, Converter={StaticResource InvertedVisibilityConverter}, FallbackValue=Visible}">
                                             <StackPanel HorizontalAlignment="Center">
                                                 <ui:SymbolIcon Symbol="BrainCircuit24" FontSize="36" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                                                <TextBlock Text="No summaries yet" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                <TextBlock Text="Summaries will appear here after you stop a server session and choose to generate one."
+                                                <TextBlock Text="{loc:Tr 'No summaries yet'}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'Summaries will appear here after you stop a server session and choose to generate one.'}"
                                                            HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,6,0,0" MaxWidth="360"/>
                                             </StackPanel>
@@ -2454,7 +2491,7 @@
                                                                            TextTrimming="CharacterEllipsis" MaxWidth="500" HorizontalAlignment="Left"/>
                                                             </StackPanel>
                                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <ui:Button Content="View" Appearance="Secondary"
+                                                                <ui:Button Content="{loc:Tr 'View'}" Appearance="Secondary"
                                                                            Command="{Binding DataContext.Summaries.ViewSummaryCommand, RelativeSource={RelativeSource AncestorType=Page}}"
                                                                            CommandParameter="{Binding}" Margin="0,0,8,0"/>
                                                                 <ui:Button Icon="{ui:SymbolIcon Delete20}" Appearance="Danger"
@@ -2470,7 +2507,7 @@
 
                                     <!-- Summary Content Viewer -->
                                     <StackPanel Visibility="{Binding Summaries.IsViewingSummary, Converter={StaticResource VisibleIfTrue}}">
-                                        <ui:Button Content="← Back to Summaries" Appearance="Transparent"
+                                        <ui:Button Content="{loc:Tr '← Back to Summaries'}" Appearance="Transparent"
                                                    Command="{Binding Summaries.CloseSummaryCommand}" Margin="0,0,0,12"/>
                                         <ui:Card Padding="16" MinHeight="400">
                                             <intel:NativeMarkdownViewer Markdown="{Binding Summaries.SummaryContent, Mode=OneWay}" />

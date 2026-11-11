@@ -1,5 +1,6 @@
 ﻿using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Localization;
 using System;
 using System.Windows.Input;
 using System.IO;
@@ -116,7 +117,7 @@ namespace PocketMC.Desktop.Features.Settings
                 }
                 catch (Exception ex)
                 {
-                    _dialogService.ShowMessage("Error", "Failed to open crop editor: " + ex.Message, DialogType.Error);
+                    _dialogService.ShowMessage(L.T("Error"), L.F("Failed to open crop editor: {0}", ex.Message), DialogType.Error);
                 }
             }
         }
@@ -140,7 +141,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Error", "Failed to save server icon: " + ex.Message, DialogType.Error);
+                _dialogService.ShowMessage(L.T("Error"), L.F("Failed to save server icon: {0}", ex.Message), DialogType.Error);
             }
         }
     }

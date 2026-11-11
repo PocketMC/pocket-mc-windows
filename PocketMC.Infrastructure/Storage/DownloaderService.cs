@@ -7,8 +7,11 @@ using PocketMC.Infrastructure.Tunnel;
 using System.IO;
 using System.Net.Http;
 using System.Net;
+using System.Buffers;
 using System.Net.Http.Headers;
+using Microsoft.Win32.SafeHandles;
 using Microsoft.Extensions.Logging;
+using PocketMC.Infrastructure.Storage;
 
 
 namespace PocketMC.Infrastructure.Instances;
@@ -34,6 +37,9 @@ public class DownloaderService
             _cloudflaredExpectedSha256Override = value;
         }
     }
+
+    // Keeps concurrent file downloads within the user-configured budget.
+    private static readonly DownloadConcurrencyLimiter ConcurrencyLimiter = new();
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DownloaderService> _logger;
@@ -62,6 +68,18 @@ public class DownloaderService
         IProgress<DownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        using IDisposable slot = await ConcurrencyLimiter.AcquireAsync(cancellationToken);
+        await DownloadFileCoreAsync(url, destinationPath, expectedHash, expectedHashType, progress, cancellationToken);
+    }
+
+    private async Task DownloadFileCoreAsync(
+        string url,
+        string destinationPath,
+        string? expectedHash,
+        string? expectedHashType,
+        IProgress<DownloadProgress>? progress,
+        CancellationToken cancellationToken)
+    {
         string partialPath = destinationPath + ".partial";
         string identityPath = partialPath + ".identity";
         if (!File.Exists(identityPath) || File.ReadAllText(identityPath) != url)
@@ -86,6 +104,15 @@ public class DownloaderService
             {
                 using HttpClient client = _httpClientFactory.CreateClient(DownloadClientName);
                 long existingBytes = GetExistingPartialLength(partialPath);
+
+                // Segmented transfer is only safe from byte zero; resumes stay on the single-stream path.
+                if (existingBytes == 0 && DownloadTuning.Threads > 1 &&
+                    await TrySegmentedDownloadAsync(client, url, partialPath, progress, cancellationToken))
+                {
+                    existingBytes = 0;
+                }
+                else
+                {
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
                 // A digest binds resumed bytes to the requested object. Without one, restart.
                 if (existingBytes > 0 && string.IsNullOrEmpty(expectedHash)) { TryDeleteFile(partialPath); existingBytes = 0; }
@@ -125,6 +152,7 @@ public class DownloaderService
 
                     await DownloadToPartialAsync(response, partialPath, existingBytes, progress, cancellationToken);
                 }
+                }
 
                 if (new FileInfo(partialPath).Length == 0) throw new InvalidDataException("Downloaded artifact is empty.");
                 if (!string.IsNullOrEmpty(expectedHash))
@@ -160,6 +188,166 @@ public class DownloaderService
 
         throw new InvalidOperationException($"Failed to download '{url}'. The download was aborted.", lastException);
     }
+
+    /// <summary>
+    /// Downloads the artifact as parallel HTTP range segments. Returns false when the server
+    /// does not honour ranges or the artifact is too small, letting the caller fall back.
+    /// </summary>
+    private async Task<bool> TrySegmentedDownloadAsync(
+        HttpClient client,
+        string url,
+        string partialPath,
+        IProgress<DownloadProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        const long minSegmentBytes = 512 * 1024;
+        int requestedThreads = DownloadTuning.Threads;
+        if (requestedThreads <= 1)
+        {
+            return false;
+        }
+
+        long totalBytes;
+        using (HttpRequestMessage probe = new(HttpMethod.Get, url))
+        using (HttpResponseMessage probeResponse = await client.SendAsync(probe, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+        {
+            if (probeResponse.StatusCode != HttpStatusCode.OK ||
+                probeResponse.Content.Headers.ContentLength is not long length ||
+                length < minSegmentBytes * 2)
+            {
+                return false;
+            }
+
+            totalBytes = length;
+        }
+
+        int threads = (int)Math.Clamp(Math.Min(requestedThreads, totalBytes / minSegmentBytes), 1, DownloadTuning.MaxThreads);
+        if (threads <= 1)
+        {
+            return false;
+        }
+
+        long segmentSize = totalBytes / threads;
+        long writtenBytes = 0;
+        long[] lastReportTick = { 0 };
+        using var segmentCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        try
+        {
+            using FileStream file = new(partialPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite, 4096, useAsync: true);
+            file.SetLength(totalBytes);
+            SafeFileHandle handle = file.SafeFileHandle;
+
+            var segments = new List<Task>(threads);
+            for (int index = 0; index < threads; index++)
+            {
+                long start = index * segmentSize;
+                long end = index == threads - 1 ? totalBytes - 1 : start + segmentSize - 1;
+                segments.Add(DownloadSegmentAsync(
+                    client, url, handle, start, end, totalBytes, segmentCts.Token,
+                    bytes => Interlocked.Add(ref writtenBytes, bytes),
+                    done => ReportThrottled(progress, done, totalBytes, lastReportTick),
+                    cancellationToken));
+            }
+
+            await Task.WhenAll(segments);
+            await file.FlushAsync(cancellationToken);
+
+            if (new FileInfo(partialPath).Length != totalBytes)
+            {
+                throw new IOException("Segmented download produced an unexpected length.");
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            TryDeleteFile(partialPath);
+            throw;
+        }
+        catch (RangeNotSupportedException)
+        {
+            _logger.LogInformation("Server rejected ranged segments for {Url}; falling back to a single stream.", url);
+            TryDeleteFile(partialPath);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Segmented download failed for {Url}; falling back to a single stream.", url);
+            TryDeleteFile(partialPath);
+            return false;
+        }
+    }
+
+    private async Task DownloadSegmentAsync(
+        HttpClient client,
+        string url,
+        SafeFileHandle handle,
+        long start,
+        long end,
+        long totalBytes,
+        CancellationToken segmentToken,
+        Action<long> addBytes,
+        Action<long> reportProgress,
+        CancellationToken cancellationToken)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, url);
+        request.Headers.Range = new RangeHeaderValue(start, end);
+        using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, segmentToken);
+
+        if (response.StatusCode != HttpStatusCode.PartialContent ||
+            response.Content.Headers.ContentRange is not { } range ||
+            range.From != start ||
+            range.To != end ||
+            range.Length != totalBytes)
+        {
+            throw new RangeNotSupportedException();
+        }
+
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
+        {
+            await using Stream stream = await response.Content.ReadAsStreamAsync(segmentToken);
+            long position = start;
+            int read;
+            while ((read = await stream.ReadAsync(buffer, segmentToken)) > 0)
+            {
+                await RandomAccess.WriteAsync(handle, buffer.AsMemory(0, read), position, cancellationToken);
+                position += read;
+                addBytes(read);
+                reportProgress(position);
+            }
+
+            if (position != end + 1)
+            {
+                throw new IOException("Segmented download range ended prematurely.");
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static void ReportThrottled(IProgress<DownloadProgress>? progress, long bytesRead, long totalBytes, long[] lastReportTick)
+    {
+        if (progress == null)
+        {
+            return;
+        }
+
+        long now = Environment.TickCount64;
+        long previous = Volatile.Read(ref lastReportTick[0]);
+        if (now - previous < 100 && bytesRead < totalBytes)
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref lastReportTick[0], now);
+        progress.Report(new DownloadProgress { BytesRead = bytesRead, TotalBytes = totalBytes });
+    }
+
+    private sealed class RangeNotSupportedException : Exception { }
 
     private static string NormalizeHashType(string expectedHash, string? expectedHashType)
     {

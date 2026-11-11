@@ -1,5 +1,6 @@
 ﻿using PocketMC.Domain.Models;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -118,7 +119,7 @@ namespace PocketMC.Desktop.Infrastructure
                 _items.Add(item);
             }
 
-            TxtSummary.Text = $"{_items.Count} addon(s) have updates available. Select the ones you want to update.";
+            TxtSummary.Text = L.F("{0} addon(s) have updates available. Select the ones you want to update.", _items.Count);
         }
 
         private void ChkSelectAll_Changed(object sender, RoutedEventArgs e)
@@ -139,15 +140,15 @@ namespace PocketMC.Desktop.Infrastructure
             var selected = _items.Where(i => i.IsSelected).ToList();
             if (selected.Count == 0)
             {
-                AppDialog.ShowInfo("No Selection", "Please select at least one addon to update.");
+                AppDialog.ShowInfo(L.T("No Selection"), L.T("Please select at least one addon to update."));
                 return;
             }
 
             _isRunning = true;
             _cts = new CancellationTokenSource();
             BtnUpdate.IsEnabled = false;
-            BtnUpdate.Content = "Updating...";
-            BtnCancel.Content = "Cancel";
+            BtnUpdate.Content = L.T("Updating...");
+            BtnCancel.Content = L.T("Cancel");
             ChkSelectAll.IsEnabled = false;
 
             // Lock all checkboxes
@@ -170,7 +171,7 @@ namespace PocketMC.Desktop.Infrastructure
                 if (_cts.Token.IsCancellationRequested) break;
 
                 current++;
-                TxtOverallStatus.Text = $"Updating {current}/{total}: {item.DisplayName}...";
+                TxtOverallStatus.Text = L.F("Updating {0}/{1}: {2}...", current, total, item.DisplayName);
                 OverallProgressBar.Value = (double)(current - 1) / total * 100;
 
                 item.StatusText = "Downloading...";
@@ -223,7 +224,7 @@ namespace PocketMC.Desktop.Infrastructure
 
             if (_cts.Token.IsCancellationRequested)
             {
-                TxtOverallStatus.Text = $"Cancelled. {succeeded} updated, {total - succeeded - failed} skipped.";
+                TxtOverallStatus.Text = L.F("Cancelled. {0} updated, {1} skipped.", succeeded, total - succeeded - failed);
             }
             else if (failed > 0)
             {
@@ -231,12 +232,12 @@ namespace PocketMC.Desktop.Infrastructure
             }
             else
             {
-                TxtOverallStatus.Text = $"All {succeeded} addon(s) updated successfully!";
+                TxtOverallStatus.Text = L.F("All {0} addon(s) updated successfully!", succeeded);
                 TxtOverallStatus.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
             }
 
             BtnUpdate.Visibility = Visibility.Collapsed;
-            BtnCancel.Content = "Close";
+            BtnCancel.Content = L.T("Close");
             _isRunning = false;
 
             OnAllUpdatesCompleted?.Invoke();

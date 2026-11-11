@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using PocketMC.Desktop.Localization;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -106,17 +107,17 @@ namespace PocketMC.Desktop.Features.Setup
 
             if (isBackup)
             {
-                TxtTitle.Text = "Backup Settings";
-                TxtSubtitle.Text = "Choose the settings categories and credentials you wish to include in your backup file.";
+                TxtTitle.Text = L.T("Backup Settings");
+                TxtSubtitle.Text = L.T("Choose the settings categories and credentials you wish to include in your backup file.");
                 HeaderIcon.Symbol = SymbolRegular.ArrowDownload24;
-                BtnAction.Content = "Export Backup...";
+                BtnAction.Content = L.T("Export Backup...");
             }
             else
             {
-                TxtTitle.Text = "Restore Settings";
-                TxtSubtitle.Text = "Select the categories you want to restore. Unchecked items in your current setup will not be changed.";
+                TxtTitle.Text = L.T("Restore Settings");
+                TxtSubtitle.Text = L.T("Select the categories you want to restore. Unchecked items in your current setup will not be changed.");
                 HeaderIcon.Symbol = SymbolRegular.ArrowUpload24;
-                BtnAction.Content = "Restore Selected";
+                BtnAction.Content = L.T("Restore Selected");
             }
 
             Items.Clear();
@@ -293,7 +294,7 @@ namespace PocketMC.Desktop.Features.Setup
 
             if (!anySelected)
             {
-                TxtStatusWarning.Text = "Please select at least one category to proceed.";
+                TxtStatusWarning.Text = L.T("Please select at least one category to proceed.");
                 TxtStatusWarning.Visibility = Visibility.Visible;
                 return;
             }

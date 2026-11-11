@@ -3,12 +3,19 @@ using System;
 using System.IO;
 using System.Windows;
 using PocketMC.Desktop.Features.Dashboard;
+using PocketMC.Desktop.Localization;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Tests.Features.Dashboard;
 
 public sealed class InstanceCardViewModelTests
 {
+    public InstanceCardViewModelTests()
+    {
+        // Assertions below compare English source strings; keep the shared catalog out of the host UI culture.
+        LocalizationService.Instance.SetLanguage("en");
+    }
+
     [Fact]
     public void Constructor_WithGeyserBedrockPort_SetsBedrockLocalPort()
     {
@@ -93,11 +100,11 @@ public sealed class InstanceCardViewModelTests
         var vm = CreateViewModel(workspace, metadata);
 
         Assert.StartsWith("Last played: ", vm.LastPlayedText);
-        Assert.Contains(lastPlayed.ToLocalTime().ToString("MMM d, yyyy"), vm.LastPlayedText);
+        Assert.Contains(LocalizationService.Instance.FormatDate(lastPlayed.ToLocalTime()), vm.LastPlayedText);
         // LastPlayedValueText now shows relative time instead of exact date
         Assert.Contains("ago", vm.LastPlayedValueText);
         // Tooltip retains the exact date
-        Assert.Equal(lastPlayed.ToLocalTime().ToString("MMM d, yyyy h:mm tt"), vm.LastPlayedTooltip);
+        Assert.Equal(LocalizationService.Instance.FormatDateTime(lastPlayed.ToLocalTime()), vm.LastPlayedTooltip);
     }
 
     [Fact]

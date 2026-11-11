@@ -6,16 +6,19 @@ using System.Threading.Tasks;
 using PocketMC.Domain.Models;
 using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure.Storage;
 
 namespace PocketMC.Infrastructure.Instances;
 
 public class ForgeInstaller
 {
     private readonly VanillaProvider _vanillaProvider;
+    private readonly DownloadMirrorService? _mirrorService;
 
-    public ForgeInstaller(VanillaProvider vanillaProvider)
+    public ForgeInstaller(VanillaProvider vanillaProvider, DownloadMirrorService? mirrorService = null)
     {
         _vanillaProvider = vanillaProvider;
+        _mirrorService = mirrorService;
     }
 
     public async Task HandleInstallerBasedSetupAsync(
@@ -55,11 +58,30 @@ public class ForgeInstaller
                 }
             }
 
+            // The installer is a separate Java process that ignores our HTTP pipeline, so redirect
+            // its embedded library URLs to the configured maven mirror before launching it.
+            string runnableInstaller = "installer.jar";
+            string? patchedInstallerPath = null;
+            if (_mirrorService != null && _mirrorService.MirrorsEnabled && _mirrorService.MavenMirrorBase is { } mavenBase)
+            {
+                string candidatePath = Path.Combine(workingDir, "installer.mirrored.jar");
+                if (InstallerMirrorPatcher.TryCreatePatchedCopy(installerPath, candidatePath, mavenBase))
+                {
+                    patchedInstallerPath = candidatePath;
+                    runnableInstaller = Path.GetFileName(candidatePath);
+                    onLog($"[PocketMC] Installer downloads redirected to {mavenBase}.");
+                }
+                else
+                {
+                    onLog("[PocketMC] WARNING: Could not prepare mirror-patched installer. Using the original installer.");
+                }
+            }
+
             var installerPsi = new ProcessStartInfo
             {
                 FileName = javaPath,
                 WorkingDirectory = workingDir,
-                Arguments = "-Djava.awt.headless=true -Dforge.stdout=true -jar installer.jar --installServer",
+                Arguments = $"-Djava.awt.headless=true -Dforge.stdout=true -jar {runnableInstaller} --installServer",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -140,6 +162,7 @@ public class ForgeInstaller
                         onLog?.Invoke($"[PocketMC] {meta.ServerType} installation successful.");
                         // Clean up installer to prevent re-runs
                         try { File.Delete(installerPath); } catch { }
+                        if (patchedInstallerPath != null) { try { File.Delete(patchedInstallerPath); } catch { } }
                     }
                     else
                     {
@@ -173,5 +196,9 @@ public class ForgeInstaller
         {
             try { Directory.Delete(verDir, true); } catch { }
         }
+
+        // The patched copy is disposable; keep installer.jar so the user can retry.
+        string patchedInstaller = Path.Combine(workingDir, "installer.mirrored.jar");
+        try { if (File.Exists(patchedInstaller)) File.Delete(patchedInstaller); } catch { }
     }
 }

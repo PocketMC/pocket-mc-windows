@@ -34,7 +34,7 @@ public class ForgeProvider : IServerSoftwareProvider
         var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
 
         var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
-        var minVersion = new Version(1, 8, 8);
+        var minVersion = new Version(1, 7, 10);
 
         if (response != null && response.TryGetPropertyValue("versions", out var versionsNode) && versionsNode is JsonArray versionsArray)
         {

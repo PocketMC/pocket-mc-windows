@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Localization;
 using PocketMC.Domain.Models;
 using System;
 using System.Diagnostics;
@@ -87,7 +88,7 @@ namespace PocketMC.Desktop.Features.Settings
         }
 
         // Existing World logic
-        private string _worldStatusText = "Checking world...";
+        private string _worldStatusText = L.T("Checking world...");
         public string WorldStatusText { get => _worldStatusText; set => SetProperty(ref _worldStatusText, value); }
 
         private string _worldSizeText = "";
@@ -156,12 +157,12 @@ namespace PocketMC.Desktop.Features.Settings
             var worldDir = ResolveWorldDir();
             if (Directory.Exists(worldDir))
             {
-                WorldStatusText = "✅ World folder exists";
+                WorldStatusText = L.T("✅ World folder exists");
                 WorldSizeText = $"Size: {PocketMC.Domain.Storage.FileUtils.GetDirectorySizeMb(worldDir)} MB";
             }
             else
             {
-                WorldStatusText = "No world folder found (will be generated)";
+                WorldStatusText = L.T("No world folder found (will be generated)");
                 WorldSizeText = "";
             }
         }
@@ -182,7 +183,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                     await _dialogService.ShowProgressDialogAsync(
                         "Importing World",
-                        $"Importing {fileName}...",
+                        L.F("Importing {0}...", fileName),
                         async (progress) =>
                         {
                             await _worldManager.ImportWorldZipAsync(
@@ -196,7 +197,7 @@ namespace PocketMC.Desktop.Features.Settings
                         });
 
                     LoadWorldState();
-                    _dialogService.ShowMessage("World Imported", $"Successfully imported '{fileName}' into your world folder.", DialogType.Information);
+                    _dialogService.ShowMessage("World Imported", L.F("Successfully imported '{0}' into your world folder.", fileName), DialogType.Information);
                 }
                 catch (Exception ex)
                 {
@@ -228,7 +229,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                     await _dialogService.ShowProgressDialogAsync(
                         "Importing World",
-                        $"Installing {fileName}...",
+                        L.F("Installing {0}...", fileName),
                         async (progress) =>
                         {
                             await _worldManager.ImportWorldZipAsync(

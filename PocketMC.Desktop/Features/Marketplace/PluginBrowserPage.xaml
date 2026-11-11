@@ -1,8 +1,8 @@
-<Page x:Class="PocketMC.Desktop.Features.Marketplace.PluginBrowserPage"
+<Page x:Class="PocketMC.Desktop.Features.Marketplace.PluginBrowserPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      Title="Marketplace">
+      Title="{loc:Tr 'Marketplace'}">
 
     <Grid Margin="28,20,28,24">
         <Grid.RowDefinitions>
@@ -14,7 +14,7 @@
         <!-- Header -->
         <Grid Grid.Row="0" Margin="0,0,0,20">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                <ui:Button Content="Back"
+                <ui:Button Content="{loc:Tr 'Back'}"
                            Appearance="Secondary"
                            Icon="{ui:SymbolIcon ArrowLeft24}"
                            MinWidth="88"
@@ -23,13 +23,13 @@
 
                 <ui:TextBlock x:Name="TxtTitle"
                               FontTypography="Title"
-                              Text="Plugin Marketplace"
+                              Text="{loc:Tr 'Plugin Marketplace'}"
                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                               VerticalAlignment="Center"/>
             </StackPanel>
 
             <ui:Button x:Name="BtnLocalImport"
-                       Content="Local Import (.zip, .mrpack)"
+                       Content="{loc:Tr 'Local Import (.zip, .mrpack)'}"
                        Appearance="Secondary"
                        Icon="{ui:SymbolIcon FolderZip24}"
                        HorizontalAlignment="Right"
@@ -41,36 +41,36 @@
         <Grid Grid.Row="1" Margin="0,0,0,16">
             <ui:Card Padding="16">
                 <StackPanel Orientation="Horizontal">
-                    <ui:AutoSuggestBox x:Name="TxtSearch" PlaceholderText="Search mods/plugins..." Width="260" Margin="0,0,16,0"
+                    <ui:AutoSuggestBox x:Name="TxtSearch" PlaceholderText="{loc:Tr 'Search mods/plugins...'}" Width="260" Margin="0,0,16,0"
                                        Icon="{ui:SymbolIcon Search24}" TextChanged="TxtSearch_TextChanged"
                                        KeyDown="TxtSearch_KeyDown"/>
 
-                    <TextBlock Text="Source:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text="{loc:Tr 'Source:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <ComboBox x:Name="CmbSource" Width="130" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged">
-                        <ComboBoxItem Content="Modrinth" IsSelected="True"/>
-                        <ComboBoxItem Content="CurseForge"/>
+                        <ComboBoxItem Content="{loc:Tr 'Modrinth'}" IsSelected="True"/>
+                        <ComboBoxItem Content="{loc:Tr 'CurseForge'}"/>
                     </ComboBox>
 
-                    <TextBlock Text="Sort By:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text="{loc:Tr 'Sort By:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <ComboBox x:Name="CmbSort" Width="130" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged">
-                        <ComboBoxItem Content="Trending" Tag="relevance" IsSelected="True"/>
-                        <ComboBoxItem Content="Top Downloads" Tag="downloads"/>
-                        <ComboBoxItem Content="Newest" Tag="newest"/>
+                        <ComboBoxItem Content="{loc:Tr 'Trending'}" Tag="relevance" IsSelected="True"/>
+                        <ComboBoxItem Content="{loc:Tr 'Top Downloads'}" Tag="downloads"/>
+                        <ComboBoxItem Content="{loc:Tr 'Newest'}" Tag="newest"/>
                     </ComboBox>
 
                     <ui:SymbolIcon x:Name="IconMcVersion" Symbol="Info24" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    <TextBlock x:Name="TxtMcVersion" Text="Minecraft 1.20.1" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock x:Name="TxtMcVersion" Text="{loc:Tr 'Minecraft 1.20.1'}" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     
                     <!-- Modpack Mode Specific Filters -->
-                    <TextBlock x:Name="TxtLoaderLabel" Text="Loader:" VerticalAlignment="Center" Margin="16,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="TxtLoaderLabel" Text="{loc:Tr 'Loader:'}" VerticalAlignment="Center" Margin="16,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
                     <ComboBox x:Name="CmbLoader" Width="130" Margin="0,0,16,0" Visibility="Collapsed" SelectionChanged="CmbLoader_SelectionChanged">
-                        <ComboBoxItem Content="Any" Tag="" IsSelected="True"/>
-                        <ComboBoxItem Content="Fabric" Tag="fabric"/>
-                        <ComboBoxItem Content="Forge" Tag="forge"/>
-                        <ComboBoxItem Content="NeoForge" Tag="neoforge"/>
+                        <ComboBoxItem Content="{loc:Tr 'Any'}" Tag="" IsSelected="True"/>
+                        <ComboBoxItem Content="{loc:Tr 'Fabric'}" Tag="fabric"/>
+                        <ComboBoxItem Content="{loc:Tr 'Forge'}" Tag="forge"/>
+                        <ComboBoxItem Content="{loc:Tr 'NeoForge'}" Tag="neoforge"/>
                     </ComboBox>
 
-                    <TextBlock x:Name="TxtMcVersionLabel" Text="Version:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="TxtMcVersionLabel" Text="{loc:Tr 'Version:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
                     <ComboBox x:Name="CmbMcVersion" Width="110" Visibility="Collapsed" DisplayMemberPath="Id" SelectionChanged="RefreshList_SelectionChanged"/>
 
                 </StackPanel>
@@ -188,9 +188,9 @@
                 <Border Width="80" Height="80" CornerRadius="40" Background="{DynamicResource ControlFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,20">
                     <ui:SymbolIcon Symbol="Search24" FontSize="36" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
-                <ui:TextBlock FontTypography="Subtitle" Text="No results found" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                <ui:TextBlock x:Name="TxtEmptyStateDetail" Text="We couldn't find anything matching your search. Try different keywords or filters." FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" Margin="0,0,0,20"/>
-                <ui:Button x:Name="BtnResetFilters" Content="Reset Filters" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync24}" HorizontalAlignment="Center" Click="BtnResetFilters_Click"/>
+                <ui:TextBlock FontTypography="Subtitle" Text="{loc:Tr 'No results found'}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <ui:TextBlock x:Name="TxtEmptyStateDetail" Text="{loc:Tr &quot;We couldn't find anything matching your search. Try different keywords or filters.&quot;}" FontSize="13" Foreground="{DynamicResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" Margin="0,0,0,20"/>
+                <ui:Button x:Name="BtnResetFilters" Content="{loc:Tr 'Reset Filters'}" Appearance="Secondary" Icon="{ui:SymbolIcon ArrowSync24}" HorizontalAlignment="Center" Click="BtnResetFilters_Click"/>
             </StackPanel>
 
             <!-- CurseForge API Key Missing/Invalid Placeholder -->
@@ -199,19 +199,19 @@
                     <ui:SymbolIcon Symbol="Key24" FontSize="36" Foreground="#F9E2AF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 
-                <ui:TextBlock x:Name="TxtCurseForgeKeyTitle" FontTypography="Subtitle" Text="CurseForge API Key Required" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <ui:TextBlock x:Name="TxtCurseForgeKeyTitle" FontTypography="Subtitle" Text="{loc:Tr 'CurseForge API Key Required'}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                 
-                <ui:TextBlock x:Name="TxtCurseForgeKeyDetail" Text="CurseForge requires a free API key to search and install addons. Enter your key to continue." FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,24"/>
+                <ui:TextBlock x:Name="TxtCurseForgeKeyDetail" Text="{loc:Tr 'CurseForge requires a free API key to search and install addons. Enter your key to continue.'}" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,24"/>
                 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
-                    <ui:Button x:Name="BtnConfigureCurseForgeKey" Content="Configure API Key" Appearance="Primary" Icon="{ui:SymbolIcon Key24}" Margin="0,0,12,0" Padding="18,8" Click="BtnConfigureCurseForgeKey_Click"/>
-                    <ui:Button x:Name="BtnSwitchToModrinth" Content="Switch to Modrinth" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" Padding="16,8" Click="BtnSwitchToModrinth_Click"/>
+                    <ui:Button x:Name="BtnConfigureCurseForgeKey" Content="{loc:Tr 'Configure API Key'}" Appearance="Primary" Icon="{ui:SymbolIcon Key24}" Margin="0,0,12,0" Padding="18,8" Click="BtnConfigureCurseForgeKey_Click"/>
+                    <ui:Button x:Name="BtnSwitchToModrinth" Content="{loc:Tr 'Switch to Modrinth'}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" Padding="16,8" Click="BtnSwitchToModrinth_Click"/>
                 </StackPanel>
 
                 <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
-                    <Run Text="Get a free key at "/>
+                    <Run Text="{loc:Tr '免费获取密钥：'}"/>
                     <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
-                        <Run Text="console.curseforge.com"/>
+                        <Run Text="{loc:Tr 'console.curseforge.com'}"/>
                     </Hyperlink>
                 </TextBlock>
             </StackPanel>

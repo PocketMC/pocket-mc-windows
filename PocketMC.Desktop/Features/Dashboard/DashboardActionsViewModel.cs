@@ -23,6 +23,7 @@ using PocketMC.Infrastructure.Backups;
 using PocketMC.Application.Services.Setup;
 using PocketMC.Infrastructure.Java;
 using PocketMC.Desktop.Features.Console;
+using PocketMC.Desktop.Localization;
 using PocketMC.Infrastructure.Networking;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Telemetry;
@@ -112,8 +113,8 @@ namespace PocketMC.Desktop.Features.Dashboard
                 var requiredMb = (ulong)vm.Metadata.MaxRamMb;
                 if (availableMb < requiredMb + 512)
                 {
-                    var result = await _dialogService.ShowDialogAsync("Low Memory",
-                        $"Your system only has {availableMb}MB of available RAM. Starting this server ({requiredMb}MB) might cause significant lag or crashes.\n\nContinue anyway?",
+                    var result = await _dialogService.ShowDialogAsync(L.T("Low Memory"),
+                        L.F("Your system only has {0}MB of available RAM. Starting this server ({1}MB) might cause significant lag or crashes.\n\nContinue anyway?", availableMb, requiredMb),
                         DialogType.Warning, true);
                     if (result != DialogResult.Yes)
                     {
@@ -138,7 +139,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                         var instancePath = _registry.GetPath(vm.Id);
                         if (instancePath != null)
                         {
-                            vm.StateTextOverride = "⚙ Checking mods/plugins Updates...";
+                            vm.StateTextOverride = L.T("⚙ Checking mods/plugins Updates...");
                             await autoUpdateService.CheckAndPromptUpdatesAsync(vm.Metadata, instancePath);
                         }
                     }
@@ -168,7 +169,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 vm.UpdateState(ServerState.Stopped);
                 onStarted(vm);
                 _logger.LogError(ex, "Failed to start server {ServerName}.", vm.Name);
-                _dialogService.ShowMessage("Start Failed", $"PocketMC could not start '{vm.Name}'.\n\n{ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage(L.T("Start Failed"), L.F("PocketMC could not start '{0}'.\n\n{1}", vm.Name, ex.Message), DialogType.Error);
             }
         }
 
@@ -221,8 +222,8 @@ namespace PocketMC.Desktop.Features.Dashboard
                 if (!settings.AlwaysAutoSummarize)
                 {
                     var response = await _dialogService.ShowDialogAsync(
-                        "AI Session Summary",
-                        $"Generate an AI summary for this '{vm.Name}' session?\n\nThis will send the session logs to {settings.AiProvider ?? "Gemini"} for analysis.",
+                        L.T("AI Session Summary"),
+                        L.F("Generate an AI summary for this '{0}' session?\n\nThis will send the session logs to {1} for analysis.", vm.Name, settings.AiProvider ?? "Gemini"),
                         DialogType.Question, true);
 
                     if (response != DialogResult.Yes)
@@ -237,7 +238,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 var notificationService = (INotificationService)_serviceProvider.GetService(typeof(INotificationService))!;
                 if (settings.EnableAiSummaryNotifications)
                 {
-                    notificationService.ShowInformation("AI Summary", $"Generating summary for '{vm.Name}'...");
+                    notificationService.ShowInformation(L.T("AI Summary"), L.F("Generating summary for '{0}'...", vm.Name));
                 }
 
                 var result = await summarizationService.SummarizeAsync(
@@ -252,7 +253,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 }
                 else
                 {
-                    _dialogService.ShowMessage("AI Summary Failed", $"Could not generate summary:\n{result.Error}", DialogType.Error);
+                    _dialogService.ShowMessage(L.T("AI Summary Failed"), L.F("Could not generate summary:\n{0}", result.Error), DialogType.Error);
                 }
             }
             catch (Exception ex)
@@ -266,7 +267,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         {
             try
             {
-                var previousState = vm.StatusText.Contains("Online") ? ServerState.Online : ServerState.Starting;
+                var previousState = vm.IsOnline ? ServerState.Online : ServerState.Starting;
                 vm.UpdateState(ServerState.SettingUp);
                 onStarted(vm);
 
@@ -308,7 +309,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 vm.UpdateState(ServerState.Stopped);
                 onStarted(vm);
                 _logger.LogError(ex, "Failed to restart server {ServerName}.", vm.Name);
-                _dialogService.ShowMessage("Restart Failed", $"PocketMC could not restart '{vm.Name}'.\n\n{ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage(L.T("Restart Failed"), L.F("PocketMC could not restart '{0}'.\n\n{1}", vm.Name, ex.Message), DialogType.Error);
             }
         }
 
@@ -316,11 +317,11 @@ namespace PocketMC.Desktop.Features.Dashboard
         {
             if (_lifecycleService.IsRunning(vm.Id))
             {
-                _dialogService.ShowMessage("Server Running", "Cannot delete a running server. Stop it first.", DialogType.Warning);
+                _dialogService.ShowMessage(L.T("Server Running"), L.T("Cannot delete a running server. Stop it first."), DialogType.Warning);
                 return;
             }
 
-            var prompt = await _dialogService.ShowDialogAsync("Delete Server", $"Are you sure you want to completely erase the {vm.Name} server?", DialogType.Warning, false);
+            var prompt = await _dialogService.ShowDialogAsync(L.T("Delete Server"), L.F("Are you sure you want to completely erase the {0} server?", vm.Name), DialogType.Warning, false);
             if (prompt == DialogResult.Yes)
             {
                 await _lifecycleService.ReleaseInstanceAsync(vm.Id);
@@ -349,13 +350,13 @@ namespace PocketMC.Desktop.Features.Dashboard
                 {
                     bool ok = await Infrastructure.ClipboardHelper.TrySetTextAsync(File.ReadAllText(latest.FullName));
                     if (ok)
-                        _dialogService.ShowMessage("Copied", "Crash report copied to clipboard.", DialogType.Information);
+                        _dialogService.ShowMessage(L.T("Copied"), L.T("Crash report copied to clipboard."), DialogType.Information);
                     else
-                        _dialogService.ShowMessage("Clipboard Error", "Failed to copy crash report. The clipboard may be locked by another application.", DialogType.Warning);
+                        _dialogService.ShowMessage(L.T("Clipboard Error"), L.T("Failed to copy crash report. The clipboard may be locked by another application."), DialogType.Warning);
                     return;
                 }
             }
-            _dialogService.ShowMessage("Not Found", "No crash reports found.", DialogType.Information);
+            _dialogService.ShowMessage(L.T("Not Found"), L.T("No crash reports found."), DialogType.Information);
         }
 
         public void OpenExportPage(InstanceCardViewModel vm)
@@ -365,7 +366,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 string? instancePath = _registry.GetPath(vm.Id);
                 if (string.IsNullOrWhiteSpace(instancePath) || !Directory.Exists(instancePath))
                 {
-                    _dialogService.ShowMessage("Export Unavailable", "PocketMC could not find this instance folder.", DialogType.Warning);
+                    _dialogService.ShowMessage(L.T("Export Unavailable"), L.T("PocketMC could not find this instance folder."), DialogType.Warning);
                     return;
                 }
 
@@ -384,7 +385,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                     viewModel);
                 _navigationService.NavigateToDetailPage(
                     page,
-                    $"Export: {vm.Name}",
+                    L.F("Export: {0}", vm.Name),
                     DetailRouteKind.InstanceExport,
                     DetailBackNavigation.Dashboard,
                     clearDetailStack: true);
@@ -393,8 +394,8 @@ namespace PocketMC.Desktop.Features.Dashboard
             {
                 _logger.LogError(ex, "Failed to open the export page for {ServerName}.", vm.Name);
                 _dialogService.ShowMessage(
-                    "Export Failed",
-                    $"PocketMC could not open the export page for '{vm.Name}'.\n\n{ex.Message}",
+                    L.T("Export Failed"),
+                    L.F("PocketMC could not open the export page for '{0}'.\n\n{1}", vm.Name, ex.Message),
                     DialogType.Error);
             }
         }
@@ -403,7 +404,7 @@ namespace PocketMC.Desktop.Features.Dashboard
         {
             var settingsViewModel = ActivatorUtilities.CreateInstance<ServerSettingsViewModel>(_serviceProvider, vm.Metadata);
             var settingsPage = ActivatorUtilities.CreateInstance<ServerSettingsPage>(_serviceProvider, settingsViewModel);
-            _navigationService.NavigateToDetailPage(settingsPage, $"Settings: {vm.Name}", DetailRouteKind.ServerSettings, DetailBackNavigation.Dashboard, true);
+            _navigationService.NavigateToDetailPage(settingsPage, L.F("Settings: {0}", vm.Name), DetailRouteKind.ServerSettings, DetailBackNavigation.Dashboard, true);
         }
 
         public void OpenConsole(InstanceCardViewModel vm)
@@ -415,7 +416,7 @@ namespace PocketMC.Desktop.Features.Dashboard
             var consolePage = process != null
                 ? ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, vm.Metadata, process, instancePath)
                 : ActivatorUtilities.CreateInstance<ServerConsolePage>(_serviceProvider, vm.Metadata, instancePath);
-            _navigationService.NavigateToDetailPage(consolePage, $"Console: {vm.Name}", DetailRouteKind.ServerConsole, DetailBackNavigation.Dashboard, true);
+            _navigationService.NavigateToDetailPage(consolePage, L.F("Console: {0}", vm.Name), DetailRouteKind.ServerConsole, DetailBackNavigation.Dashboard, true);
         }
 
         public void OpenPlayers(InstanceCardViewModel vm)
@@ -427,7 +428,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                 : ActivatorUtilities.CreateInstance<PlayerManagementViewModel>(_serviceProvider, vm.Metadata);
 
             var page = ActivatorUtilities.CreateInstance<PlayerManagementPage>(_serviceProvider, viewModel);
-            _navigationService.NavigateToDetailPage(page, $"Players: {vm.Name}", DetailRouteKind.PlayerManagement, DetailBackNavigation.Dashboard, true);
+            _navigationService.NavigateToDetailPage(page, L.F("Players: {0}", vm.Name), DetailRouteKind.PlayerManagement, DetailBackNavigation.Dashboard, true);
         }
 
         public void TogglePin(InstanceCardViewModel vm)
@@ -541,7 +542,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                             vm.UpdateState(ServerState.Stopped);
                             onStateChanged(vm);
                             _logger.LogError(retryEx, "Failed to start server {ServerName} after port change.", vm.Name);
-                            _dialogService.ShowMessage("Start Failed", $"PocketMC could not start '{vm.Name}'.\n\n{retryEx.Message}", DialogType.Error);
+                            _dialogService.ShowMessage(L.T("Start Failed"), L.F("PocketMC could not start '{0}'.\n\n{1}", vm.Name, retryEx.Message), DialogType.Error);
                         }
                     }
                 }

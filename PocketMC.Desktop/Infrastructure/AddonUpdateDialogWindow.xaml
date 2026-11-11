@@ -1,8 +1,8 @@
-<ui:FluentWindow x:Class="PocketMC.Desktop.Infrastructure.AddonUpdateDialogWindow"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Infrastructure.AddonUpdateDialogWindow" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Addon Updates"
+        Title="{loc:Tr 'Addon Updates'}"
         Width="560"
         SizeToContent="Height"
         MinWidth="480" MaxWidth="640"
@@ -32,7 +32,7 @@
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
             <ui:SymbolIcon Symbol="ArrowUp24" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"
                        Foreground="#89B4FA"/>
-            <TextBlock x:Name="TxtTitle" Text="Available Updates"
+            <TextBlock x:Name="TxtTitle" Text="{loc:Tr 'Available Updates'}"
                        FontSize="16" FontWeight="Bold"
                        Foreground="#89B4FA"
                        VerticalAlignment="Center"/>
@@ -44,7 +44,7 @@
                    Margin="0,0,0,10" TextWrapping="Wrap"/>
 
         <!-- Select All checkbox -->
-        <CheckBox Grid.Row="2" x:Name="ChkSelectAll" Content="Select All"
+        <CheckBox Grid.Row="2" x:Name="ChkSelectAll" Content="{loc:Tr 'Select All'}"
                   IsChecked="True" Margin="0,0,0,6"
                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                   Checked="ChkSelectAll_Changed" Unchecked="ChkSelectAll_Changed"/>
@@ -127,11 +127,11 @@
 
         <!-- Buttons -->
         <WrapPanel Grid.Row="5" HorizontalAlignment="Right" Margin="0,14,0,0">
-            <ui:Button x:Name="BtnCancel" Content="Cancel"
+            <ui:Button x:Name="BtnCancel" Content="{loc:Tr 'Cancel'}"
                        MinWidth="80" Margin="0,0,8,0"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                        Click="BtnCancel_Click"/>
-            <ui:Button x:Name="BtnUpdate" Content="Update Selected"
+            <ui:Button x:Name="BtnUpdate" Content="{loc:Tr 'Update Selected'}"
                        Appearance="Primary" MinWidth="120"
                        Foreground="White" FontWeight="SemiBold"
                        Click="BtnUpdate_Click" IsDefault="True"/>

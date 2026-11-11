@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Configuration;
 using PocketMC.Desktop.Features.Shell;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Infrastructure;
@@ -263,12 +264,12 @@ public partial class App : System.Windows.Application
                                 MainWindow.Focus();
                             }
 
-                            var message = $"A request to link PocketMC with a Discord bot was initiated.\n\n" +
-                                          $"User ID: {userId}\n" +
-                                          $"API URL: {apiUrl}\n\n" +
-                                          $"Do you want to authorize this connection? Warning: Only link with bots you trust.";
+                            var message = L.T("A request to link PocketMC with a Discord bot was initiated.") + "\n\n" +
+                                          L.F("User ID: {0}", userId) + "\n" +
+                                          L.F("API URL: {0}", apiUrl) + "\n\n" +
+                                          L.T("Do you want to authorize this connection? Warning: Only link with bots you trust.");
 
-                            if (!AppDialog.Confirm("Link Discord Bot", message))
+                            if (!AppDialog.Confirm(L.T("Link Discord Bot"), message))
                             {
                                 Services.GetRequiredService<ILogger<App>>().LogInformation("Discord association rejected by user.");
                                 return;
@@ -282,7 +283,7 @@ public partial class App : System.Windows.Application
                         applicationState.Settings.DiscordApiKey = apiKey;
                         settingsManager.Save(applicationState.Settings);
 
-                        AppDialog.ShowInfo("Discord Linked", "PocketMC has been successfully linked to your Discord account!");
+                        AppDialog.ShowInfo(L.T("Discord Linked"), L.T("PocketMC has been successfully linked to your Discord account!"));
 
                         Task.Run(async () =>
                         {
@@ -431,8 +432,8 @@ public partial class App : System.Windows.Application
         try
         {
             Infrastructure.AppDialog.ShowError(
-                "PocketMC Crash",
-                $"PocketMC hit an unexpected error and wrote a crash report to:\n{crashReportPath}\n\nThe app will now close so it can restart cleanly.");
+                L.T("PocketMC Crash"),
+                L.F("PocketMC hit an unexpected error and wrote a crash report to:\n{0}\n\nThe app will now close so it can restart cleanly.", crashReportPath));
         }
         catch
         {
