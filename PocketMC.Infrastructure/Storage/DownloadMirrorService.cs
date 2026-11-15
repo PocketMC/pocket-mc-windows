@@ -190,7 +190,7 @@ public sealed class DownloadMirrorService
 
         return sample.Length > 0 &&
                Uri.TryCreate(sample, UriKind.Absolute, out Uri? uri) &&
-               (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
+               IsSecureMirror(uri);
     }
 
     /// <summary>Applies a "{url}" template, or a trailing-slash prefix template.</summary>
@@ -209,13 +209,52 @@ public sealed class DownloadMirrorService
 
         if (candidate.Length == 0 ||
             !Uri.TryCreate(candidate, UriKind.Absolute, out Uri? uri) ||
-            (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+            !IsSecureMirror(uri))
         {
             return false;
         }
 
         result = uri;
         return true;
+    }
+
+    /// <summary>Mirrors must not silently downgrade a download to plaintext HTTP.</summary>
+    internal static bool IsSecureMirror(Uri uri)
+    {
+        if (uri.Scheme == Uri.UriSchemeHttps)
+        {
+            return true;
+        }
+
+        if (uri.Scheme != Uri.UriSchemeHttp)
+        {
+            return false;
+        }
+
+        if (uri.IsLoopback || uri.Host.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!IPAddress.TryParse(uri.Host, out IPAddress? address))
+        {
+            return false;
+        }
+
+        if (IPAddress.IsLoopback(address) || address.IsIPv6LinkLocal)
+        {
+            return true;
+        }
+
+        byte[] bytes = address.GetAddressBytes();
+        if (bytes.Length != 4)
+        {
+            return false;
+        }
+
+        return bytes[0] == 10 ||
+               (bytes[0] == 192 && bytes[1] == 168) ||
+               (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31);
     }
 
     /// <summary>Maps raw repository files onto jsDelivr, a CDN mirror of GitHub content.</summary>
@@ -292,6 +331,7 @@ public sealed class DownloadMirrorService
         }
 
         if (!Uri.TryCreate(mirrorBase.TrimEnd('/') + path, UriKind.Absolute, out Uri? mapped)) return false;
+        if (!IsSecureMirror(mapped)) return false;
 
         result = mapped;
         return true;

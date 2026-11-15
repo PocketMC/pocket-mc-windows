@@ -132,9 +132,23 @@ public sealed class DownloadMirrorServiceTests
     [InlineData("", false)]
     [InlineData("ftp://mirror/{url}", false)]
     [InlineData("https://mirror.example/plain", false)]
+    [InlineData("http://mirror.example/{url}", false)]
+    [InlineData("http://127.0.0.1:8080/{url}", true)]
     public void IsValidTemplate_ValidatesPlaceholderOrPrefix(string template, bool expected)
     {
         Assert.Equal(expected, DownloadMirrorService.IsValidTemplate(template));
+    }
+
+    [Fact]
+    public void GetCandidates_RejectsAPlaintextCustomMirror()
+    {
+        DownloadMirrorOptions options = new(true, "http://mirror.example/{url}", Array.Empty<string>());
+        DownloadMirrorService service = new(() => options);
+
+        var candidates = service.GetCandidates(new Uri("https://cdn.example.com/a/b.jar"));
+
+        Assert.DoesNotContain(candidates, c => c.Tunnel == "custom");
+        Assert.Contains(candidates, c => c.Tunnel is null);
     }
 
     [Fact]
