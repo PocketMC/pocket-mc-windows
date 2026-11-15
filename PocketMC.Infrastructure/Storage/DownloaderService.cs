@@ -153,19 +153,35 @@ public class DownloaderService
                     response.EnsureSuccessStatusCode();
 
                     bool isResuming = existingBytes > 0 && response.StatusCode == HttpStatusCode.PartialContent;
-                    if (response.StatusCode == HttpStatusCode.PartialContent &&
-                        (response.Content.Headers.ContentRange?.From != existingBytes ||
-                         response.Content.Headers.ContentRange?.To is not long lastByte ||
-                         response.Content.Headers.ContentRange?.Length is not long objectLength || lastByte != objectLength - 1))
-                    { TryDeleteFile(partialPath); throw new InvalidDataException("The server returned an invalid download range."); }
-                    if (existingBytes > 0 && !isResuming)
+                    bool rangeIsUsable = response.StatusCode != HttpStatusCode.PartialContent ||
+                        (response.Content.Headers.ContentRange?.From == existingBytes &&
+                         response.Content.Headers.ContentRange?.To is long lastByte &&
+                         response.Content.Headers.ContentRange?.Length is long objectLength &&
+                         lastByte == objectLength - 1);
+
+                    if (!rangeIsUsable)
                     {
-                        _logger.LogInformation("Resume is not supported for {Url}; restarting download from scratch.", url);
+                        // Some CDNs clamp or rewrite ranges; one bad 206 should not kill the download.
+                        _logger.LogWarning("Server returned an unexpected range for {Url}; restarting from scratch.", url);
                         TryDeleteFile(partialPath);
                         existingBytes = 0;
+                        using HttpRequestMessage restartRequest = new(HttpMethod.Get, url);
+                        using HttpResponseMessage restartResponse = await client.SendAsync(
+                            restartRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                        restartResponse.EnsureSuccessStatusCode();
+                        await DownloadToPartialAsync(restartResponse, partialPath, existingBytes, progress, cancellationToken);
                     }
+                    else
+                    {
+                        if (existingBytes > 0 && !isResuming)
+                        {
+                            _logger.LogInformation("Resume is not supported for {Url}; restarting download from scratch.", url);
+                            TryDeleteFile(partialPath);
+                            existingBytes = 0;
+                        }
 
-                    await DownloadToPartialAsync(response, partialPath, existingBytes, progress, cancellationToken);
+                        await DownloadToPartialAsync(response, partialPath, existingBytes, progress, cancellationToken);
+                    }
                 }
                 }
 
