@@ -298,6 +298,7 @@ public class BackupService
         bool isRunning = _serverProcessManager.IsRunning(metadata.Id);
         var process = _serverProcessManager.GetProcess(metadata.Id);
         var skippedFiles = new List<string>();
+        LocalBackupResult result;
 
         try
         {
@@ -325,7 +326,7 @@ public class BackupService
                 onProgress?.Invoke("Backup complete!");
 
             FileUtils.PromoteFile(zipPath, completedPath);
-            return new LocalBackupResult { Success = true, ZipPath = completedPath };
+            result = new LocalBackupResult { Success = true, ZipPath = completedPath };
         }
         catch (Exception ex)
         {
@@ -334,30 +335,40 @@ public class BackupService
                 TryDeleteFile(zipPath, "partial backup ZIP");
             }
             _logger.LogError(ex, "Backup failed for server {ServerName}.", metadata.Name);
-            return new LocalBackupResult { Success = false, Error = ex };
+            result = new LocalBackupResult { Success = false, Error = ex };
         }
-        finally
+
+        // Resuming world saving happens after the backup outcome is fixed: a broken RCON channel
+        // must not turn an already promoted backup into a reported failure.
+        if (isRunning && process != null && metadata.Compatibility.IsJavaEngine && _serverProcessManager.IsRunning(metadata.Id))
         {
-            if (isRunning && process != null && metadata.Compatibility.IsJavaEngine && _serverProcessManager.IsRunning(metadata.Id))
+            try
             {
-                try
+                if (!_configService.TryGetProperty(serverDir, "rcon.password", out string? password) || string.IsNullOrEmpty(password))
+                    throw new InvalidOperationException("RCON credentials are missing.");
+                _configService.TryGetProperty(serverDir, "rcon.port", out string? rawPort);
+                using var rcon = new RconClient("127.0.0.1", int.Parse(rawPort ?? "25575"), password);
+                await rcon.ConnectAsync();
+                string response = await rcon.ExecuteCommandAsync("save-on");
+                if (!response.Contains("enabled", StringComparison.OrdinalIgnoreCase) && !response.Contains("already", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("The server did not confirm save-on.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "World saving could not be resumed. Run save-on on the server immediately.");
+                if (result.Success)
                 {
-                    if (!_configService.TryGetProperty(serverDir, "rcon.password", out string? password) || string.IsNullOrEmpty(password))
-                        throw new InvalidOperationException("RCON credentials are missing.");
-                    _configService.TryGetProperty(serverDir, "rcon.port", out string? rawPort);
-                    using var rcon = new RconClient("127.0.0.1", int.Parse(rawPort ?? "25575"), password);
-                    await rcon.ConnectAsync();
-                    string response = await rcon.ExecuteCommandAsync("save-on");
-                    if (!response.Contains("enabled", StringComparison.OrdinalIgnoreCase) && !response.Contains("already", StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidOperationException("The server did not confirm save-on.");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogCritical(ex, "World saving could not be resumed. Run save-on on the server immediately.");
-                    throw new InvalidOperationException("World saving could not be resumed. Run save-on on the server immediately.", ex);
+                    result = new LocalBackupResult
+                    {
+                        Success = false,
+                        Error = new InvalidOperationException(
+                            "Backup was created, but world saving could not be resumed. Run save-on on the server immediately.", ex)
+                    };
                 }
             }
         }
+
+        return result;
     }
 
     private string ResolveWorldDirectory(InstanceMetadata metadata, string serverDir)
