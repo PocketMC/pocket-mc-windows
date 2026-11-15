@@ -677,7 +677,14 @@ public class DownloaderService
 
         if (File.Exists(cloudflaredPath))
         {
-            return;
+            if (CloudflaredExpectedSha256 == null ||
+                await VerifyHashAsync(cloudflaredPath, CloudflaredExpectedSha256, "SHA256", cancellationToken))
+            {
+                return;
+            }
+
+            _logger.LogWarning("Existing cloudflared binary failed the pinned digest; re-downloading it.");
+            TryDeleteFile(cloudflaredPath);
         }
 
         Directory.CreateDirectory(tunnelDir);

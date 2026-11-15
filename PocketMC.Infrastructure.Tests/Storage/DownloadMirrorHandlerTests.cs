@@ -97,6 +97,26 @@ public sealed class DownloadMirrorHandlerTests
         };
     }
 
+    [Fact]
+    public async Task SendAsync_DoesNotForwardCredentialsToMirrors()
+    {
+        const string origin = "https://github.com/owner/repo/releases/download/v1/server.jar";
+        var inner = new StubHandler(uri => uri.Host == "mirror.example"
+            ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : Ok());
+        using var handler = CreateHandler(inner);
+
+        using var invoker = new HttpMessageInvoker(handler, disposeHandler: false);
+        using var request = new HttpRequestMessage(HttpMethod.Get, origin);
+        request.Headers.TryAddWithoutValidation("Authorization", "Bearer secret");
+        request.Headers.TryAddWithoutValidation("Accept", "application/octet-stream");
+        using HttpResponseMessage response = await invoker.SendAsync(request, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(inner.RequestedHeaders[0]!.Authorization);
+        Assert.NotNull(inner.RequestedHeaders[0]!.Accept);
+    }
+
     private static async Task<HttpResponseMessage> SendAsync(DownloadMirrorHandler handler, string url)
     {
         using var invoker = new HttpMessageInvoker(handler, disposeHandler: false);
@@ -123,11 +143,14 @@ public sealed class DownloadMirrorHandlerTests
 
         public List<Uri> RequestedUris { get; } = new();
 
+        public List<System.Net.Http.Headers.HttpRequestHeaders> RequestedHeaders { get; } = new();
+
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Uri uri = request.RequestUri!;
             RequestedUris.Add(uri);
+            RequestedHeaders.Add(request.Headers);
 
             HttpResponseMessage response = _responder(uri);
             response.RequestMessage = request;

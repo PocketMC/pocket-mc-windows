@@ -198,6 +198,8 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
         await Task.Delay(delay > MaxRetryAfterDelay ? MaxRetryAfterDelay : delay, cancellationToken).ConfigureAwait(false);
     }
 
+    private static readonly string[] ForwardedHeaders = { "Range", "Accept", "Accept-Encoding" };
+
     private static HttpRequestMessage CloneRequest(HttpRequestMessage request, Uri uri)
     {
         var clone = new HttpRequestMessage(request.Method, uri)
@@ -206,9 +208,13 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
             VersionPolicy = request.VersionPolicy
         };
 
-        foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
+        // Mirrors are third parties: forward only the headers a download actually needs.
+        foreach (string name in ForwardedHeaders)
         {
-            clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            if (request.Headers.TryGetValues(name, out IEnumerable<string>? values))
+            {
+                clone.Headers.TryAddWithoutValidation(name, values);
+            }
         }
 
         return clone;
