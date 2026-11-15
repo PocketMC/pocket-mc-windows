@@ -38,7 +38,12 @@ public class BedrockBdsProvider : IServerSoftwareProvider
 {
     private readonly HttpClient _httpClient;
     private readonly DownloaderService _downloader;
+
     private readonly ILogger<BedrockBdsProvider> _logger;
+
+    // Backs off briefly after a failed manifest fetch so a transient outage is retried.
+    internal static TimeSpan ManifestRetryDelay { get; set; } = TimeSpan.FromSeconds(30);
+    private DateTimeOffset _cacheRetryAfter = DateTimeOffset.MinValue;
 
     // In-memory cache of (versionId → windowsDownloadUrl) built the first time versions are fetched.
     private Dictionary<string, string>? _releaseCache;
@@ -155,6 +160,7 @@ public class BedrockBdsProvider : IServerSoftwareProvider
     private async Task EnsureCacheAsync()
     {
         if (_releaseCache != null) return; // already populated
+        if (DateTimeOffset.UtcNow < _cacheRetryAfter) return;
 
         try
         {
@@ -168,9 +174,9 @@ public class BedrockBdsProvider : IServerSoftwareProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch BDS manifest from kittizz. Version list will be empty.");
-            _releaseCache = new Dictionary<string, string>();
-            _previewCache = new Dictionary<string, string>();
+            // Leave the caches empty so a later call can retry once connectivity returns.
+            _cacheRetryAfter = DateTimeOffset.UtcNow + ManifestRetryDelay;
+            _logger.LogError(ex, "Failed to fetch BDS manifest from kittizz; a later call will retry.");
         }
     }
 
