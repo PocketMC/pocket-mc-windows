@@ -362,6 +362,7 @@ public class DownloaderService
         long writtenBytes = 0;
         long[] lastReportTick = { 0 };
         using var segmentCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        List<Task>? segments = null;
 
         try
         {
@@ -369,7 +370,7 @@ public class DownloaderService
             file.SetLength(totalBytes);
             SafeFileHandle handle = file.SafeFileHandle;
 
-            var segments = new List<Task>(threads);
+            segments = new List<Task>(threads);
             for (int index = 0; index < threads; index++)
             {
                 long start = index * segmentSize;
@@ -398,6 +399,7 @@ public class DownloaderService
         catch (RangeNotSupportedException)
         {
             segmentCts.Cancel();
+            await DrainSegmentsAsync(segments).ConfigureAwait(false);
             _logger.LogInformation("Server rejected ranged segments for {Url}; falling back to a single stream.", url);
             TryDeleteFile(partialPath);
             return false;
@@ -405,10 +407,22 @@ public class DownloaderService
         catch (Exception ex)
         {
             segmentCts.Cancel();
+            await DrainSegmentsAsync(segments).ConfigureAwait(false);
             _logger.LogWarning(ex, "Segmented download failed for {Url}; falling back to a single stream.", url);
             TryDeleteFile(partialPath);
             return false;
         }
+    }
+
+    /// <summary>
+    /// Cancelled segments keep writing to the shared handle until they observe the token, so the
+    /// caller waits for them before deleting or reusing the partial file.
+    /// </summary>
+    private static async Task DrainSegmentsAsync(List<Task>? segments)
+    {
+        if (segments is null) return;
+        try { await Task.WhenAll(segments).ConfigureAwait(false); }
+        catch { /* one segment already failed; the rest were cancelled */ }
     }
 
     private async Task DownloadSegmentAsync(
