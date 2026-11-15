@@ -281,7 +281,9 @@ public class DownloaderService
                     bool isValid = await VerifyHashAsync(partialPath, expectedHash!, hashType, cancellationToken);
                     if (!isValid)
                     {
+                        // A mirror may serve a truncated or stale copy: drop both files so the retry starts clean.
                         TryDeleteFile(partialPath);
+                        TryDeleteFile(identityPath);
                         throw new CryptographicException($"{hashType} verification failed for {url}. Expected {expectedHash}, but file content mismatched.");
                     }
                     _logger.LogInformation("{HashType} verification passed for {DestinationPath}.", hashType, destinationPath);
@@ -756,7 +758,8 @@ public class DownloaderService
 
     private static bool IsRetryable(Exception ex)
     {
-        if (ex is InvalidDataException or CryptographicException) return false;
+        // Corrupted payloads and empty responses are usually served by one bad mirror, so a retry can recover.
+        if (ex is InvalidDataException or CryptographicException) return true;
         if (ex is HttpRequestException httpRequestException &&
             httpRequestException.StatusCode is HttpStatusCode statusCode)
         {
