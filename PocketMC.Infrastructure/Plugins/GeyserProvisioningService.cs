@@ -82,7 +82,9 @@ public class GeyserProvisioningService
             string geyserPath = Path.Combine(dirPath, "Geyser.jar");
             ReportStatus(progress, $"Downloading Geyser ({loader})...");
             _logger.LogInformation("Downloading Geyser from {Url}", geyserFile.Url);
-            await _downloader.DownloadFileAsync(geyserFile.Url, geyserPath, null, progress, cancellationToken);
+            string? geyserHash = ModrinthService.GetPreferredHash(geyserFile, out string? geyserHashType);
+            await _downloader.DownloadFileAsync(
+                geyserFile.Url, geyserPath, geyserHash, geyserHashType, progress, cancellationToken);
 
             // --- Fabric API (required for Geyser/Floodgate on Fabric) ---
             if (loader == "fabric")
@@ -98,7 +100,9 @@ public class GeyserProvisioningService
                         string fabricApiPath = Path.Combine(dirPath, "Fabric-API.jar");
                         ReportStatus(progress, "Downloading Fabric API...");
                         _logger.LogInformation("Downloading Fabric API from {Url}", fabricApiFile.Url);
-                        await _downloader.DownloadFileAsync(fabricApiFile.Url, fabricApiPath, null, progress, cancellationToken);
+                        string? fabricApiHash = ModrinthService.GetPreferredHash(fabricApiFile, out string? fabricApiHashType);
+                        await _downloader.DownloadFileAsync(
+                            fabricApiFile.Url, fabricApiPath, fabricApiHash, fabricApiHashType, progress, cancellationToken);
                     }
                 }
                 else
@@ -151,7 +155,9 @@ public class GeyserProvisioningService
                         string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
                         ReportStatus(progress, $"Downloading Floodgate ({loader})...");
                         _logger.LogInformation("Downloading Floodgate from {Url}", floodgateFile.Url);
-                        await _downloader.DownloadFileAsync(floodgateFile.Url, floodgatePath, null, progress, cancellationToken);
+                        string? floodgateHash = ModrinthService.GetPreferredHash(floodgateFile, out string? floodgateHashType);
+                        await _downloader.DownloadFileAsync(
+                            floodgateFile.Url, floodgatePath, floodgateHash, floodgateHashType, progress, cancellationToken);
                     }
                 }
             }
