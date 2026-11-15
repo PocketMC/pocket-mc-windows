@@ -163,6 +163,8 @@ public class ForgeInstaller
                     {
                         onLog?.Invoke($"[PocketMC] Installer cancelled. Cleaning up...");
                         try { proc.Kill(true); } catch { }
+                        // Drain the pumps so the disposed process has no observers left on it.
+                        try { await Task.WhenAll(outputTask, errorTask); } catch { }
                         throw;
                     }
                     await Task.WhenAll(outputTask, errorTask);
@@ -182,6 +184,11 @@ public class ForgeInstaller
                         throw new Exception($"{meta.ServerType} installer failed with exit code {proc.ExitCode}");
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                CleanupFailedInstallation(workingDir);
+                throw;
             }
             catch (Exception ex)
             {
