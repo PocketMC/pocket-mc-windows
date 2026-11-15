@@ -79,6 +79,7 @@ public class PocketmineProvider : IServerSoftwareProvider
         _logger.LogInformation("Resolving download URL for Pocketmine {Version}", versionId);
 
         string? downloadUrl = null;
+        string? downloadDigest = null;
 
         // Try direct tag release endpoint first for instant resolution
         try
@@ -90,6 +91,7 @@ public class PocketmineProvider : IServerSoftwareProvider
             {
                 var pharAsset = assets.FirstOrDefault(a => a is JsonObject aObj && aObj["name"]?.ToString() == "PocketMine-MP.phar") as JsonObject;
                 downloadUrl = pharAsset?["browser_download_url"]?.ToString();
+                downloadDigest = pharAsset?["digest"]?.ToString();
             }
         }
         catch (Exception ex)
@@ -111,6 +113,7 @@ public class PocketmineProvider : IServerSoftwareProvider
                     {
                         var pharAsset = assets.FirstOrDefault(a => a is JsonObject aObj && aObj["name"]?.ToString() == "PocketMine-MP.phar") as JsonObject;
                         downloadUrl = pharAsset?["browser_download_url"]?.ToString();
+                        downloadDigest = pharAsset?["digest"]?.ToString();
                     }
                 }
             }
@@ -124,7 +127,17 @@ public class PocketmineProvider : IServerSoftwareProvider
             downloadUrl = $"{directDownloadBase}/download/{versionId}/PocketMine-MP.phar";
         }
 
-        await _downloader.DownloadFileAsync(downloadUrl, destinationPath, null, progress, cancellationToken);
+        // GitHub publishes per-asset digests ("sha256:<hex>"); use them when the API returned one.
+        string? expectedHash = null;
+        string? expectedHashType = null;
+        if (!string.IsNullOrWhiteSpace(downloadDigest) && downloadDigest.Contains(':'))
+        {
+            int separator = downloadDigest.IndexOf(':');
+            expectedHashType = downloadDigest[..separator].Trim();
+            expectedHash = downloadDigest[(separator + 1)..].Trim();
+        }
+
+        await _downloader.DownloadFileAsync(downloadUrl, destinationPath, expectedHash, expectedHashType, progress, cancellationToken);
         
         return string.Empty;
     }
