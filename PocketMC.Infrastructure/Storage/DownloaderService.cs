@@ -41,6 +41,11 @@ public class DownloaderService
     // Keeps concurrent file downloads within the user-configured budget.
     private static readonly DownloadConcurrencyLimiter ConcurrencyLimiter = new();
 
+    // Serialises writers per destination so overlapping requests cannot share ".partial" files.
+    // Entries are tiny and never removed; the key space is bounded by the files the app downloads.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> DestinationLocks =
+        new(StringComparer.OrdinalIgnoreCase);
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DownloaderService> _logger;
 
@@ -68,8 +73,18 @@ public class DownloaderService
         IProgress<DownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        using IDisposable slot = await ConcurrencyLimiter.AcquireAsync(cancellationToken);
-        await DownloadFileCoreAsync(url, destinationPath, expectedHash, expectedHashType, progress, cancellationToken);
+        SemaphoreSlim destinationGate = DestinationLocks.GetOrAdd(
+            Path.GetFullPath(destinationPath), static _ => new SemaphoreSlim(1, 1));
+        await destinationGate.WaitAsync(cancellationToken);
+        try
+        {
+            using IDisposable slot = await ConcurrencyLimiter.AcquireAsync(cancellationToken);
+            await DownloadFileCoreAsync(url, destinationPath, expectedHash, expectedHashType, progress, cancellationToken);
+        }
+        finally
+        {
+            destinationGate.Release();
+        }
     }
 
     private async Task DownloadFileCoreAsync(
