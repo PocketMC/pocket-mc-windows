@@ -167,7 +167,10 @@ public class ForgeInstaller
                         try { await Task.WhenAll(outputTask, errorTask); } catch { }
                         throw;
                     }
-                    await Task.WhenAll(outputTask, errorTask);
+                    // The installer's exit code is the verdict; a broken log pump must not turn a
+                    // successful install into a cleanup that deletes libraries/versions.
+                    try { await Task.WhenAll(outputTask, errorTask); }
+                    catch (Exception ex) { onLog?.Invoke($"[PocketMC] Installer output reader failed: {ex.Message}"); }
 
                     if (proc.ExitCode == 0)
                     {
