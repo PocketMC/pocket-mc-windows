@@ -1,4 +1,5 @@
 using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Infrastructure.Java;
 using PocketMC.Domain.Models;
 
@@ -12,6 +13,9 @@ public sealed class InstanceVersionTargetService
     {
         _providers = providers.ToArray();
     }
+
+    /// <summary>Drops cached provider metadata so a user-initiated refresh sees newly published builds.</summary>
+    public void RefreshProviderMetadata() => ProviderMetaCache.Clear();
 
     public async Task<IReadOnlyList<MinecraftVersion>> GetAvailableTargetVersionsAsync(
         InstanceMetadata metadata,

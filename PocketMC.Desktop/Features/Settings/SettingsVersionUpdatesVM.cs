@@ -64,7 +64,7 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
 
         _targetVersionStatusText = L.T("Checking for available updates...");
 
-        LoadTargetVersionsCommand = new AsyncRelayCommand(_ => LoadTargetVersionsAsync(), _ => !IsBusy && !IsLoadingTargetVersions);
+        LoadTargetVersionsCommand = new AsyncRelayCommand(_ => RefreshTargetVersionsAsync(), _ => !IsBusy && !IsLoadingTargetVersions);
         ApplyMinecraftUpdateCommand = new AsyncRelayCommand(_ => ApplyMinecraftUpdateAsync(), _ => CanApplyMinecraftUpdate);
         ApplyLoaderUpdateCommand = new AsyncRelayCommand(_ => ApplyLoaderUpdateAsync(), _ => CanApplyLoaderUpdate);
 
@@ -240,6 +240,13 @@ public sealed class SettingsVersionUpdatesVM : ViewModelBase
 
         _serverDir = newDir;
         _ = LoadTargetVersionsAsync();
+    }
+
+    /// <summary>Refresh bypasses the provider metadata cache so the latest builds are really visible.</summary>
+    private Task RefreshTargetVersionsAsync()
+    {
+        _versionTargetService.RefreshProviderMetadata();
+        return LoadTargetVersionsAsync();
     }
 
     private async Task LoadTargetVersionsAsync()
