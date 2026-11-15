@@ -125,12 +125,14 @@ namespace PocketMC.Infrastructure.Java
                 return;
             }
 
+            // The shared provisioning task must outlive any single waiter: a caller that cancels
+            // only stops waiting, it never tears down the download other callers depend on.
             Task provisioningTask = _inflightProvisioning.GetOrAdd(
                 version,
-                static (v, state) => state.self.ProvisionRuntimeCoreAsync(v, state.progress, state.token),
-                (self: this, progress: progress, token: cancellationToken));
+                static (v, state) => state.self.ProvisionRuntimeCoreAsync(v, state.progress, CancellationToken.None),
+                (self: this, progress: progress));
 
-            try { await provisioningTask; }
+            try { await provisioningTask.WaitAsync(cancellationToken); }
             finally
             {
                 if (provisioningTask.IsCompleted)
