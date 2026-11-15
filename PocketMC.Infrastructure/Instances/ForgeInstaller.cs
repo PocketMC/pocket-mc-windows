@@ -30,10 +30,20 @@ public class ForgeInstaller
         CancellationToken cancellationToken = default)
     {
         string installerPath = Path.Combine(workingDir, "installer.jar");
+        string completionMarker = Path.Combine(workingDir, InstallerMarkerName);
         bool isForgeOrNeo = meta.ServerType == "Forge" || meta.ServerType == "NeoForge";
 
-        if (isForgeOrNeo && File.Exists(installerPath) && !Directory.Exists(Path.Combine(workingDir, "libraries")))
+        // The marker, not the libraries folder, decides whether the installer already succeeded:
+        // a crashed installer leaves a partial libraries/ tree that must not block a retry.
+        bool installerFinished = File.Exists(completionMarker) && Directory.Exists(Path.Combine(workingDir, "libraries"));
+        if (isForgeOrNeo && File.Exists(installerPath) && !installerFinished)
         {
+            if (Directory.Exists(Path.Combine(workingDir, "libraries")))
+            {
+                onLog($"[PocketMC] Removing an incomplete {meta.ServerType} installation before retrying...");
+                CleanupFailedInstallation(workingDir);
+            }
+
             onStateChange?.Invoke(ServerState.Installing);
             onLog($"[PocketMC] First-time {meta.ServerType} setup detected. Running installer...");
 
@@ -160,6 +170,7 @@ public class ForgeInstaller
                     if (proc.ExitCode == 0)
                     {
                         onLog?.Invoke($"[PocketMC] {meta.ServerType} installation successful.");
+                        try { File.WriteAllText(completionMarker, meta.ServerType); } catch { }
                         // Clean up installer to prevent re-runs
                         try { File.Delete(installerPath); } catch { }
                         if (patchedInstallerPath != null) { try { File.Delete(patchedInstallerPath); } catch { } }
@@ -183,6 +194,8 @@ public class ForgeInstaller
             }
         }
     }
+
+    private const string InstallerMarkerName = ".pocketmc-installer-complete";
 
     private void CleanupFailedInstallation(string workingDir)
     {
