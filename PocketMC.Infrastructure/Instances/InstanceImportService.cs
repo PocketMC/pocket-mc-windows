@@ -2,6 +2,7 @@ using PocketMC.Application.Services.Shell;
 using PocketMC.Application.Services.Instances;
 using PocketMC.Application.Interfaces.Instances;
 using System.IO;
+using System.Security.Cryptography;
 using System.IO.Compression;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -717,6 +718,14 @@ public sealed class InstanceImportService : IInstanceImportService
             return false;
         }
 
+        if (!await VerifyAddonDigestAsync(sourceFilePath, addon, cancellationToken).ConfigureAwait(false))
+        {
+            _logger.LogWarning(
+                "Packaged file digest mismatch for {AddonName}; refusing to restore it.",
+                addon.Name);
+            return false;
+        }
+
         // Determine the correct destination based on disabled state
         string destinationDirectory = ResolveJavaAddonDirectory(stagingResult.ServerDirectory, addon.Type);
         string enabledFileName = addon.FileName ?? Path.GetFileName(sourceFilePath);
@@ -762,6 +771,48 @@ public sealed class InstanceImportService : IInstanceImportService
             .ConfigureAwait(false);
 
         return true;
+    }
+
+    /// <summary>
+    /// Compares the packaged file against a declared digest. Returns true when no digest is declared.
+    /// </summary>
+    private static async Task<bool> VerifyAddonDigestAsync(
+        string filePath,
+        JavaAddonManifest addon,
+        CancellationToken cancellationToken)
+    {
+        string? expected = addon.Sha512;
+        string algorithm = "SHA512";
+        if (string.IsNullOrWhiteSpace(expected) && !string.IsNullOrWhiteSpace(addon.Hash))
+        {
+            int separator = addon.Hash.IndexOf('-', StringComparison.Ordinal);
+            if (separator > 0 && separator < addon.Hash.Length - 1)
+            {
+                algorithm = addon.Hash[..separator];
+                expected = addon.Hash[(separator + 1)..];
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(expected))
+        {
+            return true;
+        }
+
+        await using FileStream stream = File.OpenRead(filePath);
+        byte[] digest = algorithm.ToUpperInvariant() switch
+        {
+            "SHA1" => await SHA1.HashDataAsync(stream, cancellationToken).ConfigureAwait(false),
+            "SHA256" => await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false),
+            "SHA512" => await SHA512.HashDataAsync(stream, cancellationToken).ConfigureAwait(false),
+            _ => Array.Empty<byte>()
+        };
+
+        return digest.Length > 0 &&
+               Convert.ToHexString(digest).Equals(expected.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
