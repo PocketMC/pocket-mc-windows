@@ -133,6 +133,30 @@ public sealed class DownloadResumeTests
         }
     }
 
+
+    [Fact]
+    public async Task DownloadFile_RejectsAnUnknownHashLengthWithoutTouchingTheNetwork()
+    {
+        string destination = Path.Combine(Path.GetTempPath(), $"pocketmc-hash-{Guid.NewGuid():N}.bin");
+        var handler = new RestartWithNewObjectHandler(new byte[16]);
+        var service = new DownloaderService(
+            new SingleClientFactory(handler), NullLogger<DownloaderService>.Instance);
+
+        try
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => service.DownloadFileAsync(
+                "https://example.test/file.bin", destination, expectedHash: "abc123"));
+            Assert.False(File.Exists(destination + ".partial"));
+        }
+        finally
+        {
+            foreach (string path in new[] { destination, destination + ".partial", destination + ".partial.identity" })
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+        }
+    }
+
     private sealed class SingleClientFactory : IHttpClientFactory
     {
         private readonly HttpMessageHandler _handler;

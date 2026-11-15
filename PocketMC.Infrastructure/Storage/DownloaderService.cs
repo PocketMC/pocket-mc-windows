@@ -112,6 +112,9 @@ public class DownloaderService
             Directory.CreateDirectory(directory);
         }
 
+        // Validate the digest spec up front so an unsupported type fails fast instead of after a full download.
+        string? hashType = string.IsNullOrEmpty(expectedHash) ? null : NormalizeHashType(expectedHash, expectedHashType);
+
         const int maxAttempts = 4;
         Exception? lastException = null;
 
@@ -213,11 +216,10 @@ public class DownloaderService
                 }
 
                 if (new FileInfo(partialPath).Length == 0) throw new InvalidDataException("Downloaded artifact is empty.");
-                if (!string.IsNullOrEmpty(expectedHash))
+                if (hashType is not null)
                 {
-                    string hashType = NormalizeHashType(expectedHash, expectedHashType);
                     _logger.LogInformation("Verifying {HashType} hash for {DestinationPath}...", hashType, destinationPath);
-                    bool isValid = await VerifyHashAsync(partialPath, expectedHash, hashType, cancellationToken);
+                    bool isValid = await VerifyHashAsync(partialPath, expectedHash!, hashType, cancellationToken);
                     if (!isValid)
                     {
                         TryDeleteFile(partialPath);
