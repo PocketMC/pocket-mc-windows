@@ -332,6 +332,13 @@ public class DownloaderService
             probeModified = probeResponse.Content.Headers.LastModified;
         }
 
+        // Without a validator a mirror could swap the object mid-transfer and no segment would notice.
+        if (probeTag == null && probeModified == null)
+        {
+            _logger.LogDebug("Segmented download skipped for {Url}: the server exposes no validator.", url);
+            return false;
+        }
+
         // Every segment is pinned to the probe's validator so a replaced object aborts the transfer
         // instead of stitching bytes from two different builds into one file.
         RangeConditionHeaderValue? versionCondition =
@@ -431,13 +438,14 @@ public class DownloaderService
         }
 
         // A mirror can serve a different build that still honours ranges; refuse to mix its bytes in.
-        if (probeTag is not null && response.Headers.ETag is { } segmentTag && !segmentTag.Equals(probeTag))
+        if (probeTag is not null &&
+            (response.Headers.ETag is not { } segmentTag || !segmentTag.Equals(probeTag)))
         {
             throw new RangeNotSupportedException();
         }
 
         if (probeTag is null && probeModified is { } expectedModified &&
-            response.Content.Headers.LastModified is { } segmentModified && segmentModified != expectedModified)
+            (response.Content.Headers.LastModified is not { } segmentModified || segmentModified != expectedModified))
         {
             throw new RangeNotSupportedException();
         }

@@ -56,7 +56,7 @@ public sealed class SegmentedDownloadTests
     public async Task SegmentedDownload_WritesIdenticalContent_AndUsesRanges()
     {
         byte[] payload = CreatePayload(2 * 1024 * 1024);
-        await using var server = new RangeTestServer(payload, supportsRanges: true);
+        await using var server = new RangeTestServer(payload, supportsRanges: true, probeETag: "\"v1\"", segmentETag: "\"v1\"");
         string destination = TempPath();
 
         DownloadTuning.Configure(8, 1);
@@ -113,6 +113,31 @@ public sealed class SegmentedDownloadTests
 
             Assert.Equal(payload, await File.ReadAllBytesAsync(destination));
             Assert.True(server.RangeRequests >= 1, "expected the segmented path to be attempted first");
+        }
+        finally
+        {
+            DownloadTuning.Configure(DownloadTuning.DefaultThreads, DownloadTuning.DefaultConcurrency);
+            TryDelete(destination);
+        }
+    }
+
+    [Fact]
+    public async Task SegmentedDownload_FallsBack_WhenTheServerExposesNoValidator()
+    {
+        byte[] payload = CreatePayload(2 * 1024 * 1024);
+        await using var server = new RangeTestServer(payload, supportsRanges: true);
+        string destination = TempPath();
+
+        DownloadTuning.Configure(4, 1);
+        try
+        {
+            var downloader = new DownloaderService(new SingleClientFactory(), NullLogger<DownloaderService>.Instance);
+            await downloader.DownloadFileAsync(new Uri(server.BaseUri, "file.bin").ToString(), destination);
+
+            Assert.Equal(payload, await File.ReadAllBytesAsync(destination));
+            Assert.Equal(0, server.RangeRequests);
+            // One probe request plus the fallback single-stream transfer.
+            Assert.Equal(2, server.FullRequests);
         }
         finally
         {
@@ -215,7 +240,8 @@ public sealed class SegmentedDownloadTests
                                       $"Content-Length: {length}\r\n{etag}Accept-Ranges: bytes\r\nConnection: close\r\n\r\n";
                         await stream.WriteAsync(Encoding.ASCII.GetBytes(head));
                         // A stale mirror copy differs in content, so mixing it into the file must be detectable.
-                        byte[] body = _segmentETag is null ? _payload : CorruptCopy(_payload);
+                        bool differentObject = _segmentETag is not null && _segmentETag != _probeETag;
+                        byte[] body = differentObject ? CorruptCopy(_payload) : _payload;
                         await stream.WriteAsync(body.AsMemory((int)r.start, (int)length));
                     }
                     else
