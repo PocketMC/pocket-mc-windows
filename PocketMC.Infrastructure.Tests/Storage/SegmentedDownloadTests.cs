@@ -98,6 +98,29 @@ public sealed class SegmentedDownloadTests
         }
     }
 
+    [Fact]
+    public async Task SegmentedDownload_FallsBack_WhenMirrorServesADifferentObject()
+    {
+        byte[] payload = CreatePayload(2 * 1024 * 1024);
+        await using var server = new RangeTestServer(payload, supportsRanges: true, probeETag: "\"v1\"", segmentETag: "\"v2\"");
+        string destination = TempPath();
+
+        DownloadTuning.Configure(4, 1);
+        try
+        {
+            var downloader = new DownloaderService(new SingleClientFactory(), NullLogger<DownloaderService>.Instance);
+            await downloader.DownloadFileAsync(new Uri(server.BaseUri, "file.bin").ToString(), destination);
+
+            Assert.Equal(payload, await File.ReadAllBytesAsync(destination));
+            Assert.True(server.RangeRequests >= 1, "expected the segmented path to be attempted first");
+        }
+        finally
+        {
+            DownloadTuning.Configure(DownloadTuning.DefaultThreads, DownloadTuning.DefaultConcurrency);
+            TryDelete(destination);
+        }
+    }
+
     private static byte[] CreatePayload(int length)
     {
         byte[] payload = new byte[length];
@@ -128,16 +151,20 @@ public sealed class SegmentedDownloadTests
     {
         private readonly byte[] _payload;
         private readonly bool _supportsRanges;
+        private readonly string? _probeETag;
+        private readonly string? _segmentETag;
         private readonly TcpListener _listener;
         private readonly CancellationTokenSource _cts = new();
         private readonly Task _acceptLoop;
         private int _rangeRequests;
         private int _fullRequests;
 
-        public RangeTestServer(byte[] payload, bool supportsRanges)
+        public RangeTestServer(byte[] payload, bool supportsRanges, string? probeETag = null, string? segmentETag = null)
         {
             _payload = payload;
             _supportsRanges = supportsRanges;
+            _probeETag = probeETag;
+            _segmentETag = segmentETag;
             _listener = new TcpListener(IPAddress.Loopback, 0);
             _listener.Start();
             int port = ((IPEndPoint)_listener.LocalEndpoint).Port;
@@ -183,15 +210,19 @@ public sealed class SegmentedDownloadTests
                     {
                         Interlocked.Increment(ref _rangeRequests);
                         long length = r.end - r.start + 1;
+                        string etag = _segmentETag is null ? "" : $"ETag: {_segmentETag}\r\n";
                         string head = $"HTTP/1.1 206 Partial Content\r\nContent-Range: bytes {r.start}-{r.end}/{_payload.Length}\r\n" +
-                                      $"Content-Length: {length}\r\nAccept-Ranges: bytes\r\nConnection: close\r\n\r\n";
+                                      $"Content-Length: {length}\r\n{etag}Accept-Ranges: bytes\r\nConnection: close\r\n\r\n";
                         await stream.WriteAsync(Encoding.ASCII.GetBytes(head));
-                        await stream.WriteAsync(_payload.AsMemory((int)r.start, (int)length));
+                        // A stale mirror copy differs in content, so mixing it into the file must be detectable.
+                        byte[] body = _segmentETag is null ? _payload : CorruptCopy(_payload);
+                        await stream.WriteAsync(body.AsMemory((int)r.start, (int)length));
                     }
                     else
                     {
                         Interlocked.Increment(ref _fullRequests);
-                        string head = $"HTTP/1.1 200 OK\r\nContent-Length: {_payload.Length}\r\nAccept-Ranges: bytes\r\nConnection: close\r\n\r\n";
+                        string etag = _probeETag is null ? "" : $"ETag: {_probeETag}\r\n";
+                        string head = $"HTTP/1.1 200 OK\r\nContent-Length: {_payload.Length}\r\n{etag}Accept-Ranges: bytes\r\nConnection: close\r\n\r\n";
                         await stream.WriteAsync(Encoding.ASCII.GetBytes(head));
                         await stream.WriteAsync(_payload);
                     }
@@ -201,6 +232,17 @@ public sealed class SegmentedDownloadTests
                     // Aborted request: the client already has what it needs.
                 }
             }
+        }
+
+        private static byte[] CorruptCopy(byte[] source)
+        {
+            byte[] copy = (byte[])source.Clone();
+            for (int index = 0; index < copy.Length; index++)
+            {
+                copy[index] = (byte)(copy[index] ^ 0xFF);
+            }
+
+            return copy;
         }
 
         private static async Task<string?> ReadRangeHeaderAsync(NetworkStream stream)

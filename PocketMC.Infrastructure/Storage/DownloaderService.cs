@@ -314,7 +314,7 @@ public class DownloaderService
                 long start = index * segmentSize;
                 long end = index == threads - 1 ? totalBytes - 1 : start + segmentSize - 1;
                 segments.Add(DownloadSegmentAsync(
-                    client, url, handle, start, end, totalBytes, versionCondition, segmentCts.Token,
+                    client, url, handle, start, end, totalBytes, versionCondition, probeTag, probeModified, segmentCts.Token,
                     bytes => Interlocked.Add(ref writtenBytes, bytes),
                     done => ReportThrottled(progress, done, totalBytes, lastReportTick),
                     cancellationToken));
@@ -337,12 +337,14 @@ public class DownloaderService
         }
         catch (RangeNotSupportedException)
         {
+            segmentCts.Cancel();
             _logger.LogInformation("Server rejected ranged segments for {Url}; falling back to a single stream.", url);
             TryDeleteFile(partialPath);
             return false;
         }
         catch (Exception ex)
         {
+            segmentCts.Cancel();
             _logger.LogWarning(ex, "Segmented download failed for {Url}; falling back to a single stream.", url);
             TryDeleteFile(partialPath);
             return false;
@@ -357,6 +359,8 @@ public class DownloaderService
         long end,
         long totalBytes,
         RangeConditionHeaderValue? versionCondition,
+        EntityTagHeaderValue? probeTag,
+        DateTimeOffset? probeModified,
         CancellationToken segmentToken,
         Action<long> addBytes,
         Action<long> reportProgress,
@@ -375,6 +379,18 @@ public class DownloaderService
             range.From != start ||
             range.To != end ||
             range.Length != totalBytes)
+        {
+            throw new RangeNotSupportedException();
+        }
+
+        // A mirror can serve a different build that still honours ranges; refuse to mix its bytes in.
+        if (probeTag is not null && response.Headers.ETag is { } segmentTag && !segmentTag.Equals(probeTag))
+        {
+            throw new RangeNotSupportedException();
+        }
+
+        if (probeTag is null && probeModified is { } expectedModified &&
+            response.Content.Headers.LastModified is { } segmentModified && segmentModified != expectedModified)
         {
             throw new RangeNotSupportedException();
         }
