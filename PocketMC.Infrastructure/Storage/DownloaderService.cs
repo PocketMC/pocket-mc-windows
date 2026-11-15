@@ -43,10 +43,16 @@ public class DownloaderService
     // Keeps concurrent file downloads within the user-configured budget.
     private static readonly DownloadConcurrencyLimiter ConcurrencyLimiter = new();
 
+    private sealed class LockEntry
+    {
+        public SemaphoreSlim Gate { get; } = new(1, 1);
+        public int Users;
+    }
+
     // Serialises writers per destination so overlapping requests cannot share ".partial" files.
-    // Entries are tiny and never removed; the key space is bounded by the files the app downloads.
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> DestinationLocks =
-        new(StringComparer.OrdinalIgnoreCase);
+    // Idle entries are dropped so the table stays bounded no matter how many files are downloaded.
+    private static readonly Dictionary<string, LockEntry> DestinationLocks = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object DestinationLocksGate = new();
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DownloaderService> _logger;
@@ -75,9 +81,9 @@ public class DownloaderService
         IProgress<DownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        SemaphoreSlim destinationGate = DestinationLocks.GetOrAdd(
-            Path.GetFullPath(destinationPath), static _ => new SemaphoreSlim(1, 1));
-        await destinationGate.WaitAsync(cancellationToken);
+        string destinationKey = Path.GetFullPath(destinationPath);
+        LockEntry destinationEntry = RentDestinationLock(destinationKey);
+        await destinationEntry.Gate.WaitAsync(cancellationToken);
         try
         {
             using IDisposable slot = await ConcurrencyLimiter.AcquireAsync(cancellationToken);
@@ -85,7 +91,48 @@ public class DownloaderService
         }
         finally
         {
-            destinationGate.Release();
+            destinationEntry.Gate.Release();
+            ReturnDestinationLock(destinationKey, destinationEntry);
+        }
+    }
+
+    internal static int DestinationLockCount
+    {
+        get
+        {
+            lock (DestinationLocksGate)
+            {
+                return DestinationLocks.Count;
+            }
+        }
+    }
+
+    private static LockEntry RentDestinationLock(string key)
+    {
+        lock (DestinationLocksGate)
+        {
+            if (!DestinationLocks.TryGetValue(key, out LockEntry? entry))
+            {
+                entry = new LockEntry();
+                DestinationLocks[key] = entry;
+            }
+
+            entry.Users++;
+            return entry;
+        }
+    }
+
+    private static void ReturnDestinationLock(string key, LockEntry entry)
+    {
+        lock (DestinationLocksGate)
+        {
+            if (--entry.Users > 0)
+            {
+                return;
+            }
+
+            DestinationLocks.Remove(key);
+            entry.Gate.Dispose();
         }
     }
 

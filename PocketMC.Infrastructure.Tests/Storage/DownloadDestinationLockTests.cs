@@ -38,6 +38,7 @@ public sealed class DownloadDestinationLockTests
 
             Assert.Equal(2, handler.RequestCount);
             Assert.Equal(8192, new FileInfo(destination).Length);
+            Assert.Equal(0, DownloaderService.DestinationLockCount);
         }
         finally
         {
