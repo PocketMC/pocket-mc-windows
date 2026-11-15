@@ -78,12 +78,20 @@ public static class InstallerMirrorPatcher
                 }
             }
 
+            if (replaced == 0)
+            {
+                // Nothing was rewritten, so a patched copy would only waste disk and confuse retries.
+                TryDelete(tempTarget);
+                return false;
+            }
+
             if (File.Exists(targetJar)) File.Delete(targetJar);
             File.Move(tempTarget, targetJar);
-            return replaced > 0;
+            return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"Installer mirror patch failed: {ex}");
             TryDelete(tempTarget);
             return false;
         }
