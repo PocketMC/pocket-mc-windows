@@ -49,6 +49,42 @@ public sealed class DownloadResumeTests
         }
     }
 
+    [Fact]
+    public async Task DownloadFile_SendsIfRange_WhenResumingWithKnownValidator()
+    {
+        byte[] payload = Encoding.UTF8.GetBytes(new string('b', 3000));
+        string destination = Path.Combine(Path.GetTempPath(), $"pocketmc-ifrange-{Guid.NewGuid():N}.bin");
+        string partial = destination + ".partial";
+        string identity = partial + ".identity";
+        await File.WriteAllBytesAsync(partial, payload[..20]);
+        await File.WriteAllTextAsync(
+            identity,
+            $"{{\"Url\":\"https://example.test/file.bin\",\"ETag\":\"\\\"v1\\\"\",\"LastModified\":null,\"Length\":{payload.Length}}}");
+
+        var handler = new ReplacedObjectHandler(payload);
+        var service = new DownloaderService(
+            new SingleClientFactory(handler), NullLogger<DownloaderService>.Instance);
+
+        DownloadTuning.Configure(1, 1);
+        try
+        {
+            string expectedHash = Convert.ToHexString(SHA256.HashData(payload));
+            await service.DownloadFileAsync(
+                "https://example.test/file.bin", destination, expectedHash, "sha256");
+
+            Assert.True(handler.SawIfRange);
+            Assert.Equal(payload, await File.ReadAllBytesAsync(destination));
+        }
+        finally
+        {
+            DownloadTuning.Configure(DownloadTuning.DefaultThreads, DownloadTuning.DefaultConcurrency);
+            foreach (string path in new[] { destination, partial, identity })
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+        }
+    }
+
     private sealed class SingleClientFactory : IHttpClientFactory
     {
         private readonly HttpMessageHandler _handler;
@@ -88,6 +124,34 @@ public sealed class DownloadResumeTests
                 });
             }
 
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new ByteArrayContent(_payload)
+            });
+        }
+    }
+
+    private sealed class ReplacedObjectHandler : HttpMessageHandler
+    {
+        private readonly byte[] _payload;
+
+        public ReplacedObjectHandler(byte[] payload)
+        {
+            _payload = payload;
+        }
+
+        public bool SawIfRange { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.Headers.Range != null && request.Headers.IfRange != null)
+            {
+                SawIfRange = true;
+            }
+
+            // The object behind the URL changed, so the range condition fails and a full body is returned.
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 RequestMessage = request,

@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using PocketMC.Domain.Models;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Tunnel;
@@ -97,10 +99,12 @@ public class DownloaderService
     {
         string partialPath = destinationPath + ".partial";
         string identityPath = partialPath + ".identity";
-        if (!File.Exists(identityPath) || File.ReadAllText(identityPath) != url)
+        ResumeIdentity identity = ReadIdentity(identityPath);
+        if (!string.Equals(identity.Url, url, StringComparison.Ordinal))
         {
             TryDeleteFile(partialPath);
-            PocketMC.Domain.Storage.FileUtils.AtomicWriteAllText(identityPath, url);
+            identity = new ResumeIdentity(url, null, null, null);
+            WriteIdentity(identityPath, identity);
         }
         string? directory = Path.GetDirectoryName(destinationPath);
         if (!string.IsNullOrEmpty(directory))
@@ -134,6 +138,17 @@ public class DownloaderService
                 if (existingBytes > 0)
                 {
                     request.Headers.Range = new RangeHeaderValue(existingBytes, null);
+                    // If the object changed since the partial was written, the server sends a full 200 instead of a 206.
+                    if (identity.ETag is string etag && EntityTagHeaderValue.TryParse(etag, out EntityTagHeaderValue? parsedTag))
+                    {
+                        request.Headers.IfRange = new RangeConditionHeaderValue(parsedTag);
+                    }
+                    else if (identity.LastModified is string lastModified &&
+                             DateTimeOffset.TryParse(lastModified, CultureInfo.InvariantCulture,
+                                 DateTimeStyles.AssumeUniversal, out DateTimeOffset modifiedAt))
+                    {
+                        request.Headers.IfRange = new RangeConditionHeaderValue(modifiedAt);
+                    }
                 }
 
                 using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -157,7 +172,21 @@ public class DownloaderService
                         (response.Content.Headers.ContentRange?.From == existingBytes &&
                          response.Content.Headers.ContentRange?.To is long lastByte &&
                          response.Content.Headers.ContentRange?.Length is long objectLength &&
-                         lastByte == objectLength - 1);
+                         lastByte == objectLength - 1 &&
+                         (identity.Length is not long knownLength || objectLength == knownLength));
+
+                    if (rangeIsUsable)
+                    {
+                        identity = identity with
+                        {
+                            ETag = response.Headers.ETag?.ToString() ?? identity.ETag,
+                            LastModified = response.Content.Headers.LastModified?.ToString("R") ?? identity.LastModified,
+                            Length = response.StatusCode == HttpStatusCode.PartialContent
+                                ? response.Content.Headers.ContentRange?.Length ?? identity.Length
+                                : response.Content.Headers.ContentLength ?? identity.Length
+                        };
+                        WriteIdentity(identityPath, identity);
+                    }
 
                     if (!rangeIsUsable)
                     {
@@ -731,6 +760,46 @@ public class DownloaderService
         catch (Exception ex)
         {
             Debug.WriteLine($"PocketMC failed to delete file {path}: {ex}");
+        }
+    }
+
+    /// <summary>Resume state kept beside the partial file so stale bytes are never appended.</summary>
+    private sealed record ResumeIdentity(string Url, string? ETag, string? LastModified, long? Length);
+
+    private static ResumeIdentity ReadIdentity(string identityPath)
+    {
+        try
+        {
+            if (!File.Exists(identityPath))
+            {
+                return new ResumeIdentity(string.Empty, null, null, null);
+            }
+
+            string text = File.ReadAllText(identityPath).Trim();
+            if (text.StartsWith('{'))
+            {
+                return JsonSerializer.Deserialize<ResumeIdentity>(text)
+                    ?? new ResumeIdentity(string.Empty, null, null, null);
+            }
+
+            // Legacy identity files only stored the URL; the missing validators force a fresh download.
+            return new ResumeIdentity(text, null, null, null);
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return new ResumeIdentity(string.Empty, null, null, null);
+        }
+    }
+
+    private static void WriteIdentity(string identityPath, ResumeIdentity identity)
+    {
+        try
+        {
+            FileUtils.AtomicWriteAllText(identityPath, JsonSerializer.Serialize(identity));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Debug.WriteLine($"PocketMC failed to persist resume identity {identityPath}: {ex}");
         }
     }
 }
