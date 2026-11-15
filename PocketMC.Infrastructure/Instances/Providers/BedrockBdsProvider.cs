@@ -112,13 +112,20 @@ public class BedrockBdsProvider : IServerSoftwareProvider
             if (url == null) _previewCache?.TryGetValue(versionId, out url);
         }
 
+        if (url == null && !string.IsNullOrWhiteSpace(versionId) && versionId != "latest")
+        {
+            // Silently serving another build makes the instance report a version it does not run.
+            throw new InvalidOperationException(
+                $"Bedrock Dedicated Server {versionId} is not listed by the manifest. Refresh the version list and try again.");
+        }
+
         if (url == null && _releaseCache?.Count > 0)
         {
             var latest = _releaseCache
                 .OrderByDescending(kvp => kvp.Key, VersionComparer.Instance)
                 .FirstOrDefault();
             url = latest.Value;
-            _logger.LogInformation("Specific version not cached — using latest: {Version}", latest.Key);
+            _logger.LogInformation("No version requested — using latest release: {Version}", latest.Key);
         }
 
         if (string.IsNullOrEmpty(url))

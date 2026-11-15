@@ -177,14 +177,16 @@ public class ForgeProvider : IServerSoftwareProvider
         if (response != null && response.TryGetPropertyValue("promos", out var promosNode) && promosNode is JsonObject promos)
         {
             // Format: "1.20.1-recommended": "47.2.0"
-            if (promos.TryGetPropertyValue($"{mcVersion}-recommended", out var rec))
-                return rec?.ToString() ?? "0";
+            if (promos.TryGetPropertyValue($"{mcVersion}-recommended", out var rec) && !string.IsNullOrWhiteSpace(rec?.ToString()))
+                return rec!.ToString();
 
-            if (promos.TryGetPropertyValue($"{mcVersion}-latest", out var lat))
-                return lat?.ToString() ?? "0";
+            if (promos.TryGetPropertyValue($"{mcVersion}-latest", out var lat) && !string.IsNullOrWhiteSpace(lat?.ToString()))
+                return lat!.ToString();
         }
 
-        return "latest";
+        // Returning "latest" would silently build a URL that never exists.
+        throw new InvalidOperationException(
+            $"Forge does not publish a build for Minecraft {mcVersion}. Pick another version or supply a loader version.");
     }
 }
 
