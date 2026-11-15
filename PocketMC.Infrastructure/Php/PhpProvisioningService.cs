@@ -334,33 +334,43 @@ namespace PocketMC.Infrastructure.Php
 
                 // Extract beside the live runtime first so a failed install never destroys a working one.
                 string stagingDir = phpDir + ".staging";
-                if (Directory.Exists(stagingDir))
-                {
-                    Directory.Delete(stagingDir, true);
-                }
-
-                await _downloader.ExtractZipAsync(tempZipPath, stagingDir, null);
-
-                UpdateStatus(new PhpProvisioningStatus
-                {
-                    Version = version,
-                    DisplayName = displayName,
-                    Stage = PhpProvisioningStage.Verifying,
-                    Message = "Verifying PHP executable..."
-                });
-
-                string? stagedExePath = ProbeExecutable(stagingDir);
-                if (stagedExePath == null || !File.Exists(stagedExePath))
+                string? exePath;
+                try
                 {
                     TryDeleteDirectory(stagingDir);
-                    throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {stagingDir}.");
-                }
+                    await _downloader.ExtractZipAsync(tempZipPath, stagingDir, null);
 
-                ReplaceDirectory(stagingDir, phpDir);
-                string? exePath = ProbeExecutable(phpDir);
-                if (exePath == null || !File.Exists(exePath))
+                    UpdateStatus(new PhpProvisioningStatus
+                    {
+                        Version = version,
+                        DisplayName = displayName,
+                        Stage = PhpProvisioningStage.Verifying,
+                        Message = "Verifying PHP executable..."
+                    });
+
+                    string? stagedExePath = ProbeExecutable(stagingDir);
+                    if (stagedExePath == null || !File.Exists(stagedExePath))
+                    {
+                        throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {stagingDir}.");
+                    }
+
+                    // Keep the previous runtime until the new one proves it can start.
+                    string? backupDir = ReplaceDirectory(stagingDir, phpDir);
+                    exePath = ProbeExecutable(phpDir);
+                    if (exePath == null || !File.Exists(exePath))
+                    {
+                        RestoreDirectory(phpDir, backupDir);
+                        throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {phpDir}.");
+                    }
+
+                    if (backupDir != null)
+                    {
+                        TryDeleteDirectory(backupDir);
+                    }
+                }
+                finally
                 {
-                    throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {phpDir}.");
+                    TryDeleteDirectory(stagingDir);
                 }
 
                 UpdateStatus(new PhpProvisioningStatus
@@ -432,16 +442,16 @@ namespace PocketMC.Infrastructure.Php
         }
 
         /// <summary>Swaps an extracted staging directory into place, keeping the old runtime as a rollback copy.</summary>
-        private static void ReplaceDirectory(string stagingDir, string targetDir)
+        private static string? ReplaceDirectory(string stagingDir, string targetDir)
         {
             string backupDir = targetDir + ".old";
             TryDeleteDirectory(backupDir);
 
-            bool moved = false;
+            string? backup = null;
             if (Directory.Exists(targetDir))
             {
                 Directory.Move(targetDir, backupDir);
-                moved = true;
+                backup = backupDir;
             }
 
             try
@@ -450,7 +460,7 @@ namespace PocketMC.Infrastructure.Php
             }
             catch
             {
-                if (moved && !Directory.Exists(targetDir) && Directory.Exists(backupDir))
+                if (backup != null && !Directory.Exists(targetDir) && Directory.Exists(backupDir))
                 {
                     Directory.Move(backupDir, targetDir);
                 }
@@ -458,7 +468,16 @@ namespace PocketMC.Infrastructure.Php
                 throw;
             }
 
-            TryDeleteDirectory(backupDir);
+            return backup;
+        }
+
+        private static void RestoreDirectory(string targetDir, string? backupDir)
+        {
+            TryDeleteDirectory(targetDir);
+            if (backupDir != null && Directory.Exists(backupDir) && !Directory.Exists(targetDir))
+            {
+                Directory.Move(backupDir, targetDir);
+            }
         }
 
         private static void TryDeleteDirectory(string path)
