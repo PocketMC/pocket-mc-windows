@@ -14,6 +14,7 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
     private static readonly TimeSpan DirectResponseTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan MirrorResponseTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan TotalBudget = TimeSpan.FromSeconds(50);
+    private static readonly TimeSpan MaxRetryAfterDelay = TimeSpan.FromSeconds(5);
     private const int MaxMirrorAttempts = 3;
 
     private readonly DownloadMirrorService _mirrors;
@@ -93,6 +94,7 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
                     "Download mirror {Mirror} returned {Status}; trying next candidate.",
                     candidate.Uri.Host,
                     (int)response.StatusCode);
+                await DelayForRetryAfterAsync(response, cancellationToken).ConfigureAwait(false);
                 response.Dispose();
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -159,19 +161,41 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
             // Response headers are enough to decide; the caller streams the body with its own token.
             HttpResponseMessage response = await base.SendAsync(attempt, timeoutCts.Token).ConfigureAwait(false);
             timeoutCts.CancelAfter(Timeout.InfiniteTimeSpan);
+            if (!isDirect)
+            {
+                // The response owns the headers it copied; report the caller's request for diagnostics.
+                response.RequestMessage = request;
+            }
+
             return response;
         }
         finally
         {
             if (!isDirect)
             {
-                // Response disposal handles the request; drop the clone when no response was produced.
-                if (attempt.Content != null)
-                {
-                    attempt.Content.Dispose();
-                }
+                // GET has no content to stream, so the clone can be released as soon as headers arrive.
+                attempt.Dispose();
             }
         }
+    }
+
+    private static async Task DelayForRetryAfterAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        if (response.StatusCode is not (HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable) ||
+            response.Headers.RetryAfter is not { } retryAfter)
+        {
+            return;
+        }
+
+        TimeSpan delay = retryAfter.Delta
+            ?? (retryAfter.Date.HasValue ? retryAfter.Date.Value - DateTimeOffset.UtcNow : TimeSpan.Zero);
+        if (delay <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        // Keep the UI responsive: never sit on a header-driven backoff longer than a few seconds.
+        await Task.Delay(delay > MaxRetryAfterDelay ? MaxRetryAfterDelay : delay, cancellationToken).ConfigureAwait(false);
     }
 
     private static HttpRequestMessage CloneRequest(HttpRequestMessage request, Uri uri)
