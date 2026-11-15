@@ -109,10 +109,14 @@ public sealed class SegmentedDownloadTests
         try
         {
             var downloader = new DownloaderService(new SingleClientFactory(), NullLogger<DownloaderService>.Instance);
-            await downloader.DownloadFileAsync(new Uri(server.BaseUri, "file.bin").ToString(), destination);
+            var reported = new List<long>();
+            var progress = new Progress<DownloadProgress>(p => reported.Add(p.BytesRead));
+            await downloader.DownloadFileAsync(new Uri(server.BaseUri, "file.bin").ToString(), destination, progress: progress);
 
             Assert.Equal(payload, await File.ReadAllBytesAsync(destination));
             Assert.True(server.RangeRequests >= 1, "expected the segmented path to be attempted first");
+            Assert.Equal(payload.Length, reported.Last());
+            Assert.Equal(reported.OrderBy(bytes => bytes), reported);
         }
         finally
         {

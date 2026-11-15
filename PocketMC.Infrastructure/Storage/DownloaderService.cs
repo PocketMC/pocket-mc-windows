@@ -376,8 +376,7 @@ public class DownloaderService
                 long end = index == threads - 1 ? totalBytes - 1 : start + segmentSize - 1;
                 segments.Add(DownloadSegmentAsync(
                     client, url, handle, start, end, totalBytes, versionCondition, probeTag, probeModified, segmentCts.Token,
-                    bytes => Interlocked.Add(ref writtenBytes, bytes),
-                    done => ReportThrottled(progress, done, totalBytes, lastReportTick),
+                    bytes => ReportThrottled(progress, Interlocked.Add(ref writtenBytes, bytes), totalBytes, lastReportTick),
                     cancellationToken));
             }
 
@@ -424,7 +423,6 @@ public class DownloaderService
         DateTimeOffset? probeModified,
         CancellationToken segmentToken,
         Action<long> addBytes,
-        Action<long> reportProgress,
         CancellationToken cancellationToken)
     {
         using HttpRequestMessage request = new(HttpMethod.Get, url);
@@ -468,7 +466,6 @@ public class DownloaderService
                 await RandomAccess.WriteAsync(handle, buffer.AsMemory(0, read), position, cancellationToken);
                 position += read;
                 addBytes(read);
-                reportProgress(position);
             }
 
             if (position != end + 1)
