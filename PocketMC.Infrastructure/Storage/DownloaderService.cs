@@ -623,11 +623,10 @@ public class DownloaderService
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (!string.IsNullOrWhiteSpace(PlayitExpectedSha256) &&
-            await VerifyHashAsync(filePath, PlayitExpectedSha256, "SHA256", cancellationToken))
+        // A configured pin is authoritative: never accept a binary that fails it.
+        if (!string.IsNullOrWhiteSpace(PlayitExpectedSha256))
         {
-            Version? artifactVersion = PlayitRuntimeManifest.GetExecutableVersion(filePath);
-            return artifactVersion == null || PlayitRuntimeManifest.IsCompatibleVersion(artifactVersion);
+            return await VerifyHashAsync(filePath, PlayitExpectedSha256, "SHA256", cancellationToken);
         }
 
         Version? actualVersion = PlayitRuntimeManifest.GetExecutableVersion(filePath);
