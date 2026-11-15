@@ -34,7 +34,6 @@ public sealed class DownloadMirrorService
     public const string UrlPlaceholder = "{url}";
 
     private static readonly TimeSpan FailureCooldown = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan SuccessTtl = TimeSpan.FromMinutes(30);
 
     private static readonly HashSet<string> GitHubHosts = new(StringComparer.OrdinalIgnoreCase)
     {
