@@ -11,6 +11,7 @@ using Xunit;
 
 namespace PocketMC.Infrastructure.Tests.Storage;
 
+[Collection(DownloadTuningCollection.Name)]
 public sealed class DownloadDestinationLockTests
 {
     [Fact]

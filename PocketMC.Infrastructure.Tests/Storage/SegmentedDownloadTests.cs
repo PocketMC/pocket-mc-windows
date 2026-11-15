@@ -44,6 +44,7 @@ public sealed class DownloadTuningTests
     }
 }
 
+[Collection(DownloadTuningCollection.Name)]
 public sealed class SegmentedDownloadTests
 {
     private sealed class SingleClientFactory : IHttpClientFactory
