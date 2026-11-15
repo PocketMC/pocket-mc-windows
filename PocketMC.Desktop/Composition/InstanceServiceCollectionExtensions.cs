@@ -93,6 +93,12 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<CloudBackupUploadHistoryStore>();
             services.AddSingleton<CloudBackupService>();
 
+            services.AddHttpClient("PocketMC.GeyserApi", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+                client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}");
+            });
+
             services.AddHttpClient("OneDrive").AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
 
             services.AddHttpClient("GoogleDriveProxy", client =>

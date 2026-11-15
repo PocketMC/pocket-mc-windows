@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -14,15 +16,18 @@ public class GeyserProvisioningService
     private readonly DownloaderService _downloader;
     private readonly ModrinthService _modrinth;
     private readonly ILogger<GeyserProvisioningService> _logger;
+    private readonly IHttpClientFactory? _httpClientFactory;
 
     public GeyserProvisioningService(
         DownloaderService downloader,
         ModrinthService modrinth,
-        ILogger<GeyserProvisioningService> logger)
+        ILogger<GeyserProvisioningService> logger,
+        IHttpClientFactory? httpClientFactory = null)
     {
         _downloader = downloader;
         _modrinth = modrinth;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     /// <summary>
@@ -37,6 +42,48 @@ public class GeyserProvisioningService
     ///   - Bedrock clients connect on the SAME IP as Java, port 19132 (UDP) unless Geyser config changes it
     ///   - Config lives in: plugins/Geyser-Spigot/config.yml (or mods/ equivalent)
     /// </summary>
+    /// <summary>
+    /// Reads the digest GeyserMC publishes for the spigot Floodgate build. Returns null (with a warning)
+    /// when the build API is unreachable so installation can still proceed unverified.
+    /// </summary>
+    private async Task<string?> GetFloodgateSha256Async(string baseGeyser, CancellationToken cancellationToken)
+    {
+        if (_httpClientFactory == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            using HttpClient client = _httpClientFactory.CreateClient("PocketMC.GeyserApi");
+            using HttpResponseMessage response = await client.GetAsync(
+                $"{baseGeyser}/floodgate/versions/latest/builds/latest", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Floodgate build metadata returned {Status}; continuing without a digest.", response.StatusCode);
+                return null;
+            }
+
+            await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            if (document.RootElement.TryGetProperty("downloads", out JsonElement downloads) &&
+                downloads.TryGetProperty("spigot", out JsonElement spigot) &&
+                spigot.TryGetProperty("sha256", out JsonElement sha) &&
+                sha.GetString() is { Length: > 0 } digest)
+            {
+                return digest;
+            }
+
+            _logger.LogWarning("Floodgate build metadata did not expose a spigot sha256; continuing without a digest.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            _logger.LogWarning(ex, "Could not read the Floodgate build digest; continuing without verification.");
+        }
+
+        return null;
+    }
+
     public async Task EnsureGeyserSetupAsync(
         string instancePath,
         string serverType,
@@ -128,7 +175,9 @@ public class GeyserProvisioningService
                 string floodgatePath = Path.Combine(dirPath, "Floodgate.jar");
                 ReportStatus(progress, "Downloading Floodgate (GeyserMC direct)...");
                 _logger.LogInformation("Downloading Floodgate for Paper/Spigot from GeyserMC direct: {Url}", floodgateDirectUrl);
-                await _downloader.DownloadFileAsync(floodgateDirectUrl, floodgatePath, null, progress, cancellationToken);
+                string? floodgateHash = await GetFloodgateSha256Async(baseGeyser, cancellationToken);
+                await _downloader.DownloadFileAsync(
+                    floodgateDirectUrl, floodgatePath, floodgateHash, floodgateHash == null ? null : "SHA256", progress, cancellationToken);
             }
             else
             {
