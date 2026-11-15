@@ -656,21 +656,20 @@ public sealed class InstanceImportService : IInstanceImportService
         // Determine possible source paths in the staging directory
         string? sourceFilePath = null;
 
-        // Try PackagedPath first (relative to staging root, e.g. "server/mods/MyMod.jar")
+        // Manifest paths are attacker-controlled: keep them inside the extracted archive.
         if (!string.IsNullOrWhiteSpace(addon.PackagedPath))
         {
-            string candidate = Path.Combine(stagingResult.StagingDirectory, addon.PackagedPath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(candidate))
+            string? candidate = PathSafety.ValidateContainedPath(stagingResult.StagingDirectory, addon.PackagedPath);
+            if (candidate != null && File.Exists(candidate))
             {
                 sourceFilePath = candidate;
             }
         }
 
-        // Try RelativePath (relative to server directory, e.g. "mods/MyMod.jar")
         if (sourceFilePath == null && !string.IsNullOrWhiteSpace(addon.RelativePath))
         {
-            string candidate = Path.Combine(stagingResult.ServerDirectory, addon.RelativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(candidate))
+            string? candidate = PathSafety.ValidateContainedPath(stagingResult.ServerDirectory, addon.RelativePath);
+            if (candidate != null && File.Exists(candidate))
             {
                 sourceFilePath = candidate;
             }

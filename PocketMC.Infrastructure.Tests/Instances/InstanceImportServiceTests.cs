@@ -158,6 +158,36 @@ public sealed class InstanceImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ReconstructStagedImportAsync_RejectsPackagedPathOutsideTheArchive()
+    {
+        string zipPath = Path.Combine(_root, "traversal-import.zip");
+        CreateValidImportZip(zipPath, includeAddonFile: false);
+        using (ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        {
+            ZipArchiveEntry entry = archive.GetEntry("manifest.json")!;
+            entry.Delete();
+            AddEntry(archive, "manifest.json", CreateValidManifestJson().Replace(
+                "\"packagedPath\": \"server/plugins/Essentials.jar\"",
+                "\"packagedPath\": \"../escaped.jar\", \"relativePath\": null, \"fileName\": null"));
+        }
+
+        InstanceImportService service = CreateService(
+            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") });
+        InstanceImportStagingResult staged = await service.StageImportAsync(new InstanceImportRequest
+        {
+            ZipPath = zipPath
+        });
+
+        string escapedPath = Path.Combine(Path.GetDirectoryName(staged.StagingDirectory)!, "escaped.jar");
+        File.WriteAllText(escapedPath, "outside the staging root");
+
+        await service.ReconstructStagedImportAsync(staged);
+
+        Assert.Equal("outside the staging root", File.ReadAllText(escapedPath));
+        Assert.False(File.Exists(Path.Combine(staged.ServerDirectory, "plugins", "Essentials.jar")));
+    }
+
+    [Fact]
     public async Task ImportAsync_Success_PromotesOnlyCompletedStagingAndCleansStagingFolder()
     {
         string zipPath = Path.Combine(_root, "complete-import.zip");
