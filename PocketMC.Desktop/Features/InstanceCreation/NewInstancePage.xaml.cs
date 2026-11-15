@@ -569,17 +569,23 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
                     // Use system temp dir — guaranteed writable, not inside the instance path.
                     string tempZip = Path.Combine(Path.GetTempPath(), $"pocketmc-bds-{Guid.NewGuid():N}.zip");
+                    // Extract beside the instance and swap in only after the archive proved complete.
+                    string stagingDir = createdInstancePath + ".staging";
                     try
                     {
                         // DownloadSoftwareAsync writes the ZIP to tempZip, then we extract.
                         actualLoaderVersion = await provider.DownloadSoftwareAsync(selectedVersion.Id, tempZip, targetLoaderVersion, progress, ct);
                         Dispatcher.Invoke(() => TxtProgress.Text = L.T("Extracting Bedrock server files..."));
-                        await _downloader.ExtractZipAsync(tempZip, createdInstancePath, progress);
+                        if (Directory.Exists(stagingDir)) Directory.Delete(stagingDir, recursive: true);
+                        Directory.CreateDirectory(stagingDir);
+                        await _downloader.ExtractZipAsync(tempZip, stagingDir, progress);
+                        MoveDirectoryContents(stagingDir, createdInstancePath);
                     }
                     finally
                     {
                         try { if (File.Exists(tempZip)) File.Delete(tempZip); } catch { }
                         try { if (File.Exists(tempZip + ".partial")) File.Delete(tempZip + ".partial"); } catch { }
+                        try { if (Directory.Exists(stagingDir)) Directory.Delete(stagingDir, recursive: true); } catch { }
                     }
                 }
                 else
@@ -849,6 +855,29 @@ namespace PocketMC.Desktop.Features.InstanceCreation
         {
             double megabytes = bytes / 1024d / 1024d;
             return $"{megabytes:0.0} MB";
+        }
+
+        /// <summary>Moves the staged tree into the instance folder without clobbering existing files.</summary>
+        private static void MoveDirectoryContents(string sourceDir, string destinationDir)
+        {
+            Directory.CreateDirectory(destinationDir);
+            foreach (string entry in Directory.EnumerateFileSystemEntries(sourceDir))
+            {
+                string target = Path.Combine(destinationDir, Path.GetFileName(entry));
+                if (Directory.Exists(entry))
+                {
+                    if (Directory.Exists(target) || File.Exists(target))
+                    {
+                        throw new IOException($"Cannot stage Bedrock server files: '{target}' already exists.");
+                    }
+
+                    Directory.Move(entry, target);
+                }
+                else
+                {
+                    File.Move(entry, target, overwrite: false);
+                }
+            }
         }
 
         private IServerSoftwareProvider GetProvider(string serverType)
