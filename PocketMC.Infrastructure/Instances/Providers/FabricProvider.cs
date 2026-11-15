@@ -31,8 +31,8 @@ public class FabricProvider : IServerSoftwareProvider
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
         string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
-        var gameVersionsResponse = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/game");
-        var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/loader");
+        var gameVersionsResponse = await ProviderMetaCache.GetArrayAsync(_httpClient, $"{baseMeta}/versions/game");
+        var loadersResponse = await ProviderMetaCache.GetArrayAsync(_httpClient, $"{baseMeta}/versions/loader");
 
         var loaders = new List<ModLoaderVersion>();
         if (loadersResponse != null)
@@ -74,7 +74,7 @@ public class FabricProvider : IServerSoftwareProvider
     public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
         string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
-        var loadersResponse = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/loader");
+        var loadersResponse = await ProviderMetaCache.GetArrayAsync(_httpClient, $"{baseMeta}/versions/loader");
         var loaders = new List<ModLoaderVersion>();
         
         if (loadersResponse != null)
@@ -122,7 +122,7 @@ public class FabricProvider : IServerSoftwareProvider
     private async Task<string> GetLatestLoaderVersionAsync()
     {
         string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
-        var loaders = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/loader");
+        var loaders = await ProviderMetaCache.GetArrayAsync(_httpClient, $"{baseMeta}/versions/loader");
         var latest = loaders?.FirstOrDefault(l => (bool)(l?["stable"] ?? false));
         return latest?["version"]?.ToString() ?? "0.15.7";
     }
@@ -130,7 +130,7 @@ public class FabricProvider : IServerSoftwareProvider
     private async Task<string> GetLatestInstallerVersionAsync()
     {
         string baseMeta = PocketMC.Infrastructure.Configuration.AppConfig.ProviderFabricMeta;
-        var installers = await _httpClient.GetFromJsonAsync<JsonArray>($"{baseMeta}/versions/installer");
+        var installers = await ProviderMetaCache.GetArrayAsync(_httpClient, $"{baseMeta}/versions/installer");
         var latest = installers?.FirstOrDefault(l => (bool)(l?["stable"] ?? false));
         return latest?["version"]?.ToString() ?? "1.0.1";
     }

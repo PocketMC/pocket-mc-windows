@@ -31,7 +31,7 @@ public class ForgeProvider : IServerSoftwareProvider
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
         string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgeMeta;
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
+        var response = await ProviderMetaCache.GetObjectAsync(_httpClient, metadataUrl);
 
         var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
         var minVersion = new Version(1, 7, 10);
@@ -106,7 +106,7 @@ public class ForgeProvider : IServerSoftwareProvider
     public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
         string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgeMeta;
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
+        var response = await ProviderMetaCache.GetObjectAsync(_httpClient, metadataUrl);
 
         var loaders = new List<ModLoaderVersion>();
 
@@ -173,7 +173,7 @@ public class ForgeProvider : IServerSoftwareProvider
     private async Task<string> GetLatestForgeVersionAsync(string mcVersion)
     {
         string promosUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgePromotions;
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>(promosUrl);
+        var response = await ProviderMetaCache.GetObjectAsync(_httpClient, promosUrl);
         if (response != null && response.TryGetPropertyValue("promos", out var promosNode) && promosNode is JsonObject promos)
         {
             // Format: "1.20.1-recommended": "47.2.0"
