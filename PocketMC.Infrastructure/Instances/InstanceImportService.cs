@@ -225,9 +225,18 @@ public sealed class InstanceImportService : IInstanceImportService
 
             Report(progress, "Promoting imported instance...", 95);
             Directory.Move(stagingResult.ServerDirectory, finalPath);
-            promoted = true;
+            try
+            {
+                _registry.Register(metadata, finalPath);
+            }
+            catch
+            {
+                // Never leave an unregistered server folder behind: the import is reported as failed.
+                try { Directory.Delete(finalPath, true); } catch { }
+                throw;
+            }
 
-            _registry.Register(metadata, finalPath);
+            promoted = true;
             await CleanupStagingDirectoryAsync(stagingResult.StagingDirectory).ConfigureAwait(false);
             Report(progress, "Import complete.", 100);
 
