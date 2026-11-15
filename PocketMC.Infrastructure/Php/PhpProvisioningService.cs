@@ -254,6 +254,7 @@ namespace PocketMC.Infrastructure.Php
                 });
 
                 string? downloadUrl = null;
+                string? downloadSha256 = null;
                 if (def != null && !string.IsNullOrWhiteSpace(def.Tag))
                 {
                     try
@@ -272,6 +273,12 @@ namespace PocketMC.Infrastructure.Php
                                 aObj["name"]?.ToString().Contains("debug", StringComparison.OrdinalIgnoreCase) != true) as JsonObject;
 
                             downloadUrl = matchedAsset?["browser_download_url"]?.ToString();
+                            // GitHub publishes "sha256:<hex>" digests for newer release assets.
+                            string? digest = matchedAsset?["digest"]?.ToString();
+                            if (digest != null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                downloadSha256 = digest["sha256:".Length..].Trim();
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -312,7 +319,9 @@ namespace PocketMC.Infrastructure.Php
                     });
                 });
 
-                await _downloader.DownloadFileAsync(downloadUrl, tempZipPath, null, progressRelay, cancellationToken);
+                await _downloader.DownloadFileAsync(
+                    downloadUrl, tempZipPath, downloadSha256, downloadSha256 == null ? null : "sha256",
+                    progressRelay, cancellationToken);
 
                 UpdateStatus(new PhpProvisioningStatus
                 {
@@ -323,12 +332,14 @@ namespace PocketMC.Infrastructure.Php
                     ProgressPercentage = 95
                 });
 
-                if (Directory.Exists(phpDir))
+                // Extract beside the live runtime first so a failed install never destroys a working one.
+                string stagingDir = phpDir + ".staging";
+                if (Directory.Exists(stagingDir))
                 {
-                    Directory.Delete(phpDir, true);
+                    Directory.Delete(stagingDir, true);
                 }
 
-                await _downloader.ExtractZipAsync(tempZipPath, phpDir, null);
+                await _downloader.ExtractZipAsync(tempZipPath, stagingDir, null);
 
                 UpdateStatus(new PhpProvisioningStatus
                 {
@@ -338,6 +349,14 @@ namespace PocketMC.Infrastructure.Php
                     Message = "Verifying PHP executable..."
                 });
 
+                string? stagedExePath = ProbeExecutable(stagingDir);
+                if (stagedExePath == null || !File.Exists(stagedExePath))
+                {
+                    TryDeleteDirectory(stagingDir);
+                    throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {stagingDir}.");
+                }
+
+                ReplaceDirectory(stagingDir, phpDir);
                 string? exePath = ProbeExecutable(phpDir);
                 if (exePath == null || !File.Exists(exePath))
                 {
@@ -410,6 +429,54 @@ namespace PocketMC.Infrastructure.Php
                 Message = "Not installed",
                 ProgressPercentage = 0
             });
+        }
+
+        /// <summary>Swaps an extracted staging directory into place, keeping the old runtime as a rollback copy.</summary>
+        private static void ReplaceDirectory(string stagingDir, string targetDir)
+        {
+            string backupDir = targetDir + ".old";
+            TryDeleteDirectory(backupDir);
+
+            bool moved = false;
+            if (Directory.Exists(targetDir))
+            {
+                Directory.Move(targetDir, backupDir);
+                moved = true;
+            }
+
+            try
+            {
+                Directory.Move(stagingDir, targetDir);
+            }
+            catch
+            {
+                if (moved && !Directory.Exists(targetDir) && Directory.Exists(backupDir))
+                {
+                    Directory.Move(backupDir, targetDir);
+                }
+
+                throw;
+            }
+
+            TryDeleteDirectory(backupDir);
+        }
+
+        private static void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, true);
+                }
+            }
+            catch (IOException)
+            {
+                // A leftover backup/staging folder is harmless and cleaned on the next install.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
         private void UpdateStatus(PhpProvisioningStatus status)
