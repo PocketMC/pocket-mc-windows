@@ -100,6 +100,25 @@ public sealed class AddonUpdateServiceAtomicTests : IDisposable
         Assert.Equal("old-version", Assert.Single(manifest.Entries).VersionId);
     }
 
+    [Fact]
+    public async Task RenamedUpdate_KeepsOldFileWhenTheManifestCannotBeUpdated()
+    {
+        string serverDir = CreateServerWithAddon("old.jar", "old", "old-version");
+        await File.WriteAllTextAsync(Path.Combine(serverDir, "addon_manifest.json"), "{ broken");
+        AddonUpdateService service = CreateService(_ => MarketplaceHttpResponses.Bytes(Encoding.UTF8.GetBytes("new")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.ApplyUpdateAsync(
+                serverDir,
+                "old.jar",
+                UpdateInfo("new-version", "renamed.jar", "https://example.test/renamed.jar"),
+                "Modrinth",
+                "addon",
+                new EngineCompatibility("Fabric")));
+
+        Assert.Equal("old", await File.ReadAllTextAsync(Path.Combine(serverDir, "mods", "old.jar")));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))
