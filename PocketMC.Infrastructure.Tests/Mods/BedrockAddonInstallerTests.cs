@@ -271,5 +271,39 @@ namespace PocketMC.Infrastructure.Tests.Mods
             }
             catch { }
         }
+
+        [Fact]
+        public async Task InstallAddonAsync_ReplacesAnExistingPackWithoutLeavingStagingFolders()
+        {
+            string serverDir = CreateServerDir("Survival");
+            string packPath = Path.Combine(_tempDir, "Growable.mcpack");
+            CreateZipArchive(packPath, new()
+            {
+                ["manifest.json"] = """
+                {
+                  "header": {
+                    "name": "Growable",
+                    "description": "Test pack",
+                    "uuid": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                    "version": [1, 0, 0]
+                  },
+                  "modules": [{ "type": "resources" }]
+                }
+                """,
+                ["first.txt"] = "v1"
+            });
+
+            var installed = await _installer.InstallAddonAsync(packPath, serverDir);
+            string packDir = installed.Single().DirectoryPath;
+            await File.WriteAllTextAsync(Path.Combine(packDir, "stale.txt"), "leftover");
+
+            await _installer.InstallAddonAsync(packPath, serverDir);
+
+            Assert.True(Directory.Exists(packDir));
+            Assert.False(File.Exists(Path.Combine(packDir, "stale.txt")));
+            string parent = Path.GetDirectoryName(packDir)!;
+            Assert.Empty(Directory.GetDirectories(parent, "*staging-*"));
+            Assert.Empty(Directory.GetDirectories(parent, "*old-*"));
+        }
     }
 }

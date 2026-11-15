@@ -446,13 +446,30 @@ namespace PocketMC.Infrastructure.Mods
                 }
             }
 
-            // Copy pack files to destination
-            if (Directory.Exists(packDestDir))
+            // Stage the new copy beside the destination so a failure cannot leave the pack deleted.
+            string stagingDir = packDestDir + ".staging-" + Guid.NewGuid().ToString("N");
+            string backupDir = packDestDir + ".old-" + Guid.NewGuid().ToString("N");
+            try
             {
-                Directory.Delete(packDestDir, recursive: true);
-            }
+                await Task.Run(() => CopyDirectory(packSourceDir, stagingDir), ct);
 
-            await Task.Run(() => CopyDirectory(packSourceDir, packDestDir), ct);
+                if (Directory.Exists(packDestDir))
+                {
+                    Directory.Move(packDestDir, backupDir);
+                }
+
+                Directory.Move(stagingDir, packDestDir);
+                TryDeleteDirectory(backupDir);
+            }
+            catch
+            {
+                TryDeleteDirectory(stagingDir);
+                if (!Directory.Exists(packDestDir) && Directory.Exists(backupDir))
+                {
+                    try { Directory.Move(backupDir, packDestDir); } catch { }
+                }
+                throw;
+            }
 
             // Register in the active world JSON
             string worldDir = ResolveWorldDirectory(serverDir);
