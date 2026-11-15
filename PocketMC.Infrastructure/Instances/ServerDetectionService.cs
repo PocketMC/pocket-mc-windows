@@ -137,7 +137,7 @@ namespace PocketMC.Infrastructure.Instances
                     // Pass 2: Fallback (Rule C) on ordered files (Primary jars, other jars, other files)
                     if (string.IsNullOrWhiteSpace(detectedVersion))
                     {
-                        foreach (var file in orderedFiles)
+                        foreach (var file in orderedFiles.Where(f => HasArtifactExtension(f.Path)))
                         {
                             var matches = Regex.Matches(file.Name, @"\d+(?:\.\d+)+");
                             string? fallbackVersion = null;
@@ -208,6 +208,15 @@ namespace PocketMC.Infrastructure.Instances
             ("fabric", "Fabric"),
             ("forge", "Forge")
         };
+
+        private static bool HasArtifactExtension(string path)
+        {
+            string extension = Path.GetExtension(path);
+            return extension.Equals(".jar", StringComparison.OrdinalIgnoreCase) ||
+                   extension.Equals(".zip", StringComparison.OrdinalIgnoreCase) ||
+                   extension.Equals(".phar", StringComparison.OrdinalIgnoreCase) ||
+                   extension.Equals(".exe", StringComparison.OrdinalIgnoreCase);
+        }
 
         private static string DetectServerType(string folderPath)
         {

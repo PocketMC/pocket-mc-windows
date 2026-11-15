@@ -148,5 +148,20 @@ namespace PocketMC.Infrastructure.Tests.Instances
 
             Assert.Equal("Mohist", serverType);
         }
+
+        [Fact]
+        public async Task DetectVersion_IgnoresVersionLikeNamesOnNonArtifactFiles()
+        {
+            var detector = new ServerDetectionService(NullLogger<ServerDetectionService>.Instance);
+            string serverPath = Path.Combine(_tempDirectory, "ConfigOnly");
+            Directory.CreateDirectory(serverPath);
+            File.WriteAllText(Path.Combine(serverPath, "config-2.5.1.yml"), "version: 2.5.1");
+            File.WriteAllText(Path.Combine(serverPath, "notes-9.9.9.txt"), "notes");
+
+            var (_, minecraftVersion) = await detector.DetectServerTypeAndVersionAsync(serverPath);
+
+            Assert.NotEqual("2.5.1", minecraftVersion);
+            Assert.NotEqual("9.9.9", minecraftVersion);
+        }
     }
 }
