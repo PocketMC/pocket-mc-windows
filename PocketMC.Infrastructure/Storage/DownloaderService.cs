@@ -529,7 +529,23 @@ public class DownloaderService
     {
         if (!string.IsNullOrWhiteSpace(expectedHashType))
         {
-            return expectedHashType.Replace("-", "", StringComparison.OrdinalIgnoreCase).ToUpperInvariant();
+            string declared = expectedHashType.Replace("-", "", StringComparison.OrdinalIgnoreCase).ToUpperInvariant();
+            int expectedLength = declared switch
+            {
+                "SHA1" => 40,
+                "SHA256" => 64,
+                "SHA512" => 128,
+                _ => throw new NotSupportedException($"Unsupported hash type '{expectedHashType}'.")
+            };
+
+            if (expectedHash.Length != expectedLength)
+            {
+                throw new ArgumentException(
+                    $"A {declared} digest must be {expectedLength} hex characters, but '{expectedHash.Length}' were supplied.",
+                    nameof(expectedHash));
+            }
+
+            return declared;
         }
 
         return expectedHash.Length switch
