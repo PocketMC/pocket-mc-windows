@@ -57,7 +57,14 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
                     return response;
                 }
 
-                if (response.StatusCode == HttpStatusCode.NotFound || isLast)
+                // A direct 404 means the artifact is gone. A mirror 404 only means this mirror lacks
+                // the path, so keep falling back until the origin itself answers.
+                if (response.StatusCode == HttpStatusCode.NotFound && (isDirect || isLast))
+                {
+                    return response;
+                }
+
+                if (isLast)
                 {
                     return response;
                 }
