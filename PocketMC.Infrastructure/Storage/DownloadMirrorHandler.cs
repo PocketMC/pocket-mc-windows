@@ -13,6 +13,8 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
 {
     private static readonly TimeSpan DirectResponseTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan MirrorResponseTimeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan TotalBudget = TimeSpan.FromSeconds(50);
+    private const int MaxMirrorAttempts = 3;
 
     private readonly DownloadMirrorService _mirrors;
     private readonly ILogger<DownloadMirrorHandler> _logger;
@@ -36,6 +38,9 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
             return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
+        // Worst case is one timeout per mirror; cap both the attempt count and the total wall clock.
+        DateTime deadline = DateTime.UtcNow + TotalBudget;
+        int mirrorAttempts = 0;
         Exception? lastError = null;
         for (int i = 0; i < candidates.Count; i++)
         {
@@ -43,10 +48,24 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
             bool isDirect = ReferenceEquals(candidate.Uri, original) || candidate.Uri == original;
             bool isLast = i == candidates.Count - 1;
 
+            if (!isDirect && mirrorAttempts >= MaxMirrorAttempts)
+            {
+                _logger.LogInformation(
+                    "Giving up on mirrors for {Url} after {Attempts} attempts; requesting the origin directly.",
+                    original,
+                    mirrorAttempts);
+                break;
+            }
+
+            if (!isDirect)
+            {
+                mirrorAttempts++;
+            }
+
             HttpResponseMessage? response = null;
             try
             {
-                response = await SendOnceAsync(request, candidate, cancellationToken).ConfigureAwait(false);
+                response = await SendOnceAsync(request, candidate, deadline, cancellationToken).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)
                 {
                     if (!isDirect)
@@ -101,18 +120,39 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
             }
         }
 
-        throw new HttpRequestException($"All download mirror candidates failed for {original}.", lastError);
+        // Either the mirror budget ran out or every candidate failed; the origin is the last honest answer.
+        try
+        {
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException)
+        {
+            throw new HttpRequestException($"All download mirror candidates failed for {original}.", lastError ?? ex);
+        }
     }
 
     private async Task<HttpResponseMessage> SendOnceAsync(
         HttpRequestMessage request,
         DownloadMirrorCandidate candidate,
+        DateTime deadline,
         CancellationToken cancellationToken)
     {
         bool isDirect = candidate.Uri == request.RequestUri;
+        TimeSpan remaining = deadline - DateTime.UtcNow;
+        if (!isDirect && remaining <= TimeSpan.Zero)
+        {
+            throw new HttpRequestException("Mirror attempt budget exhausted.");
+        }
+
         HttpRequestMessage attempt = isDirect ? request : CloneRequest(request, candidate.Uri);
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(isDirect ? DirectResponseTimeout : MirrorResponseTimeout);
+        TimeSpan attemptTimeout = isDirect ? DirectResponseTimeout : MirrorResponseTimeout;
+        if (!isDirect && remaining < attemptTimeout)
+        {
+            attemptTimeout = remaining;
+        }
+
+        timeoutCts.CancelAfter(attemptTimeout);
 
         try
         {

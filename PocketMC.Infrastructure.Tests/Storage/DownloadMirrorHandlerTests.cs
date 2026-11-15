@@ -57,6 +57,36 @@ public sealed class DownloadMirrorHandlerTests
         Assert.Equal(origin, inner.RequestedUris.Last().AbsoluteUri);
     }
 
+    [Fact]
+    public async Task SendAsync_StopsTryingMirrorsAfterTheAttemptBudget()
+    {
+        const string origin = "https://github.com/owner/repo/releases/download/v1/server.jar";
+        var inner = new StubHandler(uri => uri.Host == "github.com"
+            ? Ok()
+            : new HttpResponseMessage(HttpStatusCode.BadGateway));
+        var options = new DownloadMirrorOptions(
+            true,
+            "https://mirror.example/{url}",
+            new[]
+            {
+                "https://m1.example/{url}", "https://m2.example/{url}", "https://m3.example/{url}",
+                "https://m4.example/{url}", "https://m5.example/{url}", "https://m6.example/{url}"
+            });
+        var mirrors = new DownloadMirrorService(() => options);
+        using var handler = new DownloadMirrorHandler(mirrors, NullLogger<DownloadMirrorHandler>.Instance)
+        {
+            InnerHandler = inner
+        };
+
+        HttpResponseMessage response = await SendAsync(handler, origin);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // custom mirror + jsDelivr + two tunnels hit the cap, then the origin is requested directly.
+        Assert.True(inner.RequestedUris.Count <= 5, $"Unexpected attempts: {inner.RequestedUris.Count}");
+        Assert.Equal(origin, inner.RequestedUris.Last().AbsoluteUri);
+        Assert.DoesNotContain(inner.RequestedUris, uri => uri.Host is "m4.example" or "m5.example" or "m6.example");
+    }
+
     private static DownloadMirrorHandler CreateHandler(HttpMessageHandler inner)
     {
         var options = new DownloadMirrorOptions(true, "https://mirror.example/{url}", Array.Empty<string>());
