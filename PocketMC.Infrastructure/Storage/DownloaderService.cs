@@ -79,7 +79,8 @@ public class DownloaderService
         string? expectedHash,
         string? expectedHashType,
         IProgress<DownloadProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool bypassMirrors = false)
     {
         string destinationKey = Path.GetFullPath(destinationPath);
         LockEntry destinationEntry = RentDestinationLock(destinationKey);
@@ -89,7 +90,7 @@ public class DownloaderService
             await destinationEntry.Gate.WaitAsync(cancellationToken);
             gateTaken = true;
             using IDisposable slot = await ConcurrencyLimiter.AcquireAsync(cancellationToken);
-            await DownloadFileCoreAsync(url, destinationPath, expectedHash, expectedHashType, progress, cancellationToken);
+            await DownloadFileCoreAsync(url, destinationPath, expectedHash, expectedHashType, progress, cancellationToken, bypassMirrors);
         }
         finally
         {
@@ -149,7 +150,8 @@ public class DownloaderService
         string? expectedHash,
         string? expectedHashType,
         IProgress<DownloadProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool bypassMirrors)
     {
         string partialPath = destinationPath + ".partial";
         string identityPath = partialPath + ".identity";
@@ -183,13 +185,14 @@ public class DownloaderService
 
                 // Segmented transfer is only safe from byte zero; resumes stay on the single-stream path.
                 if (existingBytes == 0 && DownloadTuning.Threads > 1 &&
-                    await TrySegmentedDownloadAsync(client, url, partialPath, progress, cancellationToken))
+                    await TrySegmentedDownloadAsync(client, url, partialPath, progress, cancellationToken, bypassMirrors))
                 {
                     existingBytes = 0;
                 }
                 else
                 {
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
+                ApplyMirrorBypass(request, bypassMirrors);
                 // A digest binds resumed bytes to the requested object. Without one, restart.
                 if (existingBytes > 0 && string.IsNullOrEmpty(expectedHash)) { TryDeleteFile(partialPath); existingBytes = 0; }
                 if (existingBytes > 0)
@@ -216,6 +219,7 @@ public class DownloaderService
                     TryDeleteFile(partialPath);
                     existingBytes = 0;
                     using HttpRequestMessage restartRequest = new(HttpMethod.Get, url);
+                    ApplyMirrorBypass(restartRequest, bypassMirrors);
                     using HttpResponseMessage restartResponse = await client.SendAsync(restartRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                     restartResponse.EnsureSuccessStatusCode();
                     // The restart fetches the whole object, so its validators replace the stale ones.
@@ -248,6 +252,7 @@ public class DownloaderService
                         TryDeleteFile(partialPath);
                         existingBytes = 0;
                         using HttpRequestMessage restartRequest = new(HttpMethod.Get, url);
+                        ApplyMirrorBypass(restartRequest, bypassMirrors);
                         using HttpResponseMessage restartResponse = await client.SendAsync(
                             restartRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                         restartResponse.EnsureSuccessStatusCode();
@@ -312,7 +317,8 @@ public class DownloaderService
         string url,
         string partialPath,
         IProgress<DownloadProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool bypassMirrors)
     {
         const long minSegmentBytes = 512 * 1024;
         int requestedThreads = DownloadTuning.Threads;
@@ -327,6 +333,7 @@ public class DownloaderService
         using (HttpRequestMessage probe = new(HttpMethod.Get, url))
         using (HttpResponseMessage probeResponse = await client.SendAsync(probe, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
         {
+            ApplyMirrorBypass(probe, bypassMirrors);
             if (probeResponse.StatusCode != HttpStatusCode.OK ||
                 probeResponse.Content.Headers.ContentLength is not long length ||
                 length < minSegmentBytes * 2)
@@ -378,7 +385,8 @@ public class DownloaderService
                 segments.Add(DownloadSegmentAsync(
                     client, url, handle, start, end, totalBytes, versionCondition, probeTag, probeModified, segmentCts.Token,
                     bytes => ReportThrottled(progress, Interlocked.Add(ref writtenBytes, bytes), totalBytes, lastReportTick),
-                    cancellationToken));
+                    cancellationToken,
+                    bypassMirrors));
             }
 
             await Task.WhenAll(segments);
@@ -437,9 +445,11 @@ public class DownloaderService
         DateTimeOffset? probeModified,
         CancellationToken segmentToken,
         Action<long> addBytes,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool bypassMirrors)
     {
         using HttpRequestMessage request = new(HttpMethod.Get, url);
+        ApplyMirrorBypass(request, bypassMirrors);
         request.Headers.Range = new RangeHeaderValue(start, end);
         if (versionCondition != null)
         {
@@ -874,6 +884,14 @@ public class DownloaderService
     }
 
     /// <summary>Resume state kept beside the partial file so stale bytes are never appended.</summary>
+    private static void ApplyMirrorBypass(HttpRequestMessage request, bool bypassMirrors)
+    {
+        if (bypassMirrors)
+        {
+            request.Options.Set(DownloadMirrorHandler.ByPassMirrorsOptionKey, true);
+        }
+    }
+
     private sealed record ResumeIdentity(string Url, string? ETag, string? LastModified, long? Length);
 
     private static ResumeIdentity ReadIdentity(string identityPath)

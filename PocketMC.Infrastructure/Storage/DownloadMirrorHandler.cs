@@ -11,6 +11,11 @@ namespace PocketMC.Infrastructure.Storage;
 /// </summary>
 public sealed class DownloadMirrorHandler : DelegatingHandler
 {
+    /// <summary>
+    /// Requests that must not be served by a third party (unhashed runtimes) set this option.
+    /// </summary>
+    public static readonly HttpRequestOptionsKey<bool> ByPassMirrorsOptionKey = new("PocketMC.Downloads.BypassMirrors");
+
     private static readonly TimeSpan DirectResponseTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan MirrorResponseTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan TotalBudget = TimeSpan.FromSeconds(50);
@@ -35,6 +40,11 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
 
         IReadOnlyList<DownloadMirrorCandidate> candidates = _mirrors.GetCandidates(original);
         if (candidates.Count == 1)
+        {
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (request.Options.TryGetValue(ByPassMirrorsOptionKey, out bool bypass) && bypass)
         {
             return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
