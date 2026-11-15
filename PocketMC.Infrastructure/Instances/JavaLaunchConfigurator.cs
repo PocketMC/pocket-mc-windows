@@ -182,7 +182,7 @@ public class JavaLaunchConfigurator
 
         if (isForgeOrNeo)
         {
-            var winArgs = Directory.GetFiles(workingDir, "win_args.txt", SearchOption.AllDirectories).FirstOrDefault();
+            string? winArgs = ResolveWinArgsPath(workingDir);
             if (winArgs != null)
             {
                 string relativeArgs = Path.GetRelativePath(workingDir, winArgs);
@@ -209,6 +209,29 @@ public class JavaLaunchConfigurator
     /// Picks the jar to launch. Forge installs prefer forge-specific jars, everything else prefers
     /// server.jar and otherwise falls back to a recognizable server jar (hybrids ship their own name).
     /// </summary>
+    /// <summary>A stale Forge install can leave several win_args.txt files behind; the newest one wins.</summary>
+    internal static string? ResolveWinArgsPath(string workingDir)
+    {
+        string[] candidates = Directory.GetFiles(workingDir, "win_args.txt", SearchOption.AllDirectories);
+        if (candidates.Length == 0)
+        {
+            return null;
+        }
+
+        return candidates
+            .OrderByDescending(path => IsUnderLoaderLibraries(workingDir, path))
+            .ThenByDescending(File.GetLastWriteTimeUtc)
+            .First();
+    }
+
+    private static bool IsUnderLoaderLibraries(string workingDir, string filePath)
+    {
+        string relative = Path.GetRelativePath(workingDir, filePath)
+            .Replace('\\', '/');
+        return relative.StartsWith("libraries/net/minecraftforge/", StringComparison.OrdinalIgnoreCase) ||
+               relative.StartsWith("libraries/net/neoforged/", StringComparison.OrdinalIgnoreCase);
+    }
+
     internal static string? ResolveStartableJar(string workingDir, bool preferForgeJar)
     {
         var jarNames = Directory.GetFiles(workingDir, "*.jar", SearchOption.TopDirectoryOnly)

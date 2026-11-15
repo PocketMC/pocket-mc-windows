@@ -83,4 +83,36 @@ public sealed class JavaLaunchConfiguratorJarResolutionTests : IDisposable
 
         Assert.Null(JavaLaunchConfigurator.ResolveStartableJar(_tempDirectory, preferForgeJar: false));
     }
+
+    [Fact]
+    public void ResolveWinArgsPath_PrefersTheNewestLoaderInstall()
+    {
+        string oldArgs = Path.Combine(_tempDirectory, "libraries", "net", "neoforged", "neoforge", "21.1.100", "win_args.txt");
+        string newArgs = Path.Combine(_tempDirectory, "libraries", "net", "neoforged", "neoforge", "21.1.172", "win_args.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(oldArgs)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(newArgs)!);
+        File.WriteAllText(oldArgs, "@user_jvm_args.txt");
+        File.WriteAllText(newArgs, "@user_jvm_args.txt");
+        File.SetLastWriteTimeUtc(oldArgs, DateTime.UtcNow.AddDays(-3));
+
+        string? picked = JavaLaunchConfigurator.ResolveWinArgsPath(_tempDirectory);
+
+        Assert.Equal(newArgs, picked);
+    }
+
+    [Fact]
+    public void ResolveWinArgsPath_PrefersLoaderLibrariesOverStrayCopies()
+    {
+        string stray = Path.Combine(_tempDirectory, "old-backup", "win_args.txt");
+        string loader = Path.Combine(_tempDirectory, "libraries", "net", "minecraftforge", "forge", "1.20.1-47.2.0", "win_args.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(stray)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(loader)!);
+        File.WriteAllText(stray, "stale");
+        File.WriteAllText(loader, "@user_jvm_args.txt");
+        File.SetLastWriteTimeUtc(loader, DateTime.UtcNow.AddDays(-10));
+
+        string? picked = JavaLaunchConfigurator.ResolveWinArgsPath(_tempDirectory);
+
+        Assert.Equal(loader, picked);
+    }
 }
