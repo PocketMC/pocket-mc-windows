@@ -132,12 +132,25 @@ namespace PocketMC.Infrastructure.Java
                 static (v, state) => state.self.ProvisionRuntimeCoreAsync(v, state.progress, CancellationToken.None),
                 (self: this, progress: progress));
 
-            try { await provisioningTask.WaitAsync(cancellationToken); }
-            finally
+            // Removal belongs to the task itself, not to a waiter: a cancelled waiter must not leave
+            // a faulted task cached, and a finished task must never evict a newer one.
+            if (!provisioningTask.IsCompleted)
             {
-                if (provisioningTask.IsCompleted)
-                    _inflightProvisioning.TryRemove(new KeyValuePair<int, Task>(version, provisioningTask));
+                _ = RemoveWhenCompletedAsync(provisioningTask, version);
             }
+            else
+            {
+                _inflightProvisioning.TryRemove(new KeyValuePair<int, Task>(version, provisioningTask));
+            }
+
+            await provisioningTask.WaitAsync(cancellationToken);
+        }
+
+        private async Task RemoveWhenCompletedAsync(Task provisioningTask, int version)
+        {
+            try { await provisioningTask.ConfigureAwait(false); }
+            catch { /* the waiter surfaces the failure; this only releases the cache entry */ }
+            _inflightProvisioning.TryRemove(new KeyValuePair<int, Task>(version, provisioningTask));
         }
 
         private async Task EnsureVersionsAsync(IEnumerable<int> versions, bool ignoreAutomaticRetryCooldown, bool isManualUserTriggered, CancellationToken cancellationToken)
