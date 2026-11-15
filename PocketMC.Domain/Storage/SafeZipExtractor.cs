@@ -30,8 +30,8 @@ public static class SafeZipExtractor
                 total = checked(total + entry.Length);
                 if (total > limits.MaxBytes) throw new InvalidDataException("Archive exceeds the extraction size limit.");
             }
-            string? driveRoot = Path.GetPathRoot(Path.GetFullPath(extractPath));
-            if (driveRoot != null && new DriveInfo(driveRoot).AvailableFreeSpace < total + 64L * 1024 * 1024)
+            long freeSpace = GetAvailableFreeSpace(extractPath);
+            if (freeSpace >= 0 && freeSpace < total + 64L * 1024 * 1024)
                 throw new IOException("Not enough free space to extract this archive safely.");
             long written = 0, count = 0;
             byte[] buffer = new byte[81920];
@@ -62,5 +62,26 @@ public static class SafeZipExtractor
                 onProgress?.Invoke(++count, archive.Entries.Count);
             }
         }, cancellationToken);
+    }
+
+    /// <summary>Returns the free bytes on the target volume, or -1 when the volume is not a local drive (e.g. UNC).</summary>
+    private static long GetAvailableFreeSpace(string path)
+    {
+        try
+        {
+            string? root = Path.GetPathRoot(Path.GetFullPath(path));
+            if (string.IsNullOrEmpty(root))
+            {
+                return -1;
+            }
+
+            var drive = new DriveInfo(root);
+            return drive.IsReady ? drive.AvailableFreeSpace : -1;
+        }
+        catch (Exception)
+        {
+            // UNC shares, mapped devices and filesystem providers may not expose space information.
+            return -1;
+        }
     }
 }
