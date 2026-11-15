@@ -268,6 +268,8 @@ public class DownloaderService
         }
 
         long totalBytes;
+        EntityTagHeaderValue? probeTag;
+        DateTimeOffset? probeModified;
         using (HttpRequestMessage probe = new(HttpMethod.Get, url))
         using (HttpResponseMessage probeResponse = await client.SendAsync(probe, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
         {
@@ -279,7 +281,15 @@ public class DownloaderService
             }
 
             totalBytes = length;
+            probeTag = probeResponse.Headers.ETag;
+            probeModified = probeResponse.Content.Headers.LastModified;
         }
+
+        // Every segment is pinned to the probe's validator so a replaced object aborts the transfer
+        // instead of stitching bytes from two different builds into one file.
+        RangeConditionHeaderValue? versionCondition =
+            probeTag != null ? new RangeConditionHeaderValue(probeTag) :
+            probeModified.HasValue ? new RangeConditionHeaderValue(probeModified.Value) : null;
 
         int threads = (int)Math.Clamp(Math.Min(requestedThreads, totalBytes / minSegmentBytes), 1, DownloadTuning.MaxThreads);
         if (threads <= 1)
@@ -304,7 +314,7 @@ public class DownloaderService
                 long start = index * segmentSize;
                 long end = index == threads - 1 ? totalBytes - 1 : start + segmentSize - 1;
                 segments.Add(DownloadSegmentAsync(
-                    client, url, handle, start, end, totalBytes, segmentCts.Token,
+                    client, url, handle, start, end, totalBytes, versionCondition, segmentCts.Token,
                     bytes => Interlocked.Add(ref writtenBytes, bytes),
                     done => ReportThrottled(progress, done, totalBytes, lastReportTick),
                     cancellationToken));
@@ -346,6 +356,7 @@ public class DownloaderService
         long start,
         long end,
         long totalBytes,
+        RangeConditionHeaderValue? versionCondition,
         CancellationToken segmentToken,
         Action<long> addBytes,
         Action<long> reportProgress,
@@ -353,6 +364,10 @@ public class DownloaderService
     {
         using HttpRequestMessage request = new(HttpMethod.Get, url);
         request.Headers.Range = new RangeHeaderValue(start, end);
+        if (versionCondition != null)
+        {
+            request.Headers.IfRange = versionCondition;
+        }
         using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, segmentToken);
 
         if (response.StatusCode != HttpStatusCode.PartialContent ||
