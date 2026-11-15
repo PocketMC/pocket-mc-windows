@@ -161,6 +161,9 @@ public class DownloaderService
                     using HttpRequestMessage restartRequest = new(HttpMethod.Get, url);
                     using HttpResponseMessage restartResponse = await client.SendAsync(restartRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                     restartResponse.EnsureSuccessStatusCode();
+                    // The restart fetches the whole object, so its validators replace the stale ones.
+                    identity = CreateIdentity(url, restartResponse);
+                    WriteIdentity(identityPath, identity);
                     await DownloadToPartialAsync(restartResponse, partialPath, existingBytes, progress, cancellationToken);
                 }
                 else
@@ -177,14 +180,7 @@ public class DownloaderService
 
                     if (rangeIsUsable)
                     {
-                        identity = identity with
-                        {
-                            ETag = response.Headers.ETag?.ToString() ?? identity.ETag,
-                            LastModified = response.Content.Headers.LastModified?.ToString("R") ?? identity.LastModified,
-                            Length = response.StatusCode == HttpStatusCode.PartialContent
-                                ? response.Content.Headers.ContentRange?.Length ?? identity.Length
-                                : response.Content.Headers.ContentLength ?? identity.Length
-                        };
+                        identity = MergeIdentity(identity, response);
                         WriteIdentity(identityPath, identity);
                     }
 
@@ -198,6 +194,8 @@ public class DownloaderService
                         using HttpResponseMessage restartResponse = await client.SendAsync(
                             restartRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                         restartResponse.EnsureSuccessStatusCode();
+                        identity = CreateIdentity(url, restartResponse);
+                        WriteIdentity(identityPath, identity);
                         await DownloadToPartialAsync(restartResponse, partialPath, existingBytes, progress, cancellationToken);
                     }
                     else
@@ -833,5 +831,24 @@ public class DownloaderService
             Debug.WriteLine($"PocketMC failed to persist resume identity {identityPath}: {ex}");
         }
     }
+
+    /// <summary>Captures validators from a full response, replacing anything stored for the previous object.</summary>
+    private static ResumeIdentity CreateIdentity(string url, HttpResponseMessage response) => new(
+        url,
+        response.Headers.ETag?.ToString(),
+        response.Content.Headers.LastModified?.ToString("R"),
+        response.StatusCode == HttpStatusCode.PartialContent
+            ? response.Content.Headers.ContentRange?.Length
+            : response.Content.Headers.ContentLength);
+
+    /// <summary>Keeps known validators when a response omits them, so a resumed download can still be validated.</summary>
+    private static ResumeIdentity MergeIdentity(ResumeIdentity identity, HttpResponseMessage response) => identity with
+    {
+        ETag = response.Headers.ETag?.ToString() ?? identity.ETag,
+        LastModified = response.Content.Headers.LastModified?.ToString("R") ?? identity.LastModified,
+        Length = response.StatusCode == HttpStatusCode.PartialContent
+            ? response.Content.Headers.ContentRange?.Length ?? identity.Length
+            : response.Content.Headers.ContentLength ?? identity.Length
+    };
 }
 
