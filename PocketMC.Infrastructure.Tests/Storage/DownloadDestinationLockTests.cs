@@ -49,6 +49,39 @@ public sealed class DownloadDestinationLockTests
         }
     }
 
+    [Fact]
+    public async Task DownloadCancelledWhileQueued_ReleasesTheDestinationGate()
+    {
+        string destination = Path.Combine(Path.GetTempPath(), $"pocketmc-lock-{Guid.NewGuid():N}.bin");
+        var handler = new GatedHandler(Encoding.UTF8.GetBytes(new string('y', 4096)));
+        var service = new DownloaderService(new SingleClientFactory(handler), NullLogger<DownloaderService>.Instance);
+
+        DownloadTuning.Configure(1, 1);
+        try
+        {
+            Task first = service.DownloadFileAsync("https://example.test/file.bin", destination);
+            await handler.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            using var queuedCts = new CancellationTokenSource();
+            Task queued = service.DownloadFileAsync("https://example.test/file.bin", destination, cancellationToken: queuedCts.Token);
+            queuedCts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued);
+
+            handler.Release();
+            await first;
+
+            Assert.Equal(0, DownloaderService.DestinationLockCount);
+            Assert.Equal(4096, new FileInfo(destination).Length);
+        }
+        finally
+        {
+            DownloadTuning.Configure(DownloadTuning.DefaultThreads, DownloadTuning.DefaultConcurrency);
+            TryDelete(destination);
+            TryDelete(destination + ".partial");
+            TryDelete(destination + ".partial.identity");
+        }
+    }
+
     private static void TryDelete(string path)
     {
         try

@@ -83,15 +83,22 @@ public class DownloaderService
     {
         string destinationKey = Path.GetFullPath(destinationPath);
         LockEntry destinationEntry = RentDestinationLock(destinationKey);
-        await destinationEntry.Gate.WaitAsync(cancellationToken);
+        bool gateTaken = false;
         try
         {
+            await destinationEntry.Gate.WaitAsync(cancellationToken);
+            gateTaken = true;
             using IDisposable slot = await ConcurrencyLimiter.AcquireAsync(cancellationToken);
             await DownloadFileCoreAsync(url, destinationPath, expectedHash, expectedHashType, progress, cancellationToken);
         }
         finally
         {
-            destinationEntry.Gate.Release();
+            // A cancellation while queued must still return the gate and drop the entry.
+            if (gateTaken)
+            {
+                destinationEntry.Gate.Release();
+            }
+
             ReturnDestinationLock(destinationKey, destinationEntry);
         }
     }
