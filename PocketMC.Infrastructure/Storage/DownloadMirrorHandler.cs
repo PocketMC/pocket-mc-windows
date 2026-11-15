@@ -49,7 +49,8 @@ public sealed class DownloadMirrorHandler : DelegatingHandler
             bool isDirect = ReferenceEquals(candidate.Uri, original) || candidate.Uri == original;
             bool isLast = i == candidates.Count - 1;
 
-            if (!isDirect && mirrorAttempts >= MaxMirrorAttempts)
+            // A spent budget is not a mirror fault: stop probing so healthy mirrors are not cooled down.
+            if (!isDirect && (mirrorAttempts >= MaxMirrorAttempts || DateTime.UtcNow >= deadline))
             {
                 _logger.LogInformation(
                     "Giving up on mirrors for {Url} after {Attempts} attempts; requesting the origin directly.",
