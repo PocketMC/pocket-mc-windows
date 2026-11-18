@@ -399,7 +399,7 @@
                                                 <StackPanel Grid.Column="0">
                                                     <TextBlock Text="{loc:Tr 'Server Port'}" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
                                                     <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap">
-                                                        <Run Text="{loc:Tr 'Minecraft 服务器监听的端口，默认为 '}"/>
+                                                        <Run Text="{loc:Tr 'The port your Minecraft server listens on. Default is '}"/>
                                                         <Run Text="{Binding DefaultServerPortText, Mode=OneWay}"/>
                                                         <Run Text="."/>
                                                     </TextBlock>
@@ -702,7 +702,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{loc:Tr 'View Distance:'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                 <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                                    <Run Text="{Binding World.ViewDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' 区块'}"/>
+                                                    <Run Text="{Binding World.ViewDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' chunks'}"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding World.ViewDistance}" Minimum="3" Maximum="32"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
@@ -717,7 +717,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{loc:Tr 'Simulation Distance:'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                 <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                                    <Run Text="{Binding World.SimulationDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' 区块'}"/>
+                                                    <Run Text="{Binding World.SimulationDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' chunks'}"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding World.SimulationDistance}" Minimum="3" Maximum="32"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>
@@ -796,7 +796,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Text="{loc:Tr 'View Distance:'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,12,0" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                 <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                                    <Run Text="{Binding Bedrock.ViewDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' 区块'}"/>
+                                                    <Run Text="{Binding Bedrock.ViewDistance, Mode=OneWay}"/><Run Text="{loc:Tr ' chunks'}"/>
                                                 </TextBlock>
                                                 <Slider Grid.Column="2" Value="{Binding Bedrock.ViewDistance}" Minimum="5" Maximum="96"
                                                         TickFrequency="1" IsSnapToTickEnabled="True" Margin="8,0"/>

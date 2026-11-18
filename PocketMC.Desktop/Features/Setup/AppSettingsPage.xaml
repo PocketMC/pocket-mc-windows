@@ -131,12 +131,12 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                    <TextBlock Text="Essentials" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                    <TextBlock Text="Core app behavior and appearance" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,0"/>
+                    <TextBlock Text="{loc:Tr Essentials}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="{loc:Tr 'Core app behavior and appearance'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Margin="0,12,0,12">
-                    <TextBlock Text="Connections" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                    <TextBlock Text="Services, integrations, and AI" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,0"/>
+                    <TextBlock Text="{loc:Tr Connections}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="{loc:Tr 'Services, integrations, and AI'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,0"/>
                 </StackPanel>
 
                 <StackPanel Grid.Row="1">
@@ -1380,8 +1380,8 @@
                 </StackPanel>
 
                 <StackPanel Grid.Row="4">
-                    <TextBlock Text="Maintenance" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                    <TextBlock Text="Updates, recovery, and support" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,12"/>
+                    <TextBlock Text="{loc:Tr Maintenance}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="{loc:Tr 'Updates, recovery, and support'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,3,0,12"/>
 
                 <!-- UPDATES -->
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12">

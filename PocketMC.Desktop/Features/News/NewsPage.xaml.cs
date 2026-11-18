@@ -30,7 +30,7 @@ public partial class NewsPage : Page
     {
         _newsService.PopupNewsAvailable += OnPopupNewsAvailable;
         RefreshEntries();
-        TxtSyncStatus.Text = _entries.Count == 0 ? "News will appear here when available." : "Showing locally cached news.";
+        TxtSyncStatus.Text = _entries.Count == 0 ? L.T("News will appear here when available.") : L.T("Showing locally cached news.");
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -46,7 +46,7 @@ public partial class NewsPage : Page
             RefreshEntries();
             TxtSyncStatus.Text = result.Succeeded
                 ? L.F("News checked. {0} item(s) available.", _entries.Count)
-                : "Could not reach the news service. Showing saved news.";
+                : L.T("Could not reach the news service. Showing saved news.");
         }
         catch (Exception ex)
         {
@@ -134,9 +134,9 @@ public partial class NewsPage : Page
         {
             Item = item;
             Title = item.Blocks.FirstOrDefault(block => block.Type == NewsBlockType.Title)?.Text ?? item.Metadata.Id;
-            TypeLabel = Format(item.Metadata.Type);
-            PriorityLabel = Format(item.Metadata.Priority);
-            PublishedLabel = item.Metadata.PublishedUtc.ToLocalTime().ToString("d");
+            TypeLabel = L.T(Format(item.Metadata.Type));
+            PriorityLabel = L.T(Format(item.Metadata.Priority));
+            PublishedLabel = L.Date(item.Metadata.PublishedUtc.LocalDateTime);
             UnreadVisibility = isRead ? Visibility.Collapsed : Visibility.Visible;
         }
 

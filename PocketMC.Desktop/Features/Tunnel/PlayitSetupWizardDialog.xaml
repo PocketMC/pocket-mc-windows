@@ -69,21 +69,21 @@
                             <TextBlock TextWrapping="Wrap" FontSize="15" Margin="0,0,0,8"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                 <Run Text="{loc:Tr '1. In the browser, select the dropdown menu and choose'}"/>
-                                <Run Text="{loc:Tr ' “其他”'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                <Run Text="{loc:Tr ' &quot;Other&quot;'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
                                 <Run Text="."/>
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="15" Margin="0,0,0,8"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                 <Run Text="{loc:Tr '2. Click'}"/>
-                                <Run Text="{loc:Tr ' “下一步”'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
-                                <Run Text="{loc:Tr '，在 Playit 面板中。'}"/>
+                                <Run Text="{loc:Tr ' &quot;Next&quot;'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                <Run Text="{loc:Tr ' in the Playit dashboard.'}"/>
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="15" Margin="0,0,0,4"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                 <Run Text="{loc:Tr '3. Playit will show you a'}"/>
-                                <Run Text="{loc:Tr ' 设置代码'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
-                                <Run Text="{loc:Tr '（例如 gentle-horse-123）。'}"/>
-                                <Run Text="{loc:Tr ' 复制该代码！'}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                <Run Text="{loc:Tr ' setup code'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                <Run Text="{loc:Tr ' (e.g. gentle-horse-123).'}"/>
+                                <Run Text="{loc:Tr ' Copy that code!'}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                             </TextBlock>
                         </StackPanel>
                     </Border>

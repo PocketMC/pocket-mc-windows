@@ -63,7 +63,7 @@ namespace PocketMC.Desktop.Features.WhatsNew
             TxtHeader.Text = L.F("Updated to v{0}", _version);
             TxtSubheader.Text = string.Empty;
 
-            TxtFallback.Text = "PocketMC has been updated successfully.\nThank you for updating!";
+            TxtFallback.Text = L.T("PocketMC has been updated successfully.\nThank you for updating!");
             SectionsPanel.Visibility = Visibility.Collapsed;
             FallbackPanel.Visibility = Visibility.Visible;
             BtnFullChangelog.Visibility = Visibility.Collapsed;

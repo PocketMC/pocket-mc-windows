@@ -35,17 +35,28 @@ namespace PocketMC.Desktop.Features.Shell
             _dialogService = dialogService;
             _whatsNewService = whatsNewService;
 
-            TxtAboutTitle.Text = L.F("About {0}", AppConfig.AppName);
-            TxtVersion.Text = L.F("Version {0}", AppConfig.AppVersion);
-            TxtAppTitle.Text = $"{AppConfig.AppName} Desktop";
-            TxtAppDescription.Text = AppConfig.AppDescription;
-            TxtOrgName.Text = AppConfig.OrganizationName;
-            TxtOrgTagline.Text = AppConfig.OrganizationTagline;
-            TxtCommunityDesc.Text = L.F("Join our Discord server to get help, share tips, and connect with other {0} users.", AppConfig.AppName);
-            TxtDonationDesc.Text = L.F("Support the development of {0}! If you love this project and find it useful, consider buying us a coffee or submitting feedback.", AppConfig.AppName);
+            UpdateLocalizedMetadata();
+            LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+        }
+
+        private void OnLanguageChanged(object? sender, LanguageChangedEventArgs e)
+        {
+            Dispatcher.Invoke(UpdateLocalizedMetadata);
+        }
+
+        private void UpdateLocalizedMetadata()
+        {
+            TxtAboutTitle.Text = L.F("About {0}", AppConfig.AppName);
+            TxtVersion.Text = L.F("Version {0}", AppConfig.AppVersion);
+            TxtAppTitle.Text = $"{AppConfig.AppName} Desktop";
+            TxtAppDescription.Text = L.T(AppConfig.AppDescription);
+            TxtOrgName.Text = L.T(AppConfig.OrganizationName);
+            TxtOrgTagline.Text = L.T(AppConfig.OrganizationTagline);
+            TxtCommunityDesc.Text = L.F("Join our Discord server to get help, share tips, and connect with other {0} users.", AppConfig.AppName);
+            TxtDonationDesc.Text = L.F("Support the development of {0}! If you love this project and find it useful, consider buying us a coffee or submitting feedback.", AppConfig.AppName);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)

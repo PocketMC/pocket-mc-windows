@@ -59,7 +59,7 @@
                                         Opacity="0.4"/>
 
                                 <!-- Section header -->
-                                <TextBlock Text="{Binding Name}"
+                                <TextBlock Text="{Binding Name, Converter={x:Static loc:TranslateConverter.Instance}}"
                                            FontSize="11"
                                            FontWeight="Bold"
                                            Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
@@ -86,7 +86,7 @@
                                                                    VerticalAlignment="Center"/>
                                                 </Border>
                                                 <TextBlock Grid.Column="1"
-                                                           Text="{Binding}"
+                                                           Text="{Binding Path=., Converter={x:Static loc:TranslateConverter.Instance}}"
                                                            FontSize="13"
                                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                            TextWrapping="Wrap"
