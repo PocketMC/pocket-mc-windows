@@ -100,6 +100,33 @@ public sealed class NewsTextParserTests
         Assert.Equal(item.Metadata.MinimumVersion, item.Metadata.MaximumVersion);
     }
 
+    [Fact]
+    public void Parse_ReadsLanguageFromHeaderOrFileName()
+    {
+        string withLang = ValidNews.Replace("priority: critical", "priority: critical\nlang: zh-CN", StringComparison.Ordinal);
+        NewsItem parsedExplicit = _parser.Parse("news.txt", withLang);
+        Assert.Equal("zh-CN", parsedExplicit.Metadata.Language);
+
+        string withLanguageKey = ValidNews.Replace("priority: critical", "priority: critical\nlanguage: en-US", StringComparison.Ordinal);
+        NewsItem parsedLanguageKey = _parser.Parse("news.txt", withLanguageKey);
+        Assert.Equal("en-US", parsedLanguageKey.Metadata.Language);
+
+        NewsItem parsedFromFileName = _parser.Parse("playit-agent-fix.zh-CN.txt", ValidNews);
+        Assert.Equal("zh-CN", parsedFromFileName.Metadata.Language);
+
+        NewsItem parsedDefault = _parser.Parse("playit-agent-fix.txt", ValidNews);
+        Assert.Null(parsedDefault.Metadata.Language);
+    }
+
+    [Theory]
+    [InlineData("lang: invalid$$tag")]
+    [InlineData("lang: 12345678901234567890")]
+    public void Parse_RejectsInvalidLanguageTags(string invalidLang)
+    {
+        string source = ValidNews.Replace("priority: critical", $"priority: critical\n{invalidLang}", StringComparison.Ordinal);
+        Assert.Throws<InvalidDataException>(() => _parser.Parse("news.txt", source));
+    }
+
     private const string ValidNews = """
         ---
         id: playit-agent-fix

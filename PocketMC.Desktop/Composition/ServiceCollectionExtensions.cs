@@ -1,4 +1,5 @@
 using PocketMC.Infrastructure.Configuration;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Features.Settings;
 using PocketMC.Desktop.Features.Setup;
@@ -115,7 +116,13 @@ services.AddSingleton<PocketMC.Desktop.Features.Intelligence.SummaryStorageServi
                 client.DefaultRequestHeaders.UserAgent.ParseAdd($"PocketMC-Desktop/{AppConfig.AppVersion}");
                 client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
             }).AddStandardResilience().AddHttpMessageHandler<DownloadMirrorHandler>();
-            services.AddSingleton<NewsService>();
+            services.AddSingleton<NewsService>(sp => new NewsService(
+                sp.GetRequiredService<SettingsManager>(),
+                sp.GetRequiredService<IHttpClientFactory>(),
+                sp.GetRequiredService<NewsTextParser>(),
+                sp.GetRequiredService<ILogger<NewsService>>(),
+                getCurrentVersion: null,
+                getCurrentLanguage: () => LocalizationService.Instance.Language));
 
             return services;
         }

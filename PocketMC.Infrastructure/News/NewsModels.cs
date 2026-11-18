@@ -46,7 +46,8 @@ public sealed record NewsMetadata(
     DateTimeOffset? ExpiresUtc,
     Version? MinimumVersion,
     Version? MaximumVersion,
-    bool IsRead = false);
+    bool IsRead = false,
+    string? Language = null);
 
 public sealed record NewsContentBlock(
     NewsBlockType Type,
@@ -64,7 +65,7 @@ public sealed class NewsTextParser
 {
     private static readonly HashSet<string> MetadataKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        "id", "type", "priority", "popup", "published", "expires", "minVersion", "maxVersion", "read"
+        "id", "type", "priority", "popup", "published", "expires", "minVersion", "maxVersion", "read", "lang", "language"
     };
 
     public NewsItem Parse(string fileName, string source)
@@ -112,7 +113,7 @@ public sealed class NewsTextParser
         }
 
         Dictionary<string, string> values = ParseMetadata(lines, metadataEnd, allowLocalReadState);
-        NewsMetadata metadata = BuildMetadata(values, allowLocalReadState);
+        NewsMetadata metadata = BuildMetadata(values, allowLocalReadState, fileName);
         IReadOnlyList<NewsContentBlock> blocks = ParseContent(lines, metadataEnd + 1);
         if (!blocks.Any(block => block.Type == NewsBlockType.Title))
         {
@@ -122,7 +123,7 @@ public sealed class NewsTextParser
         return new NewsItem(fileName, normalized, metadata, blocks);
     }
 
-    public NewsMetadata ParseMetadataHeader(string source)
+    public NewsMetadata ParseMetadataHeader(string source, string? fileName = null)
     {
         if (string.IsNullOrWhiteSpace(source))
         {
@@ -142,7 +143,7 @@ public sealed class NewsTextParser
             throw new InvalidDataException("News metadata section is not closed.");
         }
 
-        return BuildMetadata(ParseMetadata(lines, metadataEnd, allowLocalReadState: false), allowLocalReadState: false);
+        return BuildMetadata(ParseMetadata(lines, metadataEnd, allowLocalReadState: false), allowLocalReadState: false, fileName);
     }
 
     private static Dictionary<string, string> ParseMetadata(string[] lines, int metadataEnd, bool allowLocalReadState)
@@ -183,12 +184,30 @@ public sealed class NewsTextParser
         return values;
     }
 
-    private static NewsMetadata BuildMetadata(IReadOnlyDictionary<string, string> values, bool allowLocalReadState)
+    private static NewsMetadata BuildMetadata(IReadOnlyDictionary<string, string> values, bool allowLocalReadState, string? fileName = null)
     {
         string id = Required(values, "id");
         if (id.Length > 128 || !Regex.IsMatch(id, @"^[A-Za-z0-9][A-Za-z0-9._-]*$", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)))
         {
             throw new InvalidDataException("News id contains unsupported characters or is too long.");
+        }
+
+        string? language = Optional(values, "lang") ?? Optional(values, "language");
+        if (string.IsNullOrWhiteSpace(language) && !string.IsNullOrWhiteSpace(fileName))
+        {
+            language = InferLanguageFromFileName(fileName);
+        }
+
+        if (!string.IsNullOrWhiteSpace(language))
+        {
+            if (!IsValidLanguageTag(language))
+            {
+                throw new InvalidDataException($"News language tag '{language}' is invalid.");
+            }
+        }
+        else
+        {
+            language = null;
         }
 
         if (!Enum.TryParse(ToEnumName(Required(values, "type")), ignoreCase: true, out NewsType type) ||
@@ -231,7 +250,29 @@ public sealed class NewsTextParser
             throw new InvalidDataException("expires must be later than published.");
         }
 
-        return new NewsMetadata(id, type, priority, popup, published, expires, minimumVersion, maximumVersion, isRead);
+        return new NewsMetadata(id, type, priority, popup, published, expires, minimumVersion, maximumVersion, isRead, language);
+    }
+
+    public static string? InferLanguageFromFileName(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)) return null;
+        string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+        int dotIndex = nameWithoutExt.LastIndexOf('.');
+        if (dotIndex >= 0 && dotIndex < nameWithoutExt.Length - 1)
+        {
+            string candidate = nameWithoutExt[(dotIndex + 1)..];
+            if (IsValidLanguageTag(candidate))
+            {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    public static bool IsValidLanguageTag(string? tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag) || tag.Length > 16) return false;
+        return Regex.IsMatch(tag, @"^[A-Za-z]{2,3}(-[A-Za-z0-9]+)?$", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
     }
 
     private static IReadOnlyList<NewsContentBlock> ParseContent(string[] lines, int startIndex)

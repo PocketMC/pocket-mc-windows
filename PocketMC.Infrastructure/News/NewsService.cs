@@ -41,6 +41,7 @@ public sealed class NewsService : IDisposable
     private readonly NewsTextParser _parser;
     private readonly ILogger<NewsService> _logger;
     private readonly Func<string> _getCurrentVersion;
+    private readonly Func<string> _getCurrentLanguage;
     private readonly string _newsRoot;
     private readonly string _cacheDirectory;
     private readonly string _statePath;
@@ -60,13 +61,15 @@ public sealed class NewsService : IDisposable
         IHttpClientFactory httpClientFactory,
         NewsTextParser parser,
         ILogger<NewsService> logger,
-        Func<string>? getCurrentVersion = null)
+        Func<string>? getCurrentVersion = null,
+        Func<string>? getCurrentLanguage = null)
     {
         _settingsManager = settingsManager;
         _httpClientFactory = httpClientFactory;
         _parser = parser;
         _logger = logger;
         _getCurrentVersion = getCurrentVersion ?? (() => AppConfig.AppVersion);
+        _getCurrentLanguage = getCurrentLanguage ?? (() => _settingsManager.Load().Language);
 
         _newsRoot = Path.Combine(_settingsManager.GetPersistentDataDirectory(), "news");
         _cacheDirectory = Path.Combine(_newsRoot, "cache");
@@ -76,7 +79,7 @@ public sealed class NewsService : IDisposable
     public string CacheDirectory => _cacheDirectory;
     public string StateFilePath => _statePath;
 
-    public IReadOnlyList<NewsItem> GetCachedNews()
+    public IReadOnlyList<NewsItem> GetAllCachedNews()
     {
         if (!Directory.Exists(_cacheDirectory)) return Array.Empty<NewsItem>();
 
@@ -98,8 +101,66 @@ public sealed class NewsService : IDisposable
         return items.OrderBy(item => item.Metadata.PublishedUtc).ThenBy(item => item.Metadata.Id, StringComparer.Ordinal).ToArray();
     }
 
+    public IReadOnlyList<NewsItem> GetCachedNews(string? preferredLanguage = null)
+    {
+        IReadOnlyList<NewsItem> all = GetAllCachedNews();
+        if (all.Count == 0) return Array.Empty<NewsItem>();
+
+        string targetLang = preferredLanguage ?? GetEffectiveLanguage();
+        return FilterAndResolveLocalizedNews(all, targetLang);
+    }
+
+    public static IReadOnlyList<NewsItem> FilterAndResolveLocalizedNews(IEnumerable<NewsItem> items, string targetLanguage)
+    {
+        string normalizedTarget = (targetLanguage ?? "en").Trim();
+        string targetPrefix = normalizedTarget.Split('-')[0];
+
+        var grouped = items.GroupBy(item => item.Metadata.Id, StringComparer.Ordinal);
+        List<NewsItem> resolved = new();
+
+        foreach (var group in grouped)
+        {
+            NewsItem? exactLangMatch = null;
+            NewsItem? prefixLangMatch = null;
+            NewsItem? defaultFallback = null;
+
+            foreach (NewsItem item in group)
+            {
+                string? itemLang = item.Metadata.Language;
+                if (string.IsNullOrWhiteSpace(itemLang))
+                {
+                    defaultFallback ??= item;
+                }
+                else if (string.Equals(itemLang, normalizedTarget, StringComparison.OrdinalIgnoreCase))
+                {
+                    exactLangMatch = item;
+                    break;
+                }
+                else if (itemLang.Split('-')[0].Equals(targetPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    prefixLangMatch ??= item;
+                }
+                else if (itemLang.Equals("en", StringComparison.OrdinalIgnoreCase) ||
+                         itemLang.Equals("en-US", StringComparison.OrdinalIgnoreCase))
+                {
+                    defaultFallback ??= item;
+                }
+            }
+
+            NewsItem? bestMatch = exactLangMatch ?? prefixLangMatch ?? defaultFallback ?? group.FirstOrDefault();
+            if (bestMatch != null)
+            {
+                resolved.Add(bestMatch);
+            }
+        }
+
+        return resolved.OrderBy(item => item.Metadata.PublishedUtc)
+                       .ThenBy(item => item.Metadata.Id, StringComparer.Ordinal)
+                       .ToArray();
+    }
+
     public IReadOnlySet<string> GetReadNewsIds()
-        => GetCachedNews()
+        => GetAllCachedNews()
             .Where(item => item.Metadata.IsRead)
             .Select(item => item.Metadata.Id)
             .ToHashSet(StringComparer.Ordinal);
@@ -119,6 +180,7 @@ public sealed class NewsService : IDisposable
         string[] cachedPaths = Directory.Exists(_cacheDirectory)
             ? Directory.GetFiles(_cacheDirectory, "*.txt", SearchOption.TopDirectoryOnly)
             : Array.Empty<string>();
+        bool anyMarked = false;
         foreach (string path in cachedPaths)
         {
             try
@@ -133,9 +195,8 @@ public sealed class NewsService : IDisposable
                     }
 
                     FileUtils.AtomicWriteAllText(path, _parser.MarkRead(item.FileName, source));
-                    _logger.LogInformation("Marked cached news item {NewsId} as read.", newsId);
-                    NotifyNewsStateChanged();
-                    return;
+                    _logger.LogInformation("Marked cached news item {NewsId} ({FileName}) as read.", newsId, item.FileName);
+                    anyMarked = true;
                 }
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -143,7 +204,25 @@ public sealed class NewsService : IDisposable
                 _logger.LogWarning(ex, "Could not mark cached news file {NewsPath} as read.", path);
             }
         }
+
+        if (anyMarked)
+        {
+            NotifyNewsStateChanged();
+        }
     }
+
+    private string GetEffectiveLanguage()
+    {
+        string? lang = null;
+        try { lang = _getCurrentLanguage(); } catch { }
+        if (string.IsNullOrWhiteSpace(lang) || string.Equals(lang, "system", StringComparison.OrdinalIgnoreCase))
+        {
+            return System.Globalization.CultureInfo.CurrentUICulture.Name;
+        }
+        return lang;
+    }
+
+    private static string GetCompositeKey(string id, string? language) => $"{id}#{(language ?? string.Empty).ToLowerInvariant()}";
 
     public void Start()
     {
@@ -205,9 +284,11 @@ public sealed class NewsService : IDisposable
                 state.KnownRemoteBlobShas.Remove(removedFile);
             }
 
-            Dictionary<string, NewsItem> cachedItemsById = GetCachedNews()
-                .ToDictionary(item => item.Metadata.Id, StringComparer.Ordinal);
-            HashSet<string> cachedIds = cachedItemsById.Keys.ToHashSet(StringComparer.Ordinal);
+            IReadOnlyList<NewsItem> allCachedItems = GetAllCachedNews();
+            HashSet<string> cachedKeys = allCachedItems
+                .Select(item => GetCompositeKey(item.Metadata.Id, item.Metadata.Language))
+                .ToHashSet(StringComparer.Ordinal);
+            IReadOnlySet<string> readIds = GetReadNewsIds();
             List<NewsCandidate> candidates = new();
             int invalidCount = 0;
             bool metadataDiscoveryIncomplete = false;
@@ -229,7 +310,7 @@ public sealed class NewsService : IDisposable
                         if (string.Equals(GetGitBlobSha(cachedBytes), remoteFile.Sha, StringComparison.OrdinalIgnoreCase))
                         {
                             NewsItem cachedItem = _parser.ParseCached(remoteFile.Name, new UTF8Encoding(false, true).GetString(cachedBytes));
-                            cachedIds.Add(cachedItem.Metadata.Id);
+                            cachedKeys.Add(GetCompositeKey(cachedItem.Metadata.Id, cachedItem.Metadata.Language));
                             state.KnownRemoteBlobShas[remoteFile.Name] = remoteFile.Sha;
                             if (cachedItem.Metadata.PublishedUtc <= DateTimeOffset.UtcNow &&
                                 IsForVersion(cachedItem.Metadata, currentVersion) &&
@@ -266,8 +347,9 @@ public sealed class NewsService : IDisposable
                 try
                 {
                     MetadataDownload metadataDownload = await DownloadMetadataAsync(client, remoteFile, token);
-                    NewsMetadata metadata = _parser.ParseMetadataHeader(metadataDownload.Prefix);
-                    bool alreadyCached = cachedIds.Contains(metadata.Id);
+                    NewsMetadata metadata = _parser.ParseMetadataHeader(metadataDownload.Prefix, remoteFile.Name);
+                    string candidateKey = GetCompositeKey(metadata.Id, metadata.Language);
+                    bool alreadyCached = cachedKeys.Contains(candidateKey);
                     bool afterCursor = IsAfterLastFetched(metadata, state);
                     bool versionRelevant = IsForVersion(metadata, currentVersion);
                     DateTimeOffset metadataNow = DateTimeOffset.UtcNow;
@@ -370,26 +452,27 @@ public sealed class NewsService : IDisposable
                     break;
                 }
 
-                if (cachedItemsById.TryGetValue(item.Metadata.Id, out NewsItem? previousItem) && previousItem.Metadata.IsRead)
+                if (readIds.Contains(item.Metadata.Id))
                 {
                     string readText = _parser.MarkRead(item.FileName, item.RawText);
                     contentBytes = new UTF8Encoding(false, true).GetBytes(readText);
                     item = _parser.ParseCached(item.FileName, readText);
                 }
 
-                if (cachedIds.Contains(item.Metadata.Id) && !File.Exists(GetCachePath(item.FileName)))
+                string candidateItemKey = GetCompositeKey(item.Metadata.Id, item.Metadata.Language);
+                if (cachedKeys.Contains(candidateItemKey) && !File.Exists(GetCachePath(item.FileName)))
                 {
                     invalidCount++;
                     state.KnownRemoteBlobShas[candidate.RemoteFile.Name] = candidate.RemoteFile.Sha;
                     SaveState(state);
-                    _logger.LogWarning("Skipping duplicate news id {NewsId} in {NewsFile}.", item.Metadata.Id, candidate.RemoteFile.Name);
+                    _logger.LogWarning("Skipping duplicate news item {ItemKey} in {NewsFile}.", candidateItemKey, candidate.RemoteFile.Name);
                     continue;
                 }
 
                 try
                 {
                     await WriteCacheAtomicallyAsync(GetCachePath(candidate.RemoteFile.Name), contentBytes, token);
-                    cachedIds.Add(item.Metadata.Id);
+                    cachedKeys.Add(candidateItemKey);
                     state.KnownRemoteBlobShas[candidate.RemoteFile.Name] = candidate.RemoteFile.Sha;
                     AdvanceLastFetched(state, item.Metadata);
                     SaveState(state);

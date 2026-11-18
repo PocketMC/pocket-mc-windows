@@ -245,7 +245,35 @@ public sealed class NewsServiceTests : IDisposable
         Assert.Contains(upgraded.Service.GetCachedNews(), item => item.Metadata.Id == "targeted-news");
     }
 
-    private NewsFixture CreateFixture(string currentVersion = "1.9.9.1")
+    [Fact]
+    public async Task SynchronizeAsync_MultiLanguageNewsResolvesToUserLanguageAndFallsBackToDefault()
+    {
+        NewsFixture zhFixture = CreateFixture(currentLanguage: "zh-CN");
+        zhFixture.Remote.Add("news-1.txt", CreateNews("news-1", "2026-09-20T10:00:00Z", lang: "en"));
+        zhFixture.Remote.Add("news-1.zh-CN.txt", CreateNews("news-1", "2026-09-20T10:00:00Z", lang: "zh-CN"));
+        zhFixture.Remote.Add("news-2.txt", CreateNews("news-2", "2026-09-21T10:00:00Z", lang: "en"));
+
+        NewsSyncResult result = await zhFixture.Service.SynchronizeAsync();
+
+        Assert.True(result.Succeeded, result.ErrorMessage);
+        Assert.Equal(3, result.DownloadedCount);
+
+        IReadOnlyList<NewsItem> zhNews = zhFixture.Service.GetCachedNews();
+        Assert.Equal(2, zhNews.Count);
+        Assert.Equal("zh-CN", zhNews.First(n => n.Metadata.Id == "news-1").Metadata.Language);
+        Assert.Equal("en", zhNews.First(n => n.Metadata.Id == "news-2").Metadata.Language);
+
+        IReadOnlyList<NewsItem> enNews = zhFixture.Service.GetCachedNews(preferredLanguage: "en");
+        Assert.Equal(2, enNews.Count);
+        Assert.Equal("en", enNews.First(n => n.Metadata.Id == "news-1").Metadata.Language);
+
+        zhFixture.Service.MarkRead("news-1");
+        Assert.True(zhFixture.Service.GetCachedNews().First(n => n.Metadata.Id == "news-1").Metadata.IsRead);
+        Assert.True(zhFixture.Service.GetCachedNews(preferredLanguage: "en").First(n => n.Metadata.Id == "news-1").Metadata.IsRead);
+        Assert.Equal(1, zhFixture.Service.GetUnreadNewsCount());
+    }
+
+    private NewsFixture CreateFixture(string currentVersion = "1.9.9.1", string currentLanguage = "en")
     {
         Directory.CreateDirectory(_root);
         string settingsPath = Path.Combine(_root, "settings.json");
@@ -254,7 +282,7 @@ public sealed class NewsServiceTests : IDisposable
         HttpClient client = new(handler);
         Mock<IHttpClientFactory> factory = new();
         factory.Setup(item => item.CreateClient("PocketMC.News")).Returns(() => new HttpClient(handler));
-        NewsService service = new(settingsManager, factory.Object, new NewsTextParser(), NullLogger<NewsService>.Instance, () => currentVersion);
+        NewsService service = new(settingsManager, factory.Object, new NewsTextParser(), NullLogger<NewsService>.Instance, () => currentVersion, () => currentLanguage);
         return new NewsFixture(service, handler);
     }
 
@@ -264,11 +292,12 @@ public sealed class NewsServiceTests : IDisposable
         bool popup = false,
         string? expires = null,
         string? minVersion = null,
-        string? maxVersion = null)
+        string? maxVersion = null,
+        string? lang = null)
         => $"""
         ---
         id: {id}
-        type: announcement
+        {(lang == null ? string.Empty : $"lang: {lang}\n")}type: announcement
         priority: normal
         popup: {popup.ToString().ToLowerInvariant()}
         published: {published}

@@ -29,12 +29,28 @@ public partial class NewsPage : Page
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _newsService.PopupNewsAvailable += OnPopupNewsAvailable;
+        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
         RefreshEntries();
         TxtSyncStatus.Text = _entries.Count == 0 ? L.T("News will appear here when available.") : L.T("Showing locally cached news.");
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
-        => _newsService.PopupNewsAvailable -= OnPopupNewsAvailable;
+    {
+        _newsService.PopupNewsAvailable -= OnPopupNewsAvailable;
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, LanguageChangedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (IsLoaded)
+            {
+                RefreshEntries();
+                TxtSyncStatus.Text = _entries.Count == 0 ? L.T("News will appear here when available.") : L.T("Showing locally cached news.");
+            }
+        }));
+    }
 
     private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
     {
