@@ -6,16 +6,19 @@ using System.Threading.Tasks;
 using PocketMC.Domain.Models;
 using PocketMC.Infrastructure.Instances.Providers;
 using PocketMC.Infrastructure.Java;
+using PocketMC.Infrastructure.Storage;
 
 namespace PocketMC.Infrastructure.Instances;
 
 public class ForgeInstaller
 {
     private readonly VanillaProvider _vanillaProvider;
+    private readonly DownloadMirrorService? _mirrorService;
 
-    public ForgeInstaller(VanillaProvider vanillaProvider)
+    public ForgeInstaller(VanillaProvider vanillaProvider, DownloadMirrorService? mirrorService = null)
     {
         _vanillaProvider = vanillaProvider;
+        _mirrorService = mirrorService;
     }
 
     public async Task HandleInstallerBasedSetupAsync(
@@ -27,10 +30,20 @@ public class ForgeInstaller
         CancellationToken cancellationToken = default)
     {
         string installerPath = Path.Combine(workingDir, "installer.jar");
+        string completionMarker = Path.Combine(workingDir, InstallerMarkerName);
         bool isForgeOrNeo = meta.ServerType == "Forge" || meta.ServerType == "NeoForge";
 
-        if (isForgeOrNeo && File.Exists(installerPath) && !Directory.Exists(Path.Combine(workingDir, "libraries")))
+        // The marker, not the libraries folder, decides whether the installer already succeeded:
+        // a crashed installer leaves a partial libraries/ tree that must not block a retry.
+        bool installerFinished = File.Exists(completionMarker) && Directory.Exists(Path.Combine(workingDir, "libraries"));
+        if (isForgeOrNeo && File.Exists(installerPath) && !installerFinished)
         {
+            if (Directory.Exists(Path.Combine(workingDir, "libraries")))
+            {
+                onLog($"[PocketMC] Removing an incomplete {meta.ServerType} installation before retrying...");
+                CleanupFailedInstallation(workingDir);
+            }
+
             onStateChange?.Invoke(ServerState.Installing);
             onLog($"[PocketMC] First-time {meta.ServerType} setup detected. Running installer...");
 
@@ -55,11 +68,30 @@ public class ForgeInstaller
                 }
             }
 
+            // The installer is a separate Java process that ignores our HTTP pipeline, so redirect
+            // its embedded library URLs to the configured maven mirror before launching it.
+            string runnableInstaller = "installer.jar";
+            string? patchedInstallerPath = null;
+            if (_mirrorService != null && _mirrorService.MirrorsEnabled && _mirrorService.MavenMirrorBase is { } mavenBase)
+            {
+                string candidatePath = Path.Combine(workingDir, "installer.mirrored.jar");
+                if (InstallerMirrorPatcher.TryCreatePatchedCopy(installerPath, candidatePath, mavenBase))
+                {
+                    patchedInstallerPath = candidatePath;
+                    runnableInstaller = Path.GetFileName(candidatePath);
+                    onLog($"[PocketMC] Installer downloads redirected to {mavenBase}.");
+                }
+                else
+                {
+                    onLog("[PocketMC] WARNING: Could not prepare mirror-patched installer. Using the original installer.");
+                }
+            }
+
             var installerPsi = new ProcessStartInfo
             {
                 FileName = javaPath,
                 WorkingDirectory = workingDir,
-                Arguments = "-Djava.awt.headless=true -Dforge.stdout=true -jar installer.jar --installServer",
+                Arguments = $"-Djava.awt.headless=true -Dforge.stdout=true -jar {runnableInstaller} --installServer",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -131,15 +163,22 @@ public class ForgeInstaller
                     {
                         onLog?.Invoke($"[PocketMC] Installer cancelled. Cleaning up...");
                         try { proc.Kill(true); } catch { }
+                        // Drain the pumps so the disposed process has no observers left on it.
+                        try { await Task.WhenAll(outputTask, errorTask); } catch { }
                         throw;
                     }
-                    await Task.WhenAll(outputTask, errorTask);
+                    // The installer's exit code is the verdict; a broken log pump must not turn a
+                    // successful install into a cleanup that deletes libraries/versions.
+                    try { await Task.WhenAll(outputTask, errorTask); }
+                    catch (Exception ex) { onLog?.Invoke($"[PocketMC] Installer output reader failed: {ex.Message}"); }
 
                     if (proc.ExitCode == 0)
                     {
                         onLog?.Invoke($"[PocketMC] {meta.ServerType} installation successful.");
+                        try { File.WriteAllText(completionMarker, meta.ServerType); } catch { }
                         // Clean up installer to prevent re-runs
                         try { File.Delete(installerPath); } catch { }
+                        if (patchedInstallerPath != null) { try { File.Delete(patchedInstallerPath); } catch { } }
                     }
                     else
                     {
@@ -148,6 +187,11 @@ public class ForgeInstaller
                         throw new Exception($"{meta.ServerType} installer failed with exit code {proc.ExitCode}");
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                CleanupFailedInstallation(workingDir);
+                throw;
             }
             catch (Exception ex)
             {
@@ -161,6 +205,8 @@ public class ForgeInstaller
         }
     }
 
+    private const string InstallerMarkerName = ".pocketmc-installer-complete";
+
     private void CleanupFailedInstallation(string workingDir)
     {
         string libDir = Path.Combine(workingDir, "libraries");
@@ -173,5 +219,9 @@ public class ForgeInstaller
         {
             try { Directory.Delete(verDir, true); } catch { }
         }
+
+        // The patched copy is disposable; keep installer.jar so the user can retry.
+        string patchedInstaller = Path.Combine(workingDir, "installer.mirrored.jar");
+        try { if (File.Exists(patchedInstaller)) File.Delete(patchedInstaller); } catch { }
     }
 }

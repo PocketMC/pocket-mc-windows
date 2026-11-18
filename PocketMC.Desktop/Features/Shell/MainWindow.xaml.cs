@@ -1,5 +1,6 @@
 using PocketMC.Application.Services.Shell;
 using PocketMC.Desktop.Infrastructure;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Features.Setup;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Infrastructure.Configuration;
@@ -286,7 +287,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
         TxtNewsUnreadCount.Text = unreadCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
         System.Windows.Automation.AutomationProperties.SetName(
             NavNews,
-            unreadCount > 0 ? $"News, {unreadCount} unread (Ctrl+7)" : "News (Ctrl+7)");
+            unreadCount > 0 ? L.F("News, {0} unread (Ctrl+7)", unreadCount) : "News (Ctrl+7)");
     }
 
     private void OnMainWindowClosed(object? sender, EventArgs e)
@@ -715,7 +716,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
 
         e.Cancel = true;
         HideToTray();
-        _serviceProvider.GetRequiredService<TrayIconViewModel>().TooltipText = "PocketMC is shutting down...";
+        _serviceProvider.GetRequiredService<TrayIconViewModel>().TooltipText = L.T("PocketMC is shutting down...");
 
         System.Threading.Tasks.Task.Run(async () =>
         {
@@ -928,7 +929,7 @@ public partial class MainWindow : FluentWindow, IShellHost, IStartupShellHost
     private void TrayExit_Click(object sender, RoutedEventArgs e)
     {
         _explicitExitRequested = true;
-        _serviceProvider.GetRequiredService<TrayIconViewModel>().TooltipText = "PocketMC is shutting down...";
+        _serviceProvider.GetRequiredService<TrayIconViewModel>().TooltipText = L.T("PocketMC is shutting down...");
 
         System.Threading.Tasks.Task.Run(async () =>
         {

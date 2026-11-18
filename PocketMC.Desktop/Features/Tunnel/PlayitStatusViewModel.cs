@@ -1,4 +1,5 @@
 using System;
+using PocketMC.Desktop.Localization;
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -60,7 +61,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                     {
                         Monitors.Add(new PlayitStatusMonitorViewModel(monitor));
                     }
-                    LastUpdated = $"Last updated: {DateTime.Now:t}";
+                    LastUpdated = L.F("Last updated: {0}", DateTime.Now.ToString("t"));
                 });
             }
             finally

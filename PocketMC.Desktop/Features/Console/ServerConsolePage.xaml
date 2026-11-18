@@ -1,10 +1,10 @@
-<Page x:Class="PocketMC.Desktop.Features.Console.ServerConsolePage"
+<Page x:Class="PocketMC.Desktop.Features.Console.ServerConsolePage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:intel="clr-namespace:PocketMC.Desktop.Features.Intelligence"
       xmlns:infra="clr-namespace:PocketMC.Desktop.Infrastructure"
-      Title="Server Console"
+      Title="{loc:Tr 'Server Console'}"
       PreviewKeyDown="Page_PreviewKeyDown">
 
     <Grid x:Name="PageRoot" Margin="16">
@@ -29,63 +29,63 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <ui:Button Grid.Column="0" Content="Back" Appearance="Secondary"
+            <ui:Button Grid.Column="0" Content="{loc:Tr 'Back'}" Appearance="Secondary"
                        Icon="{ui:SymbolIcon ArrowLeft24}" Click="BtnBack_Click" Cursor="Hand" Margin="0,0,12,0"
-                       ToolTip="Back to Dashboard (Escape)"
-                       AutomationProperties.Name="Back to Dashboard (Escape)"/>
+                       ToolTip="{loc:Tr 'Back to Dashboard (Escape)'}"
+                       AutomationProperties.Name="{loc:Tr 'Back to Dashboard (Escape)'}"/>
 
-            <ToggleButton x:Name="BtnAutoScroll" Grid.Column="1" Content="Auto-scroll"
+            <ToggleButton x:Name="BtnAutoScroll" Grid.Column="1" Content="{loc:Tr 'Auto-scroll'}"
                           IsChecked="True" VerticalAlignment="Center" Margin="0,0,12,0" Cursor="Hand" Padding="12,5"
-                          AutomationProperties.Name="Toggle console auto-scrolling"/>
+                          AutomationProperties.Name="{loc:Tr 'Toggle console auto-scrolling'}"/>
 
-            <ui:Button Grid.Column="2" Content="Copy Logs" Appearance="Secondary"
+            <ui:Button Grid.Column="2" Content="{loc:Tr 'Copy Logs'}" Appearance="Secondary"
                        Icon="{ui:SymbolIcon Copy24}" Click="BtnCopyLogs_Click" Cursor="Hand" Margin="0,0,8,0"
-                       ToolTip="Copy logs to clipboard"
-                       AutomationProperties.Name="Copy console logs to clipboard"/>
+                       ToolTip="{loc:Tr 'Copy logs to clipboard'}"
+                       AutomationProperties.Name="{loc:Tr 'Copy console logs to clipboard'}"/>
 
-            <ui:TextBox x:Name="TxtLogSearch" Grid.Column="3" PlaceholderText="Search logs..."
+            <ui:TextBox x:Name="TxtLogSearch" Grid.Column="3" PlaceholderText="{loc:Tr 'Search logs...'}"
                         Margin="0,0,4,0" MinWidth="160" VerticalAlignment="Center"
                         TextChanged="TxtLogSearch_TextChanged"
                         KeyDown="TxtLogSearch_KeyDown"
-                        AutomationProperties.Name="Search console logs"/>
+                        AutomationProperties.Name="{loc:Tr 'Search console logs'}"/>
 
-            <ToggleButton Grid.Column="4" Content=".*" ToolTip="Use Regex"
+            <ToggleButton Grid.Column="4" Content=".*" ToolTip="{loc:Tr 'Use Regex'}"
                           IsChecked="{Binding IsRegexEnabled}"
                           VerticalAlignment="Center" Margin="0,0,12,0"
                           Width="32" Height="32" Padding="0" Cursor="Hand"
-                          AutomationProperties.Name="Toggle regular expression search filter"/>
+                          AutomationProperties.Name="{loc:Tr 'Toggle regular expression search filter'}"/>
 
             <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                <ToggleButton Content="Chat" IsChecked="{Binding IsFilterChat}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter chat logs"/>
-                <ToggleButton Content="Info" IsChecked="{Binding IsFilterInfo}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter informational logs"/>
-                <ToggleButton Content="Warn" IsChecked="{Binding IsFilterWarn}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter warning logs"/>
-                <ToggleButton Content="Error" IsChecked="{Binding IsFilterError}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter error logs"/>
-                <ToggleButton Content="Sys" IsChecked="{Binding IsFilterSystem}" Padding="8,4" Cursor="Hand" AutomationProperties.Name="Filter system logs"/>
+                <ToggleButton Content="{loc:Tr 'Chat'}" IsChecked="{Binding IsFilterChat}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="{loc:Tr 'Filter chat logs'}"/>
+                <ToggleButton Content="{loc:Tr 'Info'}" IsChecked="{Binding IsFilterInfo}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="{loc:Tr 'Filter informational logs'}"/>
+                <ToggleButton Content="{loc:Tr 'Warn'}" IsChecked="{Binding IsFilterWarn}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="{loc:Tr 'Filter warning logs'}"/>
+                <ToggleButton Content="{loc:Tr 'Error'}" IsChecked="{Binding IsFilterError}" Margin="0,0,4,0" Padding="8,4" Cursor="Hand" AutomationProperties.Name="{loc:Tr 'Filter error logs'}"/>
+                <ToggleButton Content="{loc:Tr 'Sys'}" IsChecked="{Binding IsFilterSystem}" Padding="8,4" Cursor="Hand" AutomationProperties.Name="{loc:Tr 'Filter system logs'}"/>
             </StackPanel>
 
             <ui:Button Grid.Column="6" Content="{Binding PlayerStatus}" Appearance="Secondary"
                        Icon="{ui:SymbolIcon People24}" Click="BtnPlayers_Click" Cursor="Hand" Margin="0,0,8,0"
-                       ToolTip="Manage online players"
-                       AutomationProperties.Name="Manage online players"
+                       ToolTip="{loc:Tr 'Manage online players'}"
+                       AutomationProperties.Name="{loc:Tr 'Manage online players'}"
                        IsEnabled="{Binding CanUseLiveServerControls}"/>
 
-            <ui:Button Grid.Column="7" Content="Stop Server" Appearance="Danger"
+            <ui:Button Grid.Column="7" Content="{loc:Tr 'Stop Server'}" Appearance="Danger"
                        Icon="{ui:SymbolIcon Stop24}" Click="BtnStop_Click" Cursor="Hand" Margin="0,0,8,0"
-                       ToolTip="Stop server process"
-                       AutomationProperties.Name="Stop server process"
+                       ToolTip="{loc:Tr 'Stop server process'}"
+                       AutomationProperties.Name="{loc:Tr 'Stop server process'}"
                        IsEnabled="{Binding CanStopServer}"/>
 
-            <ui:Button Grid.Column="8" Content="Restart" Appearance="Secondary"
+            <ui:Button Grid.Column="8" Content="{loc:Tr 'Restart'}" Appearance="Secondary"
                        Icon="{ui:SymbolIcon ArrowSync24}" Click="BtnRestart_Click" Cursor="Hand" Margin="0,0,8,0"
-                       ToolTip="Restart server process"
-                       AutomationProperties.Name="Restart server process"
+                       ToolTip="{loc:Tr 'Restart server process'}"
+                       AutomationProperties.Name="{loc:Tr 'Restart server process'}"
                        IsEnabled="{Binding CanUseLiveServerControls}"/>
 
-            <ui:Button Grid.Column="9" Content="AI Summary"
+            <ui:Button Grid.Column="9" Content="{loc:Tr 'AI Summary'}"
                        Style="{StaticResource AiActionButtonStyle}"
                        Icon="{ui:SymbolIcon Sparkle24}" Click="BtnAiSummary_Click" Cursor="Hand"
-                       ToolTip="Generate AI session summary"
-                       AutomationProperties.Name="Generate AI session summary"/>
+                       ToolTip="{loc:Tr 'Generate AI session summary'}"
+                       AutomationProperties.Name="{loc:Tr 'Generate AI session summary'}"/>
         </Grid>
 
         <!-- Console output area -->
@@ -105,19 +105,19 @@
                 </Grid.RowDefinitions>
 
                 <ui:InfoBar Grid.Row="0" x:Name="ReadOnlyLogInfoBar"
-                             Title="Read-only console"
+                             Title="{loc:Tr 'Read-only console'}"
                              Message="Showing last session log. Start the server to create a new live session."
                              Severity="Informational" Margin="0,0,0,10"
                              IsClosable="False"
                              Visibility="Collapsed"/>
 
                 <ui:InfoBar Grid.Row="1" x:Name="ResourceWarningBar"
-                             Title="High Resource Usage"
+                             Title="{loc:Tr 'High Resource Usage'}"
                              Message="Your server is using over 80% of its assigned RAM. Performance may be impacted."
                              Severity="Warning" Margin="0,0,0,10"
                              IsClosable="False"
                              Visibility="Collapsed">
-                    <ui:Button Content="Optimize" Appearance="Primary" Click="BtnOptimize_Click"
+                    <ui:Button Content="{loc:Tr 'Optimize'}" Appearance="Primary" Click="BtnOptimize_Click"
                                Margin="0,0,12,0" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </ui:InfoBar>
 
@@ -133,17 +133,17 @@
                             <Grid>
                                 <StackPanel Orientation="Horizontal">
                                     <ui:SymbolIcon Symbol="Warning24" Margin="0,0,8,0" Foreground="#FF6B6B"/>
-                                    <ui:TextBlock FontTypography="Subtitle" Text="Critical Crash Detected!" Foreground="#FF6B6B" VerticalAlignment="Center"/>
+                                    <ui:TextBlock FontTypography="Subtitle" Text="{loc:Tr 'Critical Crash Detected!'}" Foreground="#FF6B6B" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <ui:Button x:Name="BtnCrashAiAnalyze" Content="Analyze with AI"
+                                    <ui:Button x:Name="BtnCrashAiAnalyze" Content="{loc:Tr 'Analyze with AI'}"
                                                Style="{StaticResource AiActionButtonStyle}"
                                                Icon="{ui:SymbolIcon Sparkle20}"
                                                Cursor="Hand"
                                                Margin="0,0,8,0" Padding="8,4"
                                                Click="BtnCrashAiAnalyze_Click"/>
-                                    <ui:Button Content="Copy Report" Appearance="Secondary" Icon="{ui:SymbolIcon Copy24}" Margin="0,0,8,0" Padding="8,4" Click="BtnCopyCrash_Click"/>
-                                    <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Dismiss24}" Padding="4" Click="BtnDismissCrash_Click" ToolTip="Hide Banner"/>
+                                    <ui:Button Content="{loc:Tr 'Copy Report'}" Appearance="Secondary" Icon="{ui:SymbolIcon Copy24}" Margin="0,0,8,0" Padding="8,4" Click="BtnCopyCrash_Click"/>
+                                    <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Dismiss24}" Padding="4" Click="BtnDismissCrash_Click" ToolTip="{loc:Tr 'Hide Banner'}"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -164,10 +164,10 @@
                              Padding="4,2">
                     <RichTextBox.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="AI Analyze Selection"
+                            <MenuItem Header="{loc:Tr 'AI Analyze Selection'}"
                                       Icon="{ui:SymbolIcon Sparkle16}"
                                       Click="BtnAnalyzeSelection_Click"/>
-                            <MenuItem Header="Copy" Command="ApplicationCommands.Copy" />
+                            <MenuItem Header="{loc:Tr 'Copy'}" Command="ApplicationCommands.Copy" />
                         </ContextMenu>
                     </RichTextBox.ContextMenu>
                     <FlowDocument PagePadding="0" Background="Transparent" FontFamily="Cascadia Mono, Consolas" FontSize="14">
@@ -187,7 +187,7 @@
 
                     <Border Grid.Row="0" Background="#2D2D2D" CornerRadius="8,8,0,0" Padding="12,8">
                         <Grid>
-                            <ui:TextBlock Text="AI Intelligence" FontTypography="Caption" Foreground="White" VerticalAlignment="Center"/>
+                            <ui:TextBlock Text="{loc:Tr 'AI Intelligence'}" FontTypography="Caption" Foreground="White" VerticalAlignment="Center"/>
                             <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Dismiss24}"
                                        HorizontalAlignment="Right" Click="BtnCloseAiPanel_Click" Padding="4"/>
                         </Grid>
@@ -200,7 +200,7 @@
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0">
-                            <ui:TextBlock x:Name="TxtAiStatus" Text="Ready to analyze..." Foreground="#888"
+                            <ui:TextBlock x:Name="TxtAiStatus" Text="{loc:Tr 'Ready to analyze...'}" Foreground="#888"
                                            FontStyle="Italic" Margin="0,0,0,16" Visibility="Collapsed"/>
                             <ui:ProgressRing x:Name="AiProgress" IsIndeterminate="True" Height="28" Width="28"
                                               HorizontalAlignment="Center" Margin="0,30" Visibility="Collapsed"/>
@@ -210,7 +210,7 @@
                     </Grid>
 
                     <Border Grid.Row="2" Background="#2D2D2D" CornerRadius="0,0,8,8" Padding="12,8">
-                        <ui:TextBlock Text="Powered by PocketMC Intelligence" FontTypography="Caption"
+                        <ui:TextBlock Text="{loc:Tr 'Powered by PocketMC Intelligence'}" FontTypography="Caption"
                                        Foreground="#666" HorizontalAlignment="Center"/>
                     </Border>
                 </Grid>
@@ -222,15 +222,15 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <ui:TextBox x:Name="TxtCommand" Grid.Column="0" PlaceholderText="Type a command..."
+            <ui:TextBox x:Name="TxtCommand" Grid.Column="0" PlaceholderText="{loc:Tr 'Type a command...'}"
                         Margin="0,0,8,0"
                         IsEnabled="{Binding CanUseLiveServerControls}"
                         KeyDown="TxtCommand_KeyDown"
-                        AutomationProperties.Name="Server console command input"/>
-            <ui:Button Grid.Column="1" Content="Send" Appearance="Primary"
+                        AutomationProperties.Name="{loc:Tr 'Server console command input'}"/>
+            <ui:Button Grid.Column="1" Content="{loc:Tr 'Send'}" Appearance="Primary"
                        Icon="{ui:SymbolIcon Send24}" Click="BtnSend_Click" Cursor="Hand"
                        IsEnabled="{Binding CanUseLiveServerControls}"
-                       AutomationProperties.Name="Send console command"/>
+                       AutomationProperties.Name="{loc:Tr 'Send console command'}"/>
         </Grid>
     </Grid>
 </Page>

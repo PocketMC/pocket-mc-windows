@@ -1,4 +1,4 @@
-<Page x:Class="PocketMC.Desktop.Features.Tunnel.PlayitStatusPage"
+<Page x:Class="PocketMC.Desktop.Features.Tunnel.PlayitStatusPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -7,7 +7,7 @@
       xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"
       mc:Ignorable="d"
       d:DesignHeight="800" d:DesignWidth="950"
-      Title="Playit Network Status"
+      Title="{loc:Tr 'Playit Network Status'}"
       Background="Transparent">
 
     <Page.Resources>
@@ -26,9 +26,9 @@
                                Appearance="Transparent"
                                Margin="0,0,12,0"
                                Padding="6"
-                               ToolTip="Back to Tunnels"/>
+                               ToolTip="{loc:Tr 'Back to Tunnels'}"/>
                     <ui:TextBlock FontTypography="Title"
-                                  Text="Playit.gg Network Status"
+                                  Text="{loc:Tr 'Playit.gg Network Status'}"
                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                   VerticalAlignment="Center"/>
                 </StackPanel>
@@ -38,7 +38,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     
-                    <TextBlock Text="Live monitoring of the global Playit.gg network and datacenter routing infrastructure."
+                    <TextBlock Text="{loc:Tr 'Live monitoring of the global Playit.gg network and datacenter routing infrastructure.'}"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                FontSize="13"
                                TextWrapping="Wrap"
@@ -51,7 +51,7 @@
                                    Margin="0,0,16,0"
                                    VerticalAlignment="Center"/>
                         <ui:Button Command="{Binding RefreshCommand}"
-                                   Content="Refresh"
+                                   Content="{loc:Tr 'Refresh'}"
                                    Icon="{ui:SymbolIcon ArrowClockwise24}"
                                    Appearance="Secondary"
                                    Padding="16,6"/>
@@ -64,7 +64,7 @@
                 <Grid Visibility="{Binding IsLoading, Converter={StaticResource VisibleIfTrue}}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                         <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" Margin="0,0,0,16"/>
-                        <TextBlock Text="Fetching network status..." 
+                        <TextBlock Text="{loc:Tr 'Fetching network status...'}" 
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                    FontSize="14"/>
                     </StackPanel>

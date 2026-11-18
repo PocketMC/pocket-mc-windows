@@ -40,6 +40,31 @@ namespace PocketMC.Infrastructure.Configuration
         
         public static IReadOnlyList<string> DiscordApiUrls { get; private set; } = new List<string>();
 
+        /// <summary>
+        /// Ordered mirror tunnel templates for blocked or slow download hosts.
+        /// A template must contain "{url}", e.g. "https://ghfast.top/{url}".
+        /// </summary>
+        public static IReadOnlyList<string> DownloadMirrorTunnels { get; private set; } = new List<string>
+        {
+            "https://ghfast.top/{url}",
+            "https://gh-proxy.com/{url}",
+            "https://ghproxy.net/{url}",
+            "https://hub.gitmirror.com/{url}",
+            "https://gh.llkk.cc/{url}",
+            "https://mirror.ghproxy.com/{url}",
+            "https://github.moeyy.xyz/{url}",
+            "https://cf.ghproxy.cc/{url}"
+        };
+
+        /// <summary>
+        /// Maven repositories that mirror Mojang libraries plus Forge/NeoForge artifacts,
+        /// laid out as "{mirror}/&lt;group path&gt;". Used to rewrite installer downloads.
+        /// </summary>
+        public static IReadOnlyList<string> DownloadMavenMirrors { get; private set; } = new List<string>
+        {
+            "https://bmclapi2.bangbang93.com/maven"
+        };
+
         public static string AppName { get; private set; } = "PocketMC";
         public static string AppTitle { get; private set; } = "PocketMC";
         public static string AppId { get; private set; } = "PocketMC";
@@ -57,6 +82,7 @@ namespace PocketMC.Infrastructure.Configuration
         public static string LinkContributorDivy { get; private set; } = "https://github.com/divyviradiya2";
         public static string LinkContributorSahaj { get; private set; } = "https://github.com/SizWinz";
         public static string LinkHelperJohndinglesin { get; private set; } = "https://github.com/Johndinglesin";
+        public static string LinkHelperMingsiAmz { get; private set; } = "https://github.com/MingsiAmz";
         public static string LinkDonatorNexVice { get; private set; } = "https://discord.com/users/524387761541742592";
         public static string LinkOrganization { get; private set; } = "https://ds-labs-portfolio.vercel.app";
         public static string LinkPlayitWebsite { get; private set; } = "https://playit.gg";
@@ -193,10 +219,12 @@ namespace PocketMC.Infrastructure.Configuration
                     var authProxies = new List<string>();
                     var telemetryProxies = new List<string>();
                     var discordApiUrls = new List<string>();
+                    var downloadMirrors = new List<string>();
 
                     bool inAuth = false;
                     bool inTelemetry = false;
                     bool inDiscord = false;
+                    bool inMirrors = false;
 
                     foreach (var rawLine in content.Split('\n'))
                     {
@@ -209,6 +237,7 @@ namespace PocketMC.Infrastructure.Configuration
                             inAuth = true;
                             inTelemetry = false;
                             inDiscord = false;
+                            inMirrors = false;
                             continue;
                         }
                         if (trimmed.StartsWith("telemetry_proxies:"))
@@ -216,6 +245,7 @@ namespace PocketMC.Infrastructure.Configuration
                             inTelemetry = true;
                             inAuth = false;
                             inDiscord = false;
+                            inMirrors = false;
                             continue;
                         }
                         if (trimmed.StartsWith("discord_api_urls:"))
@@ -223,10 +253,19 @@ namespace PocketMC.Infrastructure.Configuration
                             inDiscord = true;
                             inAuth = false;
                             inTelemetry = false;
+                            inMirrors = false;
+                            continue;
+                        }
+                        if (trimmed.StartsWith("download_mirror_tunnels:"))
+                        {
+                            inMirrors = true;
+                            inAuth = false;
+                            inTelemetry = false;
+                            inDiscord = false;
                             continue;
                         }
 
-                        if (trimmed.StartsWith("-") && (inAuth || inTelemetry || inDiscord))
+                        if (trimmed.StartsWith("-") && (inAuth || inTelemetry || inDiscord || inMirrors))
                         {
                             var match = Regex.Match(trimmed, @"-\s*""?([^""\r\n]+)""?");
                             if (match.Success)
@@ -235,15 +274,17 @@ namespace PocketMC.Infrastructure.Configuration
                                 if (inAuth) authProxies.Add(url);
                                 if (inTelemetry) telemetryProxies.Add(url);
                                 if (inDiscord) discordApiUrls.Add(url);
+                                if (inMirrors) downloadMirrors.Add(url);
                             }
                         }
                         else if (!string.IsNullOrWhiteSpace(trimmed))
                         {
-                            if (inAuth || inTelemetry || inDiscord)
+                            if (inAuth || inTelemetry || inDiscord || inMirrors)
                             {
                                 inAuth = false;
                                 inTelemetry = false;
                                 inDiscord = false;
+                                inMirrors = false;
                             }
 
                             if (!preserveLocalVersion)
@@ -318,6 +359,9 @@ namespace PocketMC.Infrastructure.Configuration
 
                             var helperJohnMatch = Regex.Match(trimmed, @"link_helper_johndinglesin:\s*""?([^""\r\n]+)""?");
                             if (helperJohnMatch.Success) LinkHelperJohndinglesin = helperJohnMatch.Groups[1].Value;
+
+                            var helperMingsiMatch = Regex.Match(trimmed, @"link_helper_mingsiamz:\s*""?([^""\r\n]+)""?");
+                            if (helperMingsiMatch.Success) LinkHelperMingsiAmz = helperMingsiMatch.Groups[1].Value;
 
                             var nexviceMatch = Regex.Match(trimmed, @"link_donator_nexvice:\s*""?([^""\r\n]+)""?");
                             if (nexviceMatch.Success) LinkDonatorNexVice = nexviceMatch.Groups[1].Value;
@@ -408,6 +452,10 @@ namespace PocketMC.Infrastructure.Configuration
                     if (authProxies.Count > 0) AuthProxies = authProxies;
                     if (telemetryProxies.Count > 0) TelemetryProxies = telemetryProxies;
                     if (discordApiUrls.Count > 0) DiscordApiUrls = discordApiUrls;
+                    if (downloadMirrors.Count > 0) DownloadMirrorTunnels = downloadMirrors;
+
+                    var configuredMavenMirrors = ParseUrlList(content, "download_maven_mirrors");
+                    if (configuredMavenMirrors != null) DownloadMavenMirrors = configuredMavenMirrors;
                 }
                 catch (Exception ex)
                 {
@@ -475,6 +523,32 @@ namespace PocketMC.Infrastructure.Configuration
             }
 
             return false;
+        }
+
+        /// <summary>Reads a simple YAML list section such as "download_maven_mirrors:".</summary>
+        private static List<string>? ParseUrlList(string content, string key)
+        {
+            var result = new List<string>();
+            bool collecting = false;
+            foreach (var rawLine in content.Split('\n'))
+            {
+                var trimmed = rawLine.Split('#')[0].Trim();
+                if (string.IsNullOrWhiteSpace(trimmed)) continue;
+
+                if (trimmed.StartsWith(key + ":", StringComparison.Ordinal))
+                {
+                    collecting = true;
+                    continue;
+                }
+
+                if (!collecting) continue;
+                if (!trimmed.StartsWith("-", StringComparison.Ordinal)) break;
+
+                var match = Regex.Match(trimmed, "-\\s*\"?([^\"\\r\\n]+)\"?");
+                if (match.Success) result.Add(match.Groups[1].Value.Trim());
+            }
+
+            return result.Count > 0 ? result : null;
         }
 
         private static Stream? OpenConfigStream()

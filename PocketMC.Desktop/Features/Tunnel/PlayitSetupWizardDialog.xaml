@@ -1,8 +1,8 @@
-<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Tunnel.PlayitSetupWizardDialog"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Tunnel.PlayitSetupWizardDialog" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Connect Playit Agent"
+        Title="{loc:Tr 'Connect Playit Agent'}"
         Width="700" Height="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -20,7 +20,7 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,24" Orientation="Horizontal">
             <ui:SymbolIcon Symbol="Globe24" FontSize="22" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,10,0"/>
-            <TextBlock Text="Connect Playit Agent"
+            <TextBlock Text="{loc:Tr 'Connect Playit Agent'}"
                        FontSize="22" FontWeight="Bold"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
         </StackPanel>
@@ -50,7 +50,7 @@
 
             <!-- Step Title -->
             <TextBlock x:Name="TxtStepTitle" Grid.Row="1"
-                       Text="Get your Setup Code"
+                       Text="{loc:Tr 'Get your Setup Code'}"
                        FontSize="22" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                        Margin="0,0,0,16"/>
@@ -61,38 +61,38 @@
                 <StackPanel x:Name="Step1Panel" Visibility="Visible">
                     <TextBlock TextWrapping="Wrap" FontSize="15" Margin="0,0,0,14"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                        <Run Text="Click the button below to open the Playit.gg setup page in your browser."/>
+                        <Run Text="{loc:Tr 'Click the button below to open the Playit.gg setup page in your browser.'}"/>
                     </TextBlock>
                     
                     <Border Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,20">
                         <StackPanel>
                             <TextBlock TextWrapping="Wrap" FontSize="15" Margin="0,0,0,8"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                <Run Text="1. In the browser, select the dropdown menu and choose"/>
-                                <Run Text=" &quot;Other&quot;" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                <Run Text="{loc:Tr '1. In the browser, select the dropdown menu and choose'}"/>
+                                <Run Text="{loc:Tr ' “其他”'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
                                 <Run Text="."/>
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="15" Margin="0,0,0,8"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                <Run Text="2. Click"/>
-                                <Run Text=" &quot;Next&quot;" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
-                                <Run Text=" in the Playit dashboard."/>
+                                <Run Text="{loc:Tr '2. Click'}"/>
+                                <Run Text="{loc:Tr ' “下一步”'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                <Run Text="{loc:Tr '，在 Playit 面板中。'}"/>
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap" FontSize="15" Margin="0,0,0,4"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                                <Run Text="3. Playit will show you a"/>
-                                <Run Text=" setup code" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
-                                <Run Text=" (e.g. gentle-horse-123)."/>
-                                <Run Text=" Copy that code!" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                <Run Text="{loc:Tr '3. Playit will show you a'}"/>
+                                <Run Text="{loc:Tr ' 设置代码'}" FontWeight="Bold" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}"/>
+                                <Run Text="{loc:Tr '（例如 gentle-horse-123）。'}"/>
+                                <Run Text="{loc:Tr ' 复制该代码！'}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                             </TextBlock>
                         </StackPanel>
                     </Border>
 
-                    <ui:Button Content="Open Setup Page"
+                    <ui:Button Content="{loc:Tr 'Open Setup Page'}"
                                Icon="{ui:SymbolIcon Globe24}"
                                Appearance="Primary"
                                Cursor="Hand"
-                               AutomationProperties.Name="Open Playit setup page in browser"
+                               AutomationProperties.Name="{loc:Tr 'Open Playit setup page in browser'}"
                                Click="BtnOpenSetupPage_Click"/>
                 </StackPanel>
 
@@ -100,7 +100,7 @@
                 <StackPanel x:Name="Step2Panel" Visibility="Collapsed">
                     <TextBlock TextWrapping="Wrap" FontSize="15" Margin="0,0,0,14"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               Text="Paste the setup code you copied from Playit and click Connect."/>
+                               Text="{loc:Tr 'Paste the setup code you copied from Playit and click Connect.'}"/>
 
                     <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,12">
                         <Grid>
@@ -112,17 +112,17 @@
                                      Grid.Column="0"
                                      Padding="10,8"
                                      TextWrapping="NoWrap"
-                                     ToolTip="Paste the Playit setup code here."
-                                     AutomationProperties.Name="Playit setup code input"
+                                     ToolTip="{loc:Tr 'Paste the Playit setup code here.'}"
+                                     AutomationProperties.Name="{loc:Tr 'Playit setup code input'}"
                                      VerticalAlignment="Center"/>
                             <ui:Button x:Name="BtnWizardConnect"
                                        Grid.Column="1"
-                                       Content="Connect"
+                                       Content="{loc:Tr 'Connect'}"
                                        Icon="{ui:SymbolIcon PlugConnected24}"
                                        Appearance="Primary"
                                        Cursor="Hand"
                                        Margin="8,0,0,0"
-                                       AutomationProperties.Name="Connect Playit agent"
+                                       AutomationProperties.Name="{loc:Tr 'Connect Playit agent'}"
                                        Click="BtnWizardConnect_Click"/>
                         </Grid>
                     </Border>
@@ -139,7 +139,7 @@
                         <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16"
                                          Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <TextBlock x:Name="TxtConnectingStatus"
-                                   Text="Connecting..."
+                                   Text="{loc:Tr 'Connecting...'}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    FontSize="13" VerticalAlignment="Center"/>
                     </StackPanel>
@@ -149,28 +149,28 @@
 
         <!-- Navigation / Footer Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-            <ui:Button Content="Cancel"
+            <ui:Button Content="{loc:Tr 'Cancel'}"
                        Appearance="Secondary"
                        Cursor="Hand"
                        Margin="0,0,8,0"
                        IsCancel="True"
-                       AutomationProperties.Name="Cancel wizard"
+                       AutomationProperties.Name="{loc:Tr 'Cancel wizard'}"
                        Click="BtnCancel_Click"/>
             <ui:Button x:Name="BtnPrevStep"
-                       Content="Previous"
+                       Content="{loc:Tr 'Previous'}"
                        Icon="{ui:SymbolIcon ArrowLeft24}"
                        Appearance="Secondary"
                        Cursor="Hand"
                        Margin="0,0,8,0"
                        Visibility="Collapsed"
-                       AutomationProperties.Name="Previous wizard step"
+                       AutomationProperties.Name="{loc:Tr 'Previous wizard step'}"
                        Click="BtnPrevStep_Click"/>
             <ui:Button x:Name="BtnNextStep"
-                       Content="Next"
+                       Content="{loc:Tr 'Next'}"
                        Icon="{ui:SymbolIcon ArrowRight24}"
                        Appearance="Primary"
                        Cursor="Hand"
-                       AutomationProperties.Name="Next wizard step"
+                       AutomationProperties.Name="{loc:Tr 'Next wizard step'}"
                        Click="BtnNextStep_Click"/>
         </StackPanel>
     </Grid>

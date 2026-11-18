@@ -14,6 +14,7 @@ using PocketMC.Infrastructure.Instances;
 using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
 using PocketMC.Infrastructure.Networking;
+using PocketMC.Desktop.Localization;
 
 namespace PocketMC.Desktop.Features.Dashboard;
 
@@ -25,9 +26,9 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private readonly PocketMC.Application.Services.Shell.ApplicationState _appState;
     private ServerState _state = ServerState.Stopped;
     private string? _countdownText;
-    private string _cpuText = "· · ·";
-    private string _ramText = "· · ·";
-    private string _playerStatus = "· · ·";
+    private string _cpuText = L.T("· · ·");
+    private string _ramText = L.T("· · ·");
+    private string _playerStatus = L.T("· · ·");
     private string? _tunnelAddress;
     private string? _numericTunnelAddress;
     private string? _bedrockTunnelAddress;
@@ -37,7 +38,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     private string? _simpleVoiceChatWarning;
     private string? _bedrockIpDisplayTextOverride;
     private int _bedrockLocalPort;
-    private string _ipDisplayText = "Will Appear Here!";
+    private string _ipDisplayText = L.T("Will Appear Here!");
     private string? _portIssueText;
     private string? _portIssueTooltip;
     private bool _isTunnelResolving;
@@ -80,6 +81,11 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             var proc = _serverProcessManager.GetProcess(metadata.Id);
             _state = proc?.State ?? ServerState.Stopped;
         }
+
+        WeakEventManager<LocalizationService, LanguageChangedEventArgs>.AddHandler(
+            LocalizationService.Instance,
+            nameof(LocalizationService.LanguageChanged),
+            OnLanguageChanged);
     }
 
     public InstanceMetadata Metadata => _metadata;
@@ -87,6 +93,8 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public string Name => _metadata.Name;
     public string Description => _metadata.Description;
     public bool IsPinned => _metadata.PinnedAt.HasValue;
+    public string PinActionText => IsPinned ? L.T("Unpin Instance") : L.T("Pin Instance");
+    public bool IsOnline => _state == ServerState.Online;
     public bool IsRunning => _state == ServerState.Installing || _state == ServerState.SettingUp || _state == ServerState.Starting || _state == ServerState.Online || _state == ServerState.Stopping;
     public bool IsBusy => _state == ServerState.Installing || _state == ServerState.SettingUp || _state == ServerState.Starting || _state == ServerState.Stopping;
     public Visibility BusySpinnerVisibility => IsBusy ? Visibility.Visible : Visibility.Collapsed;
@@ -94,16 +102,16 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public bool ShowRunningControls => IsRunning || IsWaitingToRestart;
     public Visibility RunningControlsVisibility => ShowRunningControls ? Visibility.Visible : Visibility.Collapsed;
     public Visibility StoppedControlsVisibility => ShowRunningControls ? Visibility.Collapsed : Visibility.Visible;
-    public string StopButtonText => IsWaitingToRestart ? "Abort" : "Stop";
+    public string StopButtonText => IsWaitingToRestart ? L.T("Abort") : L.T("Stop");
     public string MinecraftVersion => _metadata.MinecraftVersion;
     public string ServerType => _metadata.ServerType;
     public int MaxPlayers => _metadata.MaxPlayers;
-    public string LastPlayedLabelText => IsRunning ? "Uptime" : "Last played";
+    public string LastPlayedLabelText => IsRunning ? L.T("Uptime") : L.T("Last played");
     public string LastPlayedText => IsRunning
-        ? $"Uptime: {LastPlayedValueText}"
+        ? L.F("Uptime: {0}", LastPlayedValueText)
         : (_metadata.LastPlayedAt.HasValue
-            ? $"Last played: {_metadata.LastPlayedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)}"
-            : "Last played: Never");
+            ? L.F("Last played: {0}", L.DateTime(_metadata.LastPlayedAt.Value.ToLocalTime()))
+            : L.T("Last played: Never"));
     public string LastPlayedValueText
     {
         get
@@ -116,12 +124,12 @@ public class InstanceCardViewModel : INotifyPropertyChanged
                     var uptime = DateTime.UtcNow - sessionStart.Value;
                     return FormatUptime(uptime);
                 }
-                return "Just started";
+                return L.T("Just started");
             }
 
             return _metadata.LastPlayedAt.HasValue
                 ? FormatRelativeTime(_metadata.LastPlayedAt.Value)
-                : "Never";
+                : L.T("Never");
         }
     }
     public string LastPlayedTooltip
@@ -133,22 +141,22 @@ public class InstanceCardViewModel : INotifyPropertyChanged
                 var sessionStart = _lifecycleService.GetSessionStartTime(Id);
                 if (sessionStart.HasValue)
                 {
-                    return $"Started at: {sessionStart.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)}";
+                    return L.F("Started at: {0}", L.DateTime(sessionStart.Value.ToLocalTime()));
                 }
-                return "Just started";
+                return L.T("Just started");
             }
 
             return _metadata.LastPlayedAt.HasValue
-                ? _metadata.LastPlayedAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt", CultureInfo.CurrentCulture)
-                : "Never played";
+                ? L.DateTime(_metadata.LastPlayedAt.Value.ToLocalTime())
+                : L.T("Never played");
         }
     }
-    public string CreatedText => $"Created: {_metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}";
-    public string CreatedValueText => _metadata.CreatedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
+    public string CreatedText => L.F("Created: {0}", L.Date(_metadata.CreatedAt.ToLocalTime()));
+    public string CreatedValueText => L.Date(_metadata.CreatedAt.ToLocalTime());
     public bool ShowCrossPlayBadge => HasGeyser;
     public Visibility CrossPlayBadgeVisibility => ShowCrossPlayBadge ? Visibility.Visible : Visibility.Collapsed;
-    public string CrossPlayBadgeText => "Cross-play";
-    public string CrossPlayBadgeTooltip => "Java and Bedrock players can join through Geyser/Floodgate.";
+    public string CrossPlayBadgeText => L.T("Cross-play");
+    public string CrossPlayBadgeTooltip => L.T("Java and Bedrock players can join through Geyser/Floodgate.");
 
     public void NotifyUptimeChanged()
     {
@@ -162,17 +170,17 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     {
         if (uptime.TotalDays >= 1)
         {
-            return $"{(int)uptime.TotalDays}d {(int)uptime.Hours}h";
+            return L.F("{0}d {1}h", (int)uptime.TotalDays, (int)uptime.Hours);
         }
         if (uptime.TotalHours >= 1)
         {
-            return $"{(int)uptime.TotalHours}h {(int)uptime.Minutes}m";
+            return L.F("{0}h {1}m", (int)uptime.TotalHours, (int)uptime.Minutes);
         }
         if (uptime.TotalMinutes >= 1)
         {
-            return $"{(int)uptime.TotalMinutes}m {(int)uptime.Seconds}s";
+            return L.F("{0}m {1}s", (int)uptime.TotalMinutes, (int)uptime.Seconds);
         }
-        return $"{(int)uptime.Seconds}s";
+        return L.F("{0}s", (int)uptime.Seconds);
     }
 
     public bool ShowVoiceChatBadge
@@ -193,12 +201,12 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         }
     }
     public Visibility VoiceChatBadgeVisibility => ShowVoiceChatBadge ? Visibility.Visible : Visibility.Collapsed;
-    public string VoiceChatBadgeText => "Voice Chat";
-    public string VoiceChatBadgeTooltip => "Simple Voice Chat is active on this server.";
+    public string VoiceChatBadgeText => L.T("Voice Chat");
+    public string VoiceChatBadgeTooltip => L.T("Simple Voice Chat is active on this server.");
 
     public string PlatformSummaryText => ShowCrossPlayBadge
-        ? "Java + Bedrock"
-        : IsBedrockServer ? "Bedrock network" : "Java network";
+        ? L.T("Java + Bedrock")
+        : IsBedrockServer ? L.T("Bedrock network") : L.T("Java network");
     public bool HasTunnelAddress => !string.IsNullOrEmpty(_tunnelAddress);
     public bool HasBedrockTunnelAddress => !string.IsNullOrEmpty(_bedrockTunnelAddress);
     public bool HasVoiceChatTunnelAddress => !string.IsNullOrEmpty(_voiceChatTunnelAddress);
@@ -275,13 +283,32 @@ public class InstanceCardViewModel : INotifyPropertyChanged
     public bool ShowBedrockIp => !IsBedrockServer && HasGeyser;
 
     /// <summary>Label prefix for the secondary IP row.</summary>
-    public string BedrockIpLabel => "Bedrock (Geyser):";
+    public string BedrockIpLabel => L.T("Bedrock (Geyser):");
 
     public int PrimaryPort => _metadata.ServerPort ?? (IsBedrockServer ? 19132 : 25565);
     public string LanAddressDisplayText => $"{_localNetworkAddressService.GetPrimaryLanIpAddress()}:{PrimaryPort}";
     public bool HasLanAddress => IsRunning;
 
     public int BedrockLocalPort => _bedrockLocalPort;
+
+    /// <summary>True when the Bedrock row shows the local Geyser address (not copyable).</summary>
+    public bool IsBedrockAddressLocal => _bedrockIpDisplayTextOverride == null
+        && !(IsBedrockServer && !string.IsNullOrEmpty(_tunnelAddress))
+        && !(HasGeyser && !string.IsNullOrEmpty(_bedrockTunnelAddress));
+
+    public void ShowBedrockAddressCopiedFeedback()
+    {
+        _bedrockIpDisplayTextOverride = L.T("✓ Copied");
+        OnPropertyChanged(nameof(BedrockIpDisplayText));
+    }
+
+    public void ClearBedrockAddressCopiedFeedback()
+    {
+        if (_bedrockIpDisplayTextOverride == null) return;
+
+        _bedrockIpDisplayTextOverride = null;
+        OnPropertyChanged(nameof(BedrockIpDisplayText));
+    }
 
     /// <summary>Text for the Bedrock IP row (tunnel address, or local Geyser port note).</summary>
     public string BedrockIpDisplayText
@@ -298,7 +325,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
             {
                 return _bedrockTunnelAddress;
             }
-            return $"{_localNetworkAddressService.GetPrimaryLanIpAddress()}:{_bedrockLocalPort} (local)";
+            return L.F("{0} (local)", $"{_localNetworkAddressService.GetPrimaryLanIpAddress()}:{_bedrockLocalPort}");
         }
         set
         {
@@ -320,14 +347,14 @@ public class InstanceCardViewModel : INotifyPropertyChanged
 
     public string StatusText => _stateTextOverride ?? _countdownText ?? _state switch
     {
-        ServerState.Stopped => "Stopped",
-        ServerState.Installing => "Installing...",
-        ServerState.SettingUp => "Setting Up...",
-        ServerState.Starting => "Starting...",
-        ServerState.Online => "Online",
-        ServerState.Stopping => "Stopping...",
-        ServerState.Crashed => "Crashed",
-        _ => "Unknown"
+        ServerState.Stopped => L.T("Stopped"),
+        ServerState.Installing => L.T("Installing..."),
+        ServerState.SettingUp => L.T("Setting Up..."),
+        ServerState.Starting => L.T("Starting..."),
+        ServerState.Online => L.T("Online"),
+        ServerState.Stopping => L.T("Stopping..."),
+        ServerState.Crashed => L.T("Crashed"),
+        _ => L.T("Unknown")
     };
 
     public Wpf.Ui.Controls.SymbolRegular StatusSymbol => _state switch
@@ -544,7 +571,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
 
     public void UpdateCountdown(int secondsLeft)
     {
-        _countdownText = $"Restarting in {secondsLeft}s...";
+        _countdownText = L.F("Restarting in {0}s...", secondsLeft);
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(StatusSymbol));
         OnPropertyChanged(nameof(StatusSymbolVisibility));
@@ -578,6 +605,7 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(Description));
         OnPropertyChanged(nameof(IsPinned));
+        OnPropertyChanged(nameof(PinActionText));
         OnPropertyChanged(nameof(MinecraftVersion));
         OnPropertyChanged(nameof(ServerType));
         OnPropertyChanged(nameof(MaxPlayers));
@@ -613,35 +641,60 @@ public class InstanceCardViewModel : INotifyPropertyChanged
         var elapsed = DateTime.UtcNow - utcDateTime;
 
         if (elapsed.TotalSeconds < 60)
-            return "Just now";
+            return L.T("Just now");
         if (elapsed.TotalMinutes < 60)
         {
             int minutes = (int)elapsed.TotalMinutes;
-            return minutes == 1 ? "1 min ago" : $"{minutes} min ago";
+            return minutes == 1 ? L.T("1 min ago") : L.F("{0} min ago", minutes);
         }
         if (elapsed.TotalHours < 24)
         {
             int hours = (int)elapsed.TotalHours;
-            return hours == 1 ? "1 hour ago" : $"{hours} hours ago";
+            return hours == 1 ? L.T("1 hour ago") : L.F("{0} hours ago", hours);
         }
         if (elapsed.TotalDays < 7)
         {
             int days = (int)elapsed.TotalDays;
-            return days == 1 ? "Yesterday" : $"{days} days ago";
+            return days == 1 ? L.T("Yesterday") : L.F("{0} days ago", days);
         }
         if (elapsed.TotalDays < 30)
         {
             int weeks = (int)(elapsed.TotalDays / 7);
-            return weeks == 1 ? "1 week ago" : $"{weeks} weeks ago";
+            return weeks == 1 ? L.T("1 week ago") : L.F("{0} weeks ago", weeks);
         }
         if (elapsed.TotalDays < 365)
         {
             int months = (int)(elapsed.TotalDays / 30);
-            return months == 1 ? "1 month ago" : $"{months} months ago";
+            return months == 1 ? L.T("1 month ago") : L.F("{0} months ago", months);
         }
 
         int years = (int)(elapsed.TotalDays / 365);
-        return years == 1 ? "1 year ago" : $"{years} years ago";
+        return years == 1 ? L.T("1 year ago") : L.F("{0} years ago", years);
+    }
+
+    private void OnLanguageChanged(object? sender, LanguageChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(StopButtonText));
+        OnPropertyChanged(nameof(LastPlayedLabelText));
+        OnPropertyChanged(nameof(LastPlayedText));
+        OnPropertyChanged(nameof(LastPlayedValueText));
+        OnPropertyChanged(nameof(LastPlayedTooltip));
+        OnPropertyChanged(nameof(CreatedText));
+        OnPropertyChanged(nameof(CreatedValueText));
+        OnPropertyChanged(nameof(CrossPlayBadgeText));
+        OnPropertyChanged(nameof(CrossPlayBadgeTooltip));
+        OnPropertyChanged(nameof(VoiceChatBadgeText));
+        OnPropertyChanged(nameof(VoiceChatBadgeTooltip));
+        OnPropertyChanged(nameof(PlatformSummaryText));
+        OnPropertyChanged(nameof(BedrockIpLabel));
+        OnPropertyChanged(nameof(BedrockIpDisplayText));
+        OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(PinActionText));
+
+        if (string.IsNullOrEmpty(_tunnelAddress))
+        {
+            IpDisplayText = L.T("Will Appear Here!");
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

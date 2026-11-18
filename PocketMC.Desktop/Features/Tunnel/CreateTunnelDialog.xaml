@@ -1,8 +1,8 @@
-<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Tunnel.CreateTunnelDialog"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Tunnel.CreateTunnelDialog" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Create Tunnel"
+        Title="{loc:Tr 'Create Tunnel'}"
         Width="520" Height="540"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -21,11 +21,11 @@
         <StackPanel Grid.Row="0" Margin="0,0,0,16">
             <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                 <ui:SymbolIcon Symbol="AddCircle24" FontSize="18" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,8,0"/>
-                <TextBlock Text="Create Tunnel"
+                <TextBlock Text="{loc:Tr 'Create Tunnel'}"
                            FontSize="18" FontWeight="Bold"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
             </StackPanel>
-            <TextBlock Text="Configure a new PlayIt.gg tunnel for your Minecraft server."
+            <TextBlock Text="{loc:Tr 'Configure a new PlayIt.gg tunnel for your Minecraft server.'}"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"
                        TextWrapping="Wrap"/>
         </StackPanel>
@@ -34,14 +34,14 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
             <StackPanel>
                 <!-- Tunnel Name -->
-                <TextBlock Text="Tunnel Name"
+                <TextBlock Text="{loc:Tr 'Tunnel Name'}"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"
                            Margin="0,0,0,6"/>
                 <ui:TextBox x:Name="TxtTunnelName"
                          MaxLength="64"
                          FontSize="13"
                          Padding="10,8"
-                         ToolTip="ASCII characters only"/>
+                         ToolTip="{loc:Tr 'ASCII characters only'}"/>
                 <TextBlock x:Name="TxtNameError"
                            Foreground="{DynamicResource SystemFillColorCriticalBrush}" FontSize="11"
                            Margin="0,4,0,0"
@@ -49,19 +49,19 @@
                            TextWrapping="Wrap"/>
 
                 <!-- Tunnel Type -->
-                <TextBlock Text="Tunnel Type"
+                <TextBlock Text="{loc:Tr 'Tunnel Type'}"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"
                            Margin="0,16,0,6"/>
                 <ComboBox x:Name="CmbTunnelType"
                           FontSize="13"
                           SelectedIndex="0"
                           MinHeight="36">
-                    <ComboBoxItem Content="Minecraft Java" Tag="minecraft-java"/>
-                    <ComboBoxItem Content="Minecraft Bedrock" Tag="minecraft-bedrock"/>
+                    <ComboBoxItem Content="{loc:Tr 'Minecraft Java'}" Tag="minecraft-java"/>
+                    <ComboBoxItem Content="{loc:Tr 'Minecraft Bedrock'}" Tag="minecraft-bedrock"/>
                 </ComboBox>
 
                 <!-- Local Port -->
-                <TextBlock Text="Local Port"
+                <TextBlock Text="{loc:Tr 'Local Port'}"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"
                            Margin="0,16,0,6"/>
                 <ui:TextBox x:Name="TxtLocalPort"
@@ -70,7 +70,7 @@
                          FontSize="13"
                          Padding="10,8"
                          ClearButtonEnabled="False"
-                         ToolTip="Port number between 1 and 65535"
+                         ToolTip="{loc:Tr 'Port number between 1 and 65535'}"
                          PreviewTextInput="TxtLocalPort_PreviewTextInput"/>
                 <TextBlock x:Name="TxtPortError"
                            Foreground="{DynamicResource SystemFillColorCriticalBrush}" FontSize="11"
@@ -79,21 +79,21 @@
                            TextWrapping="Wrap"/>
 
                 <!-- Region -->
-                <TextBlock Text="Region"
+                <TextBlock Text="{loc:Tr 'Region'}"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"
                            Margin="0,16,0,6"/>
                 <ComboBox x:Name="CmbRegion"
                           FontSize="13"
                           SelectedIndex="0"
                           MinHeight="36">
-                    <ComboBoxItem Content="Global (default)" Tag="global"/>
-                    <ComboBoxItem Content="North America" Tag="north-america"/>
-                    <ComboBoxItem Content="Europe" Tag="europe"/>
-                    <ComboBoxItem Content="Asia" Tag="asia"/>
-                    <ComboBoxItem Content="India" Tag="india"/>
-                    <ComboBoxItem Content="South America" Tag="south-america"/>
-                    <ComboBoxItem Content="Japan" Tag="japan"/>
-                    <ComboBoxItem Content="Australia" Tag="australia"/>
+                    <ComboBoxItem Content="{loc:Tr 'Global (default)'}" Tag="global"/>
+                    <ComboBoxItem Content="{loc:Tr 'North America'}" Tag="north-america"/>
+                    <ComboBoxItem Content="{loc:Tr 'Europe'}" Tag="europe"/>
+                    <ComboBoxItem Content="{loc:Tr 'Asia'}" Tag="asia"/>
+                    <ComboBoxItem Content="{loc:Tr 'India'}" Tag="india"/>
+                    <ComboBoxItem Content="{loc:Tr 'South America'}" Tag="south-america"/>
+                    <ComboBoxItem Content="{loc:Tr 'Japan'}" Tag="japan"/>
+                    <ComboBoxItem Content="{loc:Tr 'Australia'}" Tag="australia"/>
                 </ComboBox>
 
                 <!-- Enable immediately -->
@@ -103,9 +103,9 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="Enable immediately"
+                        <TextBlock Text="{loc:Tr 'Enable immediately'}"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock Text="The tunnel will start routing traffic as soon as it's created."
+                        <TextBlock Text="{loc:Tr &quot;The tunnel will start routing traffic as soon as it's created.&quot;}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="11"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
@@ -153,14 +153,14 @@
 
             <ui:Button Grid.Column="2"
                        x:Name="BtnCancel"
-                       Content="Cancel"
+                       Content="{loc:Tr 'Cancel'}"
                        Width="100"
                        Click="BtnCancel_Click"
                        IsCancel="True"/>
 
             <ui:Button Grid.Column="4"
                        x:Name="BtnCreate"
-                       Content="Create"
+                       Content="{loc:Tr 'Create'}"
                        Appearance="Primary"
                        Width="120"
                        Click="BtnCreate_Click"

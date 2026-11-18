@@ -1,4 +1,4 @@
-<Page x:Class="PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage"
+<Page x:Class="PocketMC.Desktop.Features.RemoteControl.UI.RemoteControlPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -6,7 +6,7 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       mc:Ignorable="d" 
       d:DesignHeight="800" d:DesignWidth="1000"
-      Title="RemoteControlPage">
+      Title="{loc:Tr 'RemoteControlPage'}">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="Remote Control"
+                   Text="{loc:Tr 'Remote Control'}"
                    FontSize="28"
                    FontWeight="SemiBold"
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -42,7 +42,7 @@
                         </Grid.ColumnDefinitions>
                         <RadioButton x:Name="RadioGeneral"
                                      Grid.Column="0"
-                                     Content="General Settings"
+                                     Content="{loc:Tr 'General Settings'}"
                                      IsChecked="{Binding IsGeneralTab, Mode=TwoWay}"
                                      GroupName="RemoteControlTabs"
                                      Style="{StaticResource {x:Type ToggleButton}}"
@@ -52,7 +52,7 @@
                                      HorizontalContentAlignment="Center"/>
                         <RadioButton x:Name="RadioUsers"
                                      Grid.Column="1"
-                                     Content="Users &amp; Permissions"
+                                     Content="{loc:Tr 'Users &amp; Permissions'}"
                                      IsChecked="{Binding IsUsersTab, Mode=TwoWay}"
                                      GroupName="RemoteControlTabs"
                                      Style="{StaticResource {x:Type ToggleButton}}"
@@ -72,8 +72,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Enable Remote Control" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="Starts a local web dashboard secured by paired device tokens."
+                                    <TextBlock Text="{loc:Tr 'Enable Remote Control'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Starts a local web dashboard secured by paired device tokens.'}"
                                                TextWrapping="Wrap"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                FontSize="12"
@@ -94,11 +94,11 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                                    <TextBlock Text="Port" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Port'}" FontSize="14" FontWeight="Medium"/>
                                     <ui:TextBox x:Name="RemotePortInput" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="25580" ClearButtonEnabled="False" Margin="0,8,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="0,0,12,0">
-                                    <TextBlock Text="Access Mode" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Access Mode'}" FontSize="14" FontWeight="Medium"/>
                                     <ComboBox x:Name="RemoteAccessModeCombo"
                                               ItemsSource="{Binding AccessModes}"
                                               SelectedValue="{Binding AccessMode}"
@@ -111,12 +111,12 @@
                                 </StackPanel>
                             </Grid>
 
-                            <TextBlock Text="Cloudflare Quick Tunnel creates a temporary public URL. Anyone with the URL can reach the login/pairing page. Keep pairing disabled unless you are actively pairing a device."
+                            <TextBlock Text="{loc:Tr 'Cloudflare Quick Tunnel creates a temporary public URL. Anyone with the URL can reach the login/pairing page. Keep pairing disabled unless you are actively pairing a device.'}"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        FontSize="12"
                                        Margin="0,12,0,0"/>
-                            <TextBlock Text="PlayIt HTTPS tunnels require PlayIt Premium. Stop Remote Link disables the dedicated PocketMC Remote Control tunnel."
+                            <TextBlock Text="{loc:Tr 'PlayIt HTTPS tunnels require PlayIt Premium. Stop Remote Link disables the dedicated PocketMC Remote Control tunnel.'}"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        FontSize="12"
@@ -173,8 +173,8 @@
 
                                         <Grid Grid.Row="0" Grid.Column="2" VerticalAlignment="Center">
                                             <StackPanel Orientation="Horizontal" Visibility="{Binding HasPublicUrl, Converter={StaticResource BoolToVis}}">
-                                                <ui:Button Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyPublicUrlCommand}"/>
-                                                <ui:Button Appearance="Secondary" Content="QR Code" Icon="{ui:SymbolIcon QrCode24}" Command="{Binding TogglePublicQrCommand}" Margin="8,0,0,0"/>
+                                                <ui:Button Appearance="Secondary" Content="{loc:Tr 'Copy URL'}" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyPublicUrlCommand}"/>
+                                                <ui:Button Appearance="Secondary" Content="{loc:Tr 'QR Code'}" Icon="{ui:SymbolIcon QrCode24}" Command="{Binding TogglePublicQrCommand}" Margin="8,0,0,0"/>
                                             </StackPanel>
                                             <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="12,0,12,0" Visibility="{Binding IsLoadingPublicUrl, Converter={StaticResource BoolToVis}}"/>
                                             <ui:SymbolIcon Symbol="ErrorCircle24" Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="12,0,12,0" Visibility="{Binding HasPublicUrlError, Converter={StaticResource BoolToVis}}"/>
@@ -185,7 +185,7 @@
                                             <Border Background="White" Padding="8" CornerRadius="4" BorderThickness="1" BorderBrush="#E0E0E0" HorizontalAlignment="Center">
                                                 <Image Source="{Binding PublicQrImage}" Width="150" Height="150" Stretch="Uniform"/>
                                             </Border>
-                                            <TextBlock Text="Scan to access the remote dashboard" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                            <TextBlock Text="{loc:Tr 'Scan to access the remote dashboard'}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -206,12 +206,12 @@
                                         </Grid.ColumnDefinitions>
                                         <ui:SymbolIcon Grid.Row="0" Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Symbol="Home24" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
-                                            <TextBlock Text="Local Network (LAN)" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{loc:Tr 'Local Network (LAN)'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding LocalUrl}" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <ui:Button Appearance="Secondary" Content="Copy URL" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyLocalUrlCommand}"/>
-                                            <ui:Button Appearance="Secondary" Content="QR Code" Icon="{ui:SymbolIcon QrCode24}" Command="{Binding ToggleLocalQrCommand}" Margin="8,0,0,0"/>
+                                            <ui:Button Appearance="Secondary" Content="{loc:Tr 'Copy URL'}" Icon="{ui:SymbolIcon Copy16}" Command="{Binding CopyLocalUrlCommand}"/>
+                                            <ui:Button Appearance="Secondary" Content="{loc:Tr 'QR Code'}" Icon="{ui:SymbolIcon QrCode24}" Command="{Binding ToggleLocalQrCommand}" Margin="8,0,0,0"/>
                                         </StackPanel>
 
                                         <!-- QR Code Area -->
@@ -219,7 +219,7 @@
                                             <Border Background="White" Padding="8" CornerRadius="4" BorderThickness="1" BorderBrush="#E0E0E0" HorizontalAlignment="Center">
                                                 <Image Source="{Binding LocalQrImage}" Width="150" Height="150" Stretch="Uniform"/>
                                             </Border>
-                                            <TextBlock Text="Scan to access the local dashboard" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                            <TextBlock Text="{loc:Tr 'Scan to access the local dashboard'}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -254,8 +254,8 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Global Authentication" FontSize="16" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Enable or disable password requirement for the dashboard." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{loc:Tr 'Global Authentication'}" FontSize="16" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Enable or disable password requirement for the dashboard.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </ui:CardExpander.Header>
@@ -267,8 +267,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Require password authentication" FontSize="14" FontWeight="Medium"/>
-                                    <TextBlock Text="When enabled, anyone accessing the remote dashboard must enter the password."
+                                    <TextBlock Text="{loc:Tr 'Require password authentication'}" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'When enabled, anyone accessing the remote dashboard must enter the password.'}"
                                                TextWrapping="Wrap"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                FontSize="12"
@@ -289,8 +289,8 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Discord Notifications" FontSize="16" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Link your Discord account to receive generated URLs via Direct Message." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{loc:Tr 'Discord Notifications'}" FontSize="16" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Link your Discord account to receive generated URLs via Direct Message.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </ui:CardExpander.Header>
@@ -302,19 +302,19 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Direct Message Notifications" FontSize="14" FontWeight="Medium"/>
+                                    <TextBlock Text="{loc:Tr 'Direct Message Notifications'}" FontSize="14" FontWeight="Medium"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                        <TextBlock Text="Status: " Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
-                                        <TextBlock Text="Linked" Foreground="#A6E3A1" FontSize="12" Visibility="{Binding IsDiscordLinked, Converter={StaticResource BoolToVis}}"/>
-                                        <TextBlock Text="Not Linked" Foreground="{DynamicResource TextFillColorDisabledBrush}" FontSize="12" Visibility="{Binding IsDiscordNotLinked, Converter={StaticResource BoolToVis}}"/>
+                                        <TextBlock Text="{loc:Tr '状态：'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                                        <TextBlock Text="{loc:Tr 'Linked'}" Foreground="#A6E3A1" FontSize="12" Visibility="{Binding IsDiscordLinked, Converter={StaticResource BoolToVis}}"/>
+                                        <TextBlock Text="{loc:Tr 'Not Linked'}" Foreground="{DynamicResource TextFillColorDisabledBrush}" FontSize="12" Visibility="{Binding IsDiscordNotLinked, Converter={StaticResource BoolToVis}}"/>
                                     </StackPanel>
                                     
                                     <StackPanel Margin="0,8,24,0" Visibility="{Binding IsDiscordNotLinked, Converter={StaticResource BoolToVis}}">
-                                        <TextBlock Text="To link your account, join our Discord server and use the /link command. You'll receive a connect button via DM."
+                                        <TextBlock Text="{loc:Tr &quot;To link your account, join our Discord server and use the /link command. You'll receive a connect button via DM.&quot;}"
                                                    TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                    FontSize="12" />
-                                        <ui:Button Content="Join Discord Server" 
+                                        <ui:Button Content="{loc:Tr 'Join Discord Server'}" 
                                                    Margin="0,12,0,0" 
                                                    Appearance="Secondary"
                                                    Icon="{ui:SymbolIcon Chat24}"
@@ -322,7 +322,7 @@
                                                    HorizontalAlignment="Left" />
                                     </StackPanel>
 
-                                    <TextBlock Text="Send an automatic Direct Message via your PocketMC Discord Bot when the remote control URL gets generated."
+                                    <TextBlock Text="{loc:Tr 'Send an automatic Direct Message via your PocketMC Discord Bot when the remote control URL gets generated.'}"
                                                TextWrapping="Wrap"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                FontSize="12"
@@ -347,10 +347,10 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBlock Text="Dashboard Users" FontSize="20" FontWeight="SemiBold"/>
-                            <TextBlock Text="Manage who can access the remote dashboard and what permissions they have. Note: As the desktop user, you are the Owner and have full access." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            <TextBlock Text="{loc:Tr 'Dashboard Users'}" FontSize="20" FontWeight="SemiBold"/>
+                            <TextBlock Text="{loc:Tr 'Manage who can access the remote dashboard and what permissions they have. Note: As the desktop user, you are the Owner and have full access.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
-                        <ui:Button Grid.Column="1" Content="Add User" Appearance="Primary" Icon="{ui:SymbolIcon Add24}" Command="{Binding AddUserCommand}"/>
+                        <ui:Button Grid.Column="1" Content="{loc:Tr 'Add User'}" Appearance="Primary" Icon="{ui:SymbolIcon Add24}" Command="{Binding AddUserCommand}"/>
                     </Grid>
 
                     <!-- Status Message Banner for Users & Permissions Tab -->
@@ -406,8 +406,8 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Admin Credentials" FontSize="16" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Manage the primary admin account used for dashboard login." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{loc:Tr 'Admin Credentials'}" FontSize="16" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{loc:Tr 'Manage the primary admin account used for dashboard login.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </ui:CardExpander.Header>
@@ -425,17 +425,17 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Admin Username" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
-                                <ui:TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter admin username" Margin="0,0,0,8" />
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr 'Admin Username'}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
+                                <ui:TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Enter admin username'}" Margin="0,0,0,8" />
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Admin Password" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
-                                <ui:PasswordBox Grid.Row="1" Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter admin password" Margin="0,0,0,12"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Tr 'Admin Password'}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
+                                <ui:PasswordBox Grid.Row="1" Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Enter admin password'}" Margin="0,0,0,12"/>
                                 
-                                <ui:Button Grid.Row="2" Grid.Column="1" Content="Save Admin Account" Appearance="Primary" Command="{Binding SaveCredentialsCommand}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+                                <ui:Button Grid.Row="2" Grid.Column="1" Content="{loc:Tr 'Save Admin Account'}" Appearance="Primary" Command="{Binding SaveCredentialsCommand}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
 
                                 <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding IsOwnerSetupVisible, Converter={StaticResource BoolToVis}}">
                                     <ui:SymbolIcon Symbol="Warning24" Foreground="{DynamicResource SystemFillColorCautionBrush}" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Missing credentials! Dashboard is vulnerable until you configure an admin account." Foreground="{DynamicResource SystemFillColorCautionBrush}" VerticalAlignment="Center" FontSize="12"/>
+                                    <TextBlock Text="{loc:Tr 'Missing credentials! Dashboard is vulnerable until you configure an admin account.'}" Foreground="{DynamicResource SystemFillColorCautionBrush}" VerticalAlignment="Center" FontSize="12"/>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
@@ -453,9 +453,9 @@
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Username}" FontSize="16" FontWeight="SemiBold"/>
-                                                <TextBlock Text="Sub-user" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                                                <TextBlock Text="{loc:Tr 'Sub-user'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
                                             </StackPanel>
-                                            <ui:Button Grid.Column="1" Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" Command="{Binding RemoveCommand}" Margin="0,0,16,0" ToolTip="Remove User"/>
+                                            <ui:Button Grid.Column="1" Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" Command="{Binding RemoveCommand}" Margin="0,0,16,0" ToolTip="{loc:Tr 'Remove User'}"/>
                                         </Grid>
                                     </ui:CardExpander.Header>
 
@@ -472,19 +472,19 @@
                                                 <ColumnDefinition Width="300"/>
                                             </Grid.ColumnDefinitions>
 
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Username" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
-                                            <ui:TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter username" Margin="0,0,0,8" />
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr 'Username'}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
+                                            <ui:TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Enter username'}" Margin="0,0,0,8" />
 
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Password" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
-                                            <ui:PasswordBox Grid.Row="1" Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Enter password" Margin="0,0,0,12"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Tr 'Password'}" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" Margin="0,0,12,0"/>
+                                            <ui:PasswordBox Grid.Row="1" Grid.Column="1" Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{loc:Tr 'Enter password'}" Margin="0,0,0,12"/>
 
                                             <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
-                                                <ui:Button Content="Save Credentials" Appearance="Primary" Command="{Binding SaveCommand}" Margin="0,0,8,0"/>
-                                                <ui:Button Content="Cancel" Appearance="Secondary" Command="{Binding CancelEditCommand}"/>
+                                                <ui:Button Content="{loc:Tr 'Save Credentials'}" Appearance="Primary" Command="{Binding SaveCommand}" Margin="0,0,8,0"/>
+                                                <ui:Button Content="{loc:Tr 'Cancel'}" Appearance="Secondary" Command="{Binding CancelEditCommand}"/>
                                             </StackPanel>
                                         </Grid>
 
-                                        <TextBlock Text="Permissions" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                                        <TextBlock Text="{loc:Tr 'Permissions'}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
                                         
                                         <Grid Margin="0,0,0,12">
                                             <Grid.ColumnDefinitions>
@@ -492,8 +492,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="Console Commands" FontSize="14" FontWeight="Medium"/>
-                                                <TextBlock Text="Grants permission to view the server console and execute administrative commands." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
+                                                <TextBlock Text="{loc:Tr 'Console Commands'}" FontSize="14" FontWeight="Medium"/>
+                                                <TextBlock Text="{loc:Tr 'Grants permission to view the server console and execute administrative commands.'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
                                             </StackPanel>
                                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowRemoteConsoleCommands}"/>
                                         </Grid>
@@ -504,8 +504,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="Player Actions" FontSize="14" FontWeight="Medium"/>
-                                                <TextBlock Text="Grants permission to manage players, including kicking, banning, and whitelisting." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
+                                                <TextBlock Text="{loc:Tr 'Player Actions'}" FontSize="14" FontWeight="Medium"/>
+                                                <TextBlock Text="{loc:Tr 'Grants permission to manage players, including kicking, banning, and whitelisting.'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
                                             </StackPanel>
                                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowRemotePlayerActions}"/>
                                         </Grid>
@@ -516,8 +516,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="Server Settings" FontSize="14" FontWeight="Medium"/>
-                                                <TextBlock Text="Grants permission to modify the server properties and configuration files." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
+                                                <TextBlock Text="{loc:Tr 'Server Settings'}" FontSize="14" FontWeight="Medium"/>
+                                                <TextBlock Text="{loc:Tr 'Grants permission to modify the server properties and configuration files.'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
                                             </StackPanel>
                                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowRemoteServerSettings}"/>
                                         </Grid>
@@ -528,8 +528,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="Server Addons" FontSize="14" FontWeight="Medium"/>
-                                                <TextBlock Text="Grants permission to install, update, and remove server plugins and mods." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
+                                                <TextBlock Text="{loc:Tr 'Server Addons'}" FontSize="14" FontWeight="Medium"/>
+                                                <TextBlock Text="{loc:Tr 'Grants permission to install, update, and remove server plugins and mods.'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
                                             </StackPanel>
                                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowRemoteServerAddons}"/>
                                         </Grid>
@@ -540,8 +540,8 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="File Manager" FontSize="14" FontWeight="Medium"/>
-                                                <TextBlock Text="Grants permission to browse, upload, and modify the server files directly." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
+                                                <TextBlock Text="{loc:Tr 'File Manager'}" FontSize="14" FontWeight="Medium"/>
+                                                <TextBlock Text="{loc:Tr 'Grants permission to browse, upload, and modify the server files directly.'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
                                             </StackPanel>
                                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowRemoteFileManager}"/>
                                         </Grid>
@@ -552,15 +552,15 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="Server Backups" FontSize="14" FontWeight="Medium"/>
-                                                <TextBlock Text="Grants permission to create, restore, and delete server backups." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
+                                                <TextBlock Text="{loc:Tr 'Server Backups'}" FontSize="14" FontWeight="Medium"/>
+                                                <TextBlock Text="{loc:Tr 'Grants permission to create, restore, and delete server backups.'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
                                             </StackPanel>
                                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowRemoteServerBackups}"/>
                                         </Grid>
 
                                         <Separator Margin="0,16" Opacity="0.15"/>
 
-                                        <TextBlock Text="Instance Access" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                                        <TextBlock Text="{loc:Tr 'Instance Access'}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
 
                                         <Grid Margin="0,0,0,12">
                                             <Grid.ColumnDefinitions>
@@ -568,15 +568,15 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="All Instances" FontSize="14" FontWeight="Medium"/>
-                                                <TextBlock Text="Grants access to all current and future server instances." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
+                                                <TextBlock Text="{loc:Tr 'All Instances'}" FontSize="14" FontWeight="Medium"/>
+                                                <TextBlock Text="{loc:Tr 'Grants access to all current and future server instances.'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,24,0"/>
                                             </StackPanel>
                                             <ui:ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding AllowAllInstances}"/>
                                         </Grid>
 
                                         <!-- Specific Instances Checklist (visible when AllowAllInstances is false) -->
                                         <StackPanel Visibility="{Binding IsRestrictedInstances, Converter={StaticResource BoolToVis}}" Margin="0,4,0,4">
-                                            <TextBlock Text="Select Available Instances" FontSize="13" FontWeight="Medium" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
+                                            <TextBlock Text="{loc:Tr 'Select Available Instances'}" FontSize="13" FontWeight="Medium" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8"/>
                                             
                                             <!-- Available instances list -->
                                             <ItemsControl ItemsSource="{Binding AvailableInstances}" Visibility="{Binding HasAvailableInstances, Converter={StaticResource BoolToVis}}">
@@ -604,7 +604,7 @@
 
                                             <!-- No instances found warning -->
                                             <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="12,8" Visibility="{Binding HasNoAvailableInstances, Converter={StaticResource BoolToVis}}">
-                                                <TextBlock Text="No server instances found in PocketMC." FontSize="12" Foreground="{DynamicResource TextFillColorDisabledBrush}"/>
+                                                <TextBlock Text="{loc:Tr 'No server instances found in PocketMC.'}" FontSize="12" Foreground="{DynamicResource TextFillColorDisabledBrush}"/>
                                             </Border>
                                         </StackPanel>
                                     </StackPanel>
@@ -626,8 +626,8 @@
                         </StackPanel.Style>
                         
                         <ui:SymbolIcon Symbol="People24" FontSize="64" Foreground="{DynamicResource TextFillColorDisabledBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                        <TextBlock Text="No sub-users configured" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                        <TextBlock Text="You haven't added any sub-users yet. Click 'Add User' above to grant dashboard access and assign specific permissions." 
+                        <TextBlock Text="{loc:Tr 'No sub-users configured'}" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock Text="{loc:Tr &quot;You haven't added any sub-users yet. Click 'Add User' above to grant dashboard access and assign specific permissions.&quot;}" 
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                    FontSize="14" 
                                    HorizontalAlignment="Center" 

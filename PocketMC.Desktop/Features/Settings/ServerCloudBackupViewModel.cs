@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Configuration;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Localization;
 using PocketMC.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -126,7 +127,7 @@ public class ServerCloudBackupViewModel : ViewModelBase
         }
     }
 
-    private string _providerStatusMessage = "No connected cloud providers. Connect Google Drive, Dropbox, or OneDrive in App Settings.";
+    private string _providerStatusMessage = L.T("No connected cloud providers. Connect Google Drive, Dropbox, or OneDrive in App Settings.");
     public string ProviderStatusMessage { get => _providerStatusMessage; private set => SetProperty(ref _providerStatusMessage, value); }
 
     public bool ShowNoConnectedProvidersMessage => IsCloudBackupsEnabled && !IsRefreshingProviders && !HasConnectedProviders;
@@ -181,12 +182,12 @@ public class ServerCloudBackupViewModel : ViewModelBase
 
         if (!IsCloudBackupsEnabled)
         {
-            ProviderStatusMessage = "Cloud backups are disabled in App Settings.";
+            ProviderStatusMessage = L.T("Cloud backups are disabled in App Settings.");
             return;
         }
 
         IsRefreshingProviders = true;
-        ProviderStatusMessage = "Checking connected cloud providers...";
+        ProviderStatusMessage = L.T("Checking connected cloud providers...");
 
         try
         {
@@ -293,7 +294,7 @@ public class ServerCloudBackupViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _dialogService.ShowMessage("Error", $"Failed to load remote backups: {ex.Message}", DialogType.Error);
+            _dialogService.ShowMessage("Error", L.F("Failed to load remote backups: {0}", ex.Message), DialogType.Error);
         }
         finally
         {
@@ -306,7 +307,7 @@ public class ServerCloudBackupViewModel : ViewModelBase
     {
         if (vm == null) return;
 
-        if (await _dialogService.ShowDialogAsync("Confirm", $"Delete {vm.FileName} from {vm.Provider}?", DialogType.Question) == DialogResult.Yes)
+        if (await _dialogService.ShowDialogAsync("Confirm", L.F("Delete {0} from {1}?", vm.FileName, vm.Provider), DialogType.Question) == DialogResult.Yes)
         {
             IsLoading = true;
             try
@@ -320,7 +321,7 @@ public class ServerCloudBackupViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Error", $"Failed to delete remote backup: {ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Error", L.F("Failed to delete remote backup: {0}", ex.Message), DialogType.Error);
             }
             finally
             {
@@ -333,7 +334,7 @@ public class ServerCloudBackupViewModel : ViewModelBase
     {
         if (vm == null) return;
 
-        if (await _dialogService.ShowDialogAsync("Restore Cloud Backup", $"This will download and COMPLETELY OVERWRITE current server files with the backup {vm.FileName} from {vm.Provider}. Continue?", DialogType.Warning) == DialogResult.Yes)
+        if (await _dialogService.ShowDialogAsync("Restore Cloud Backup", L.F("This will download and COMPLETELY OVERWRITE current server files with the backup {0} from {1}. Continue?", vm.FileName, vm.Provider), DialogType.Warning) == DialogResult.Yes)
         {
             IsLoading = true;
             try
@@ -360,11 +361,11 @@ public class ServerCloudBackupViewModel : ViewModelBase
                     });
 
                     // 1. Download from cloud
-                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = "Downloading from cloud..." }));
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = L.T("Downloading from cloud...") }));
                     await provider.DownloadBackupAsync(vm.ProviderFileId, tempZipPath, CancellationToken.None, doubleProgress);
 
                     // 2. Restore using BackupService
-                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = "Restoring backup..." }));
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = L.T("Restoring backup...") }));
                     await _backupService.RestoreBackupAsync(
                         _metadata, 
                         tempZipPath, 
@@ -379,18 +380,18 @@ public class ServerCloudBackupViewModel : ViewModelBase
                         progress: doubleProgress);
 
                     // 3. Clean up the downloaded zip
-                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = "Cleaning up..." }));
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => progressUpdate.Report(new ProgressDialogUpdate { Percentage = -1, Message = L.T("Cleaning up...") }));
                     if (File.Exists(tempZipPath))
                     {
                         File.Delete(tempZipPath);
                     }
                 });
 
-                _dialogService.ShowMessage("Success", "Backup downloaded and restored successfully from the cloud.");
+                _dialogService.ShowMessage(L.T("Success"), L.T("Backup downloaded and restored successfully from the cloud."));
             }
             catch (Exception ex)
             {
-                _dialogService.ShowMessage("Error", $"Failed to restore cloud backup: {ex.Message}", DialogType.Error);
+                _dialogService.ShowMessage("Error", L.F("Failed to restore cloud backup: {0}", ex.Message), DialogType.Error);
             }
             finally
             {

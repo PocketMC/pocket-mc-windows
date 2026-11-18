@@ -1,9 +1,9 @@
-<Page x:Class="PocketMC.Desktop.Features.News.NewsPage"
+<Page x:Class="PocketMC.Desktop.Features.News.NewsPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:news="clr-namespace:PocketMC.Desktop.Features.News"
-      Title="News">
+      Title="{loc:Tr 'News'}">
     <Grid Margin="28,20,28,24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -18,20 +18,20 @@
             </Grid.ColumnDefinitions>
             <StackPanel>
                 <ui:TextBlock FontTypography="Title"
-                              Text="News"
+                              Text="{loc:Tr 'News'}"
                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                               Margin="0,0,0,4"/>
-                <TextBlock Text="PocketMC announcements and service notices"
+                <TextBlock Text="{loc:Tr 'PocketMC announcements and service notices'}"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                            FontSize="13"/>
             </StackPanel>
             <ui:Button x:Name="BtnRefresh"
                        Grid.Column="1"
-                       Content="Refresh"
+                       Content="{loc:Tr 'Refresh'}"
                        Icon="{ui:SymbolIcon ArrowSync24}"
                        Appearance="Secondary"
                        Click="BtnRefresh_Click"
-                       AutomationProperties.Name="Refresh PocketMC news"/>
+                       AutomationProperties.Name="{loc:Tr 'Refresh PocketMC news'}"/>
         </Grid>
 
         <Grid Grid.Row="1">
@@ -156,7 +156,7 @@
                             Visibility="Visible">
                     <ui:SymbolIcon Symbol="Megaphone24" FontSize="32" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                    <TextBlock x:Name="TxtEmpty" Text="No news is available yet."
+                    <TextBlock x:Name="TxtEmpty" Text="{loc:Tr 'No news is available yet.'}"
                                Margin="0,10,0,0" FontSize="14" TextAlignment="Center"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 </StackPanel>

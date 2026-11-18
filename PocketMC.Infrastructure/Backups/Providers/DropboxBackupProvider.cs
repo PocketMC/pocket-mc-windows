@@ -297,21 +297,44 @@ public class DropboxBackupProvider : ICloudBackupProvider
         using var response = await client.Files.DownloadAsync(providerFileId);
         long totalSize = (long)response.Response.Size;
 
-        using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
-        using var downloadStream = await response.GetContentAsStreamAsync();
-
-        var buffer = new byte[81920];
-        int bytesRead;
-        long totalRead = 0;
-
-        while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+        // Download beside the destination so a failed transfer cannot destroy an existing backup.
+        string partialPath = localDestinationPath + ".partial";
+        try
         {
-            await stream.WriteAsync(buffer, 0, bytesRead, ct);
-            totalRead += bytesRead;
-            if (totalSize > 0 && progress != null)
+            long totalRead = 0;
+            using (var stream = new FileStream(partialPath, FileMode.Create, FileAccess.Write))
+            using (var downloadStream = await response.GetContentAsStreamAsync())
             {
-                progress.Report((double)totalRead / totalSize * 100.0);
+                var buffer = new byte[81920];
+                int bytesRead;
+
+                while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+                {
+                    await stream.WriteAsync(buffer, 0, bytesRead, ct);
+                    totalRead += bytesRead;
+                    if (totalSize > 0 && progress != null)
+                    {
+                        progress.Report((double)totalRead / totalSize * 100.0);
+                    }
+                }
             }
+
+            if (totalSize > 0 && totalRead != totalSize)
+            {
+                throw new IOException("Dropbox download ended before the reported size was reached.");
+            }
+
+            File.Move(partialPath, localDestinationPath, overwrite: true);
         }
+        catch
+        {
+            TryDeleteFile(partialPath);
+            throw;
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); } catch { }
     }
 }

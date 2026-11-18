@@ -1,10 +1,10 @@
-<Page x:Class="PocketMC.Desktop.Features.Instances.ImportExport.InstanceExportPage"
+<Page x:Class="PocketMC.Desktop.Features.Instances.ImportExport.InstanceExportPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       ScrollViewer.VerticalScrollBarVisibility="Disabled"
       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-      Title="Export Instance">
+      Title="{loc:Tr 'Export Instance'}">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -14,7 +14,7 @@
         <DockPanel LastChildFill="True">
             <Grid DockPanel.Dock="Top" MaxWidth="1040" HorizontalAlignment="Stretch" Margin="0,0,0,20">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <ui:Button Content="Back"
+                    <ui:Button Content="{loc:Tr 'Back'}"
                                Appearance="Secondary"
                                Icon="{ui:SymbolIcon ArrowLeft24}"
                                MinWidth="88"
@@ -22,9 +22,9 @@
                                Click="BtnBack_Click"/>
                     <StackPanel>
                         <ui:TextBlock FontTypography="Title"
-                                      Text="Export Instance"
+                                      Text="{loc:Tr 'Export Instance'}"
                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                        <TextBlock Text="Create a lightweight ZIP with settings, worlds, metadata, and a re-download manifest."
+                        <TextBlock Text="{loc:Tr 'Create a lightweight ZIP with settings, worlds, metadata, and a re-download manifest.'}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    FontSize="13"
@@ -66,13 +66,13 @@
 
                     <ui:Button x:Name="BtnCancel"
                                Grid.Column="2"
-                               Content="Cancel"
+                               Content="{loc:Tr 'Cancel'}"
                                Appearance="Secondary"
                                Width="104"
                                IsEnabled="{Binding IsExporting}"
                                Click="BtnCancel_Click"/>
                     <ui:Button Grid.Column="4"
-                               Content="Export"
+                               Content="{loc:Tr 'Export'}"
                                Appearance="Primary"
                                Icon="{ui:SymbolIcon Archive24}"
                                Width="124"
@@ -111,7 +111,7 @@
                             </StackPanel>
 
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="Save ZIP as"
+                                <TextBlock Text="{loc:Tr 'Save ZIP as'}"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                            Margin="0,0,0,8"/>
@@ -122,11 +122,11 @@
                                     </Grid.ColumnDefinitions>
                                     <ui:TextBox Grid.Column="0"
                                                 Text="{Binding DestinationZipPath, UpdateSourceTrigger=PropertyChanged}"
-                                                PlaceholderText="Choose a .zip destination"
+                                                PlaceholderText="{loc:Tr 'Choose a .zip destination'}"
                                                 MinHeight="40"
                                                 Margin="0,0,8,0"/>
                                     <ui:Button Grid.Column="1"
-                                               Content="Browse"
+                                               Content="{loc:Tr 'Browse'}"
                                                Icon="{ui:SymbolIcon FolderOpen20}"
                                                Appearance="Secondary"
                                                MinHeight="40"
@@ -135,9 +135,9 @@
 
                                 <CheckBox IsChecked="{Binding IncludeWorlds}"
                                           Margin="0,18,0,0"
-                                          Content="Include world folders"/>
-                                <CheckBox IsChecked="{Binding IncludeSensitiveConfiguration}" Content="Private backup: include credentials and plugin configuration (do not share)" Margin="0,10,0,0" />
-                                <TextBlock Text="Disable this for a compact configuration-only export, or when the server is running."
+                                          Content="{loc:Tr 'Include world folders'}"/>
+                                <CheckBox IsChecked="{Binding IncludeSensitiveConfiguration}" Content="{loc:Tr 'Private backup: include credentials and plugin configuration (do not share)'}" Margin="0,10,0,0" />
+                                <TextBlock Text="{loc:Tr 'Disable this for a compact configuration-only export, or when the server is running.'}"
                                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                            FontSize="12"
                                            TextWrapping="Wrap"
@@ -159,7 +159,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Export progress"
+                                <TextBlock Text="{loc:Tr 'Export progress'}"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                            FontWeight="SemiBold"/>
                                 <TextBlock Grid.Column="1"
@@ -215,7 +215,7 @@
                                            Margin="0,0,10,0"
                                            VerticalAlignment="Top"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock Text="Export package created."
+                                <TextBlock Text="{loc:Tr 'Export package created.'}"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                            FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding SkippedFilesSummary}"
@@ -224,7 +224,7 @@
                                            Margin="0,4,0,0"/>
                             </StackPanel>
                             <ui:Button Grid.Column="2"
-                                       Content="Open Folder"
+                                       Content="{loc:Tr 'Open Folder'}"
                                        Appearance="Primary"
                                        Icon="{ui:SymbolIcon FolderOpen20}"
                                        Margin="16,0,0,0"

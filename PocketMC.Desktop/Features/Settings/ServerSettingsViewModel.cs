@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Configuration;
 using PocketMC.Desktop.Features.Mods;
+using PocketMC.Desktop.Localization;
 using PocketMC.Desktop.Infrastructure;
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Models;
@@ -170,6 +171,8 @@ namespace PocketMC.Desktop.Features.Settings
                 dialogService,
                 () => IsRunning,
                 serviceProvider.GetRequiredService<PocketMC.Infrastructure.Java.JavaProvisioningService>(),
+                _applicationState,
+                (SettingsManager)serviceProvider.GetService(typeof(SettingsManager))!,
                 async (bool isMinecraftUpdate) => 
                 {
                     if (isMinecraftUpdate)
@@ -347,7 +350,7 @@ namespace PocketMC.Desktop.Features.Settings
                 var match = PlayitApiClient.FindTunnelForRequest(result.Tunnels, primaryRequest);
                 PlayitAddress = match != null
                     ? match.PublicAddress
-                    : $"No {FormatProtocol(primaryRequest.Protocol)} tunnel found for port {primaryRequest.Port}. Please create one.";
+                    : L.F("No {0} tunnel found for port {1}. Please create one.", FormatProtocol(primaryRequest.Protocol), primaryRequest.Port);
 
                 if (HasGeyser)
                 {
@@ -366,7 +369,7 @@ namespace PocketMC.Desktop.Features.Settings
                     var bedrockMatch = PlayitApiClient.FindTunnelForRequest(result.Tunnels, geyserRequest);
                     PlayitBedrockAddress = bedrockMatch != null
                         ? bedrockMatch.PublicAddress
-                        : $"No Bedrock UDP tunnel found for port {geyserRequest.Port}. Please create one.";
+                        : L.F("No Bedrock UDP tunnel found for port {0}. Please create one.", geyserRequest.Port);
                 }
             }
             catch
@@ -485,7 +488,7 @@ namespace PocketMC.Desktop.Features.Settings
 
             if (nameChanged && IsRunning)
             {
-                _dialogService.ShowMessage("Cannot Rename", "Cannot rename a running server. Please stop the server first.", DialogType.Warning);
+                _dialogService.ShowMessage(L.T("Cannot Rename"), L.T("Cannot rename a running server. Please stop the server first."), DialogType.Warning);
                 return;
             }
 
@@ -588,7 +591,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
 
             HasUnsavedChanges = false;
-            _dialogService.ShowMessage("Saved", "Configurations saved successfully.");
+            _dialogService.ShowMessage(L.T("Saved"), L.T("Configurations saved successfully."));
         }
 
         private async Task CancelAsync()

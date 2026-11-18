@@ -20,6 +20,7 @@ public sealed class InstanceExportService : IInstanceExportService
     private readonly ExportZipWriter _zipWriter;
     private readonly ILogger<InstanceExportService> _logger;
     private CancellationTokenSource? _activeCts;
+    private int _exportInProgress;
 
     public InstanceExportService(
         ExportManifestBuilder manifestBuilder,
@@ -57,6 +58,13 @@ public sealed class InstanceExportService : IInstanceExportService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        // A single export slot keeps Cancel()/IsActive meaningful and stops one export from
+        // disposing the token source another export is still writing with.
+        if (Interlocked.CompareExchange(ref _exportInProgress, 1, 0) != 0)
+        {
+            throw new InvalidOperationException("An instance export is already in progress.");
+        }
 
         _activeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         CancellationToken linkedToken = _activeCts.Token;
@@ -107,6 +115,7 @@ public sealed class InstanceExportService : IInstanceExportService
         {
             _activeCts?.Dispose();
             _activeCts = null;
+            Interlocked.Exchange(ref _exportInProgress, 0);
         }
     }
 

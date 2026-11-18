@@ -11,6 +11,7 @@
         xmlns:remote="clr-namespace:PocketMC.Desktop.Features.RemoteControl.UI"
         xmlns:news="clr-namespace:PocketMC.Desktop.Features.News"
         xmlns:tb="clr-namespace:Hardcodet.Wpf.TaskbarNotification;assembly=Hardcodet.NotifyIcon.Wpf"
+        xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
         mc:Ignorable="d"
         Title="PocketMC"
         WindowBackdropType="None"
@@ -53,8 +54,8 @@
                         TrayMouseDoubleClick="AppTrayIcon_TrayMouseDoubleClick">
             <tb:TaskbarIcon.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Open Dashboard" Click="TrayOpen_Click"/>
-                    <MenuItem Header="Exit PocketMC" Click="TrayExit_Click"/>
+                    <MenuItem Header="{loc:Tr Open Dashboard}" Click="TrayOpen_Click"/>
+                    <MenuItem Header="{loc:Tr Exit PocketMC}" Click="TrayExit_Click"/>
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>
         </tb:TaskbarIcon>
@@ -106,13 +107,13 @@
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <!-- "Restart now" button — only shown when update is fully downloaded -->
-                        <ui:Button Content="Restart to update"
+                        <ui:Button Content="{loc:Tr Restart to update}"
                                    Appearance="Primary"
                                    Margin="12,0,8,0"
                                    Padding="10,4"
                                    Command="{Binding RestartAndApplyUpdateCommand}"
-                                   ToolTip="Stop all servers first if any are running"
-                                   AutomationProperties.Name="Restart and apply pending update"
+                                   ToolTip="{loc:Tr Stop all servers first if any are running}"
+                                   AutomationProperties.Name="{loc:Tr Restart and apply pending update}"
                                    Visibility="{Binding IsUpdateReadyToApply, Converter={StaticResource BoolToVis}}"/>
 
                         <!-- Dismiss -->
@@ -120,8 +121,8 @@
                                    Appearance="Transparent"
                                    Padding="4"
                                    Command="{Binding DismissUpdateBannerCommand}"
-                                   ToolTip="Dismiss — update will apply on next restart"
-                                   AutomationProperties.Name="Dismiss update notification banner"/>
+                                   ToolTip="{loc:Tr Dismiss — update will apply on next restart}"
+                                   AutomationProperties.Name="{loc:Tr Dismiss update notification banner}"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -207,31 +208,31 @@
                 <!-- ─── Sidebar Items ─── -->
                 <ui:NavigationView.MenuItems>
                     <ui:NavigationViewItem x:Name="NavDashboard"
-                                           Content="Dashboard"
+                                           Content="{loc:Tr Dashboard}"
                                            Icon="{ui:SymbolIcon Home24}"
                                            TargetPageType="{x:Type dash:DashboardPage}"
-                                           AutomationProperties.Name="Dashboard (Ctrl+1)"
-                                           AutomationProperties.HelpText="View and manage all local Minecraft server instances."/>
+                                           AutomationProperties.Name="{loc:Tr Dashboard (Ctrl+1)}"
+                                           AutomationProperties.HelpText="{loc:Tr View and manage all local Minecraft server instances.}"/>
                     <ui:NavigationViewItem x:Name="NavTunnel"
-                                           Content="Tunnel"
+                                           Content="{loc:Tr Tunnel}"
                                            Icon="{ui:SymbolIcon Globe24}"
                                            TargetPageType="{x:Type tunnel:TunnelPage}"
-                                           AutomationProperties.Name="Tunnel (Ctrl+2)"
-                                           AutomationProperties.HelpText="Configure Playit.gg public tunnels for multiplayer connectivity."/>
+                                           AutomationProperties.Name="{loc:Tr Tunnel (Ctrl+2)}"
+                                           AutomationProperties.HelpText="{loc:Tr Configure Playit.gg public tunnels for multiplayer connectivity.}"/>
                     <ui:NavigationViewItem x:Name="NavRemoteControl"
-                                           Content="Remote Control"
+                                           Content="{loc:Tr Remote Control}"
                                            Icon="{ui:SymbolIcon PhoneDesktop24}"
                                            TargetPageType="{x:Type remote:RemoteControlPage}"
-                                           AutomationProperties.Name="Remote Control (Ctrl+3)"
-                                           AutomationProperties.HelpText="Manage web dashboard and remote device access credentials."/>
+                                           AutomationProperties.Name="{loc:Tr Remote Control (Ctrl+3)}"
+                                           AutomationProperties.HelpText="{loc:Tr Manage web dashboard and remote device access credentials.}"/>
                     <ui:NavigationViewItem x:Name="NavNews"
                                            Icon="{ui:SymbolIcon Megaphone24}"
                                            TargetPageType="{x:Type news:NewsPage}"
-                                           AutomationProperties.Name="News (Ctrl+7)"
-                                           AutomationProperties.HelpText="Read PocketMC announcements and service notices.">
+                                           AutomationProperties.Name="{loc:Tr News (Ctrl+7)}"
+                                           AutomationProperties.HelpText="{loc:Tr Read PocketMC announcements and service notices.}">
                         <ui:NavigationViewItem.Content>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="News"
+                                <TextBlock Text="{loc:Tr News}"
                                            VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                 <Border x:Name="NewsUnreadBadge"
@@ -259,23 +260,23 @@
                 <!-- ─── Footer ─── -->
                 <ui:NavigationView.FooterMenuItems>
                     <ui:NavigationViewItem x:Name="NavSettings"
-                                           Content="Settings"
+                                           Content="{loc:Tr Settings}"
                                            Icon="{ui:SymbolIcon Settings24}"
                                            TargetPageType="{x:Type setup:AppSettingsPage}"
-                                           AutomationProperties.Name="Settings (Ctrl+5 or Ctrl+,)"
-                                           AutomationProperties.HelpText="Configure global application preferences and cloud backups."/>
+                                           AutomationProperties.Name="{loc:Tr 'Settings (Ctrl+5 or Ctrl+,)'}"
+                                           AutomationProperties.HelpText="{loc:Tr Configure global application preferences and cloud backups.}"/>
                     <ui:NavigationViewItem x:Name="NavJavaSetup"
-                                           Content="Runtimes"
+                                           Content="{loc:Tr Runtimes}"
                                            Icon="{ui:SymbolIcon ArrowDownload24}"
                                            TargetPageType="{x:Type setup:JavaSetupPage}"
-                                           AutomationProperties.Name="Runtimes (Ctrl+4)"
-                                           AutomationProperties.HelpText="Manage installed Java and PHP runtime versions."/>
+                                           AutomationProperties.Name="{loc:Tr Runtimes (Ctrl+4)}"
+                                           AutomationProperties.HelpText="{loc:Tr Manage installed Java and PHP runtime versions.}"/>
                     <ui:NavigationViewItem x:Name="NavAbout"
-                                           Content="About"
+                                           Content="{loc:Tr About}"
                                            Icon="{ui:SymbolIcon Info24}"
                                            TargetPageType="{x:Type shell:AboutPage}"
-                                           AutomationProperties.Name="About (Ctrl+6)"
-                                           AutomationProperties.HelpText="View application version, links, and license information."/>
+                                           AutomationProperties.Name="{loc:Tr About (Ctrl+6)}"
+                                           AutomationProperties.HelpText="{loc:Tr 'View application version, links, and license information.'}"/>
                 </ui:NavigationView.FooterMenuItems>
 
             </ui:NavigationView>

@@ -208,18 +208,26 @@ namespace PocketMC.Infrastructure.Php
                 }
                 else
                 {
-                    task = ProvisionInternalAsync(version, progress, cancellationToken);
+                    // The shared install must outlive the caller that kicked it off; a waiter
+                    // cancelling only stops waiting, it never aborts the download for others.
+                    task = ProvisionInternalAsync(version, progress, CancellationToken.None);
                     _inflightProvisioning[version] = task;
                 }
             }
 
-            try
+            _ = RemoveWhenCompletedAsync(task, version);
+            await task.WaitAsync(cancellationToken);
+        }
+
+        private async Task RemoveWhenCompletedAsync(Task task, string version)
+        {
+            try { await task.ConfigureAwait(false); }
+            catch { /* the waiter surfaces the failure; this only releases the cache entry */ }
+
+            lock (_inflightProvisioning)
             {
-                await task;
-            }
-            finally
-            {
-                lock (_inflightProvisioning)
+                // Key the removal to this task so a newer install is never evicted by an older one.
+                if (_inflightProvisioning.TryGetValue(version, out Task? current) && ReferenceEquals(current, task))
                 {
                     _inflightProvisioning.TryRemove(version, out _);
                 }
@@ -254,6 +262,7 @@ namespace PocketMC.Infrastructure.Php
                 });
 
                 string? downloadUrl = null;
+                string? downloadSha256 = null;
                 if (def != null && !string.IsNullOrWhiteSpace(def.Tag))
                 {
                     try
@@ -272,6 +281,12 @@ namespace PocketMC.Infrastructure.Php
                                 aObj["name"]?.ToString().Contains("debug", StringComparison.OrdinalIgnoreCase) != true) as JsonObject;
 
                             downloadUrl = matchedAsset?["browser_download_url"]?.ToString();
+                            // GitHub publishes "sha256:<hex>" digests for newer release assets.
+                            string? digest = matchedAsset?["digest"]?.ToString();
+                            if (digest != null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                downloadSha256 = digest["sha256:".Length..].Trim();
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -312,7 +327,11 @@ namespace PocketMC.Infrastructure.Php
                     });
                 });
 
-                await _downloader.DownloadFileAsync(downloadUrl, tempZipPath, null, progressRelay, cancellationToken);
+                // Without a published digest the bytes cannot be verified, so a third-party mirror
+                // must not be allowed to supply them: fetch straight from the release host.
+                await _downloader.DownloadFileAsync(
+                    downloadUrl, tempZipPath, downloadSha256, downloadSha256 == null ? null : "sha256",
+                    progressRelay, cancellationToken, bypassMirrors: downloadSha256 == null);
 
                 UpdateStatus(new PhpProvisioningStatus
                 {
@@ -323,25 +342,45 @@ namespace PocketMC.Infrastructure.Php
                     ProgressPercentage = 95
                 });
 
-                if (Directory.Exists(phpDir))
+                // Extract beside the live runtime first so a failed install never destroys a working one.
+                string stagingDir = phpDir + ".staging";
+                string? exePath;
+                try
                 {
-                    Directory.Delete(phpDir, true);
+                    TryDeleteDirectory(stagingDir);
+                    await _downloader.ExtractZipAsync(tempZipPath, stagingDir, null);
+
+                    UpdateStatus(new PhpProvisioningStatus
+                    {
+                        Version = version,
+                        DisplayName = displayName,
+                        Stage = PhpProvisioningStage.Verifying,
+                        Message = "Verifying PHP executable..."
+                    });
+
+                    string? stagedExePath = ProbeExecutable(stagingDir);
+                    if (stagedExePath == null || !File.Exists(stagedExePath))
+                    {
+                        throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {stagingDir}.");
+                    }
+
+                    // Keep the previous runtime until the new one proves it can start.
+                    string? backupDir = ReplaceDirectory(stagingDir, phpDir);
+                    exePath = ProbeExecutable(phpDir);
+                    if (exePath == null || !File.Exists(exePath))
+                    {
+                        RestoreDirectory(phpDir, backupDir);
+                        throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {phpDir}.");
+                    }
+
+                    if (backupDir != null)
+                    {
+                        TryDeleteDirectory(backupDir);
+                    }
                 }
-
-                await _downloader.ExtractZipAsync(tempZipPath, phpDir, null);
-
-                UpdateStatus(new PhpProvisioningStatus
+                finally
                 {
-                    Version = version,
-                    DisplayName = displayName,
-                    Stage = PhpProvisioningStage.Verifying,
-                    Message = "Verifying PHP executable..."
-                });
-
-                string? exePath = ProbeExecutable(phpDir);
-                if (exePath == null || !File.Exists(exePath))
-                {
-                    throw new FileNotFoundException($"Extracted PHP runtime does not contain a valid php.exe in {phpDir}.");
+                    TryDeleteDirectory(stagingDir);
                 }
 
                 UpdateStatus(new PhpProvisioningStatus
@@ -410,6 +449,63 @@ namespace PocketMC.Infrastructure.Php
                 Message = "Not installed",
                 ProgressPercentage = 0
             });
+        }
+
+        /// <summary>Swaps an extracted staging directory into place, keeping the old runtime as a rollback copy.</summary>
+        private static string? ReplaceDirectory(string stagingDir, string targetDir)
+        {
+            string backupDir = targetDir + ".old";
+            TryDeleteDirectory(backupDir);
+
+            string? backup = null;
+            if (Directory.Exists(targetDir))
+            {
+                Directory.Move(targetDir, backupDir);
+                backup = backupDir;
+            }
+
+            try
+            {
+                Directory.Move(stagingDir, targetDir);
+            }
+            catch
+            {
+                if (backup != null && !Directory.Exists(targetDir) && Directory.Exists(backupDir))
+                {
+                    Directory.Move(backupDir, targetDir);
+                }
+
+                throw;
+            }
+
+            return backup;
+        }
+
+        private static void RestoreDirectory(string targetDir, string? backupDir)
+        {
+            TryDeleteDirectory(targetDir);
+            if (backupDir != null && Directory.Exists(backupDir) && !Directory.Exists(targetDir))
+            {
+                Directory.Move(backupDir, targetDir);
+            }
+        }
+
+        private static void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, true);
+                }
+            }
+            catch (IOException)
+            {
+                // A leftover backup/staging folder is harmless and cleaned on the next install.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
         private void UpdateStatus(PhpProvisioningStatus status)

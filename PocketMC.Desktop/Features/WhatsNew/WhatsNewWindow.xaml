@@ -1,8 +1,8 @@
-<ui:FluentWindow x:Class="PocketMC.Desktop.Features.WhatsNew.WhatsNewWindow"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.WhatsNew.WhatsNewWindow" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="What's New"
+        Title="{loc:Tr &quot;What's New&quot;}"
         Width="580"
         SizeToContent="Height"
         MinWidth="500" MaxWidth="680"
@@ -21,7 +21,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="What's New" ShowMaximize="False" ShowMinimize="False" />
+        <ui:TitleBar Grid.Row="0" Title="{loc:Tr &quot;What's New&quot;}" ShowMaximize="False" ShowMinimize="False" />
 
         <Grid Grid.Row="1" Margin="28,8,28,24">
             <Grid.RowDefinitions>
@@ -33,7 +33,7 @@
             <!-- Header -->
             <StackPanel Grid.Row="0" Margin="0,0,0,16">
                 <TextBlock x:Name="TxtHeader"
-                           Text="What's New"
+                           Text="{loc:Tr &quot;What's New&quot;}"
                            FontSize="20"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
@@ -122,19 +122,19 @@
                 </Grid.ColumnDefinitions>
                 <ui:Button x:Name="BtnFullChangelog"
                            Grid.Column="0"
-                           Content="View Full Changelog"
+                           Content="{loc:Tr 'View Full Changelog'}"
                            Appearance="Secondary"
                            HorizontalAlignment="Left"
                            Click="ViewFullChangelog_Click"
                            Icon="{ui:SymbolIcon Open20}"
-                           AutomationProperties.Name="View Full Changelog"/>
+                           AutomationProperties.Name="{loc:Tr 'View Full Changelog'}"/>
                 <ui:Button Grid.Column="1"
-                           Content="Got It"
+                           Content="{loc:Tr 'Got It'}"
                            Appearance="Primary"
                            MinWidth="100"
                            Click="GotIt_Click"
                            IsDefault="True"
-                           AutomationProperties.Name="Got It"/>
+                           AutomationProperties.Name="{loc:Tr 'Got It'}"/>
             </Grid>
         </Grid>
     </Grid>

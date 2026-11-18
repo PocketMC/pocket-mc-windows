@@ -1,4 +1,4 @@
-<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Marketplace.CurseForgeApiKeyDialogWindow"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Marketplace.CurseForgeApiKeyDialogWindow" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -20,7 +20,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="CurseForge API Key" ShowMaximize="False" ShowMinimize="False" />
+        <ui:TitleBar Grid.Row="0" Title="{loc:Tr 'CurseForge API Key'}" ShowMaximize="False" ShowMinimize="False" />
 
         <Grid Grid.Row="1" Margin="24,8,24,24">
             <Grid.RowDefinitions>
@@ -39,7 +39,7 @@
                                Margin="0,0,12,0"
                                Foreground="#F9E2AF"/>
                 <TextBlock x:Name="TxtTitle"
-                           Text="CurseForge API Key Required"
+                           Text="{loc:Tr 'CurseForge API Key Required'}"
                            FontSize="18" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                            VerticalAlignment="Center"
@@ -54,34 +54,34 @@
                        TextWrapping="Wrap"
                        LineHeight="20"
                        Margin="0,0,0,16">
-                To download or search for CurseForge mods, you need a CurseForge API Key.
+                <Run Text="{loc:Tr 'To download or search for CurseForge mods, you need a CurseForge API Key.'}"/>
                 <LineBreak/>
-                <Run Text="You can obtain a free key from the "/>
+                <Run Text="{loc:Tr '你可以从 '}"/>
                 <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate"
                            Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
-                    <Run Text="CurseForge Console"/>
+                    <Run Text="{loc:Tr 'CurseForge Console'}"/>
                 </Hyperlink>
                 <Run Text="."/>
             </TextBlock>
 
             <!-- Input -->
             <ui:TextBox Grid.Row="2" x:Name="TxtApiKey"
-                        PlaceholderText="Enter your CurseForge API Key (e.g. $2a$10$xyz...)"
+                        PlaceholderText="{loc:Tr 'Enter your CurseForge API Key (e.g. $2a$10$xyz...)'}"
                         Margin="0,0,0,4" />
 
             <!-- Error Msg -->
             <TextBlock Grid.Row="3" x:Name="TxtError" Foreground="#F38BA8" FontSize="12"
                        Margin="0,0,0,0" Visibility="Collapsed"
-                       Text="Please enter a valid API key."/>
+                       Text="{loc:Tr 'Please enter a valid API key.'}"/>
 
             <!-- Action buttons -->
             <WrapPanel Grid.Row="4" HorizontalAlignment="Right" Margin="0,18,0,0">
-                <ui:Button Content="Cancel"
+                <ui:Button Content="{loc:Tr 'Cancel'}"
                            MinWidth="80"
                            Margin="0,0,8,0"
                            Click="BtnCancel_Click"/>
 
-                <ui:Button Content="Save &amp; Continue"
+                <ui:Button Content="{loc:Tr 'Save &amp; Continue'}"
                            Appearance="Primary"
                            MinWidth="90"
                            Click="BtnSave_Click"

@@ -1,5 +1,6 @@
 ﻿using PocketMC.Domain.Models;
 using System;
+using PocketMC.Desktop.Localization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -57,7 +58,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             _isRunning = true;
             _cts = new CancellationTokenSource();
-            BtnCancel.Content = "Cancel";
+            BtnCancel.Content = L.T("Cancel");
 
             int total = _items.Count;
             int current = 0;
@@ -69,7 +70,7 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (_cts.Token.IsCancellationRequested) break;
 
                 current++;
-                TxtOverallStatus.Text = $"Installing {current}/{total}: {item.ProjectTitle}...";
+                TxtOverallStatus.Text = L.F("Installing {0}/{1}: {2}...", current, total, item.ProjectTitle);
                 OverallProgressBar.Value = (double)(current - 1) / total * 100;
 
                 item.StatusText = "Downloading...";
@@ -121,7 +122,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             if (_cts.Token.IsCancellationRequested)
             {
-                TxtOverallStatus.Text = $"Cancelled. {succeeded} installed, {total - succeeded - failed} skipped.";
+                TxtOverallStatus.Text = L.F("Cancelled. {0} installed, {1} skipped.", succeeded, total - succeeded - failed);
             }
             else if (failed > 0)
             {
@@ -129,11 +130,11 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             else
             {
-                TxtOverallStatus.Text = $"All {succeeded} addon(s) installed successfully!";
+                TxtOverallStatus.Text = L.F("All {0} addon(s) installed successfully!", succeeded);
                 TxtOverallStatus.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
             }
 
-            BtnCancel.Content = "Close";
+            BtnCancel.Content = L.T("Close");
             _isRunning = false;
 
             OnAllInstallsCompleted?.Invoke();

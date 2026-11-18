@@ -797,7 +797,7 @@ namespace PocketMC.Infrastructure.Marketplace
             return string.Empty;
         }
 
-        private static string? GetPreferredHash(ModrinthFile file, out string? hashType)
+        public static string? GetPreferredHash(ModrinthFile file, out string? hashType)
         {
             if (file.Hashes.TryGetValue("sha512", out string? sha512) && !string.IsNullOrWhiteSpace(sha512))
             {

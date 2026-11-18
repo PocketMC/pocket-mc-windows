@@ -1,5 +1,6 @@
 using PocketMC.Domain.Security;
 using PocketMC.Domain.Storage;
+using PocketMC.Desktop.Localization;
 using PocketMC.Domain.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Desktop.Core.Interfaces;
@@ -88,25 +89,25 @@ namespace PocketMC.Desktop.Features.Marketplace
             ListResults.ItemsSource = _results;
 
             string baseTitle = _isModpackMode ? "Modpack Marketplace" : (_projectType.Contains("plugin") ? "Plugin Marketplace" : "Mod Marketplace");
-            if (_compat.Family == EngineFamily.Bedrock) baseTitle = "Bedrock Add-Ons Marketplace";
+            if (_compat.Family == EngineFamily.Bedrock) baseTitle = L.T("Bedrock Add-Ons Marketplace");
             if (_compat.Family == EngineFamily.Pocketmine)
             {
-                baseTitle = "Pocketmine Plugins";
+                baseTitle = L.T("Pocketmine Plugins");
                 CmbSource.Items.Clear();
             }
             TxtTitle.Text = baseTitle;
-            TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
+            TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : L.F("Minecraft {0}", _mcVersion);
 
-            if (_isModpackMode) TxtSearch.PlaceholderText = "Search modpacks...";
-            else if (_compat.Family == EngineFamily.Bedrock) TxtSearch.PlaceholderText = "Search Bedrock Add-Ons...";
-            else if (_compat.Family == EngineFamily.Pocketmine && _projectType.Contains("plugin")) TxtSearch.PlaceholderText = "Search Pocketmine plugins (*.phar)...";
-            else if (_projectType.Contains("plugin")) TxtSearch.PlaceholderText = "Search Spigot/Paper plugins...";
+            if (_isModpackMode) TxtSearch.PlaceholderText = L.T("Search modpacks...");
+            else if (_compat.Family == EngineFamily.Bedrock) TxtSearch.PlaceholderText = L.T("Search Bedrock Add-Ons...");
+            else if (_compat.Family == EngineFamily.Pocketmine && _projectType.Contains("plugin")) TxtSearch.PlaceholderText = L.T("Search Pocketmine plugins (*.phar)...");
+            else if (_projectType.Contains("plugin")) TxtSearch.PlaceholderText = L.T("Search Spigot/Paper plugins...");
             else if (_projectType.Contains("mod"))
             {
                 string loaderLabel = string.IsNullOrWhiteSpace(_compat.LoaderName) ? "mods" : $"{ToDisplayLoader(_compat.LoaderName)} mods";
-                TxtSearch.PlaceholderText = $"Search {loaderLabel}...";
+                TxtSearch.PlaceholderText = L.F("Search {0}...", loaderLabel);
             }
-            else TxtSearch.PlaceholderText = "Search mods...";
+            else TxtSearch.PlaceholderText = L.T("Search mods...");
 
             if (_isModpackMode)
             {
@@ -302,7 +303,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (Exception ex)
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Search Error", $"Search failed: {ex.Message}");
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Search Error", L.F("Search failed: {0}", ex.Message));
             }
             finally
             {
@@ -317,13 +318,13 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                     if (keyError.IsMissingKey)
                     {
-                        TxtCurseForgeKeyTitle.Text = "CurseForge API Key Required";
-                        TxtCurseForgeKeyDetail.Text = "CurseForge requires a free API key to browse and install addons. Enter your key to continue.";
+                        TxtCurseForgeKeyTitle.Text = L.T("CurseForge API Key Required");
+                        TxtCurseForgeKeyDetail.Text = L.T("CurseForge requires a free API key to browse and install addons. Enter your key to continue.");
                     }
                     else
                     {
-                        TxtCurseForgeKeyTitle.Text = "Invalid CurseForge API Key";
-                        TxtCurseForgeKeyDetail.Text = "Your CurseForge API key was rejected (403 Forbidden). Please check that your key is entered correctly and has active permissions.";
+                        TxtCurseForgeKeyTitle.Text = L.T("Invalid CurseForge API Key");
+                        TxtCurseForgeKeyDetail.Text = L.T("Your CurseForge API key was rejected (403 Forbidden). Please check that your key is entered correctly and has active permissions.");
                     }
                 }
                 else
@@ -343,11 +344,11 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                         if (!string.IsNullOrEmpty(query))
                         {
-                            TxtEmptyStateDetail.Text = $"No {itemType} matched \"{query}\". Try checking for spelling errors or adjusting your filters.";
+                            TxtEmptyStateDetail.Text = L.F("No {0} matched \"{1}\". Try checking for spelling errors or adjusting your filters.", itemType, query);
                         }
                         else
                         {
-                            TxtEmptyStateDetail.Text = $"No {itemType} matched the selected filter criteria. Try selecting 'Any' for loader or version.";
+                            TxtEmptyStateDetail.Text = L.F("No {0} matched the selected filter criteria. Try selecting 'Any' for loader or version.", itemType);
                         }
                     }
                 }
@@ -506,10 +507,10 @@ namespace PocketMC.Desktop.Features.Marketplace
                 if (rootResolved == null || string.IsNullOrEmpty(rootResolved.DownloadUrl) || !string.IsNullOrEmpty(rootResolved.Error))
                 {
                     string details = rootResolved?.Error ?? "No compatible version found.";
-                    string mcMessage = string.IsNullOrEmpty(mcVersionArg) ? "" : $" for Minecraft {mcVersionArg}";
+                    string mcMessage = string.IsNullOrEmpty(mcVersionArg) ? "" : L.F(" for Minecraft {0}", mcVersionArg);
                     PocketMC.Desktop.Infrastructure.AppDialog.ShowError(
                         "No compatible version found",
-                        $"PocketMC could not find a compatible version of {vm.Title}{mcMessage}.{Environment.NewLine}{Environment.NewLine}Details: {details}");
+                        L.F("PocketMC could not find a compatible version of {0}{1}.{2}{3}Details: {4}", vm.Title, mcMessage, Environment.NewLine, Environment.NewLine, details));
 
                     vm.State = InstallState.NotInstalled;
                     vm.IsActionEnabled = true;
@@ -570,7 +571,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (Exception ex)
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Install failed: " + ex.Message);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError(L.T("Error"), L.F("Install failed: {0}", ex.Message));
                 vm.State = InstallState.Failed;
                 vm.IsActionEnabled = true;
             }
@@ -602,15 +603,15 @@ namespace PocketMC.Desktop.Features.Marketplace
             if (_isModpackMode)
             {
                 destFile = PathSafety.ValidateContainedPath(Path.GetTempPath(), safeFileName)
-                    ?? throw new InvalidOperationException($"Invalid marketplace download file name '{safeFileName}'.");
+                    ?? throw new InvalidOperationException(L.F("Invalid marketplace download file name '{0}'.", safeFileName));
             }
             else
             {
                 string destDir = PathSafety.ValidateContainedPath(_serverDir!, _compat.PrimaryAddonSubDir)
-                    ?? throw new InvalidOperationException($"Invalid add-on directory '{_compat.PrimaryAddonSubDir}'.");
+                    ?? throw new InvalidOperationException(L.F("Invalid add-on directory '{0}'.", _compat.PrimaryAddonSubDir));
                 if (!Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
                 destFile = PathSafety.ValidateContainedPath(destDir, safeFileName)
-                    ?? throw new InvalidOperationException($"Invalid marketplace add-on file name '{safeFileName}'.");
+                    ?? throw new InvalidOperationException(L.F("Invalid marketplace add-on file name '{0}'.", safeFileName));
             }
 
             await _fileInstaller.InstallAsync(url, destFile, hash, hashType, progress, cancellationToken);

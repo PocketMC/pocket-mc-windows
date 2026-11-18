@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using PocketMC.Desktop.Localization;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -38,19 +39,19 @@ public partial class NewsPage : Page
     private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
     {
         BtnRefresh.IsEnabled = false;
-        TxtSyncStatus.Text = "Checking for news...";
+        TxtSyncStatus.Text = L.T("Checking for news...");
         try
         {
             NewsSyncResult result = await _newsService.SynchronizeAsync();
             RefreshEntries();
             TxtSyncStatus.Text = result.Succeeded
-                ? $"News checked. {_entries.Count} item{(_entries.Count == 1 ? string.Empty : "s")} available."
+                ? L.F("News checked. {0} item(s) available.", _entries.Count)
                 : "Could not reach the news service. Showing saved news.";
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Manual PocketMC news sync failed.");
-            TxtSyncStatus.Text = "Could not reach the news service. Showing saved news.";
+            TxtSyncStatus.Text = L.T("Could not reach the news service. Showing saved news.");
         }
         finally
         {
@@ -62,7 +63,7 @@ public partial class NewsPage : Page
     {
         if (NewsList.SelectedItem is not NewsListEntry entry)
         {
-            ShowEmptyState("Choose a news item to read.");
+            ShowEmptyState(L.T("Choose a news item to read."));
             return;
         }
 
@@ -96,11 +97,11 @@ public partial class NewsPage : Page
         if (_entries.Count == 0)
         {
             NewsArticleSurface.Visibility = Visibility.Collapsed;
-            ShowEmptyState("No news is available yet. PocketMC will check again later.");
+            ShowEmptyState(L.T("No news is available yet. PocketMC will check again later."));
         }
         else if (NewsList.SelectedItem == null)
         {
-            ShowEmptyState("Choose a news item to read.");
+            ShowEmptyState(L.T("Choose a news item to read."));
         }
     }
 
