@@ -43,8 +43,8 @@ namespace PocketMC.Desktop.Infrastructure
 
         private void Init(string title, string message)
         {
-            Title = title;
-            MessageText.Text = message;
+            Title = LocalizationService.T(title);
+            MessageText.Text = LocalizationService.T(message);
 
             // Apply DWM Dark mode fix and accent colors
             var visualService = ServiceProviderServiceExtensions.GetRequiredService<IShellVisualService>(((App)System.Windows.Application.Current).Services);

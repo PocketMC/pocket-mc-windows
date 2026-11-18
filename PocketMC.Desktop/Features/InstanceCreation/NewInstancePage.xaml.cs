@@ -253,7 +253,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             
             if (TxtLoaderVersionLabel != null)
             {
-                TxtLoaderVersionLabel.Text = serverType == "Paper" ? "Paper Build" : "Loader Version";
+                TxtLoaderVersionLabel.Text = serverType == "Paper" ? L.T("Paper Build") : L.T("Loader Version");
             }
 
             if (CmbVersion.SelectedItem is MinecraftVersion version)
@@ -374,8 +374,8 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             try
             {
                 var result = await _dialogService.OpenFileDialogAsync(
-                    "Select Custom World Archive",
-                    "Minecraft World Archives (*.zip;*.mcworld)|*.zip;*.mcworld|All Files (*.*)|*.*");
+                    L.T("Select Custom World Archive"),
+                    L.T("Minecraft World Archives (*.zip;*.mcworld)|*.zip;*.mcworld|All Files (*.*)|*.*"));
                 if (result != null)
                 {
                     TxtCustomWorldPath.Text = result;
@@ -394,14 +394,14 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             {
                 if (_isCreating)
                 {
-                    ShowError("Wait for the current server creation to finish before importing another instance.");
+                    ShowError(L.T("Wait for the current server creation to finish before importing another instance."));
                     return;
                 }
 
                 var page = ActivatorUtilities.CreateInstance<InstanceImportPage>(_serviceProvider);
                 _navigationService.NavigateToDetailPage(
                     page,
-                    "Import Instance",
+                    L.T("Import Instance"),
                     DetailRouteKind.InstanceImport,
                     DetailBackNavigation.PreviousDetail);
             }
@@ -417,8 +417,8 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             if (_isCreating)
             {
                 var result = PocketMC.Desktop.Infrastructure.AppDialog.Confirm(
-                    "Cancel Download?",
-                    "A download is in progress. Are you sure you want to cancel? All downloaded files will be deleted."
+                    L.T("Cancel Download?"),
+                    L.T("A download is in progress. Are you sure you want to cancel? All downloaded files will be deleted.")
                 );
 
                 if (!result)
@@ -443,8 +443,9 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
         private async void BtnImportModpack_Click(object sender, RoutedEventArgs e)
         {
-            var result = await _dialogService.ShowDialogAsync("Modpacks (BETA)",
-                "Modpacks are designed for clients and may crash on servers out-of-the-box. You will often need to resolve mod dependencies manually (using an LLM can help!) to fix crashes.\n\nTip: If the modpack author provides a dedicated 'Server Pack', it's highly recommended to download it and use 'Import Instance' instead. However, not all developers create Server Packs.\n\nContinue with automated modpack install?",
+            var result = await _dialogService.ShowDialogAsync(
+                L.T("Modpacks (BETA)"),
+                L.T("Modpacks are designed for clients and may crash on servers out-of-the-box. You will often need to resolve mod dependencies manually (using an LLM can help!) to fix crashes.\n\nTip: If the modpack author provides a dedicated 'Server Pack', it's highly recommended to download it and use 'Import Instance' instead. However, not all developers create Server Packs.\n\nContinue with automated modpack install?"),
                 DialogType.Warning);
 
             if (result != DialogResult.Yes) return;
@@ -477,7 +478,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
             _navigationService.NavigateToDetailPage(
                 browserPage,
-                "Marketplace - Modpacks",
+                L.T("Marketplace - Modpacks"),
                 DetailRouteKind.PluginBrowser,
                 DetailBackNavigation.PreviousDetail);
         }
@@ -488,26 +489,26 @@ namespace PocketMC.Desktop.Features.InstanceCreation
 
             if (string.IsNullOrWhiteSpace(TxtName.Text))
             {
-                ShowError("Enter a server name before creating the instance.");
+                ShowError(L.T("Enter a server name before creating the instance."));
                 return;
             }
 
             if (CmbVersion.SelectedItem is not MinecraftVersion selectedVersion)
             {
-                ShowError("Select a Minecraft version before continuing.");
+                ShowError(L.T("Select a Minecraft version before continuing."));
                 return;
             }
 
             if (!int.TryParse(TxtMaxPlayers.Text.Trim(), out int maxPlayers) || maxPlayers <= 0)
             {
-                ShowError("Players Limit must be a positive integer.");
+                ShowError(L.T("Players Limit must be a positive integer."));
                 return;
             }
 
             string customWorldPath = TxtCustomWorldPath.Text.Trim();
             if (!string.IsNullOrEmpty(customWorldPath) && !File.Exists(customWorldPath))
             {
-                ShowError("The custom world archive file does not exist.");
+                ShowError(L.T("The custom world archive file does not exist."));
                 return;
             }
 
@@ -685,7 +686,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
                         Dispatcher.Invoke(() =>
                         {
                             PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(
-                                "Cross-play Unavailable",
+                                L.T("Cross-play Unavailable"),
                                 L.F("Cross-play Setup Failed\n\n{0}\n\nYour server was created without cross-play. You can add it later from Server Settings.", geyserEx.Message));
                         });
                     }
@@ -845,7 +846,7 @@ namespace PocketMC.Desktop.Features.InstanceCreation
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to open the Minecraft EULA link.");
-                ShowError("PocketMC could not open the Minecraft EULA link right now.");
+                ShowError(L.T("PocketMC could not open the Minecraft EULA link right now."));
             }
         }
 

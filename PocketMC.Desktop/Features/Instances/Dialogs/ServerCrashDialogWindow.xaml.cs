@@ -49,10 +49,10 @@ public partial class ServerCrashDialogWindow : FluentWindow
         _providerFactory = providerFactory;
         _onOpenConsole = onOpenConsole;
         _crashReportPath = analysis.CrashReportPath;
-        _serverName = string.IsNullOrWhiteSpace(serverName) ? "Server" : serverName;
+        _serverName = string.IsNullOrWhiteSpace(serverName) ? L.T("Server") : serverName;
         _serverType = serverType;
         _mcVersion = mcVersion;
-        _summaryText = string.IsNullOrWhiteSpace(analysis.Summary) ? "The server terminated unexpectedly." : analysis.Summary;
+        _summaryText = string.IsNullOrWhiteSpace(analysis.Summary) ? L.T("The server terminated unexpectedly.") : analysis.Summary;
 
         TxtServerName.Text = _serverName;
         TxtServerDetails.Text = $"{serverType} • {mcVersion}";
@@ -60,27 +60,27 @@ public partial class ServerCrashDialogWindow : FluentWindow
         // Category Badge
         _categoryText = analysis.Category switch
         {
-            CrashCategory.ModDependency => "Mod Dependency",
-            CrashCategory.MissingMod => "Missing Mod",
-            CrashCategory.MixinConflict => "Mixin Collision",
-            CrashCategory.OutOfMemory => "Out of Memory",
-            CrashCategory.JavaRuntime => "Java Exception",
-            CrashCategory.BedrockScript => "Bedrock Error",
-            CrashCategory.PocketMineFatal => "PocketMine Crash",
-            CrashCategory.ServerTickException => "Crash Report",
-            CrashCategory.StartupAborted => "Startup Failed",
+            CrashCategory.ModDependency => L.T("Mod Dependency"),
+            CrashCategory.MissingMod => L.T("Missing Mod"),
+            CrashCategory.MixinConflict => L.T("Mixin Collision"),
+            CrashCategory.OutOfMemory => L.T("Out of Memory"),
+            CrashCategory.JavaRuntime => L.T("Java Exception"),
+            CrashCategory.BedrockScript => L.T("Bedrock Error"),
+            CrashCategory.PocketMineFatal => L.T("PocketMine Crash"),
+            CrashCategory.ServerTickException => L.T("Crash Report"),
+            CrashCategory.StartupAborted => L.T("Startup Failed"),
             CrashCategory.ProcessExitError => L.F("Exit Code {0}", analysis.ExitCode),
-            _ => "Crashed"
+            _ => L.T("Crashed")
         };
         TxtCategoryBadge.Text = _categoryText;
 
-        TxtCrashTitle.Text = string.IsNullOrWhiteSpace(analysis.Title) ? "Server Crash Detected" : analysis.Title;
-        TxtCrashSummary.Text = _summaryText;
+        TxtCrashTitle.Text = string.IsNullOrWhiteSpace(analysis.Title) ? L.T("Server Crash Detected") : L.T(analysis.Title);
+        TxtCrashSummary.Text = L.T(_summaryText);
 
         // Log viewer text
         _rawLogContent = !string.IsNullOrWhiteSpace(analysis.FullLogContext)
             ? analysis.FullLogContext
-            : (!string.IsNullOrWhiteSpace(analysis.Summary) ? analysis.Summary : "No detailed crash logs available.");
+            : (!string.IsNullOrWhiteSpace(analysis.Summary) ? analysis.Summary : L.T("No detailed crash logs available."));
         TxtLogViewer.Text = _rawLogContent;
 
         // Open Crash Report Button Visibility

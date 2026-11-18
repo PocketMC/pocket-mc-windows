@@ -223,8 +223,8 @@ namespace PocketMC.Desktop.Features.Setup
         {
             Items.Add(new SettingsBackupCategoryItemViewModel(
                 key,
-                title,
-                description,
+                L.T(title),
+                L.T(description),
                 symbol,
                 isSensitive: isSensitive,
                 isAvailable: isAvailable,

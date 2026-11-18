@@ -4,6 +4,7 @@ using System.Windows;
 using Microsoft.Win32;
 using PocketMC.Application.Interfaces;
 using PocketMC.Desktop.Features.Shell.Interfaces;
+using PocketMC.Desktop.Localization;
 
 namespace PocketMC.Desktop.Infrastructure
 {
@@ -72,19 +73,19 @@ namespace PocketMC.Desktop.Infrastructure
 
         public Task<string?> OpenFolderDialogAsync(string title)
         {
-            var dialog = new OpenFolderDialog { Title = title, Multiselect = false };
+            var dialog = new OpenFolderDialog { Title = LocalizationService.T(title), Multiselect = false };
             return Task.FromResult(dialog.ShowDialog() == true ? dialog.FolderName : null);
         }
 
         public Task<string?> OpenFileDialogAsync(string title, string filter = "All Files (*.*)|*.*")
         {
-            var dialog = new OpenFileDialog { Title = title, Filter = filter, Multiselect = false };
+            var dialog = new OpenFileDialog { Title = LocalizationService.T(title), Filter = LocalizationService.T(filter), Multiselect = false };
             return Task.FromResult(dialog.ShowDialog() == true ? dialog.FileName : null);
         }
 
         public Task<string[]> OpenFilesDialogAsync(string title, string filter = "All Files (*.*)|*.*")
         {
-            var dialog = new OpenFileDialog { Title = title, Filter = filter, Multiselect = true };
+            var dialog = new OpenFileDialog { Title = LocalizationService.T(title), Filter = LocalizationService.T(filter), Multiselect = true };
             return Task.FromResult(dialog.ShowDialog() == true ? dialog.FileNames : System.Array.Empty<string>());
         }
 

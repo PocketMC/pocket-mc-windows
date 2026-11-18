@@ -221,7 +221,7 @@ namespace PocketMC.Desktop.Features.Tunnel
         private void ShowConnectError(string message)
         {
             ConnectingPanel.Visibility = Visibility.Collapsed;
-            TxtConnectStatus.Text = message;
+            TxtConnectStatus.Text = L.T(message);
             TxtConnectStatus.Foreground = Brushes.Orange;
             TxtConnectStatus.Visibility = Visibility.Visible;
         }
