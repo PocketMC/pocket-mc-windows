@@ -26,7 +26,7 @@ subsequent downloads skip it; the list still contains it as a last resort.
 
 Settings → Downloads & Mirrors:
 
-- **Use download mirrors** — master switch (`AppSettings.UseDownloadMirrors`, default `true`).
+- **Use download mirrors** — master switch (`AppSettings.UseDownloadMirrors`, default `false`).
 - **Custom download mirror** — optional template (`AppSettings.CustomDownloadMirror`):
   - `{url}` placeholder: `https://ghfast.top/{url}`
   - trailing slash prefix: `https://mirror.example/gh/`

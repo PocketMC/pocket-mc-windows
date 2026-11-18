@@ -186,7 +186,7 @@
                 <ui:Button x:Name="BtnConfigureCurseForgeKey" Content="{loc:Tr 'Configure API Key'}" Appearance="Primary" Icon="{ui:SymbolIcon Key24}" HorizontalAlignment="Center" Padding="20,8" Margin="0,0,0,16" Click="BtnConfigureCurseForgeKey_Click"/>
 
                 <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
-                    <Run Text="{loc:Tr '免费获取密钥：'}"/>
+                    <Run Text="{loc:Tr 'Get a free key at '}"/>
                     <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
                         <Run Text="{loc:Tr 'console.curseforge.com'}"/>
                     </Hyperlink>

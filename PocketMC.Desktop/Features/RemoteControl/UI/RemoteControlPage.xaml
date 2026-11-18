@@ -304,7 +304,7 @@
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="{loc:Tr 'Direct Message Notifications'}" FontSize="14" FontWeight="Medium"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                        <TextBlock Text="{loc:Tr '状态：'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                                        <TextBlock Text="{loc:Tr 'Status: '}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
                                         <TextBlock Text="{loc:Tr 'Linked'}" Foreground="#A6E3A1" FontSize="12" Visibility="{Binding IsDiscordLinked, Converter={StaticResource BoolToVis}}"/>
                                         <TextBlock Text="{loc:Tr 'Not Linked'}" Foreground="{DynamicResource TextFillColorDisabledBrush}" FontSize="12" Visibility="{Binding IsDiscordNotLinked, Converter={StaticResource BoolToVis}}"/>
                                     </StackPanel>

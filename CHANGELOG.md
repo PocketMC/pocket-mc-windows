@@ -4,8 +4,6 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 
 ## Diff Analysis Summary
 
-- `v1.9.14...v1.9.15`: Introduces the two-level server version picker with instant loader build refresh, segmented multi-threaded downloads with configurable threads and simultaneous downloads, mirror settings on the version update page, Maven-mirror rewriting for Forge/NeoForge installers, and the MingsiAmz contributor card.
-
 - `v1.9.9...v1.9.10`: Adds in-app remote News, expands local Ollama model management, checks and repairs incompatible Playit runtimes, migrates settings to a structured format while retaining legacy compatibility, and fixes maximized-window restoration.
 
 - `v1.9.8...v1.9.9`: Focuses on scheduled server reboot automation with in-game warnings, built-in Ollama local and cloud model manager with progress tracking, persistent AI session summaries, seamless detail page navigation resumption, add-on card three-dot context menus, Playit v1.0.10 agent upgrade with dedicated binary console, customizable Discord Rich Presence with live preview, wallpaper theme blur and dimming controls, process concurrency and file locking stabilization, window geometry remembrance, and centralized configuration architecture.
@@ -24,68 +22,6 @@ This changelog is organized from newest to oldest and rewritten from release-to-
 - `v1.6.2...v1.6.9`: 53 commits focused on player management, server settings profiles, Bedrock/PocketMine parity, add-on update workflows, runtime download gating, console intelligence, Playit agent stability, and production workflow cleanup.
 - `v1.4.0...v1.5.4`: 120 commits focused on NeoForge support, marketplace dependency resolution, port reliability, cross-play networking, automated Playit setup, Java runtime lifecycle management, and release infrastructure.
 - `v1.0.0...v1.4.0`: 39 commits focused on turning the early desktop shell into a broader multi-protocol server manager with Bedrock, PocketMine, diagnostics, graceful lifecycle handling, Velopack packaging, and stronger infrastructure.
-
----
-
-## v1.9.15 - Version Picker, Segmented Downloads & Installer Mirrors
-
-### Summary
-
-v1.9.15 rebuilds the server version picker around a two-level selection (Minecraft version first, loader build second) without reloads, adds segmented multi-threaded downloads with configurable thread and concurrency limits, and finally routes Forge/NeoForge installer library downloads through the Maven mirror so installations succeed on networks where `maven.neoforged.net` is unreachable.
-
-### Added
-
-- **Two-level version picker**: the server update card lists every Minecraft release; choosing one immediately refreshes the loader build list below it, and the loader update card reuses that selection instead of asking for the parent version twice.
-- **Mirror controls in server settings**: the version update page gains a download-mirror toggle and a custom mirror field, saved with the instance settings.
-- **Segmented downloads**: large files are split into up to 128 parallel ranges with a configurable "Threads" and "Simultaneous downloads" limit, falling back to a single stream when the server ignores Range requests.
-- **MingsiAmz contributor entry** on the About page for the Chinese localization, download mirrors and hybrid server work.
-
-### Fixes
-
-- Forge/NeoForge installer library downloads are rewritten to the Maven mirror (`download_maven_mirrors`), fixing `SocketTimeoutException` failures when `maven.neoforged.net` is blocked.
-- Mojang `libraries.minecraft.net` and `resources.download.minecraft.net` downloads now map to the mirror's `/maven` and `/assets` layouts instead of returning 404.
-- The installer patcher preserves the original installer when rewriting fails, so standard installations are unaffected.
-
----
-
-## v1.9.12 - Settings Crash Fix
-
-### Summary
-
-v1.9.12 fixes a crash introduced in v1.9.11 when opening Settings > Backups. The localized size summary accidentally embedded a C# expression in the format string, so `string.Format` threw `FormatException` while loading the settings page.
-
-### Fixes
-
-- Backup size summary and Playit console counters now use numbered placeholders with real arguments.
-- Corrected the corresponding zh-CN entries and removed the malformed keys.
-- `LocalizationService.Format` now logs and falls back to the unformatted pattern instead of throwing on the UI thread.
-- Added a regression test for malformed placeholders.
-
----
-
-## v1.9.11 - Localization, Download Mirrors & Hybrid Server Support
-
-### Summary
-
-v1.9.11 makes the desktop app fully bilingual with a Simplified Chinese interface, adds a mirror-aware download pipeline with user-configurable mirrors, and teaches instance detection and the launcher about hybrid server software (Mohist, Arclight, Magma, CatServer) plus Purpur/Spigot/CraftBukkit. Forge and Vanilla now support Minecraft 1.7.10 and newer.
-
-### Added
-
-- **Localization system**: source-text-as-key catalogs embedded as `Assets/i18n/*.json`, external language packs in `i18n/` next to the executable or `%LOCALAPPDATA%\PocketMC\i18n`, live language switching from Settings > Language & Region, and `en`/`zh-CN` preferences persisted in `AppSettings.Language`.
-- **Simplified Chinese translation** covering the shell, dashboard, instance cards, settings, dialogs, import/export, marketplace, console and setup wizard.
-- **Download mirrors**: `DownloadMirrorHandler` retries downloads through custom mirrors, jsDelivr, GitHub accelerators and BMCLAPI, preserving Range requests and hash verification. Mirrors can be configured in Settings > Downloads & Mirrors or remotely through `download_mirror_tunnels` in `pocketmc.yml`.
-- **Hybrid server detection**: jar-brand detection for Mohist, Arclight, Magma, CatServer, Purpur, Spigot and CraftBukkit, used by import auto-detection and by engine compatibility (mods + plugins in one instance).
-- **Flexible jar launch resolution**: instances no longer need a jar named `server.jar`; the launcher picks the right branded jar and still prefers Forge/NeoForge launch scripts.
-
-### Changed
-
-- The Runtimes section is now labeled Downloads.
-- Forge and Vanilla minimum supported version lowered from 1.8.8 to 1.7.10.
-- Removed accidentally committed build artifacts from the repository and ignored verify-build output paths.
-
-### Tests
-
-- Added localization catalog/service tests, language-switch regression coverage, download mirror candidate/rewrite/cooldown tests, hybrid jar-brand detection tests and jar resolution tests. Full suite: 1119 passing.
 
 ---
 

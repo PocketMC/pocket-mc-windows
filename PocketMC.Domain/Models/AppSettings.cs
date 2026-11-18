@@ -30,7 +30,7 @@ namespace PocketMC.Domain.Models
         /// <summary>"system", "en", "zh-CN" or any installed language tag.</summary>
         public string Language { get; set; } = "system";
         // Download acceleration through mirror tunnels
-        public bool UseDownloadMirrors { get; set; } = true;
+        public bool UseDownloadMirrors { get; set; } = false;
         public string? CustomDownloadMirror { get; set; }
         /// <summary>Parallel HTTP range segments per file; 1 disables segmented download.</summary>
         public int DownloadThreads { get; set; } = 8;

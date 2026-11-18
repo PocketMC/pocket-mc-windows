@@ -56,7 +56,7 @@
                        Margin="0,0,0,16">
                 <Run Text="{loc:Tr 'To download or search for CurseForge mods, you need a CurseForge API Key.'}"/>
                 <LineBreak/>
-                <Run Text="{loc:Tr '你可以从 '}"/>
+                <Run Text="{loc:Tr 'You can obtain a free key from the '}"/>
                 <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate"
                            Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
                     <Run Text="{loc:Tr 'CurseForge Console'}"/>

@@ -1,17 +1,13 @@
-VERSION=1.9.15
+VERSION=1.9.10
 
 [NEW FEATURES]
-Server version updates now pick the Minecraft version first, then show only the loader builds that belong to it. The loader card reuses the same selection, so you no longer choose the parent version twice.
-
-Large downloads are split into parallel segments. Set "Threads" and "Simultaneous downloads" in Settings > Downloads & Mirrors to match your connection (up to 128 threads).
-
-The server update page now has a download mirror toggle and a custom mirror field, so version files and mod updates can use your own accelerator.
-
-Forge and NeoForge installations now download libraries through a Maven mirror, so first-time installs work even when maven.neoforged.net is unreachable.
+Read PocketMC announcements and service notices in the new News page. News syncs in the background, stays cached for offline reading, and can show unread popup notices.
 
 [IMPROVEMENTS]
-The About page lists MingsiAmz as a contributor for the Chinese localization, download mirrors and hybrid server support.
+Manage local Ollama models in separate Installed, Download, and Manual tabs. Pull recommended or custom models with progress and cancellation, and delete local models you no longer use.
+PocketMC checks the Playit agent at startup and before connecting. If the runtime is incompatible, PocketMC attempts a verified repair while keeping your saved agent credentials.
+Existing flat settings and version 1 PocketMC backups are converted to the organized format without resetting saved appearance or credentials.
 
 [FIXES & STABILITY]
-Fixed mirror 404s for Mojang libraries and assets by mapping them to the mirror's /maven and /assets layouts.
-If the installer mirror patch fails, the original Forge/NeoForge installer is used unchanged.
+A window saved as maximized now reopens maximized instead of sometimes opening as a large, normal window.
+Updating settings no longer replaces an existing backdrop, accent color, or wallpaper path with migration defaults.

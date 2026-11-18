@@ -93,9 +93,9 @@
                             </TextBlock>
 
                             <StackPanel Orientation="Horizontal" Margin="0,2,0,0" Visibility="{Binding SelectedLoader, Converter={StaticResource StringToVisibilityConverter}}">
-                                <TextBlock Text="{loc:Tr '加载器：'}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                <TextBlock Text="{loc:Tr 'Loader: '}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                 <TextBlock Text="{Binding SelectedLoader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,8,0"/>
-                                <TextBlock Text="{loc:Tr '游戏版本：'}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                <TextBlock Text="{loc:Tr 'Game Version: '}" FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                                 <TextBlock Text="{Binding MatchedMinecraftVersion}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             </StackPanel>
 

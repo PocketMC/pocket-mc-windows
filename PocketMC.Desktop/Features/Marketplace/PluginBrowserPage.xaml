@@ -209,7 +209,7 @@
                 </StackPanel>
 
                 <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
-                    <Run Text="{loc:Tr '免费获取密钥：'}"/>
+                    <Run Text="{loc:Tr 'Get a free key at '}"/>
                     <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
                         <Run Text="{loc:Tr 'console.curseforge.com'}"/>
                     </Hyperlink>

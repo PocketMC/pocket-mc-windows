@@ -284,69 +284,6 @@
                     </StackPanel>
                 </ui:CardExpander>
 
-                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12">
-                    <ui:CardExpander.Header>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="{loc:Tr 'Downloads &amp; Mirrors'}" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="{loc:Tr 'Route blocked or slow downloads through mirror tunnels.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Grid>
-                    </ui:CardExpander.Header>
-
-                    <StackPanel Margin="16,8,16,16">
-                        <Grid Margin="0,0,0,16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="{loc:Tr 'Use download mirrors'}" FontSize="14" FontWeight="Medium"/>
-                                <TextBlock Text="{loc:Tr 'Retry downloads through public mirror tunnels and BMCLAPI when the official host is unreachable.'}"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                           FontSize="12"
-                                           Margin="0,4,0,0"
-                                           TextWrapping="Wrap"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch Grid.Column="1" x:Name="DownloadMirrorsToggle" VerticalAlignment="Top" Margin="16,0,0,0"
-                                             Checked="ToggleUseDownloadMirrors_Changed" Unchecked="ToggleUseDownloadMirrors_Changed"/>
-                        </Grid>
-
-                        <TextBlock Text="{loc:Tr 'Custom download mirror'}" FontSize="14" FontWeight="Medium"/>
-                        <TextBlock Text="{loc:Tr 'Optional template containing {url}, for example https://ghfast.top/{url}. Leave empty to use the built-in tunnels.'}"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   FontSize="12"
-                                   Margin="0,4,0,8"
-                                   TextWrapping="Wrap"/>
-                        <ui:TextBox x:Name="CustomDownloadMirrorInput" MinWidth="320" HorizontalAlignment="Left"
-                                    PlaceholderText="https://ghfast.top/{url}"
-                                    LostFocus="CustomDownloadMirrorInput_LostFocus"/>
-
-                        <Grid Margin="0,20,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{loc:Tr 'Threads:'}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
-                            <ComboBox Grid.Column="1" x:Name="DownloadThreadsCombo" MinWidth="90" Margin="8,0,32,0"
-                                      SelectionChanged="DownloadThreadsCombo_SelectionChanged"/>
-                            <TextBlock Grid.Column="2" Text="{loc:Tr 'Simultaneous downloads:'}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
-                            <ComboBox Grid.Column="3" x:Name="DownloadConcurrencyCombo" MinWidth="90" Margin="8,0,0,0"
-                                      SelectionChanged="DownloadConcurrencyCombo_SelectionChanged"/>
-                        </Grid>
-                        <TextBlock Text="{loc:Tr 'Each file is split into range segments; simultaneous downloads run several files at once. Higher values use more bandwidth.'}"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   FontSize="12"
-                                   Margin="0,6,0,0"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-                </ui:CardExpander>
-
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon FolderOpen24}" Margin="0,0,0,12">
                     <ui:CardExpander.Header>
                         <Grid>
@@ -719,6 +656,70 @@
                 </StackPanel>
 
                 <StackPanel Grid.Row="3">
+
+                <!-- DOWNLOADS & MIRRORS SECTION -->
+                <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,0,12">
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr 'Downloads &amp; Mirrors'}" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="{loc:Tr 'Route blocked or slow downloads through mirror tunnels.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel Margin="16,8,16,16">
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr 'Use download mirrors'}" FontSize="14" FontWeight="Medium"/>
+                                <TextBlock Text="{loc:Tr 'Retry downloads through public mirror tunnels and BMCLAPI when the official host is unreachable.'}"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"
+                                           Margin="0,4,0,0"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="1" x:Name="DownloadMirrorsToggle" VerticalAlignment="Top" Margin="16,0,0,0"
+                                             Checked="ToggleUseDownloadMirrors_Changed" Unchecked="ToggleUseDownloadMirrors_Changed"/>
+                        </Grid>
+
+                        <TextBlock Text="{loc:Tr 'Custom download mirror'}" FontSize="14" FontWeight="Medium"/>
+                        <TextBlock Text="{loc:Tr 'Optional template containing {url}, for example https://ghfast.top/{url}. Leave empty to use the built-in tunnels.'}"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,4,0,8"
+                                   TextWrapping="Wrap"/>
+                        <ui:TextBox x:Name="CustomDownloadMirrorInput" MinWidth="320" HorizontalAlignment="Left"
+                                    PlaceholderText="https://ghfast.top/{url}"
+                                    LostFocus="CustomDownloadMirrorInput_LostFocus"/>
+
+                        <Grid Margin="0,20,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{loc:Tr 'Threads:'}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1" x:Name="DownloadThreadsCombo" MinWidth="90" Margin="8,0,32,0"
+                                      SelectionChanged="DownloadThreadsCombo_SelectionChanged"/>
+                            <TextBlock Grid.Column="2" Text="{loc:Tr 'Simultaneous downloads:'}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="3" x:Name="DownloadConcurrencyCombo" MinWidth="90" Margin="8,0,0,0"
+                                      SelectionChanged="DownloadConcurrencyCombo_SelectionChanged"/>
+                        </Grid>
+                        <TextBlock Text="{loc:Tr 'Each file is split into range segments; simultaneous downloads run several files at once. Higher values use more bandwidth.'}"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,6,0,0"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ui:CardExpander>
 
                 <!-- DISCORD RICH PRESENCE SECTION -->
                 <ui:CardExpander IsExpanded="False" Icon="{ui:SymbolIcon Games24}" Margin="0,0,0,12">
@@ -1188,12 +1189,12 @@
                             <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
                                 <TextBlock Text="{loc:Tr 'CurseForge API Key'}" FontSize="14" FontWeight="Medium"/>
                                 <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap">
-                                    <Run Text="{loc:Tr '从 '}"/>
+                                    <Run Text="{loc:Tr 'Obtain a free key from the '}"/>
                                     <Hyperlink NavigateUri="https://console.curseforge.com/#/api-keys/" RequestNavigate="Hyperlink_RequestNavigate"
                                                Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
                                         <Run Text="{loc:Tr 'CurseForge Console'}"/>
                                     </Hyperlink>
-                                    <Run Text="{loc:Tr ' 获取免费密钥以访问 CurseForge 附加内容。'}"/>
+                                    <Run Text="{loc:Tr ' to access CurseForge addons.'}"/>
                                 </TextBlock>
                                 <ui:PasswordBox x:Name="CurseForgeKeyInput" 
                                                 Margin="0,8,0,0" 

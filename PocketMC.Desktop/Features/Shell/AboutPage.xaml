@@ -92,7 +92,7 @@
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{loc:Tr '开发者：'}"
+                                            <TextBlock Text="{loc:Tr 'Crafted by '}"
                                                        FontSize="12"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <TextBlock x:Name="TxtOrgName"
