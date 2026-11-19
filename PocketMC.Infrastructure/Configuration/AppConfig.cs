@@ -34,7 +34,6 @@ namespace PocketMC.Infrastructure.Configuration
         
         public static IReadOnlyList<string> TelemetryProxies { get; private set; } = new List<string>
         {
-            "https://pocket-mc-proxy-3fqm.onrender.com/",
             "https://pocket-mc-proxy.onrender.com/"
         };
         

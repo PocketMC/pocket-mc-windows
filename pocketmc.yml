@@ -43,7 +43,6 @@ auth_proxies:                                                         # [Dynamic
   - "https://pocket-mc-proxy-20d5.onrender.com"
   - "https://pocket-mc-proxy-n2qx.onrender.com"
 telemetry_proxies:                                                    # [Dynamic Cloud] Live-updates telemetry proxies
-  - "https://pocket-mc-proxy-3fqm.onrender.com/"
   - "https://pocket-mc-proxy.onrender.com/"
 discord_api_urls:                                                     # [Dynamic Cloud] Live-updates Discord bot notification webhooks
   - "https://pocketmc-welcome-bot-k1gq.onrender.com"
