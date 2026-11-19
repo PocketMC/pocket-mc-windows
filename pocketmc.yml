@@ -44,7 +44,6 @@ auth_proxies:                                                         # [Dynamic
   - "https://pocket-mc-proxy-20d5.onrender.com"
   - "https://pocket-mc-proxy-n2qx.onrender.com"
 telemetry_proxies:                                                    # [Dynamic Cloud] Live-updates telemetry proxies
-  - "https://pocket-mc-proxy-3fqm.onrender.com/"
   - "https://pocket-mc-proxy.onrender.com/"
 download_mirror_tunnels:                                              # [Dynamic Cloud] Live-updates download mirror tunnels ({url} = original link)
   - "https://ghfast.top/{url}"
