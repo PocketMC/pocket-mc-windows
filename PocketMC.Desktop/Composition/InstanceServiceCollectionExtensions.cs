@@ -116,6 +116,7 @@ namespace PocketMC.Desktop.Composition
             services.AddHttpClient<PaperProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
             services.AddHttpClient<PocketmineProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
             services.AddHttpClient<BedrockBdsProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
+            services.AddHttpClient<PumpkinProvider>(client => client.DefaultRequestHeaders.Add("User-Agent", $"{AppConfig.AppName}-Desktop/{AppConfig.AppVersion}")).AddStandardResilience().AddHttpMessageHandler<LoggingHttpMessageHandler>();
 
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<VanillaProvider>());
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<FabricProvider>());
@@ -124,6 +125,7 @@ namespace PocketMC.Desktop.Composition
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<PaperProvider>());
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<PocketmineProvider>());
             services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<BedrockBdsProvider>());
+            services.AddSingleton<IServerSoftwareProvider>(provider => provider.GetRequiredService<PumpkinProvider>());
 
             return services;
         }

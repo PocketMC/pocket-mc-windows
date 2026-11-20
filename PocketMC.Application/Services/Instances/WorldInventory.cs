@@ -11,15 +11,25 @@ public static class WorldInventory
     {
         var properties = ServerPropertiesParser.Read(Path.Combine(serverDir, "server.properties"));
         string name = properties.GetValueOrDefault("level-name")?.Trim() ?? "";
+        bool isPumpkin = metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase);
+        if (isPumpkin) name = PumpkinConfiguration.ReadLevelName(serverDir);
         var roots = new List<WorldRoot>();
         void Add(string relative)
         {
             string path = PathSafety.ValidateContainedPath(serverDir, relative)
                 ?? throw new InvalidDataException("The configured world path is unsafe.");
+            if (isPumpkin)
+            {
+                string containedRelative = Path.GetRelativePath(serverDir, path);
+                string first = containedRelative.Split('/', '\\')[0];
+                if (first.StartsWith('.') || new[] { "plugins", "mods", "libraries", "config", "backups", "runtime", "data", "logs" }.Contains(first, StringComparer.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Pumpkin's configured world must be a dedicated world directory inside the instance.");
+            }
             if (!roots.Any(r => string.Equals(r.DirectoryPath, path, StringComparison.OrdinalIgnoreCase)))
                 roots.Add(new(path, relative.Replace('\\', '/')));
         }
-        if (metadata.Compatibility.Family == EngineFamily.Pocketmine) Add("worlds");
+        if (isPumpkin) Add(name.Length == 0 ? "world" : name);
+        else if (metadata.Compatibility.Family == EngineFamily.Pocketmine) Add("worlds");
         else if (metadata.Compatibility.Family == EngineFamily.Bedrock)
             Add(Path.Combine("worlds", name.Length == 0 ? "Bedrock level" : name));
         else

@@ -25,6 +25,7 @@ public sealed class InstanceImportService : IInstanceImportService
     private const string MetadataEntryName = "pocket-mc.json";
     private const string ServerRootEntryPrefix = "server/";
     private const string ServerPropertiesEntryName = "server/server.properties";
+    private const string PumpkinConfigurationEntryName = "server/pumpkin.toml";
     private const string StagingDirectoryName = ".staging";
     private const string DownloadsDirectoryName = ".downloads";
     private static readonly byte[] LocalFileHeader = [0x50, 0x4B, 0x03, 0x04];
@@ -86,6 +87,9 @@ public sealed class InstanceImportService : IInstanceImportService
                 ?? throw new InvalidDataException("Import manifest is empty.");
 
             ValidateManifest(manifest);
+            string configurationEntry = IsPumpkinServer(manifest.Software.Type) ? PumpkinConfigurationEntryName : ServerPropertiesEntryName;
+            if (archive.GetEntry(configurationEntry) == null)
+                throw new InvalidDataException($"Import ZIP is missing {configurationEntry}.");
             return manifest;
         }
         catch (InvalidDataException)
@@ -286,6 +290,17 @@ public sealed class InstanceImportService : IInstanceImportService
         string appRoot = _applicationState.IsConfigured ? _applicationState.GetRequiredAppRootPath() : string.Empty;
         metadata.CustomJavaPath = RestorePortablePath(metadata.CustomJavaPath, appRoot, isFile: true);
         metadata.CustomBackupDirectory = null;
+        if (IsPumpkinServer(metadata.ServerType))
+        {
+            metadata.CustomJavaPath = null;
+            metadata.AdvancedJvmArgs = null;
+            metadata.HasGeyser = false;
+            var properties = PumpkinConfiguration.Load(stagingResult.ServerDirectory);
+            if (int.TryParse(properties.GetValueOrDefault("server-port"), out int port)) metadata.ServerPort = port;
+            metadata.PumpkinBedrockPort = PumpkinConfiguration.ReadBedrockPort(stagingResult.ServerDirectory);
+            if (int.TryParse(properties.GetValueOrDefault("max-players"), out int maximum)) metadata.MaxPlayers = maximum;
+            metadata.Motd = properties.GetValueOrDefault("motd") ?? metadata.Motd;
+        }
 
         await WriteMetadataAsync(Path.Combine(stagingResult.ServerDirectory, InstancePathService.MetadataFileName), metadata, cancellationToken)
             .ConfigureAwait(false);
@@ -486,7 +501,7 @@ public sealed class InstanceImportService : IInstanceImportService
         string serverType = software.Type;
         string minecraftVersion = software.MinecraftVersion;
         string loaderVersion = software.LoaderVersion ?? string.Empty;
-        string artifactFileName = IsInstallerBasedJavaServer(serverType) ? "installer.jar" : "server.jar";
+        string artifactFileName = IsPumpkinServer(serverType) ? "pumpkin.exe" : IsInstallerBasedJavaServer(serverType) ? "installer.jar" : "server.jar";
         string artifactPath = Path.Combine(serverDirectory, artifactFileName);
         IServerSoftwareProvider provider = ResolveSoftwareProvider(serverType);
 
@@ -882,6 +897,7 @@ public sealed class InstanceImportService : IInstanceImportService
     {
         string normalized = serverType ?? string.Empty;
         string providerPrefix =
+            IsPumpkinServer(normalized) ? "Pumpkin" :
             normalized.StartsWith("Paper", StringComparison.OrdinalIgnoreCase) ||
             normalized.StartsWith("Spigot", StringComparison.OrdinalIgnoreCase)
                 ? "Paper"
@@ -1107,9 +1123,9 @@ public sealed class InstanceImportService : IInstanceImportService
             throw new InvalidDataException("Import ZIP is missing pocket-mc.json.");
         }
 
-        if (archive.GetEntry(ServerPropertiesEntryName) == null)
+        if (archive.GetEntry(ServerPropertiesEntryName) == null && archive.GetEntry(PumpkinConfigurationEntryName) == null)
         {
-            throw new InvalidDataException("Import ZIP is missing server/server.properties.");
+            throw new InvalidDataException("Import ZIP is missing server/server.properties or server/pumpkin.toml.");
         }
 
         bool hasServerContent = false;
@@ -1168,7 +1184,13 @@ public sealed class InstanceImportService : IInstanceImportService
             throw new InvalidDataException("Import manifest is missing software.minecraftVersion.");
         }
 
-        if (manifest.Software.Platform == InstanceServerPlatform.Java &&
+        bool isPumpkin = IsPumpkinServer(manifest.Software.Type);
+        if (isPumpkin && (manifest.Software.Platform != InstanceServerPlatform.Java || manifest.Runtime.Type != InstanceRuntimeType.Native))
+        {
+            throw new InvalidDataException("Pumpkin imports must declare the Java protocol platform and a Native runtime.");
+        }
+
+        if (manifest.Software.Platform == InstanceServerPlatform.Java && !isPumpkin &&
             manifest.Runtime.Type != InstanceRuntimeType.Java)
         {
             throw new InvalidDataException("Java imports must declare a Java runtime.");
@@ -1182,6 +1204,8 @@ public sealed class InstanceImportService : IInstanceImportService
 
         foreach (InstanceAddonManifest addon in manifest.Addons)
         {
+            if (isPumpkin)
+                throw new InvalidDataException("Pumpkin imports cannot declare Java or Bedrock add-ons. Its plugins require Pumpkin's native ABI.");
             ValidateAddonManifest(addon, manifest.Software.Platform);
         }
     }
@@ -1263,7 +1287,8 @@ public sealed class InstanceImportService : IInstanceImportService
     {
         ValidateContainedStagedPath(stagingDirectory, ManifestEntryName, requiredFile: true);
         ValidateContainedStagedPath(stagingDirectory, MetadataEntryName, requiredFile: true);
-        ValidateContainedStagedPath(stagingDirectory, ServerPropertiesEntryName, requiredFile: true);
+        bool isPumpkin = IsPumpkinServer(manifest.Software.Type);
+        ValidateContainedStagedPath(stagingDirectory, isPumpkin ? PumpkinConfigurationEntryName : ServerPropertiesEntryName, requiredFile: true);
 
         string serverDirectory = Path.Combine(stagingDirectory, "server");
         if (!Directory.Exists(serverDirectory))
@@ -1271,10 +1296,33 @@ public sealed class InstanceImportService : IInstanceImportService
             throw new InvalidDataException("Staged import is missing the server directory.");
         }
 
+        if (isPumpkin)
+        {
+            PumpkinConfiguration.ValidateRaw(File.ReadAllText(Path.Combine(serverDirectory, "pumpkin.toml")));
+            WorldInventory.Resolve(serverDirectory, new InstanceMetadata { ServerType = "Pumpkin" });
+        }
+
         if (manifest.ServerMeta.Icon != null)
         {
             ValidateContainedStagedPath(stagingDirectory, manifest.ServerMeta.Icon, requiredFile: false);
         }
+    }
+
+    private static bool IsPumpkinServer(string? serverType) =>
+        string.Equals(serverType, "Pumpkin", StringComparison.OrdinalIgnoreCase);
+
+    private static string ResolvePumpkinExecutable(string directory)
+    {
+        string executable = Path.Combine(directory, "pumpkin.exe");
+        if (File.Exists(executable)) return executable;
+        string architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture switch
+        {
+            System.Runtime.InteropServices.Architecture.X64 => "X64",
+            System.Runtime.InteropServices.Architecture.Arm64 => "ARM64",
+            _ => throw new PlatformNotSupportedException("Pumpkin requires Windows x64 or ARM64.")
+        };
+        executable = Path.Combine(directory, $"pumpkin-{architecture}-Windows.exe");
+        return File.Exists(executable) ? executable : throw new FileNotFoundException("The selected folder does not contain a Pumpkin executable for this Windows architecture.", executable);
     }
 
     private static void ValidateContainedStagedPath(string stagingDirectory, string relativePath, bool requiredFile)
@@ -1382,6 +1430,15 @@ public sealed class InstanceImportService : IInstanceImportService
             throw new DirectoryNotFoundException($"Source folder '{sourceFolderPath}' does not exist.");
         }
 
+        if (IsPumpkinServer(serverType))
+        {
+            // Validate before a move so an invalid native configuration cannot strand the source.
+            WorldInventory.Resolve(sourceFolderPath, new InstanceMetadata { ServerType = "Pumpkin" });
+            if (File.Exists(Path.Combine(sourceFolderPath, "pumpkin.toml")))
+                PumpkinConfiguration.ValidateRaw(File.ReadAllText(Path.Combine(sourceFolderPath, "pumpkin.toml")));
+            ResolvePumpkinExecutable(sourceFolderPath);
+        }
+
         string serversRoot = _pathService.GetServersRoot();
         string relativePath = Path.GetRelativePath(serversRoot, sourceFolderPath);
         if (PathSafety.ValidateContainedPath(serversRoot, relativePath) != null)
@@ -1431,6 +1488,14 @@ public sealed class InstanceImportService : IInstanceImportService
             }
 
             Report(progress, "Configuring instance settings...", 80);
+
+            if (IsPumpkinServer(serverType))
+            {
+                string executable = ResolvePumpkinExecutable(destinationPath);
+                string canonical = Path.Combine(destinationPath, "pumpkin.exe");
+                if (!executable.Equals(canonical, StringComparison.OrdinalIgnoreCase)) File.Move(executable, canonical);
+                PumpkinConfiguration.PrepareForLaunch(destinationPath);
+            }
 
             // Rename the main server jar to server.jar if it doesn't exist (only for Vanilla, Fabric, and Paper which run directly via server.jar)
             if (serverType.Equals("Vanilla", StringComparison.OrdinalIgnoreCase) ||
@@ -1498,8 +1563,11 @@ public sealed class InstanceImportService : IInstanceImportService
             }
 
             // Accept EULA
-            string eulaPath = Path.Combine(destinationPath, "eula.txt");
-            await File.WriteAllTextAsync(eulaPath, "eula=true", linkedToken).ConfigureAwait(false);
+            if (!IsPumpkinServer(serverType))
+            {
+                string eulaPath = Path.Combine(destinationPath, "eula.txt");
+                await File.WriteAllTextAsync(eulaPath, "eula=true", linkedToken).ConfigureAwait(false);
+            }
 
             // Create metadata
             var metadata = new InstanceMetadata
@@ -1515,7 +1583,15 @@ public sealed class InstanceImportService : IInstanceImportService
 
             // Read max-players from server.properties if available
             string propsFile = Path.Combine(destinationPath, "server.properties");
-            if (File.Exists(propsFile))
+            if (IsPumpkinServer(serverType))
+            {
+                var properties = PumpkinConfiguration.Load(destinationPath);
+                if (int.TryParse(properties.GetValueOrDefault("max-players"), out int maximum)) metadata.MaxPlayers = maximum;
+                if (int.TryParse(properties.GetValueOrDefault("server-port"), out int port)) metadata.ServerPort = port;
+                metadata.PumpkinBedrockPort = PumpkinConfiguration.ReadBedrockPort(destinationPath);
+                metadata.Motd = properties.GetValueOrDefault("motd") ?? metadata.Motd;
+            }
+            else if (File.Exists(propsFile))
             {
                 try
                 {
@@ -1540,7 +1616,7 @@ public sealed class InstanceImportService : IInstanceImportService
                     break;
                 }
             }
-            metadata.HasGeyser = hasGeyser;
+            metadata.HasGeyser = !IsPumpkinServer(serverType) && hasGeyser;
 
             await WriteMetadataAsync(Path.Combine(destinationPath, InstancePathService.MetadataFileName), metadata, linkedToken).ConfigureAwait(false);
 

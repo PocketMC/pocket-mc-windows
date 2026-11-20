@@ -116,7 +116,7 @@ public sealed class PortPreflightService
                         requiresUserAction: true));
 
                 return new PortCheckResult(
-                    primaryRequest,
+                    CreateRequest(metadata, serverDir, target),
                     isSuccessful: false,
                     canBindLocally: false,
                     failureCode: PortFailureCode.InvalidRange,
@@ -182,21 +182,25 @@ public sealed class PortPreflightService
         if (detectedConflicts.Count > 0)
         {
             var primaryConflict = detectedConflicts[0];
-            int suggestedPort = FindSuggestedPort(primaryConflict.Target, occupiedTargets);
+            // Moving Pumpkin's NetherNet listener also moves its following IPv6 discovery port.
+            var recoveryTarget = primaryConflict.Target.Engine == PortEngine.PumpkinBedrock
+                ? targets.First(target => target.Engine == PortEngine.PumpkinBedrock && target.Protocol == PortProtocol.TcpAndUdp)
+                : primaryConflict.Target;
+            int suggestedPort = FindSuggestedPort(recoveryTarget, occupiedTargets);
 
             recommendations.Add(
                 new PortRecoveryRecommendation(
                     PortFailureCode.InUseByPocketMcInstance,
-                    $"Move {primaryConflict.Target.Name} to a free port",
-                    $"{primaryConflict.Target.Name} conflicts with another PocketMC instance. Choose a different {FormatProtocol(primaryConflict.Target.Protocol)} port before starting the server.",
+                    $"Move {recoveryTarget.Name} to a free port",
+                    $"{primaryConflict.Target.Name} conflicts with another PocketMC instance. Choose a different {FormatProtocol(recoveryTarget.Protocol)} port before starting the server.",
                     suggestedPort: suggestedPort,
-                    suggestedProtocol: primaryConflict.Target.Protocol,
-                    suggestedIpMode: primaryConflict.Target.IpMode,
+                    suggestedProtocol: recoveryTarget.Protocol,
+                    suggestedIpMode: recoveryTarget.IpMode,
                     canAutoApply: false,
                     requiresUserAction: true));
 
             return new PortCheckResult(
-                primaryRequest,
+                CreateRequest(metadata, serverDir, recoveryTarget),
                 isSuccessful: false,
                 canBindLocally: false,
                 failureCode: PortFailureCode.InUseByPocketMcInstance,
@@ -250,7 +254,7 @@ public sealed class PortPreflightService
 
         foreach (var other in _registry.GetAll())
         {
-            if (other.Id == currentInstanceId)
+            if (other.Id == currentInstanceId || !_serverProcessManager.IsRunning(other.Id))
             {
                 continue;
             }
@@ -295,6 +299,31 @@ public sealed class PortPreflightService
         string? rawBindAddress = NormalizeConfiguredAddress(configuration.ServerIp);
         string? bindAddress = NormalizeBindAddress(rawBindAddress);
         int mainPort = ParsePortOrDefault(configuration.ServerPort, GetDefaultMainPort(metadata));
+
+        if (metadata.Compatibility.Family == EngineFamily.Pumpkin && !string.IsNullOrEmpty(serverDir))
+        {
+            if (PumpkinConfiguration.IsJavaEnabled(serverDir))
+            {
+                var endpoint = IPEndPoint.Parse(PumpkinConfiguration.ReadJavaAddress(serverDir));
+                targets.Add(new PreflightTarget("Pumpkin Java", endpoint.Port, PortProtocol.Tcp,
+                    endpoint.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 ? PortIpMode.IPv6 : PortIpMode.IPv4,
+                    NormalizeBindAddress(endpoint.Address.ToString()), DefaultJavaPort, PortBindingRole.JavaServer, PortEngine.Java));
+            }
+            if (PumpkinConfiguration.IsBedrockEnabled(serverDir))
+            {
+                var endpoint = IPEndPoint.Parse(PumpkinConfiguration.ReadBedrockAddress(serverDir));
+                int port = endpoint.Port;
+                var ipMode = endpoint.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 ? PortIpMode.IPv6 : PortIpMode.IPv4;
+                targets.Add(new PreflightTarget("Pumpkin Bedrock NetherNet", port, PortProtocol.TcpAndUdp,
+                    ipMode, NormalizeBindAddress(endpoint.Address.ToString()), DefaultBedrockPort,
+                    PortBindingRole.PumpkinBedrock, PortEngine.PumpkinBedrock));
+                targets.Add(new PreflightTarget("Pumpkin Bedrock IPv6 discovery", port + 1, PortProtocol.Udp,
+                    PortIpMode.IPv6, null, DefaultBedrockPort + 1, PortBindingRole.PumpkinBedrock, PortEngine.PumpkinBedrock));
+            }
+            if (targets.Count == 0)
+                throw new InvalidOperationException("Enable at least one Pumpkin client listener before starting the server.");
+            return targets;
+        }
 
         if (IsNativeBedrockServer(metadata))
         {
@@ -449,7 +478,7 @@ public sealed class PortPreflightService
             {
                 return _configurationService.Load(CloneMetadata(metadata), serverDir);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (metadata.Compatibility.Family != EngineFamily.Pumpkin)
             {
                 _logger.LogDebug(ex, "Falling back to default port configuration for instance {InstanceName}.", metadata.Name);
             }
@@ -496,6 +525,7 @@ public sealed class PortPreflightService
             HasGeyser = metadata.HasGeyser,
             GeyserBedrockPort = metadata.GeyserBedrockPort,
             ServerPort = metadata.ServerPort,
+            PumpkinBedrockPort = metadata.PumpkinBedrockPort,
             SimpleVoiceChatDetected = metadata.SimpleVoiceChatDetected,
             SimpleVoiceChatPort = metadata.SimpleVoiceChatPort,
             SimpleVoiceChatTunnelId = metadata.SimpleVoiceChatTunnelId,
@@ -844,10 +874,17 @@ public sealed class PortPreflightService
             .ToHashSet();
 
         int candidate = Math.Max(target.DefaultPort, IsPrivilegedPort(target.Port) ? target.DefaultPort : target.Port + 1);
-        while (candidate <= MaxValidPort)
+        bool isPumpkin = target.Engine == PortEngine.PumpkinBedrock && target.Protocol == PortProtocol.TcpAndUdp;
+        while (candidate <= (isPumpkin ? MaxValidPort - 1 : MaxValidPort))
         {
             if (!occupiedPorts.Contains(candidate) && !IsPrivilegedPort(candidate))
             {
+                var companion = target with { Port = candidate + 1, Protocol = PortProtocol.Udp, IpMode = PortIpMode.IPv6, BindAddress = null };
+                if (isPumpkin && occupiedTargets.Any(occupied => TargetsConflict(companion, occupied.Target)))
+                {
+                    candidate++;
+                    continue;
+                }
                 if (_portProbeService == null)
                 {
                     return candidate;
@@ -862,7 +899,8 @@ public sealed class PortPreflightService
                     engine: target.Engine,
                     displayName: target.Name);
 
-                if (_portProbeService.Probe(req).IsSuccessful)
+                if (_portProbeService.Probe(req).IsSuccessful &&
+                    (!isPumpkin || _portProbeService.Probe(new PortCheckRequest(candidate + 1, PortProtocol.Udp, PortIpMode.IPv6)).IsSuccessful))
                 {
                     return candidate;
                 }

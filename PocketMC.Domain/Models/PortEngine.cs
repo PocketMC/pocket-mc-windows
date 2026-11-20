@@ -33,5 +33,8 @@ public enum PortEngine
     /// <summary>
     /// Simple Voice Chat's dedicated UDP voice server.
     /// </summary>
-    SimpleVoiceChat
+    SimpleVoiceChat,
+
+    /// <summary>Pumpkin's native NetherNet Bedrock listener.</summary>
+    PumpkinBedrock
 }

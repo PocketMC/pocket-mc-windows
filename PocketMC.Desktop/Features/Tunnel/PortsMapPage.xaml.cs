@@ -162,6 +162,11 @@ namespace PocketMC.Desktop.Features.Tunnel
         {
             if (parameter is RouteViewModel route)
             {
+                if (route.PortType == "PumpkinDiscovery")
+                {
+                    AppDialog.ShowInfo("Pumpkin Discovery", "This port follows the Pumpkin Bedrock port. Change the NetherNet listener port to move both.");
+                    return;
+                }
                 if (route.IsOnline)
                 {
                     AppDialog.ShowWarning("Server is Running", "Cannot change port while the server is running. Please stop the server first.");
@@ -364,9 +369,16 @@ namespace PocketMC.Desktop.Features.Tunnel
                     var ports = new List<(int Port, PortProtocol Protocol, string Name)>();
                     bool isBedrock = server.ServerType?.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase) == true ||
                                      server.ServerType?.StartsWith("Pocketmine", StringComparison.OrdinalIgnoreCase) == true;
+                    bool isPumpkin = server.Compatibility.Family == EngineFamily.Pumpkin;
 
                     var leases = _portLeaseRegistry.GetAllLeases().Where(l => l.InstanceId == server.Id).ToList();
-                    if (leases.Count > 0)
+                    if (isPumpkin)
+                    {
+                        var preflight = _serviceProvider.GetRequiredService<PortPreflightService>();
+                        foreach (var request in preflight.BuildRequests(server, _instanceRegistry.GetPath(server.Id)))
+                            ports.Add((request.Port, request.Protocol, request.DisplayName ?? "Pumpkin"));
+                    }
+                    else if (leases.Count > 0)
                     {
                         foreach (var lease in leases)
                         {
@@ -413,7 +425,9 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                     foreach (var p in uniquePorts)
                     {
-                        var tunnel = activeTunnels.FirstOrDefault(t =>
+                        bool isPumpkinBedrock = isPumpkin && p.Name.Contains("Bedrock", StringComparison.OrdinalIgnoreCase);
+                        bool isPumpkinDiscovery = isPumpkinBedrock && p.Name.Contains("discovery", StringComparison.OrdinalIgnoreCase);
+                        var tunnel = isPumpkinBedrock ? null : activeTunnels.FirstOrDefault(t =>
                             t.Port == p.Port &&
                             (!t.Protocol.HasValue || t.Protocol == p.Protocol || t.Protocol == PortProtocol.TcpAndUdp));
 
@@ -421,7 +435,13 @@ namespace PocketMC.Desktop.Features.Tunnel
                         string roleDetail;
                         string portType = "Main";
 
-                        if (p.Port == server.ServerPort || p.Name.Contains("Java/TCP") || p.Name.Contains("Bedrock/UDP"))
+                        if (isPumpkinBedrock)
+                        {
+                            roleName = isPumpkinDiscovery ? "Pumpkin Bedrock discovery" : "Pumpkin Bedrock NetherNet";
+                            roleDetail = "Native Bedrock transport; standard Playit Bedrock tunnels are incompatible";
+                            portType = isPumpkinDiscovery ? "PumpkinDiscovery" : "PumpkinBedrock";
+                        }
+                        else if (p.Port == server.ServerPort || p.Name.Contains("Java", StringComparison.OrdinalIgnoreCase) || p.Name.Contains("Bedrock/UDP"))
                         {
                             roleName = isBedrock ? "Minecraft Bedrock Port" : "Minecraft Java Port";
                             roleDetail = isBedrock ? "Native game server entrypoint" : "Standard Java server endpoint";
@@ -448,7 +468,7 @@ namespace PocketMC.Desktop.Features.Tunnel
 
                         var route = new RouteViewModel
                         {
-                            PublicAddressLabel = tunnel != null && !string.IsNullOrEmpty(tunnel.PublicAddress)
+                            PublicAddressLabel = isPumpkinBedrock ? "LAN / direct NetherNet connection" : tunnel != null && !string.IsNullOrEmpty(tunnel.PublicAddress)
                                 ? tunnel.PublicAddress
                                 : (tunnel != null ? "Allocating Address..." : "No active Playit tunnel"),
                             PublicAddress = tunnel?.PublicAddress ?? string.Empty,

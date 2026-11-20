@@ -2,6 +2,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows.Input;
+using System.Windows.Data;
+using System.ComponentModel;
 using PocketMC.Desktop.Core.Mvvm;
 
 using PocketMC.Application.Services.Instances;
@@ -16,6 +18,18 @@ namespace PocketMC.Desktop.Features.Settings
 
         public void UpdateServerDir(string newDir) => _serverDir = newDir;
         private readonly Action _markDirty;
+        private bool _isPumpkin;
+        public string ConfigurationTitle => _isPumpkin ? "Internal Properties (pumpkin.toml)" : "Internal Properties (server.properties)";
+        public string ConfigurationDescription => _isPumpkin
+            ? "Use TOML strings (\"text\" or 'text'), true/false, numbers, or arrays. Single-quoted strings keep backslashes literal; double-quoted strings use escapes. Core settings are managed in the other tabs. Changes apply after restart."
+            : "Directly modify internal key-value pairs. Core properties are protected.";
+
+        public void SetPumpkinEditor(bool isPumpkin)
+        {
+            _isPumpkin = isPumpkin;
+            OnPropertyChanged(nameof(ConfigurationTitle));
+            OnPropertyChanged(nameof(ConfigurationDescription));
+        }
 
         private bool _enableAutoRestart;
         public bool EnableAutoRestart { get => _enableAutoRestart; set { if (SetProperty(ref _enableAutoRestart, value)) _markDirty(); } }
@@ -134,6 +148,14 @@ namespace PocketMC.Desktop.Features.Settings
         }
 
         public ObservableCollection<PropertyItem> AdvancedProperties { get; } = new();
+        public ICollectionView AdvancedPropertiesView { get; }
+        public event Action<PropertyItem>? FocusPropertyRequested;
+        private string _searchQuery = string.Empty;
+        public string SearchQuery
+        {
+            get => _searchQuery;
+            set { if (SetProperty(ref _searchQuery, value)) AdvancedPropertiesView.Refresh(); }
+        }
 
         private string _rawServerProperties = "";
         private bool _isLoadingRawServerProperties;
@@ -161,6 +183,10 @@ namespace PocketMC.Desktop.Features.Settings
             _serverDir = serverDir;
             _configService = configService;
             _markDirty = markDirty;
+            AdvancedPropertiesView = CollectionViewSource.GetDefaultView(AdvancedProperties);
+            AdvancedPropertiesView.Filter = item => item is PropertyItem property &&
+                (string.IsNullOrWhiteSpace(SearchQuery) || property.Key.Contains(SearchQuery.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                 property.Value.Contains(SearchQuery.Trim(), StringComparison.OrdinalIgnoreCase));
             AdvancedProperties.CollectionChanged += (s, e) => _markDirty();
 
             AddPropertyCommand = new RelayCommand(_ => AddProperty());
@@ -187,11 +213,27 @@ namespace PocketMC.Desktop.Features.Settings
 
         public void ClearDirtyRaw() => _isRawServerPropertiesDirty = false;
 
+        public void ValidateProperties()
+        {
+            var keys = new System.Collections.Generic.HashSet<string>(
+                _isPumpkin ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < AdvancedProperties.Count; i++)
+            {
+                string key = AdvancedProperties[i].Key.Trim();
+                if (key.Length == 0)
+                    throw new FormatException($"Parameter row {i + 1} needs a name. Enter a name or remove the empty row.");
+                if (!keys.Add(key))
+                    throw new FormatException($"Parameter '{key}' appears more than once. Rename or remove the duplicate row.");
+            }
+        }
+
         public void AddProperty()
         {
-            var property = new PropertyItem();
+            SearchQuery = string.Empty;
+            var property = new PropertyItem { Value = _isPumpkin ? "\"\"" : string.Empty };
             property.PropertyChanged += (s, e) => _markDirty();
             AdvancedProperties.Add(property);
+            FocusPropertyRequested?.Invoke(property);
         }
 
         public void RemoveProperty(PropertyItem? item)
@@ -205,7 +247,9 @@ namespace PocketMC.Desktop.Features.Settings
 
         public PropertyItem CreatePropertyItem(string key, string value)
         {
-            var item = PropertyItem.CreateLoaded(key, value, ServerConfigurationService.IsCoreProperty(key));
+            bool isCore = _isPumpkin ? PumpkinConfiguration.IsManagedEditorProperty(key) : ServerConfigurationService.IsCoreProperty(key);
+            var item = PropertyItem.CreateLoaded(key, value, isCore);
+            item.IsValueEditable = !_isPumpkin || !isCore;
             item.PropertyChanged += (s, e) => _markDirty();
             return item;
         }

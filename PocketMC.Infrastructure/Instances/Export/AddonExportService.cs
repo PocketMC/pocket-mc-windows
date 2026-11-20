@@ -29,6 +29,12 @@ public class AddonExportService
         bool isJava,
         CancellationToken cancellationToken)
     {
+        // Pumpkin plugins use their own native ABI; Java add-on metadata is inapplicable.
+        if (metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+        {
+            return Array.Empty<InstanceAddonManifest>();
+        }
+
         var addons = new List<InstanceAddonManifest>();
         AddonManifest providerManifest = await _addonManifestService.LoadManifestAsync(instanceRoot).ConfigureAwait(false);
 
