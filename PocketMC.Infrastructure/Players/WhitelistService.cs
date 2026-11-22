@@ -109,6 +109,9 @@ public sealed class WhitelistService
         if (entries.Any(e => string.Equals(e.Name, username, StringComparison.OrdinalIgnoreCase)))
             return WhitelistAddResult.AlreadyExists;
 
+        if (instance.Compatibility.Family == EngineFamily.Pumpkin)
+            throw new InvalidOperationException("Pumpkin must resolve Java and Bedrock player identities itself. Start Pumpkin and use 'whitelist add <player>' in its console, then refresh the player list. Offline removal of known entries remains available.");
+
         bool isJava = !CommandFormatter.IsBedrock(instance.ServerType) && !CommandFormatter.IsPocketMine(instance.ServerType);
         bool onlineMode = false;
         if (isJava && _configService.TryGetProperty(serverRoot, "online-mode", out string? onlineModeStr))
@@ -162,6 +165,9 @@ public sealed class WhitelistService
 
     private static string GetWhitelistPath(string serverRoot, InstanceMetadata instance)
     {
+        if (instance.Compatibility.Family == EngineFamily.Pumpkin)
+            return Path.Combine(serverRoot, "data", "whitelist.json");
+
         // PocketMine uses white-list.txt
         if (CommandFormatter.IsPocketMine(instance.ServerType))
             return Path.Combine(serverRoot, "white-list.txt");
@@ -224,6 +230,9 @@ public sealed class WhitelistService
 
     private static async Task WriteWhitelistAsync(string path, List<WhitelistEntry> entries, InstanceMetadata instance)
     {
+        if (instance.Compatibility.Family == EngineFamily.Pumpkin)
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
         if (CommandFormatter.IsPocketMine(instance.ServerType))
         {
             var lines = entries.Select(e => e.Name);
@@ -256,7 +265,10 @@ public sealed class WhitelistService
         }).ToArray();
 
         string javaJson = JsonSerializer.Serialize(javaEntries, options);
-        await File.WriteAllTextAsync(path, javaJson, new UTF8Encoding(false));
+        if (instance.Compatibility.Family == EngineFamily.Pumpkin)
+            await PocketMC.Domain.Storage.FileUtils.AtomicWriteAllTextAsync(path, javaJson, new UTF8Encoding(false));
+        else
+            await File.WriteAllTextAsync(path, javaJson, new UTF8Encoding(false));
     }
 
     /// <summary>

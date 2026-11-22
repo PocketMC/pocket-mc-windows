@@ -66,7 +66,7 @@ public sealed class InstanceExportService : IInstanceExportService
         Directory.CreateDirectory(Path.GetDirectoryName(destinationZipPath)!);
 
         InstanceMetadata metadata = request.Metadata ?? throw new ArgumentException("Export metadata is required.", nameof(request));
-        bool isJava = metadata.Compatibility.IsJavaEngine;
+        bool isJava = metadata.Compatibility.IsJavaEngine || metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase);
         string tempZipPath = Path.Combine(
             Path.GetDirectoryName(destinationZipPath)!,
             $".{Path.GetFileName(destinationZipPath)}.{Guid.NewGuid():N}.tmp");
@@ -74,13 +74,17 @@ public sealed class InstanceExportService : IInstanceExportService
 
         try
         {
+            if (metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase) &&
+                (string.IsNullOrWhiteSpace(metadata.MinecraftVersion) || metadata.MinecraftVersion.Equals("unknown", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("Update this imported Pumpkin instance to a known release before exporting. Portable imports must reconstruct the exact native release.");
+
             Report(progress, "Preparing export manifest...", 0);
             InstanceExportManifest manifest = await _manifestBuilder.BuildManifestAsync(metadata, instanceRoot, isJava, linkedToken)
                 .ConfigureAwait(false);
 
-            long totalBytes = _fileEnumerator.EstimateExportBytes(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken, request.IncludeSensitiveConfiguration);
+            long totalBytes = _fileEnumerator.EstimateExportBytes(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken, request.IncludeSensitiveConfiguration, metadata);
 
-            var files = _fileEnumerator.EnumerateExportFilesAsync(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken, request.IncludeSensitiveConfiguration);
+            var files = _fileEnumerator.EnumerateExportFilesAsync(instanceRoot, isJava, request.IncludeWorlds, skippedFiles, linkedToken, request.IncludeSensitiveConfiguration, metadata);
 
             await _zipWriter.WriteZipAsync(tempZipPath, manifest, metadata, instanceRoot, isJava, totalBytes, files, progress, linkedToken, request.IncludeSensitiveConfiguration)
                 .ConfigureAwait(false);

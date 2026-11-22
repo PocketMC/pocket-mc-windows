@@ -43,6 +43,9 @@ namespace PocketMC.Desktop.Features.Settings
         private string _geyserBedrockPort = "19132";
         public string GeyserBedrockPort { get => _geyserBedrockPort; set { if (SetProperty(ref _geyserBedrockPort, value)) _markDirty(); } }
 
+        private string _pumpkinBedrockPort = "19132";
+        public string PumpkinBedrockPort { get => _pumpkinBedrockPort; set { if (SetProperty(ref _pumpkinBedrockPort, value)) _markDirty(); } }
+
         private string? _serverIp;
         public string? ServerIp { get => _serverIp; set { if (SetProperty(ref _serverIp, value)) _markDirty(); } }
 

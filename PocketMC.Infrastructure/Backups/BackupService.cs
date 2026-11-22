@@ -301,6 +301,8 @@ public class BackupService
 
         try
         {
+            if (isRunning && metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Stop Pumpkin before backing up. Live snapshots require a confirmed engine-specific save protocol.");
             if (isRunning && process != null)
             {
                 if (!metadata.Compatibility.IsJavaEngine)
@@ -338,7 +340,8 @@ public class BackupService
         }
         finally
         {
-            if (isRunning && process != null && metadata.Compatibility.IsJavaEngine && _serverProcessManager.IsRunning(metadata.Id))
+            if (isRunning && process != null && metadata.Compatibility.IsJavaEngine &&
+                !metadata.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase) && _serverProcessManager.IsRunning(metadata.Id))
             {
                 try
                 {
@@ -569,6 +572,14 @@ public class BackupService
                     string first = relative.Split('/', '\\')[0];
                     if (first.StartsWith('.') || new[] { "plugins", "mods", "libraries", "config", "backups", "runtime" }.Contains(first, StringComparer.OrdinalIgnoreCase))
                         throw new InvalidDataException("Backup layout contains a protected directory.");
+                    if (metadata.Compatibility.Family == EngineFamily.Pumpkin)
+                    {
+                        string destination = PathSafety.ValidateContainedPath(serverDir, relative)
+                            ?? throw new InvalidDataException("Unsafe Pumpkin world destination.");
+                        string normalizedFirst = Path.GetRelativePath(serverDir, destination).Split('/', '\\')[0];
+                        if (normalizedFirst.StartsWith('.') || new[] { "plugins", "mods", "libraries", "config", "backups", "runtime", "data" }.Contains(normalizedFirst, StringComparer.OrdinalIgnoreCase))
+                            throw new InvalidDataException("Pumpkin backups cannot replace configuration or access-control data.");
+                    }
                     replacements.Add(new(source, relative));
                 }
             }

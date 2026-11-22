@@ -439,6 +439,21 @@
                                     </StackPanel>
 
                                     <StackPanel Visibility="{Binding ShowBedrockIp, Converter={StaticResource BoolToVis}}">
+                                        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6" Padding="10,8" Margin="0,0,0,4"
+                                                Visibility="{Binding ShowNativeBedrockLanAddress, Converter={StaticResource BoolToVis}}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <ui:SymbolIcon Symbol="Cube24" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="Bedrock (LAN)" FontSize="10" FontWeight="Bold"/>
+                                                    <TextBlock Text="{Binding BedrockIpDisplayText}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding NativeBedrockTunnelNotice}" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                               ToolTip="NetherNet tunnels are available on Playit's free tier with agent 1.2.0+. They require NXS signaling, which this Pumpkin release cannot configure. This is a LAN address, not a public tunnel."/>
+                                                </StackPanel>
+                                                <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Copy16}" Click="BtnCopyBedrockIp_Click"
+                                                           ToolTip="Copy Bedrock LAN address" AutomationProperties.Name="{Binding Name, StringFormat='Copy Bedrock LAN address for {0}'}"/>
+                                            </Grid>
+                                        </Border>
                                         <!-- Skeleton: Geyser Bedrock hostname -->
                                         <ContentControl Style="{StaticResource SkeletonRow}" Visibility="{Binding ShowGeyserHostnameSkeleton, Converter={StaticResource BoolToVis}}"/>
                                         <!-- Geyser Bedrock Hostname -->

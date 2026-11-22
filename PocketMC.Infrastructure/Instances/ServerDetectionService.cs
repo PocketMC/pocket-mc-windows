@@ -1,4 +1,6 @@
 using PocketMC.Application.Interfaces.Instances;
+using PocketMC.Domain.Models;
+using System.Text.Json;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -31,7 +33,11 @@ namespace PocketMC.Infrastructure.Instances
                 string detectedType = "Vanilla";
                 try
                 {
-                    if (File.Exists(Path.Combine(folderPath, "PocketMine-MP.phar")))
+                    if (new[] { "pumpkin.exe", "pumpkin-X64-Windows.exe", "pumpkin-ARM64-Windows.exe" }.Any(name => File.Exists(Path.Combine(folderPath, name))))
+                    {
+                        detectedType = "Pumpkin";
+                    }
+                    else if (File.Exists(Path.Combine(folderPath, "PocketMine-MP.phar")))
                     {
                         detectedType = "Pocketmine";
                     }
@@ -65,6 +71,26 @@ namespace PocketMC.Infrastructure.Instances
 
                 // 2. Try to detect Minecraft version
                 string detectedVersion = string.Empty;
+                if (detectedType == "Pumpkin")
+                {
+                    // Native asset filenames contain CPU names, not the exact upstream release identity.
+                    string metadataPath = Path.Combine(folderPath, ".pocket-mc.json");
+                    if (File.Exists(metadataPath))
+                    {
+                        try
+                        {
+                            var metadata = JsonSerializer.Deserialize<InstanceMetadata>(File.ReadAllText(metadataPath));
+                            if (metadata != null && string.Equals(metadata.ServerType, "Pumpkin", StringComparison.OrdinalIgnoreCase))
+                                detectedVersion = metadata.MinecraftVersion ?? string.Empty;
+                        }
+                        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+                        {
+                            _logger.LogDebug(ex, "Could not read the Pumpkin release identity from instance metadata.");
+                        }
+                    }
+                    return (detectedType, detectedVersion);
+                }
+
                 try
                 {
                     var allFiles = Directory.GetFiles(folderPath, "*", SearchOption.TopDirectoryOnly)

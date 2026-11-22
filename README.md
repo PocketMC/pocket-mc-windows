@@ -42,6 +42,8 @@ Your servers reside on your machine, in the app root you select. PocketMC is not
 
 ## Supported server software
 
+**Pumpkin** is also available as a native Windows server for Java and Bedrock clients. It runs without Java, PHP, or Geyser. PocketMC manages its official release downloads, `pumpkin.toml`, separate client ports, console, and offline backups. See [Pumpkin support](docs/features/pumpkin.md) for transport and compatibility details.
+
 <table border="0" align="center" cellpadding="8">
   <tr align="center">
     <td><img src="docs/assets/icons/vanilla.png" alt="Vanilla Java" height="60" /></td>

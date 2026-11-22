@@ -94,21 +94,38 @@ public sealed class RemoteStatusService
 
         int serverPort = metadata.ServerPort ?? (_geyserDetector.IsGeyserInstalled(_registry.GetPath(metadata.Id)) && metadata.GeyserBedrockPort.HasValue ? metadata.GeyserBedrockPort.Value : 25565);
         var serverIps = new List<ServerIpDto>();
+        bool isPumpkin = metadata.Compatibility.Family == EngineFamily.Pumpkin;
+        bool pumpkinJavaEnabled = true;
+        bool pumpkinBedrockEnabled = true;
+        if (isPumpkin)
+        {
+            try
+            {
+                string? path = _registry.GetPath(instanceId);
+                pumpkinJavaEnabled = path != null && PumpkinConfiguration.IsJavaEnabled(path);
+                pumpkinBedrockEnabled = path != null && PumpkinConfiguration.IsBedrockEnabled(path);
+            }
+            catch (Exception)
+            {
+                pumpkinJavaEnabled = false;
+                pumpkinBedrockEnabled = false;
+            }
+        }
 
         string? tunnelIp = _applicationState.GetTunnelAddress(instanceId);
-        if (!string.IsNullOrWhiteSpace(tunnelIp))
+        if ((!isPumpkin || pumpkinJavaEnabled) && !string.IsNullOrWhiteSpace(tunnelIp))
         {
             serverIps.Add(new ServerIpDto { Label = PocketMC.Application.Services.Players.CommandFormatter.IsBedrock(metadata.ServerType) ? "Primary (Playit)" : "Java (Playit)", Address = tunnelIp });
         }
 
         string? bedrockTunnelIp = _applicationState.GetBedrockTunnelAddress(instanceId);
-        if (!string.IsNullOrWhiteSpace(bedrockTunnelIp) && bedrockTunnelIp != tunnelIp)
+        if (metadata.Compatibility.Family != EngineFamily.Pumpkin && !string.IsNullOrWhiteSpace(bedrockTunnelIp) && bedrockTunnelIp != tunnelIp)
         {
             serverIps.Add(new ServerIpDto { Label = "Bedrock (Playit)", Address = bedrockTunnelIp });
         }
 
         string? bedrockNumericTunnelIp = _applicationState.GetBedrockNumericTunnelAddress(instanceId);
-        if (!string.IsNullOrWhiteSpace(bedrockNumericTunnelIp) && bedrockNumericTunnelIp != bedrockTunnelIp)
+        if (metadata.Compatibility.Family != EngineFamily.Pumpkin && !string.IsNullOrWhiteSpace(bedrockNumericTunnelIp) && bedrockNumericTunnelIp != bedrockTunnelIp)
         {
             serverIps.Add(new ServerIpDto { Label = "Bedrock Numeric (Playit)", Address = bedrockNumericTunnelIp });
         }
@@ -122,7 +139,13 @@ public sealed class RemoteStatusService
         string? localIp = _localNetworkAddressService.GetPrimaryLanIpAddress();
         if (!string.IsNullOrWhiteSpace(localIp))
         {
-            serverIps.Add(new ServerIpDto { Label = PocketMC.Application.Services.Players.CommandFormatter.IsBedrock(metadata.ServerType) ? "LAN" : "Java (LAN)", Address = $"{localIp}:{serverPort}" });
+            if (!isPumpkin || pumpkinJavaEnabled)
+                serverIps.Add(new ServerIpDto { Label = PocketMC.Application.Services.Players.CommandFormatter.IsBedrock(metadata.ServerType) ? "LAN" : "Java (LAN)", Address = $"{localIp}:{serverPort}" });
+
+            if (isPumpkin && pumpkinBedrockEnabled)
+            {
+                serverIps.Add(new ServerIpDto { Label = "Bedrock NetherNet (LAN)", Address = $"{localIp}:{metadata.PumpkinBedrockPort ?? 19132}" });
+            }
 
             if (_geyserDetector.IsGeyserInstalled(_registry.GetPath(metadata.Id)) && metadata.GeyserBedrockPort.HasValue)
             {

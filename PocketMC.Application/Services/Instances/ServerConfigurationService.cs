@@ -63,18 +63,21 @@ public sealed class ServerConfigurationService
 
     public ServerConfiguration Load(InstanceMetadata metadata, string serverDir)
     {
-        var props = ServerPropertiesParser.Read(GetPropertiesPath(serverDir));
+        var props = metadata.Compatibility.Family == EngineFamily.Pumpkin
+            ? PumpkinConfiguration.Load(serverDir)
+            : ServerPropertiesParser.Read(GetPropertiesPath(serverDir));
         var profile = ServerSettingsProfile.FromMetadata(metadata, _geyserDetector.IsGeyserInstalled(serverDir));
 
         // Sync metadata if needed (NET-15)
         if (TryGetDisplayName(props, profile, out var pMotd)) metadata.Motd = pMotd;
         if (props.TryGetValue("max-players", out var pMax) && int.TryParse(pMax, out int max)) metadata.MaxPlayers = max;
         if (props.TryGetValue("server-port", out var pPort) && int.TryParse(pPort, out int parsedPort)) metadata.ServerPort = parsedPort;
+        if (props.TryGetValue("pumpkin-bedrock-port", out var pBedrockPort) && int.TryParse(pBedrockPort, out int parsedBedrockPort)) metadata.PumpkinBedrockPort = parsedBedrockPort;
 
         string defaultPort = profile.DefaultServerPort;
         string defaultPortV6 = TryGetPortPlusOne(props.TryGetValue("server-port", out var portValue) ? portValue : defaultPort);
 
-        var configuration = new ServerConfiguration
+        var configuration = new ServerConfiguration(profile.IsPumpkin ? StringComparer.Ordinal : null)
         {
             MinRamMb = metadata.MinRamMb > 0 ? metadata.MinRamMb : 1024,
             MaxRamMb = metadata.MaxRamMb > 0 ? metadata.MaxRamMb : 4096,
@@ -96,6 +99,7 @@ public sealed class ServerConfigurationService
             SpawnProtection = props.TryGetValue("spawn-protection", out var protection) ? protection : "16",
             MaxPlayers = props.TryGetValue("max-players", out var maxPlayers) ? maxPlayers : "20",
             ServerPort = props.TryGetValue("server-port", out var port) ? port : defaultPort,
+            PumpkinBedrockPort = props.TryGetValue("pumpkin-bedrock-port", out var pumpkinPort) ? pumpkinPort : "19132",
             ServerPortV6 = props.TryGetValue("server-portv6", out var portV6) ? portV6 : defaultPortV6,
             ServerIp = props.TryGetValue("server-ip", out var ip) ? ip : "",
             LevelType = props.TryGetValue("level-type", out var levelType) ? levelType : profile.DefaultLevelType,
@@ -116,12 +120,14 @@ public sealed class ServerConfigurationService
             SimulationDistance = props.TryGetValue("simulation-distance", out var simDist) ? simDist : "10"
         };
 
-        foreach (var property in props)
+        var editorProperties = profile.IsPumpkin ? PumpkinConfiguration.LoadEditorProperties(serverDir) : props;
+        foreach (var property in editorProperties)
         {
             configuration.AllProperties[property.Key] = property.Value;
         }
 
-        foreach (var property in props.Where(property => !CorePropertyKeys.Contains(property.Key)))
+        foreach (var property in editorProperties.Where(property => profile.IsPumpkin
+                     ? !PumpkinConfiguration.IsManagedEditorProperty(property.Key) : !CorePropertyKeys.Contains(property.Key)))
         {
             configuration.AdvancedProperties[property.Key] = property.Value;
         }
@@ -133,26 +139,39 @@ public sealed class ServerConfigurationService
     {
         var profile = ServerSettingsProfile.FromMetadata(metadata, _geyserDetector.IsGeyserInstalled(serverDir));
 
-        metadata.MinRamMb = configuration.MinRamMb;
-        metadata.MaxRamMb = configuration.MaxRamMb;
-        metadata.EnableAutoRestart = configuration.EnableAutoRestart;
-        metadata.MaxAutoRestarts = configuration.MaxAutoRestarts;
-        metadata.AutoRestartDelaySeconds = configuration.AutoRestartDelaySeconds;
-        metadata.EnableScheduledReboot = configuration.EnableScheduledReboot;
-        metadata.ScheduledRebootMode = configuration.ScheduledRebootMode;
-        metadata.ScheduledRebootTime = configuration.ScheduledRebootTime;
-        metadata.ScheduledRebootIntervalHours = configuration.ScheduledRebootIntervalHours;
-        metadata.ScheduledRebootWarning = configuration.ScheduledRebootWarning;
-        metadata.ScheduledRebootWarningSeconds = configuration.ScheduledRebootWarningSeconds;
-        metadata.BackupIntervalHours = configuration.BackupIntervalHours;
-        metadata.MaxBackupsToKeep = configuration.MaxBackupsToKeep;
-        metadata.CustomJavaPath = string.IsNullOrWhiteSpace(configuration.CustomJavaPath) ? null : configuration.CustomJavaPath;
-        metadata.AdvancedJvmArgs = string.IsNullOrWhiteSpace(configuration.AdvancedJvmArgs) ? null : configuration.AdvancedJvmArgs.Trim();
-        metadata.Motd = configuration.Motd;
-        if (int.TryParse(configuration.MaxPlayers, out int mp)) metadata.MaxPlayers = mp;
-        if (int.TryParse(configuration.ServerPort, out int sp)) metadata.ServerPort = sp;
+        void PublishMetadata()
+        {
+            metadata.MinRamMb = configuration.MinRamMb;
+            metadata.MaxRamMb = configuration.MaxRamMb;
+            metadata.EnableAutoRestart = configuration.EnableAutoRestart;
+            metadata.MaxAutoRestarts = configuration.MaxAutoRestarts;
+            metadata.AutoRestartDelaySeconds = configuration.AutoRestartDelaySeconds;
+            metadata.EnableScheduledReboot = configuration.EnableScheduledReboot;
+            metadata.ScheduledRebootMode = configuration.ScheduledRebootMode;
+            metadata.ScheduledRebootTime = configuration.ScheduledRebootTime;
+            metadata.ScheduledRebootIntervalHours = configuration.ScheduledRebootIntervalHours;
+            metadata.ScheduledRebootWarning = configuration.ScheduledRebootWarning;
+            metadata.ScheduledRebootWarningSeconds = configuration.ScheduledRebootWarningSeconds;
+            metadata.BackupIntervalHours = configuration.BackupIntervalHours;
+            metadata.MaxBackupsToKeep = configuration.MaxBackupsToKeep;
+            metadata.CustomJavaPath = string.IsNullOrWhiteSpace(configuration.CustomJavaPath) ? null : configuration.CustomJavaPath;
+            metadata.AdvancedJvmArgs = string.IsNullOrWhiteSpace(configuration.AdvancedJvmArgs) ? null : configuration.AdvancedJvmArgs.Trim();
+            metadata.Motd = configuration.Motd;
+            if (int.TryParse(configuration.MaxPlayers, out int mp)) metadata.MaxPlayers = mp;
+            if (int.TryParse(configuration.ServerPort, out int sp)) metadata.ServerPort = sp;
+        }
 
-        _instanceManager.SaveMetadata(metadata, serverDir);
+        if (profile.IsPumpkin)
+        {
+            var pumpkin = CreatePumpkinProperties(serverDir, configuration);
+            PumpkinConfiguration.SaveEditorProperties(serverDir, pumpkin, configuration.AdvancedProperties);
+            PublishMetadata();
+            metadata.PumpkinBedrockPort = PumpkinConfiguration.ReadBedrockPort(serverDir);
+            metadata.CustomJavaPath = null;
+            metadata.AdvancedJvmArgs = null;
+            _instanceManager.SaveMetadata(metadata, serverDir);
+            return;
+        }
 
         var propsFile = GetPropertiesPath(serverDir);
         var props = ServerPropertiesParser.Read(propsFile);
@@ -248,11 +267,42 @@ public sealed class ServerConfigurationService
         }
 
         ServerPropertiesParser.Write(propsFile, props);
+        PublishMetadata();
+        _instanceManager.SaveMetadata(metadata, serverDir);
+    }
+
+    public void Validate(InstanceMetadata metadata, string serverDir, ServerConfiguration configuration)
+    {
+        if (metadata.Compatibility.Family == EngineFamily.Pumpkin)
+            PumpkinConfiguration.ValidateEditorProperties(serverDir, CreatePumpkinProperties(serverDir, configuration), configuration.AdvancedProperties);
+    }
+
+    private static Dictionary<string, string> CreatePumpkinProperties(string serverDir, ServerConfiguration configuration)
+    {
+        var pumpkin = PumpkinConfiguration.Load(serverDir);
+        pumpkin["motd"] = configuration.Motd;
+        pumpkin["level-seed"] = configuration.Seed;
+        pumpkin["max-players"] = configuration.MaxPlayers;
+        pumpkin["server-port"] = configuration.ServerPort;
+        pumpkin["server-ip"] = configuration.ServerIp;
+        pumpkin["pumpkin-bedrock-port"] = configuration.PumpkinBedrockPort;
+        pumpkin["online-mode"] = configuration.OnlineMode ? "true" : "false";
+        pumpkin["pvp"] = configuration.Pvp ? "true" : "false";
+        pumpkin["white-list"] = configuration.WhiteList ? "true" : "false";
+        pumpkin["gamemode"] = configuration.Gamemode;
+        pumpkin["difficulty"] = configuration.Difficulty;
+        pumpkin["view-distance"] = configuration.ViewDistance;
+        pumpkin["simulation-distance"] = configuration.SimulationDistance;
+        pumpkin["spawn-protection"] = configuration.SpawnProtection;
+        pumpkin["allow-nether"] = configuration.AllowNether ? "true" : "false";
+        return pumpkin;
     }
 
     public bool TryGetProperty(string serverDir, string key, out string? value)
     {
         value = null;
+        if (IsPumpkinDirectory(serverDir))
+            return PumpkinConfiguration.Load(serverDir).TryGetValue(key, out value);
         string propsFile = GetPropertiesPath(serverDir);
         if (!File.Exists(propsFile))
         {
@@ -265,7 +315,14 @@ public sealed class ServerConfigurationService
 
     public void SaveProperty(string serverDir, string key, string value)
     {
-        string propsFile = GetPropertiesPath(serverDir);
+        if (IsPumpkinDirectory(serverDir))
+        {
+            var properties = PumpkinConfiguration.Load(serverDir);
+            properties[key] = value;
+            PumpkinConfiguration.Save(serverDir, properties);
+            return;
+        }
+        string propsFile = GetConfigurationPath(serverDir);
         var props = ServerPropertiesParser.Read(propsFile);
         props[key] = value;
         ServerPropertiesParser.Write(propsFile, props);
@@ -273,7 +330,7 @@ public sealed class ServerConfigurationService
 
     public string LoadRawProperties(string serverDir)
     {
-        string propsFile = GetPropertiesPath(serverDir);
+        string propsFile = GetConfigurationPath(serverDir);
         if (!File.Exists(propsFile))
         {
             return string.Empty;
@@ -293,13 +350,20 @@ public sealed class ServerConfigurationService
 
     public void SaveRawProperties(string serverDir, string contents)
     {
-        FileUtils.AtomicWriteAllText(GetPropertiesPath(serverDir), contents, new UTF8Encoding(false));
+        if (IsPumpkinDirectory(serverDir)) PumpkinConfiguration.ValidateRaw(contents);
+        FileUtils.AtomicWriteAllText(GetConfigurationPath(serverDir), contents, new UTF8Encoding(false));
     }
 
     public static bool IsCoreProperty(string key) => CorePropertyKeys.Contains(key);
 
     private static string GetPropertiesPath(string serverDir) =>
         Path.Combine(serverDir, ServerPropertiesFileName);
+
+    private static bool IsPumpkinDirectory(string serverDir) =>
+        File.Exists(Path.Combine(serverDir, PumpkinConfiguration.FileName)) || File.Exists(Path.Combine(serverDir, "pumpkin.exe"));
+
+    private static string GetConfigurationPath(string serverDir) =>
+        IsPumpkinDirectory(serverDir) ? Path.Combine(serverDir, PumpkinConfiguration.FileName) : GetPropertiesPath(serverDir);
 
     private static bool TryGetDisplayName(
         IReadOnlyDictionary<string, string> props,

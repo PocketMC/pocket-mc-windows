@@ -776,7 +776,9 @@ namespace PocketMC.Desktop.Features.Tunnel
 
         private static bool IsTunnelRelevantRequest(PortCheckRequest request)
         {
-            return request.IpMode != PortIpMode.IPv6;
+            // Playit 1.2.0 NetherNet requires NXS signaling, absent in this Pumpkin release.
+            // Keep the native Bedrock listener excluded; never substitute a RakNet tunnel.
+            return request.IpMode != PortIpMode.IPv6 && request.Engine != PortEngine.PumpkinBedrock;
         }
 
         private static bool IsGeyserBedrockRequest(PortCheckRequest request)

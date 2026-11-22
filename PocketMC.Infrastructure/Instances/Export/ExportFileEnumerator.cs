@@ -1,4 +1,5 @@
 using PocketMC.Application.Services.Instances;
+using PocketMC.Domain.Models;
 using PocketMC.Domain.Storage;
 using System;
 using System.Collections.Generic;
@@ -39,6 +40,15 @@ public class ExportFileEnumerator
         "addon_manifest.json"
     ];
 
+    private static readonly string[] PumpkinRootFiles =
+    [
+        "pumpkin.toml",
+        "data/whitelist.json",
+        "data/ops.json",
+        "data/banned-players.json",
+        "data/banned-ips.json"
+    ];
+
     private static readonly string[] JavaDirectories =
     [
         "config",
@@ -73,9 +83,10 @@ public class ExportFileEnumerator
         bool isJava,
         bool includeWorlds,
         List<string> skippedFiles,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, bool includeSensitiveConfiguration = false)
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, bool includeSensitiveConfiguration = false,
+        InstanceMetadata? metadata = null)
     {
-        foreach (ExportFile file in EnumerateExportFiles(instanceRoot, isJava, includeWorlds, skippedFiles, cancellationToken, includeSensitiveConfiguration))
+        foreach (ExportFile file in EnumerateExportFiles(instanceRoot, isJava, includeWorlds, skippedFiles, cancellationToken, includeSensitiveConfiguration, metadata))
         {
             yield return file;
             await Task.Yield();
@@ -87,23 +98,27 @@ public class ExportFileEnumerator
         bool isJava,
         bool includeWorlds,
         List<string> skippedFiles,
-        CancellationToken cancellationToken, bool includeSensitiveConfiguration = false)
+        CancellationToken cancellationToken, bool includeSensitiveConfiguration = false, InstanceMetadata? metadata = null)
     {
-        string[] rootFiles = isJava ? JavaRootFiles : BedrockRootFiles;
+        bool isPumpkin = metadata?.ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase) == true;
+        string[] rootFiles = isPumpkin ? PumpkinRootFiles : isJava ? JavaRootFiles : BedrockRootFiles;
         foreach (string fileName in rootFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
             string path = Path.Combine(instanceRoot, fileName);
-            if (!includeSensitiveConfiguration && fileName is "ops.json" or "whitelist.json" or "banned-players.json" or "banned-ips.json") continue;
+            if (!includeSensitiveConfiguration && Path.GetFileName(fileName) is "ops.json" or "whitelist.json" or "banned-players.json" or "banned-ips.json") continue;
             if (File.Exists(path) && ShouldIncludeFile(path, isJava))
             {
                 yield return CreateExportFile(instanceRoot, path);
             }
         }
 
-        var metadata = new PocketMC.Domain.Models.InstanceMetadata { ServerType = isJava ? "Vanilla" : "Bedrock" };
-        var worldDirectories = isJava ? WorldInventory.Resolve(instanceRoot, metadata).Select(r => r.RelativePath).ToArray() : new[] { "worlds" };
-        string[] directories = (isJava ? JavaDirectories.Where(d => !IsWorldDirectory(d, true)) : BedrockDirectories.Where(d => d != "worlds"))
+        metadata ??= new InstanceMetadata { ServerType = isJava ? "Vanilla" : "Bedrock" };
+        var worldDirectories = isJava || isPumpkin ? WorldInventory.Resolve(instanceRoot, metadata).Select(r => r.RelativePath).ToArray() : new[] { "worlds" };
+        IEnumerable<string> configurationDirectories = isPumpkin
+            ? (includeSensitiveConfiguration ? new[] { "plugins" } : Array.Empty<string>())
+            : isJava ? JavaDirectories.Where(d => !IsWorldDirectory(d, true)) : BedrockDirectories.Where(d => d != "worlds");
+        string[] directories = configurationDirectories
             .Concat(includeWorlds ? worldDirectories : Array.Empty<string>()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         foreach (string directoryName in directories)
         {
@@ -143,11 +158,11 @@ public class ExportFileEnumerator
         bool isJava,
         bool includeWorlds,
         List<string> skippedFiles,
-        CancellationToken cancellationToken, bool includeSensitiveConfiguration = false)
+        CancellationToken cancellationToken, bool includeSensitiveConfiguration = false, InstanceMetadata? metadata = null)
     {
         long totalBytes = 0;
 
-        foreach (ExportFile file in EnumerateExportFiles(instanceRoot, isJava, includeWorlds, skippedFiles, cancellationToken, includeSensitiveConfiguration))
+        foreach (ExportFile file in EnumerateExportFiles(instanceRoot, isJava, includeWorlds, skippedFiles, cancellationToken, includeSensitiveConfiguration, metadata))
         {
             totalBytes += file.SizeBytes;
         }

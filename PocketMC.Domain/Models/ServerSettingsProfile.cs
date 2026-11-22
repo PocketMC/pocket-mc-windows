@@ -9,7 +9,8 @@ public sealed class ServerSettingsProfile
         bool hasGeyser)
     {
         Family = family;
-        IsJava = family is EngineFamily.Vanilla or EngineFamily.Spigot or EngineFamily.Fabric or EngineFamily.Forge or EngineFamily.NeoForge;
+        IsJava = family is EngineFamily.Vanilla or EngineFamily.Spigot or EngineFamily.Fabric or EngineFamily.Forge or EngineFamily.NeoForge or EngineFamily.Pumpkin;
+        IsPumpkin = family == EngineFamily.Pumpkin;
         IsBedrockDedicated = family == EngineFamily.Bedrock;
         IsPocketMine = family == EngineFamily.Pocketmine;
         HasGeyser = hasGeyser;
@@ -17,19 +18,20 @@ public sealed class ServerSettingsProfile
 
     public EngineFamily Family { get; }
     public bool IsJava { get; }
+    public bool IsPumpkin { get; }
     public bool IsBedrockDedicated { get; }
     public bool IsPocketMine { get; }
     public bool HasGeyser { get; }
 
-    public bool SupportsJavaRuntimeSettings => IsJava;
-    public bool SupportsJavaWorldGenerator => IsJava;
-    public bool SupportsNether => IsJava;
-    public bool SupportsCommandBlocks => IsJava;
-    public bool SupportsAllowFlight => IsJava || IsPocketMine;
-    public bool SupportsSpawnProtection => IsJava || IsPocketMine;
+    public bool SupportsJavaRuntimeSettings => IsJava && !IsPumpkin;
+    public bool SupportsJavaWorldGenerator => IsJava && !IsPumpkin;
+    public bool SupportsNether => IsJava && !IsPumpkin;
+    public bool SupportsCommandBlocks => IsJava && !IsPumpkin;
+    public bool SupportsAllowFlight => (IsJava && !IsPumpkin) || IsPocketMine;
+    public bool SupportsSpawnProtection => (IsJava && !IsPumpkin) || IsPocketMine;
     public bool SupportsBedrockRules => IsBedrockDedicated || IsPocketMine;
     public bool SupportsBedrockWorlds => IsBedrockDedicated || IsPocketMine;
-    public bool SupportsGeyserSettings => IsJava && HasGeyser;
+    public bool SupportsGeyserSettings => IsJava && !IsPumpkin && HasGeyser;
 
     public string DefaultServerPort => IsJava ? "25565" : "19132";
     public string DisplayNamePropertyKey => IsJava ? "motd" : "server-name";

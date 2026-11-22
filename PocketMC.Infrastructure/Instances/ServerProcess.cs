@@ -290,7 +290,8 @@ public class ServerProcess : IServerProcess, IDisposable
             return;
         }
 
-        bool rconSuccess = await TryStopViaRconAsync(WorkingDirectory);
+        bool rconSuccess = !_serverType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase) &&
+            await TryStopViaRconAsync(WorkingDirectory);
         if (!rconSuccess)
         {
             await WriteInputAsync("stop");
@@ -359,7 +360,7 @@ public class ServerProcess : IServerProcess, IDisposable
             while ((line = await reader.ReadLineAsync()) != null)
             {
                 AppendOutput(line, isError);
-                if (!isError)
+                if (!isError || _serverType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
                 {
                     foreach (var kvp in _outputWaiters)
                     {
@@ -401,7 +402,7 @@ public class ServerProcess : IServerProcess, IDisposable
             }
         }
 
-        if (isError) OnErrorLine?.Invoke(sanitizedLine);
+        if (isError && !_serverType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase)) OnErrorLine?.Invoke(sanitizedLine);
         else
         {
             if (PlayerGamemodeLogParser.MightContainGamemode(sanitizedLine))
@@ -417,7 +418,9 @@ public class ServerProcess : IServerProcess, IDisposable
             // Player-count processing ALWAYS runs regardless of suppression.
             if (State == ServerState.Starting)
             {
-                if (sanitizedLine.Contains("Done (", StringComparison.OrdinalIgnoreCase) || sanitizedLine.Contains("Server started", StringComparison.OrdinalIgnoreCase))
+                if (sanitizedLine.Contains("Done (", StringComparison.OrdinalIgnoreCase) || sanitizedLine.Contains("Server started", StringComparison.OrdinalIgnoreCase) ||
+                    (_serverType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase) &&
+                     sanitizedLine.Contains("Server is now running", StringComparison.OrdinalIgnoreCase)))
                 {
                     SetState(ServerState.Online);
                 }

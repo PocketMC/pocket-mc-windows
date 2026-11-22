@@ -10,7 +10,8 @@ namespace PocketMC.Domain.Models
         Forge,
         NeoForge,
         Bedrock,
-        Pocketmine
+        Pocketmine,
+        Pumpkin
     }
 
     public class EngineCompatibility
@@ -103,6 +104,13 @@ namespace PocketMC.Domain.Models
                 PrimaryAddonSubDir = "plugins";
                 LoaderName = "pocketmine";
                 CompatibleLoaderNames = new[] { "pocketmine" };
+            }
+            else if (ServerType.StartsWith("Pumpkin", StringComparison.OrdinalIgnoreCase))
+            {
+                Family = EngineFamily.Pumpkin;
+                PrimaryAddonSubDir = "plugins";
+                LoaderName = "pumpkin";
+                CompatibleLoaderNames = new[] { "pumpkin" };
             }
             else if (ServerType.StartsWith("Bedrock", StringComparison.OrdinalIgnoreCase))
             {

@@ -23,6 +23,7 @@ namespace PocketMC.Desktop.Features.Settings
             InitializeComponent();
             ViewModel = viewModel;
             DataContext = ViewModel;
+            ViewModel.Advanced.FocusPropertyRequested += FocusAdvancedProperty;
             _previewMouseWheelHandler = OnSettingsPagePreviewMouseWheel;
 
             // Optional UI logic for tab synchronization and animations can remain here
@@ -33,6 +34,33 @@ namespace PocketMC.Desktop.Features.Settings
         }
 
         private bool _isFirstLoad = true;
+        private void FocusAdvancedProperty(PropertyItem property)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (_isDisposed) return;
+                AdvancedPropertiesList.UpdateLayout();
+                if (AdvancedPropertiesList.ItemContainerGenerator.ContainerFromItem(property) is FrameworkElement row)
+                {
+                    row.BringIntoView();
+                    var input = FindPropertyInput(row);
+                    input?.Focus();
+                    input?.SelectAll();
+                }
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        private static TextBox? FindPropertyInput(DependencyObject parent)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is TextBox input) return input;
+                var nested = FindPropertyInput(child);
+                if (nested != null) return nested;
+            }
+            return null;
+        }
         private bool _allowTabAnimation = false;
 
         private void ServerSettingsPage_Loaded(object sender, RoutedEventArgs e)
@@ -297,6 +325,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
 
             _isDisposed = true;
+            ViewModel.Advanced.FocusPropertyRequested -= FocusAdvancedProperty;
             ViewModel.Dispose();
         }
 

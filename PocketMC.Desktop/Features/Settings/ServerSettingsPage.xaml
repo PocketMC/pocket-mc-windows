@@ -414,6 +414,13 @@
                                                     <ui:TextBox Text="{Binding General.GeyserBedrockPort, UpdateSourceTrigger=PropertyChanged}"
                                                                 PlaceholderText="19132" Width="160" ClearButtonEnabled="False" HorizontalAlignment="Left"/>
                                                 </StackPanel>
+                                                <StackPanel Grid.Column="2" Visibility="{Binding IsPumpkinSettings, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="Pumpkin Bedrock Port (TCP + UDP)" Style="{StaticResource SettingsHeader}" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="The next UDP port is reserved for IPv6. Playit 1.2.0+ offers free NetherNet tunnels using NXS signaling, which this Pumpkin release does not support. PocketMC shows its Bedrock LAN address instead."
+                                                               FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                                                    <ui:TextBox Text="{Binding General.PumpkinBedrockPort, UpdateSourceTrigger=PropertyChanged}"
+                                                                PlaceholderText="19132" Width="160" ClearButtonEnabled="False" HorizontalAlignment="Left"/>
+                                                </StackPanel>
                                             </Grid>
 
 
@@ -701,8 +708,8 @@
                                                     <ui:ToggleSwitch IsChecked="{Binding World.WhiteList}" Content="Enable Whitelist" />
                                                 </StackPanel>
                                                 <StackPanel Width="400" Margin="10">
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowCommandBlock}" Content="Enable Command Blocks" />
-                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowFlight}" Content="Allow Cheat Flight" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowCommandBlock}" Content="Enable Command Blocks" Visibility="{Binding SupportsLegacyProperties, Converter={StaticResource BoolToVis}}" />
+                                                    <ui:ToggleSwitch IsChecked="{Binding World.AllowFlight}" Content="Allow Cheat Flight" Visibility="{Binding SupportsLegacyProperties, Converter={StaticResource BoolToVis}}" />
                                                     <ui:ToggleSwitch IsChecked="{Binding World.AllowNether}" Content="Allow Dimension: Nether" />
                                                 </StackPanel>
                                             </WrapPanel>
@@ -829,8 +836,8 @@
                                             <TextBlock Text="File Management" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,4"/>
                                             <TextBlock Text="Import a new map from the web or wipe your existing data to start fresh." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,16"/>
                                             <StackPanel Orientation="Horizontal">
-                                                <ui:Button Content="{Binding World.ImportWorldButtonText}" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}"/>
-                                                <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,12,0"/>
+                                                <ui:Button Content="{Binding World.ImportWorldButtonText}" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}" Visibility="{Binding SupportsWorldImport, Converter={StaticResource BoolToVis}}"/>
+                                                <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com" Visibility="{Binding SupportsWorldImport, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,12,0"/>
                                                 <ui:Button Content="Wipe World Data" Command="{Binding World.DeleteWorldCommand}" Appearance="Danger" Margin="0,0,0,0" Icon="{ui:SymbolIcon Delete24}"/>
                                             </StackPanel>
                                         </StackPanel>
@@ -845,7 +852,7 @@
                                 <StackPanel>
                                     <!-- Auto-Update Addons moved to minimal toggle near Update All -->
                                     <!-- Search and Sort Control Bar -->
-                                    <Grid Margin="4,0,4,16" Visibility="{Binding Addons.ShowVanillaWarning, Converter={StaticResource InvertedVisibilityConverter}}">
+                                    <Grid Margin="4,0,4,16" Visibility="{Binding Addons.HasSupportedAddonTypes, Converter={StaticResource VisibleIfTrue}}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="220"/>
@@ -937,6 +944,16 @@
                                             <TextBlock Text="To install plugins or mods, please change your server type to Paper, Fabric, Forge, or NeoForge."
                                                        HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,6,0,0" MaxWidth="360"/>
+                                        </StackPanel>
+                                    </ui:Card>
+
+                                    <ui:Card Padding="32" Margin="0,0,0,16"
+                                             Visibility="{Binding Addons.IsAddonManagementUnsupported, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel HorizontalAlignment="Center" MaxWidth="560">
+                                            <ui:SymbolIcon Symbol="Info24" FontSize="36" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                            <TextBlock Text="{Binding Addons.UnsupportedAddonTitle}" FontSize="16" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Addons.UnsupportedAddonMessage}" TextAlignment="Center" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,6,0,0"/>
                                         </StackPanel>
                                     </ui:Card>
 
@@ -2381,19 +2398,21 @@
                                 <StackPanel>
                                     <ui:Card Padding="24" Margin="0,0,0,16">
                                         <StackPanel>
-                                            <TextBlock Text="Internal Properties (server.properties)" Style="{StaticResource SettingsHeader}"/>
-                                            <TextBlock Text="Directly modify internal key-value pairs. Core properties are protected." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,20"/>
+                                            <TextBlock Text="{Binding Advanced.ConfigurationTitle}" Style="{StaticResource SettingsHeader}"/>
+                                            <TextBlock Text="{Binding Advanced.ConfigurationDescription}" Style="{StaticResource SettingsSubtext}" TextWrapping="Wrap" Margin="0,0,0,20"/>
                                             <ui:Button Content="Append Parameter" Command="{Binding Advanced.AddPropertyCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Add20}"/>
+                                            <ui:TextBox Text="{Binding Advanced.SearchQuery, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Search parameter names or values..."
+                                                        AutomationProperties.Name="Search advanced parameters" Margin="0,12,0,0"/>
                                         </StackPanel>
                                     </ui:Card>
 
-                                    <ItemsControl ItemsSource="{Binding Advanced.AdvancedProperties}">
+                                    <ItemsControl x:Name="AdvancedPropertiesList" ItemsSource="{Binding Advanced.AdvancedPropertiesView}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid Margin="0,0,0,12">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                    <ui:TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCore, Converter={StaticResource InvertedBooleanConverter}}" Margin="0,0,12,0"/>
-                                                    <ui:TextBox Grid.Column="1" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"/>
+                                                    <ui:TextBox Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Parameter name" AutomationProperties.Name="Parameter name" IsEnabled="{Binding IsCore, Converter={StaticResource InvertedBooleanConverter}}" Margin="0,0,12,0"/>
+                                                    <ui:TextBox Grid.Column="1" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Value" AutomationProperties.Name="Parameter value" IsEnabled="{Binding IsValueEditable}"/>
                                                     <ui:Button Grid.Column="2" Icon="{ui:SymbolIcon Delete20}" Appearance="Danger" Command="{Binding DataContext.Advanced.RemovePropertyCommand, RelativeSource={RelativeSource AncestorType=Page}}" CommandParameter="{Binding}" Margin="12,0,0,0" Visibility="{Binding IsCore, Converter={StaticResource InvertedVisibilityConverter}}"/>
                                                 </Grid>
                                             </DataTemplate>
