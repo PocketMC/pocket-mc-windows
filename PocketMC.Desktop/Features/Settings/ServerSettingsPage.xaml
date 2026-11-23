@@ -828,11 +828,66 @@
                                         <StackPanel>
                                             <TextBlock Text="File Management" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,4"/>
                                             <TextBlock Text="Import a new map from the web or wipe your existing data to start fresh." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,16"/>
-                                            <StackPanel Orientation="Horizontal">
+                                            <WrapPanel Orientation="Horizontal">
                                                 <ui:Button Content="{Binding World.ImportWorldButtonText}" Command="{Binding World.UploadWorldCommand}" Appearance="Primary" Margin="0,0,12,0" Icon="{ui:SymbolIcon ArrowUpload24}"/>
                                                 <ui:Button Content="Browse Maps" Command="{Binding World.BrowseMapsCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Globe24}" ToolTip="Find community maps on minecraftmaps.com" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,12,0"/>
+                                                <ui:Button Content="Browse Data Packs" Command="{Binding World.BrowseDataPacksCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Puzzlepiece24}" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,12,0"/>
+                                                <ui:Button Content="Browse Resource Packs" Command="{Binding World.BrowseResourcePacksCommand}" Appearance="Secondary" Icon="{ui:SymbolIcon Image24}" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}" Margin="0,0,12,0"/>
                                                 <ui:Button Content="Wipe World Data" Command="{Binding World.DeleteWorldCommand}" Appearance="Danger" Margin="0,0,0,0" Icon="{ui:SymbolIcon Delete24}"/>
-                                            </StackPanel>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </ui:Card>
+
+                                    <!-- 4. Data Packs & Resource Pack (Java) -->
+                                    <ui:Card Padding="24" Margin="0,0,0,16" Visibility="{Binding IsJavaSettings, Converter={StaticResource VisibleIfTrue}}">
+                                        <StackPanel>
+                                            <TextBlock Text="Data Packs" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Packs installed in this world. Disable, update or remove them without opening the folder. The server must be stopped." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,12"/>
+                                            <TextBlock Text="No data packs installed. Use Browse Data Packs to add some." Margin="0,0,0,12">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource SettingsSubtext}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding World.HasDataPacks}" Value="False">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <ItemsControl ItemsSource="{Binding World.DataPacks}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,0,0,8">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                                                <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                                <ui:Button Content="Update" Command="{Binding UpdateCommand}" Appearance="Primary" Margin="0,0,8,0"
+                                                                           Visibility="{Binding HasUpdate, Converter={StaticResource VisibleIfTrue}}"/>
+                                                                <ui:Button Content="{Binding ToggleText}" Command="{Binding ToggleCommand}" Appearance="Secondary" Margin="0,0,8,0"/>
+                                                                <ui:Button Content="Remove" Command="{Binding RemoveCommand}" Appearance="Danger"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <TextBlock Text="Resource Pack" Style="{StaticResource SettingsHeader}" FontSize="18" Margin="0,16,0,4"/>
+                                            <TextBlock Text="The server sends this resource pack to players when they join." Style="{StaticResource SettingsSubtext}" Margin="0,0,0,12"/>
+                                            <Grid Visibility="{Binding World.HasResourcePack, Converter={StaticResource VisibleIfTrue}}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding World.ResourcePackText}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                                <ui:Button Grid.Column="1" Content="Remove" Command="{Binding World.ClearResourcePackCommand}" Appearance="Danger"/>
+                                            </Grid>
                                         </StackPanel>
                                     </ui:Card>
                                 </StackPanel>

@@ -45,7 +45,8 @@
                                        KeyDown="TxtSearch_KeyDown"/>
 
                     <TextBlock Text="Source:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    <ComboBox x:Name="CmbSource" Width="130" Margin="0,0,16,0" IsEnabled="False">
+                    <ComboBox x:Name="CmbSource" Width="130" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged">
+                        <ComboBoxItem Content="Modrinth"/>
                         <ComboBoxItem Content="CurseForge" IsSelected="True"/>
                     </ComboBox>
 
@@ -58,7 +59,7 @@
                         <ComboBoxItem Content="Total Downloads" Tag="6"/>
                     </ComboBox>
 
-                    <TextBlock Text="Category:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock x:Name="LblCategory" Text="Category:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <ComboBox x:Name="CmbCategory" Width="160" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged" SelectedIndex="0">
                         <ComboBoxItem Content="All Categories" Tag=""/>
                         <ComboBoxItem Content="Adventure" Tag="248"/>

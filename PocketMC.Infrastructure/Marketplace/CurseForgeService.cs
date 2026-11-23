@@ -154,6 +154,7 @@ namespace PocketMC.Infrastructure.Marketplace
                 "project_type:plugin" => "5",
                 "project_type:world" => "17",
                 "6945" => "6945",
+                "12" => "12",
                 _ => "6"
             };
 

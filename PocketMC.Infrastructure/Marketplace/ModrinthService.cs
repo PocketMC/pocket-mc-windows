@@ -238,6 +238,12 @@ namespace PocketMC.Infrastructure.Marketplace
                 var facetList = new List<List<string>>();
                 facetList.Add(new List<string> { type });
 
+                if (type == "project_type:datapack")
+                {
+                    // Mods that bundle data pack content also match the project type; real data packs use the "datapack" loader.
+                    facetList.Add(new List<string> { "categories:datapack" });
+                }
+
                 if (type == "project_type:mod" || type == "project_type:modpack")
                 {
                     facetList.Add(new List<string> { "server_side:required", "server_side:optional" });

@@ -22,11 +22,15 @@ using PocketMC.Desktop.Infrastructure;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
+    public enum MarketplacePackKind { World, DataPack, ResourcePack }
+
     public partial class MapBrowserPage : Page
     {
         private readonly IAppNavigationService _navigationService;
         private readonly CurseForgeService _curseForge;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ModrinthService _modrinth;
+        private readonly MarketplacePackKind _kind;
         private readonly string _mcVersion;
         private readonly ObservableCollection<ModrinthHit> _results = new();
         private int _currentOffset = 0;
@@ -36,19 +40,45 @@ namespace PocketMC.Desktop.Features.Marketplace
 
         public event Action<string>? OnMapDownloaded;
 
+        /// <summary>Raised for resource packs: (download url, sha1 or null). Servers fetch the pack themselves.</summary>
+        public event Action<string, string?>? OnResourcePackSelected;
+
+        /// <summary>Raised for data packs: (provider name, project id). The caller downloads and tracks the pack.</summary>
+        public event Action<string, string>? OnDataPackSelected;
+
+        private bool UseModrinth => _kind != MarketplacePackKind.World && CmbSource.SelectedIndex == 0;
+        private string ModrinthType => _kind == MarketplacePackKind.DataPack ? "project_type:datapack" : "project_type:resourcepack";
+
         public MapBrowserPage(
             IAppNavigationService navigationService,
             CurseForgeService curseForge,
+            ModrinthService modrinth,
             IHttpClientFactory httpClientFactory,
-            string mcVersion)
+            string mcVersion,
+            MarketplacePackKind kind = MarketplacePackKind.World)
         {
             InitializeComponent();
             _navigationService = navigationService;
             _curseForge = curseForge;
+            _modrinth = modrinth;
+            _kind = kind;
             _httpClientFactory = httpClientFactory;
             _mcVersion = mcVersion;
 
             ListResults.ItemsSource = _results;
+            if (kind == MarketplacePackKind.World)
+            {
+                CmbSource.IsEnabled = false;
+            }
+            else
+            {
+                bool data = kind == MarketplacePackKind.DataPack;
+                TxtTitle.Text = data ? "Data Packs Browser" : "Resource Packs Browser";
+                TxtSearch.PlaceholderText = data ? "Search data packs..." : "Search resource packs...";
+                CmbCategory.Visibility = Visibility.Collapsed;
+                LblCategory.Visibility = Visibility.Collapsed;
+                CmbSource.SelectedIndex = 0;
+            }
             TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
 
             Loaded += async (s, e) => await RefreshResultsAsync();
@@ -114,8 +144,18 @@ namespace PocketMC.Desktop.Features.Marketplace
                     categoryId = catVal;
                 }
 
-                // Maps/Worlds class ID is 17 in CurseForge API
-                var hits = await _curseForge.SearchAsync("project_type:world", _mcVersion, "", query, _currentOffset, sortField, "desc", categoryId);
+                List<ModrinthHit> hits;
+                if (UseModrinth)
+                {
+                    string index = sortField switch { 2 or 6 => "downloads", 3 => "updated", _ => "relevance" };
+                    hits = await _modrinth.SearchAsync(ModrinthType, _mcVersion, Array.Empty<string>(), index, query, _currentOffset);
+                }
+                else
+                {
+                    // CurseForge class IDs: worlds 17, data packs 6945, resource packs 12
+                    string cfType = _kind switch { MarketplacePackKind.DataPack => "6945", MarketplacePackKind.ResourcePack => "12", _ => "project_type:world" };
+                    hits = await _curseForge.SearchAsync(cfType, _mcVersion, "", query, _currentOffset, sortField, "desc", categoryId);
+                }
 
                 foreach (var hit in hits)
                 {
@@ -287,6 +327,13 @@ namespace PocketMC.Desktop.Features.Marketplace
                 return;
             }
 
+            if (_kind == MarketplacePackKind.DataPack)
+            {
+                OnDataPackSelected?.Invoke(UseModrinth ? "Modrinth" : "CurseForge", slug);
+                _navigationService.NavigateBack();
+                return;
+            }
+
             btn.IsEnabled = false;
             btn.Content = "Downloading...";
 
@@ -296,7 +343,20 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             try
             {
-                var version = await _curseForge.GetLatestVersionAsync(slug, _mcVersion == "*" ? "" : _mcVersion, "");
+                string mc = _mcVersion == "*" ? "" : _mcVersion;
+                ModrinthVersion? version = null;
+                if (UseModrinth)
+                {
+                    foreach (var cand in ModrinthService.BuildMinecraftVersionCandidates(mc))
+                    {
+                        version = await _modrinth.GetLatestVersionAsync(slug, cand);
+                        if (version != null) break;
+                    }
+                }
+                else
+                {
+                    version = await _curseForge.GetLatestVersionAsync(slug, mc, "");
+                }
 
                 if (version == null || version.Files.Count == 0)
                 {
@@ -307,6 +367,14 @@ namespace PocketMC.Desktop.Features.Marketplace
                 }
 
                 var file = version.Files.FirstOrDefault(f => f.IsPrimary) ?? version.Files[0];
+
+                if (_kind == MarketplacePackKind.ResourcePack)
+                {
+                    file.Hashes.TryGetValue("sha1", out string? sha1);
+                    OnResourcePackSelected?.Invoke(file.Url, sha1);
+                    _navigationService.NavigateBack();
+                    return;
+                }
                 string safeFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(file.FileName);
                 destFile = Path.Combine(Path.GetTempPath(), safeFileName);
 
