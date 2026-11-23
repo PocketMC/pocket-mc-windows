@@ -348,7 +348,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
 
             btn.IsEnabled = false;
-            btn.Content = "Downloading...";
+            // Resource packs are only linked in server.properties, nothing is downloaded.
+            btn.Content = _kind == MarketplacePackKind.ResourcePack ? "Applying..." : "Downloading...";
 
             var cts = new System.Threading.CancellationTokenSource();
             string? destFile = null;
