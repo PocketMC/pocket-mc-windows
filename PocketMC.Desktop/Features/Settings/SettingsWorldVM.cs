@@ -228,7 +228,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private void BrowseDataPacks()
         {
-            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.DataPack);
+            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.DataPack, _metadata.ServerType);
             page.OnDataPackSelected += async (provider, projectId) =>
             {
                 try
@@ -257,7 +257,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private void BrowseResourcePacks()
         {
-            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.ResourcePack);
+            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.ResourcePack, _metadata.ServerType);
             page.OnResourcePackSelected += (url, sha1) =>
             {
                 try
@@ -366,7 +366,7 @@ namespace PocketMC.Desktop.Features.Settings
 
         private void BrowseMaps()
         {
-            var browserPage = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion);
+            var browserPage = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.World, _metadata.ServerType);
             browserPage.OnMapDownloaded += async (tempZip) =>
             {
                 try

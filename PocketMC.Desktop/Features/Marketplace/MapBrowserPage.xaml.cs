@@ -32,6 +32,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly ModrinthService _modrinth;
         private readonly MarketplacePackKind _kind;
         private readonly string _mcVersion;
+        private readonly string? _serverType;
         private readonly ObservableCollection<ModrinthHit> _results = new();
         private int _currentOffset = 0;
         private bool _isLoadingMore = false;
@@ -55,7 +56,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             ModrinthService modrinth,
             IHttpClientFactory httpClientFactory,
             string mcVersion,
-            MarketplacePackKind kind = MarketplacePackKind.World)
+            MarketplacePackKind kind = MarketplacePackKind.World,
+            string? serverType = null)
         {
             InitializeComponent();
             _navigationService = navigationService;
@@ -64,6 +66,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             _kind = kind;
             _httpClientFactory = httpClientFactory;
             _mcVersion = mcVersion;
+            _serverType = serverType;
 
             ListResults.ItemsSource = _results;
             if (kind == MarketplacePackKind.World)
@@ -79,7 +82,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                 LblCategory.Visibility = Visibility.Collapsed;
                 CmbSource.SelectedIndex = 0;
             }
-            TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
+            TxtMcVersion.Text = MarketplaceFilterFormatter.FormatCompatibilityLabel(_serverType, _mcVersion);
+            TxtMcVersion.ToolTip = MarketplaceFilterFormatter.FormatCompatibilityTooltip(_serverType, _mcVersion);
+            IconMcVersion.ToolTip = TxtMcVersion.ToolTip;
 
             Loaded += async (s, e) => await RefreshResultsAsync();
             ScrollViewerHelper.EnableMouseWheelScrolling(this, ResultsScrollViewer);

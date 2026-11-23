@@ -95,7 +95,9 @@ namespace PocketMC.Desktop.Features.Marketplace
                 CmbSource.Items.Clear();
             }
             TxtTitle.Text = baseTitle;
-            TxtMcVersion.Text = _mcVersion == "*" ? "All Versions" : $"Minecraft {_mcVersion}";
+            TxtMcVersion.Text = MarketplaceFilterFormatter.FormatCompatibilityLabel(_compat.ServerType, _mcVersion);
+            TxtMcVersion.ToolTip = MarketplaceFilterFormatter.FormatCompatibilityTooltip(_compat.ServerType, _mcVersion);
+            IconMcVersion.ToolTip = TxtMcVersion.ToolTip;
 
             if (_isModpackMode) TxtSearch.PlaceholderText = "Search modpacks...";
             else if (_compat.Family == EngineFamily.Bedrock) TxtSearch.PlaceholderText = "Search Bedrock Add-Ons...";

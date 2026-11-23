@@ -71,7 +71,7 @@
                         <ComboBoxItem Content="Survival" Tag="253"/>
                     </ComboBox>
 
-                    <ui:SymbolIcon Symbol="Info24" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ui:SymbolIcon x:Name="IconMcVersion" Symbol="Info24" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <TextBlock x:Name="TxtMcVersion" Text="Minecraft 1.20.1" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 </StackPanel>
             </ui:Card>
