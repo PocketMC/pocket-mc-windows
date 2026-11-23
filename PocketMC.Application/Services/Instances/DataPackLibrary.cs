@@ -40,10 +40,12 @@ public static class DataPackLibrary
         string from = Resolve(worldDir, enabled ? DisabledFolder : ActiveFolder, name);
         string toDir = System.IO.Path.Combine(worldDir, enabled ? ActiveFolder : DisabledFolder);
         string to = Resolve(worldDir, enabled ? ActiveFolder : DisabledFolder, name);
+        if (!Directory.Exists(from) && !File.Exists(from)) throw new FileNotFoundException("Data pack not found.", name);
+        if (Directory.Exists(to) || File.Exists(to))
+            throw new IOException($"A data pack named '{name}' already exists in the {(enabled ? "enabled" : "disabled")} list. Remove or rename one of them first.");
         Directory.CreateDirectory(toDir);
         if (Directory.Exists(from)) Directory.Move(from, to);
-        else if (File.Exists(from)) File.Move(from, to, overwrite: true);
-        else throw new FileNotFoundException("Data pack not found.", name);
+        else File.Move(from, to);
     }
 
     public static void Remove(string worldDir, string name)

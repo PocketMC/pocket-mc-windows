@@ -35,6 +35,18 @@ public sealed class DataPackLibraryTests : IDisposable
     }
 
     [Fact]
+    public void Disable_WhenDestinationExists_ThrowsAndKeepsBothPacks()
+    {
+        Directory.CreateDirectory(Path.Combine(_world, "datapacks.disabled"));
+        File.WriteAllText(Path.Combine(_world, "datapacks.disabled", "a.zip"), "other");
+
+        Assert.Throws<IOException>(() => DataPackLibrary.SetEnabled(_world, "a.zip", false));
+
+        Assert.Equal("x", File.ReadAllText(Path.Combine(_world, "datapacks", "a.zip")));
+        Assert.Equal("other", File.ReadAllText(Path.Combine(_world, "datapacks.disabled", "a.zip")));
+    }
+
+    [Fact]
     public void Disable_Folder_MovesWholeFolder()
     {
         DataPackLibrary.SetEnabled(_world, "folderpack", false);

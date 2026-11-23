@@ -321,11 +321,11 @@ namespace PocketMC.Desktop.Features.Settings
             foreach (var entry in DataPackLibrary.List(worldDir))
             {
                 var item = new DataPackItemViewModel(entry);
-                item.ToggleCommand = new RelayCommand(async _ => await RunPackActionAsync(() => DataPackLibrary.SetEnabled(worldDir, entry.Name, !entry.IsEnabled)));
+                item.ToggleCommand = new RelayCommand(async _ => await RunPackActionAsync(() => { DataPackLibrary.SetEnabled(worldDir, entry.Name, !entry.IsEnabled); return Task.CompletedTask; }));
                 item.RemoveCommand = new RelayCommand(async _ =>
                 {
                     if (await _dialogService.ShowDialogAsync("Confirm", string.Format("Remove data pack '{0}'?", entry.Name), DialogType.Warning) == DialogResult.Yes)
-                        await RunPackActionAsync(() => DataPackLibrary.Remove(worldDir, entry.Name));
+                        await RunPackActionAsync(() => _dataPacks.RemoveAsync(_serverDir, worldDir, entry.Name));
                 });
                 item.UpdateCommand = new RelayCommand(async _ =>
                 {
@@ -353,12 +353,12 @@ namespace PocketMC.Desktop.Features.Settings
             }
         }
 
-        private async Task RunPackActionAsync(Action action)
+        private async Task RunPackActionAsync(Func<Task> action)
         {
             try
             {
                 if (_isRunningCheck()) throw new InvalidOperationException("Stop the server before changing data packs.");
-                action();
+                await action();
             }
             catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
             await LoadDataPacksAsync();

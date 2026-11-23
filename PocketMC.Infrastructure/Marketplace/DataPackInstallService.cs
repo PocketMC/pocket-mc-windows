@@ -29,7 +29,7 @@ public sealed class DataPackInstallService
         var provider = Provider(providerName) ?? throw new InvalidOperationException($"Unknown provider '{providerName}'.");
         var version = await provider.GetLatestVersionAsync(projectId, Normalize(mcVersion), Loaders(providerName))
             ?? throw new InvalidOperationException("No compatible data pack version was found.");
-        return await InstallVersionAsync(serverDir, worldDir, providerName, version, mcVersion, progress, ct);
+        return await InstallVersionAsync(serverDir, worldDir, providerName, version, mcVersion, replacing: null, progress, ct);
     }
 
     /// <summary>Returns the newer version when the tracked pack is out of date, otherwise null.</summary>
@@ -44,6 +44,13 @@ public sealed class DataPackInstallService
         return latest != null && latest.Id != entry.VersionId ? latest : null;
     }
 
+    /// <summary>Deletes a data pack and its manifest entry.</summary>
+    public async Task RemoveAsync(string serverDir, string worldDir, string fileName)
+    {
+        DataPackLibrary.Remove(worldDir, fileName);
+        await _manifest.UnregisterByFileNameAsync(serverDir, fileName);
+    }
+
     /// <summary>Installs <paramref name="latest"/> over the tracked pack, keeping its enabled/disabled state.</summary>
     public async Task<string> UpdateAsync(string serverDir, string worldDir, string oldFileName, MarketplaceVersion latest,
         string mcVersion, IProgress<DownloadProgress>? progress = null, CancellationToken ct = default)
@@ -53,7 +60,7 @@ public sealed class DataPackInstallService
             ?? throw new InvalidOperationException("This data pack was not installed from a marketplace.");
         bool wasEnabled = DataPackLibrary.List(worldDir).FirstOrDefault(p => p.Name == oldFileName)?.IsEnabled ?? true;
 
-        string newName = await InstallVersionAsync(serverDir, worldDir, entry.Provider, latest, mcVersion, progress, ct);
+        string newName = await InstallVersionAsync(serverDir, worldDir, entry.Provider, latest, mcVersion, replacing: oldFileName, progress, ct);
         if (!newName.Equals(oldFileName, StringComparison.OrdinalIgnoreCase))
             DataPackLibrary.Remove(worldDir, oldFileName);
         if (!wasEnabled) DataPackLibrary.SetEnabled(worldDir, newName, false);
@@ -61,11 +68,14 @@ public sealed class DataPackInstallService
     }
 
     private async Task<string> InstallVersionAsync(string serverDir, string worldDir, string providerName,
-        MarketplaceVersion version, string mcVersion, IProgress<DownloadProgress>? progress, CancellationToken ct)
+        MarketplaceVersion version, string mcVersion, string? replacing, IProgress<DownloadProgress>? progress, CancellationToken ct)
     {
         string name = MarketplaceFileNameSanitizer.RequireSafeFileName(version.FileName);
         if (!name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Data packs must be .zip files.");
+        // Only the pack being updated may be replaced in place; anything else with the same name is a different pack.
+        if (!name.Equals(replacing, StringComparison.OrdinalIgnoreCase) && DataPackLibrary.List(worldDir).Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException($"A data pack named '{name}' already exists in this world.");
         string dest = PathSafety.ValidateContainedPath(Path.Combine(worldDir, DataPackLibrary.ActiveFolder), name)
             ?? throw new InvalidOperationException("Unsafe data pack file name.");
 
