@@ -153,7 +153,19 @@
 
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                                             <ui:Button x:Name="BtnAction" Width="90" Height="36"
-                                                       Click="BtnInstall_Click" Tag="{Binding Slug}" Appearance="Primary" Content="Import"/>
+                                                       Click="BtnInstall_Click" Tag="{Binding Slug}" Appearance="Primary">
+                                                <ui:Button.Style>
+                                                    <Style TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                                        <Setter Property="Content" Value="Import"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                                <Setter Property="Content" Value="Imported"/>
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ui:Button.Style>
+                                            </ui:Button>
                                         </StackPanel>
                                     </Grid>
                                 </ui:Card>

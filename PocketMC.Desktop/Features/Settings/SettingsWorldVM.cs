@@ -228,7 +228,9 @@ namespace PocketMC.Desktop.Features.Settings
 
         private void BrowseDataPacks()
         {
-            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.DataPack, _metadata.ServerType);
+            var installed = _dataPacks.InstalledKeys(_serverDir, ResolveWorldDir());
+            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.DataPack, _metadata.ServerType,
+                new Func<string, string, bool>((provider, id) => installed.Contains($"{provider}:{id}")));
             page.OnDataPackSelected += async (provider, projectId) =>
             {
                 try
@@ -257,7 +259,9 @@ namespace PocketMC.Desktop.Features.Settings
 
         private void BrowseResourcePacks()
         {
-            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.ResourcePack, _metadata.ServerType);
+            // Modrinth download URLs contain the project id, so the pack currently set on the server can be recognised.
+            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.ResourcePack, _metadata.ServerType,
+                new Func<string, string, bool>((provider, id) => provider == "Modrinth" && HasResourcePack && ResourcePackText.Contains($"/data/{id}/")));
             page.OnResourcePackSelected += (url, sha1) =>
             {
                 try

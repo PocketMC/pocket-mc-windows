@@ -36,6 +36,10 @@ namespace PocketMC.Infrastructure.Marketplace
 
         [JsonPropertyName("project_id")]
         public string ProjectId { get; set; } = "";
+
+        /// <summary>Set by the browser page when the project is already installed; not part of the API payload.</summary>
+        [JsonIgnore]
+        public bool IsInstalled { get; set; }
     }
 
     public class ModrinthVersion

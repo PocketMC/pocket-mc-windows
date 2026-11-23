@@ -31,6 +31,7 @@ namespace PocketMC.Desktop.Features.Marketplace
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ModrinthService _modrinth;
         private readonly MarketplacePackKind _kind;
+        private readonly Func<string, string, bool>? _isInstalled;
         private readonly string _mcVersion;
         private readonly string? _serverType;
         private readonly ObservableCollection<ModrinthHit> _results = new();
@@ -57,13 +58,15 @@ namespace PocketMC.Desktop.Features.Marketplace
             IHttpClientFactory httpClientFactory,
             string mcVersion,
             MarketplacePackKind kind = MarketplacePackKind.World,
-            string? serverType = null)
+            string? serverType = null,
+            Func<string, string, bool>? isInstalled = null)
         {
             InitializeComponent();
             _navigationService = navigationService;
             _curseForge = curseForge;
             _modrinth = modrinth;
             _kind = kind;
+            _isInstalled = isInstalled;
             _httpClientFactory = httpClientFactory;
             _mcVersion = mcVersion;
             _serverType = serverType;
@@ -165,7 +168,12 @@ namespace PocketMC.Desktop.Features.Marketplace
                 foreach (var hit in hits)
                 {
                     if (!_results.Any(r => r.Slug == hit.Slug))
+                    {
+                        // CurseForge hits carry the project id in Slug; Modrinth has a separate project id.
+                        hit.IsInstalled = _isInstalled?.Invoke(UseModrinth ? "Modrinth" : "CurseForge",
+                            string.IsNullOrEmpty(hit.ProjectId) ? hit.Slug : hit.ProjectId) ?? false;
                         _results.Add(hit);
+                    }
                 }
 
                 _currentOffset += hits.Count;

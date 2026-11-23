@@ -44,6 +44,16 @@ public sealed class DataPackInstallService
         return latest != null && latest.Id != entry.VersionId ? latest : null;
     }
 
+    /// <summary>"Provider:ProjectId" keys of tracked packs whose file is still in the world.</summary>
+    public HashSet<string> InstalledKeys(string serverDir, string worldDir)
+    {
+        var files = DataPackLibrary.List(worldDir).Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return _manifest.LoadManifest(serverDir).Entries
+            .Where(e => files.Contains(e.FileName))
+            .Select(e => $"{e.Provider}:{e.ProjectId}")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
     /// <summary>Deletes a data pack and its manifest entry.</summary>
     public async Task RemoveAsync(string serverDir, string worldDir, string fileName)
     {

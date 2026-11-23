@@ -133,6 +133,28 @@ public sealed class DataPackInstallFlowTests : IDisposable
     }
 
     [Fact]
+    public async Task InstalledKeys_OnlyIncludesTrackedPacksStillInTheWorld()
+    {
+        await SeedInstalledAsync("here.zip", enabled: false);
+        await _manifest.RegisterInstallAsync(_server, "CurseForge", "123", "v1", "gone.zip");
+
+        var keys = Create(Version("v1", "x.zip"), _ => Ok("x")).InstalledKeys(_server, World);
+
+        Assert.Equal(new[] { "Modrinth:proj" }, keys);
+    }
+
+    [Fact]
+    public async Task DataPackManifest_IsSeparateFromAddonManifest()
+    {
+        var packs = new AddonManifestService(null, "datapack_manifest.json");
+        await packs.RegisterInstallAsync(_server, "Modrinth", "proj", "v1", "pack.zip");
+
+        Assert.Empty((await new AddonManifestService().LoadManifestAsync(_server)).Entries);
+        Assert.Single((await packs.LoadManifestAsync(_server)).Entries);
+        Assert.True(File.Exists(Path.Combine(_server, "datapack_manifest.json")));
+    }
+
+    [Fact]
     public async Task Remove_DeletesPackAndManifestEntry()
     {
         await SeedInstalledAsync("pack.zip");
