@@ -885,7 +885,10 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{Binding World.ResourcePackText}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0" ToolTip="{Binding World.ResourcePackText}">
+                                                    <TextBlock Text="{Binding World.ResourcePackName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="Sent to players when they join" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                </StackPanel>
                                                 <ui:Button Grid.Column="1" Content="Remove" Command="{Binding World.ClearResourcePackCommand}" Appearance="Danger"/>
                                             </Grid>
                                         </StackPanel>

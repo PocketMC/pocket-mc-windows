@@ -157,7 +157,7 @@ namespace PocketMC.Desktop.Features.Settings
                 InstanceName = metadata.Name,
                 InstanceDescription = metadata.Description
             };
-            World = new SettingsWorldVM(ServerDir, worldManager, serverConfigurationService, metadata, dialogService, dispatcher, navigationService, serviceProvider, metadata.MinecraftVersion, Profile, () => IsRunning, MarkChanged);
+            World = new SettingsWorldVM(ServerDir, worldManager, serverConfigurationService, metadata, dialogService, dispatcher, navigationService, serviceProvider, metadata.MinecraftVersion, Profile, () => IsRunning, MarkChanged, SyncAdvancedProperty);
             Performance = new SettingsPerformanceVM(dialogService, MarkChanged);
             Bedrock = new SettingsBedrockVM(Profile, MarkChanged);
             Backups = new SettingsBackupsVM(metadata, ServerDir, backupService, dialogService, dispatcher, () => IsRunning, MarkChanged);
@@ -598,5 +598,12 @@ namespace PocketMC.Desktop.Features.Settings
         }
 
         public void Dispose() => _lifecycleService.OnInstanceStateChanged -= _instanceStateChangedHandler;
+    
+        private void SyncAdvancedProperty(string key, string value)
+        {
+            var item = Advanced.AdvancedProperties.FirstOrDefault(p => p.Key == key);
+            if (item == null) Advanced.AdvancedProperties.Add(Advanced.CreatePropertyItem(key, value));
+            else item.Value = value;
+        }
     }
 }

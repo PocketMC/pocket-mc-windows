@@ -111,6 +111,7 @@ namespace PocketMC.Desktop.Features.Settings
         private readonly IAppNavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly string _mcVersion;
+        private readonly Action<string, string>? _syncAdvancedProperty;
 
         public SettingsWorldVM(
             string serverDir,
@@ -124,8 +125,10 @@ namespace PocketMC.Desktop.Features.Settings
             string mcVersion,
             ServerSettingsProfile profile,
             Func<bool> isRunningCheck,
-            Action markDirty)
+            Action markDirty,
+            Action<string, string>? syncAdvancedProperty = null)
         {
+            _syncAdvancedProperty = syncAdvancedProperty;
             _serverDir = serverDir;
             _worldManager = worldManager;
             _configService = configService;
@@ -284,8 +287,13 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand ClearResourcePackCommand { get; private set; } = null!;
 
         private string _resourcePackText = "";
-        public string ResourcePackText { get => _resourcePackText; private set { if (SetProperty(ref _resourcePackText, value)) OnPropertyChanged(nameof(HasResourcePack)); } }
+        public string ResourcePackText { get => _resourcePackText; private set { if (SetProperty(ref _resourcePackText, value)) { OnPropertyChanged(nameof(HasResourcePack)); OnPropertyChanged(nameof(ResourcePackName)); } } }
         public bool HasResourcePack => !string.IsNullOrEmpty(_resourcePackText);
+
+        /// <summary>The pack's file name (it carries the version), taken from the end of the URL.</summary>
+        public string ResourcePackName => Uri.TryCreate(_resourcePackText, UriKind.Absolute, out var uri)
+            ? Uri.UnescapeDataString(Path.GetFileName(uri.AbsolutePath))
+            : _resourcePackText;
         public bool HasDataPacks => DataPacks.Count > 0;
 
         private DataPackInstallService _dataPacks => _serviceProvider.GetRequiredService<DataPackInstallService>();
@@ -298,6 +306,9 @@ namespace PocketMC.Desktop.Features.Settings
             props["resource-pack"] = url;
             props["resource-pack-sha1"] = sha1;
             ServerPropertiesParser.Write(PropertiesPath, props);
+            // The settings page keeps its own copy of these keys and rewrites the file on Save, so keep it in step.
+            _syncAdvancedProperty?.Invoke("resource-pack", url);
+            _syncAdvancedProperty?.Invoke("resource-pack-sha1", sha1);
             LoadResourcePack();
         }
 
