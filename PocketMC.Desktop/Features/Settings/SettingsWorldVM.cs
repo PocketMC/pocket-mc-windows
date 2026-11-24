@@ -5,6 +5,7 @@ using PocketMC.Domain.Models;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,7 @@ using PocketMC.Infrastructure.Instances;
 
 using PocketMC.Infrastructure.Marketplace;
 using PocketMC.Application.Services.Mods;
+using System.Linq;
 
 namespace PocketMC.Desktop.Features.Settings
 {
@@ -104,10 +106,13 @@ namespace PocketMC.Desktop.Features.Settings
         public ICommand UploadWorldCommand { get; }
         public ICommand DeleteWorldCommand { get; }
         public ICommand BrowseMapsCommand { get; }
+        public ICommand BrowseDataPacksCommand { get; }
+        public ICommand BrowseResourcePacksCommand { get; }
 
         private readonly IAppNavigationService _navigationService;
         private readonly IServiceProvider _serviceProvider;
         private readonly string _mcVersion;
+        private readonly Action<string, string>? _syncAdvancedProperty;
 
         public SettingsWorldVM(
             string serverDir,
@@ -121,8 +126,10 @@ namespace PocketMC.Desktop.Features.Settings
             string mcVersion,
             ServerSettingsProfile profile,
             Func<bool> isRunningCheck,
-            Action markDirty)
+            Action markDirty,
+            Action<string, string>? syncAdvancedProperty = null)
         {
+            _syncAdvancedProperty = syncAdvancedProperty;
             _serverDir = serverDir;
             _worldManager = worldManager;
             _configService = configService;
@@ -142,6 +149,9 @@ namespace PocketMC.Desktop.Features.Settings
             UploadWorldCommand = new RelayCommand(async _ => await UploadWorldAsync(), _ => !_isRunningCheck());
             DeleteWorldCommand = new RelayCommand(async _ => await DeleteWorldAsync(), _ => !_isRunningCheck());
             BrowseMapsCommand = new RelayCommand(_ => BrowseMaps());
+            BrowseDataPacksCommand = new RelayCommand(_ => BrowseDataPacks());
+            BrowseResourcePacksCommand = new RelayCommand(_ => BrowseResourcePacks());
+            ClearResourcePackCommand = new RelayCommand(_ => ClearResourcePack());
         }
 
         /// <summary>
@@ -165,6 +175,9 @@ namespace PocketMC.Desktop.Features.Settings
                 WorldStatusText = L.T("No world folder found (will be generated)");
                 WorldSizeText = "";
             }
+
+            if (!_profile.SupportsBedrockWorlds && _metadata.Compatibility.Family != EngineFamily.Pocketmine)
+                _ = LoadDataPacksAsync();
         }
 
         private async Task UploadWorldAsync()
@@ -217,9 +230,159 @@ namespace PocketMC.Desktop.Features.Settings
             }
         }
 
+        private void BrowseDataPacks()
+        {
+            var installed = _dataPacks.InstalledKeys(_serverDir, ResolveWorldDir());
+            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.DataPack, _metadata.ServerType,
+                new Func<string, string, bool>((provider, id) => installed.Contains($"{provider}:{id}")));
+            page.OnDataPackSelected += async (provider, projectId) =>
+            {
+                try
+                {
+                    if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before changing data packs."));
+                    string worldDir = ResolveWorldDir();
+                    string name = "";
+                    await _dialogService.ShowProgressDialogAsync(
+                        L.T("Installing Data Pack"),
+                        L.T("Downloading data pack..."),
+                        async (IProgress<ProgressDialogUpdate> progress) =>
+                        {
+                            name = await _dataPacks.InstallAsync(_serverDir, worldDir, provider, projectId, _mcVersion,
+                                new Progress<DownloadProgress>(p => progress.Report(new ProgressDialogUpdate { Percentage = p.Percentage, Message = L.T("Downloading data pack...") })));
+                        });
+                    await LoadDataPacksAsync();
+                    _dialogService.ShowMessage(L.T("Data Pack Installed"), L.F("Installed '{0}'. Start the server to apply it.", name), DialogType.Information);
+                }
+                catch (Exception ex)
+                {
+                    _dialogService.ShowMessage(L.T("Install Failed"), ex.Message, DialogType.Error);
+                }
+            };
+            _navigationService.NavigateToDetailPage(page, L.T("Data Packs"), DetailRouteKind.PluginBrowser, DetailBackNavigation.PreviousDetail);
+        }
+
+        private void BrowseResourcePacks()
+        {
+            // Modrinth download URLs contain the project id, so the pack currently set on the server can be recognised.
+            var page = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.ResourcePack, _metadata.ServerType,
+                new Func<string, string, bool>((provider, id) => provider == "Modrinth" && HasResourcePack && ResourcePackText.Contains($"/data/{id}/")));
+            page.OnResourcePackSelected += (url, sha1) =>
+            {
+                try
+                {
+                    if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before changing its resource pack."));
+                    // Java servers push a resource pack to players by URL, so we point server.properties at it.
+                    SetResourcePack(url, sha1 ?? "");
+                    _dialogService.ShowMessage(L.T("Resource Pack Set"), L.T("server.properties now points at this resource pack. Start the server to apply it."), DialogType.Information);
+                }
+                catch (Exception ex)
+                {
+                    _dialogService.ShowMessage(L.T("Install Failed"), ex.Message, DialogType.Error);
+                }
+            };
+            _navigationService.NavigateToDetailPage(page, L.T("Resource Packs"), DetailRouteKind.PluginBrowser, DetailBackNavigation.PreviousDetail);
+        }
+
+        // ---- Installed pack management ----
+        public ObservableCollection<DataPackItemViewModel> DataPacks { get; } = new();
+        public ICommand ClearResourcePackCommand { get; private set; } = null!;
+
+        private string _resourcePackText = "";
+        public string ResourcePackText { get => _resourcePackText; private set { if (SetProperty(ref _resourcePackText, value)) { OnPropertyChanged(nameof(HasResourcePack)); OnPropertyChanged(nameof(ResourcePackName)); } } }
+        public bool HasResourcePack => !string.IsNullOrEmpty(_resourcePackText);
+
+        /// <summary>The pack's file name (it carries the version), taken from the end of the URL.</summary>
+        public string ResourcePackName => Uri.TryCreate(_resourcePackText, UriKind.Absolute, out var uri)
+            ? Uri.UnescapeDataString(Path.GetFileName(uri.AbsolutePath))
+            : _resourcePackText;
+        public bool HasDataPacks => DataPacks.Count > 0;
+
+        private DataPackInstallService _dataPacks => _serviceProvider.GetRequiredService<DataPackInstallService>();
+
+        private string PropertiesPath => Path.Combine(_serverDir, "server.properties");
+
+        private void SetResourcePack(string url, string sha1)
+        {
+            var props = ServerPropertiesParser.Read(PropertiesPath);
+            props["resource-pack"] = url;
+            props["resource-pack-sha1"] = sha1;
+            ServerPropertiesParser.Write(PropertiesPath, props);
+            // The settings page keeps its own copy of these keys and rewrites the file on Save, so keep it in step.
+            _syncAdvancedProperty?.Invoke("resource-pack", url);
+            _syncAdvancedProperty?.Invoke("resource-pack-sha1", sha1);
+            LoadResourcePack();
+        }
+
+        public void LoadResourcePack()
+        {
+            var props = ServerPropertiesParser.Read(PropertiesPath);
+            ResourcePackText = props.GetValueOrDefault("resource-pack")?.Trim() ?? "";
+        }
+
+        private void ClearResourcePack()
+        {
+            try
+            {
+                if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before changing its resource pack."));
+                SetResourcePack("", "");
+            }
+            catch (Exception ex) { _dialogService.ShowMessage(L.T("Error"), ex.Message, DialogType.Error); }
+        }
+
+        public async Task LoadDataPacksAsync()
+        {
+            LoadResourcePack();
+            DataPacks.Clear();
+            string worldDir = ResolveWorldDir();
+            foreach (var entry in DataPackLibrary.List(worldDir))
+            {
+                var item = new DataPackItemViewModel(entry);
+                item.ToggleCommand = new RelayCommand(async _ => await RunPackActionAsync(() => { DataPackLibrary.SetEnabled(worldDir, entry.Name, !entry.IsEnabled); return Task.CompletedTask; }));
+                item.RemoveCommand = new RelayCommand(async _ =>
+                {
+                    if (await _dialogService.ShowDialogAsync(L.T("Confirm"), L.F("Remove data pack '{0}'?", entry.Name), DialogType.Warning) == DialogResult.Yes)
+                        await RunPackActionAsync(() => _dataPacks.RemoveAsync(_serverDir, worldDir, entry.Name));
+                });
+                item.UpdateCommand = new RelayCommand(async _ =>
+                {
+                    if (item.Update == null) return;
+                    try
+                    {
+                        if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before updating data packs."));
+                        await _dialogService.ShowProgressDialogAsync(L.T("Updating Data Pack"), entry.Name,
+                            async (IProgress<ProgressDialogUpdate> progress) =>
+                                await _dataPacks.UpdateAsync(_serverDir, worldDir, entry.Name, item.Update, _mcVersion,
+                                    new Progress<DownloadProgress>(p => progress.Report(new ProgressDialogUpdate { Percentage = p.Percentage, Message = entry.Name }))));
+                        await LoadDataPacksAsync();
+                    }
+                    catch (Exception ex) { _dialogService.ShowMessage(L.T("Update Failed"), ex.Message, DialogType.Error); }
+                });
+                DataPacks.Add(item);
+            }
+            OnPropertyChanged(nameof(HasDataPacks));
+
+            // Update checks hit the network, so they run after the list is shown.
+            foreach (var item in DataPacks.ToList())
+            {
+                try { item.Update = await _dataPacks.CheckUpdateAsync(_serverDir, item.Name, _mcVersion); }
+                catch { /* offline or provider error: leave the pack without an update badge */ }
+            }
+        }
+
+        private async Task RunPackActionAsync(Func<Task> action)
+        {
+            try
+            {
+                if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before changing data packs."));
+                await action();
+            }
+            catch (Exception ex) { _dialogService.ShowMessage(L.T("Error"), ex.Message, DialogType.Error); }
+            await LoadDataPacksAsync();
+        }
+
         private void BrowseMaps()
         {
-            var browserPage = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion);
+            var browserPage = ActivatorUtilities.CreateInstance<MapBrowserPage>(_serviceProvider, _mcVersion, MarketplacePackKind.World, _metadata.ServerType);
             browserPage.OnMapDownloaded += async (tempZip) =>
             {
                 try

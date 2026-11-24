@@ -44,13 +44,15 @@ namespace PocketMC.Infrastructure.Marketplace
 
     public class AddonManifestService
     {
-        private const string ManifestFileName = "addon_manifest.json";
+        private readonly string ManifestFileName;
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new(StringComparer.OrdinalIgnoreCase);
         private readonly ILogger<AddonManifestService> _logger;
 
-        public AddonManifestService(ILogger<AddonManifestService>? logger = null)
+        /// <param name="manifestFileName">Data packs use their own file so the add-on sync, which prunes entries missing from the mods folder, never touches them.</param>
+        public AddonManifestService(ILogger<AddonManifestService>? logger = null, string manifestFileName = "addon_manifest.json")
         {
             _logger = logger ?? NullLogger<AddonManifestService>.Instance;
+            ManifestFileName = manifestFileName;
         }
 
         private SemaphoreSlim GetLock(string serverDir)

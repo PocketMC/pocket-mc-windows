@@ -28,7 +28,7 @@
                               VerticalAlignment="Center"/>
             </StackPanel>
             
-            <ui:Button Content="{loc:Tr 'Browse More on Web'}" 
+            <ui:Button Content="{loc:Tr 'Browse More on Web'}"
                        Appearance="Secondary" 
                        Icon="{ui:SymbolIcon Globe24}" 
                        HorizontalAlignment="Right" 
@@ -45,7 +45,8 @@
                                        KeyDown="TxtSearch_KeyDown"/>
 
                     <TextBlock Text="{loc:Tr 'Source:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    <ComboBox x:Name="CmbSource" Width="130" Margin="0,0,16,0" IsEnabled="False">
+                    <ComboBox x:Name="CmbSource" Width="130" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged">
+                        <ComboBoxItem Content="{loc:Tr 'Modrinth'}"/>
                         <ComboBoxItem Content="{loc:Tr 'CurseForge'}" IsSelected="True"/>
                     </ComboBox>
 
@@ -58,7 +59,7 @@
                         <ComboBoxItem Content="{loc:Tr 'Total Downloads'}" Tag="6"/>
                     </ComboBox>
 
-                    <TextBlock Text="{loc:Tr 'Category:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock x:Name="LblCategory" Text="{loc:Tr 'Category:'}" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <ComboBox x:Name="CmbCategory" Width="160" Margin="0,0,16,0" SelectionChanged="RefreshList_SelectionChanged" SelectedIndex="0">
                         <ComboBoxItem Content="{loc:Tr 'All Categories'}" Tag=""/>
                         <ComboBoxItem Content="{loc:Tr 'Adventure'}" Tag="248"/>
@@ -70,7 +71,7 @@
                         <ComboBoxItem Content="{loc:Tr 'Survival'}" Tag="253"/>
                     </ComboBox>
 
-                    <ui:SymbolIcon Symbol="Info24" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <ui:SymbolIcon x:Name="IconMcVersion" Symbol="Info24" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     <TextBlock x:Name="TxtMcVersion" Text="{loc:Tr 'Minecraft 1.20.1'}" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 </StackPanel>
             </ui:Card>
@@ -152,7 +153,19 @@
 
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                                             <ui:Button x:Name="BtnAction" Width="90" Height="36"
-                                                       Click="BtnInstall_Click" Tag="{Binding Slug}" Appearance="Primary" Content="{loc:Tr 'Import'}"/>
+                                                       Click="BtnInstall_Click" Tag="{Binding Slug}" Appearance="Primary">
+                                                <ui:Button.Style>
+                                                    <Style TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                                        <Setter Property="Content" Value="{loc:Tr 'Import'}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsInstalled}" Value="True">
+                                                                <Setter Property="Content" Value="{loc:Tr 'Imported'}"/>
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ui:Button.Style>
+                                            </ui:Button>
                                         </StackPanel>
                                     </Grid>
                                 </ui:Card>

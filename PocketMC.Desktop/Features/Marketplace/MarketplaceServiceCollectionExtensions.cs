@@ -79,6 +79,10 @@ namespace PocketMC.Desktop.Features.Marketplace
                 provider => provider.GetRequiredService<CurseForgeService>());
             services.AddSingleton<AddonManifestService>();
             services.AddSingleton<MarketplaceFileInstaller>();
+            services.AddSingleton(sp => new DataPackInstallService(
+                sp.GetServices<IAddonProvider>(),
+                sp.GetRequiredService<MarketplaceFileInstaller>(),
+                new AddonManifestService(sp.GetService<Microsoft.Extensions.Logging.ILogger<AddonManifestService>>(), "datapack_manifest.json")));
             services.AddSingleton<AddonUpdateService>();
             services.AddSingleton<DependencyResolverService>();
             services.AddSingleton<AddonStateStore>();

@@ -262,6 +262,8 @@ namespace PocketMC.Desktop.Features.Settings
 
         private ScrollViewer? GetActiveTabScrollViewer()
         {
+            // Prefer the selected tab's own ScrollViewer so index shifts (hidden/added tabs) cannot break wheel scrolling.
+            if ((MainTabControl.SelectedItem as TabItem)?.Content is ScrollViewer selected) return selected;
             return MainTabControl.SelectedIndex switch
             {
                 0 => GeneralScrollViewer,
