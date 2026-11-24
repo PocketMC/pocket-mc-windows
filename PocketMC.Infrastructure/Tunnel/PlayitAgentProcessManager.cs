@@ -117,6 +117,10 @@ namespace PocketMC.Infrastructure.Tunnel
                     await _process.WaitForExitAsync(token);
                 }
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Error killing playit process.");

@@ -1,4 +1,5 @@
 using System.Windows;
+using PocketMC.Desktop.Localization;
 
 namespace PocketMC.Desktop.Infrastructure
 {
@@ -64,15 +65,15 @@ namespace PocketMC.Desktop.Infrastructure
             string? linkText = null,
             string? linkUrl = null)
         {
-            TxtTitle.Text = title;
-            TxtMessage.Text = message;
+            TxtTitle.Text = LocalizationService.T(title);
+            TxtMessage.Text = LocalizationService.T(message);
 
             if (!string.IsNullOrEmpty(linkText) && !string.IsNullOrEmpty(linkUrl))
             {
                 TxtLinkBlock.Visibility = Visibility.Visible;
                 TxtLink.NavigateUri = new Uri(linkUrl);
                 TxtLink.Inlines.Clear();
-                TxtLink.Inlines.Add(linkText);
+                TxtLink.Inlines.Add(LocalizationService.T(linkText));
             }
             else
             {
@@ -120,30 +121,30 @@ namespace PocketMC.Desktop.Infrastructure
             switch (buttons)
             {
                 case AppDialogButtons.OkCancel:
-                    BtnPrimary.Content = primaryButtonText ?? "OK";
-                    BtnSecondary.Content = secondaryButtonText ?? "Cancel";
+                    BtnPrimary.Content = primaryButtonText != null ? LocalizationService.T(primaryButtonText) : LocalizationService.T("OK");
+                    BtnSecondary.Content = secondaryButtonText != null ? LocalizationService.T(secondaryButtonText) : LocalizationService.T("Cancel");
                     BtnSecondary.Visibility = Visibility.Visible;
                     BtnTertiary.Visibility = Visibility.Collapsed;
                     break;
 
                 case AppDialogButtons.YesNo:
-                    BtnPrimary.Content = primaryButtonText ?? "Yes";
-                    BtnSecondary.Content = secondaryButtonText ?? "No";
+                    BtnPrimary.Content = primaryButtonText != null ? LocalizationService.T(primaryButtonText) : LocalizationService.T("Yes");
+                    BtnSecondary.Content = secondaryButtonText != null ? LocalizationService.T(secondaryButtonText) : LocalizationService.T("No");
                     BtnSecondary.Visibility = Visibility.Visible;
                     BtnTertiary.Visibility = Visibility.Collapsed;
                     break;
 
                 case AppDialogButtons.YesNoCancel:
-                    BtnPrimary.Content = primaryButtonText ?? "Yes";
-                    BtnSecondary.Content = secondaryButtonText ?? "No";
-                    BtnTertiary.Content = tertiaryButtonText ?? "Cancel";
+                    BtnPrimary.Content = primaryButtonText != null ? LocalizationService.T(primaryButtonText) : LocalizationService.T("Yes");
+                    BtnSecondary.Content = secondaryButtonText != null ? LocalizationService.T(secondaryButtonText) : LocalizationService.T("No");
+                    BtnTertiary.Content = tertiaryButtonText != null ? LocalizationService.T(tertiaryButtonText) : LocalizationService.T("Cancel");
                     BtnSecondary.Visibility = Visibility.Visible;
                     BtnTertiary.Visibility = Visibility.Visible;
                     break;
 
                 case AppDialogButtons.Ok:
                 default:
-                    BtnPrimary.Content = primaryButtonText ?? "OK";
+                    BtnPrimary.Content = primaryButtonText != null ? LocalizationService.T(primaryButtonText) : LocalizationService.T("OK");
                     BtnSecondary.Visibility = Visibility.Collapsed;
                     BtnTertiary.Visibility = Visibility.Collapsed;
                     break;

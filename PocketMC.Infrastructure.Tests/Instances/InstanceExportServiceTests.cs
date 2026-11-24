@@ -403,6 +403,52 @@ public sealed class InstanceExportServiceTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task ExportAsync_RejectsASecondExportWhileOneIsRunning()
+    {
+        string instanceRoot = Path.Combine(_root, "busy-instance");
+        Directory.CreateDirectory(instanceRoot);
+        WriteFile(instanceRoot, "server.jar", "server binary");
+        WriteFile(instanceRoot, @"world\level.dat", "level");
+        var service = CreateService();
+
+        using var started = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        var request = new InstanceExportRequest
+        {
+            Metadata = new InstanceMetadata { Name = "Busy", ServerType = "Paper", MinecraftVersion = "1.20.4" },
+            InstancePath = instanceRoot,
+            DestinationZipPath = Path.Combine(_root, "busy-1.zip")
+        };
+
+        Task<InstanceExportResult> first = Task.Run(() => service.ExportAsync(request, new BlockingProgress(() =>
+        {
+            started.Set();
+            release.Wait(TimeSpan.FromSeconds(10));
+        })));
+
+        Assert.True(started.Wait(TimeSpan.FromSeconds(10)));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ExportAsync(new InstanceExportRequest
+        {
+            Metadata = request.Metadata,
+            InstancePath = instanceRoot,
+            DestinationZipPath = Path.Combine(_root, "busy-2.zip")
+        }));
+
+        release.Set();
+        await first;
+        Assert.False(service.IsActive);
+    }
+
+    private sealed class BlockingProgress : IProgress<InstanceTransferProgress>
+    {
+        private readonly Action _onReport;
+
+        public BlockingProgress(Action onReport) => _onReport = onReport;
+
+        public void Report(InstanceTransferProgress value) => _onReport();
+    }
+
     private static InstanceExportService CreateService() =>
         new(new AddonManifestService(), new ApplicationState(), NullLogger<InstanceExportService>.Instance);
 

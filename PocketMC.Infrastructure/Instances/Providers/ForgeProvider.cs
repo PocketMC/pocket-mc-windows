@@ -31,10 +31,10 @@ public class ForgeProvider : IServerSoftwareProvider
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
         string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgeMeta;
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
+        var response = await ProviderMetaCache.GetObjectAsync(_httpClient, metadataUrl);
 
         var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
-        var minVersion = new Version(1, 8, 8);
+        var minVersion = new Version(1, 7, 10);
 
         if (response != null && response.TryGetPropertyValue("versions", out var versionsNode) && versionsNode is JsonArray versionsArray)
         {
@@ -106,7 +106,7 @@ public class ForgeProvider : IServerSoftwareProvider
     public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
         string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgeMeta;
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
+        var response = await ProviderMetaCache.GetObjectAsync(_httpClient, metadataUrl);
 
         var loaders = new List<ModLoaderVersion>();
 
@@ -173,18 +173,20 @@ public class ForgeProvider : IServerSoftwareProvider
     private async Task<string> GetLatestForgeVersionAsync(string mcVersion)
     {
         string promosUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderForgePromotions;
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>(promosUrl);
+        var response = await ProviderMetaCache.GetObjectAsync(_httpClient, promosUrl);
         if (response != null && response.TryGetPropertyValue("promos", out var promosNode) && promosNode is JsonObject promos)
         {
             // Format: "1.20.1-recommended": "47.2.0"
-            if (promos.TryGetPropertyValue($"{mcVersion}-recommended", out var rec))
-                return rec?.ToString() ?? "0";
+            if (promos.TryGetPropertyValue($"{mcVersion}-recommended", out var rec) && !string.IsNullOrWhiteSpace(rec?.ToString()))
+                return rec!.ToString();
 
-            if (promos.TryGetPropertyValue($"{mcVersion}-latest", out var lat))
-                return lat?.ToString() ?? "0";
+            if (promos.TryGetPropertyValue($"{mcVersion}-latest", out var lat) && !string.IsNullOrWhiteSpace(lat?.ToString()))
+                return lat!.ToString();
         }
 
-        return "latest";
+        // Returning "latest" would silently build a URL that never exists.
+        throw new InvalidOperationException(
+            $"Forge does not publish a build for Minecraft {mcVersion}. Pick another version or supply a loader version.");
     }
 }
 

@@ -179,44 +179,106 @@ public class JavaLaunchConfigurator
     private void AddExecutableArguments(ProcessStartInfo psi, InstanceMetadata meta, string workingDir)
     {
         bool isForgeOrNeo = meta.ServerType == "Forge" || meta.ServerType == "NeoForge";
-        string? chosenJar = null;
 
         if (isForgeOrNeo)
         {
-            var winArgs = Directory.GetFiles(workingDir, "win_args.txt", SearchOption.AllDirectories).FirstOrDefault();
+            string? winArgs = ResolveWinArgsPath(workingDir);
             if (winArgs != null)
             {
                 string relativeArgs = Path.GetRelativePath(workingDir, winArgs);
                 psi.ArgumentList.Add($"@{relativeArgs}");
                 return;
             }
-
-            var jars = Directory.GetFiles(workingDir, "*.jar")
-                .Select(Path.GetFileName)
-                .Where(f => f != null && f.Contains("forge", StringComparison.OrdinalIgnoreCase) && !f.Contains("installer", StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(f => f!.Contains("universal", StringComparison.OrdinalIgnoreCase))
-                .ThenByDescending(f => f!.Contains("server", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            chosenJar = jars.FirstOrDefault();
         }
 
+        string? chosenJar = ResolveStartableJar(workingDir, isForgeOrNeo);
         if (string.IsNullOrEmpty(chosenJar))
         {
-            chosenJar = "server.jar";
-        }
-
-        string fullJarPath = Path.Combine(workingDir, chosenJar);
-        if (!File.Exists(fullJarPath))
-        {
             throw new FileNotFoundException(
-                $"The server executable '{chosenJar}' was not found in the instance directory. " +
-                "If this is a Forge server, Ensure the installation completed successfully. " +
-                "You may need to 'Reinstall' the server software if it is missing.", chosenJar);
+                "No startable server jar was found in the instance directory. " +
+                "Place the server jar (for example server.jar or mohist-<version>-server.jar) in the instance folder, " +
+                "or reinstall the server software if it is missing.",
+                "server.jar");
         }
 
         psi.ArgumentList.Add("-jar");
         psi.ArgumentList.Add(chosenJar);
+    }
+
+    /// <summary>
+    /// Picks the jar to launch. Forge installs prefer forge-specific jars, everything else prefers
+    /// server.jar and otherwise falls back to a recognizable server jar (hybrids ship their own name).
+    /// </summary>
+    /// <summary>A stale Forge install can leave several win_args.txt files behind; the newest one wins.</summary>
+    internal static string? ResolveWinArgsPath(string workingDir)
+    {
+        string[] candidates = Directory.GetFiles(workingDir, "win_args.txt", SearchOption.AllDirectories);
+        if (candidates.Length == 0)
+        {
+            return null;
+        }
+
+        return candidates
+            .OrderByDescending(path => IsUnderLoaderLibraries(workingDir, path))
+            .ThenByDescending(File.GetLastWriteTimeUtc)
+            .First();
+    }
+
+    private static bool IsUnderLoaderLibraries(string workingDir, string filePath)
+    {
+        string relative = Path.GetRelativePath(workingDir, filePath)
+            .Replace('\\', '/');
+        return relative.StartsWith("libraries/net/minecraftforge/", StringComparison.OrdinalIgnoreCase) ||
+               relative.StartsWith("libraries/net/neoforged/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    internal static string? ResolveStartableJar(string workingDir, bool preferForgeJar)
+    {
+        var jarNames = Directory.GetFiles(workingDir, "*.jar", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileName)
+            .Where(name => name != null && !name.Contains("installer", StringComparison.OrdinalIgnoreCase))
+            .Select(name => name!)
+            .ToList();
+
+        if (jarNames.Count == 0)
+        {
+            return null;
+        }
+
+        string? serverJar = jarNames.FirstOrDefault(name => name.Equals("server.jar", StringComparison.OrdinalIgnoreCase));
+
+        if (preferForgeJar)
+        {
+            string? forgeJar = jarNames
+                .Where(name => name.Contains("forge", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(name => name.Contains("universal", StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(name => name.Contains("server", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault();
+
+            return forgeJar ?? serverJar;
+        }
+
+        if (serverJar != null)
+        {
+            return serverJar;
+        }
+
+        string[] preferredTokens =
+        {
+            "mohist", "arclight", "magma", "catserver", "purpur", "paper", "spigot", "craftbukkit",
+            "fabric", "neoforge", "forge", "minecraft_server"
+        };
+
+        foreach (string token in preferredTokens)
+        {
+            string? match = jarNames.FirstOrDefault(name => name.Contains(token, StringComparison.OrdinalIgnoreCase));
+            if (match != null)
+            {
+                return match;
+            }
+        }
+
+        return jarNames.Count == 1 ? jarNames[0] : null;
     }
 
     private static IEnumerable<string> TokenizeAdvancedJvmArgs(string? advancedJvmArgs)

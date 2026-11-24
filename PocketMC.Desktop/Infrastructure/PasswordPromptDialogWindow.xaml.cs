@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using PocketMC.Desktop.Localization;
 using Wpf.Ui.Controls;
 
 namespace PocketMC.Desktop.Infrastructure
@@ -12,8 +13,8 @@ namespace PocketMC.Desktop.Infrastructure
         public PasswordPromptDialogWindow(string title, string message, bool askUsername, bool askPassword)
         {
             InitializeComponent();
-            TxtTitle.Text = title;
-            TxtMessage.Text = message;
+            TxtTitle.Text = LocalizationService.T(title);
+            TxtMessage.Text = LocalizationService.T(message);
             
             var visualService = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<PocketMC.Desktop.Features.Shell.Interfaces.IShellVisualService>(((App)System.Windows.Application.Current).Services);
             visualService.ApplyThemeToDialog(this);

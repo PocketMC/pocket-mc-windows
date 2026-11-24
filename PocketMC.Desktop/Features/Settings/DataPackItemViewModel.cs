@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using PocketMC.Application.Services.Instances;
 using PocketMC.Desktop.Core.Mvvm;
+using PocketMC.Desktop.Localization;
 using PocketMC.Domain.Models;
 
 namespace PocketMC.Desktop.Features.Settings
@@ -13,8 +14,8 @@ namespace PocketMC.Desktop.Features.Settings
 
         public DataPackEntry Entry { get; }
         public string Name => Entry.Name;
-        public string ToggleText => Entry.IsEnabled ? "Disable" : "Enable";
-        public string StatusText => Entry.IsEnabled ? "Enabled" : "Disabled";
+        public string ToggleText => Entry.IsEnabled ? L.T("Disable") : L.T("Enable");
+        public string StatusText => Entry.IsEnabled ? L.T("Enabled") : L.T("Disabled");
 
         public MarketplaceVersion? Update
         {

@@ -61,6 +61,21 @@ public static class Program
         }
     }
 
+    /// <summary>Applies the persisted language before any window is created.</summary>
+    private static void InitializeLocalization()
+    {
+        try
+        {
+            var settings = new PocketMC.Infrastructure.Configuration.SettingsManager().Load();
+            Localization.LocalizationService.Instance.SetLanguage(settings.Language);
+            PocketMC.Infrastructure.Storage.DownloadTuning.Apply(settings);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.TraceWarning($"Failed to initialize localization: {ex.Message}");
+        }
+    }
+
     [STAThread]
     public static void Main(string[] args)
     {
@@ -82,6 +97,8 @@ public static class Program
 
         try
         {
+            InitializeLocalization();
+
             // Normal WPF startup
             var app = new App();
             app.InitializeComponent();

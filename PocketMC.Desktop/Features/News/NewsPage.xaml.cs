@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using PocketMC.Desktop.Localization;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -28,29 +29,45 @@ public partial class NewsPage : Page
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _newsService.PopupNewsAvailable += OnPopupNewsAvailable;
+        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
         RefreshEntries();
-        TxtSyncStatus.Text = _entries.Count == 0 ? "News will appear here when available." : "Showing locally cached news.";
+        TxtSyncStatus.Text = _entries.Count == 0 ? L.T("News will appear here when available.") : L.T("Showing locally cached news.");
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
-        => _newsService.PopupNewsAvailable -= OnPopupNewsAvailable;
+    {
+        _newsService.PopupNewsAvailable -= OnPopupNewsAvailable;
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, LanguageChangedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (IsLoaded)
+            {
+                RefreshEntries();
+                TxtSyncStatus.Text = _entries.Count == 0 ? L.T("News will appear here when available.") : L.T("Showing locally cached news.");
+            }
+        }));
+    }
 
     private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
     {
         BtnRefresh.IsEnabled = false;
-        TxtSyncStatus.Text = "Checking for news...";
+        TxtSyncStatus.Text = L.T("Checking for news...");
         try
         {
             NewsSyncResult result = await _newsService.SynchronizeAsync();
             RefreshEntries();
             TxtSyncStatus.Text = result.Succeeded
-                ? $"News checked. {_entries.Count} item{(_entries.Count == 1 ? string.Empty : "s")} available."
-                : "Could not reach the news service. Showing saved news.";
+                ? L.F("News checked. {0} item(s) available.", _entries.Count)
+                : L.T("Could not reach the news service. Showing saved news.");
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Manual PocketMC news sync failed.");
-            TxtSyncStatus.Text = "Could not reach the news service. Showing saved news.";
+            TxtSyncStatus.Text = L.T("Could not reach the news service. Showing saved news.");
         }
         finally
         {
@@ -62,7 +79,7 @@ public partial class NewsPage : Page
     {
         if (NewsList.SelectedItem is not NewsListEntry entry)
         {
-            ShowEmptyState("Choose a news item to read.");
+            ShowEmptyState(L.T("Choose a news item to read."));
             return;
         }
 
@@ -96,11 +113,11 @@ public partial class NewsPage : Page
         if (_entries.Count == 0)
         {
             NewsArticleSurface.Visibility = Visibility.Collapsed;
-            ShowEmptyState("No news is available yet. PocketMC will check again later.");
+            ShowEmptyState(L.T("No news is available yet. PocketMC will check again later."));
         }
         else if (NewsList.SelectedItem == null)
         {
-            ShowEmptyState("Choose a news item to read.");
+            ShowEmptyState(L.T("Choose a news item to read."));
         }
     }
 
@@ -133,9 +150,9 @@ public partial class NewsPage : Page
         {
             Item = item;
             Title = item.Blocks.FirstOrDefault(block => block.Type == NewsBlockType.Title)?.Text ?? item.Metadata.Id;
-            TypeLabel = Format(item.Metadata.Type);
-            PriorityLabel = Format(item.Metadata.Priority);
-            PublishedLabel = item.Metadata.PublishedUtc.ToLocalTime().ToString("d");
+            TypeLabel = L.T(Format(item.Metadata.Type));
+            PriorityLabel = L.T(Format(item.Metadata.Priority));
+            PublishedLabel = L.Date(item.Metadata.PublishedUtc.LocalDateTime);
             UnreadVisibility = isRead ? Visibility.Collapsed : Visibility.Visible;
         }
 

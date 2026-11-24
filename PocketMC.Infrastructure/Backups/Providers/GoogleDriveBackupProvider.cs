@@ -404,8 +404,36 @@ public class GoogleDriveBackupProvider : ICloudBackupProvider
             }
         };
 
-        using var stream = new FileStream(localDestinationPath, FileMode.Create, FileAccess.Write);
-        await request.DownloadAsync(stream, ct);
+        // Download beside the destination so a failed transfer cannot destroy an existing backup.
+        string partialPath = localDestinationPath + ".partial";
+        try
+        {
+            using (var stream = new FileStream(partialPath, FileMode.Create, FileAccess.Write))
+            {
+                var downloadResult = await request.DownloadAsync(stream, ct);
+                if (downloadResult.Status != Google.Apis.Download.DownloadStatus.Completed)
+                {
+                    throw new IOException($"Google Drive download did not complete ({downloadResult.Status}).");
+                }
+            }
+
+            if (totalSize > 0 && new FileInfo(partialPath).Length != totalSize)
+            {
+                throw new IOException("Google Drive download ended before the reported size was reached.");
+            }
+
+            File.Move(partialPath, localDestinationPath, overwrite: true);
+        }
+        catch
+        {
+            TryDeleteFile(partialPath);
+            throw;
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); } catch { }
     }
 
     private async Task<HttpResponseMessage> PostToProxyAsync<T>(string path, T payload, CancellationToken ct, AppSettings? settings = null)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PocketMC.Desktop.Localization;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -66,7 +67,7 @@ namespace PocketMC.Desktop.Infrastructure
             {
                 _items.Add(item);
             }
-            TxtSummary.Text = $"Checking {_items.Count} addon(s) for updates...";
+            TxtSummary.Text = L.F("Checking {0} addon(s) for updates...", _items.Count);
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -75,7 +76,7 @@ namespace PocketMC.Desktop.Infrastructure
 
             _isRunning = true;
             _cts = new CancellationTokenSource();
-            BtnCancel.Content = "Cancel";
+            BtnCancel.Content = L.T("Cancel");
             BtnProceed.Visibility = Visibility.Collapsed;
 
             TxtOverallStatus.Visibility = Visibility.Visible;
@@ -92,7 +93,7 @@ namespace PocketMC.Desktop.Infrastructure
                 if (_cts.Token.IsCancellationRequested) break;
 
                 current++;
-                TxtOverallStatus.Text = $"Checking {current}/{total}: {item.DisplayName}...";
+                TxtOverallStatus.Text = L.F("Checking {0}/{1}: {2}...", current, total, item.DisplayName);
                 OverallProgressBar.Value = (double)(current - 1) / total * 100;
 
                 item.IsChecking = true;
@@ -107,13 +108,13 @@ namespace PocketMC.Desktop.Infrastructure
 
                     if (hasUpdate)
                     {
-                        item.StatusText = "Update available";
+                        item.StatusText = L.T("Update available");
                         item.StatusForeground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1)); // Green
                         updatable++;
                     }
                     else
                     {
-                        item.StatusText = "Up to date";
+                        item.StatusText = L.T("Up to date");
                         item.StatusForeground = new SolidColorBrush(Color.FromRgb(0xA6, 0xAD, 0xC8)); // Subtext
                         upToDate++;
                     }
@@ -139,8 +140,8 @@ namespace PocketMC.Desktop.Infrastructure
 
             if (_cts.Token.IsCancellationRequested)
             {
-                TxtOverallStatus.Text = "Check cancelled.";
-                BtnCancel.Content = "Close";
+                TxtOverallStatus.Text = L.T("Check cancelled.");
+                BtnCancel.Content = L.T("Close");
                 IsCancelled = true;
                 _isRunning = false;
             }
@@ -150,7 +151,7 @@ namespace PocketMC.Desktop.Infrastructure
                 {
                     TxtOverallStatus.Text = $"Done. {updatable} update(s) found.";
                     TxtHeaderIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowUp24;
-                    TxtTitle.Text = "Updates Available";
+                    TxtTitle.Text = L.T("Updates Available");
                     BtnProceed.Visibility = Visibility.Visible;
                     
                     // Auto-proceed after a tiny delay for visual completion
@@ -160,9 +161,9 @@ namespace PocketMC.Desktop.Infrastructure
                 }
                 else
                 {
-                    TxtOverallStatus.Text = $"Done. All addons are up to date. ({failed} failed)";
+                    TxtOverallStatus.Text = L.F("Done. All addons are up to date. ({0} failed)", failed);
                     TxtHeaderIcon.Symbol = Wpf.Ui.Controls.SymbolRegular.Checkmark24;
-                    TxtTitle.Text = "Up to Date";
+                    TxtTitle.Text = L.T("Up to Date");
                     TxtHeaderIcon.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
                     TxtTitle.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
                     

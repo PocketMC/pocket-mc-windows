@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Marketplace;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Localization;
 using PocketMC.Domain.Models;
 using System;
 using System.Diagnostics;
@@ -89,7 +90,7 @@ namespace PocketMC.Desktop.Features.Settings
         }
 
         // Existing World logic
-        private string _worldStatusText = "Checking world...";
+        private string _worldStatusText = L.T("Checking world...");
         public string WorldStatusText { get => _worldStatusText; set => SetProperty(ref _worldStatusText, value); }
 
         private string _worldSizeText = "";
@@ -166,12 +167,12 @@ namespace PocketMC.Desktop.Features.Settings
             var worldDir = ResolveWorldDir();
             if (Directory.Exists(worldDir))
             {
-                WorldStatusText = "✅ World folder exists";
+                WorldStatusText = L.T("✅ World folder exists");
                 WorldSizeText = $"Size: {PocketMC.Domain.Storage.FileUtils.GetDirectorySizeMb(worldDir)} MB";
             }
             else
             {
-                WorldStatusText = "No world folder found (will be generated)";
+                WorldStatusText = L.T("No world folder found (will be generated)");
                 WorldSizeText = "";
             }
 
@@ -195,7 +196,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                     await _dialogService.ShowProgressDialogAsync(
                         "Importing World",
-                        $"Importing {fileName}...",
+                        L.F("Importing {0}...", fileName),
                         async (progress) =>
                         {
                             await _worldManager.ImportWorldZipAsync(
@@ -209,7 +210,7 @@ namespace PocketMC.Desktop.Features.Settings
                         });
 
                     LoadWorldState();
-                    _dialogService.ShowMessage("World Imported", $"Successfully imported '{fileName}' into your world folder.", DialogType.Information);
+                    _dialogService.ShowMessage("World Imported", L.F("Successfully imported '{0}' into your world folder.", fileName), DialogType.Information);
                 }
                 catch (Exception ex)
                 {
@@ -238,26 +239,26 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 try
                 {
-                    if (_isRunningCheck()) throw new InvalidOperationException("Stop the server before changing data packs.");
+                    if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before changing data packs."));
                     string worldDir = ResolveWorldDir();
                     string name = "";
                     await _dialogService.ShowProgressDialogAsync(
-                        "Installing Data Pack",
-                        "Downloading data pack...",
+                        L.T("Installing Data Pack"),
+                        L.T("Downloading data pack..."),
                         async (IProgress<ProgressDialogUpdate> progress) =>
                         {
                             name = await _dataPacks.InstallAsync(_serverDir, worldDir, provider, projectId, _mcVersion,
-                                new Progress<DownloadProgress>(p => progress.Report(new ProgressDialogUpdate { Percentage = p.Percentage, Message = "Downloading data pack..." })));
+                                new Progress<DownloadProgress>(p => progress.Report(new ProgressDialogUpdate { Percentage = p.Percentage, Message = L.T("Downloading data pack...") })));
                         });
                     await LoadDataPacksAsync();
-                    _dialogService.ShowMessage("Data Pack Installed", string.Format("Installed '{0}'. Start the server to apply it.", name), DialogType.Information);
+                    _dialogService.ShowMessage(L.T("Data Pack Installed"), L.F("Installed '{0}'. Start the server to apply it.", name), DialogType.Information);
                 }
                 catch (Exception ex)
                 {
-                    _dialogService.ShowMessage("Install Failed", ex.Message, DialogType.Error);
+                    _dialogService.ShowMessage(L.T("Install Failed"), ex.Message, DialogType.Error);
                 }
             };
-            _navigationService.NavigateToDetailPage(page, "Data Packs", DetailRouteKind.PluginBrowser, DetailBackNavigation.PreviousDetail);
+            _navigationService.NavigateToDetailPage(page, L.T("Data Packs"), DetailRouteKind.PluginBrowser, DetailBackNavigation.PreviousDetail);
         }
 
         private void BrowseResourcePacks()
@@ -269,17 +270,17 @@ namespace PocketMC.Desktop.Features.Settings
             {
                 try
                 {
-                    if (_isRunningCheck()) throw new InvalidOperationException("Stop the server before changing its resource pack.");
+                    if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before changing its resource pack."));
                     // Java servers push a resource pack to players by URL, so we point server.properties at it.
                     SetResourcePack(url, sha1 ?? "");
-                    _dialogService.ShowMessage("Resource Pack Set", "server.properties now points at this resource pack. Start the server to apply it.", DialogType.Information);
+                    _dialogService.ShowMessage(L.T("Resource Pack Set"), L.T("server.properties now points at this resource pack. Start the server to apply it."), DialogType.Information);
                 }
                 catch (Exception ex)
                 {
-                    _dialogService.ShowMessage("Install Failed", ex.Message, DialogType.Error);
+                    _dialogService.ShowMessage(L.T("Install Failed"), ex.Message, DialogType.Error);
                 }
             };
-            _navigationService.NavigateToDetailPage(page, "Resource Packs", DetailRouteKind.PluginBrowser, DetailBackNavigation.PreviousDetail);
+            _navigationService.NavigateToDetailPage(page, L.T("Resource Packs"), DetailRouteKind.PluginBrowser, DetailBackNavigation.PreviousDetail);
         }
 
         // ---- Installed pack management ----
@@ -322,10 +323,10 @@ namespace PocketMC.Desktop.Features.Settings
         {
             try
             {
-                if (_isRunningCheck()) throw new InvalidOperationException("Stop the server before changing its resource pack.");
+                if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before changing its resource pack."));
                 SetResourcePack("", "");
             }
-            catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
+            catch (Exception ex) { _dialogService.ShowMessage(L.T("Error"), ex.Message, DialogType.Error); }
         }
 
         public async Task LoadDataPacksAsync()
@@ -339,7 +340,7 @@ namespace PocketMC.Desktop.Features.Settings
                 item.ToggleCommand = new RelayCommand(async _ => await RunPackActionAsync(() => { DataPackLibrary.SetEnabled(worldDir, entry.Name, !entry.IsEnabled); return Task.CompletedTask; }));
                 item.RemoveCommand = new RelayCommand(async _ =>
                 {
-                    if (await _dialogService.ShowDialogAsync("Confirm", string.Format("Remove data pack '{0}'?", entry.Name), DialogType.Warning) == DialogResult.Yes)
+                    if (await _dialogService.ShowDialogAsync(L.T("Confirm"), L.F("Remove data pack '{0}'?", entry.Name), DialogType.Warning) == DialogResult.Yes)
                         await RunPackActionAsync(() => _dataPacks.RemoveAsync(_serverDir, worldDir, entry.Name));
                 });
                 item.UpdateCommand = new RelayCommand(async _ =>
@@ -347,14 +348,14 @@ namespace PocketMC.Desktop.Features.Settings
                     if (item.Update == null) return;
                     try
                     {
-                        if (_isRunningCheck()) throw new InvalidOperationException("Stop the server before updating data packs.");
-                        await _dialogService.ShowProgressDialogAsync("Updating Data Pack", entry.Name,
+                        if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before updating data packs."));
+                        await _dialogService.ShowProgressDialogAsync(L.T("Updating Data Pack"), entry.Name,
                             async (IProgress<ProgressDialogUpdate> progress) =>
                                 await _dataPacks.UpdateAsync(_serverDir, worldDir, entry.Name, item.Update, _mcVersion,
                                     new Progress<DownloadProgress>(p => progress.Report(new ProgressDialogUpdate { Percentage = p.Percentage, Message = entry.Name }))));
                         await LoadDataPacksAsync();
                     }
-                    catch (Exception ex) { _dialogService.ShowMessage("Update Failed", ex.Message, DialogType.Error); }
+                    catch (Exception ex) { _dialogService.ShowMessage(L.T("Update Failed"), ex.Message, DialogType.Error); }
                 });
                 DataPacks.Add(item);
             }
@@ -372,10 +373,10 @@ namespace PocketMC.Desktop.Features.Settings
         {
             try
             {
-                if (_isRunningCheck()) throw new InvalidOperationException("Stop the server before changing data packs.");
+                if (_isRunningCheck()) throw new InvalidOperationException(L.T("Stop the server before changing data packs."));
                 await action();
             }
-            catch (Exception ex) { _dialogService.ShowMessage("Error", ex.Message, DialogType.Error); }
+            catch (Exception ex) { _dialogService.ShowMessage(L.T("Error"), ex.Message, DialogType.Error); }
             await LoadDataPacksAsync();
         }
 
@@ -391,7 +392,7 @@ namespace PocketMC.Desktop.Features.Settings
 
                     await _dialogService.ShowProgressDialogAsync(
                         "Importing World",
-                        $"Installing {fileName}...",
+                        L.F("Installing {0}...", fileName),
                         async (progress) =>
                         {
                             await _worldManager.ImportWorldZipAsync(

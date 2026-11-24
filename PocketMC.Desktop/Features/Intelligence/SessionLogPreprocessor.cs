@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PocketMC.Desktop.Localization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -215,7 +216,7 @@ public static class SessionLogPreprocessor
         }
         else
         {
-            result.Add($"{representativeLine} (repeated {count} times)");
+            result.Add(L.F("{0} (repeated {1} times)", representativeLine, count));
         }
     }
 }

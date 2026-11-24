@@ -1,9 +1,9 @@
-<Page x:Class="PocketMC.Desktop.Features.Setup.JavaSetupPage"
+<Page x:Class="PocketMC.Desktop.Features.Setup.JavaSetupPage" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:presentation="clr-namespace:PocketMC.Desktop.Core.Presentation"
-      Title="Runtimes">
+      Title="{loc:Tr 'Runtimes'}">
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -20,8 +20,8 @@
 
         <!-- ─── Header ─── -->
         <StackPanel Grid.Row="0" Margin="0,0,0,8">
-            <ui:TextBlock FontTypography="Title" Text="Runtimes" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
-            <TextBlock Text="Managed Java and PHP runtimes for your Minecraft Java and Bedrock PocketMine-MP server instances. Missing runtimes are downloaded automatically."
+            <ui:TextBlock FontTypography="Title" Text="{loc:Tr 'Runtimes'}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,4"/>
+            <TextBlock Text="{loc:Tr 'Managed Java and PHP runtimes for your Minecraft Java and Bedrock PocketMine-MP server instances. Missing runtimes are downloaded automatically.'}"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        TextWrapping="Wrap" FontSize="13" Margin="0,0,0,16"/>
         </StackPanel>
@@ -29,18 +29,18 @@
         <!-- ─── Action Bar ─── -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,20">
             <ui:Button x:Name="BtnDownloadMissing"
-                       Content="Download Missing"
+                       Content="{loc:Tr 'Download Missing'}"
                        Icon="{ui:SymbolIcon ArrowDownload24}"
                        Appearance="Primary"
                        Click="BtnDownloadMissing_Click"
                        Cursor="Hand" Margin="0,0,8,0"/>
             <ui:Button x:Name="BtnAddCustom"
-                       Content="Add Custom Runtime"
+                       Content="{loc:Tr 'Add Custom Runtime'}"
                        Icon="{ui:SymbolIcon FolderAdd24}"
                        Click="BtnAddCustom_Click"
                        Cursor="Hand" Margin="0,0,8,0"/>
             <ui:Button x:Name="BtnRefresh"
-                       Content="Refresh"
+                       Content="{loc:Tr 'Refresh'}"
                        Icon="{ui:SymbolIcon ArrowSync24}"
                        Click="BtnRefresh_Click"
                        Cursor="Hand"/>
@@ -55,7 +55,7 @@
                       PanningMode="VerticalOnly">
             <StackPanel Margin="0,0,12,0">
                 <!-- Section 1: Java Runtimes -->
-                <ui:TextBlock Text="Minecraft Java Runtimes" 
+                <ui:TextBlock Text="{loc:Tr 'Minecraft Java Runtimes'}" 
                               FontTypography="BodyStrong" 
                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
                               Margin="0,0,0,10"/>
@@ -181,7 +181,7 @@
                                     <ui:Button Grid.Column="3"
                                                Icon="{ui:SymbolIcon Delete24}"
                                                Appearance="Secondary"
-                                               ToolTip="Delete this runtime"
+                                               ToolTip="{loc:Tr 'Delete this runtime'}"
                                                Click="BtnDelete_Click"
                                                Tag="{Binding}"
                                                Visibility="{Binding DeleteVisibility}"
@@ -192,7 +192,7 @@
                                     <ui:Button Grid.Column="4"
                                                Icon="{ui:SymbolIcon ArrowDownload24}"
                                                Appearance="Primary"
-                                               ToolTip="Download this runtime"
+                                               ToolTip="{loc:Tr 'Download this runtime'}"
                                                Click="BtnDownloadSingle_Click"
                                                Tag="{Binding}"
                                                Visibility="{Binding DownloadVisibility}"
@@ -205,7 +205,7 @@
                 </ItemsControl>
 
                 <!-- Section 2: PocketMine PHP Runtimes -->
-                <ui:TextBlock Text="PocketMine-MP PHP Runtimes" 
+                <ui:TextBlock Text="{loc:Tr 'PocketMine-MP PHP Runtimes'}" 
                               FontTypography="BodyStrong" 
                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
                               Margin="0,16,0,10"/>
@@ -316,7 +316,7 @@
                                     <ui:Button Grid.Column="3"
                                                Icon="{ui:SymbolIcon Delete24}"
                                                Appearance="Secondary"
-                                               ToolTip="Delete this PHP runtime"
+                                               ToolTip="{loc:Tr 'Delete this PHP runtime'}"
                                                Click="BtnDeletePhp_Click"
                                                Tag="{Binding}"
                                                Visibility="{Binding DeleteVisibility}"
@@ -327,7 +327,7 @@
                                     <ui:Button Grid.Column="4"
                                                Icon="{ui:SymbolIcon ArrowDownload24}"
                                                Appearance="Primary"
-                                               ToolTip="Download this PHP runtime"
+                                               ToolTip="{loc:Tr 'Download this PHP runtime'}"
                                                Click="BtnDownloadPhpSingle_Click"
                                                Tag="{Binding}"
                                                Visibility="{Binding DownloadVisibility}"

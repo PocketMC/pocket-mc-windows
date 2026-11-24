@@ -1,11 +1,11 @@
-<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Intelligence.OllamaModelManagerDialog"
+<ui:FluentWindow x:Class="PocketMC.Desktop.Features.Intelligence.OllamaModelManagerDialog" xmlns:loc="clr-namespace:PocketMC.Desktop.Localization"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  mc:Ignorable="d"
-                 Title="Ollama Model Manager" Height="600" Width="760"
+                 Title="{loc:Tr 'Ollama Model Manager'}" Height="600" Width="760"
                  MinHeight="480" MinWidth="600"
                  WindowStartupLocation="CenterOwner"
                  ResizeMode="CanResizeWithGrip"
@@ -22,7 +22,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Margin="-24,-12,-24,0" Title="Ollama Model Manager" ShowMaximize="False" ShowMinimize="False" />
+        <ui:TitleBar Grid.Row="0" Margin="-24,-12,-24,0" Title="{loc:Tr 'Ollama Model Manager'}" ShowMaximize="False" ShowMinimize="False" />
 
         <Grid Grid.Row="1" Margin="0,16,0,12">
             <Grid.ColumnDefinitions>
@@ -30,15 +30,15 @@
                 <ColumnDefinition x:Name="DownloadTabColumn" Width="*"/>
                 <ColumnDefinition x:Name="ManualTabColumn" Width="*"/>
             </Grid.ColumnDefinitions>
-            <RadioButton x:Name="TabInstalledModels" Grid.Column="0" Content="Installed Models" Tag="Installed"
+            <RadioButton x:Name="TabInstalledModels" Grid.Column="0" Content="{loc:Tr 'Installed Models'}" Tag="Installed"
                          GroupName="OllamaModelManagerTabs" Style="{StaticResource {x:Type ToggleButton}}"
                          MinHeight="40" Margin="0,0,8,0" HorizontalAlignment="Stretch"
                          HorizontalContentAlignment="Center" Checked="ManagerTab_Checked"/>
-            <RadioButton x:Name="TabDownloadModels" Grid.Column="1" Content="Download Models" Tag="Download"
+            <RadioButton x:Name="TabDownloadModels" Grid.Column="1" Content="{loc:Tr 'Download Models'}" Tag="Download"
                          GroupName="OllamaModelManagerTabs" Style="{StaticResource {x:Type ToggleButton}}"
                          MinHeight="40" Margin="4,0" HorizontalAlignment="Stretch"
                          HorizontalContentAlignment="Center" Checked="ManagerTab_Checked"/>
-            <RadioButton x:Name="TabManualSteps" Grid.Column="2" Content="Manual Steps" Tag="Manual"
+            <RadioButton x:Name="TabManualSteps" Grid.Column="2" Content="{loc:Tr 'Manual Steps'}" Tag="Manual"
                          GroupName="OllamaModelManagerTabs" Style="{StaticResource {x:Type ToggleButton}}"
                          MinHeight="40" Margin="8,0,0,0" HorizontalAlignment="Stretch"
                          HorizontalContentAlignment="Center" Checked="ManagerTab_Checked"/>
@@ -84,8 +84,8 @@
                                                 </ItemsControl>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <ui:Button Content="Select" Appearance="Primary" Click="SelectModelButton_Click" Tag="{Binding Name}"/>
-                                                <ui:Button Content="Delete" Appearance="Secondary" Click="DeleteModelButton_Click" Tag="{Binding Name}"
+                                                <ui:Button Content="{loc:Tr 'Select'}" Appearance="Primary" Click="SelectModelButton_Click" Tag="{Binding Name}"/>
+                                                <ui:Button Content="{loc:Tr 'Delete'}" Appearance="Secondary" Click="DeleteModelButton_Click" Tag="{Binding Name}"
                                                            Visibility="{Binding DeleteVisibility}" Margin="8,0,0,0"/>
                                             </StackPanel>
                                         </Grid>
@@ -112,22 +112,22 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
-                                        <TextBlock Text="Custom Model" FontSize="16" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Enter an Ollama model name to pull." Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                        <TextBlock Text="{loc:Tr 'Custom Model'}" FontSize="16" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{loc:Tr 'Enter an Ollama model name to pull.'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <Grid Grid.Column="1" MinWidth="320" VerticalAlignment="Center">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <ui:TextBox x:Name="CustomModelTextBox" Grid.Column="0" PlaceholderText="e.g. llama3:8b" HorizontalAlignment="Stretch"/>
-                                        <ui:Button Grid.Column="1" Content="Pull" Margin="8,0,0,0" Appearance="Primary" Click="PullCustomModel_Click"/>
+                                        <ui:TextBox x:Name="CustomModelTextBox" Grid.Column="0" PlaceholderText="{loc:Tr 'e.g. llama3:8b'}" HorizontalAlignment="Stretch"/>
+                                        <ui:Button Grid.Column="1" Content="{loc:Tr 'Pull'}" Margin="8,0,0,0" Appearance="Primary" Click="PullCustomModel_Click"/>
                                     </Grid>
                                 </Grid>
                             </ui:Card>
 
-                            <TextBlock x:Name="RecommendedModelsHeader" Text="Recommended Models" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                            <TextBlock x:Name="NoRecommendedModelsText" Text="All recommended models are already installed." Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
+                            <TextBlock x:Name="RecommendedModelsHeader" Text="{loc:Tr 'Recommended Models'}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                            <TextBlock x:Name="NoRecommendedModelsText" Text="{loc:Tr 'All recommended models are already installed.'}" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed"/>
                             
                             <ui:Card x:Name="RecommendedLlamaCard" Margin="0,0,0,8">
                                 <Grid>
@@ -136,10 +136,10 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="llama3.2:3b" FontSize="14" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Lightweight, ~2.0 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{loc:Tr 'llama3.2:3b'}" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{loc:Tr 'Lightweight, ~2.0 GB'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="llama3.2:3b"/>
+                                    <ui:Button Grid.Column="1" Content="{loc:Tr 'Download'}" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="llama3.2:3b"/>
                                 </Grid>
                             </ui:Card>
 
@@ -150,10 +150,10 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="qwen2.5:7b" FontSize="14" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Balanced, ~4.7 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{loc:Tr 'qwen2.5:7b'}" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{loc:Tr 'Balanced, ~4.7 GB'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="qwen2.5:7b"/>
+                                    <ui:Button Grid.Column="1" Content="{loc:Tr 'Download'}" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="qwen2.5:7b"/>
                                 </Grid>
                             </ui:Card>
 
@@ -164,10 +164,10 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="deepseek-r1:8b" FontSize="14" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Reasoning, ~4.9 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{loc:Tr 'deepseek-r1:8b'}" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{loc:Tr 'Reasoning, ~4.9 GB'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="deepseek-r1:8b"/>
+                                    <ui:Button Grid.Column="1" Content="{loc:Tr 'Download'}" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="deepseek-r1:8b"/>
                                 </Grid>
                             </ui:Card>
 
@@ -178,10 +178,10 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="phi4:14b" FontSize="14" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Advanced, ~9.1 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{loc:Tr 'phi4:14b'}" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{loc:Tr 'Advanced, ~9.1 GB'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="phi4:14b"/>
+                                    <ui:Button Grid.Column="1" Content="{loc:Tr 'Download'}" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="phi4:14b"/>
                                 </Grid>
                             </ui:Card>
 
@@ -192,10 +192,10 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="mistral:7b" FontSize="14" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Balanced, ~4.1 GB" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{loc:Tr 'mistral:7b'}" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{loc:Tr 'Balanced, ~4.1 GB'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <ui:Button Grid.Column="1" Content="Download" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="mistral:7b"/>
+                                    <ui:Button Grid.Column="1" Content="{loc:Tr 'Download'}" VerticalAlignment="Center" Click="DownloadRecommended_Click" Tag="mistral:7b"/>
                                 </Grid>
                             </ui:Card>
 
@@ -209,30 +209,30 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock x:Name="ProgressStatusText" Text="Downloading..." Margin="0,0,0,4"/>
+                                <TextBlock x:Name="ProgressStatusText" Text="{loc:Tr 'Downloading...'}" Margin="0,0,0,4"/>
                                 <ProgressBar x:Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="0" Height="4"/>
                             </StackPanel>
-                            <ui:Button Grid.Column="1" Content="Cancel" Margin="12,0,0,0" Click="CancelPull_Click"/>
+                            <ui:Button Grid.Column="1" Content="{loc:Tr 'Cancel'}" Margin="12,0,0,0" Click="CancelPull_Click"/>
                         </Grid>
                     </ui:Card>
             </Grid>
 
             <!-- Manual steps -->
             <StackPanel x:Name="ManualTabPanel" Visibility="Collapsed" Margin="0,8,0,0">
-                    <TextBlock Text="Manually Install Models" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    <TextBlock Text="You can download and install models manually using the Ollama command line interface. Run the following command in your terminal:" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <TextBlock Text="{loc:Tr 'Manually Install Models'}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{loc:Tr 'You can download and install models manually using the Ollama command line interface. Run the following command in your terminal:'}" TextWrapping="Wrap" Margin="0,0,0,12"/>
                     
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <ui:TextBox x:Name="ManualCommandBox" Grid.Column="0" Text="ollama pull &lt;model-name&gt;" IsReadOnly="True" FontFamily="Consolas"/>
-                        <ui:Button Grid.Column="1" Content="Copy Command" Margin="8,0,0,0" Icon="{ui:SymbolIcon Copy24}" Click="CopyCommand_Click"/>
+                        <ui:TextBox x:Name="ManualCommandBox" Grid.Column="0" Text="{loc:Tr 'ollama pull &lt;model-name&gt;'}" IsReadOnly="True" FontFamily="Consolas"/>
+                        <ui:Button Grid.Column="1" Content="{loc:Tr 'Copy Command'}" Margin="8,0,0,0" Icon="{ui:SymbolIcon Copy24}" Click="CopyCommand_Click"/>
                     </Grid>
 
-                    <TextBlock Text="Note: Models are downloaded to your default Ollama storage location (usually ~/.ollama/models or C:\Users\&lt;User&gt;\.ollama\models)." TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,12"/>
-                    <TextBlock Text="Find available models at ollama.com/library" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text="{loc:Tr 'Note: Models are downloaded to your default Ollama storage location (usually ~/.ollama/models or C:\Users\&lt;User&gt;\.ollama\models).'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,12"/>
+                    <TextBlock Text="{loc:Tr 'Find available models at ollama.com/library'}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
             </StackPanel>
         </Grid>
     </Grid>

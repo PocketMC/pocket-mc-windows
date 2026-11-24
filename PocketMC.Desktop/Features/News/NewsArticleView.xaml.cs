@@ -2,6 +2,7 @@ using System;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using PocketMC.Desktop.Localization;
 using PocketMC.Infrastructure.News;
 
 namespace PocketMC.Desktop.Features.News;
@@ -18,9 +19,9 @@ public partial class NewsArticleView : UserControl
         ArticleBadges.Children.Clear();
         ArticleContent.Children.Clear();
 
-        AddBadge(Format(item.Metadata.Type));
-        AddBadge(Format(item.Metadata.Priority));
-        AddBadge(item.Metadata.PublishedUtc.ToLocalTime().ToString("g"));
+        AddBadge(L.T(Format(item.Metadata.Type)));
+        AddBadge(L.T(Format(item.Metadata.Priority)));
+        AddBadge(L.DateTime(item.Metadata.PublishedUtc.LocalDateTime));
         ArticleContent.Children.Add(NewsContentRenderer.Build(item));
     }
 

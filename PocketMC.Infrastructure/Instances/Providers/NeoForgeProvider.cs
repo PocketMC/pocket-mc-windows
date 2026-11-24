@@ -29,7 +29,7 @@ public class NeoForgeProvider : IServerSoftwareProvider
     public async Task<List<MinecraftVersion>> GetAvailableVersionsAsync()
     {
         string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderNeoForgeMeta;
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
+        var response = await ProviderMetaCache.GetObjectAsync(_httpClient, metadataUrl);
 
         var mcToLoaders = new Dictionary<string, List<ModLoaderVersion>>();
 
@@ -101,7 +101,7 @@ public class NeoForgeProvider : IServerSoftwareProvider
     public async Task<List<ModLoaderVersion>> GetBuildsAsync(string versionId)
     {
         string metadataUrl = PocketMC.Infrastructure.Configuration.AppConfig.ProviderNeoForgeMeta;
-        var response = await _httpClient.GetFromJsonAsync<JsonObject>(metadataUrl);
+        var response = await ProviderMetaCache.GetObjectAsync(_httpClient, metadataUrl);
 
         var loaders = new List<ModLoaderVersion>();
 

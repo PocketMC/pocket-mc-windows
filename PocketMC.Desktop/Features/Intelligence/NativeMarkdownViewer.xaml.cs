@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using PocketMC.Desktop.Localization;
 using System.Windows.Controls;
 using PocketMC.Infrastructure;
 using PocketMC.Domain.Storage;
@@ -67,7 +68,7 @@ namespace PocketMC.Desktop.Features.Intelligence
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"NativeMarkdownViewer render error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine(L.F("NativeMarkdownViewer render error: {0}", ex.Message));
             }
         }
 

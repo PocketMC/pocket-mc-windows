@@ -1,5 +1,6 @@
 using PocketMC.Domain.Storage;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Localization;
 using System;
 using System.Diagnostics;
 using System.Collections.Concurrent;
@@ -654,7 +655,7 @@ namespace PocketMC.Desktop.Features.Console
         {
             if (LogRichTextBox == null || string.IsNullOrWhiteSpace(LogRichTextBox.Selection.Text))
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("No Selection", "Please highlight some text in the console to analyze.");
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(L.T("No Selection"), L.T("Please highlight some text in the console to analyze."));
                 return;
             }
 
@@ -748,7 +749,7 @@ namespace PocketMC.Desktop.Features.Console
             {
                 bool ok = await PocketMC.Desktop.Infrastructure.ClipboardHelper.TrySetTextAsync(allText);
                 if (!ok)
-                    PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Clipboard Error", "Failed to copy logs. The clipboard may be locked by another application.");
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(L.T("Clipboard Error"), L.T("Failed to copy logs. The clipboard may be locked by another application."));
             }
         }
 
@@ -956,7 +957,7 @@ namespace PocketMC.Desktop.Features.Console
             if (_summarizationService.IsSummarizing(_instancePath))
             {
                 ToggleAiPanel(true);
-                TxtAiStatus.Text = "Generating session summary...";
+                TxtAiStatus.Text = L.T("Generating session summary...");
                 TxtAiStatus.Visibility = Visibility.Visible;
                 AiProgress.Visibility = Visibility.Visible;
                 TxtAiResponse.Markdown = string.Empty;
@@ -978,7 +979,7 @@ namespace PocketMC.Desktop.Features.Console
             Dispatcher.InvokeAsync(() =>
             {
                 ToggleAiPanel(true);
-                TxtAiStatus.Text = "Generating session summary...";
+                TxtAiStatus.Text = L.T("Generating session summary...");
                 TxtAiStatus.Visibility = Visibility.Visible;
                 AiProgress.Visibility = Visibility.Visible;
                 TxtAiResponse.Markdown = string.Empty;
@@ -1001,7 +1002,7 @@ namespace PocketMC.Desktop.Features.Console
                 }
                 else
                 {
-                    TxtAiResponse.Markdown = $"Summarization failure: {result.Error}";
+                    TxtAiResponse.Markdown = L.F("Summarization failure: {0}", result.Error);
                 }
             });
         }
@@ -1026,7 +1027,7 @@ namespace PocketMC.Desktop.Features.Console
         private async System.Threading.Tasks.Task PerformAIAnalysisAsync(string contextText)
         {
             ToggleAiPanel(true);
-            TxtAiStatus.Text = "Analyzing text...";
+            TxtAiStatus.Text = L.T("Analyzing text...");
             TxtAiStatus.Visibility = Visibility.Visible;
             AiProgress.Visibility = Visibility.Visible;
             TxtAiResponse.Markdown = string.Empty;
@@ -1057,11 +1058,11 @@ Logs:
                 if (result.Success)
                     TxtAiResponse.Markdown = result.Content;
                 else
-                    TxtAiResponse.Markdown = $"Analysis failure: {result.Error}";
+                    TxtAiResponse.Markdown = L.F("Analysis failure: {0}", result.Error);
             }
             catch (Exception ex)
             {
-                TxtAiResponse.Markdown = $"Unexpected error: {ex.Message}";
+                TxtAiResponse.Markdown = L.F("Unexpected error: {0}", ex.Message);
             }
             finally
             {
@@ -1097,7 +1098,7 @@ Logs:
             }
 
             ToggleAiPanel(true);
-            TxtAiStatus.Text = "Generating session summary...";
+            TxtAiStatus.Text = L.T("Generating session summary...");
             TxtAiStatus.Visibility = Visibility.Visible;
             AiProgress.Visibility = Visibility.Visible;
             TxtAiResponse.Markdown = string.Empty;
@@ -1126,11 +1127,11 @@ Logs:
                 if (result.Success && result.Summary != null)
                     TxtAiResponse.Markdown = result.Summary.Content;
                 else
-                    TxtAiResponse.Markdown = $"Summarization failure: {result.Error}";
+                    TxtAiResponse.Markdown = L.F("Summarization failure: {0}", result.Error);
             }
             catch (Exception ex)
             {
-                TxtAiResponse.Markdown = $"Unexpected error: {ex.Message}";
+                TxtAiResponse.Markdown = L.F("Unexpected error: {0}", ex.Message);
             }
             finally
             {
@@ -1174,16 +1175,16 @@ Logs:
                     await _serverProcess.WriteInputAsync("gc");
                     await _serverProcess.WriteInputAsync("spark gc"); // if spark profiler is present
 
-                    ResourceWarningBar.Title = "Optimization Applied";
-                    ResourceWarningBar.Message = "Process priority set to High and GC sweep requested.";
+                    ResourceWarningBar.Title = L.T("Optimization Applied");
+                    ResourceWarningBar.Message = L.T("Process priority set to High and GC sweep requested.");
                     ResourceWarningBar.Severity = InfoBarSeverity.Success;
 
                     await System.Threading.Tasks.Task.Delay(3000);
                     ResourceWarningBar.Visibility = Visibility.Collapsed;
 
                     // Reset for next warning
-                    ResourceWarningBar.Title = "High Resource Usage";
-                    ResourceWarningBar.Message = "Your server is using over 80% of its assigned RAM. Performance may be impacted.";
+                    ResourceWarningBar.Title = L.T("High Resource Usage");
+                    ResourceWarningBar.Message = L.T("Your server is using over 80% of its assigned RAM. Performance may be impacted.");
                     ResourceWarningBar.Severity = InfoBarSeverity.Warning;
                 }
             }

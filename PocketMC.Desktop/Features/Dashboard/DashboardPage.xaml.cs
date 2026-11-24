@@ -7,6 +7,7 @@ using PocketMC.Infrastructure;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Instances;
 using PocketMC.Infrastructure.OS;
+using PocketMC.Desktop.Localization;
 
 namespace PocketMC.Desktop.Features.Dashboard
 {
@@ -63,7 +64,7 @@ namespace PocketMC.Desktop.Features.Dashboard
                     string zipPath = files[0];
                     if (zipPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                     {
-                        PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo("Info", "Modpack import is now available from Server Settings > Mods.");
+                        PocketMC.Desktop.Infrastructure.AppDialog.ShowInfo(L.T("Info"), L.T("Modpack import is now available from Server Settings > Mods."));
                     }
                 }
             }
@@ -151,17 +152,14 @@ namespace PocketMC.Desktop.Features.Dashboard
             if (sender is FrameworkElement fe && fe.DataContext is InstanceCardViewModel vm)
             {
                 string addressToCopy = vm.HasGeyser && !string.IsNullOrEmpty(vm.BedrockTunnelAddress) ? vm.BedrockTunnelAddress : vm.BedrockIpDisplayText;
-                if (addressToCopy.Contains("local") || string.IsNullOrWhiteSpace(addressToCopy)) return;
+                if (vm.IsBedrockAddressLocal || string.IsNullOrWhiteSpace(addressToCopy)) return;
 
                 await TrySetClipboardText(addressToCopy);
 
                 // Keep the property nulling clean so we can read the raw string for saving
-                vm.BedrockIpDisplayText = "\u2713 Copied";
+                vm.ShowBedrockAddressCopiedFeedback();
                 await System.Threading.Tasks.Task.Delay(1500);
-                if (vm.BedrockIpDisplayText == "\u2713 Copied")
-                {
-                    vm.BedrockIpDisplayText = null!; // resets to computed property
-                }
+                vm.ClearBedrockAddressCopiedFeedback();
             }
         }
 

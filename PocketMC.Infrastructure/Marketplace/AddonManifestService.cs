@@ -101,8 +101,29 @@ namespace PocketMC.Infrastructure.Marketplace
         public async Task SaveManifestAsync(string serverDir, AddonManifest manifest)
         {
             string path = Path.Combine(serverDir, ManifestFileName);
+
+            // An unreadable manifest must never be replaced by the empty one a failed load produced.
+            if (File.Exists(path) && !IsManifestReadable(path))
+            {
+                throw new InvalidOperationException(
+                    $"The add-on manifest at '{path}' could not be parsed; refusing to overwrite it.");
+            }
+
             string json = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
             await FileUtils.AtomicWriteAllTextAsync(path, json);
+        }
+
+        private static bool IsManifestReadable(string path)
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                return JsonSerializer.Deserialize<AddonManifest>(json) != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public async Task RegisterInstallAsync(string serverDir, string provider, string projectId, string versionId, string fileName)

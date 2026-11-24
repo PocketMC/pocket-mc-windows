@@ -74,6 +74,34 @@ namespace PocketMC.Domain.Models
                 LoaderName = "quilt";
                 CompatibleLoaderNames = new[] { "quilt", "fabric" };
             }
+            else if (ServerType.StartsWith("Mohist", StringComparison.OrdinalIgnoreCase) ||
+                     ServerType.StartsWith("Magma", StringComparison.OrdinalIgnoreCase) ||
+                     ServerType.StartsWith("CatServer", StringComparison.OrdinalIgnoreCase) ||
+                     ServerType.StartsWith("Arclight", StringComparison.OrdinalIgnoreCase))
+            {
+                // Hybrid engines: Forge mods plus Bukkit plugins in the same server.
+                Family = EngineFamily.Forge;
+                SupportsMods = true;
+                SupportsPlugins = true;
+                SupportsModpacks = true;
+                SupportsModrinth = true;
+                SupportsCurseForge = true;
+                PrimaryAddonSubDir = "mods";
+                LoaderName = "forge";
+                CompatibleLoaderNames = new[] { "forge", "spigot", "bukkit" };
+            }
+            else if (ServerType.StartsWith("Purpur", StringComparison.OrdinalIgnoreCase) ||
+                     ServerType.StartsWith("CraftBukkit", StringComparison.OrdinalIgnoreCase) ||
+                     ServerType.StartsWith("Bukkit", StringComparison.OrdinalIgnoreCase))
+            {
+                Family = EngineFamily.Spigot;
+                SupportsPlugins = true;
+                SupportsModrinth = true;
+                SupportsCurseForge = true;
+                PrimaryAddonSubDir = "plugins";
+                LoaderName = "spigot";
+                CompatibleLoaderNames = new[] { "spigot", "bukkit", "purpur" };
+            }
             else if (ServerType.StartsWith("Forge", StringComparison.OrdinalIgnoreCase))
             {
                 Family = EngineFamily.Forge;

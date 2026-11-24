@@ -70,6 +70,7 @@ namespace PocketMC.Infrastructure.Tunnel
         private CancellationTokenSource? _networkChangeCancellation;
         private readonly object _networkEventLock = new();
         private readonly SemaphoreSlim _runtimeCheckGate = new(1, 1);
+        private readonly object _downloadStateGate = new();
         private volatile bool _isDownloadingBinary;
         private string? _validatedRuntimePath;
         private long _validatedRuntimeLength;
@@ -615,14 +616,37 @@ namespace PocketMC.Infrastructure.Tunnel
 
         public async Task DownloadAgentAsync()
         {
-            if (_isDownloadingBinary) return;
-            _downloadCancellation?.Cancel();
-            _downloadCancellation = new CancellationTokenSource();
+            CancellationTokenSource cancellation;
+            lock (_downloadStateGate)
+            {
+                // Claiming the flag and installing the token must be one step; two clicks racing
+                // here otherwise dispose each other's source and cancel a download they do not own.
+                if (_isDownloadingBinary) return;
+
+                _isDownloadingBinary = true;
+                cancellation = new CancellationTokenSource();
+                _downloadCancellation?.Dispose();
+                _downloadCancellation = cancellation;
+            }
+
             try
             {
-                await EnsurePlayitRuntimeAsync(_downloadCancellation.Token);
+                await EnsurePlayitRuntimeAsync(cancellation.Token);
             }
-            finally { _downloadCancellation?.Dispose(); _downloadCancellation = null; }
+            finally
+            {
+                lock (_downloadStateGate)
+                {
+                    if (ReferenceEquals(_downloadCancellation, cancellation))
+                    {
+                        _downloadCancellation = null;
+                    }
+
+                    _isDownloadingBinary = false;
+                }
+
+                cancellation.Dispose();
+            }
         }
 
         public async Task<bool> EnsurePlayitRuntimeAsync(CancellationToken token = default)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using PocketMC.Desktop.Localization;
 using System.Collections.Specialized;
 using System.Windows.Input;
 using PocketMC.Desktop.Core.Mvvm;
@@ -127,9 +128,9 @@ namespace PocketMC.Desktop.Features.Settings
                 if (!EnableScheduledReboot) return string.Empty;
                 if (IsDailyMode)
                 {
-                    return $"Daily at {ScheduledRebootTime}";
+                    return L.F("Daily at {0}", ScheduledRebootTime);
                 }
-                return $"Every {ScheduledRebootIntervalHours} hours";
+                return L.F("Every {0} hours", ScheduledRebootIntervalHours);
             }
         }
 

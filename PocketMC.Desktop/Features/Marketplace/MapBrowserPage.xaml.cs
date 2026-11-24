@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Domain.Exceptions;
+using PocketMC.Desktop.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using PocketMC.Application.Services.Shell;
 using System;
@@ -79,8 +80,8 @@ namespace PocketMC.Desktop.Features.Marketplace
             else
             {
                 bool data = kind == MarketplacePackKind.DataPack;
-                TxtTitle.Text = data ? "Data Packs Browser" : "Resource Packs Browser";
-                TxtSearch.PlaceholderText = data ? "Search data packs..." : "Search resource packs...";
+                TxtTitle.Text = data ? L.T("Data Packs Browser") : L.T("Resource Packs Browser");
+                TxtSearch.PlaceholderText = data ? L.T("Search data packs...") : L.T("Search resource packs...");
                 CmbCategory.Visibility = Visibility.Collapsed;
                 LblCategory.Visibility = Visibility.Collapsed;
                 CmbSource.SelectedIndex = 0;
@@ -186,7 +187,7 @@ namespace PocketMC.Desktop.Features.Marketplace
             }
             catch (Exception ex)
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Search Error", $"Search failed: {ex.Message}");
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Search Error", L.F("Search failed: {0}", ex.Message));
             }
             finally
             {
@@ -201,13 +202,13 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                     if (keyError.IsMissingKey)
                     {
-                        TxtCurseForgeKeyTitle.Text = "CurseForge API Key Required";
-                        TxtCurseForgeKeyDetail.Text = "CurseForge requires a free API key to search and download worlds. Enter your key to continue.";
+                        TxtCurseForgeKeyTitle.Text = L.T("CurseForge API Key Required");
+                        TxtCurseForgeKeyDetail.Text = L.T("CurseForge requires a free API key to search and download worlds. Enter your key to continue.");
                     }
                     else
                     {
-                        TxtCurseForgeKeyTitle.Text = "Invalid CurseForge API Key";
-                        TxtCurseForgeKeyDetail.Text = "Your CurseForge API key was rejected (403 Forbidden). Please check that your key is entered correctly and has active permissions.";
+                        TxtCurseForgeKeyTitle.Text = L.T("Invalid CurseForge API Key");
+                        TxtCurseForgeKeyDetail.Text = L.T("Your CurseForge API key was rejected (403 Forbidden). Please check that your key is entered correctly and has active permissions.");
                     }
                 }
                 else
@@ -223,11 +224,11 @@ namespace PocketMC.Desktop.Features.Marketplace
                         string query = TxtSearch.Text?.Trim() ?? "";
                         if (!string.IsNullOrEmpty(query))
                         {
-                            TxtEmptyStateDetail.Text = $"No worlds or maps matched \"{query}\". Try checking for spelling errors or clearing the category filter.";
+                            TxtEmptyStateDetail.Text = L.F("No worlds or maps matched \"{0}\". Try checking for spelling errors or clearing the category filter.", query);
                         }
                         else
                         {
-                            TxtEmptyStateDetail.Text = "No worlds or maps found for the selected criteria. Try changing the category filter or search terms.";
+                            TxtEmptyStateDetail.Text = L.T("No worlds or maps found for the selected criteria. Try changing the category filter or search terms.");
                         }
                     }
                 }
@@ -349,7 +350,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             btn.IsEnabled = false;
             // Resource packs are only linked in server.properties, nothing is downloaded.
-            btn.Content = _kind == MarketplacePackKind.ResourcePack ? "Applying..." : "Downloading...";
+            btn.Content = _kind == MarketplacePackKind.ResourcePack ? L.T("Applying...") : L.T("Downloading...");
 
             var cts = new System.Threading.CancellationTokenSource();
             string? destFile = null;
@@ -374,9 +375,9 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                 if (version == null || version.Files.Count == 0)
                 {
-                    PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Not Found", "No compatible world version found on CurseForge.");
+                    PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(L.T("Not Found"), L.T("No compatible world version found on CurseForge."));
                     btn.IsEnabled = true;
-                    btn.Content = "Import";
+                    btn.Content = L.T("Import");
                     return;
                 }
 
@@ -394,7 +395,7 @@ namespace PocketMC.Desktop.Features.Marketplace
 
                 var dialog = new ProgressDialogWindow(
                     "Downloading Map",
-                    $"Downloading {file.FileName}...",
+                    L.F("Downloading {0}...", file.FileName),
                     async (progress, ct) =>
                     {
                         using var httpClient = _httpClientFactory.CreateClient("PocketMC.Downloads");
@@ -458,18 +459,18 @@ namespace PocketMC.Desktop.Features.Marketplace
                         try { File.Delete(destFile); } catch { }
                     }
                     btn.IsEnabled = true;
-                    btn.Content = "Import";
+                    btn.Content = L.T("Import");
                 }
             }
             catch (Exception ex)
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Download failed: " + ex.Message);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError(L.T("Error"), L.F("Download failed: {0}", ex.Message));
                 if (!string.IsNullOrEmpty(destFile) && File.Exists(destFile))
                 {
                     try { File.Delete(destFile); } catch { }
                 }
                 btn.IsEnabled = true;
-                btn.Content = "Import";
+                btn.Content = L.T("Import");
             }
         }
 

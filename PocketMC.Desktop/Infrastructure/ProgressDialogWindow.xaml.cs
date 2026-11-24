@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using PocketMC.Desktop.Localization;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,8 +43,8 @@ namespace PocketMC.Desktop.Infrastructure
 
         private void Init(string title, string message)
         {
-            Title = title;
-            MessageText.Text = message;
+            Title = LocalizationService.T(title);
+            MessageText.Text = LocalizationService.T(message);
 
             // Apply DWM Dark mode fix and accent colors
             var visualService = ServiceProviderServiceExtensions.GetRequiredService<IShellVisualService>(((App)System.Windows.Application.Current).Services);
@@ -122,7 +123,7 @@ namespace PocketMC.Desktop.Infrastructure
             {
                 _cts.Cancel();
                 BtnCancel.IsEnabled = false;
-                BtnCancel.Content = "Cancelling...";
+                BtnCancel.Content = L.T("Cancelling...");
             }
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using PocketMC.Desktop.Localization;
 using System.Text.RegularExpressions;
 
 namespace PocketMC.Desktop.Features.Tunnel
@@ -194,7 +195,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 entry.Level = PlayitLogLevel.Warn;
                 entry.LevelBadge = "RETRY";
                 entry.IsTransientRetry = true;
-                entry.Message = "Handshake timeout waiting for register response (reconnecting...)";
+                entry.Message = L.T("Handshake timeout waiting for register response (reconnecting...)");
                 return;
             }
 
@@ -203,7 +204,7 @@ namespace PocketMC.Desktop.Features.Tunnel
             {
                 entry.Level = PlayitLogLevel.Warn;
                 entry.LevelBadge = "WARN";
-                entry.Message = "Control session expired; renewing session (reason: SessionNotSetup)";
+                entry.Message = L.T("Control session expired; renewing session (reason: SessionNotSetup)");
                 return;
             }
 
@@ -227,7 +228,7 @@ namespace PocketMC.Desktop.Features.Tunnel
                 }
                 else
                 {
-                    entry.Message = "Playit tunnel connected successfully.";
+                    entry.Message = L.T("Playit tunnel connected successfully.");
                 }
                 return;
             }

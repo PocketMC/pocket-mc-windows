@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using PocketMC.Desktop.Localization;
 using System.Linq;
 using System.Text;
 using System.Collections.Concurrent;
@@ -144,7 +145,7 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
                 var providerImpl = _providerFactory.GetProvider(provider);
                 var result = await providerImpl.GenerateCompletionAsync(apiKey, modelName ?? "", endpointUrl ?? "", SystemPrompt, chunks[0], ct);
                 if (!result.Success)
-                    return SummarizationResult.Fail($"AI API error: {result.Error}");
+                    return SummarizationResult.Fail(L.F("AI API error: {0}", result.Error));
                 finalContent = result.Content;
             }
             else
@@ -173,7 +174,7 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
                     partialSummaries.ToString(), ct);
 
                 if (!metaResult.Success)
-                    return SummarizationResult.Fail($"AI API error during final summary: {metaResult.Error}");
+                    return SummarizationResult.Fail(L.F("AI API error during final summary: {0}", metaResult.Error));
 
                 finalContent = metaResult.Content;
             }
@@ -204,12 +205,12 @@ If the logs include sensitive data (IPs, emails), DO NOT include them in the sum
         catch (IOException ex)
         {
             _logger.LogError(ex, "IO error during summarization for {Server}.", serverName);
-            return SummarizationResult.Fail($"File system error: {ex.Message}");
+            return SummarizationResult.Fail(L.F("File system error: {0}", ex.Message));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during summarization for {Server}.", serverName);
-            return SummarizationResult.Fail($"Unexpected error: {ex.Message}");
+            return SummarizationResult.Fail(L.F("Unexpected error: {0}", ex.Message));
         }
     }
 }

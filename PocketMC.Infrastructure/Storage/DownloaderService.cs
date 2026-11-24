@@ -1,14 +1,19 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using PocketMC.Domain.Models;
 using PocketMC.Domain.Storage;
 using PocketMC.Infrastructure.Tunnel;
 using System.IO;
 using System.Net.Http;
 using System.Net;
+using System.Buffers;
 using System.Net.Http.Headers;
+using Microsoft.Win32.SafeHandles;
 using Microsoft.Extensions.Logging;
+using PocketMC.Infrastructure.Storage;
 
 
 namespace PocketMC.Infrastructure.Instances;
@@ -35,6 +40,20 @@ public class DownloaderService
         }
     }
 
+    // Keeps concurrent file downloads within the user-configured budget.
+    private static readonly DownloadConcurrencyLimiter ConcurrencyLimiter = new();
+
+    private sealed class LockEntry
+    {
+        public SemaphoreSlim Gate { get; } = new(1, 1);
+        public int Users;
+    }
+
+    // Serialises writers per destination so overlapping requests cannot share ".partial" files.
+    // Idle entries are dropped so the table stays bounded no matter how many files are downloaded.
+    private static readonly Dictionary<string, LockEntry> DestinationLocks = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object DestinationLocksGate = new();
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DownloaderService> _logger;
 
@@ -60,20 +79,97 @@ public class DownloaderService
         string? expectedHash,
         string? expectedHashType,
         IProgress<DownloadProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool bypassMirrors = false)
+    {
+        string destinationKey = Path.GetFullPath(destinationPath);
+        LockEntry destinationEntry = RentDestinationLock(destinationKey);
+        bool gateTaken = false;
+        try
+        {
+            await destinationEntry.Gate.WaitAsync(cancellationToken);
+            gateTaken = true;
+            using IDisposable slot = await ConcurrencyLimiter.AcquireAsync(cancellationToken);
+            await DownloadFileCoreAsync(url, destinationPath, expectedHash, expectedHashType, progress, cancellationToken, bypassMirrors);
+        }
+        finally
+        {
+            // A cancellation while queued must still return the gate and drop the entry.
+            if (gateTaken)
+            {
+                destinationEntry.Gate.Release();
+            }
+
+            ReturnDestinationLock(destinationKey, destinationEntry);
+        }
+    }
+
+    internal static int DestinationLockCount
+    {
+        get
+        {
+            lock (DestinationLocksGate)
+            {
+                return DestinationLocks.Count;
+            }
+        }
+    }
+
+    private static LockEntry RentDestinationLock(string key)
+    {
+        lock (DestinationLocksGate)
+        {
+            if (!DestinationLocks.TryGetValue(key, out LockEntry? entry))
+            {
+                entry = new LockEntry();
+                DestinationLocks[key] = entry;
+            }
+
+            entry.Users++;
+            return entry;
+        }
+    }
+
+    private static void ReturnDestinationLock(string key, LockEntry entry)
+    {
+        lock (DestinationLocksGate)
+        {
+            if (--entry.Users > 0)
+            {
+                return;
+            }
+
+            DestinationLocks.Remove(key);
+            entry.Gate.Dispose();
+        }
+    }
+
+    private async Task DownloadFileCoreAsync(
+        string url,
+        string destinationPath,
+        string? expectedHash,
+        string? expectedHashType,
+        IProgress<DownloadProgress>? progress,
+        CancellationToken cancellationToken,
+        bool bypassMirrors)
     {
         string partialPath = destinationPath + ".partial";
         string identityPath = partialPath + ".identity";
-        if (!File.Exists(identityPath) || File.ReadAllText(identityPath) != url)
+        ResumeIdentity identity = ReadIdentity(identityPath);
+        if (!string.Equals(identity.Url, url, StringComparison.Ordinal))
         {
             TryDeleteFile(partialPath);
-            PocketMC.Domain.Storage.FileUtils.AtomicWriteAllText(identityPath, url);
+            identity = new ResumeIdentity(url, null, null, null);
+            WriteIdentity(identityPath, identity);
         }
         string? directory = Path.GetDirectoryName(destinationPath);
         if (!string.IsNullOrEmpty(directory))
         {
             Directory.CreateDirectory(directory);
         }
+
+        // Validate the digest spec up front so an unsupported type fails fast instead of after a full download.
+        string? hashType = string.IsNullOrEmpty(expectedHash) ? null : NormalizeHashType(expectedHash, expectedHashType);
 
         const int maxAttempts = 4;
         Exception? lastException = null;
@@ -86,12 +182,33 @@ public class DownloaderService
             {
                 using HttpClient client = _httpClientFactory.CreateClient(DownloadClientName);
                 long existingBytes = GetExistingPartialLength(partialPath);
+
+                // Segmented transfer is only safe from byte zero; resumes stay on the single-stream path.
+                if (existingBytes == 0 && DownloadTuning.Threads > 1 &&
+                    await TrySegmentedDownloadAsync(client, url, partialPath, progress, cancellationToken, bypassMirrors))
+                {
+                    existingBytes = 0;
+                }
+                else
+                {
                 using HttpRequestMessage request = new(HttpMethod.Get, url);
+                ApplyMirrorBypass(request, bypassMirrors);
                 // A digest binds resumed bytes to the requested object. Without one, restart.
                 if (existingBytes > 0 && string.IsNullOrEmpty(expectedHash)) { TryDeleteFile(partialPath); existingBytes = 0; }
                 if (existingBytes > 0)
                 {
                     request.Headers.Range = new RangeHeaderValue(existingBytes, null);
+                    // If the object changed since the partial was written, the server sends a full 200 instead of a 206.
+                    if (identity.ETag is string etag && EntityTagHeaderValue.TryParse(etag, out EntityTagHeaderValue? parsedTag))
+                    {
+                        request.Headers.IfRange = new RangeConditionHeaderValue(parsedTag);
+                    }
+                    else if (identity.LastModified is string lastModified &&
+                             DateTimeOffset.TryParse(lastModified, CultureInfo.InvariantCulture,
+                                 DateTimeStyles.AssumeUniversal, out DateTimeOffset modifiedAt))
+                    {
+                        request.Headers.IfRange = new RangeConditionHeaderValue(modifiedAt);
+                    }
                 }
 
                 using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
@@ -102,8 +219,12 @@ public class DownloaderService
                     TryDeleteFile(partialPath);
                     existingBytes = 0;
                     using HttpRequestMessage restartRequest = new(HttpMethod.Get, url);
+                    ApplyMirrorBypass(restartRequest, bypassMirrors);
                     using HttpResponseMessage restartResponse = await client.SendAsync(restartRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                     restartResponse.EnsureSuccessStatusCode();
+                    // The restart fetches the whole object, so its validators replace the stale ones.
+                    identity = CreateIdentity(url, restartResponse);
+                    WriteIdentity(identityPath, identity);
                     await DownloadToPartialAsync(restartResponse, partialPath, existingBytes, progress, cancellationToken);
                 }
                 else
@@ -111,30 +232,58 @@ public class DownloaderService
                     response.EnsureSuccessStatusCode();
 
                     bool isResuming = existingBytes > 0 && response.StatusCode == HttpStatusCode.PartialContent;
-                    if (response.StatusCode == HttpStatusCode.PartialContent &&
-                        (response.Content.Headers.ContentRange?.From != existingBytes ||
-                         response.Content.Headers.ContentRange?.To is not long lastByte ||
-                         response.Content.Headers.ContentRange?.Length is not long objectLength || lastByte != objectLength - 1))
-                    { TryDeleteFile(partialPath); throw new InvalidDataException("The server returned an invalid download range."); }
-                    if (existingBytes > 0 && !isResuming)
+                    bool rangeIsUsable = response.StatusCode != HttpStatusCode.PartialContent ||
+                        (response.Content.Headers.ContentRange?.From == existingBytes &&
+                         response.Content.Headers.ContentRange?.To is long lastByte &&
+                         response.Content.Headers.ContentRange?.Length is long objectLength &&
+                         lastByte == objectLength - 1 &&
+                         (identity.Length is not long knownLength || objectLength == knownLength));
+
+                    if (rangeIsUsable)
                     {
-                        _logger.LogInformation("Resume is not supported for {Url}; restarting download from scratch.", url);
-                        TryDeleteFile(partialPath);
-                        existingBytes = 0;
+                        identity = MergeIdentity(identity, response);
+                        WriteIdentity(identityPath, identity);
                     }
 
-                    await DownloadToPartialAsync(response, partialPath, existingBytes, progress, cancellationToken);
+                    if (!rangeIsUsable)
+                    {
+                        // Some CDNs clamp or rewrite ranges; one bad 206 should not kill the download.
+                        _logger.LogWarning("Server returned an unexpected range for {Url}; restarting from scratch.", url);
+                        TryDeleteFile(partialPath);
+                        existingBytes = 0;
+                        using HttpRequestMessage restartRequest = new(HttpMethod.Get, url);
+                        ApplyMirrorBypass(restartRequest, bypassMirrors);
+                        using HttpResponseMessage restartResponse = await client.SendAsync(
+                            restartRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                        restartResponse.EnsureSuccessStatusCode();
+                        identity = CreateIdentity(url, restartResponse);
+                        WriteIdentity(identityPath, identity);
+                        await DownloadToPartialAsync(restartResponse, partialPath, existingBytes, progress, cancellationToken);
+                    }
+                    else
+                    {
+                        if (existingBytes > 0 && !isResuming)
+                        {
+                            _logger.LogInformation("Resume is not supported for {Url}; restarting download from scratch.", url);
+                            TryDeleteFile(partialPath);
+                            existingBytes = 0;
+                        }
+
+                        await DownloadToPartialAsync(response, partialPath, existingBytes, progress, cancellationToken);
+                    }
+                }
                 }
 
                 if (new FileInfo(partialPath).Length == 0) throw new InvalidDataException("Downloaded artifact is empty.");
-                if (!string.IsNullOrEmpty(expectedHash))
+                if (hashType is not null)
                 {
-                    string hashType = NormalizeHashType(expectedHash, expectedHashType);
                     _logger.LogInformation("Verifying {HashType} hash for {DestinationPath}...", hashType, destinationPath);
-                    bool isValid = await VerifyHashAsync(partialPath, expectedHash, hashType, cancellationToken);
+                    bool isValid = await VerifyHashAsync(partialPath, expectedHash!, hashType, cancellationToken);
                     if (!isValid)
                     {
+                        // A mirror may serve a truncated or stale copy: drop both files so the retry starts clean.
                         TryDeleteFile(partialPath);
+                        TryDeleteFile(identityPath);
                         throw new CryptographicException($"{hashType} verification failed for {url}. Expected {expectedHash}, but file content mismatched.");
                     }
                     _logger.LogInformation("{HashType} verification passed for {DestinationPath}.", hashType, destinationPath);
@@ -161,11 +310,242 @@ public class DownloaderService
         throw new InvalidOperationException($"Failed to download '{url}'. The download was aborted.", lastException);
     }
 
+    /// <summary>
+    /// Downloads the artifact as parallel HTTP range segments. Returns false when the server
+    /// does not honour ranges or the artifact is too small, letting the caller fall back.
+    /// </summary>
+    private async Task<bool> TrySegmentedDownloadAsync(
+        HttpClient client,
+        string url,
+        string partialPath,
+        IProgress<DownloadProgress>? progress,
+        CancellationToken cancellationToken,
+        bool bypassMirrors)
+    {
+        const long minSegmentBytes = 512 * 1024;
+        int requestedThreads = DownloadTuning.Threads;
+        if (requestedThreads <= 1)
+        {
+            return false;
+        }
+
+        long totalBytes;
+        EntityTagHeaderValue? probeTag;
+        DateTimeOffset? probeModified;
+        using (HttpRequestMessage probe = new(HttpMethod.Get, url))
+        using (HttpResponseMessage probeResponse = await client.SendAsync(probe, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+        {
+            ApplyMirrorBypass(probe, bypassMirrors);
+            if (probeResponse.StatusCode != HttpStatusCode.OK ||
+                probeResponse.Content.Headers.ContentLength is not long length ||
+                length < minSegmentBytes * 2)
+            {
+                return false;
+            }
+
+            totalBytes = length;
+            probeTag = probeResponse.Headers.ETag;
+            probeModified = probeResponse.Content.Headers.LastModified;
+        }
+
+        // Without a validator a mirror could swap the object mid-transfer and no segment would notice.
+        if (probeTag == null && probeModified == null)
+        {
+            _logger.LogDebug("Segmented download skipped for {Url}: the server exposes no validator.", url);
+            return false;
+        }
+
+        // Every segment is pinned to the probe's validator so a replaced object aborts the transfer
+        // instead of stitching bytes from two different builds into one file.
+        RangeConditionHeaderValue? versionCondition =
+            probeTag != null ? new RangeConditionHeaderValue(probeTag) :
+            probeModified.HasValue ? new RangeConditionHeaderValue(probeModified.Value) : null;
+
+        int threads = (int)Math.Clamp(Math.Min(requestedThreads, totalBytes / minSegmentBytes), 1, DownloadTuning.MaxThreads);
+        if (threads <= 1)
+        {
+            return false;
+        }
+
+        long segmentSize = totalBytes / threads;
+        long writtenBytes = 0;
+        long[] lastReportTick = { 0 };
+        using var segmentCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        List<Task>? segments = null;
+
+        try
+        {
+            using FileStream file = new(partialPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite, 4096, useAsync: true);
+            file.SetLength(totalBytes);
+            SafeFileHandle handle = file.SafeFileHandle;
+
+            segments = new List<Task>(threads);
+            for (int index = 0; index < threads; index++)
+            {
+                long start = index * segmentSize;
+                long end = index == threads - 1 ? totalBytes - 1 : start + segmentSize - 1;
+                segments.Add(DownloadSegmentAsync(
+                    client, url, handle, start, end, totalBytes, versionCondition, probeTag, probeModified, segmentCts.Token,
+                    bytes => ReportThrottled(progress, Interlocked.Add(ref writtenBytes, bytes), totalBytes, lastReportTick),
+                    cancellationToken,
+                    bypassMirrors));
+            }
+
+            await Task.WhenAll(segments);
+            await file.FlushAsync(cancellationToken);
+
+            if (new FileInfo(partialPath).Length != totalBytes)
+            {
+                throw new IOException("Segmented download produced an unexpected length.");
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            TryDeleteFile(partialPath);
+            throw;
+        }
+        catch (RangeNotSupportedException)
+        {
+            segmentCts.Cancel();
+            await DrainSegmentsAsync(segments).ConfigureAwait(false);
+            _logger.LogInformation("Server rejected ranged segments for {Url}; falling back to a single stream.", url);
+            TryDeleteFile(partialPath);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            segmentCts.Cancel();
+            await DrainSegmentsAsync(segments).ConfigureAwait(false);
+            _logger.LogWarning(ex, "Segmented download failed for {Url}; falling back to a single stream.", url);
+            TryDeleteFile(partialPath);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Cancelled segments keep writing to the shared handle until they observe the token, so the
+    /// caller waits for them before deleting or reusing the partial file.
+    /// </summary>
+    private static async Task DrainSegmentsAsync(List<Task>? segments)
+    {
+        if (segments is null) return;
+        try { await Task.WhenAll(segments).ConfigureAwait(false); }
+        catch { /* one segment already failed; the rest were cancelled */ }
+    }
+
+    private async Task DownloadSegmentAsync(
+        HttpClient client,
+        string url,
+        SafeFileHandle handle,
+        long start,
+        long end,
+        long totalBytes,
+        RangeConditionHeaderValue? versionCondition,
+        EntityTagHeaderValue? probeTag,
+        DateTimeOffset? probeModified,
+        CancellationToken segmentToken,
+        Action<long> addBytes,
+        CancellationToken cancellationToken,
+        bool bypassMirrors)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, url);
+        ApplyMirrorBypass(request, bypassMirrors);
+        request.Headers.Range = new RangeHeaderValue(start, end);
+        if (versionCondition != null)
+        {
+            request.Headers.IfRange = versionCondition;
+        }
+        using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, segmentToken);
+
+        if (response.StatusCode != HttpStatusCode.PartialContent ||
+            response.Content.Headers.ContentRange is not { } range ||
+            range.From != start ||
+            range.To != end ||
+            range.Length != totalBytes)
+        {
+            throw new RangeNotSupportedException();
+        }
+
+        // A mirror can serve a different build that still honours ranges; refuse to mix its bytes in.
+        if (probeTag is not null &&
+            (response.Headers.ETag is not { } segmentTag || !segmentTag.Equals(probeTag)))
+        {
+            throw new RangeNotSupportedException();
+        }
+
+        if (probeTag is null && probeModified is { } expectedModified &&
+            (response.Content.Headers.LastModified is not { } segmentModified || segmentModified != expectedModified))
+        {
+            throw new RangeNotSupportedException();
+        }
+
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
+        {
+            await using Stream stream = await response.Content.ReadAsStreamAsync(segmentToken);
+            long position = start;
+            int read;
+            while ((read = await stream.ReadAsync(buffer, segmentToken)) > 0)
+            {
+                await RandomAccess.WriteAsync(handle, buffer.AsMemory(0, read), position, cancellationToken);
+                position += read;
+                addBytes(read);
+            }
+
+            if (position != end + 1)
+            {
+                throw new IOException("Segmented download range ended prematurely.");
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static void ReportThrottled(IProgress<DownloadProgress>? progress, long bytesRead, long totalBytes, long[] lastReportTick)
+    {
+        if (progress == null)
+        {
+            return;
+        }
+
+        long now = Environment.TickCount64;
+        long previous = Volatile.Read(ref lastReportTick[0]);
+        if (now - previous < 100 && bytesRead < totalBytes)
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref lastReportTick[0], now);
+        progress.Report(new DownloadProgress { BytesRead = bytesRead, TotalBytes = totalBytes });
+    }
+
+    private sealed class RangeNotSupportedException : Exception { }
+
     private static string NormalizeHashType(string expectedHash, string? expectedHashType)
     {
         if (!string.IsNullOrWhiteSpace(expectedHashType))
         {
-            return expectedHashType.Replace("-", "", StringComparison.OrdinalIgnoreCase).ToUpperInvariant();
+            string declared = expectedHashType.Replace("-", "", StringComparison.OrdinalIgnoreCase).ToUpperInvariant();
+            int expectedLength = declared switch
+            {
+                "SHA1" => 40,
+                "SHA256" => 64,
+                "SHA512" => 128,
+                _ => throw new NotSupportedException($"Unsupported hash type '{expectedHashType}'.")
+            };
+
+            if (expectedHash.Length != expectedLength)
+            {
+                throw new ArgumentException(
+                    $"A {declared} digest must be {expectedLength} hex characters, but '{expectedHash.Length}' were supplied.",
+                    nameof(expectedHash));
+            }
+
+            return declared;
         }
 
         return expectedHash.Length switch
@@ -297,11 +677,10 @@ public class DownloaderService
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (!string.IsNullOrWhiteSpace(PlayitExpectedSha256) &&
-            await VerifyHashAsync(filePath, PlayitExpectedSha256, "SHA256", cancellationToken))
+        // A configured pin is authoritative: never accept a binary that fails it.
+        if (!string.IsNullOrWhiteSpace(PlayitExpectedSha256))
         {
-            Version? artifactVersion = PlayitRuntimeManifest.GetExecutableVersion(filePath);
-            return artifactVersion == null || PlayitRuntimeManifest.IsCompatibleVersion(artifactVersion);
+            return await VerifyHashAsync(filePath, PlayitExpectedSha256, "SHA256", cancellationToken);
         }
 
         Version? actualVersion = PlayitRuntimeManifest.GetExecutableVersion(filePath);
@@ -340,7 +719,14 @@ public class DownloaderService
 
         if (File.Exists(cloudflaredPath))
         {
-            return;
+            if (CloudflaredExpectedSha256 == null ||
+                await VerifyHashAsync(cloudflaredPath, CloudflaredExpectedSha256, "SHA256", cancellationToken))
+            {
+                return;
+            }
+
+            _logger.LogWarning("Existing cloudflared binary failed the pinned digest; re-downloading it.");
+            TryDeleteFile(cloudflaredPath);
         }
 
         Directory.CreateDirectory(tunnelDir);
@@ -388,7 +774,8 @@ public class DownloaderService
 
     private static bool IsRetryable(Exception ex)
     {
-        if (ex is InvalidDataException or CryptographicException) return false;
+        // Corrupted payloads and empty responses are usually served by one bad mirror, so a retry can recover.
+        if (ex is InvalidDataException or CryptographicException) return true;
         if (ex is HttpRequestException httpRequestException &&
             httpRequestException.StatusCode is HttpStatusCode statusCode)
         {
@@ -514,5 +901,72 @@ public class DownloaderService
             Debug.WriteLine($"PocketMC failed to delete file {path}: {ex}");
         }
     }
+
+    /// <summary>Resume state kept beside the partial file so stale bytes are never appended.</summary>
+    private static void ApplyMirrorBypass(HttpRequestMessage request, bool bypassMirrors)
+    {
+        if (bypassMirrors)
+        {
+            request.Options.Set(DownloadMirrorHandler.ByPassMirrorsOptionKey, true);
+        }
+    }
+
+    private sealed record ResumeIdentity(string Url, string? ETag, string? LastModified, long? Length);
+
+    private static ResumeIdentity ReadIdentity(string identityPath)
+    {
+        try
+        {
+            if (!File.Exists(identityPath))
+            {
+                return new ResumeIdentity(string.Empty, null, null, null);
+            }
+
+            string text = File.ReadAllText(identityPath).Trim();
+            if (text.StartsWith('{'))
+            {
+                return JsonSerializer.Deserialize<ResumeIdentity>(text)
+                    ?? new ResumeIdentity(string.Empty, null, null, null);
+            }
+
+            // Legacy identity files only stored the URL; the missing validators force a fresh download.
+            return new ResumeIdentity(text, null, null, null);
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return new ResumeIdentity(string.Empty, null, null, null);
+        }
+    }
+
+    private static void WriteIdentity(string identityPath, ResumeIdentity identity)
+    {
+        try
+        {
+            FileUtils.AtomicWriteAllText(identityPath, JsonSerializer.Serialize(identity));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Debug.WriteLine($"PocketMC failed to persist resume identity {identityPath}: {ex}");
+        }
+    }
+
+    /// <summary>Captures validators from a full response, replacing anything stored for the previous object.</summary>
+    private static ResumeIdentity CreateIdentity(string url, HttpResponseMessage response) => new(
+        url,
+        response.Headers.ETag?.ToString(),
+        response.Content.Headers.LastModified?.ToString("R"),
+        response.StatusCode == HttpStatusCode.PartialContent
+            ? response.Content.Headers.ContentRange?.Length
+            : response.Content.Headers.ContentLength);
+
+    /// <summary>Keeps known validators when a response omits them, so a resumed download can still be validated.</summary>
+    private static ResumeIdentity MergeIdentity(ResumeIdentity identity, HttpResponseMessage response) => identity with
+    {
+        ETag = response.Headers.ETag?.ToString() ?? identity.ETag,
+        LastModified = response.Content.Headers.LastModified?.ToString("R") ?? identity.LastModified,
+        Length = response.StatusCode == HttpStatusCode.PartialContent
+            ? response.Content.Headers.ContentRange?.Length ?? identity.Length
+            : response.Content.Headers.ContentLength ?? identity.Length
+    };
 }
 

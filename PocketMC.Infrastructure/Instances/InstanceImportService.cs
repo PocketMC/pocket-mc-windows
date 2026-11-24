@@ -2,6 +2,7 @@ using PocketMC.Application.Services.Shell;
 using PocketMC.Application.Services.Instances;
 using PocketMC.Application.Interfaces.Instances;
 using System.IO;
+using System.Security.Cryptography;
 using System.IO.Compression;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -224,9 +225,18 @@ public sealed class InstanceImportService : IInstanceImportService
 
             Report(progress, "Promoting imported instance...", 95);
             Directory.Move(stagingResult.ServerDirectory, finalPath);
-            promoted = true;
+            try
+            {
+                _registry.Register(metadata, finalPath);
+            }
+            catch
+            {
+                // Never leave an unregistered server folder behind: the import is reported as failed.
+                try { Directory.Delete(finalPath, true); } catch { }
+                throw;
+            }
 
-            _registry.Register(metadata, finalPath);
+            promoted = true;
             await CleanupStagingDirectoryAsync(stagingResult.StagingDirectory).ConfigureAwait(false);
             Report(progress, "Import complete.", 100);
 
@@ -656,21 +666,20 @@ public sealed class InstanceImportService : IInstanceImportService
         // Determine possible source paths in the staging directory
         string? sourceFilePath = null;
 
-        // Try PackagedPath first (relative to staging root, e.g. "server/mods/MyMod.jar")
+        // Manifest paths are attacker-controlled: keep them inside the extracted archive.
         if (!string.IsNullOrWhiteSpace(addon.PackagedPath))
         {
-            string candidate = Path.Combine(stagingResult.StagingDirectory, addon.PackagedPath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(candidate))
+            string? candidate = PathSafety.ValidateContainedPath(stagingResult.StagingDirectory, addon.PackagedPath);
+            if (candidate != null && File.Exists(candidate))
             {
                 sourceFilePath = candidate;
             }
         }
 
-        // Try RelativePath (relative to server directory, e.g. "mods/MyMod.jar")
         if (sourceFilePath == null && !string.IsNullOrWhiteSpace(addon.RelativePath))
         {
-            string candidate = Path.Combine(stagingResult.ServerDirectory, addon.RelativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(candidate))
+            string? candidate = PathSafety.ValidateContainedPath(stagingResult.ServerDirectory, addon.RelativePath);
+            if (candidate != null && File.Exists(candidate))
             {
                 sourceFilePath = candidate;
             }
@@ -715,6 +724,14 @@ public sealed class InstanceImportService : IInstanceImportService
             _logger.LogWarning(
                 "Packaged file size mismatch for {AddonName}: expected {Expected} bytes, got {Actual} bytes. Marking packaged add-on restore as failed.",
                 addon.Name, addon.Size.Value, fileInfo.Length);
+            return false;
+        }
+
+        if (!await VerifyAddonDigestAsync(sourceFilePath, addon, cancellationToken).ConfigureAwait(false))
+        {
+            _logger.LogWarning(
+                "Packaged file digest mismatch for {AddonName}; refusing to restore it.",
+                addon.Name);
             return false;
         }
 
@@ -763,6 +780,48 @@ public sealed class InstanceImportService : IInstanceImportService
             .ConfigureAwait(false);
 
         return true;
+    }
+
+    /// <summary>
+    /// Compares the packaged file against a declared digest. Returns true when no digest is declared.
+    /// </summary>
+    private static async Task<bool> VerifyAddonDigestAsync(
+        string filePath,
+        JavaAddonManifest addon,
+        CancellationToken cancellationToken)
+    {
+        string? expected = addon.Sha512;
+        string algorithm = "SHA512";
+        if (string.IsNullOrWhiteSpace(expected) && !string.IsNullOrWhiteSpace(addon.Hash))
+        {
+            int separator = addon.Hash.IndexOf('-', StringComparison.Ordinal);
+            if (separator > 0 && separator < addon.Hash.Length - 1)
+            {
+                algorithm = addon.Hash[..separator];
+                expected = addon.Hash[(separator + 1)..];
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(expected))
+        {
+            return true;
+        }
+
+        await using FileStream stream = File.OpenRead(filePath);
+        byte[] digest = algorithm.ToUpperInvariant() switch
+        {
+            "SHA1" => await SHA1.HashDataAsync(stream, cancellationToken).ConfigureAwait(false),
+            "SHA256" => await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false),
+            "SHA512" => await SHA512.HashDataAsync(stream, cancellationToken).ConfigureAwait(false),
+            _ => Array.Empty<byte>()
+        };
+
+        return digest.Length > 0 &&
+               Convert.ToHexString(digest).Equals(expected.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

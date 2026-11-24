@@ -139,6 +139,32 @@ public sealed class InstanceImportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ReconstructStagedImportAsync_RejectsAddonWithMismatchedDigest()
+    {
+        string zipPath = Path.Combine(_root, "digest-import.zip");
+        CreateValidImportZip(zipPath);
+        using (ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        {
+            ZipArchiveEntry entry = archive.GetEntry("manifest.json")!;
+            entry.Delete();
+            AddEntry(archive, "manifest.json", CreateValidManifestJson().Replace(
+                "\"packagedPath\": \"server/plugins/Essentials.jar\"",
+                "\"packagedPath\": \"server/plugins/Essentials.jar\", \"sha512\": \"" + new string('0', 128) + "\""));
+        }
+
+        InstanceImportService service = CreateService(
+            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") });
+        InstanceImportResult result = await service.ImportAsync(new InstanceImportRequest
+        {
+            ZipPath = zipPath
+        });
+
+        var failedAddon = result.Report!.Addons.Single();
+        Assert.Equal("Essentials", failedAddon.Name);
+        Assert.Equal("failed", failedAddon.Status);
+    }
+
+    [Fact]
     public async Task ReconstructStagedImportAsync_BedrockExtractsBdsWithoutOverwritingImportedConfig()
     {
         string zipPath = Path.Combine(_root, "bedrock-import.zip");
@@ -155,6 +181,36 @@ public sealed class InstanceImportServiceTests : IDisposable
 
         Assert.True(File.Exists(Path.Combine(staged.ServerDirectory, "bedrock_server.exe")));
         Assert.Equal("level-name=Imported", File.ReadAllText(Path.Combine(staged.ServerDirectory, "server.properties")));
+    }
+
+    [Fact]
+    public async Task ReconstructStagedImportAsync_RejectsPackagedPathOutsideTheArchive()
+    {
+        string zipPath = Path.Combine(_root, "traversal-import.zip");
+        CreateValidImportZip(zipPath, includeAddonFile: false);
+        using (ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        {
+            ZipArchiveEntry entry = archive.GetEntry("manifest.json")!;
+            entry.Delete();
+            AddEntry(archive, "manifest.json", CreateValidManifestJson().Replace(
+                "\"packagedPath\": \"server/plugins/Essentials.jar\"",
+                "\"packagedPath\": \"../escaped.jar\", \"relativePath\": null, \"fileName\": null"));
+        }
+
+        InstanceImportService service = CreateService(
+            softwareProviders: new[] { new FakeSoftwareProvider("Paper (Test)", "server jar") });
+        InstanceImportStagingResult staged = await service.StageImportAsync(new InstanceImportRequest
+        {
+            ZipPath = zipPath
+        });
+
+        string escapedPath = Path.Combine(Path.GetDirectoryName(staged.StagingDirectory)!, "escaped.jar");
+        File.WriteAllText(escapedPath, "outside the staging root");
+
+        await service.ReconstructStagedImportAsync(staged);
+
+        Assert.Equal("outside the staging root", File.ReadAllText(escapedPath));
+        Assert.False(File.Exists(Path.Combine(staged.ServerDirectory, "plugins", "Essentials.jar")));
     }
 
     [Fact]

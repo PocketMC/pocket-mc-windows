@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Desktop.Core.Interfaces;
+using PocketMC.Desktop.Localization;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -51,7 +52,7 @@ public partial class InstanceExportPage : Page, ISupportsKeyboardBackNavigation
     {
         var dialog = new SaveFileDialog
         {
-            Title = "Save PocketMC Instance Export",
+            Title = L.T("Save PocketMC Instance Export"),
             Filter = "PocketMC Instance Export (*.zip)|*.zip",
             DefaultExt = ".zip",
             AddExtension = true,

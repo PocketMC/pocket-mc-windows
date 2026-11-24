@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Core.Interfaces;
 using PocketMC.Desktop.Features.Console;
+using PocketMC.Desktop.Localization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -62,7 +63,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     private bool _disposed;
     private bool _hasLoadedOpState;
     private bool _isRefreshingState;
-    private string _lastUpdatedText = "Waiting for player list";
+    private string _lastUpdatedText = L.T("Waiting for player list");
     private bool _isWhitelistEnabled;
     private string _whitelistAddUsername = string.Empty;
     private readonly string _workingDirectory;
@@ -195,7 +196,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public string EmptyWhitelistText => "No whitelisted players found.";
+    public string EmptyWhitelistText => L.T("No whitelisted players found.");
 
     public string EmptyOnlineText
     {
@@ -568,7 +569,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             {
                 if (TryFormatPlayerCommandTarget(playerName, out string formattedTarget, showDialog: false))
                 {
-                    _ = DispatchCommandAsync($"data get entity {formattedTarget} playerGameType");
+                    _ = DispatchCommandAsync(L.F("data get entity {0} playerGameType", formattedTarget));
                 }
             }
 
@@ -931,7 +932,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         var pending = new PendingGamemodeChange(mode, player.ConfirmedGameMode, shouldRevertPersistedGamemode: UsesSidecarGamemode);
         _pendingGamemodePlayers[player.Name] = pending;
-        await DispatchCommandAsync($"gamemode {mode} {formattedName}");
+        await DispatchCommandAsync(L.F("gamemode {0} {1}", mode, formattedName));
         _ = RevertGamemodeAfterDelayAsync(player.Name, pending);
     }
 
@@ -984,7 +985,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         {
             DialogResult result = await _dialogService.ShowDialogAsync(
                 "Ban Player",
-                $"Ban {player.Name} from {InstanceName}?",
+                L.F("Ban {0} from {1}?", player.Name, InstanceName),
                 DialogType.Warning,
                 true);
 
@@ -1096,9 +1097,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             _metadata.ServerType);
         if (showDialog)
         {
-            _dialogService.ShowMessage(
-                "Invalid Player Name",
-                "PocketMC blocked this command because the player name contains characters that cannot be safely used in server commands.",
+            _dialogService.ShowMessage(L.T("Invalid Player Name"), L.T("PocketMC blocked this command because the player name contains characters that cannot be safely used in server commands."),
                 DialogType.Error);
         }
 
@@ -1229,7 +1228,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        string command = CommandFormatter.AppendOptionalReason($"kick {formattedName}", ban.Reason);
+        string command = CommandFormatter.AppendOptionalReason(L.F("kick {0}", formattedName), ban.Reason);
         await DispatchCommandAsync(command);
     }
 
@@ -1260,14 +1259,14 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
     {
         if (!_lastUpdatedUtc.HasValue)
         {
-            LastUpdatedText = "Waiting for player list";
+            LastUpdatedText = L.T("Waiting for player list");
             return;
         }
 
         int seconds = Math.Max(0, (int)Math.Round((DateTime.UtcNow - _lastUpdatedUtc.Value).TotalSeconds));
         LastUpdatedText = seconds <= 1
             ? "Last updated just now"
-            : $"Last updated {seconds}s ago";
+            : L.F("Last updated {0}s ago", seconds);
     }
 
     private PlayerViewModel? FindOnlinePlayer(string playerName)
@@ -1361,8 +1360,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             _logger.LogError(ex, "Failed to toggle whitelist.");
             // Revert UI toggle since it failed
             IsWhitelistEnabled = !newValue;
-            _dialogService.ShowMessage("Error",
-                "Failed to save whitelist settings. The properties file might be locked by another process.",
+            _dialogService.ShowMessage(L.T("Error"), L.T("Failed to save whitelist settings. The properties file might be locked by another process."),
                 DialogType.Error);
         }
     }
@@ -1385,8 +1383,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
 
         if (!IsValidUsernameForCommand(username))
         {
-            _dialogService.ShowMessage("Invalid Username",
-                "The username contains invalid characters. Java usernames must be 3-16 alphanumeric characters. Bedrock usernames can contain spaces but no control characters, quotes, or backslashes.",
+            _dialogService.ShowMessage(L.T("Invalid Username"), L.T("The username contains invalid characters. Java usernames must be 3-16 alphanumeric characters. Bedrock usernames can contain spaces but no control characters, quotes, or backslashes."),
                 DialogType.Error);
             return;
         }
@@ -1408,15 +1405,14 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
             if (result == WhitelistAddResult.AddedWithOfflineUuidFallback)
             {
                 _dialogService.ShowMessage("Warning",
-                    $"Failed to resolve Mojang UUID for '{username}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.",
+                    L.F("Failed to resolve Mojang UUID for '{0}'. An offline-mode UUID was generated instead, but this player might not be able to join if online-mode=true.", username),
                     DialogType.Warning);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to add player to whitelist.");
-            _dialogService.ShowMessage("Error",
-                "Failed to add the player. The whitelist file might be locked by another process, or it contains invalid formatting.",
+            _dialogService.ShowMessage(L.T("Error"), L.T("Failed to add the player. The whitelist file might be locked by another process, or it contains invalid formatting."),
                 DialogType.Error);
         }
     }
@@ -1441,8 +1437,7 @@ public sealed class PlayerManagementViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to remove player from whitelist.");
-            _dialogService.ShowMessage("Error",
-                "Failed to remove the player. The whitelist file might be locked by another process, or it contains invalid formatting.",
+            _dialogService.ShowMessage(L.T("Error"), L.T("Failed to remove the player. The whitelist file might be locked by another process, or it contains invalid formatting."),
                 DialogType.Error);
         }
     }

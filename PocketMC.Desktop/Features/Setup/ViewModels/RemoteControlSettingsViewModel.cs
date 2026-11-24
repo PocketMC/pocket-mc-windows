@@ -1,5 +1,6 @@
 using PocketMC.Infrastructure.Configuration;
 using PocketMC.RemoteControl.Models;
+using PocketMC.Desktop.Localization;
 using System.IO;
 using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -154,7 +155,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
     {
         var result = await _dialogService.ShowDialogAsync(
             "Remove User",
-            $"Are you sure you want to remove the user '{user.Username}'? This action cannot be undone.",
+            L.F("Are you sure you want to remove the user '{0}'? This action cannot be undone.", user.Username),
             PocketMC.Desktop.Core.Interfaces.DialogType.Warning,
             false,
             "Remove",
@@ -164,7 +165,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         {
             Users.Remove(user);
             SaveSettings();
-            SetStatus($"User '{user.Username}' removed successfully.", false);
+            SetStatus(L.F("User '{0}' removed successfully.", user.Username), false);
         }
     }
 
@@ -172,7 +173,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
     {
         if (string.IsNullOrWhiteSpace(user.Username))
         {
-            SetStatus("Username cannot be empty.", true);
+            SetStatus(L.T("Username cannot be empty."), true);
             if (string.IsNullOrEmpty(user.PasswordHash))
             {
                 Users.Remove(user);
@@ -191,7 +192,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         var adminUser = _applicationState.Settings.RemoteControl.Username;
         if (!string.IsNullOrEmpty(adminUser) && string.Equals(trimmedUsername, adminUser.Trim(), StringComparison.OrdinalIgnoreCase))
         {
-            SetStatus("Sub-user username cannot be the same as the admin username.", true);
+            SetStatus(L.T("Sub-user username cannot be the same as the admin username."), true);
             if (string.IsNullOrEmpty(user.PasswordHash))
             {
                 Users.Remove(user);
@@ -207,7 +208,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         // Check if username is already taken by another sub-user
         if (Users.Any(u => u != user && string.Equals(u.Username?.Trim(), trimmedUsername, StringComparison.OrdinalIgnoreCase)))
         {
-            SetStatus($"User '{trimmedUsername}' already exists.", true);
+            SetStatus(L.F("User '{0}' already exists.", trimmedUsername), true);
             if (string.IsNullOrEmpty(user.PasswordHash))
             {
                 Users.Remove(user);
@@ -229,11 +230,11 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
                 user.Model.Username = trimmedUsername;
                 user.IsEditing = false;
                 if (!SaveSettings()) return;
-                SetStatus($"User '{user.Username}' updated successfully.", false);
+                SetStatus(L.F("User '{0}' updated successfully.", user.Username), false);
                 return;
             }
 
-            SetStatus("Password is required to save credentials.", true);
+            SetStatus(L.T("Password is required to save credentials."), true);
             return;
         }
 
@@ -246,7 +247,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
 
         user.IsEditing = false;
         if (!SaveSettings()) return;
-        SetStatus($"User '{user.Username}' credentials saved successfully.", false);
+        SetStatus(L.F("User '{0}' credentials saved successfully.", user.Username), false);
     }
 
     [ObservableProperty]
@@ -378,7 +379,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
             if ((askUsername && string.IsNullOrWhiteSpace(result.Username)) || 
                 (askPassword && string.IsNullOrWhiteSpace(result.Password)))
             {
-                _dialogService.ShowMessage("Invalid Input", "Username and password cannot be empty. Please enter valid credentials.", PocketMC.Desktop.Core.Interfaces.DialogType.Warning);
+                _dialogService.ShowMessage(L.T("Invalid Input"), L.T("Username and password cannot be empty. Please enter valid credentials."), PocketMC.Desktop.Core.Interfaces.DialogType.Warning);
                 continue;
             }
 
@@ -421,14 +422,14 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
             OnPropertyChanged(nameof(IsPasswordSet));
             OnPropertyChanged(nameof(IsPasswordNotSet));
             OnPropertyChanged(nameof(IsOwnerSetupVisible));
-            SetStatus("Admin credentials cleared successfully.", false);
+            SetStatus(L.T("Admin credentials cleared successfully."), false);
             IsAdminCredentialsExpanded = false;
             return;
         }
 
         if (string.IsNullOrWhiteSpace(Username))
         {
-            SetStatus("Username cannot be empty.", true);
+            SetStatus(L.T("Username cannot be empty."), true);
             Username = _applicationState.Settings.RemoteControl.Username ?? "";
             return;
         }
@@ -438,7 +439,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         // Check if any sub-user already uses this username
         if (Users.Any(u => string.Equals(u.Username?.Trim(), trimmedAdminUsername, StringComparison.OrdinalIgnoreCase)))
         {
-            SetStatus("Admin username cannot be the same as an existing sub-user username.", true);
+            SetStatus(L.T("Admin username cannot be the same as an existing sub-user username."), true);
             Username = _applicationState.Settings.RemoteControl.Username ?? "";
             return;
         }
@@ -454,12 +455,12 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
                 OnPropertyChanged(nameof(IsPasswordSet));
                 OnPropertyChanged(nameof(IsPasswordNotSet));
                 OnPropertyChanged(nameof(IsOwnerSetupVisible));
-                SetStatus("Admin username updated successfully.", false);
+                SetStatus(L.T("Admin username updated successfully."), false);
                 IsAdminCredentialsExpanded = false;
                 return;
             }
 
-            SetStatus("Password cannot be empty.", true);
+            SetStatus(L.T("Password cannot be empty."), true);
             return;
         }
 
@@ -473,7 +474,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         OnPropertyChanged(nameof(IsPasswordSet));
         OnPropertyChanged(nameof(IsPasswordNotSet));
         OnPropertyChanged(nameof(IsOwnerSetupVisible));
-        SetStatus("Admin credentials saved successfully.", false);
+        SetStatus(L.T("Admin credentials saved successfully."), false);
         IsAdminCredentialsExpanded = false;
     }
 
@@ -528,7 +529,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         var settings = _applicationState.Settings;
         if (Port <= 0 || Port > 65535)
         {
-            SetStatus("Remote Control port must be between 1 and 65535.", true);
+            SetStatus(L.T("Remote Control port must be between 1 and 65535."), true);
             return false;
         }
 
@@ -750,7 +751,7 @@ public sealed partial class RemoteControlSettingsViewModel : ObservableObject, I
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to generate QR code: {ex}");
+            System.Diagnostics.Debug.WriteLine(L.F("Failed to generate QR code: {0}", ex));
             return null;
         }
     }

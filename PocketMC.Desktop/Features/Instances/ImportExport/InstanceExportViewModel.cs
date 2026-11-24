@@ -1,5 +1,6 @@
 using PocketMC.Desktop.Features.Instances.ImportExport;
 using PocketMC.Application.Interfaces;
+using PocketMC.Desktop.Localization;
 using PocketMC.Application.Interfaces.Instances;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -176,8 +177,8 @@ public sealed class InstanceExportViewModel : ObservableObject
             OverallProgress = 100;
             CurrentStep = "Export complete.";
             SkippedFilesSummary = result.SkippedFiles.Count == 0
-                ? "No binaries or unsafe files were exported."
-                : $"Skipped {result.SkippedFiles.Count} binary or transient file{(result.SkippedFiles.Count == 1 ? string.Empty : "s")}.";
+                ? L.T("No binaries or unsafe files were exported.")
+                : L.F("Skipped {0} binary or transient file(s).", result.SkippedFiles.Count);
             OnPropertyChanged(nameof(HasSkippedFiles));
             ExportCompleted?.Invoke(this, result);
         }

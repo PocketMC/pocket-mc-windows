@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using PocketMC.Desktop.Localization;
 using PocketMC.Infrastructure.News;
 
 namespace PocketMC.Desktop.Features.News;
@@ -131,7 +132,7 @@ internal static class NewsContentRenderer
     private static FrameworkElement Callout(string message, string label, string resourceKey)
     {
         StackPanel body = new();
-        body.Children.Add(Text(label, 12, FontWeights.SemiBold, resourceKey, 0, 3));
+        body.Children.Add(Text(L.T(label), 12, FontWeights.SemiBold, resourceKey, 0, 3));
         body.Children.Add(Text(message, 13, FontWeights.Normal, "TextFillColorPrimaryBrush", 0, 0, 19));
         return new Border
         {

@@ -1,5 +1,6 @@
 ﻿using PocketMC.Desktop.Core.Interfaces;
 using System;
+using PocketMC.Desktop.Localization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,7 +61,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
             catch (Exception ex)
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Failed to load image: " + ex.Message);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError(L.T("Error"), L.F("Failed to load image: {0}", ex.Message));
                 _navigationService.NavigateBack();
             }
         }
@@ -222,7 +223,7 @@ namespace PocketMC.Desktop.Features.Settings
                 // Clamp for safety
                 if (pxX + pxSize > _originalImage.PixelWidth) pxSize = _originalImage.PixelWidth - pxX;
                 if (pxY + pxSize > _originalImage.PixelHeight) pxSize = Math.Min(pxSize, _originalImage.PixelHeight - pxY);
-                if (pxSize <= 0) { PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning("Invalid Crop", "Invalid crop region."); return; }
+                if (pxSize <= 0) { PocketMC.Desktop.Infrastructure.AppDialog.ShowWarning(L.T("Invalid Crop"), L.T("Invalid crop region.")); return; }
 
                 // 1. Crop, Resize to 64x64, and Encode to PNG in memory
                 BitmapImage result = _imageProcessingService.CropAndResizeImage(_originalImage, pxX, pxY, pxSize, 64);
@@ -233,7 +234,7 @@ namespace PocketMC.Desktop.Features.Settings
             }
             catch (Exception ex)
             {
-                PocketMC.Desktop.Infrastructure.AppDialog.ShowError("Error", "Failed to crop image: " + ex.Message);
+                PocketMC.Desktop.Infrastructure.AppDialog.ShowError(L.T("Error"), L.F("Failed to crop image: {0}", ex.Message));
             }
         }
 

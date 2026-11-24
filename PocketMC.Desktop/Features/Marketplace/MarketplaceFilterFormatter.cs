@@ -1,4 +1,5 @@
 using System;
+using PocketMC.Desktop.Localization;
 
 namespace PocketMC.Desktop.Features.Marketplace
 {
@@ -11,11 +12,11 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             if (string.IsNullOrWhiteSpace(cleanVersion) || cleanVersion == "*")
             {
-                versionText = "All Versions";
+                versionText = L.T("All Versions");
             }
             else
             {
-                versionText = $"Minecraft {cleanVersion}";
+                versionText = L.F("Minecraft {0}", cleanVersion);
             }
 
             if (string.IsNullOrWhiteSpace(serverType))
@@ -34,20 +35,20 @@ namespace PocketMC.Desktop.Features.Marketplace
 
             if (hasServerType && hasSpecificVersion)
             {
-                return $"Filtered for {serverType!.Trim()} compatibility on Minecraft {cleanVersion}";
+                return L.F("Filtered for {0} compatibility on Minecraft {1}", serverType!.Trim(), cleanVersion);
             }
 
             if (hasServerType)
             {
-                return $"Filtered for {serverType!.Trim()} compatibility on all Minecraft versions";
+                return L.F("Filtered for {0} compatibility on all Minecraft versions", serverType!.Trim());
             }
 
             if (hasSpecificVersion)
             {
-                return $"Filtered for Minecraft {cleanVersion} compatibility";
+                return L.F("Filtered for Minecraft {0} compatibility", cleanVersion);
             }
 
-            return "Showing items for all versions";
+            return L.T("Showing items for all versions");
         }
 
         private static string CleanVersionString(string? mcVersion)

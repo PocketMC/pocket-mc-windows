@@ -203,21 +203,6 @@ namespace PocketMC.Infrastructure.Marketplace
                 progress,
                 cancellationToken);
 
-            // Delete old file if it has a different name
-            if (!string.Equals(oldFileName, safeLatestFileName, StringComparison.OrdinalIgnoreCase))
-            {
-                string safeOldFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(oldFileName);
-                string? oldFilePath = PathSafety.ValidateContainedPath(destDir, safeOldFileName);
-                if (File.Exists(oldFilePath))
-                {
-                    try { File.Delete(oldFilePath); }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "Best-effort cleanup could not delete old add-on file {OldFilePath}.", oldFilePath);
-                    }
-                }
-            }
-
             // Update manifest entry preserving or refreshing display metadata
             string? iconUrl = null;
             string? displayName = null;
@@ -244,6 +229,21 @@ namespace PocketMC.Infrastructure.Marketplace
                 minecraftVersion: null,
                 loader: compat.LoaderName,
                 downloadUrl: updateInfo.LatestDownloadUrl);
+
+            // Only retire the previous jar once the manifest points at the new one.
+            if (!string.Equals(oldFileName, safeLatestFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                string safeOldFileName = MarketplaceFileNameSanitizer.RequireSafeFileName(oldFileName);
+                string? oldFilePath = PathSafety.ValidateContainedPath(destDir, safeOldFileName);
+                if (File.Exists(oldFilePath))
+                {
+                    try { File.Delete(oldFilePath); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Best-effort cleanup could not delete old add-on file {OldFilePath}.", oldFilePath);
+                    }
+                }
+            }
         }
 
         private IAddonProvider? GetProvider(string providerName)
