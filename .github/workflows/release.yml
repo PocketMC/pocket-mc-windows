@@ -241,3 +241,37 @@ jobs:
           } catch {
             Write-Warning "Failed to send Discord notification: $_"
           }
+
+      - name: Publish to Windows Package Manager (WinGet)
+        if: steps.check_channel.outputs.skip == 'false'
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          if (-not $env:WINGET_TOKEN) {
+            Write-Warning "WINGET_TOKEN secret is not set. Skipping WinGet manifest update."
+            exit 0
+          }
+
+          Write-Host "Downloading latest wingetcreate standalone binary..."
+          Invoke-WebRequest -Uri "https://aka.ms/wingetcreate/latest" -OutFile "wingetcreate.exe"
+
+          $packageId = "PocketMC.PocketMC"
+          $version = "${{ steps.config.outputs.version }}"
+          $installerUrl = "${{ steps.config.outputs.link_releases }}/download/v$version/${{ steps.config.outputs.app_id }}-win-Setup.exe"
+          $releaseNotesUrl = "${{ steps.config.outputs.link_releases }}/tag/v$version"
+
+          # Allow release asset propagation on GitHub CDN
+          Start-Sleep -Seconds 10
+
+          Write-Host "Submitting $packageId v$version update to WinGet..."
+          .\wingetcreate.exe update $packageId `
+            --version $version `
+            --urls $installerUrl `
+            --release-notes-url $releaseNotesUrl `
+            --token $env:WINGET_TOKEN `
+            --submit
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "wingetcreate exited with code $LASTEXITCODE"
+          }

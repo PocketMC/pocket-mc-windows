@@ -178,13 +178,9 @@ namespace PocketMC.Application.Services.Mods
                 }
             }
 
-            if (totalFiles > 0)
+            if (skippedFiles > 0)
             {
-                double skipRatio = (double)skippedFiles / totalFiles;
-                if (skipRatio > 0.50)
-                {
-                    throw new InvalidOperationException($"This modpack appears to be primarily client-side ({skipRatio:P0} client-only mods) and is unsupported for server installation.");
-                }
+                _logger.LogInformation("Skipped {Skipped} of {Total} client-only files from Modrinth pack.", skippedFiles, totalFiles);
             }
 
             return result;
